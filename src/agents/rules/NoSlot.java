@@ -18,7 +18,7 @@ public class NoSlot extends StrategyTransformation{
 	
 	@Override
 	protected void transform(Query q, SSBBidStrategy strategy) {
-		if(_queryReport != null){
+		if(_queryReport != null && strategy.getQuerySpendLimit(q) > 0){
 			if(Double.isNaN(_queryReport.getPosition(q, _advertiser))){
 				double current = strategy.getQueryReinvestFactor(q);
 				strategy.setQueryReinvestFactor(q, current+_increase);

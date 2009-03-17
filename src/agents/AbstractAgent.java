@@ -199,7 +199,7 @@ public abstract class AbstractAgent extends Agent {
 	/**
 	 * This method will be called at the start of the first day only
 	 * after all other reports have been received, but before sendBidAndAds is called
-	 * It can be used like a constructor for the agent's status
+	 * It can be used like a constructor for the agent's state
 	 */
 	protected abstract void initBidder();
 
@@ -271,15 +271,17 @@ public abstract class AbstractAgent extends Agent {
 			// F1 Component only
 			tempquery = new Query(null, product.getComponent());
 			_querySpace.add(tempquery);
-			manufacturerSet.add(tempquery);
+			componentSet.add(tempquery);
 			F1.add(tempquery);
 			
 			// The F2 query class
 			tempquery = new Query(product.getManufacturer(), product.getComponent());
-			Set<Query> singleton = new LinkedHashSet<Query>();
-			
 			_querySpace.add(tempquery);
 			F2.add(tempquery);
+			componentSet.add(tempquery);
+			manufacturerSet.add(tempquery);
+			
+			Set<Query> singleton = new LinkedHashSet<Query>();
 			singleton.add(tempquery);
 			
 			Hashtable<String, Set<Query>> tempTable= new Hashtable<String, Set<Query>>();
@@ -318,5 +320,41 @@ public abstract class AbstractAgent extends Agent {
 		_queryReports.clear();
 		_querySpace.clear();
 		_firstDay = true;
+	}
+	
+	
+	/**
+	 * Helper methods for generating more interesting sets of queries
+	 * 
+	 * @param s1
+	 * @param s2
+	 * @return
+	 */
+	protected Set<Query> intersect(Set<Query> s1, Set<Query> s2){
+		Set<Query> inter = new LinkedHashSet<Query>();
+		inter.addAll(s1);
+		inter.retainAll(s2);
+		return inter;
+	}
+	
+	protected void printAdvertiserInfo(){
+		System.out.println("Agent Info");
+		System.out.println("Distribution Capacity: "+_advertiserInfo.getDistributionCapacity());
+		System.out.println("Distribution Window: "+_advertiserInfo.getDistributionWindow());
+		
+		System.out.println("Component Specialty: "+_advertiserInfo.getComponentSpecialty());
+		System.out.println("Component Bonus: "+_advertiserInfo.getComponentBonus());
+		
+		System.out.println("Manufacturer Specialty: "+_advertiserInfo.getManufacturerSpecialty());
+		System.out.println("Manufacturer Bonus: "+_advertiserInfo.getManufacturerBonus());
+	}
+	
+	protected void printQueryReport(QueryReport report){
+		for(Query q : report){
+			System.out.println(q);
+			for(String a : report.advertisers(q)){
+				System.out.println("\t"+a+" "+report.getPosition(q,a));
+			}		
+		}
 	}
 }

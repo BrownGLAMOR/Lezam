@@ -25,8 +25,6 @@ public class SSBBidStrategy {
 	protected Hashtable<Query, Double> _queryConversionRevenue;
 	
 	
-	//F0_Query_Bid = Revenue * F0_Conversion * ACC
-	
 	public SSBBidStrategy(Set<Query> querySpace){
 		_querySpace = querySpace;
 		_campaignSpendLimit = Double.NaN;
@@ -92,14 +90,18 @@ public class SSBBidStrategy {
 		}
 	}
 	
+	public double getQueryBid(Query q) {
+		return getQueryConversionRevenue(q)*getQueryConversion(q)*getQueryReinvestFactor(q);
+	}
+	
 	public void setQuerySpendLimit(Query q, double d){_querySpendLimit.put(q, d);}
 	public void setQueryAd(Query q, Ad d){_queryAd.put(q, d);}
 	public void setQueryConversion(Query q, double d){_queryConversion.put(q, d);}
 	public void setQueryReinvestFactor(Query q, double d){_queryReinvestFactor.put(q, d);}
 	public void setQueryConversionRevenue(Query q, double d){_queryConversionRevenue.put(q, d);}
-	public void setQueryCampaignSpendLimit(double campaignSpendLimit){_campaignSpendLimit = campaignSpendLimit;}
 	
 	
+	public void setCampaignSpendLimit(double campaignSpendLimit){_campaignSpendLimit = campaignSpendLimit;}
 	public void setDefaultQuerySpendLimit(double d){_defaultQuerySpendLimit = d;}
 	public void setDefaultQueryAd(Ad d){_defaultQueryAd = d;}
 	public void setDefaultQueryConversion(double d){_defaultQueryConversion = d;}
@@ -110,40 +112,31 @@ public class SSBBidStrategy {
 	public BidBundle buildBidBundle(){
 		BidBundle bidBundle = new BidBundle();
 		
-		for(Query query : _querySpace) {
-			Ad ad = _defaultQueryAd;
-			if(_queryAd.containsKey(query)){
-				ad = _queryAd.get(query);
-			}
-			double spendLimit = _defaultQuerySpendLimit;
-			if(_querySpendLimit.containsKey(query)){
-				spendLimit = _querySpendLimit.get(query);
-			}
-			
-			double queryConversion = _defaultQueryConversion;
-			double queryAdvertisingCost = _defaultQueryReinvestFactor;
-			double queryConversionRevenue = _defaultQueryConversionRevenue;
-			
-			
-			
-			if(_queryConversion.containsKey(query)){
-				queryConversion = _queryConversion.get(query);
-			}
-			if(_queryReinvestFactor.containsKey(query)){
-				queryAdvertisingCost = _queryReinvestFactor.get(query);
-			}
-			if(_queryConversionRevenue.containsKey(query)){
-				queryConversionRevenue = _queryConversionRevenue.get(query);
-			}
-			
-			double queryBid = queryConversionRevenue*queryConversion*queryAdvertisingCost;
+		for(Query q : _querySpace) {
+			double queryBid = getQueryConversionRevenue(q)*getQueryConversion(q)*getQueryReinvestFactor(q);
 
-			bidBundle.addQuery(query, queryBid, ad);
-			bidBundle.setDailyLimit(query, spendLimit);
+			bidBundle.addQuery(q, queryBid, getQueryAd(q));
+			bidBundle.setDailyLimit(q, getQuerySpendLimit(q));
 		}
 		
 		bidBundle.setCampaignDailySpendLimit(_campaignSpendLimit);
 		
 		return bidBundle;
 	}
+
+	public String toString(){
+		StringBuffer buff = new StringBuffer(255);
+		buff.append("CampaignSpendLimit: ").append(_campaignSpendLimit).append("\n");
+		for(Query q : _querySpace){
+			buff.append(q).append("\n");
+			buff.append("\t").append("Bid: ").append(getQueryBid(q)).append("\n");
+			buff.append("\t").append("SpendLimit: ").append(getQuerySpendLimit(q)).append("\n");
+			buff.append("\t").append("Ad: ").append(getQueryAd(q)).append("\n");
+			buff.append("\t").append("Conversion: ").append(getQueryConversion(q)).append("\n");
+			buff.append("\t").append("ReinvestFactor: ").append(getQueryReinvestFactor(q)).append("\n");
+			buff.append("\t").append("ConversionRevenue: ").append(getQueryConversionRevenue(q)).append("\n");
+		}
+		return buff.toString();
+	}
+	
 }
