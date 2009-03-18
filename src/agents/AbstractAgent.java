@@ -10,7 +10,7 @@ import edu.umich.eecs.tac.props.*;
 import java.util.*;
 
 /**
- * This class is a skeletal implementation of a TAC/AA agent.
+ * This class is a skeletal implementation of a TAC/AA agent.  Based on the Example Agent
  *
  * @author Patrick Jordan
  * @see <a href="http://aa.tradingagents.org/documentation">TAC AA Documentation</a>
@@ -197,8 +197,8 @@ public abstract class AbstractAgent extends Agent {
 	}
 	
 	/**
-	 * This method will be called at the start of the first day only
-	 * after all other reports have been received, but before sendBidAndAds is called
+	 * This method will be called at the start of the first day only;
+	 * After all other reports have been received, but before sendBidAndAds is called.
 	 * It can be used like a constructor for the agent's state
 	 */
 	protected abstract void initBidder();

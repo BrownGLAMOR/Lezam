@@ -1,15 +1,14 @@
 package agents;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
 import agents.rules.ManufacurerBonus;
-import agents.rules.NoSlot;
+import agents.rules.NoImpressions;
 import agents.rules.ReinvestmentCap;
 import agents.rules.Targeted;
-import agents.rules.TopSlot;
+import agents.rules.TopPosition;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -20,28 +19,33 @@ public class SSBAgent extends AbstractAgent {
 	protected SSBBidStrategy _bidStrategy;
 	protected DistributionCap _distributionCap;
 	protected ReinvestmentCap _reinvestmentCap;
-	protected TopSlot _topSlot;
-	protected NoSlot _noSlot;
+	protected TopPosition _topPosition;
+	protected NoImpressions _noImpressions;
 	
 	public SSBAgent(){}
 	
+	@Override
 	protected void simulationSetup() {}
 
 	@Override
 	protected void initBidder() {
 		printAdvertiserInfo();
 		_bidStrategy = new SSBBidStrategy(_querySpace);
+		int distributionCapacity = _advertiserInfo.getDistributionCapacity();
+		int distributionWindow = _advertiserInfo.getDistributionWindow();
+		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
-		_distributionCap = new DistributionCap(_advertiserInfo.getDistributionCapacity(), _advertiserInfo.getDistributionWindow());
+		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
 		_reinvestmentCap = new ReinvestmentCap(0.80);
-		_topSlot = new TopSlot(_advertiserInfo.getAdvertiserId(), 0.10);
-		_noSlot = new NoSlot(_advertiserInfo.getAdvertiserId(), 0.10);
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
+		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
 		
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
 		new ConversionPr(0.30).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy);
 		
-		new ManufacurerBonus(_advertiserInfo.getManufacturerBonus()).apply(_queryManufacturer.get(_advertiserInfo.getManufacturerSpecialty()), _bidStrategy);
+		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
 		
@@ -51,20 +55,24 @@ public class SSBAgent extends AbstractAgent {
 		Set<Query> F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
 		new ConversionPr(0.39).apply(F2componentSpecialty, _bidStrategy);
 		
+		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
 		new Targeted().apply(F2componentSpecialty, _bidStrategy);
 	}
+	
+
+	
 	
 	@Override
 	protected void updateBidStratagy() {
 		QueryReport qr = _queryReports.remove();
-		_topSlot.updateReport(qr);
-		_noSlot.updateReport(qr);
+		_topPosition.updateReport(qr);
+		_noImpressions.updateReport(qr);
 		
 		SalesReport sr = _salesReports.remove();
 		_distributionCap.updateReport(sr);
 		
-		_topSlot.apply(_bidStrategy);
-		_noSlot.apply(_bidStrategy);
+		_topPosition.apply(_bidStrategy);
+		_noImpressions.apply(_bidStrategy);
 		_reinvestmentCap.apply(_bidStrategy);
 		_distributionCap.apply(_bidStrategy);
 	}
@@ -76,9 +84,6 @@ public class SSBAgent extends AbstractAgent {
 		System.out.println("**********");
 		return _bidStrategy.buildBidBundle();
 	}
-
-	
-	
 
 	
 }

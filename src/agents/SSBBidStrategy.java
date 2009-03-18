@@ -29,8 +29,7 @@ public class SSBBidStrategy {
 		_querySpace = querySpace;
 		_campaignSpendLimit = Double.NaN;
 		_defaultQuerySpendLimit = Double.NaN;
-		_defaultQueryAd = null;//?
-		
+		_defaultQueryAd = new Ad();
 		
 		_defaultQueryConversion = 0.1;
 		_defaultQueryReinvestFactor = 0.5;
