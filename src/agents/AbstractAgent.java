@@ -151,7 +151,7 @@ public abstract class AbstractAgent extends Agent {
 	 */
 	protected void sendBidAndAds() {
 		updateBidStratagy();
-		BidBundle bidBundle = buildBidBundle();
+		BidBundle bidBundle = buildBidBudle();
 
 		String publisherAddress = _advertiserInfo.getPublisherId();
 
@@ -162,7 +162,7 @@ public abstract class AbstractAgent extends Agent {
 	}
 	
 	protected abstract void updateBidStratagy();
-	protected abstract BidBundle buildBidBundle();
+	protected abstract BidBundle buildBidBudle();
 	
 	/**
 	 * Processes an incoming query report.
