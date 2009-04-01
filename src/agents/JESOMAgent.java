@@ -1,0 +1,172 @@
+package agents;
+
+import java.util.Scanner;
+import java.util.StringTokenizer;
+import java.io.*;
+import java.util.Hashtable;
+
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Query;
+
+
+public class JESOMAgent extends AbstractAgent {
+
+	// There should be a nicer way to get these capacities.
+	final static private double SmallCapacity = 300;
+	final static private double MediumCapacity = 400;
+	final static private double LargeCapacity = 500;
+	
+	protected JESOMBidStrategy _bidStrategy;
+
+	protected Hashtable<String, Double> capacityName;
+	
+	public JESOMAgent(){}
+	
+	@Override
+	protected void simulationSetup() {}
+
+	@Override
+	protected void initBidder() {
+		
+		printAdvertiserInfo();
+		
+		SetCapacityName();
+
+        BufferedReader bidsBufReader, budgetBufReader;
+       
+        try
+        {   
+        	// Read initial bid and budget from the files.
+            FileReader bidsFstream = new FileReader("data/bids.txt");
+            FileReader budgetFstream = new FileReader("data/budget.txt");
+            bidsBufReader = new BufferedReader(bidsFstream);
+            budgetBufReader = new BufferedReader(budgetFstream);
+        }
+        catch (Exception e)
+        {
+            //Catch exception if any
+            System.err.println("Error: " + e.getMessage());
+            return;
+        }
+        
+		Hashtable<Query, Pair<Double, Double> > initQueryBidBudget =
+						GetInitQueryBidBudget(bidsBufReader, budgetBufReader,
+								_advertiserInfo.getManufacturerSpecialty(),
+								_advertiserInfo.getComponentSpecialty(),
+								_advertiserInfo.getDistributionCapacity());
+
+		_bidStrategy = new JESOMBidStrategy(_querySpace, initQueryBidBudget);
+	}
+	
+	@Override
+	protected void updateBidStratagy() {
+		/* Add some code to update our strategy */
+	}
+	
+	@Override
+	protected BidBundle buildBidBudle(){
+		System.out.println("**********");
+		System.out.println(_bidStrategy);
+		System.out.println("**********");
+		return _bidStrategy.buildBidBundle();
+	}
+
+	// Again there should be a better way to get the association between the capacity and its name.
+    private void SetCapacityName()
+    {
+    	capacityName = new Hashtable<String, Double>();
+    	capacityName.put("small", SmallCapacity);
+    	capacityName.put("medium", MediumCapacity);
+    	capacityName.put("large", LargeCapacity);
+    }
+	
+    /* Reads of bids and budgets to initialize our strategy. */
+    private Hashtable<Query, Pair<Double, Double>> GetInitQueryBidBudget(BufferedReader bidsBufReader,
+		  							BufferedReader budgetBufReader,
+		  							String _manufacturer,
+		  							String _component,
+		  							double _capacity)
+	{
+		Hashtable<Query, Pair<Double, Double>> initQueryBidBudget = new
+													Hashtable<Query, Pair<Double, Double>>();
+
+		Scanner bidsScanner = new Scanner(bidsBufReader);
+		Scanner budgetScanner = new Scanner(budgetBufReader);
+		
+		int i = 0;
+
+        // Expects file of format <Manufacturer/Component/CapacityStr> <int> +
+		// Assumes that the bid and budget files are of the same length. (and of the same order)
+        while(bidsScanner.hasNextLine())
+        {
+            StringTokenizer bidsStr = new StringTokenizer(bidsScanner.nextLine(), "\t");
+            StringTokenizer budgetStr = new StringTokenizer(budgetScanner.nextLine(), "\t");
+            if ((bidsStr.countTokens() == (_querySpace.size()+1)) &&
+            		(budgetStr.countTokens() == (_querySpace.size()+1)))
+            {
+            	// Skip budget first column, read it from bids file instead
+            	budgetStr.nextToken();
+            	StringTokenizer speciality = new StringTokenizer(bidsStr.nextToken(), "/");
+            	String rowManufacturer = speciality.nextToken().toLowerCase().trim();
+            	String rowComponent = speciality.nextToken().toLowerCase().trim();
+            	String rowCapacityStr = speciality.nextToken().toLowerCase().trim();
+            	
+            	double rowCapacity = capacityName.get(rowCapacityStr);            	
+           	
+            	if (_manufacturer.toLowerCase().equals(rowManufacturer) &&
+            			  _component.toLowerCase().equals(rowComponent) &&
+            			  _capacity == rowCapacity)
+            	{    
+            		// Our speciality row.            		
+            		while (bidsStr.countTokens() > 0)
+            		{
+            			// Read bid and budget for query i.           		
+            			double bid = new Double(bidsStr.nextToken());
+            			double budget = new Double(budgetStr.nextToken());
+            		
+            			Pair<Double, Double> pair = new Pair<Double, Double>(bid, budget);
+            			Query q = new Query(QueryColEnum.values()[i].manufacturer, QueryColEnum.values()[i].component);
+            			initQueryBidBudget.put(q, pair);
+            			i++;
+            		}
+            		// In the future we should probably read off the whole table not just our speciality.
+            		return  initQueryBidBudget;
+            	}
+            }
+        }
+		return initQueryBidBudget;
+	}
+
+  /*
+   * Since for now we read off the text file, we do not know which column corresponds
+   * to which query. This is one way of specifying column number->query association.
+   */
+  public enum QueryColEnum {
+	  
+      F0 (null, null),
+      TV   (null, "tv"),
+      DVD   (null, "dvd"),
+      Audio   (null, "audio"),
+      Lioneer ("lioneer", null),
+      PG("pg", null),
+      Flat("flat", null),
+      TL("lioneer", "tv"),
+      TP ("pg", "tv"),
+      TA ("flat", "tv"),
+      DL ("lioneer", "dvd"),
+      DP ("pg", "dvd"),
+      DF ("flat", "dvd"),
+      AL ("lioneer", "audio"),
+      AP ("pg", "audio"),
+      AF ("flat", "audio");
+      
+      private final String manufacturer;
+      private final String component;
+      
+      QueryColEnum(String m, String c) {
+    	  
+          this.manufacturer = m;
+          this.component = c;
+      }
+  }
+}
