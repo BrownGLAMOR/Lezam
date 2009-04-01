@@ -12,11 +12,14 @@ public class DistributionCap extends StrategyTransformation{
 	protected SalesReport _salesReport;
 	LinkedList<Integer> _sold;
 	int _usedCapacity;
+	private LinkedList<Integer> _capacityWindow;
+	private int estimatedLastDaySoldCap;
 	
 	public DistributionCap(int distributionCapacity, int distributionWindow){
 		_distributionCapacity = distributionCapacity;
 		_distributionWindow = distributionWindow;
 		_sold = new LinkedList<Integer>();
+		_capacityWindow = new LinkedList<Integer>();
 		_usedCapacity = 0;
 	}
 	
@@ -28,15 +31,22 @@ public class DistributionCap extends StrategyTransformation{
 		}
 		
 		_sold.addFirst(conversions);
+
+		// Subtract the previous last day estimated capacity (since now we have real data for that day).
+		_usedCapacity -= estimatedLastDaySoldCap;
+		// Since last day capacity is unknown, we assume that it was the same as on the day
+		// before yesterday. 
+		estimatedLastDaySoldCap = conversions;
 		
-		if(_sold.size() > _distributionWindow){
-			int restored = _sold.removeLast();
-			_usedCapacity += conversions - restored;
+		if(_capacityWindow.size() > (_distributionWindow-1)){
+			int restored = _capacityWindow.removeLast();
+			_usedCapacity += conversions - restored;	
 		}
-		else {
+		else
+		{
 			_usedCapacity += conversions;
 		}
-		
+		_usedCapacity += estimatedLastDaySoldCap;
 	}
 	
 	@Override
