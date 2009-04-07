@@ -7,6 +7,7 @@ import java.util.Hashtable;
 
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 
 /**
 
@@ -39,9 +40,9 @@ public class JESOMAgent extends AbstractAgent {
 	final static private double MediumCapacity = 400;
 	final static private double LargeCapacity = 500;
 	
+	private double[] capWeights; //to be used later
+	
 	final private double initialBidFraction = 0.75;
-	
-	
 	
 	protected JESOMBidStrategy _bidStrategy;
 
@@ -59,7 +60,7 @@ public class JESOMAgent extends AbstractAgent {
 		
 		SetCapacityName();
 
-        BufferedReader bidsBufReader, budgetBufReader;
+        BufferedReader bidsBufReader, budgetBufReader, conBufReader;
        
         try
         {   
@@ -68,6 +69,7 @@ public class JESOMAgent extends AbstractAgent {
             FileReader budgetFstream = new FileReader("data/budget.txt");
             bidsBufReader = new BufferedReader(bidsFstream);
             budgetBufReader = new BufferedReader(budgetFstream);
+            conBufReader = new BufferedReader(budgetFstream);
         }
         catch (Exception e)
         {
@@ -77,7 +79,7 @@ public class JESOMAgent extends AbstractAgent {
         }
         
 		Hashtable<Query, Pair<Double, Double> > initQueryBidBudget =
-						GetInitQueryBidBudget(bidsBufReader, budgetBufReader,
+						GetInitQueryBidBudget(bidsBufReader, budgetBufReader, /**TODO conBufReader,*/
 								_advertiserInfo.getManufacturerSpecialty(),
 								_advertiserInfo.getComponentSpecialty(),
 								_advertiserInfo.getDistributionCapacity());
@@ -88,6 +90,21 @@ public class JESOMAgent extends AbstractAgent {
 	@Override
 	protected void updateBidStrategy() {
 		/* Add some code to update our strategy */
+		QueryReport qr = _queryReports.remove();
+		if (qr!=null){
+			for (Query q : _bidStrategy.getQuerySpace()){
+				double clicksGot = qr.getClicks(q);
+				double clicksAim = _bidStrategy.getQuerySpendLimit(q)/_bidStrategy.getQueryBid(q);
+				if (clicksGot < clicksAim){
+					_bidStrategy.setQueryBid(q, _bidStrategy.getQueryBid(q)*1.3);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim);
+				}
+				else {
+					_bidStrategy.setQueryBid(q, qr.getCPC(q)-.01);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim);
+				}
+			}
+		}
 	}
 	
 	@Override
@@ -110,6 +127,7 @@ public class JESOMAgent extends AbstractAgent {
     /* Reads of bids and budgets to initialize our strategy. */
     protected Hashtable<Query, Pair<Double, Double>> GetInitQueryBidBudget(BufferedReader bidsBufReader,
 		  							BufferedReader budgetBufReader,
+		  							/**TODO BufferedReader convBufReader,*/
 		  							String _manufacturer,
 		  							String _component,
 		  							double _capacity)
@@ -119,6 +137,7 @@ public class JESOMAgent extends AbstractAgent {
 
 		Scanner bidsScanner = new Scanner(bidsBufReader);
 		Scanner budgetScanner = new Scanner(budgetBufReader);
+		/**TODO Scanner conversionScanner = new Scanner(convBufReader); */
 		
 		int i = 0;
 
@@ -128,12 +147,15 @@ public class JESOMAgent extends AbstractAgent {
         {
             StringTokenizer bidsStr = new StringTokenizer(bidsScanner.nextLine(), "\t");
             StringTokenizer budgetStr = new StringTokenizer(budgetScanner.nextLine(), "\t");
+            /**StringTokenizer convStr = new StringTokenizer(conversionScanner.nextLine(), "\t"); TODO */
             if ((bidsStr.countTokens() == (_querySpace.size()+1)) &&
-            		(budgetStr.countTokens() == (_querySpace.size()+1)))
+            		(budgetStr.countTokens() == (_querySpace.size()+1)) /**&& 
+            		(convStr.countTokens() == (_querySpace.size()+1)) TODO*/ )
             {
             	// Skip budget first column, read it from bids file instead
             	budgetStr.nextToken();
             	StringTokenizer speciality = new StringTokenizer(bidsStr.nextToken(), "/");
+            	
             	String rowManufacturer = speciality.nextToken().toLowerCase().trim();
             	String rowComponent = speciality.nextToken().toLowerCase().trim();
             	String rowCapacityStr = speciality.nextToken().toLowerCase().trim();
