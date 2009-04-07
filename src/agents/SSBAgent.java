@@ -63,7 +63,7 @@ public class SSBAgent extends AbstractAgent {
 	
 	
 	@Override
-	protected void updateBidStratagy() {
+	protected void updateBidStrategy() {
 		QueryReport qr = _queryReports.remove();
 		_topPosition.updateReport(qr);
 		_noImpressions.updateReport(qr);

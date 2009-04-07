@@ -86,7 +86,7 @@ public class JESOMAgent extends AbstractAgent {
 	}
 	
 	@Override
-	protected void updateBidStratagy() {
+	protected void updateBidStrategy() {
 		/* Add some code to update our strategy */
 	}
 	
@@ -108,7 +108,7 @@ public class JESOMAgent extends AbstractAgent {
     }
 	
     /* Reads of bids and budgets to initialize our strategy. */
-    private Hashtable<Query, Pair<Double, Double>> GetInitQueryBidBudget(BufferedReader bidsBufReader,
+    protected Hashtable<Query, Pair<Double, Double>> GetInitQueryBidBudget(BufferedReader bidsBufReader,
 		  							BufferedReader budgetBufReader,
 		  							String _manufacturer,
 		  							String _component,

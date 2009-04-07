@@ -150,7 +150,7 @@ public abstract class AbstractAgent extends Agent {
 	 * Sends a constructed {@link BidBundle} from any updated bids, ads, or spend limits.
 	 */
 	protected void sendBidAndAds() {
-		updateBidStratagy();
+		updateBidStrategy();
 		BidBundle bidBundle = buildBidBudle();
 
 		String publisherAddress = _advertiserInfo.getPublisherId();
@@ -161,7 +161,7 @@ public abstract class AbstractAgent extends Agent {
 		}
 	}
 	
-	protected abstract void updateBidStratagy();
+	protected abstract void updateBidStrategy();
 	protected abstract BidBundle buildBidBudle();
 	
 	/**

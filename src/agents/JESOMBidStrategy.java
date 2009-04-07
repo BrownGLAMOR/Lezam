@@ -56,6 +56,21 @@ public class JESOMBidStrategy {
 		return _queryBidBudget.get(q).getFirst();		
 	}
 	
+	/**
+	 * Set the bid for a query.
+	 * @param q The query to set the bid for.
+	 * @param bid The bid to set.
+	 * @return The previous value of the specified key. <code>null</code> if the value was not set.
+	 */
+	public Pair<Double, Double> setQueryBid(Query q, double bid) {
+		if(_queryBidBudget == null || _queryBidBudget.isEmpty() || _queryBidBudget.get(q) == null){
+			return null;
+		}
+		else {
+			return _queryBidBudget.put(q, new Pair<Double,Double>(bid, _queryBidBudget.get(q).getSecond()));
+		}
+	}
+	
 	public void setQueryAd(Query q, Ad d){_queryAd.put(q, d);}
 	
 	public void setDefaultQuerySpendLimit(double d){_defaultQuerySpendLimit = d;}
