@@ -8,6 +8,29 @@ import java.util.Hashtable;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 
+/**
+
+Pr(conversion) array
+Desired sales in each query array (could be expressed as the weight of the daily capacity)
+	desired # clicks in query q = desired # sales in query q / Pr(conversion_q)
+MaxBid array (maximum amount we're willing to pay)
+	MaxBid_q = USP_q * Pr(conversion_q)
+
+budget_q = bid_q * desiredClicks_q
+
+Probably want to have initBid_q set as 2/3 or 3/4 of maxBid_q
+
+...to decide the changes in bid...
+Currently, we
+Want #s for desired # of clicks.
+If desired # (or more) of clicks were received yesterday, 
+  	lower bid for that query to CPC-epsilon 
+  	(i.e. just lower than yesterday's bidder, hopefully putting us in one lower slot)
+If under the desired # of clicks
+	if we have hit maxBid_q, lower the weight of this query for desired # sales
+  	else: Raise bid (possibly with noise)
+
+*/
 
 public class JESOMAgent extends AbstractAgent {
 
@@ -15,6 +38,10 @@ public class JESOMAgent extends AbstractAgent {
 	final static private double SmallCapacity = 300;
 	final static private double MediumCapacity = 400;
 	final static private double LargeCapacity = 500;
+	
+	final private double initialBidFraction = 0.75;
+	
+	
 	
 	protected JESOMBidStrategy _bidStrategy;
 
