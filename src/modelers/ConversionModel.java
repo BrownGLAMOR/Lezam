@@ -1,5 +1,6 @@
 package modelers;
 
+import modelers.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.*;
 
 public class ConversionModel extends AbstractModel {
