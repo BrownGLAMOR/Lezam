@@ -1,7 +1,9 @@
 package agents;
 
+import java.util.Hashtable;
 import java.util.Set;
 
+import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
 import agents.rules.ManufacurerBonus;
@@ -21,6 +23,8 @@ public class SSBAgent extends AbstractAgent {
 	protected ReinvestmentCap _reinvestmentCap;
 	protected TopPosition _topPosition;
 	protected NoImpressions _noImpressions;
+	protected AdjustConversionPr _adjustConversionPr;
+	protected Hashtable<Query,Double> _baseLineConversion;
 	
 	public SSBAgent(){}
 	
@@ -30,6 +34,7 @@ public class SSBAgent extends AbstractAgent {
 	@Override
 	protected void initBidder() {
 		printAdvertiserInfo();
+		_baseLineConversion = new Hashtable<Query,Double>();
 		_bidStrategy = new SSBBidStrategy(_querySpace);
 		int distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		int distributionWindow = _advertiserInfo.getDistributionWindow();
@@ -37,9 +42,16 @@ public class SSBAgent extends AbstractAgent {
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
 		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
-		_reinvestmentCap = new ReinvestmentCap(0.80);
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
+		_reinvestmentCap = new ReinvestmentCap(0.90);
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.05);
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
+		
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
+		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
+		
+		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, distributionWindow, _baseLineConversion, componentSpecialty);
 		
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
@@ -47,13 +59,14 @@ public class SSBAgent extends AbstractAgent {
 		
 		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
-		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
-		
 		Set<Query> F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
 		new ConversionPr(0.27).apply(F1componentSpecialty, _bidStrategy);
+		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);}
 		
 		Set<Query> F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
 		new ConversionPr(0.39).apply(F2componentSpecialty, _bidStrategy);
+		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);}
+		
 		
 		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
 		new Targeted().apply(F2componentSpecialty, _bidStrategy);
@@ -69,12 +82,20 @@ public class SSBAgent extends AbstractAgent {
 		_noImpressions.updateReport(qr);
 		
 		SalesReport sr = _salesReports.remove();
-		_distributionCap.updateReport(sr);
+		//_distributionCap.updateReport(sr);
+		_adjustConversionPr.updateReport(sr);
 		
+		int oversold = _adjustConversionPr.getOversold();
+		if(oversold > _advertiserInfo.getDistributionCapacity()/2){
+			_noImpressions.apply(_bidStrategy);
+		}
 		_topPosition.apply(_bidStrategy);
-		_noImpressions.apply(_bidStrategy);
+		
+		_adjustConversionPr.apply(_bidStrategy);
 		_reinvestmentCap.apply(_bidStrategy);
-		_distributionCap.apply(_bidStrategy);
+		//_distributionCap.apply(_bidStrategy);
+		
+		
 	}
 	
 	@Override
