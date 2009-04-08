@@ -172,8 +172,8 @@ public class JESOMAgent extends AbstractAgent {
             			// Read bid and budget for query i.           		
             			double bid = new Double(bidsStr.nextToken());
             			double budget = new Double(budgetStr.nextToken());
-            		
-            			Pair<Double, Double> pair = new Pair<Double, Double>(bid*initialBidFraction, budget*initialBidFraction);
+
+            			Pair<Double, Double> pair = new Pair<Double, Double>(bid*.75, budget*.75);
             			Query q = new Query(QueryColEnum.values()[i].manufacturer, QueryColEnum.values()[i].component);
             			initQueryBidBudget.put(q, pair);
             			i++;
