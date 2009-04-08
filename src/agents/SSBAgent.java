@@ -42,7 +42,7 @@ public class SSBAgent extends AbstractAgent {
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
 		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
-		_reinvestmentCap = new ReinvestmentCap(0.90);
+		_reinvestmentCap = new ReinvestmentCap(0.80);
 		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.05);
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
 		
@@ -85,18 +85,20 @@ public class SSBAgent extends AbstractAgent {
 		//_distributionCap.updateReport(sr);
 		_adjustConversionPr.updateReport(sr);
 		
-		int oversold = _adjustConversionPr.getOversold();
-		if(oversold > _advertiserInfo.getDistributionCapacity()/2){
-			_noImpressions.apply(_bidStrategy);
-		}
-		_topPosition.apply(_bidStrategy);
+		//int oversold = _adjustConversionPr.getOversold();
+		//if(oversold > _advertiserInfo.getDistributionCapacity()/2){
+		
+		//}
 		
 		_adjustConversionPr.apply(_bidStrategy);
+		
+		_topPosition.apply(_bidStrategy);
+		_noImpressions.apply(_bidStrategy);
+		
 		_reinvestmentCap.apply(_bidStrategy);
 		//_distributionCap.apply(_bidStrategy);
-		
-		
 	}
+	
 	
 	@Override
 	protected BidBundle buildBidBudle(){

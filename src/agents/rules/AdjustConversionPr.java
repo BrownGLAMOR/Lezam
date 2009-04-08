@@ -68,6 +68,9 @@ public class AdjustConversionPr extends StrategyTransformation{
 		
 		double conversionPr = conversion_pr(overstock, _baseLineConversion.get(q), _componentSpecialty.contains(q));
 		System.out.println(q+" Baseline Conversion: " + _baseLineConversion.get(q) + " current conversion: " + conversionPr + " overstock: " + overstock);
+		if(conversionPr < 0.01){
+			conversionPr = 0;
+		}
 		strategy.setQueryConversion(q, conversionPr);
 	}
 

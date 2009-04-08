@@ -107,12 +107,15 @@ public class SSBBidStrategy {
 	public void setDefaultReinvestFactor(double d){_defaultQueryReinvestFactor = d;}
 	public void setDefaultConversionRevenue(double d){_defaultQueryConversionRevenue = d;}
 
+	public double getBid(Query q){
+		return getQueryConversionRevenue(q)*getQueryConversion(q)*getQueryReinvestFactor(q);
+	}
 	
 	public BidBundle buildBidBundle(){
 		BidBundle bidBundle = new BidBundle();
 		
 		for(Query q : _querySpace) {
-			double queryBid = getQueryConversionRevenue(q)*getQueryConversion(q)*getQueryReinvestFactor(q);
+			double queryBid = getBid(q);
 
 			bidBundle.addQuery(q, queryBid, getQueryAd(q));
 			bidBundle.setDailyLimit(q, getQuerySpendLimit(q));
