@@ -91,7 +91,7 @@ public class MeanAgent extends AbstractAgent {
 	
 	
 	@Override
-	protected void updateBidStratagy() {
+	protected void updateBidStrategy() {
 
 		QueryReport lastReport = _queryReports.poll();
 		SalesReport sales = _salesReports.poll();
@@ -125,7 +125,7 @@ public class MeanAgent extends AbstractAgent {
 		_capacityWindow.add(conversionsThisRound);
 		
 		
-		dbg("=================================");
+		dbg("================================updateBidStrategy=");
 		dbg("         Costs                   ");
 		dbg("=================================");
 		
@@ -151,5 +151,7 @@ public class MeanAgent extends AbstractAgent {
 		if(DEBUG)
 			System.out.println(str);
 	}
+
+	
 }
 

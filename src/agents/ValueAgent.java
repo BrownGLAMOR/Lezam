@@ -26,9 +26,12 @@ public class ValueAgent extends AbstractAgent {
     private int _capacity;
     private int _estimatedCapacity; 
     private LinkedList<Integer> _capacityWindow;
-
-    private int _debugDay;
+    private LinkedList<Integer> _capacityEstimates;
+    private LinkedList<Integer> _actualCapacities;
     
+    
+    private int _debugDay;
+    private int _laggedDay;
     private class QueryKey implements Comparable{
         public Query query;
         public double value;
@@ -38,7 +41,7 @@ public class ValueAgent extends AbstractAgent {
             value = v;
         }
 
-        int compareTo(Object o) {
+        public int compareTo(Object o) {
             QueryKey other = (QueryKey)o;
             return (int)(value - other.value);
         }
@@ -46,7 +49,7 @@ public class ValueAgent extends AbstractAgent {
 
     public void initBidder() {
         
-        _bids = new Hashtable<Query, Double>();
+        _bids = new HashMap<Query, Double>();
 
         for(Query query:_querySpace) {
             if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
@@ -57,10 +60,13 @@ public class ValueAgent extends AbstractAgent {
                 _bids.put(query, CONVERSION_F2*SALE_VALUE*AVERAGE_FX_PERCENT);
         }
         
-        _capacity = _advertiserInfo.getDistributionCapacity()*OVERLOAD_FACTOR;
+        _capacity = (int) (_advertiserInfo.getDistributionCapacity()*OVERLOAD_FACTOR);
         _capacityWindow = new LinkedList<Integer>();
+        _capacityEstimates = new LinkedList<Integer>();
+        _actualCapacities = new LinkedList<Integer>();
 
-        _debugDag = 0;
+        _debugDay = 0;
+        _laggedDay = 0;
     }
 
     protected void updateBidStrategy() {
@@ -69,19 +75,33 @@ public class ValueAgent extends AbstractAgent {
         _debug("           Starting Day: "+_debugDay);
         _debug("======================================");
 
+        
         QueryReport lastReport = _queryReports.poll();
         SalesReport sales = _salesReports.poll();
 
-        int sales = 0;
+        int conversions = 0;
 
         // ======================================
         // Bookkeeping for the lagged capacity
         // ======================================
 
         // Keeps track of the current capacity
-        if( _capacityWindow.size() >= 5)
+        if( _capacityWindow.size() >= 5) {
+        	int actualCapacity = 0;
+        	for(Integer i:_capacityWindow) {
+        		_debug(i.toString());
+        		actualCapacity += i;
+        	}
+        	actualCapacity =  _advertiserInfo.getDistributionCapacity() - actualCapacity;
+        	_actualCapacities.add(actualCapacity);
+        	
+        	_debug("Information for day :" +_laggedDay);
+        	_debug("Actual capacity :" +_actualCapacities.get(_laggedDay));
+        	_debug("Estimated capacity :" + _capacityEstimates.get(_laggedDay));
+        	
+        	_laggedDay++;
             _capacity += _capacityWindow.poll();
-
+        }
         // Day 1-2 case
         // Some crude estimate of how our capacity decreases
         if( _capacityWindow.size() < 2) 
@@ -90,11 +110,12 @@ public class ValueAgent extends AbstractAgent {
         // Decrease the lagged capacity 
         for(Query query:_querySpace) {        
             _capacity -= sales.getConversions(query);
-            sales += sales.getConversions(query);
+            conversions += sales.getConversions(query);
         }
 
+        _debug(new Integer(conversions).toString());
         // Update the sliding window
-        _capacityWindow.add(sales);
+        _capacityWindow.add(conversions);
 
         // ======================================
         // Modify it to project into the "future"
@@ -102,7 +123,8 @@ public class ValueAgent extends AbstractAgent {
         
         // Use estimated capacity (lagged)
         int estimatedCapacity = _capacity;
-
+       
+        
         // If there are more than 2 things in the list
         // take the change in conversions and continue the trend
         // to estimate the number of conversions during the
@@ -137,13 +159,50 @@ public class ValueAgent extends AbstractAgent {
         // At this point, we have an estimate of capacity, and we can start
         // to build our bid bundle
 
-        
+        // Keep track of the actual capacity
+        _debugDay++;
+        _capacityEstimates.add(estimatedCapacity);
+        _estimatedCapacity = estimatedCapacity;
     }
 
     protected BidBundle buildBidBudle() {
+    	BidBundle bidBundle = new BidBundle();
+
+		double avgbid = 0;
+		for(Query query : _querySpace) {
+				
+			Product product;
+			
+			double rand = Math.random();
+			if(rand < .4)
+				product = new Product(_advertiserInfo.getManufacturerSpecialty(),_advertiserInfo.getComponentSpecialty());
+			else if(rand < .6)
+				product = new Product(_advertiserInfo.getManufacturerSpecialty(),(String)_retailCatalog.getComponents().toArray()[0]);
+			else if(rand < .8)
+				product = new Product(_advertiserInfo.getManufacturerSpecialty(),(String)_retailCatalog.getComponents().toArray()[1]);
+			else
+				product = new Product(_advertiserInfo.getManufacturerSpecialty(),(String)_retailCatalog.getComponents().toArray()[2]);
+			
+			Ad ad = new Ad(product);
+			double bid = _bids.get(query);
+			
+			avgbid += bid;
+			
+			double spendingLimit = (.3*_estimatedCapacity/CONVERSION_F2)*bid;
+			
+			bidBundle.addQuery(query,  bid, ad);
+			bidBundle.setDailyLimit(query, spendingLimit);
+		}
+
+		avgbid = avgbid/_querySpace.size();
+		
+		double campaignSpendLimit = .3*_estimatedCapacity*avgbid/CONVERSION_F2;;
+		bidBundle.setCampaignDailySpendLimit(campaignSpendLimit);
+
+		return bidBundle;
     }
 
     private void _debug(String s) {
-        if(DEBUG) System.out.prinlnt(s);
+        if(DEBUG) System.out.println(s);
     }
 }
