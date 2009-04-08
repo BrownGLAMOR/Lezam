@@ -138,6 +138,8 @@ public class MeanAgent extends AbstractAgent {
 			dbg(query.toString());
 			dbg("Revenue: " + sales.getRevenue(query));
 			dbg("Cost: " + lastReport.getCost(query));
+                        if(lastReport.getCost(query) != 0)
+			dbg("Revenue / COST " + (sales.getRevenue(query) / lastReport.getCost(query)) );
 		}
 		
 		dbg(" Total Revenue: " + totalRevenue);
