@@ -15,15 +15,19 @@ public class KBWAgent extends AbstractAgent {
 	protected HashMap<Query,Double> _oldprices;
 	protected HashMap<Query,Double> _goalpositions;
 	
+	protected int[] _totalConversions;
+	
 	protected int _capacity;
 	protected int _window;
 	
 	protected final static double QUOTA = .27;
-	protected final static double INITIAL_CHEAPNESS = .7;
+	protected final static double INITIAL_CHEAPNESS = .6;
 	protected final static double LEARNING_RATE = .05;
 	
 	protected final static double INC_RATE = 1.2;
 	protected final static double DEC_RATE = .9;
+	
+	protected final static double lambda = .995;
 	
 	@Override
 	protected BidBundle buildBidBudle() {
@@ -37,7 +41,23 @@ public class KBWAgent extends AbstractAgent {
 		// 2. We will bid for the third slot and try to maintain that position
 		// this is from our observations in class about how people drop out.
 		// This simplifies the problem for the time being.
-		// 3. Capacity does not affect conversion rates... yet!
+		// 3. Capacity is taken into consideration
+		
+		double CSB = _advertiserInfo.getComponentBonus();
+		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
+		
+		//sum up conversions from last 5 days
+		int conv = 0;
+		for(int i = 0; i < 5; i++) {
+			conv += _totalConversions[i];
+		}
+		
+		int capdiff = conv - _capacity;
+		
+		debug("\n\n\n Cap difference: " + capdiff + "\n\n\n");
+		
+		double capratio = Math.pow(lambda,Math.max(capdiff, 0));
 		
 		
 		// For each query, figure out how much to devote to that specific query
@@ -46,15 +66,28 @@ public class KBWAgent extends AbstractAgent {
 		
 			// How many clicks does it take to get to that point?
 			int clicks = 0;
-			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				clicks = (int) (quota/Constants.CONVERSION_F0);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-				clicks = (int) (quota/Constants.CONVERSION_F1);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-				clicks = (int) (quota/Constants.CONVERSION_F2);
-			else
-				System.exit(0); // Death condition, just to be sure
-				
+			
+			if(ourspecialty.contains(query)) {
+				if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+					clicks = (int) (quota/eta(Constants.CONVERSION_F0*capratio,1+CSB));
+				else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+					clicks = (int) (quota/eta(Constants.CONVERSION_F1*capratio,1+CSB));
+				else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+					clicks = (int) (quota/eta(Constants.CONVERSION_F2*capratio,1+CSB));
+				else
+					System.exit(0); // Death condition, just to be sure
+			}
+			else {
+				if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+					clicks = (int) (quota/(Constants.CONVERSION_F0*capratio));
+				else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+					clicks = (int) (quota/(Constants.CONVERSION_F1*capratio));
+				else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+					clicks = (int) (quota/(Constants.CONVERSION_F2*capratio));
+				else
+					System.exit(0); // Death condition, just to be sure
+			}
+			
 			// How much does it cost to get to that point?
 			double budget = clicks*_bids.get(query);
 		
@@ -77,6 +110,13 @@ public class KBWAgent extends AbstractAgent {
 		_bids = new HashMap<Query, Double>();
 		_oldprices = new HashMap<Query, Double>();
 		_goalpositions = new HashMap<Query, Double>();
+		_totalConversions = new int[5];
+		_totalConversions[0] = 0;
+		_totalConversions[1] = 0;
+		_totalConversions[2] = 0;
+		_totalConversions[3] = 0;
+		_totalConversions[4] = 0;
+		
 		
 		// Initialize all of the queries to one
 		// Then normalize
@@ -86,14 +126,15 @@ public class KBWAgent extends AbstractAgent {
 		
 		for(Query query: _querySpace) {
 			_oldprices.put(query, 1.0);
-			//This is where I set the positon we are shooting or (between 3 and 4)
-			_goalpositions.put(query,3.5);
+			//our goal position for our specialty is slightly higher
 			if (ourspecialty.contains(query)) {
 				//We weight our specialty slightly higher (.5 extra)
 				_weights.put(query, 1.0 + manufacturerBonus);
+				_goalpositions.put(query,2.5);
 			}
 			else {
 				_weights.put(query, 1.0);
+				_goalpositions.put(query,3.5);
 			}
 		}
 		_normalizeWeights();
@@ -134,6 +175,17 @@ public class KBWAgent extends AbstractAgent {
 		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
 		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
 		
+		int conversions = 0;
+		
+		for(Query query:_querySpace)
+			conversions += salesReport.getConversions(query);
+		
+		_totalConversions[0] = _totalConversions[1];
+		_totalConversions[1] = _totalConversions[2];
+		_totalConversions[2] = _totalConversions[3];
+		_totalConversions[3] = _totalConversions[4 ];
+		_totalConversions[4] = conversions;
+		
 		for(Query query:_querySpace) {
 			// Zero case, not in the query at all
 			// We don't want to not explore this at all, so for the time being
@@ -148,32 +200,36 @@ public class KBWAgent extends AbstractAgent {
 			}
 			relatives.put(query, newprices.get(query)/_oldprices.get(query));
 			_oldprices.put(query,newprices.get(query));
-			System.out.println("\n\n\n\n\n\n\n\n"+"*************"+"\n"+relatives.get(query));
+//			System.out.println("\n\n\n\n\n\n\n\n"+"*************"+"\n"+relatives.get(query));
 		}
 		
 		// Debug messages
-		for(Query query:_querySpace)
+		for(Query query:_querySpace) {
 			debug("Original weight: " + query + " = " + _weights.get(query));
+		}
 		
 		// Update weights using the EG algorithm
 		// First get the dot product
 		double dotProduct = 0;
-		for(Query query:_querySpace) 
+		for(Query query:_querySpace)  {
 			dotProduct += _weights.get(query)*relatives.get(query);
+		}
 		
 		// Now get the denominator
 		double totalWeights = 0;
-		for(Query query:_querySpace)
+		for(Query query:_querySpace) {
 			totalWeights += _weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct);
+		}
 		
 		// Now update the weights
-		for(Query query:_querySpace)
+		for(Query query:_querySpace) {
 			_weights.put(query, (_weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
-		
+		}
+			
 		// Debug messages
-		for(Query query:_querySpace)
+		for(Query query:_querySpace) {
 			debug("New weight: " + query + " = " + _weights.get(query));
-		
+		}
 		
 		// Update the bids to get the fourth place;
 		// Just try to maintain that position
@@ -218,8 +274,13 @@ public class KBWAgent extends AbstractAgent {
 	}
 	
 	//Returns a random double rand such that a <= r < b
-	double randDouble(double a, double b) {
+	protected double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
+	
+	protected double eta(double p, double x) {
+		return (p*x) / (p*x + (1-p));
+	}
+	
 }
