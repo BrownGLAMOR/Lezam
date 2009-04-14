@@ -142,7 +142,7 @@ public class KBWAgent extends AbstractAgent {
 			}
 			// Otherwise we put the actual relative in there
 			else {
-				newprices.put(query, queryReport.getCost(query) / salesReport.getConversions(query));
+				newprices.put(query, (salesReport.getRevenue(query) - queryReport.getCost(query)) / salesReport.getConversions(query));
 			}
 			relatives.put(query, newprices.get(query)/_oldprices.get(query));
 			_oldprices.put(query,newprices.get(query));
