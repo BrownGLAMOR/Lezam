@@ -58,7 +58,7 @@ public class KBWAgent extends AbstractAgent {
 		
 		double capratio = Math.pow(lambda,Math.max(capdiff, 0));
 		
-		debug("\n\n\n Recenconv pre:" + recentConvHist);
+		debug("\n\n\n"+"Recenconv pre:" + recentConvHist);
 		
 		if(capdiff > 70) {
 			if(recentConvHist >= 2) {
@@ -158,13 +158,13 @@ public class KBWAgent extends AbstractAgent {
 		recentConvHist = 0;
 		
 		if(_capacity == 500) {
-			QUOTA = .24;
+			QUOTA = .25;
 		}
 		else if(_capacity == 400) {
-			QUOTA = .23;
+			QUOTA = .225;
 		}
 		else {
-			QUOTA = .22;
+			QUOTA = .20;
 		}
 		
 		// Initialize all of the queries to one
