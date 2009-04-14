@@ -16,11 +16,12 @@ public class KBWAgent extends AbstractAgent {
 	protected HashMap<Query,Double> _goalpositions;
 	
 	protected int[] _totalConversions;
+	protected int recentConvHist;
 	
 	protected int _capacity;
 	protected int _window;
 	
-	protected final static double QUOTA = .25;
+	protected double QUOTA = .22;
 	protected final static double INITIAL_CHEAPNESS = .6;
 	protected final static double LEARNING_RATE = .075;
 	
@@ -55,10 +56,42 @@ public class KBWAgent extends AbstractAgent {
 		
 		int capdiff = conv - _capacity;
 		
-		debug("\n\n\n Cap difference: " + capdiff + "\n\n\n");
-		
 		double capratio = Math.pow(lambda,Math.max(capdiff, 0));
 		
+		debug("\n\n\n Recenconv pre:" + recentConvHist);
+		
+		if(capdiff > 70) {
+			if(recentConvHist >= 2) {
+				debug("CHANGED QUOTA BY -.01");
+				QUOTA -= .01;
+				recentConvHist = 1;
+			}
+			else if(recentConvHist < 0) {
+				recentConvHist = 1;
+			}
+			else {
+				recentConvHist++;
+			}
+		}
+		else if(capdiff < -10) {
+			if(recentConvHist <= -2) {
+				debug("CHANGED QUOTA BY +.01");
+				QUOTA += .01;
+				recentConvHist = -1;
+			}
+			else if(recentConvHist > 0) {
+				recentConvHist = -1;
+			}
+			else {
+				recentConvHist--;
+			}
+		}
+		else {
+			recentConvHist = 0;
+		}
+		debug("Recenconv post:" + recentConvHist);
+		debug("Cap difference: " + capdiff);
+		debug("Quota: " + QUOTA + "\n\n\n");
 		
 		// For each query, figure out how much to devote to that specific query
 		for(Query query:_querySpace) {
@@ -106,23 +139,36 @@ public class KBWAgent extends AbstractAgent {
 		debug("Initializing bidder");
 		debug("===================================");
 		
+		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
+		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		_capacity = _advertiserInfo.getDistributionCapacity();
+		_window = _advertiserInfo.getDistributionWindow();
+		
 		_weights = new HashMap<Query, Double>();
 		_bids = new HashMap<Query, Double>();
 		_oldprices = new HashMap<Query, Double>();
 		_goalpositions = new HashMap<Query, Double>();
 		_totalConversions = new int[5];
-		_totalConversions[0] = 0;
-		_totalConversions[1] = 0;
-		_totalConversions[2] = 0;
+		_totalConversions[0] = _capacity/5;
+		_totalConversions[1] = _capacity/5;
+		_totalConversions[2] = _capacity/5;
 		_totalConversions[3] = 0;
 		_totalConversions[4] = 0;
+		recentConvHist = 0;
 		
+		if(_capacity == 500) {
+			QUOTA = .24;
+		}
+		else if(_capacity == 400) {
+			QUOTA = .23;
+		}
+		else {
+			QUOTA = .22;
+		}
 		
 		// Initialize all of the queries to one
 		// Then normalize
-		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
-		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		
 		for(Query query: _querySpace) {
 			_oldprices.put(query, 1.0);
@@ -139,8 +185,6 @@ public class KBWAgent extends AbstractAgent {
 		}
 		_normalizeWeights();
 
-		_capacity = _advertiserInfo.getDistributionCapacity();
-		_window = _advertiserInfo.getDistributionWindow();
 		  
 		// Initialize the bids to slightly below the honest value
 		// Using the "cheapness" value
@@ -172,6 +216,7 @@ public class KBWAgent extends AbstractAgent {
 		
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
+		
 		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
 		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
 		
@@ -183,7 +228,7 @@ public class KBWAgent extends AbstractAgent {
 		_totalConversions[0] = _totalConversions[1];
 		_totalConversions[1] = _totalConversions[2];
 		_totalConversions[2] = _totalConversions[3];
-		_totalConversions[3] = _totalConversions[4 ];
+		_totalConversions[3] = _totalConversions[4];
 		_totalConversions[4] = conversions;
 		
 		for(Query query:_querySpace) {
