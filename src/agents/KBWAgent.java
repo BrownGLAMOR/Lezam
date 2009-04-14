@@ -74,8 +74,20 @@ public class KBWAgent extends AbstractAgent {
 		
 		// Initialize all of the queries to one
 		// Then normalize
-		for(Query query: _querySpace)
-			_weights.put(query, 1.0);
+		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nManufacturer Specialty: " + manufacturerSpecialty);
+		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
+		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		
+		for(Query query: _querySpace) {
+			if (ourspecialty.contains(query)) {
+				System.out.println(query);
+				_weights.put(query, 1.0 + manufacturerBonus);
+			}
+			else {
+				_weights.put(query, 1.0);
+			}
+		}
 		_normalizeWeights();
 
 		_capacity = _advertiserInfo.getDistributionCapacity();
