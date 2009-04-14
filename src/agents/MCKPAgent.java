@@ -79,8 +79,14 @@ public class MCKPAgent extends AbstractAgent {
 		}
 		
 		//set bids!!!
-		for(int i=0; i<queries.nlength; i++) {
+		for(int i=0; i<queries.length; i++) {
+			double bid = 0;
+			Integer isID = i;
+			if(solution.containsKey(isID)) { 
+				bid = solution.get(isID);
+			}
 			
+				
 		}
 		
 	}
