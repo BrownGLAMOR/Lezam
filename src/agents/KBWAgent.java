@@ -191,16 +191,16 @@ public class KBWAgent extends AbstractAgent {
 			// We don't want to not explore this at all, so for the time being
 			// we will set it to 1.
 			if( Math.abs( queryReport.getCost(query) ) <= .001 || 
-					salesReport.getConversions(query) <= .001) {
-				newprices.put(query, _oldprices.get(query));
+					salesReport.getRevenue(query) <= .001) {
+				newprices.put(query, 1.0);
 			}
 			// Otherwise we put the actual relative in there
 			else {
-				newprices.put(query, queryReport.getCost(query) / salesReport.getConversions(query));
+				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
 			}
 			relatives.put(query, newprices.get(query)/_oldprices.get(query));
-			_oldprices.put(query,newprices.get(query));
-//			System.out.println("\n\n\n\n\n\n\n\n"+"*************"+"\n"+relatives.get(query));
+//			_oldprices.put(query,newprices.get(query));
+			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
 		}
 		
 		// Debug messages
