@@ -357,4 +357,16 @@ public abstract class AbstractAgent extends Agent {
 			}		
 		}
 	}
+
+	protected double getAvaregeProductPrice() {
+		double price = 0;
+		int n = 0;
+		for (Product p : _retailCatalog) {
+			price =+ _retailCatalog.getSalesProfit(p);
+			n++;
+		}
+		
+		return price;
+	}
+
 }
