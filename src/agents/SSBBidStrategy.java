@@ -5,9 +5,7 @@ import java.util.Set;
 import edu.umich.eecs.tac.props.Query;
 
 public class SSBBidStrategy extends GenericBidStrategy {
-	public static String CONVERSION_PR= "ConversionPr";
 	public static String REINVEST_FACTOR = "ReinvestFactor";
-	public static String CONVERSION_REVENUE= "ConversionRevenue";
 	
 	public SSBBidStrategy(Set<Query> querySpace){
 		super(querySpace);

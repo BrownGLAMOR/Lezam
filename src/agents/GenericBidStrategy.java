@@ -9,6 +9,8 @@ import edu.umich.eecs.tac.props.Query;
 
 public abstract class GenericBidStrategy {
 	public static String BID = "Bid";
+	public static String CONVERSION_PR= "ConversionPr";
+	public static String CONVERSION_REVENUE= "ConversionRevenue";
 	
 	protected Set<Query> _querySpace;
 	
