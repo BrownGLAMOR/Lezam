@@ -10,13 +10,14 @@ public class KBWAgent extends AbstractAgent {
 
 	protected HashMap<Query,Double> _weights;
 	protected HashMap<Query,Double> _bids;
+	protected HashMap<Query,Double> _oldprices;
 	
 	protected int _capacity;
 	protected int _window;
 	
-	protected final static double QUOTA = .27;
-	protected final static double INITIAL_CHEAPNESS = .6;
-	protected final static double LEARNING_RATE = .05;
+	protected final static double QUOTA = .29;
+	protected final static double INITIAL_CHEAPNESS = .8;
+	protected final static double LEARNING_RATE = .075;
 	
 	protected final static double INC_RATE = 1.3;
 	protected final static double DEC_RATE = .9;
@@ -71,17 +72,18 @@ public class KBWAgent extends AbstractAgent {
 		
 		_weights = new HashMap<Query, Double>();
 		_bids = new HashMap<Query, Double>();
+		_oldprices = new HashMap<Query, Double>();
 		
 		// Initialize all of the queries to one
 		// Then normalize
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nManufacturer Specialty: " + manufacturerSpecialty);
 		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		
 		for(Query query: _querySpace) {
+			_oldprices.put(query, 1.0); 
 			if (ourspecialty.contains(query)) {
-				System.out.println(query);
+				//We weight our specialty slightly higher (.5 extra)
 				_weights.put(query, 1.0 + manufacturerBonus);
 			}
 			else {
@@ -123,18 +125,24 @@ public class KBWAgent extends AbstractAgent {
 		
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
-
+		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
 		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
+		
 		for(Query query:_querySpace) {
-			
 			// Zero case, not in the query at all
 			// We don't want to not explore this at all, so for the time being
 			// we will set it to 1.
-			if( Math.abs( queryReport.getCost(query) ) <= .001)
-				relatives.put(query, 1.0);
+			if( Math.abs( queryReport.getCost(query) ) <= .001 || 
+					salesReport.getConversions(query) <= .001) {
+				newprices.put(query, _oldprices.get(query));
+			}
 			// Otherwise we put the actual relative in there
-			else
-				relatives.put(query, salesReport.getRevenue(query) / queryReport.getCost(query));
+			else {
+				newprices.put(query, queryReport.getCost(query) / salesReport.getConversions(query));
+			}
+			relatives.put(query, newprices.get(query)/_oldprices.get(query));
+			_oldprices.put(query,newprices.get(query));
+			System.out.println("\n\n\n\n\n\n\n\n"+"*************"+"\n"+relatives.get(query));
 		}
 		
 		// Debug messages
@@ -161,13 +169,13 @@ public class KBWAgent extends AbstractAgent {
 			debug("New weight: " + query + " = " + _weights.get(query));
 		
 		
-		// Update the bids to get the third place;
+		// Update the bids to get the fourth place;
 		// Just try to maintain that position
 		for(Query query:_querySpace) {
 			
 			debug("Original bid: " + query + " = " + _bids.get(query));
 			
-			if(queryReport.getPosition(query) > 4.1)
+			if(queryReport.getPosition(query) > 3.5)
 				_bids.put(query, _bids.get(query) * INC_RATE);
 			else 
 				_bids.put(query, _bids.get(query) * DEC_RATE);
