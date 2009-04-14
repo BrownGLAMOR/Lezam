@@ -25,8 +25,9 @@ public class ValueAgent extends AbstractAgent {
     private HashMap<Query, Double> _bids;
     private int _capacity;
     private int _estimatedCapacity; 
-    private LinkedList<Integer> _capacityWindow;
+    private LinkedList<Integer> _conversionHistory;
     private LinkedList<Integer> _capacityEstimates;
+    private LinkedList<Integer> _conversionGuessHistory;
     private LinkedList<Integer> _actualCapacities;
     
     
@@ -61,10 +62,10 @@ public class ValueAgent extends AbstractAgent {
         }
         
         _capacity = (int) (_advertiserInfo.getDistributionCapacity()*OVERLOAD_FACTOR);
-        _capacityWindow = new LinkedList<Integer>();
+        _conversionHistory = new LinkedList<Integer>();
         _capacityEstimates = new LinkedList<Integer>();
         _actualCapacities = new LinkedList<Integer>();
-
+        _conversionGuessHistory = new LinkedList<Integer>();
         _debugDay = 0;
         _laggedDay = 0;
     }
@@ -79,43 +80,58 @@ public class ValueAgent extends AbstractAgent {
         QueryReport lastReport = _queryReports.poll();
         SalesReport sales = _salesReports.poll();
 
-        int conversions = 0;
 
         // ======================================
         // Bookkeeping for the lagged capacity
         // ======================================
 
         // Keeps track of the current capacity
-        if( _capacityWindow.size() >= 5) {
-        	int actualCapacity = 0;
-        	for(Integer i:_capacityWindow) {
-        		_debug(i.toString());
-        		actualCapacity += i;
-        	}
-        	actualCapacity =  _advertiserInfo.getDistributionCapacity() - actualCapacity;
-        	_actualCapacities.add(actualCapacity);
+        if( _conversionHistory.size() > 2) {
         	
-        	_debug("Information for day :" +_laggedDay);
-        	_debug("Actual capacity :" +_actualCapacities.get(_laggedDay));
-        	_debug("Estimated capacity :" + _capacityEstimates.get(_laggedDay));
+            
         	
-        	_laggedDay++;
-            _capacity += _capacityWindow.poll();
+            _debug("Information for day :" +_laggedDay);
+            
+            int actualCapacity = 0;
+            for(Integer i:_conversionHistory) { 
+            	actualCapacity += i;
+            	_debug(new Integer(i).toString());
+            }
+            
+            _debug(_conversionGuessHistory.poll());
+            _debug(_conversionGuessHistory.poll());
+            _debug(_conversionGuessHistory.poll());
+            _debug(_conversionGuessHistory.poll());
+            _debug(_conversionGuessHistory.poll());
+            
+            actualCapacity =  _advertiserInfo.getDistributionCapacity() - actualCapacity;
+            _actualCapacities.add(actualCapacity);
+        
+            
+            _debug("Actual capacity :" +_actualCapacities.get(_laggedDay));
+            _debug("Estimated capacity :" + _capacityEstimates.get(_laggedDay));
+        	
+            _laggedDay++;
+            
         }
-        // Day 1-2 case
-        // Some crude estimate of how our capacity decreases
-        if( _capacityWindow.size() < 2) 
-            _capacity *= .9; 
-      
-        // Decrease the lagged capacity 
+
+        
+        // Get the number of conversions in this day
+        int conversions = 0;
         for(Query query:_querySpace) {        
-            _capacity -= sales.getConversions(query);
             conversions += sales.getConversions(query);
         }
 
-        _debug(new Integer(conversions).toString());
         // Update the sliding window
-        _capacityWindow.add(conversions);
+        if(_conversionHistory.size() > 4)
+        	_conversionHistory.poll();
+        _conversionHistory.add(conversions);
+                
+
+        // Day 1-2 case
+        // Some crude estimate of how our capacity decreases
+        if( _conversionHistory.size() < 5) 
+            _capacity *= .9; 
 
         // ======================================
         // Modify it to project into the "future"
@@ -123,38 +139,62 @@ public class ValueAgent extends AbstractAgent {
         
         // Use estimated capacity (lagged)
         int estimatedCapacity = _capacity;
-       
-        
+      
+        if( _conversionHistory.size() >= 5) {
+        	
+        	_debug("HERE");
+        	
+            estimatedCapacity = _conversionHistory.get(_conversionHistory.size() - 3);
+            estimatedCapacity+= _conversionHistory.get(_conversionHistory.size() - 2);
+            estimatedCapacity+= _conversionHistory.get(_conversionHistory.size() - 1);
+
+            
+            
+            estimatedCapacity = _advertiserInfo.getDistributionCapacity() - estimatedCapacity;
+            _debug(estimatedCapacity);
+        }
+
         // If there are more than 2 things in the list
         // take the change in conversions and continue the trend
         // to estimate the number of conversions during the
         // past two periods
 
-        if( _capacityWindow.size() > 2) {
-            int start = _capacityWindow.get(_capacityWindow.size() - 3);
-            int mid = _capacityWindow.get(_capacityWindow.size() - 2);
-            int end = _capacityWindow.get(_capacityWindow.size() - 1);
-
+        if( _conversionHistory.size() > 2) {
+            int start = _conversionHistory.get(_conversionHistory.size() - 3);
+            int mid = _conversionHistory.get(_conversionHistory.size() - 2);
+            int end = _conversionHistory.get(_conversionHistory.size() - 1);
+            
+            _debug(new Integer(start).toString());
+            _debug(new Integer(mid).toString());
+            _debug(new Integer(end).toString());
             // Using these start, mid, and end points, project into the future
             int slope1 = mid - start;
             int slope2 = end - mid;
-            int deltaSlope = slope2 - slope1;
+            int deltaSlope = slope2 - slope1/4;
 
             int forwardSlope1 = slope2 + deltaSlope;
+            forwardSlope1/=2;
             int forwardSlope2 = forwardSlope1 + deltaSlope;
-
+            forwardSlope2/=4;
+            
             int forwardSales1 = forwardSlope1 + end;
+            forwardSales1 = Math.max(forwardSales1,0);
             int forwardSales2 = forwardSlope2 + forwardSales1;
-
+            forwardSales2 = Math.max(forwardSales2	,0);
+            _debug(new Integer(forwardSales1).toString());
+            _debug(new Integer(forwardSales2).toString());
             estimatedCapacity -= forwardSales1;
             estimatedCapacity -= forwardSales2;
+
+            _debug(estimatedCapacity);
+            _debug("==");
+            _conversionGuessHistory.add(start);
+            _conversionGuessHistory.add(mid);
+            _conversionGuessHistory.add(end);
+            _conversionGuessHistory.add(forwardSales1);
+            _conversionGuessHistory.add(forwardSales2);
         }
 
-        // And also to remove things too far back in the past
-        if( _capacityWindow.size() >= 5) {
-            estimatedCapacity -= _capacityWindow.get(0);
-            estimatedCapacity -= _capacityWindow.get(1);
-        }
 
         // At this point, we have an estimate of capacity, and we can start
         // to build our bid bundle
@@ -202,7 +242,8 @@ public class ValueAgent extends AbstractAgent {
 		return bidBundle;
     }
 
-    private void _debug(String s) {
-        if(DEBUG) System.out.println(s);
+    private void _debug(Object o) {
+        if(DEBUG) System.out.println(o.toString());
     }
 }
+
