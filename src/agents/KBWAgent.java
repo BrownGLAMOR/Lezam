@@ -7,6 +7,8 @@ import agents.rules.Constants;
 import edu.umich.eecs.tac.props.*;
 
 public class KBWAgent extends AbstractAgent {
+	
+	Random _R = new Random();
 
 	protected HashMap<Query,Double> _weights;
 	protected HashMap<Query,Double> _bids;
@@ -17,7 +19,7 @@ public class KBWAgent extends AbstractAgent {
 	protected int _window;
 	
 	protected final static double QUOTA = .27;
-	protected final static double INITIAL_CHEAPNESS = .75;
+	protected final static double INITIAL_CHEAPNESS = .7;
 	protected final static double LEARNING_RATE = .05;
 	
 	protected final static double INC_RATE = 1.2;
@@ -142,7 +144,7 @@ public class KBWAgent extends AbstractAgent {
 			}
 			// Otherwise we put the actual relative in there
 			else {
-				newprices.put(query, (salesReport.getRevenue(query) - queryReport.getCost(query)) / salesReport.getConversions(query));
+				newprices.put(query, queryReport.getCost(query) / salesReport.getConversions(query));
 			}
 			relatives.put(query, newprices.get(query)/_oldprices.get(query));
 			_oldprices.put(query,newprices.get(query));
@@ -179,8 +181,8 @@ public class KBWAgent extends AbstractAgent {
 			
 			debug("Original bid: " + query + " = " + _bids.get(query));
 			
-			if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < 1)
-				_bids.put(query, _bids.get(query));
+			if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < .5)
+				_bids.put(query, _bids.get(query) * randDouble(.98,1.02));
 			else if(queryReport.getPosition(query) > _goalpositions.get(query))
 				_bids.put(query, _bids.get(query) * INC_RATE);
 			else 
@@ -213,5 +215,11 @@ public class KBWAgent extends AbstractAgent {
 	protected static void debug(Object o) {
 		if(Constants.DEBUG)
 			System.out.println(o.toString());
+	}
+	
+	//Returns a random double rand such that a <= r < b
+	double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
 	}
 }
