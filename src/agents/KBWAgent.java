@@ -20,9 +20,9 @@ public class KBWAgent extends AbstractAgent {
 	protected int _capacity;
 	protected int _window;
 	
-	protected final static double QUOTA = .27;
+	protected final static double QUOTA = .25;
 	protected final static double INITIAL_CHEAPNESS = .6;
-	protected final static double LEARNING_RATE = .05;
+	protected final static double LEARNING_RATE = .075;
 	
 	protected final static double INC_RATE = 1.2;
 	protected final static double DEC_RATE = .9;
