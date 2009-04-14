@@ -3,6 +3,9 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
+import modelers.UnitsSoldModel;
+import modelers.UnitsSoldModelMaxWindow;
+
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
@@ -26,6 +29,9 @@ public class SSBAgent extends AbstractAgent {
 	protected AdjustConversionPr _adjustConversionPr;
 	protected Hashtable<Query,Double> _baseLineConversion;
 	
+	protected UnitsSoldModel _unitsSold;
+	
+	
 	public SSBAgent(){}
 	
 	@Override
@@ -42,7 +48,7 @@ public class SSBAgent extends AbstractAgent {
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
 		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
-		_reinvestmentCap = new ReinvestmentCap(0.80);
+		_reinvestmentCap = new ReinvestmentCap(0.90);
 		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.05);
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
 		
@@ -51,7 +57,8 @@ public class SSBAgent extends AbstractAgent {
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
 		
-		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, distributionWindow, _baseLineConversion, componentSpecialty);
+		_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty);
 		
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
@@ -83,7 +90,7 @@ public class SSBAgent extends AbstractAgent {
 		
 		SalesReport sr = _salesReports.remove();
 		//_distributionCap.updateReport(sr);
-		_adjustConversionPr.updateReport(sr);
+		_unitsSold.updateReport(sr);
 		
 		//int oversold = _adjustConversionPr.getOversold();
 		//if(oversold > _advertiserInfo.getDistributionCapacity()/2){

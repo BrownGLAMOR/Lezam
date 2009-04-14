@@ -32,7 +32,7 @@ public class SSBBidStrategy {
 		_defaultQueryAd = new Ad();
 		
 		_defaultQueryConversion = 0.1;
-		_defaultQueryReinvestFactor = 0.3;
+		_defaultQueryReinvestFactor = 0.1;
 		_defaultQueryConversionRevenue = 10;
 		
 		_querySpendLimit = new Hashtable<Query, Double>();
