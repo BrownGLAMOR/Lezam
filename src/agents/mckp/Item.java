@@ -20,6 +20,10 @@ public class Item {
 	public double v() {
 		return _v;
 	}
+
+	public double b() {
+		return _b;
+	}
 	
 	public int isID() {
 		return _isID;

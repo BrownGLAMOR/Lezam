@@ -34,6 +34,7 @@ public class MCKPAgent extends AbstractAgent {
 		//generate undominated items and convert them to inc items
 		LinkedList<IncItem> iis = new LinkedList<IncItem>();
 		int numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
+		Misc.println("num slots " + numSlots);
 		
 		LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 		//want the queries to be in a guaranteed order - put them in an array
@@ -48,8 +49,9 @@ public class MCKPAgent extends AbstractAgent {
 				double bid = numSlots - s;//!!!getBid for position
 				double cpc = bid;//!!!getCPC
 				double w = numClicks*cpc;
-				double rpc = 10;//!!!how do i get unit sales profit? _retailCatalog.getSalesProfit();//!!include manufacturer bonus
-				double v = numClicks*rpc;
+				double rpc = getAvaregeProductPrice();
+				double convProb = .1;//!!!get from report
+				double v = numClicks*rpc*convProb;
 				int isID = i;
 				items[s] = new Item(w,v,bid, isID);
 			
@@ -64,6 +66,7 @@ public class MCKPAgent extends AbstractAgent {
 		Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 		
 		HashMap<Integer,Item> solution = new HashMap<Integer,Item>();
+		//_advertiserInfo.getDistributionCapacity()/_advertiserInfo.getDistributionWindow()
 		double budget = 100;//!!!getbudget
 		//4. greedily fill the knapsack
 		for(IncItem ii: allIncItems) {
@@ -83,10 +86,9 @@ public class MCKPAgent extends AbstractAgent {
 			double bid = 0;
 			Integer isID = i;
 			if(solution.containsKey(isID)) { 
-				bid = solution.get(isID);
+				bid = solution.get(isID).b();
 			}
 			
-				
 		}
 		
 	}
