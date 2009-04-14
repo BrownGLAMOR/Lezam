@@ -11,15 +11,16 @@ public class KBWAgent extends AbstractAgent {
 	protected HashMap<Query,Double> _weights;
 	protected HashMap<Query,Double> _bids;
 	protected HashMap<Query,Double> _oldprices;
+	protected HashMap<Query,Double> _goalpositions;
 	
 	protected int _capacity;
 	protected int _window;
 	
-	protected final static double QUOTA = .29;
-	protected final static double INITIAL_CHEAPNESS = .8;
-	protected final static double LEARNING_RATE = .075;
+	protected final static double QUOTA = .27;
+	protected final static double INITIAL_CHEAPNESS = .75;
+	protected final static double LEARNING_RATE = .05;
 	
-	protected final static double INC_RATE = 1.3;
+	protected final static double INC_RATE = 1.2;
 	protected final static double DEC_RATE = .9;
 	
 	@Override
@@ -73,6 +74,7 @@ public class KBWAgent extends AbstractAgent {
 		_weights = new HashMap<Query, Double>();
 		_bids = new HashMap<Query, Double>();
 		_oldprices = new HashMap<Query, Double>();
+		_goalpositions = new HashMap<Query, Double>();
 		
 		// Initialize all of the queries to one
 		// Then normalize
@@ -81,7 +83,9 @@ public class KBWAgent extends AbstractAgent {
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		
 		for(Query query: _querySpace) {
-			_oldprices.put(query, 1.0); 
+			_oldprices.put(query, 1.0);
+			//This is where I set the positon we are shooting or (between 3 and 4)
+			_goalpositions.put(query,3.5);
 			if (ourspecialty.contains(query)) {
 				//We weight our specialty slightly higher (.5 extra)
 				_weights.put(query, 1.0 + manufacturerBonus);
@@ -175,7 +179,9 @@ public class KBWAgent extends AbstractAgent {
 			
 			debug("Original bid: " + query + " = " + _bids.get(query));
 			
-			if(queryReport.getPosition(query) > 3.5)
+			if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < 1)
+				_bids.put(query, _bids.get(query));
+			else if(queryReport.getPosition(query) > _goalpositions.get(query))
 				_bids.put(query, _bids.get(query) * INC_RATE);
 			else 
 				_bids.put(query, _bids.get(query) * DEC_RATE);
