@@ -237,15 +237,18 @@ public class KBWAgent extends AbstractAgent {
 			
 			debug("Original bid: " + query + " = " + _bids.get(query));
 			
+			//If we are close to the slot that we want to be in we just slowly move down
+			//If we are in a higher slot we bid more
+			//If we are in a lower slot we bid less
+			
 			if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < .5)
-				_bids.put(query, _bids.get(query) * randDouble(.98,1.02));
+				_bids.put(query, _bids.get(query) * randDouble(.95,1.0));
 			else if(queryReport.getPosition(query) > _goalpositions.get(query))
 				_bids.put(query, _bids.get(query) * INC_RATE);
 			else 
 				_bids.put(query, _bids.get(query) * DEC_RATE);
 			
 			debug("New bid: " + query + " = " + _bids.get(query));
-			
 		}
 		
 		
