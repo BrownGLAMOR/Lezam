@@ -1,5 +1,6 @@
 package agents.rules;
 
+import agents.GenericBidStrategy;
 import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
@@ -11,9 +12,9 @@ public class ManufacurerBonus extends StrategyTransformation{
 	}
 	
 	@Override
-	protected void transform(Query q, SSBBidStrategy strategy) {
-		double current = strategy.getQueryConversionRevenue(q);
-		strategy.setQueryConversionRevenue(q, current*(1+_bonusFactor));
+	protected void transform(Query q, GenericBidStrategy strategy) {
+		double current = strategy.getProperty(q, SSBBidStrategy.CONVERSION_REVENUE);
+		strategy.setProperty(q, SSBBidStrategy.CONVERSION_REVENUE, current*(1+_bonusFactor));
 	}
 
 }

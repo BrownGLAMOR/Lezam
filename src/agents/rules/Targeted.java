@@ -1,6 +1,6 @@
 package agents.rules;
 
-import agents.SSBBidStrategy;
+import agents.GenericBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
@@ -17,7 +17,7 @@ public class Targeted extends StrategyTransformation{
 	}
 	
 	@Override
-	protected void transform(Query q, SSBBidStrategy strategy) {
+	protected void transform(Query q, GenericBidStrategy strategy) {
 		if(_product != null){
 			strategy.setQueryAd(q, new Ad(_product));
 		}
@@ -26,4 +26,5 @@ public class Targeted extends StrategyTransformation{
 		}
 		
 	}
+	
 }

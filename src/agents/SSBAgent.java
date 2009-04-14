@@ -47,17 +47,18 @@ public class SSBAgent extends AbstractAgent {
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
-		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
-		_reinvestmentCap = new ReinvestmentCap(0.90);
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.05);
-		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
+		_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
+		_reinvestmentCap = new ReinvestmentCap(0.85);
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.20);
+		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05);
 		
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
 		
-		_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
 		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty);
 		
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);

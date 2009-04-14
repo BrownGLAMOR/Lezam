@@ -1,5 +1,6 @@
 package agents.rules;
 
+import agents.GenericBidStrategy;
 import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
@@ -11,9 +12,9 @@ public class ReinvestmentCap extends StrategyTransformation{
 	}
 	
 	@Override
-	protected void transform(Query q, SSBBidStrategy strategy) {
-		if(strategy.getQueryReinvestFactor(q) > _maxValue){
-			strategy.setQueryReinvestFactor(q, _maxValue);
+	protected void transform(Query q, GenericBidStrategy strategy) {
+		if(strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) > _maxValue){
+			strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, _maxValue);
 		}
 	}
 

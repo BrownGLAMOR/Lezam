@@ -5,6 +5,7 @@ import java.util.Set;
 
 import modelers.UnitsSoldModel;
 
+import agents.GenericBidStrategy;
 import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
@@ -24,7 +25,7 @@ public class AdjustConversionPr extends StrategyTransformation{
 	public int getOversold(){return _unitsSold.getWindowSold() > _distributionCapacity ? _unitsSold.getWindowSold() - _distributionCapacity : 0;}
 	
 	@Override
-	protected void transform(Query q, SSBBidStrategy strategy) {
+	protected void transform(Query q, GenericBidStrategy strategy) {
 		int overstock = 0;
 		if(_unitsSold.getWindowSold() > _distributionCapacity){
 			overstock = _unitsSold.getWindowSold() - _distributionCapacity;
@@ -35,7 +36,8 @@ public class AdjustConversionPr extends StrategyTransformation{
 		if(conversionPr < 0.01){
 			conversionPr = 0;
 		}
-		strategy.setQueryConversion(q, conversionPr);
+		
+		strategy.setProperty(q, SSBBidStrategy.CONVERSION_PR, conversionPr);
 	}
 
 	double conversion_pr(int overstock, double baseline, boolean bonus){

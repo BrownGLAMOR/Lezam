@@ -4,19 +4,19 @@ import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;
 
-import agents.SSBBidStrategy;
+import agents.GenericBidStrategy;
 
 public abstract class StrategyTransformation {
 	
-	public void apply(Set<Query> queries, SSBBidStrategy strategy){
+	public void apply(Set<Query> queries, GenericBidStrategy strategy){
 		for(Query q : queries){
 			transform(q,strategy);
 		}
 	}
 	
-	public void apply(SSBBidStrategy strategy){
+	public void apply(GenericBidStrategy strategy){
 		apply(strategy.getQuerySpace(),strategy);
 	}
 	
-	protected abstract void transform(Query q, SSBBidStrategy strategy);
+	protected abstract void transform(Query q, GenericBidStrategy strategy);
 }

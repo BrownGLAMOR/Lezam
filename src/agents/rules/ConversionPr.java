@@ -1,5 +1,6 @@
 package agents.rules;
 
+import agents.GenericBidStrategy;
 import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
@@ -11,8 +12,8 @@ public class ConversionPr extends StrategyTransformation{
 	}
 	
 	@Override
-	protected void transform(Query q, SSBBidStrategy strategy) {
-		strategy.setQueryConversion(q, _conversionPr);
+	protected void transform(Query q, GenericBidStrategy strategy) {
+		strategy.setProperty(q, SSBBidStrategy.CONVERSION_PR, _conversionPr);
 	}
-
+	
 }
