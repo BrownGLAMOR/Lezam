@@ -5,6 +5,7 @@ import java.util.Set;
 
 import modelers.UnitsSoldModel;
 import modelers.UnitsSoldModelMaxWindow;
+import modelers.UnitsSoldModelMean;
 
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
@@ -22,12 +23,21 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class SSBAgent extends AbstractAgent {
 	protected SSBBidStrategy _bidStrategy;
+	
 	protected DistributionCap _distributionCap;
-	protected ReinvestmentCap _reinvestmentCap;
+	protected ReinvestmentCap _reinvestmentCap0;
+	protected ReinvestmentCap _reinvestmentCap1;
+	protected ReinvestmentCap _reinvestmentCap1s;
+	protected ReinvestmentCap _reinvestmentCap2;
+	protected ReinvestmentCap _reinvestmentCap2s;
 	protected TopPosition _topPosition;
 	protected NoImpressions _noImpressions;
 	protected AdjustConversionPr _adjustConversionPr;
+	
 	protected Hashtable<Query,Double> _baseLineConversion;
+	
+	Set<Query> _F1componentSpecialty;
+	Set<Query> _F2componentSpecialty;
 	
 	protected UnitsSoldModel _unitsSold;
 	
@@ -47,12 +57,18 @@ public class SSBAgent extends AbstractAgent {
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		
-		_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		//_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		_unitsSold = new UnitsSoldModelMean(distributionWindow);
 		
 		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
-		_reinvestmentCap = new ReinvestmentCap(0.85);
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.20);
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05);
+		_reinvestmentCap0 = new ReinvestmentCap(0.50);
+		_reinvestmentCap1 = new ReinvestmentCap(0.70);
+		_reinvestmentCap1s = new ReinvestmentCap(0.75);
+		_reinvestmentCap2 = new ReinvestmentCap(0.80);
+		_reinvestmentCap2s = new ReinvestmentCap(0.90);
+		
 		
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}
@@ -67,17 +83,17 @@ public class SSBAgent extends AbstractAgent {
 		
 		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
-		Set<Query> F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
-		new ConversionPr(0.27).apply(F1componentSpecialty, _bidStrategy);
+		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
+		new ConversionPr(0.27).apply(_F1componentSpecialty, _bidStrategy);
 		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);}
 		
-		Set<Query> F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
-		new ConversionPr(0.39).apply(F2componentSpecialty, _bidStrategy);
+		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
+		new ConversionPr(0.39).apply(_F2componentSpecialty, _bidStrategy);
 		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);}
 		
 		
 		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
-		new Targeted().apply(F2componentSpecialty, _bidStrategy);
+		new Targeted().apply(_F2componentSpecialty, _bidStrategy);
 	}
 	
 
@@ -103,7 +119,12 @@ public class SSBAgent extends AbstractAgent {
 		_topPosition.apply(_bidStrategy);
 		_noImpressions.apply(_bidStrategy);
 		
-		_reinvestmentCap.apply(_bidStrategy);
+		_reinvestmentCap0.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
+		_reinvestmentCap1s.apply(_F1componentSpecialty, _bidStrategy);
+		_reinvestmentCap1.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy); //TODO need to do set subtracion here
+		_reinvestmentCap2s.apply(_F2componentSpecialty, _bidStrategy);
+		_reinvestmentCap2.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy); //TODO need to do set subtracion here
+
 		//_distributionCap.apply(_bidStrategy);
 	}
 	

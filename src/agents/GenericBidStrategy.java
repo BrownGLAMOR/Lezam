@@ -7,10 +7,20 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 
-public abstract class GenericBidStrategy {
+public class GenericBidStrategy {
 	public static String BID = "Bid";
+	
+	/* General Constants */
 	public static String CONVERSION_PR= "ConversionPr";
 	public static String CONVERSION_REVENUE= "ConversionRevenue";
+	
+	/* SSB Constants */
+	public static String REINVEST_FACTOR = "ReinvestFactor";
+	
+	/* JESOM Constants */
+	public static String WANTED_SALES = "WantedSales";
+	public static String HONESTY_FACTOR = "HonestyFactor";
+	
 	
 	protected Set<Query> _querySpace;
 	

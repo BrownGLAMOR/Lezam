@@ -22,7 +22,12 @@ public class TopPosition extends StrategyTransformation{
 		if(_queryReport != null){
 			if(_queryReport.getPosition(q, _advertiser) < 1.1){
 				double current = strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR);
-				strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current-_decrease);
+				if(current > _decrease){
+					strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current-_decrease);
+				}
+				else {
+					//strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, 0);
+				}
 			}
 		}
 	}

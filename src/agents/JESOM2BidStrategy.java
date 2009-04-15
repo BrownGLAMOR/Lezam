@@ -5,8 +5,6 @@ import java.util.Set;
 import edu.umich.eecs.tac.props.Query;
 
 public class JESOM2BidStrategy extends GenericBidStrategy {
-	public static String WANTED_SALES = "WantedSales";
-	public static String HONESTY_FACTOR = "HonestyFactor";
 	
 	public JESOM2BidStrategy(Set<Query> querySpace){
 		super(querySpace);

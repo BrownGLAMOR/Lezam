@@ -1,12 +1,11 @@
 package agents;
 
+import java.util.Hashtable;
 import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;
 
 public class SSBBidStrategy extends GenericBidStrategy {
-	public static String REINVEST_FACTOR = "ReinvestFactor";
-	
 	public SSBBidStrategy(Set<Query> querySpace){
 		super(querySpace);
 		setDefaultProperty(CONVERSION_PR, 0.1);
@@ -23,6 +22,23 @@ public class SSBBidStrategy extends GenericBidStrategy {
 		buff.append("\t").append("Conversion: ").append(getProperty(q,CONVERSION_PR)).append("\n");
 		buff.append("\t").append("ReinvestFactor: ").append(getProperty(q,REINVEST_FACTOR)).append("\n");
 		buff.append("\t").append("ConversionRevenue: ").append(getProperty(q,CONVERSION_REVENUE)).append("\n");
+	}
+	
+	
+	
+	
+	
+	@Override
+	public void setProperty(Query q, String key, double value){
+		if(key == REINVEST_FACTOR && value < 0.0){
+			System.out.println();
+			System.out.println("*!@#$* "+q+" " + key + " <- "+value);
+			System.out.println();
+			GenericBidStrategy stg = null;
+			stg.getCampaignSpendLimit();
+		}
+		
+		super.setProperty(q, key, value);
 	}
 	
 }
