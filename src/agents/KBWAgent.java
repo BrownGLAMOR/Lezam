@@ -123,9 +123,36 @@ public class KBWAgent extends AbstractAgent {
 			
 			// How much does it cost to get to that point?
 			double budget = clicks*_bids.get(query);
-		
+			
+			Ad ad;
+			ad = new Ad();  // Default generic
+			
 			// Set the limit
-			bidBundle.addQuery(query, _bids.get(query), new Ad(), budget);	
+			
+			boolean queryComponent = (query.getComponent() != null);
+			boolean queryManu = (query.getManufacturer() != null);
+
+			// TODO: WTF?
+			if(queryComponent || queryManu) {
+				if(queryComponent && queryManu) {
+					// If query is F2 and both manu and component match our specialty, target
+					if(query.getComponent().equals(_advertiserInfo.getComponentSpecialty()) && query.getManufacturer().equals(_advertiserInfo.getManufacturerSpecialty())) {
+						Product product = new Product(_advertiserInfo.getManufacturerSpecialty(),_advertiserInfo.getComponentSpecialty());
+						ad = new Ad(product);
+					}
+				} else {
+					if( (queryComponent && query.getComponent().equals(_advertiserInfo.getComponentSpecialty())) ||
+							(queryManu && query.getManufacturer().equals(_advertiserInfo.getManufacturerSpecialty())) ) {
+						// Otherwise, if either component or manu matches our speciality, then target with some probability we pulled out of nowhere
+						if(randDouble(0, 1) > 0.5 ) {
+							Product product = new Product(_advertiserInfo.getManufacturerSpecialty(),_advertiserInfo.getComponentSpecialty());
+							ad = new Ad(product);							
+						}
+					}
+				}
+			}
+			
+			bidBundle.addQuery(query, _bids.get(query), ad, budget);	
 		}
 		
 		// There is no whole limit, as we set limits on the individual parts
@@ -243,7 +270,7 @@ public class KBWAgent extends AbstractAgent {
 			else {
 				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
 			}
-			relatives.put(query, newprices.get(query)/_oldprices.get(query));
+			relatives.put(query, newprices.get(query));
 //			_oldprices.put(query,newprices.get(query));
 			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
 		}
@@ -295,8 +322,6 @@ public class KBWAgent extends AbstractAgent {
 			
 			debug("New bid: " + query + " = " + _bids.get(query));
 		}
-		
-		
 	}
 
 	/*
