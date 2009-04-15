@@ -6,7 +6,6 @@ import java.util.Set;
 import modelers.UnitsSoldModel;
 
 import agents.GenericBidStrategy;
-import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
 public class AdjustConversionPr extends StrategyTransformation{	
@@ -37,7 +36,7 @@ public class AdjustConversionPr extends StrategyTransformation{
 			conversionPr = 0;
 		}
 		
-		strategy.setProperty(q, SSBBidStrategy.CONVERSION_PR, conversionPr);
+		strategy.setProperty(q, GenericBidStrategy.CONVERSION_PR, conversionPr);
 	}
 
 	double conversion_pr(int overstock, double baseline, boolean bonus){

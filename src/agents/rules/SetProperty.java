@@ -1,7 +1,6 @@
 package agents.rules;
 
 import agents.GenericBidStrategy;
-import agents.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
 public class SetProperty extends StrategyTransformation{
