@@ -10,10 +10,13 @@ public class KBWAgent extends AbstractAgent {
 	
 	Random _R = new Random();
 
+	protected ArrayList<HashMap<Query,Double>> _allweights;
+	private ArrayList<HashMap<Query, Double>> _allconversions;
 	protected HashMap<Query,Double> _weights;
 	protected HashMap<Query,Double> _bids;
 	protected HashMap<Query,Double> _oldprices;
 	protected HashMap<Query,Double> _goalpositions;
+	protected HashMap<Query,Double> _conversions;
 	
 	protected int[] _totalConversions;
 	protected int recentConvHist;
@@ -22,6 +25,12 @@ public class KBWAgent extends AbstractAgent {
 	protected int _window;
 	
 	protected double QUOTA = .22;
+	private double CSB;
+	private double MSB;
+
+	private String manufacturerSpecialty;
+	private Set<Query> ourspecialty;
+
 	protected final static double INITIAL_CHEAPNESS = .6;
 	protected final static double LEARNING_RATE = .075;
 	
@@ -43,10 +52,6 @@ public class KBWAgent extends AbstractAgent {
 		// this is from our observations in class about how people drop out.
 		// This simplifies the problem for the time being.
 		// 3. Capacity is taken into consideration
-		
-		double CSB = _advertiserInfo.getComponentBonus();
-		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
 		
 		//sum up conversions from last 5 days
 		int conv = 0;
@@ -166,17 +171,22 @@ public class KBWAgent extends AbstractAgent {
 		debug("Initializing bidder");
 		debug("===================================");
 		
-		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		Set<Query> ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
-		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		CSB = _advertiserInfo.getComponentBonus();
+		MSB = _advertiserInfo.getManufacturerBonus();
+		manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
 		_capacity = _advertiserInfo.getDistributionCapacity();
 		_window = _advertiserInfo.getDistributionWindow();
 		
+		_allweights = new ArrayList<HashMap<Query, Double>>();
+		_allconversions = new ArrayList<HashMap<Query, Double>>();
 		_weights = new HashMap<Query, Double>();
 		_bids = new HashMap<Query, Double>();
 		_oldprices = new HashMap<Query, Double>();
 		_goalpositions = new HashMap<Query, Double>();
+		_conversions = new HashMap<Query, Double>();
 		_totalConversions = new int[5];
+		
 		_totalConversions[0] = _capacity/5;
 		_totalConversions[1] = _capacity/5;
 		_totalConversions[2] = _capacity/5;
@@ -202,7 +212,7 @@ public class KBWAgent extends AbstractAgent {
 			//our goal position for our specialty is slightly higher
 			if (ourspecialty.contains(query)) {
 				//We weight our specialty slightly higher (.5 extra)
-				_weights.put(query, 1.0 + manufacturerBonus);
+				_weights.put(query, 1.0 + MSB);
 				_goalpositions.put(query,3.0);
 			}
 			else {
@@ -210,8 +220,9 @@ public class KBWAgent extends AbstractAgent {
 				_goalpositions.put(query,4.0);
 			}
 		}
-		_normalizeWeights();
+		_normalizeWeights(_weights);
 
+		_allweights.add(_weights);
 		  
 		// Initialize the bids to slightly below the honest value
 		// Using the "cheapness" value
@@ -236,61 +247,73 @@ public class KBWAgent extends AbstractAgent {
 
 	@Override
 	protected void updateBidStrategy() {
-		
+
 		debug("===================================");
 		debug("Updating bidding strategy");
 		debug("===================================");
-		
+
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
 
-		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
-		
-		int conversions = 0;
-		
-		for(Query query:_querySpace)
-			conversions += salesReport.getConversions(query);
-		
-		_totalConversions[0] = _totalConversions[1];
-		_totalConversions[1] = _totalConversions[2];
-		_totalConversions[2] = _totalConversions[3];
-		_totalConversions[3] = _totalConversions[4];
-		_totalConversions[4] = conversions;
-		
-		relatives = getRelatives(queryReport, salesReport);
-		
-		// Debug messages
-		for(Query query:_querySpace) {
-			debug("Original weight: " + query + " = " + _weights.get(query));
+		if(!(queryReport == null || salesReport == null)) {
+
+			HashMap<Query,Double> relatives = new HashMap<Query, Double>();
+
+			int conversions = 0;
+
+			for(Query query:_querySpace) {
+				double conv = salesReport.getConversions(query);
+				_conversions.put(query, conv);
+				conversions += conv;
+			}
+
+			_allconversions.add(_conversions);
+
+			_totalConversions[0] = _totalConversions[1];
+			_totalConversions[1] = _totalConversions[2];
+			_totalConversions[2] = _totalConversions[3];
+			_totalConversions[3] = _totalConversions[4];
+			_totalConversions[4] = conversions;
+
+			relatives = getRelatives(queryReport, salesReport);
+
+			// Debug messages
+			for(Query query:_querySpace) {
+				debug("Original weight: " + query + " = " + _weights.get(query));
+			}
+
+
+			_weights = EGUpdate(_weights,relatives);
+			_allweights.add(_weights);
+
+
+			// Debug messages
+			for(Query query:_querySpace) {
+				debug("New weight: " + query + " = " + _weights.get(query));
+			}
+
+			// Update the bids to get the fourth place;
+			// Just try to maintain that position
+			for(Query query:_querySpace) {
+
+				debug("Original bid: " + query + " = " + _bids.get(query));
+
+				//If we are close to the slot that we want to be in we just slowly move down
+				//If we are in a higher slot we bid more
+				//If we are in a lower slot we bid less
+
+				if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < .5)
+					_bids.put(query, _bids.get(query) * randDouble(.95,1.0));
+				else if(queryReport.getPosition(query) > _goalpositions.get(query))
+					_bids.put(query, _bids.get(query) * INC_RATE);
+				else 
+					_bids.put(query, _bids.get(query) * DEC_RATE);
+
+				debug("New bid: " + query + " = " + _bids.get(query));
+			}
 		}
-		
-		
-		_weights = EGUpdate(_weights,relatives);
-		
-			
-		// Debug messages
-		for(Query query:_querySpace) {
-			debug("New weight: " + query + " = " + _weights.get(query));
-		}
-		
-		// Update the bids to get the fourth place;
-		// Just try to maintain that position
-		for(Query query:_querySpace) {
-			
-			debug("Original bid: " + query + " = " + _bids.get(query));
-			
-			//If we are close to the slot that we want to be in we just slowly move down
-			//If we are in a higher slot we bid more
-			//If we are in a lower slot we bid less
-			
-			if(Math.abs(_goalpositions.get(query) - queryReport.getPosition(query)) < .5)
-				_bids.put(query, _bids.get(query) * randDouble(.95,1.0));
-			else if(queryReport.getPosition(query) > _goalpositions.get(query))
-				_bids.put(query, _bids.get(query) * INC_RATE);
-			else 
-				_bids.put(query, _bids.get(query) * DEC_RATE);
-			
-			debug("New bid: " + query + " = " + _bids.get(query));
+		else {
+			System.out.println("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
 		}
 	}
 
@@ -300,14 +323,14 @@ public class KBWAgent extends AbstractAgent {
 	 * this function will normalize the sum of the
 	 * weights.
 	 */
-	protected void _normalizeWeights() {
+	protected void _normalizeWeights(HashMap<Query, Double> weights) {
 		double total = 0;
-		for(Query query:_weights.keySet())
-			total += _weights.get(query);
+		for(Query query:weights.keySet())
+			total += weights.get(query);
 		
-		for(Query query:_weights.keySet()) {
-			double value = _weights.get(query)/total;
-			_weights.put(query, value);
+		for(Query query:weights.keySet()) {
+			double value = weights.get(query)/total;
+			weights.put(query, value);
 		}
 	}
 	
@@ -367,6 +390,33 @@ public class KBWAgent extends AbstractAgent {
 			weights.put(query, (weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
 		}
 		return weights;
+	}
+	
+	/**
+	 * Prepares the agent for a new simulation.
+	 */
+	protected void simulationSetup() {
+		
+	}
+
+	/**
+	 * Runs any post-processes required for the agent after a simulation ends.
+	 */
+	protected void simulationFinished() {
+		_salesReports.clear();
+		_queryReports.clear();
+		_firstDay = true;
+		for (int i = 2; i < _allconversions.size(); i++) {
+			HashMap<Query, Double> weights = _allweights.get(i-2);
+			HashMap<Query, Double> convs = _allconversions.get(i);
+			_normalizeWeights(convs);
+			for(Query query:_querySpace) {
+				//((observer - actual)/actual)*100
+				double percenterror = ((convs.get(query) - weights.get(query))/weights.get(query))*100;
+				System.out.println("\nDay + " + (i-2) + "  query: " + query.toString() + "  weight percent error: " + percenterror  + "%");
+			}
+		}
+		_querySpace.clear();
 	}
 	
 }
