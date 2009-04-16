@@ -43,8 +43,6 @@ public class JESOMAgent extends AbstractAgent {
 
 	private double[] capWeights; //to be used later
 
-	final private double initialBidFraction = 0.75;
-
 	protected JESOMBidStrategy _bidStrategy;
 
 	protected Hashtable<String, Double> capacityName;
@@ -101,11 +99,11 @@ public class JESOMAgent extends AbstractAgent {
 				double clicksAim = _bidStrategy.getQuerySpendLimit(q)/_bidStrategy.getQueryBid(q);
 				if (clicksGot < clicksAim){
 					_bidStrategy.setQueryBid(q, _bidStrategy.getQueryBid(q)*1.15+.01);
-					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.9);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.83);
 				}
 				else {
 					_bidStrategy.setQueryBid(q, qr.getCPC(q)+.01);
-					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*1.1);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*1.2);
 				}
 			}
 		}
