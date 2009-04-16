@@ -7,14 +7,14 @@ import edu.umich.eecs.tac.props.Query;
 
 public class WalkingAgent extends JESOMAgent {
 
-	protected static final double FIRST_ADJUSTMENT = 0.75;
+	protected static final double FIRST_ADJUSTMENT = 0.55;
 	protected static final double ADJUSTMENT = 0.05;
 	
 	protected Hashtable<Query, Double> _maxBids;
 	protected Random _random;
 	
 	protected static final double LOWER_CUTOFF = 0.30;
-	protected static final double UPPER_CUTOFF = 0.60;
+	protected static final double UPPER_CUTOFF = 0.70;
 	
 	@Override
 	protected void initBidder(){
