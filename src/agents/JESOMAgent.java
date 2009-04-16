@@ -98,12 +98,14 @@ public class JESOMAgent extends AbstractAgent {
 				double clicksGot = qr.getClicks(q);
 				double clicksAim = _bidStrategy.getQuerySpendLimit(q)/_bidStrategy.getQueryBid(q);
 				if (clicksGot < clicksAim){
-					_bidStrategy.setQueryBid(q, _bidStrategy.getQueryBid(q)*1.15+.01);
-					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.83);
+					if (_bidStrategy.getQueryBid(q) < 0.02)
+						_bidStrategy.setQueryBid(q, .1);
+					else _bidStrategy.setQueryBid(q, _bidStrategy.getQueryBid(q)*1.15-.01);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.91);
 				}
 				else {
 					_bidStrategy.setQueryBid(q, qr.getCPC(q)+.01);
-					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*1.2);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*1.1);
 				}
 			}
 		}

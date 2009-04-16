@@ -72,7 +72,7 @@ public class JESOM2Agent extends AbstractAgent {
 		new SetProperty(JESOM2BidStrategy.WANTED_SALES, slice).apply(_querySpace, _bidStrategy);
 		new SetProperty(JESOM2BidStrategy.WANTED_SALES, 2*slice).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
-		new SetProperty(JESOM2BidStrategy.HONESTY_FACTOR, 0.75).apply(_querySpace, _bidStrategy);
+		new SetProperty(JESOM2BidStrategy.HONESTY_FACTOR, 0.4).apply(_querySpace, _bidStrategy);
 	}
 	
 
@@ -96,14 +96,15 @@ public class JESOM2Agent extends AbstractAgent {
 				//double clicksAim = _bidStrategy.getQuerySpendLimit(q)/_bidStrategy.getQueryBid(q);
 				if (conversionsGot < wantedSales){
 					double honestyFactor = _bidStrategy.getProperty(q, JESOM2BidStrategy.HONESTY_FACTOR);
-					_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.3);
+					_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.14 + .01);
 					
 					//_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim);
 				}
 				else {
 					double conversionRevenue = _bidStrategy.getProperty(q, JESOM2BidStrategy.CONVERSION_REVENUE);
 					double conversionPr = _bidStrategy.getProperty(q, JESOM2BidStrategy.CONVERSION_PR);
-					double cpc = qr.getCPC(q)-.01;
+					double cpc = qr.getCPC(q)+.01;
+					//just in case the CPC is 0.0
 					
 					double newHonesty = cpc / (conversionRevenue * conversionPr);
 					
