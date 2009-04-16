@@ -101,7 +101,7 @@ public class JESOMAgent extends AbstractAgent {
 				double clicksAim = _bidStrategy.getQuerySpendLimit(q)/_bidStrategy.getQueryBid(q);
 				if (clicksGot < clicksAim){
 					_bidStrategy.setQueryBid(q, _bidStrategy.getQueryBid(q)*1.15+.01);
-					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.91);
+					_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim*.9);
 				}
 				else {
 					_bidStrategy.setQueryBid(q, qr.getCPC(q)+.01);
@@ -179,7 +179,7 @@ public class JESOMAgent extends AbstractAgent {
 						double bid = new Double(bidsStr.nextToken());
 						double budget = new Double(budgetStr.nextToken());
 
-						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.5, budget*.55);
+						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.5, budget*.6);
 						Query q = new Query(QueryColEnum.values()[i].manufacturer, QueryColEnum.values()[i].component);
 						initQueryBidBudget.put(q, pair);
 						i++;
