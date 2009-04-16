@@ -145,6 +145,7 @@ public class JESOMAgent extends AbstractAgent {
 		/**TODO Scanner conversionScanner = new Scanner(convBufReader); */
 
 		int i = 0;
+		//some change
 
 		// Expects file of format <Manufacturer/Component/CapacityStr> <int> +
 		// Assumes that the bid and budget files are of the same length. (and of the same order)
@@ -178,7 +179,7 @@ public class JESOMAgent extends AbstractAgent {
 						double bid = new Double(bidsStr.nextToken());
 						double budget = new Double(budgetStr.nextToken());
 
-						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.5, budget*.55);
+						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.5, budget*.56);
 						Query q = new Query(QueryColEnum.values()[i].manufacturer, QueryColEnum.values()[i].component);
 						initQueryBidBudget.put(q, pair);
 						i++;
