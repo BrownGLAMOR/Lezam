@@ -203,11 +203,11 @@ public class KBWAgent extends AbstractAgent {
 			if (ourspecialty.contains(query)) {
 				//We weight our specialty slightly higher (.5 extra)
 				_weights.put(query, 1.0 + manufacturerBonus);
-				_goalpositions.put(query,2.5);
+				_goalpositions.put(query,3.0);
 			}
 			else {
 				_weights.put(query, 1.0);
-				_goalpositions.put(query,3.5);
+				_goalpositions.put(query,4.0);
 			}
 		}
 		_normalizeWeights();
@@ -243,8 +243,7 @@ public class KBWAgent extends AbstractAgent {
 		
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
-		
-		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
+
 		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
 		
 		int conversions = 0;
@@ -258,45 +257,16 @@ public class KBWAgent extends AbstractAgent {
 		_totalConversions[3] = _totalConversions[4];
 		_totalConversions[4] = conversions;
 		
-		for(Query query:_querySpace) {
-			// Zero case, not in the query at all
-			// We don't want to not explore this at all, so for the time being
-			// we will set it to 1.
-			if( Math.abs( queryReport.getCost(query) ) <= .001 || 
-					salesReport.getRevenue(query) <= .001) {
-				newprices.put(query, 1.0);
-			}
-			// Otherwise we put the actual relative in there
-			else {
-				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
-			}
-			relatives.put(query, newprices.get(query));
-//			_oldprices.put(query,newprices.get(query));
-			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
-		}
+		relatives = getRelatives(queryReport, salesReport);
 		
 		// Debug messages
 		for(Query query:_querySpace) {
 			debug("Original weight: " + query + " = " + _weights.get(query));
 		}
 		
-		// Update weights using the EG algorithm
-		// First get the dot product
-		double dotProduct = 0;
-		for(Query query:_querySpace)  {
-			dotProduct += _weights.get(query)*relatives.get(query);
-		}
 		
-		// Now get the denominator
-		double totalWeights = 0;
-		for(Query query:_querySpace) {
-			totalWeights += _weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct);
-		}
+		_weights = EGUpdate(_weights,relatives);
 		
-		// Now update the weights
-		for(Query query:_querySpace) {
-			_weights.put(query, (_weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
-		}
 			
 		// Debug messages
 		for(Query query:_querySpace) {
@@ -354,6 +324,49 @@ public class KBWAgent extends AbstractAgent {
 	
 	protected double eta(double p, double x) {
 		return (p*x) / (p*x + (1-p));
+	}
+	
+	private HashMap<Query, Double> getRelatives(QueryReport queryReport, SalesReport salesReport) {
+		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
+		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
+		for(Query query:_querySpace) {
+			// Zero case, not in the query at all
+			// We don't want to not explore this at all, so for the time being
+			// we will set it to 1.
+			if( Math.abs( queryReport.getCost(query) ) <= .001 || 
+					salesReport.getRevenue(query) <= .001) {
+				newprices.put(query, 1.0);
+			}
+			// Otherwise we put the actual relative in there
+			else {
+				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
+			}
+			relatives.put(query, newprices.get(query));
+//			_oldprices.put(query,newprices.get(query));
+			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
+		}
+		return relatives;
+	}
+	
+	protected HashMap<Query,Double> EGUpdate(HashMap<Query,Double> weights, HashMap<Query,Double> relatives) {
+		// Update weights using the EG algorithm
+		// First get the dot product
+		double dotProduct = 0;
+		for(Query query:_querySpace)  {
+			dotProduct += weights.get(query)*relatives.get(query);
+		}
+		
+		// Now get the denominator
+		double totalWeights = 0;
+		for(Query query:_querySpace) {
+			totalWeights += weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct);
+		}
+		
+		// Now update the weights
+		for(Query query:_querySpace) {
+			weights.put(query, (weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
+		}
+		return weights;
 	}
 	
 }
