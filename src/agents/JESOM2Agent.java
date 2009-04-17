@@ -97,6 +97,7 @@ public class JESOM2Agent extends AbstractAgent {
 				if (conversionsGot < wantedSales){
 					double honestyFactor = _bidStrategy.getProperty(q, JESOM2BidStrategy.HONESTY_FACTOR);
 					_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.14 + .01);
+					_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*.91);
 					
 					//_bidStrategy.setQueryBudget(q, _bidStrategy.getQueryBid(q)*clicksAim);
 				}
@@ -109,6 +110,7 @@ public class JESOM2Agent extends AbstractAgent {
 					double newHonesty = cpc / (conversionRevenue * conversionPr);
 					
 					_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, newHonesty);
+					_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.1);
 				}
 			}
 		}
