@@ -167,10 +167,15 @@ public class MCKPAgent extends AbstractAgent {
 		items[2] = new Item(3, 12);
 		uItems = getUndominated(items);
 		Misc.myassert(uItems.length == 2 && uItems[0].w() == 1 && uItems[0].v() == 9 && uItems[1].w() == 3 && uItems[1].v() == 12);
+		
+		IncItem[] iItems = getIncremental(items);
+		Misc.myassert(iItems.length == 2 && iItems[0].w() == 1 && iItems[0].v() == 9 && iItems[1].w() == 2 && iItems[1].v() == 3);
+		
 	}
 
 	
-	public static IncItem[] getIncremental(Item[] items) {	
+	public static IncItem[] getIncremental(Item[] items) {
+		Misc.printArray("getIncremental", items);
 		//items are still sorted by weight - create incremental items
 		Item[] uItems = getUndominated(items);
 		IncItem[] ii = new IncItem[uItems.length];
@@ -180,7 +185,7 @@ public class MCKPAgent extends AbstractAgent {
 			Item cur = uItems[item];
 			ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
 		}
-		
+		Misc.printArray("inc items", ii);
 		return ii;
 	}
 		

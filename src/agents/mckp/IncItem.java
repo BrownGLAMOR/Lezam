@@ -20,6 +20,10 @@ public class IncItem implements Comparable<IncItem>{
 		return _w;
 	}
 
+	public double v() {
+		return _v;
+	}
+
 	double eff() {
 		return _v/_w;
 	}
@@ -38,6 +42,10 @@ public class IncItem implements Comparable<IncItem>{
 		}
 		//Misc.println(this + " <?> " + item + " result " + result);
 		return result;
+	}
+	
+	public String toString() {
+		return "[" + _w + "," + _v + "]";
 	}
 
 }
