@@ -6,14 +6,10 @@ import java.util.*;
 
 import props.*;
 import agents.mckp.*;
-import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
+import edu.umich.eecs.tac.props.*;
 
 public class MCKPAgent extends AbstractAgent {
-	protected MCKPBidStrategy _bidStrategy;
+	protected BidBundle _bidBundle;
 	
 	public MCKPAgent(){}
 	
@@ -23,11 +19,7 @@ public class MCKPAgent extends AbstractAgent {
 	@Override
 	protected void initBidder() {
 		printAdvertiserInfo();
-		_bidStrategy = new MCKPBidStrategy(_querySpace);
 	}
-	
-
-	
 	
 	@Override
 	protected void updateBidStrategy() {
@@ -81,12 +73,15 @@ public class MCKPAgent extends AbstractAgent {
 			}
 		}
 		
-		//set bids!!!
+		//set bids
+		_bidBundle = new BidBundle();
 		for(int i=0; i<queries.length; i++) {
+			Query q = queries[i];
 			double bid = 0;
 			Integer isID = i;
 			if(solution.containsKey(isID)) { 
 				bid = solution.get(isID).b();
+				_bidBundle.addQuery(q, bid, new Ad());//!!! is new Ad() the right argument to pass
 			}
 			
 		}
@@ -95,13 +90,35 @@ public class MCKPAgent extends AbstractAgent {
 	
 	
 	public static Item[] getUndominated(Item[] items) {
-		LinkedList<Item> q = new LinkedList<Item>();
-		q.add(new Item(0,0,-1,-1));//add item with zero weight and value
+		Misc.printArray("getUndominated. all items", items);
 		Arrays.sort(items,new ItemComparatorByWeight());
 
+		Misc.printArray("sorted by weight", items);
+		
+		//remove dominated items (higher weight, lower value)		
+		LinkedList<Item> temp = new LinkedList<Item>();
+		temp.add(items[0]);
+		for(int i=1; i<items.length; i++) {
+			Item lastUndominated = temp.get(temp.size()-1); 
+			//Misc.println("prev " + lastUndominated.value() + " current " +  itemSet.get(j).value());
+			if(lastUndominated.v() < items[i].v()) {
+				//Misc.println("adding undominated item " + itemSet.get(j));
+				temp.add(items[i]);
+			}
+		}
+		
+		//items now contain only undominated items
+		items = temp.toArray(new Item[0]);
+		
+	
+		//remove lp-dominated items
+		//see Figure 2 in http://www.cs.brown.edu/people/vnarodit/troa.pdf
+		LinkedList<Item> q = new LinkedList<Item>();
+		q.add(new Item(0,0,-1,-1));//add item with zero weight and value
 		for(int i=0; i<items.length; i++) {
-			q.add(items[i]);
+			q.add(items[i]);//has at least 2 items
 			int l = q.size()-1;
+			//Misc.println("l=" + l);
 			Item li = q.get(l);//last item
 			Item nli = q.get(l-1);//next to last
 			if(li.w() == nli.w()) {
@@ -110,13 +127,12 @@ public class MCKPAgent extends AbstractAgent {
 				}else{
 					q.remove(l);
 				}
-				l = q.size() - 1;
-				//while there are at least three elements and ...
-				while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) <= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
-					q.remove(l-1);
-					l--;
-				}
-			}			
+			}
+			//while there are at least three elements and ...
+			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) <= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
+				q.remove(l-1);
+				l--;
+			}
 		}
 		
 		//remove the (0,0) item
@@ -124,36 +140,62 @@ public class MCKPAgent extends AbstractAgent {
 			q.remove(0);
 		}
 		
-		return (Item[]) q.toArray(new Item[0]);
+		Item[] uItems = (Item[]) q.toArray(new Item[0]);
+		Misc.printArray("undominated items", uItems);
+		return uItems;
+	}
+	
+	public void testGetUndominated() {
+		//dominate
+		Item[] items = new Item[2];
+		items[0] = new Item(5, 2);
+		items[1] = new Item(7, 1);
+		Item[] uItems = getUndominated(items);
+		Misc.myassert(uItems.length == 1 && uItems[0].w() == 5 && uItems[0].v() == 2);
+		
+		//lp dominate with zero item
+		items = new Item[2];
+		items[1] = new Item(4, 1);
+		items[0] = new Item(5, 2);//.8*5,.8*2
+		uItems = getUndominated(items);
+		Misc.myassert(uItems.length == 1 && uItems[0].w() == 5 && uItems[0].v() == 2);
+
+		//lp dominate: half of item 1 and 3 dominate item 2
+		items = new Item[3];
+		items[0] = new Item(1, 9);
+		items[1] = new Item(2, 10);
+		items[2] = new Item(3, 12);
+		uItems = getUndominated(items);
+		Misc.myassert(uItems.length == 2 && uItems[0].w() == 1 && uItems[0].v() == 9 && uItems[1].w() == 3 && uItems[1].v() == 12);
 	}
 
 	
-	public static IncItem[] getIncremental(Item[] items) {
-			//items are still sorted by weight - create incremental items
-			Item[] uItems = getUndominated(items);
-			IncItem[] ii = new IncItem[uItems.length];
-			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
-			for(int item=1; item<uItems.length; item++) {
-				Item prev = uItems[item-1];
-				Item cur = uItems[item];
-				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
-			}
-			
-			return ii;
+	public static IncItem[] getIncremental(Item[] items) {	
+		//items are still sorted by weight - create incremental items
+		Item[] uItems = getUndominated(items);
+		IncItem[] ii = new IncItem[uItems.length];
+		ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
+		for(int item=1; item<uItems.length; item++) {
+			Item prev = uItems[item-1];
+			Item cur = uItems[item];
+			ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
 		}
+		
+		return ii;
+	}
 		
 	
 	
 	@Override
 	protected BidBundle buildBidBudle(){
-		System.out.println("**********");
-		System.out.println(_bidStrategy);
-		System.out.println("**********");
-		return _bidStrategy.buildBidBundle();
+		return _bidBundle;
 	}
 
 	
-
+	public static void main (String[] args) {
+		MCKPAgent agent = new MCKPAgent();
+		agent.testGetUndominated();
+	}
 
 
 	public static class Output {
