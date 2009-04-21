@@ -81,7 +81,7 @@ public class MCKPAgent extends AbstractAgent {
 			Integer isID = i;
 			if(solution.containsKey(isID)) { 
 				bid = solution.get(isID).b();
-				_bidBundle.addQuery(q, bid, new Ad());//!!! is new Ad() the right argument to pass
+				_bidBundle.addQuery(q, bid, new Ad());
 			}
 			
 		}
