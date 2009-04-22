@@ -1,13 +1,17 @@
 package agents.mckp;
 
+import edu.umich.eecs.tac.props.Query;
+
 public class Item {
+	Query _q;
 	double _w;
 	double _v;
 	double _b;//bid
 	int _isID;//item set id (i.e., id for the query)
 	public static int UNDEFINED = -1;
 	
-	public Item(double w, double v, double b, int isID) {
+	public Item(Query q, double w, double v, double b, int isID) {
+		_q = q;
 		_w = w;
 		_v = v;
 		_b = b;
@@ -38,8 +42,12 @@ public class Item {
 		return _isID;
 	}
 	
+	public Query q() {
+		return _q;
+	}
+	
 	public String toString() {
-		return "[" + _w + "," + _v + "]";
+		return _q+" [" + _w + "," + _v + "]";
 	}
 
 }

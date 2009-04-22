@@ -3,12 +3,35 @@ package agents;
 
 import java.util.*;
 
+import modelers.PositionBidLinear;
+import modelers.PositionClicksExponential;
+import modelers.UnitsSoldModel;
+import modelers.UnitsSoldModelMax;
+
 
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
 
 public class MCKPAgent extends AbstractAgent {
+	protected int _day;
+	
+	protected int _distributionCapacity;
+	protected int _distributionWindow;
+	protected int _numSlots;
+	
+	protected UnitsSoldModel _unitsSold;
+	protected PositionBidLinear _positionBid;
+	protected PositionClicksExponential _positionClicks;
+	
+	protected Hashtable<Query,Integer> _queryId;
+	
+	protected Hashtable<Query,Double> _baseLineConversion;
+	protected Hashtable<Query,Double> _noOversellConversion;
+	protected Hashtable<Query,Double> _rpc;
+	Set<Query> _F1componentSpecialty;
+	Set<Query> _F2componentSpecialty;
+	
 	protected BidBundle _bidBundle;
 	
 	public MCKPAgent(){}
@@ -19,73 +42,129 @@ public class MCKPAgent extends AbstractAgent {
 	@Override
 	protected void initBidder() {
 		printAdvertiserInfo();
+		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
+		_distributionWindow = _advertiserInfo.getDistributionWindow();
+		
+		_numSlots = _slotInfo.getRegularSlots();
+		
+		_unitsSold = new UnitsSoldModelMax(_distributionWindow);
+		_positionBid = new PositionBidLinear(_numSlots, 0.5);
+		_positionClicks = new PositionClicksExponential(_numSlots, 2.5);
+		
+		_baseLineConversion = new Hashtable<Query,Double>();
+		_noOversellConversion = new Hashtable<Query,Double>();
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1); _noOversellConversion.put(q, 0.1);}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2); _noOversellConversion.put(q, 0.2);}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3); _noOversellConversion.put(q, 0.3);}
+		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
+		
+		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
+		for(Query q : _F1componentSpecialty) {_noOversellConversion.put(q, 0.27);}
+		
+		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
+		for(Query q : _F2componentSpecialty) {_noOversellConversion.put(q, 0.39);}
+		
+		
+		Set<Query> manufacturerSpecialty = _queryManufacturer.get(_advertiserInfo.getManufacturerSpecialty());
+		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		
+		_rpc = new Hashtable<Query,Double>();
+		for(Query q : _querySpace) {_rpc.put(q, 10.0);}
+		for(Query q : manufacturerSpecialty) {_rpc.put(q, manufacturerBonus*_rpc.get(q));}
+		
+		_queryId = new Hashtable<Query,Integer>();
+		int i = 0;
+		for(Query q : _querySpace){
+			i++;
+			_queryId.put(q, i);
+		}
+		
+		_day = 0;
 	}
 	
 	@Override
 	protected void updateBidStrategy() {
-		//generate undominated items and convert them to inc items
-		LinkedList<IncItem> iis = new LinkedList<IncItem>();
-		int numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
-		Misc.println("num slots " + numSlots);
+		QueryReport qr = _queryReports.remove();
+		_positionBid.updateReport(qr);
+		_positionClicks.updateReport(qr);
 		
-		LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
-		//want the queries to be in a guaranteed order - put them in an array
-		//index will be used as the id of the query
-		Query[] queries = (Query[])_querySpace.toArray();
-		for(int i=0; i<queries.length; i++) {
-			Query q = queries[i];
-			//let's generate an item set for this query
-			Item[] items = new Item[numSlots];
-			for(int s=0; s<items.length; s++) {//slot
-				int numClicks = numSlots - s;//!!!getClicks
-				double bid = numSlots - s;//!!!getBid for position
-				double cpc = bid;//!!!getCPC
-				double w = numClicks*cpc;
-				double rpc = getAvaregeProductPrice();
-				double convProb = .1;//!!!get from report
-				double v = numClicks*rpc*convProb;
-				int isID = i;
-				items[s] = new Item(w,v,bid, isID);
+		SalesReport sr = _salesReports.remove();
+		_unitsSold.updateReport(sr);
+		
+		if(_day > 2){
+			//generate undominated items and convert them to inc items
+			//LinkedList<IncItem> iis = new LinkedList<IncItem>();
+			int numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
+			Misc.println("num slots " + numSlots);
 			
+			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
+			//want the queries to be in a guaranteed order - put them in an array
+			//index will be used as the id of the query
+			for(Query q : _querySpace) {
+				
+				double rpc = _rpc.get(q);
+				double convProb = _noOversellConversion.get(q);
+				
+				//let's generate an item set for this query
+				Item[] items = new Item[numSlots];
+				for(int s=0; s<items.length; s++) {//slot
+					int numClicks = _positionClicks.getClicks(q, s);//!!!getClicks
+					double bid = _positionBid.getBid(q, s);
+					double cpc = bid;//!!!getCPC
+					double w = numClicks*cpc;
+					double v = numClicks*rpc*convProb;
+					int isID = _queryId.get(q);
+					items[s] = new Item(q,w,v,bid, isID);	
+				}
+				
 				IncItem[] iItems = getIncremental(items);
 				allIncItems.addAll(Arrays.asList(iItems));
 			}
-		}
-		
-		//pick items greedily is order of decreasing efficiency
-		Collections.sort(allIncItems);
-		Misc.println("sorted incremental items", Output.OPTIMAL);
-		Misc.printList(allIncItems,"\n", Output.OPTIMAL);
-		
-		HashMap<Integer,Item> solution = new HashMap<Integer,Item>();
-		//_advertiserInfo.getDistributionCapacity()/_advertiserInfo.getDistributionWindow()
-		double budget = 100;//!!!getbudget
-		//4. greedily fill the knapsack
-		for(IncItem ii: allIncItems) {
-			Misc.println("adding item " + ii, Output.OPTIMAL);
-			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
-			//set replace lighter items as we want
-			if(budget >= ii.w()) {
-				solution.put(ii.item().isID(), ii.item());
-				budget -= ii.w();
-			}else{
-				break;
-			}
-		}
-		
-		//set bids
-		_bidBundle = new BidBundle();
-		for(int i=0; i<queries.length; i++) {
-			Query q = queries[i];
-			double bid = 0;
-			Integer isID = i;
-			if(solution.containsKey(isID)) { 
-				bid = solution.get(isID).b();
-				_bidBundle.addQuery(q, bid, new Ad());
+			
+			//pick items greedily is order of decreasing efficiency
+			Collections.sort(allIncItems);
+			Misc.println("sorted incremental items", Output.OPTIMAL);
+			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			
+			HashMap<Integer,Item> solution = new HashMap<Integer,Item>();
+			//_advertiserInfo.getDistributionCapacity()/_advertiserInfo.getDistributionWindow()
+			double budget = (_distributionCapacity - _unitsSold.getWindowSold()) / _distributionWindow;
+			
+			//4. greedily fill the knapsack
+			for(IncItem ii: allIncItems) {
+				Misc.println("adding item " + ii, Output.OPTIMAL);
+				//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
+				//set replace lighter items as we want
+				if(budget >= ii.w()) {
+					solution.put(ii.item().isID(), ii.item());
+					budget -= ii.w();
+				}else{
+					break;
+				}
 			}
 			
+			//set bids
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace){
+				double bid = 0;
+				Integer isID = _queryId.get(q);
+				if(solution.containsKey(isID)) { 
+					bid = solution.get(isID).b();
+					_bidBundle.addQuery(q, bid, new Ad());
+					_bidBundle.setDailyLimit(q, solution.get(isID).w());
+				}
+				
+			}
+		}
+		else {
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace){
+				double bid = 1.0;
+				_bidBundle.addQuery(q, bid, new Ad());
+			}
 		}
 		
+		_day++;
 	}
 	
 	
@@ -114,7 +193,7 @@ public class MCKPAgent extends AbstractAgent {
 		//remove lp-dominated items
 		//see Figure 2 in http://www.cs.brown.edu/people/vnarodit/troa.pdf
 		LinkedList<Item> q = new LinkedList<Item>();
-		q.add(new Item(0,0,-1,-1));//add item with zero weight and value
+		q.add(new Item(new Query(),0,0,-1,-1));//add item with zero weight and value
 		for(int i=0; i<items.length; i++) {
 			q.add(items[i]);//has at least 2 items
 			int l = q.size()-1;
@@ -193,6 +272,9 @@ public class MCKPAgent extends AbstractAgent {
 	
 	@Override
 	protected BidBundle buildBidBudle(){
+		System.out.println("****************************************");
+		System.out.println(_bidBundle);
+		System.out.println("****************************************");
 		return _bidBundle;
 	}
 
