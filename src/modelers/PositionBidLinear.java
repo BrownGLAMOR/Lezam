@@ -4,8 +4,6 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.LinkedList;
 
-import com.sun.tools.javac.code.Attribute.Array;
-
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 
