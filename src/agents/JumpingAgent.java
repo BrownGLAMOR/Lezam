@@ -19,13 +19,13 @@ INCOMPLETE
 
 need to:
 
-increase high value
+increase high value (done)
 
 */
 
 public class JumpingAgent extends JESOMAgent {
 
-	protected static final double FIRST_ADJUSTMENT = 0.50;
+	protected static final double FIRST_ADJUSTMENT = 0.60;
 	protected static final double HIGH_ADJUSTMENT = 0.75;
 	protected static final double MAX_ADJUSTMENT = 0.95;
 	protected static final double MIN_ADJUSTMENT = 0.05;
@@ -99,6 +99,10 @@ public class JumpingAgent extends JESOMAgent {
 				newBid = previousCPC * UNDERCUT_CONSTANT;//returnBidWithinLimits(previousCPC * UNDERCUT_CONSTANT, query);
 			}
 			// else bid high and TODO: update high value (up)
+			if ((previousPosition > 3 || previousPosition == 0) && previousCPC > _highBids.get(query)){
+				_highBids.put(query, _highBids.get(query)*HIGH_MULTIPLE);
+			}
+			
 			
 			
 			_previousBids.put(query, newBid);
