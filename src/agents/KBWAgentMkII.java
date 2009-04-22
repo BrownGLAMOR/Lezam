@@ -26,7 +26,7 @@ public class KBWAgentMkII extends AbstractAgent {
 	protected int _capacity;
 	protected int _window;
 	
-	protected double QUOTA = .18;
+	protected double QUOTA = .2;
 	private double CSB;
 	private double MSB;
 	protected int _currentday;
@@ -36,9 +36,10 @@ public class KBWAgentMkII extends AbstractAgent {
 
 	private int recentConvHist;
 
-	protected final static double INITIAL_CHEAPNESS = .8;
-	protected final static double CHEAPNESS = .75;
-	protected final static double LEARNING_RATE = .075;
+	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
+	protected final static double CHEAPNESS = .9;
+	protected final static double BUDGETCHEAPNESS = .8;
+	protected final static double LEARNING_RATE = .05;
 	
 	protected final static double INC_RATE = 1.1;
 	protected final static double DEC_RATE = .9;
@@ -141,7 +142,9 @@ public class KBWAgentMkII extends AbstractAgent {
 			}
 			
 			// How much does it cost to get to that point?
-			double budget = clicks*_bids.get(query)*CHEAPNESS;
+			//We multiply by cheapness to reflect the fact that we are actually going to multiply our bid by that
+			//we add a cheapness into our budget to reflect the fact that we are actually going to pay less per click than our bid
+			double budget = clicks*_bids.get(query)*CHEAPNESS*BUDGETCHEAPNESS;
 			
 			Ad ad;
 			ad = new Ad();  // Default generic
