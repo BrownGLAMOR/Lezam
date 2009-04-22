@@ -157,13 +157,12 @@ public class MCKPAgent extends AbstractAgent {
 				}
 				
 				_bidBundle.addQuery(q, bid, new Ad());
-				
 			}
 		}
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = 1.0;
+				double bid = 0.75;
 				_bidBundle.addQuery(q, bid, new Ad());
 			}
 		}

@@ -59,10 +59,8 @@ public class PositionClicksExponential implements PositionClicksModel {
 					slotclicks[i] = queryPositionClicks.get(i+1);
 				}
 				System.out.println(Arrays.toString(slotclicks));
+				_positionClicks.put(q, queryPositionClicks);
 			}
-			
-			_positionClicks.put(q, queryPositionClicks);
-			
 			
 		}
 		
@@ -74,7 +72,7 @@ public class PositionClicksExponential implements PositionClicksModel {
 			return (int)clicks;
 		}
 				
-		return 0;
+		return 1;
 	}
 
 }

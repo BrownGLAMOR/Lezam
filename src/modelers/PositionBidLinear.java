@@ -52,20 +52,35 @@ public class PositionBidLinear implements PositionBidModel{
 				
 				for(int i = 0; i < _slots; i++){
 					if(queryPositionBid.get(i+1) < 0){
-						queryPositionBid.put(i+1, 0.01);
+						queryPositionBid.put(i+1, 0.25);
 					}
 				}
 				
+				_positionBid.put(q, queryPositionBid);
+				
 				System.out.println();
-				System.out.println(q+"Position Bid Given : "+bid+" in position "+pos);
+				System.out.println(q+"Position Bid Given : "+bid+" in position "+position);
 				double[] slotbids = new double[_slots];
 				for(int i = 0; i < _slots; i++){
 					slotbids[i] = queryPositionBid.get(i+1);
 				}
 				System.out.println(Arrays.toString(slotbids));
+				
+				
 			}
+			/*
+			else{
+				if(!_positionBid.containsKey(q)){
+					for(int i = _slots-1; i >= 0; i--){
+						queryPositionBid.put(i+1, _interpolation*(_slots-i));
+					}
+					_positionBid.put(q, queryPositionBid);
+				}
 		
-			_positionBid.put(q, queryPositionBid);
+			}
+			*/
+			
+			
 		}
 		
 	}
@@ -75,7 +90,7 @@ public class PositionBidLinear implements PositionBidModel{
 			return _positionBid.get(q).get(slot);
 		}
 				
-		return Double.NaN;
+		return 0.25;//Double.NaN;
 	}
 
 }
