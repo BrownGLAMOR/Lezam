@@ -21,8 +21,8 @@ INCOMPLETE
 
 public class JumpingAgent extends JESOMAgent {
 
-	protected static final double FIRST_ADJUSTMENT = 0.65;
-	protected static final double ADJUSTMENT = 0.05;
+	protected static final double FIRST_ADJUSTMENT = 0.50;
+	protected static final double HIGH_ADJUSTMENT = 0.65;
 	protected static final double MAX_ADJUSTMENT = 0.95;
 	protected static final double MIN_ADJUSTMENT = 0.05;
 	
@@ -30,7 +30,7 @@ public class JumpingAgent extends JESOMAgent {
 	
 	public static final boolean DEBUG = false;
 	protected static final double SLOT_FRACTION = 0.30;
-	protected static final double UNDERCUT_AMOUNT = 0.05; // could change to be a random interval
+	protected static final double UNDERCUT_CONSTANT = 0.98; // could change to be a random interval
 	
 	public static final double CONVERSION_F0 = .1;
 	public static final double CONVERSION_F1 = .2;
@@ -40,8 +40,9 @@ public class JumpingAgent extends JESOMAgent {
 	public static final double DECREASE_FACTOR = .95;
 	public static final double INCREASE_FACTOR = 1.5;
 	protected Hashtable<Query, Double> _previousBids;
+	protected Hashtable<Query, Double> _maxBids;
 	protected Hashtable<Query, Double> _highBids;
-	protected Hashtable<Query, Double> _lowBids;
+	protected Hashtable<Query, Double> _minBids;
 	protected int _estimatedCapacity;
 	protected Queue<Integer> _capacityWindow;
 	
@@ -97,10 +98,13 @@ public class JumpingAgent extends JESOMAgent {
 
 		_previousBids = new Hashtable<Query, Double>();
 		_highBids = new Hashtable<Query, Double>();
+		_maxBids = new Hashtable<Query, Double>();
+		_minBids = new Hashtable<Query, Double>();
 		for(Query query:_querySpace) {
 			_previousBids.put(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
-			_highBids.put(query, _bidStrategy.getQueryBid(query) * MAX_ADJUSTMENT);
-			_lowBids.put(query, _bidStrategy.getQueryBid(query) * MIN_ADJUSTMENT);
+			_highBids.put(query, _bidStrategy.getQueryBid(query) * HIGH_ADJUSTMENT);
+			_maxBids.put(query, _bidStrategy.getQueryBid(query) * MAX_ADJUSTMENT);
+			_minBids.put(query, _bidStrategy.getQueryBid(query) * MIN_ADJUSTMENT);
 			_bidStrategy.setQueryBid(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
 		}
 		
@@ -108,6 +112,12 @@ public class JumpingAgent extends JESOMAgent {
 		_capacityWindow = new LinkedList<Integer>();
 	}
 
+	protected double returnBidWithinLimits(double newBid, Query query){
+		Double minBid = _minBids.get(query);
+		Double maxBid = _maxBids.get(query);
+		return Math.min(Math.max(minBid, newBid),maxBid);
+	}
+	
 	@Override
 	protected void updateBidStrategy() {
 
@@ -125,14 +135,31 @@ public class JumpingAgent extends JESOMAgent {
 		
 		for(Query query:_querySpace) {
 			
-			Double lastValue = _previousBids.get(query); 
-		
+			Double lastValue = _previousBids.get(query);
+			Double newBid = returnBidWithinLimits(_highBids.get(query), query);
+			Double previousPosition = lastReport.getPosition(query);
+			Double previousCPC = lastReport.getCPC(query);
+			
+			// undercut and update high value
+			if(previousPosition <= 3 && previousPosition != 0){
+				Double highBid = previousCPC * UNDERCUT_CONSTANT; 
+				newBid = returnBidWithinLimits(highBid, query);
+				_highBids.put(query, highBid);
+			}
+			// undercut
+			else if(previousPosition > 3 && previousPosition < 4){
+				newBid = returnBidWithinLimits(previousCPC * UNDERCUT_CONSTANT, query);
+			}
+			// else bid high
+			
+			/*
 			if( lastReport.getPosition(query,_advertiserInfo.getAdvertiserId()) > 1.01 )
 				lastValue*=INCREASE_FACTOR;
 			else
 				lastValue*=DECREASE_FACTOR;
+			*/
 			
-			_previousBids.put(query, lastValue);
+			_previousBids.put(query, newBid);
 			
 			dbg("Position: " + lastReport.getPosition(query,_advertiserInfo.getAdvertiserId()) + query + " : " + lastValue);
 			
@@ -143,7 +170,7 @@ public class JumpingAgent extends JESOMAgent {
 		_capacityWindow.add(conversionsThisRound);
 		
 		
-		dbg("================================updateBidStrategy=");
+		dbg("=================================");
 		dbg("         Costs                   ");
 		dbg("=================================");
 		
