@@ -23,6 +23,8 @@ public class JumpingAgent extends JESOMAgent {
 
 	protected static final double FIRST_ADJUSTMENT = 0.65;
 	protected static final double ADJUSTMENT = 0.05;
+	protected static final double MAX_ADJUSTMENT = 0.95;
+	protected static final double MIN_ADJUSTMENT = 0.05;
 	
 	protected Random _random;
 	
@@ -39,6 +41,7 @@ public class JumpingAgent extends JESOMAgent {
 	public static final double INCREASE_FACTOR = 1.5;
 	protected Hashtable<Query, Double> _previousBids;
 	protected Hashtable<Query, Double> _highBids;
+	protected Hashtable<Query, Double> _lowBids;
 	protected int _estimatedCapacity;
 	protected Queue<Integer> _capacityWindow;
 	
@@ -96,7 +99,8 @@ public class JumpingAgent extends JESOMAgent {
 		_highBids = new Hashtable<Query, Double>();
 		for(Query query:_querySpace) {
 			_previousBids.put(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
-			_highBids.put(query, _bidStrategy.getQueryBid(query) * Math.min(FIRST_ADJUSTMENT+.1,1.0));
+			_highBids.put(query, _bidStrategy.getQueryBid(query) * MAX_ADJUSTMENT);
+			_lowBids.put(query, _bidStrategy.getQueryBid(query) * MIN_ADJUSTMENT);
 			_bidStrategy.setQueryBid(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
 		}
 		
