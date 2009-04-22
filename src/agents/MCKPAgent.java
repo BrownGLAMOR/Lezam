@@ -112,6 +112,7 @@ public class MCKPAgent extends AbstractAgent {
 					double bid = _positionBid.getBid(q, s);
 					double cpc = bid;//!!!getCPC
 					double w = numClicks*cpc;
+					Misc.myassert(Double.isNaN(w) || w >= 0);
 					double v = numClicks*rpc*convProb;
 					int isID = _queryId.get(q);
 					items[s] = new Item(q,w,v,bid, isID);	
@@ -146,13 +147,16 @@ public class MCKPAgent extends AbstractAgent {
 			//set bids
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = 0;
+				double bid = 0.25;
+				//double spendLimit = Double.MAX_VALUE;
 				Integer isID = _queryId.get(q);
 				if(solution.containsKey(isID)) { 
 					bid = solution.get(isID).b();
-					_bidBundle.addQuery(q, bid, new Ad());
-					_bidBundle.setDailyLimit(q, solution.get(isID).w());
+					//spendLimit = solution.get(isID).w();
+					//_bidBundle.setDailyLimit(q, spendLimit);
 				}
+				
+				_bidBundle.addQuery(q, bid, new Ad());
 				
 			}
 		}

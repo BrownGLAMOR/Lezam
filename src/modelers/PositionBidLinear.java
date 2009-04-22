@@ -50,6 +50,12 @@ public class PositionBidLinear implements PositionBidModel{
 					queryPositionBid.put(i, bid-_interpolation*(i-pos));
 				}
 				
+				for(int i = 0; i < _slots; i++){
+					if(queryPositionBid.get(i+1) < 0){
+						queryPositionBid.put(i+1, 0.01);
+					}
+				}
+				
 				System.out.println();
 				System.out.println(q+"Position Bid Given : "+bid+" in position "+pos);
 				double[] slotbids = new double[_slots];
