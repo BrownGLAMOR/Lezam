@@ -1,21 +1,25 @@
 package agents;
 
 import java.util.Hashtable;
-import java.util.LinkedList;
+//import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 
-import edu.umich.eecs.tac.props.Ad;
-import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
+//import edu.umich.eecs.tac.props.Ad;
+//import edu.umich.eecs.tac.props.BidBundle;
+//import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
+//import edu.umich.eecs.tac.props.QueryType;
+//import edu.umich.eecs.tac.props.SalesReport;
 
 /*
 
 INCOMPLETE
+
+need to:
+
+increase high value
 
 */
 
@@ -46,7 +50,7 @@ public class JumpingAgent extends JESOMAgent {
 	protected int _estimatedCapacity;
 	protected Queue<Integer> _capacityWindow;
 	
-	
+	/*
 	@Override
 	protected BidBundle buildBidBudle() {
 		
@@ -90,6 +94,7 @@ public class JumpingAgent extends JESOMAgent {
 		
 		return null;
 	}
+	*/
 
 	@Override
 	protected void initBidder() {
@@ -100,6 +105,7 @@ public class JumpingAgent extends JESOMAgent {
 		_highBids = new Hashtable<Query, Double>();
 		_maxBids = new Hashtable<Query, Double>();
 		_minBids = new Hashtable<Query, Double>();
+		
 		for(Query query:_querySpace) {
 			_previousBids.put(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
 			_highBids.put(query, _bidStrategy.getQueryBid(query) * HIGH_ADJUSTMENT);
@@ -107,9 +113,10 @@ public class JumpingAgent extends JESOMAgent {
 			_minBids.put(query, _bidStrategy.getQueryBid(query) * MIN_ADJUSTMENT);
 			_bidStrategy.setQueryBid(query, _bidStrategy.getQueryBid(query) * FIRST_ADJUSTMENT);
 		}
-		
+		/*
 		_estimatedCapacity = _advertiserInfo.getDistributionCapacity();
 		_capacityWindow = new LinkedList<Integer>();
+		*/
 	}
 
 	protected double returnBidWithinLimits(double newBid, Query query){
@@ -122,7 +129,7 @@ public class JumpingAgent extends JESOMAgent {
 	protected void updateBidStrategy() {
 
 		QueryReport lastReport = _queryReports.poll();
-		SalesReport sales = _salesReports.poll();
+		/*SalesReport sales = _salesReports.poll();
 		
 		dbg("=================================");
 		dbg("         New Bids                ");
@@ -131,11 +138,11 @@ public class JumpingAgent extends JESOMAgent {
 		int conversionsThisRound = 0;
 		
 		if(_capacityWindow.size() >= 4) 
-			_estimatedCapacity += _capacityWindow.poll();
+			_estimatedCapacity += _capacityWindow.poll();*/
 		
 		for(Query query:_querySpace) {
 			
-			Double lastValue = _previousBids.get(query);
+			//Double lastValue = _previousBids.get(query);
 			Double newBid = returnBidWithinLimits(_highBids.get(query), query);
 			Double previousPosition = lastReport.getPosition(query);
 			Double previousCPC = lastReport.getCPC(query);
@@ -160,13 +167,14 @@ public class JumpingAgent extends JESOMAgent {
 			*/
 			
 			_previousBids.put(query, newBid);
+			_bidStrategy.setQueryBid(query, newBid);
 			
-			dbg("Position: " + lastReport.getPosition(query,_advertiserInfo.getAdvertiserId()) + query + " : " + lastValue);
+			/*dbg("Position: " + lastReport.getPosition(query,_advertiserInfo.getAdvertiserId()) + query + " : " + lastValue);
 			
 			_estimatedCapacity -= sales.getConversions(query);
-			conversionsThisRound += sales.getConversions(query);
+			conversionsThisRound += sales.getConversions(query);*/
 		}
-		
+		/*
 		_capacityWindow.add(conversionsThisRound);
 		
 		
@@ -190,6 +198,7 @@ public class JumpingAgent extends JESOMAgent {
 		dbg(" Total Revenue: " + totalRevenue);
 		dbg(" Total Costs: " + totalCosts);
 		dbg(" Capacity: " + _estimatedCapacity);
+		*/
 	}
 
 	/*
