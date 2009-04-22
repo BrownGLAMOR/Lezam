@@ -25,11 +25,11 @@ increase high value (done)
 
 public class JumpingAgent extends JESOMAgent {
 
-	protected static final double FIRST_ADJUSTMENT = 0.60;
-	protected static final double HIGH_ADJUSTMENT = 0.75;
+	protected static final double FIRST_ADJUSTMENT = 0.55;
+	protected static final double HIGH_ADJUSTMENT = 0.70;
 	protected static final double MAX_ADJUSTMENT = 0.95;
 	protected static final double MIN_ADJUSTMENT = 0.05;
-	protected static final double HIGH_MULTIPLE = 1.15;
+	protected static final double HIGH_MULTIPLE = 1.25;
 	
 	protected Random _random;
 	
@@ -92,19 +92,17 @@ public class JumpingAgent extends JESOMAgent {
 			if(previousPosition <= 3 && previousPosition != 0){
 				Double highBid = previousCPC * UNDERCUT_CONSTANT; 
 				newBid = highBid;//returnBidWithinLimits(highBid, query);
-				_highBids.put(query, highBid);
+				//_highBids.put(query, highBid);
 			}
 			// undercut
 			else if(previousPosition > 3 && previousPosition < 4){
 				newBid = previousCPC * UNDERCUT_CONSTANT;//returnBidWithinLimits(previousCPC * UNDERCUT_CONSTANT, query);
 			}
 			// else bid high and TODO: update high value (up)
-			if ((previousPosition > 3 || previousPosition == 0) && previousCPC > _highBids.get(query)){
+			/*if (previousCPC > _highBids.get(query)){
 				_highBids.put(query, _highBids.get(query)*HIGH_MULTIPLE);
-			}
-			
-			
-			
+			}*/
+
 			_previousBids.put(query, newBid);
 			_bidStrategy.setQueryBid(query, newBid);
 			
@@ -113,8 +111,6 @@ public class JumpingAgent extends JESOMAgent {
 
 	}
 
-
-	
 	public static void dbg(String str) {
 		if(DEBUG)
 			System.out.println(str);
