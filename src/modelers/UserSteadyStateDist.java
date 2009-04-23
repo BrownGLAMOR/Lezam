@@ -9,7 +9,7 @@ public class UserSteadyStateDist {
 	public enum UserState {NS, IS, F0, F1, F2, T};
 
 	protected final static double epsilon = .0000000001;
-	protected final static double burstprobability = 0.10;
+	protected final static double burstprobability = 0.1;
 	//All these probabilities should sum to 1
 	// From NS:
 	protected final static double standard_NON_SEARCHING_NON_SEARCHING=0.99;
@@ -72,15 +72,18 @@ public class UserSteadyStateDist {
 	protected static double[][] findSteadyState() {
 		double[][] probMatrix = new double[UserState.values().length][UserState.values().length];
 		probMatrix = makeProbMatrix();
+		int count = 0;
 		do {
 			for(int i = 0; i < 10; i++) {
 				probMatrix = matrixMultiplication(probMatrix, probMatrix);
 				for(int j = 0; j < probMatrix.length; j++) {
 					probMatrix[j] = norm(probMatrix[j]);
 				}
+				count++;
 			}
 		}
 		while(!convergenceTest(probMatrix));
+		System.out.println(count+" Iterations");
 		return probMatrix;
 	}
 	
