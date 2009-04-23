@@ -37,7 +37,7 @@ public class KBWAgentMkII extends AbstractAgent {
 	private int recentConvHist;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
-	protected final static double CHEAPNESS = .9;
+	protected final static double CHEAPNESS = .5;
 	protected final static double BUDGETCHEAPNESS = .8;
 	protected final static double LEARNING_RATE = .05;
 	
@@ -232,7 +232,7 @@ public class KBWAgentMkII extends AbstractAgent {
 			}
 		}
 		
-		_normalizeWeights(weights);
+		normalizeWeights(weights);
 		//We add it in twice because we don't update our bidding strategy on the first or second day
 		_allweights.add(weights);
 		_allweights.add(weights);
@@ -266,6 +266,7 @@ public class KBWAgentMkII extends AbstractAgent {
 
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
+
 
 		if(!(queryReport == null || salesReport == null)) {
 			if(_currentday > 1) {
@@ -354,7 +355,7 @@ public class KBWAgentMkII extends AbstractAgent {
 	 * this function will normalize the sum of the
 	 * weights.
 	 */
-	protected void _normalizeWeights(HashMap<Query, Double> weights) {
+	protected void normalizeWeights(HashMap<Query, Double> weights) {
 		double total = 0;
 		for(Query query:weights.keySet())
 			total += weights.get(query);
