@@ -1,9 +1,5 @@
 package modelers;
 
-import java.util.HashMap;
-
-import edu.umich.eecs.tac.props.Query;
-
 public class UserSteadyStateDist {
 	
 	public enum UserState {NS, IS, F0, F1, F2, T};
@@ -60,15 +56,41 @@ public class UserSteadyStateDist {
 	 */
 	public static void main(String[] args) {
 		double[][] steadyStateM = new double[UserState.values().length][UserState.values().length];
-		steadyStateM = findSteadyState();
+		steadyStateM = simulateVirtualization();
 		for(int i = 0; i < UserState.values().length; i++) {
 			for(int j = 0; j < UserState.values().length; j++) {
 				System.out.println(UserState.values()[i]+" to "+UserState.values()[j]+":  "+steadyStateM[i][j]+"");
 			}
 		}
 	}
-	
-	
+
+
+	protected static double[][] simulateVirtualization() {
+		double[][] m = new double[UserState.values().length][UserState.values().length];
+		double[][] standardMatrix = makeStandardMatrix();
+		double[][] burstMatrix = makeBurstMatrix();
+		if(Math.random() < burstprobability) {
+			System.out.println("***");
+			m = burstMatrix;
+		}
+		else {
+			m = standardMatrix;
+		}
+		for(int i = 0; i < 10; i++) {
+			if(Math.random() < burstprobability) {
+				System.out.println("***");
+				m = matrixMultiplication(m, burstMatrix);
+			}
+			else {
+				m = matrixMultiplication(m, standardMatrix);
+			}
+			for(int j = 0; j < m.length; j++) {
+				m[j] = norm(m[j]);
+			}
+		}
+		return m;
+	}
+
 	protected static double[][] findSteadyState() {
 		double[][] probMatrix = new double[UserState.values().length][UserState.values().length];
 		probMatrix = makeProbMatrix();
