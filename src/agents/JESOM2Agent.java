@@ -72,7 +72,7 @@ public class JESOM2Agent extends AbstractAgent {
 		new SetProperty(JESOM2BidStrategy.WANTED_SALES, slice).apply(_querySpace, _bidStrategy);
 		new SetProperty(JESOM2BidStrategy.WANTED_SALES, 3*slice).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
-		new SetProperty(JESOM2BidStrategy.HONESTY_FACTOR, 0.4).apply(_querySpace, _bidStrategy);
+		new SetProperty(JESOM2BidStrategy.HONESTY_FACTOR, 0.3).apply(_querySpace, _bidStrategy);
 	}
 	
 

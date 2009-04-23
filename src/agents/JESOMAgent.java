@@ -177,7 +177,7 @@ public class JESOMAgent extends AbstractAgent {
 						double bid = new Double(bidsStr.nextToken());
 						double budget = new Double(budgetStr.nextToken());
 
-						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.2, budget*.24);
+						Pair<Double, Double> pair = new Pair<Double, Double>(bid*.3, budget*.35);
 						Query q = new Query(QueryColEnum.values()[i].manufacturer, QueryColEnum.values()[i].component);
 						initQueryBidBudget.put(q, pair);
 						i++;
