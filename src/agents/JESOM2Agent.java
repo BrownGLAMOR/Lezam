@@ -99,7 +99,7 @@ public class JESOM2Agent extends AbstractAgent {
 				if (clicksGot < wantedSales/conversionPr){
 					// Didn't get enough sales, but had a good position
 					// -> raise other sales, lower this query's wanted sales
-					if (qr.getPosition(q) < 3){
+					if (qr.getPosition(q) < 4){
 						for (Query qu : _querySpace){
 							if (qu != q){
 								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.05);
@@ -110,8 +110,9 @@ public class JESOM2Agent extends AbstractAgent {
 					// Not enough sales, bad position
 					// -> raise bid
 					else {
-						_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.2 + .1);
-						System.out.println("\n=============\n" + qr.getPosition(q) + "\n=============\n");
+						_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.3 + .1);
+						System.out.println("\n=============" + q + "\nGot: " + clicksGot + ", Wanted: " +
+								(wantedSales/conversionPr) + ", Position: " + qr.getPosition(q) + "\n=============\n");
 					}
 				}
 				else {
