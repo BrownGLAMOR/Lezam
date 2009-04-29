@@ -102,7 +102,7 @@ public class JESOM2Agent extends AbstractAgent {
 					if (qr.getPosition(q) < 3){
 						for (Query qu : _querySpace){
 							if (qu != q){
-								_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.05);
+								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.05);
 							}
 						}
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*.5);
@@ -120,7 +120,7 @@ public class JESOM2Agent extends AbstractAgent {
 					if (!(qr.getPosition(q) < 4) || qr.getCPC(q) < .2){
 						for (Query qu : _querySpace){
 							if (qu != q){
-								_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*.95);
+								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*.95);
 							}
 						}
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.6);
