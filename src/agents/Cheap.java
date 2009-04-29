@@ -21,22 +21,22 @@ public class Cheap extends AbstractAgent {
 		BidBundle bidBundle = new BidBundle();
 		double distCap = (double) _advertiserInfo.getDistributionCapacity();
 		double distWind = (double) _advertiserInfo.getDistributionWindow();
-		double dailyDist = distCap/distWind;
+		double dailyCap = distCap/distWind;
 		
 		for(Query q : _querySpace) {
 			double queryBid;
 			double queryBudget;
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO){
-				queryBid = .8;
-				queryBudget = .8 * (dailyDist + 10);
+				queryBid = 1.2;
+				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				queryBid = 1;
-				queryBudget = .8 * (dailyDist + 5);
+				queryBid = 1.8;
+				queryBudget = dailyCap;
 			}
 			else {
-				queryBid = 2;
-				queryBudget = .8 * (dailyDist - 5);
+				queryBid = 2.4;
+				queryBudget = dailyCap;
 			}
 			bidBundle.addQuery(q, queryBid, null);
 			bidBundle.setDailyLimit(q, queryBudget);
