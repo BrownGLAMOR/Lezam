@@ -1,6 +1,5 @@
 package agents.mckp;
 
-
 public class IncItem implements Comparable<IncItem>{
 	Item _item;
 	double _w;

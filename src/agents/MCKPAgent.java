@@ -1,14 +1,10 @@
 package agents;
 
-
 import java.util.*;
-
 import modelers.PositionBidLinear;
 import modelers.PositionClicksExponential;
 import modelers.UnitsSoldModel;
 import modelers.UnitsSoldModelMax;
-
-
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
@@ -53,25 +49,40 @@ public class MCKPAgent extends AbstractAgent {
 		
 		_baseLineConversion = new Hashtable<Query,Double>();
 		_noOversellConversion = new Hashtable<Query,Double>();
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1); _noOversellConversion.put(q, 0.1);}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2); _noOversellConversion.put(q, 0.2);}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3); _noOversellConversion.put(q, 0.3);}
+		
+		// BEGIN -> Set probability of conversion for queries
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {
+			_baseLineConversion.put(q, 0.1); 
+			_noOversellConversion.put(q, 0.1);
+		}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {
+			_baseLineConversion.put(q, 0.2); 
+			_noOversellConversion.put(q, 0.2);
+		}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {
+			_baseLineConversion.put(q, 0.3); 
+			_noOversellConversion.put(q, 0.3);
+		}
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
-		
 		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
-		for(Query q : _F1componentSpecialty) {_noOversellConversion.put(q, 0.27);}
-		
+		for(Query q : _F1componentSpecialty) 
+			_noOversellConversion.put(q, 0.27);
 		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
-		for(Query q : _F2componentSpecialty) {_noOversellConversion.put(q, 0.39);}
-		
+		for(Query q : _F2componentSpecialty) 
+			_noOversellConversion.put(q, 0.39);
+		// END -> Set probability of conversion for queries
 		
 		Set<Query> manufacturerSpecialty = _queryManufacturer.get(_advertiserInfo.getManufacturerSpecialty());
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		
+		// set revenue prices
 		_rpc = new Hashtable<Query,Double>();
-		for(Query q : _querySpace) {_rpc.put(q, 10.0);}
-		for(Query q : manufacturerSpecialty) {_rpc.put(q, manufacturerBonus*_rpc.get(q));}
+		for(Query q : _querySpace) 
+			_rpc.put(q, 10.0);
+		for(Query q : manufacturerSpecialty) 
+			_rpc.put(q, manufacturerBonus*_rpc.get(q));
 		
+		// assign IDs to the queries
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
