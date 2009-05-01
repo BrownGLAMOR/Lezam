@@ -1,13 +1,10 @@
 package props;
 
-
 import java.util.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
 import java.text.*;
-
-
 
 public class Misc
 {
