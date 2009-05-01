@@ -31,8 +31,6 @@ public class PositionClicksExponential implements PositionClicksModel {
 		if(queryReport == null){
 			return;
 		}
-			
-		
 		
 		for(Query q : queryReport){
 			Hashtable<Integer,Double> queryPositionClicks = new Hashtable<Integer,Double>();
