@@ -12,23 +12,23 @@ public class EEAgent extends AbstractAgent {
 	
 	Random _R = new Random();
 
-	protected ArrayList<HashMap<Query,Double>> _allweights;
 	protected ArrayList<HashMap<Query, Double>> _allconversions;
-	protected ArrayList<HashMap<Query, Double>> _percenterror;
+	protected ArrayList<HashMap<Query,Double>> _allpositions;
+	protected ArrayList<HashMap<Query,Double>> _allbids;
 	protected HashMap<Query,Double> _bids;
-	protected HashMap<Query,Double> _oldprices;
-	protected HashMap<Query,Double> _goalpositions;
-	
-	protected ArrayList<Double> _quotas;
-	
+	protected HashMap<Query,Double> USP;
+		
 	protected int[] _totalConversions;
 	
 	protected int _capacity;
 	protected int _window;
 	
-	protected double QUOTA = .2;
-	private double CSB;
-	private double MSB;
+	private double CSB;			//Component Specialty Bonus
+	private double MSB;			//Manufacturer Specialty Bonus
+	private double PSB;			//Promoted Slot Bonus
+	private int NumRS;			//Number of Regular Slots
+	private int NumPS;			//Number of Promoted Slots
+	protected double LAMBDA;	//Capacity Discount Factor
 	protected int _currentday;
 
 	private String manufacturerSpecialty;
@@ -42,7 +42,129 @@ public class EEAgent extends AbstractAgent {
 	protected final static double INC_RATE = 1.1;
 	protected final static double DEC_RATE = .9;
 	
-	protected final static double lambda = .995;
+	
+
+	@Override
+	protected void initBidder() {
+
+		debug("===================================");
+		debug("Initializing bidder");
+		debug("===================================");
+		
+		CSB = _advertiserInfo.getComponentBonus();
+		MSB = _advertiserInfo.getManufacturerBonus();
+		PSB = _slotInfo.getPromotedSlotBonus();
+		NumPS = _slotInfo.getPromotedSlots();
+		NumRS = _slotInfo.getRegularSlots();
+		manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
+		_capacity = _advertiserInfo.getDistributionCapacity();
+		_window = _advertiserInfo.getDistributionWindow();
+		LAMBDA = _advertiserInfo.getDistributionCapacityDiscounter();
+		for(Query query: _querySpace) {
+			USP.put(query, _retailCatalog.getSalesProfit(new Product(query.getManufacturer(), query.getComponent())));
+		}
+		
+		_allconversions = new ArrayList<HashMap<Query, Double>>();
+		_allpositions = new ArrayList<HashMap<Query, Double>>();
+		_allbids = new ArrayList<HashMap<Query, Double>>();
+		_bids = new HashMap<Query, Double>();
+		_totalConversions = new int[5];
+						
+		_totalConversions[0] = 0;
+		_totalConversions[1] = 0;
+		_totalConversions[2] = 0;
+		_totalConversions[3] = 0;
+		_totalConversions[4] = 0;
+		  
+		// Initialize the bids to slightly below the honest value
+		// Using the "cheapness" value
+		// From observations, we've seen that people tend to sell out and drop out
+		// even on the first day. We will use the cheapness value until we get 
+		// more information from reports (when we can use different heuristics)
+
+		for(Query query: _querySpace) {
+			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+				_bids.put(query, Constants.CONVERSION_F0*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
+			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+				_bids.put(query, Constants.CONVERSION_F1*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
+			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+				_bids.put(query, Constants.CONVERSION_F2*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
+			
+			debug("Initial bid: " + query + " = " +_bids.get(query));
+		}
+		
+		_allbids.add(_bids);
+		_allbids.add(_bids);
+	}
+
+	@Override
+	protected void updateBidStrategy() {
+
+		debug("===================================");
+		debug("Updating bidding strategy");
+		debug("===================================");
+
+		QueryReport queryReport = _queryReports.poll();
+		SalesReport salesReport = _salesReports.poll();
+
+
+		if(!(queryReport == null || salesReport == null)) {
+			System.out.println("Day: " + _currentday);
+			System.out.println("Advertiser ID: "+_advertiserInfo.getAdvertiserId());
+			System.out.println("Squashing Parameter: " + _publisherInfo.getSquashingParameter());
+			for(Query query : _querySpace) {
+				System.out.println("\tQuery: " + query);
+				for(int i = 1; i <= 8; i++) {
+					System.out.println("\t\t Adv"+i+" Position: " + queryReport.getPosition(query, "adv"+i));		
+				}
+			}
+			if(_currentday > 1) {
+				HashMap<Query,Double> c = new HashMap<Query,Double>();
+				int conversions = 0;
+
+				for(Query query:_querySpace) {
+					double conv = salesReport.getConversions(query);
+					c.put(query, conv);
+					conversions += conv;
+				}
+
+				_allconversions.add(c);
+
+				_totalConversions[0] = _totalConversions[1];
+				_totalConversions[1] = _totalConversions[2];
+				_totalConversions[2] = _totalConversions[3];
+				_totalConversions[3] = _totalConversions[4];
+				_totalConversions[4] = conversions;
+
+				// Update bids based on how close we were to getting the weights right 2 days ago
+				for(Query query:_querySpace) {
+					
+					//RANDOMLY CHOOSE BIDS TO EXPLORE SPACE
+					
+					double minbid = .40;
+					double maxbid;
+					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+						maxbid = Constants.CONVERSION_F0*USP.get(query);
+					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+						maxbid = Constants.CONVERSION_F1*USP.get(query);
+					else
+						maxbid = Constants.CONVERSION_F2*USP.get(query);
+					
+					maxbid *= 1.25;  
+					
+					_bids.put(query, randDouble(minbid, maxbid));
+
+					debug("New bid: " + query + " = " + _bids.get(query));
+				}				
+			}
+		}
+		else {
+			System.out.println("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
+			throw new RuntimeException("Query or Sales Report Null");
+		}
+	}
+	
 	
 	@Override
 	protected BidBundle buildBidBudle() {
@@ -66,18 +188,17 @@ public class EEAgent extends AbstractAgent {
 		
 		int capdiff = conv - _capacity;
 		
-		_quotas.add(QUOTA);
 		
 		debug("\n\n\n CAPDIFF: " + capdiff);
 		
 		//This is the amount that our capacity will be reduced due too being over capacity
-		double capratio = Math.pow(lambda,Math.max(capdiff, 0));
+		double capratio = Math.pow(LAMBDA,Math.max(capdiff, 0));
 		
 		// For each query, figure out how much to devote to that specific query
 		for(Query query:_querySpace) {
 			//get the most recent weights
 			//Determine how many conversions we are looking for in this query
-			int quota = (int) Math.ceil((1.0/((double)_querySpace.size()))* _capacity * QUOTA );
+			int quota = (int) Math.ceil((1.0/((double)_querySpace.size()))* _capacity * .2);
 		
 			// How many clicks does it take to get to that point?
 			int clicks = 0;
@@ -112,132 +233,6 @@ public class EEAgent extends AbstractAgent {
 		
 		// There is no whole limit, as we set limits on the individual parts
 		return bidBundle;
-	}
-
-	@Override
-	protected void initBidder() {
-
-		debug("===================================");
-		debug("Initializing bidder");
-		debug("===================================");
-		
-		CSB = _advertiserInfo.getComponentBonus();
-		MSB = _advertiserInfo.getManufacturerBonus();
-		manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
-		_capacity = _advertiserInfo.getDistributionCapacity();
-		_window = _advertiserInfo.getDistributionWindow();
-		
-		_allweights = new ArrayList<HashMap<Query, Double>>();
-		_allconversions = new ArrayList<HashMap<Query, Double>>();
-		_percenterror = new ArrayList<HashMap<Query, Double>>();
-		_bids = new HashMap<Query, Double>();
-		_oldprices = new HashMap<Query, Double>();
-		_goalpositions = new HashMap<Query, Double>();
-		_totalConversions = new int[5];
-		
-		
-		_quotas = new ArrayList<Double>();
-				
-		_totalConversions[0] = 0;
-		_totalConversions[1] = 0;
-		_totalConversions[2] = 0;
-		_totalConversions[3] = 0;
-		_totalConversions[4] = 0;
-		  
-		// Initialize the bids to slightly below the honest value
-		// Using the "cheapness" value
-		// From observations, we've seen that people tend to sell out and drop out
-		// even on the first day. We will use the cheapness value until we get 
-		// more information from reports (when we can use different heuristics)
-
-		for(Query query: _querySpace) {
-			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_bids.put(query, Constants.CONVERSION_F0*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-				_bids.put(query, Constants.CONVERSION_F1*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-				_bids.put(query, Constants.CONVERSION_F2*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
-			
-			debug("Initial bid: " + query + " = " +_bids.get(query));
-		}
-		
-		
-	}
-
-	@Override
-	protected void updateBidStrategy() {
-
-		debug("===================================");
-		debug("Updating bidding strategy");
-		debug("===================================");
-
-		QueryReport queryReport = _queryReports.poll();
-		SalesReport salesReport = _salesReports.poll();
-
-
-		if(!(queryReport == null || salesReport == null)) {
-			System.out.println("Day: " + _currentday);
-			System.out.println("Advertiser ID: "+_advertiserInfo.getAdvertiserId());
-			System.out.println("Squashing Parameter: " + _publisherInfo.getSquashingParameter());
-			for(Query query : _querySpace) {
-				System.out.println("\tQuery: " + query);
-				for(int i = 1; i <= 8; i++) {
-					System.out.println("\t\t Adv"+i+" Position: " + queryReport.getPosition(query, "adv"+i));		
-				}
-			}
-			if(_currentday > 1) {
-				HashMap<Query,Double> relatives = new HashMap<Query, Double>();
-				HashMap<Query,Double> c = new HashMap<Query,Double>();
-				HashMap<Query,Double> percenterror = new HashMap<Query,Double>();
-				int conversions = 0;
-
-				for(Query query:_querySpace) {
-					double conv = salesReport.getConversions(query);
-					c.put(query, conv);
-					conversions += conv;
-				}
-
-				_allconversions.add(c);
-
-				_totalConversions[0] = _totalConversions[1];
-				_totalConversions[1] = _totalConversions[2];
-				_totalConversions[2] = _totalConversions[3];
-				_totalConversions[3] = _totalConversions[4];
-				_totalConversions[4] = conversions;
-
-				// Update bids based on how close we were to getting the weights right 2 days ago
-				for(Query query:_querySpace) {
-					
-					//RANDOMLY CHOOSE BIDS TO EXPLORE SPACE
-					
-					double minbid = .40;
-					double maxbid;
-					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-						maxbid = Constants.CONVERSION_F0*Constants.SALE_VALUE;
-					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-						maxbid = Constants.CONVERSION_F1*Constants.SALE_VALUE;
-					else
-						maxbid = Constants.CONVERSION_F2*Constants.SALE_VALUE;
-					
-					maxbid *= 1.5;  
-					
-					_bids.put(query, randDouble(minbid, maxbid));
-
-					debug("New bid: " + query + " = " + _bids.get(query));
-				}
-				
-				_percenterror.add(percenterror);
-				for(Query query: _querySpace) {
-					debug("Percent error for " + query.toString() + ":  " + percenterror.get(query));
-				}
-				
-			}
-		}
-		else {
-			System.out.println("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
-			throw new RuntimeException("Query or Sales Report Null");
-		}
 	}
 
 	/*
