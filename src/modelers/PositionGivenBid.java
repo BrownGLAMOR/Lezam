@@ -7,7 +7,7 @@ import edu.umich.eecs.tac.props.Query;
 
 public class PositionGivenBid {
 	
-	private double m = .75;
+	private double m = .8;
 	private Query Q;
 	private ArrayList<double[]> dataPoints;
 	
@@ -63,8 +63,8 @@ public class PositionGivenBid {
 //			PSI = Math.exp(linReg.Coefficients()[0]);  //Log-linear version
 			PSI = linReg.Coefficients()[0];
 			ZETA = linReg.Coefficients()[1];
-			System.out.println("Zeta: "+ZETA+"   Psi: "+PSI);
-			System.out.println(dataPoints.size());
+//			System.out.println("Zeta: "+ZETA+"   Psi: "+PSI);
+//			System.out.println(dataPoints.size());
 			return true;
 		}
 		
@@ -83,6 +83,10 @@ public class PositionGivenBid {
 	public double getBid(double position) {
 //		return Math.log(position/PSI)/ZETA;  //Log-linear version
 		return (position-PSI)/ZETA;
+	}
+	
+	public void intervalEstimation() {
+		
 	}
 	
 }

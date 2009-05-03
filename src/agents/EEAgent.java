@@ -12,6 +12,8 @@ import edu.umich.eecs.tac.props.*;
 
 public class EEAgent extends AbstractAgent {
 	
+	private static boolean DEBUG = false;
+
 	Random _R = new Random();
 
 	protected ArrayList<HashMap<Query, Double>> _allconversions;
@@ -40,6 +42,8 @@ public class EEAgent extends AbstractAgent {
 	private Set<Query> ourspecialty;
 
 	private String ADVERTISER;
+
+	private double LAST = 5.5;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
 	protected final static double CHEAPNESS = .5;
@@ -125,15 +129,15 @@ public class EEAgent extends AbstractAgent {
 
 
 		if(!(queryReport == null || salesReport == null)) {
-			System.out.println("Day: " + _currentday);
-			System.out.println("Advertiser ID: "+_advertiserInfo.getAdvertiserId());
-			System.out.println("Squashing Parameter: " + _publisherInfo.getSquashingParameter());
+			debug("Day: " + _currentday);
+			debug("Advertiser ID: "+_advertiserInfo.getAdvertiserId());
+			debug("Squashing Parameter: " + _publisherInfo.getSquashingParameter());
 			for(Query query : _querySpace) {
-				System.out.println("\tQuery: " + query);
+				debug("\tQuery: " + query);
 				String[] advertisers = (String[]) queryReport.advertisers(query).toArray(new String[queryReport.advertisers(query).size()]);
-				System.out.println("\t\t "+_advertiserInfo.getAdvertiserId()+" Position: " + queryReport.getPosition(query, _advertiserInfo.getAdvertiserId()));
+				debug("\t\t "+_advertiserInfo.getAdvertiserId()+" Position: " + queryReport.getPosition(query, _advertiserInfo.getAdvertiserId()));
 				for(int i = 0; i < advertisers.length; i++) {
-					System.out.println("\t\t "+advertisers[i]+" Position: " + queryReport.getPosition(query, advertisers[i]));		
+					debug("\t\t "+advertisers[i]+" Position: " + queryReport.getPosition(query, advertisers[i]));		
 				}
 			}
 			if(_currentday > 1) {
@@ -144,7 +148,7 @@ public class EEAgent extends AbstractAgent {
 
 				for(Query query:_querySpace) {
 					conv.put(query, (double)salesReport.getConversions(query));
-					pos.put(query, queryReport.getPosition(query, ADVERTISER));
+					pos.put(query, Math.ceil(queryReport.getPosition(query, ADVERTISER)));
 					cpc.put(query,queryReport.getCPC(query));
 					conversions += salesReport.getConversions(query);
 				}
@@ -162,28 +166,22 @@ public class EEAgent extends AbstractAgent {
 						//If we were in position 1 we only get one data point
 						if(pos.get(query) < 2) {
 							model.addDataPoint(_allpositions.size(), cpc.get(query), 1.0);
-							System.out.println("ADDING POINT: (1.0, " +cpc.get(query) );
 						}
 						//If we were in position 5 we only get one data point
 						else if(pos.get(query) > 4.5) {
 							model.addDataPoint(_allpositions.size(), cpc.get(query), 5.0);
-							System.out.println("ADDING POINT: (5.0, " +cpc.get(query) );
 						}
 						//Otherwise we get two data points
 						else {
-							System.out.println("SHOULDN'T BE NaN " + pos.get(query));
 							model.addDataPoint(_allpositions.size(), bids.get(query), Math.ceil(pos.get(query)-.99));
 							model.addDataPoint(_allpositions.size(), cpc.get(query), Math.ceil(pos.get(query)));
-							System.out.println("ADDING POINT: ("+ Math.ceil(pos.get(query))+" , " +cpc.get(query) );
-							System.out.println("ADDING POINT: ("+ Math.ceil(pos.get(query)-.99)+" , " +bids.get(query) );
 						}
 					}
 					//If we didn't get a position we may or may not put a point in
 					else {
 						//We are putting points that didn't make it into the data as position 6.5 for now
 						//This is vaguely arbitrary :)
-						model.addDataPoint(_allpositions.size(), bids.get(query), 6.5);
-						System.out.println("ADDING POINT: (6.5, " +bids.get(query) );
+						model.addDataPoint(_allpositions.size(), bids.get(query), LAST);
 					}
 				}
 
@@ -223,8 +221,8 @@ public class EEAgent extends AbstractAgent {
 					PositionGivenBid model = pgbModels.get(query);
 					if(model.updateModel(_bids.size())) {
 						double posguess = model.getPosition(_bids.get(query));
-						pos.put(query, posguess);
-						System.out.println("Query: "+query+"  PosGues: "+posguess);
+						posg.put(query, posguess);
+						debug("Query: "+query+"  PosGues: "+posguess);
 					}
 					else {
 						
@@ -232,16 +230,105 @@ public class EEAgent extends AbstractAgent {
 				}
 				_allpositionguesses.add(posg);
 				
-				System.out.println("PosGuessArraySize: " + _allpositionguesses.size());
-				System.out.println("PosArraySize: " + _allpositions.size());
-				System.out.println("ConvArraySize: " + _allconversions.size());
-				System.out.println("BidArraySize: " + _allbids.size());
+				debug("PosGuessArraySize: " + _allpositionguesses.size());
+				debug("PosArraySize: " + _allpositions.size());
+				debug("ConvArraySize: " + _allconversions.size());
+				debug("BidArraySize: " + _allbids.size());
 				
 			}
 		}
 		else {
-			System.out.println("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
-			
+			debug("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
+			HashMap<Query,ArrayList<Double>> rmse2to20map = new HashMap<Query,ArrayList<Double>>();
+			HashMap<Query,ArrayList<Double>> rmse21to40map = new HashMap<Query,ArrayList<Double>>();
+			HashMap<Query,ArrayList<Double>> rmse41to58map = new HashMap<Query,ArrayList<Double>>();
+			HashMap<Query,ArrayList<Double>> rmse2to58map = new HashMap<Query,ArrayList<Double>>();
+			for(Query query: _querySpace){
+				rmse2to20map.put(query, new ArrayList<Double>());
+				rmse21to40map.put(query, new ArrayList<Double>());
+				rmse41to58map.put(query, new ArrayList<Double>());
+				rmse2to58map.put(query, new ArrayList<Double>());
+			}
+			for(int i = 2; i < _allpositionguesses.size(); i++) {
+				HashMap<Query, Double> posmap = _allpositions.get(i);
+				HashMap<Query, Double> posguessmap = _allpositionguesses.get(i);
+				for(Query query: _querySpace) {
+					if(posguessmap.get(query) != null) {
+						ArrayList<Double> rmse2to20 = rmse2to20map.get(query);
+						ArrayList<Double> rmse21to40 = rmse21to40map.get(query);
+						ArrayList<Double> rmse41to58 = rmse41to58map.get(query);
+						ArrayList<Double> rmse2to58 = rmse2to58map.get(query);
+						Double pos = posmap.get(query);
+						double posguess = posguessmap.get(query);
+						if(pos.isNaN()) {
+							pos = LAST;
+						}
+						if(posguess < 1.0) {
+							posguess = 1.0;
+						}
+						if(posguess > 5) {
+							posguess = LAST;
+						}
+						double diff = pos - posguess;
+						if(i <= 20) {
+							rmse2to20.add(diff);
+							rmse2to58.add(diff);
+						}
+						else if(i > 20 && i <= 40) {
+							rmse21to40.add(diff);
+							rmse2to58.add(diff);
+						}
+						else if(i > 40) {
+							rmse41to58.add(diff);
+							rmse2to58.add(diff);
+						}
+						debug(diff);
+					}
+				}
+			}
+			double totalerr = 0;
+			for(Query query:_querySpace) {
+				debug("Query: "+query);
+				ArrayList<Double> rmse2to20 = rmse2to20map.get(query);
+				ArrayList<Double> rmse21to40 = rmse21to40map.get(query);
+				ArrayList<Double> rmse41to58 = rmse41to58map.get(query);
+				ArrayList<Double> rmse2to58 = rmse2to58map.get(query);
+				double tot = 0;
+				for(int i = 0; i < rmse2to20.size(); i++) {
+					tot += rmse2to20.get(i)*rmse2to20.get(i);
+				}
+				tot = tot/rmse2to20.size();
+				tot = Math.sqrt(tot);
+				debug("\tError 2-20: "+tot);
+
+				tot = 0;
+				for(int i = 0; i < rmse21to40.size(); i++) {
+					tot += rmse21to40.get(i)*rmse21to40.get(i);
+				}
+				tot = tot/rmse21to40.size();
+				tot = Math.sqrt(tot);
+				debug("\tError 21-40: "+tot);
+				
+				tot = 0;
+				for(int i = 0; i < rmse41to58.size(); i++) {
+					tot += rmse41to58.get(i)*rmse41to58.get(i);
+				}
+				tot = tot/rmse41to58.size();
+				tot = Math.sqrt(tot);
+				debug("\tError 41-58: "+tot);
+				
+				tot = 0;
+				for(int i = 0; i < rmse2to58.size(); i++) {
+					tot += rmse2to58.get(i)*rmse2to58.get(i);
+				}
+				totalerr += tot;
+				tot = tot/rmse2to58.size();
+				tot = Math.sqrt(tot);
+				debug("\tError 2-58: "+tot);
+			}
+			totalerr = totalerr/(rmse2to58map.get(_querySpace.iterator().next()).size()*_querySpace.size());
+			totalerr = Math.sqrt(totalerr);
+			System.out.println("THE NUMBER: "+totalerr);
 			throw new RuntimeException("Query or Sales Report Null");
 		}
 	}
@@ -308,7 +395,7 @@ public class EEAgent extends AbstractAgent {
 			// How much does it cost to get to that point?
 			//We multiply by cheapness to reflect the fact that we are actually going to multiply our bid by that
 			//we add a cheapness into our budget to reflect the fact that we are actually going to pay less per click than our bid
-			double budget = clicks*_bids.get(query)*CHEAPNESS;
+			double budget = clicks*_bids.get(query);
 			bidBundle.addQuery(query, _bids.get(query), new Ad(), budget);	
 		}
 		
@@ -334,8 +421,8 @@ public class EEAgent extends AbstractAgent {
 	}
 	
 	protected static void debug(Object o) {
-		if(Constants.DEBUG)
-			System.out.println(o.toString());
+		if(DEBUG )
+			debug(o.toString());
 	}
 	
 	//Returns a random double rand such that a <= r < b
@@ -360,34 +447,7 @@ public class EEAgent extends AbstractAgent {
 		sendBidAndAds();
 		endTime = System.nanoTime();
 		long duration = endTime - startTime;
-		System.out.println("\n\n\n TIME FOR SIMULATION "+_currentday+":   "+ 10E-9 *duration+" seconds \n\n\n");
-	}
-	
-	private class Pair {
-		  public Object o1;
-		  public Object o2;
-		  public Pair(Object o1, Object o2) { this.o1 = o1; this.o2 = o2; }
-		 
-		  public boolean same(Object o1, Object o2) {
-		    return o1 == null ? o2 == null : o1.equals(o2);
-		  }
-		 
-		  Object getFirst() { return o1; }
-		  Object getSecond() { return o2; }
-		 
-		  void setFirst(Object o) { o1 = o; }
-		  void setSecond(Object o) { o2 = o; }
-		 
-		  public boolean equals(Object obj) {
-		    if( ! (obj instanceof Pair))
-		      return false;
-		    Pair p = (Pair)obj;
-		    return same(p.o1, this.o1) && same(p.o2, this.o2);
-		  }
-		 
-		  public String toString() {
-		    return "Pair{"+o1+", "+o2+"}";
-		  }
+		debug("\n\n\n TIME FOR SIMULATION "+_currentday+":   "+ 10E-9 *duration+" seconds \n\n\n");
 	}
 	
 }
