@@ -3,6 +3,8 @@ package agents;
 
 import java.util.*;
 
+import modelers.PositionGivenBid;
+
 import se.sics.tasim.props.SimulationStatus;
 
 import agents.rules.Constants;
@@ -14,9 +16,12 @@ public class EEAgent extends AbstractAgent {
 
 	protected ArrayList<HashMap<Query, Double>> _allconversions;
 	protected ArrayList<HashMap<Query,Double>> _allpositions;
+	protected ArrayList<HashMap<Query,Double>> _allpositionguesses;
+	protected ArrayList<HashMap<Query,Double>> _allCPC;
 	protected ArrayList<HashMap<Query,Double>> _allbids;
 	protected HashMap<Query,Double> _bids;
 	protected HashMap<Query,Double> USP;
+	protected HashMap<Query,PositionGivenBid> pgbModels;
 		
 	protected int[] _totalConversions;
 	
@@ -33,6 +38,8 @@ public class EEAgent extends AbstractAgent {
 
 	private String manufacturerSpecialty;
 	private Set<Query> ourspecialty;
+
+	private String ADVERTISER;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
 	protected final static double CHEAPNESS = .5;
@@ -61,16 +68,24 @@ public class EEAgent extends AbstractAgent {
 		_capacity = _advertiserInfo.getDistributionCapacity();
 		_window = _advertiserInfo.getDistributionWindow();
 		LAMBDA = _advertiserInfo.getDistributionCapacityDiscounter();
-		for(Query query: _querySpace) {
-			USP.put(query, _retailCatalog.getSalesProfit(new Product(query.getManufacturer(), query.getComponent())));
-		}
+		ADVERTISER = _advertiserInfo.getAdvertiserId();		
 		
 		_allconversions = new ArrayList<HashMap<Query, Double>>();
 		_allpositions = new ArrayList<HashMap<Query, Double>>();
+		_allpositionguesses = new ArrayList<HashMap<Query, Double>>();
+		_allpositions = new ArrayList<HashMap<Query, Double>>();
+		_allCPC = new ArrayList<HashMap<Query, Double>>();
 		_allbids = new ArrayList<HashMap<Query, Double>>();
 		_bids = new HashMap<Query, Double>();
+		USP = new HashMap<Query, Double>();
 		_totalConversions = new int[5];
-						
+		pgbModels = new HashMap<Query,PositionGivenBid>();
+		
+		for(Query query: _querySpace) {
+			USP.put(query, _retailCatalog.getSalesProfit(new Product(query.getManufacturer(), query.getComponent())));
+			pgbModels.put(query, new PositionGivenBid(query));
+		}
+		
 		_totalConversions[0] = 0;
 		_totalConversions[1] = 0;
 		_totalConversions[2] = 0;
@@ -115,21 +130,62 @@ public class EEAgent extends AbstractAgent {
 			System.out.println("Squashing Parameter: " + _publisherInfo.getSquashingParameter());
 			for(Query query : _querySpace) {
 				System.out.println("\tQuery: " + query);
-				for(int i = 1; i <= 8; i++) {
-					System.out.println("\t\t Adv"+i+" Position: " + queryReport.getPosition(query, "adv"+i));		
+				String[] advertisers = (String[]) queryReport.advertisers(query).toArray(new String[queryReport.advertisers(query).size()]);
+				System.out.println("\t\t "+_advertiserInfo.getAdvertiserId()+" Position: " + queryReport.getPosition(query, _advertiserInfo.getAdvertiserId()));
+				for(int i = 0; i < advertisers.length; i++) {
+					System.out.println("\t\t "+advertisers[i]+" Position: " + queryReport.getPosition(query, advertisers[i]));		
 				}
 			}
 			if(_currentday > 1) {
-				HashMap<Query,Double> c = new HashMap<Query,Double>();
+				HashMap<Query,Double> conv = new HashMap<Query,Double>();
+				HashMap<Query,Double> pos = new HashMap<Query,Double>();
+				HashMap<Query,Double> cpc = new HashMap<Query,Double>();
 				int conversions = 0;
 
 				for(Query query:_querySpace) {
-					double conv = salesReport.getConversions(query);
-					c.put(query, conv);
-					conversions += conv;
+					conv.put(query, (double)salesReport.getConversions(query));
+					pos.put(query, queryReport.getPosition(query, ADVERTISER));
+					cpc.put(query,queryReport.getCPC(query));
+					conversions += salesReport.getConversions(query);
 				}
 
-				_allconversions.add(c);
+				_allconversions.add(conv);
+				_allpositions.add(pos);
+				_allCPC.add(cpc);
+				
+				//UPDATE MODELS!!!
+				for(Query query: _querySpace) {
+					PositionGivenBid model = pgbModels.get(query);
+					HashMap<Query,Double> bids = _allbids.get(_allconversions.size());
+					//Make sure that we actually got a position
+					if(!(pos.get(query).isNaN() || cpc.get(query).isNaN())) {
+						//If we were in position 1 we only get one data point
+						if(pos.get(query) < 2) {
+							model.addDataPoint(_allpositions.size(), cpc.get(query), 1.0);
+							System.out.println("ADDING POINT: (1.0, " +cpc.get(query) );
+						}
+						//If we were in position 5 we only get one data point
+						else if(pos.get(query) > 4.5) {
+							model.addDataPoint(_allpositions.size(), cpc.get(query), 5.0);
+							System.out.println("ADDING POINT: (5.0, " +cpc.get(query) );
+						}
+						//Otherwise we get two data points
+						else {
+							System.out.println("SHOULDN'T BE NaN " + pos.get(query));
+							model.addDataPoint(_allpositions.size(), bids.get(query), Math.ceil(pos.get(query)-.99));
+							model.addDataPoint(_allpositions.size(), cpc.get(query), Math.ceil(pos.get(query)));
+							System.out.println("ADDING POINT: ("+ Math.ceil(pos.get(query))+" , " +cpc.get(query) );
+							System.out.println("ADDING POINT: ("+ Math.ceil(pos.get(query)-.99)+" , " +bids.get(query) );
+						}
+					}
+					//If we didn't get a position we may or may not put a point in
+					else {
+						//We are putting points that didn't make it into the data as position 6.5 for now
+						//This is vaguely arbitrary :)
+						model.addDataPoint(_allpositions.size(), bids.get(query), 6.5);
+						System.out.println("ADDING POINT: (6.5, " +bids.get(query) );
+					}
+				}
 
 				_totalConversions[0] = _totalConversions[1];
 				_totalConversions[1] = _totalConversions[2];
@@ -156,11 +212,36 @@ public class EEAgent extends AbstractAgent {
 					_bids.put(query, randDouble(minbid, maxbid));
 
 					debug("New bid: " + query + " = " + _bids.get(query));
-				}				
+				}
+				
+				_allbids.add(_bids);
+
+				
+				//TEST MODELS!!
+				HashMap<Query, Double> posg = new HashMap<Query, Double>();
+				for(Query query:_querySpace) {
+					PositionGivenBid model = pgbModels.get(query);
+					if(model.updateModel(_bids.size())) {
+						double posguess = model.getPosition(_bids.get(query));
+						pos.put(query, posguess);
+						System.out.println("Query: "+query+"  PosGues: "+posguess);
+					}
+					else {
+						
+					}
+				}
+				_allpositionguesses.add(posg);
+				
+				System.out.println("PosGuessArraySize: " + _allpositionguesses.size());
+				System.out.println("PosArraySize: " + _allpositions.size());
+				System.out.println("ConvArraySize: " + _allconversions.size());
+				System.out.println("BidArraySize: " + _allbids.size());
+				
 			}
 		}
 		else {
 			System.out.println("\n\n\n\n\n QUERY REPORT NULL!!!!! \n\n\n");
+			
 			throw new RuntimeException("Query or Sales Report Null");
 		}
 	}
@@ -227,7 +308,7 @@ public class EEAgent extends AbstractAgent {
 			// How much does it cost to get to that point?
 			//We multiply by cheapness to reflect the fact that we are actually going to multiply our bid by that
 			//we add a cheapness into our budget to reflect the fact that we are actually going to pay less per click than our bid
-			double budget = 5.0;
+			double budget = clicks*_bids.get(query)*CHEAPNESS;
 			bidBundle.addQuery(query, _bids.get(query), new Ad(), budget);	
 		}
 		
@@ -266,8 +347,10 @@ public class EEAgent extends AbstractAgent {
 	protected double eta(double p, double x) {
 		return (p*x) / (p*x + (1-p));
 	}
-	
+
 	protected void handleSimulationStatus(SimulationStatus simulationStatus) {
+		long startTime = System.nanoTime();
+		long endTime;
 		_currentday++;
 		if(_firstDay){
 			_firstDay = false;
@@ -275,6 +358,36 @@ public class EEAgent extends AbstractAgent {
 			initBidder();
 		}
 		sendBidAndAds();
+		endTime = System.nanoTime();
+		long duration = endTime - startTime;
+		System.out.println("\n\n\n TIME FOR SIMULATION "+_currentday+":   "+ 10E-9 *duration+" seconds \n\n\n");
+	}
+	
+	private class Pair {
+		  public Object o1;
+		  public Object o2;
+		  public Pair(Object o1, Object o2) { this.o1 = o1; this.o2 = o2; }
+		 
+		  public boolean same(Object o1, Object o2) {
+		    return o1 == null ? o2 == null : o1.equals(o2);
+		  }
+		 
+		  Object getFirst() { return o1; }
+		  Object getSecond() { return o2; }
+		 
+		  void setFirst(Object o) { o1 = o; }
+		  void setSecond(Object o) { o2 = o; }
+		 
+		  public boolean equals(Object obj) {
+		    if( ! (obj instanceof Pair))
+		      return false;
+		    Pair p = (Pair)obj;
+		    return same(p.o1, this.o1) && same(p.o2, this.o2);
+		  }
+		 
+		  public String toString() {
+		    return "Pair{"+o1+", "+o2+"}";
+		  }
 	}
 	
 }
