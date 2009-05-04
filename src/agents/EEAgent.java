@@ -12,7 +12,7 @@ import edu.umich.eecs.tac.props.*;
 
 public class EEAgent extends AbstractAgent {
 	
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 
 	Random _R = new Random();
 
@@ -43,7 +43,7 @@ public class EEAgent extends AbstractAgent {
 
 	private String ADVERTISER;
 
-	private double LAST = 5.5;
+	private double LAST = 6.5;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
 	protected final static double CHEAPNESS = .5;
@@ -421,8 +421,9 @@ public class EEAgent extends AbstractAgent {
 	}
 	
 	protected static void debug(Object o) {
-		if(DEBUG )
-			debug(o.toString());
+		if(DEBUG) {
+			System.out.println(o.toString());
+		}
 	}
 	
 	//Returns a random double rand such that a <= r < b
