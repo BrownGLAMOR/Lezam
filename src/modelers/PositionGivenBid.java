@@ -6,7 +6,7 @@ import edu.umich.eecs.tac.props.Query;
 
 public class PositionGivenBid {
 	
-	private double m = .99;
+	private double m = .8;
 	private Query Q;
 	private ArrayList<double[]> dataPoints;
 	private boolean isLogLinear = true;

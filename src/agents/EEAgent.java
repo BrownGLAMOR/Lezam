@@ -12,7 +12,7 @@ import edu.umich.eecs.tac.props.*;
 
 public class EEAgent extends AbstractAgent {
 	
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	Random _R = new Random();
 
@@ -287,6 +287,7 @@ public class EEAgent extends AbstractAgent {
 				}
 			}
 			double totalerr = 0;
+			double totgood = 0;
 			for(Query query:_querySpace) {
 				debug("Query: "+query);
 				ArrayList<Double> rmse2to20 = rmse2to20map.get(query);
@@ -319,6 +320,9 @@ public class EEAgent extends AbstractAgent {
 				
 				tot = 0;
 				for(int i = 0; i < rmse2to58.size(); i++) {
+					if(Math.abs(rmse2to58.get(i)*rmse2to58.get(i)) < 1) {
+						totgood += 1;
+					}
 					tot += rmse2to58.get(i)*rmse2to58.get(i);
 				}
 				totalerr += tot;
@@ -327,8 +331,10 @@ public class EEAgent extends AbstractAgent {
 				debug("\tError 2-58: "+tot);
 			}
 			totalerr = totalerr/(rmse2to58map.get(_querySpace.iterator().next()).size()*_querySpace.size());
+			totgood = totgood/(rmse2to58map.get(_querySpace.iterator().next()).size()*_querySpace.size());
 			totalerr = Math.sqrt(totalerr);
 			System.out.println("THE NUMBER: "+totalerr);
+			System.out.println("GOOD GUESS(%): "+totgood);
 			throw new RuntimeException("Query or Sales Report Null");
 		}
 	}
