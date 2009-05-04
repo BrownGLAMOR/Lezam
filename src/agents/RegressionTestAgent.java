@@ -10,7 +10,7 @@ import se.sics.tasim.props.SimulationStatus;
 import agents.rules.Constants;
 import edu.umich.eecs.tac.props.*;
 
-public class EEAgent extends AbstractAgent {
+public class RegressionTestAgent extends AbstractAgent {
 	
 	private static boolean DEBUG = false;
 
@@ -24,8 +24,7 @@ public class EEAgent extends AbstractAgent {
 	protected HashMap<Query,Double> _bids;
 	protected HashMap<Query,Double> USP;
 	protected HashMap<Query,PositionGivenBid> pgbModels;
-	protected HashMap<Query,Boolean> _exploring;
-	protected HashMap<Query,Double> _numdaysexploring;
+		
 	protected int[] _totalConversions;
 	
 	protected int _capacity;
@@ -50,7 +49,6 @@ public class EEAgent extends AbstractAgent {
 	protected final static double CHEAPNESS = .5;
 	protected final static double BUDGETCHEAPNESS = .8;
 	protected final static double LEARNING_RATE = .05;
-	protected final static double RATIOEXPLORING = .3;
 	
 	protected final static double INC_RATE = 1.1;
 	protected final static double DEC_RATE = .9;
@@ -84,16 +82,12 @@ public class EEAgent extends AbstractAgent {
 		_allbids = new ArrayList<HashMap<Query, Double>>();
 		_bids = new HashMap<Query, Double>();
 		USP = new HashMap<Query, Double>();
-		_exploring = new HashMap<Query, Boolean>();
-		_numdaysexploring = new HashMap<Query, Double>();
 		_totalConversions = new int[5];
 		pgbModels = new HashMap<Query,PositionGivenBid>();
 		
 		for(Query query: _querySpace) {
 			USP.put(query, _retailCatalog.getSalesProfit(new Product(query.getManufacturer(), query.getComponent())));
 			pgbModels.put(query, new PositionGivenBid(query));
-			_exploring.put(query, false);
-			_numdaysexploring.put(query,0.0);
 		}
 		
 		_totalConversions[0] = 0;
@@ -196,30 +190,25 @@ public class EEAgent extends AbstractAgent {
 				_totalConversions[2] = _totalConversions[3];
 				_totalConversions[3] = _totalConversions[4];
 				_totalConversions[4] = conversions;
-				
-				explore();
-				
+
 				// Update bids based on how close we were to getting the weights right 2 days ago
 				for(Query query:_querySpace) {
-//					if(_exploring.get(query)) {
-//						//Place awesome bids using model!!!
-//					}
-//					else {
-						//RANDOMLY CHOOSE BIDS TO EXPLORE SPACE
+					
+					//RANDOMLY CHOOSE BIDS TO EXPLORE SPACE
+					
+					double minbid = .40;
+					double maxbid;
+					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+						maxbid = Constants.CONVERSION_F0*USP.get(query);
+					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+						maxbid = Constants.CONVERSION_F1*USP.get(query);
+					else
+						maxbid = Constants.CONVERSION_F2*USP.get(query);
+					
+					maxbid *= 1.25;  
+					
+					_bids.put(query, randDouble(minbid, maxbid));
 
-						double minbid = .40;
-						double maxbid;
-						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-							maxbid = Constants.CONVERSION_F0*USP.get(query);
-						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-							maxbid = Constants.CONVERSION_F1*USP.get(query);
-						else
-							maxbid = Constants.CONVERSION_F2*USP.get(query);
-
-						maxbid *= 1.25;  
-
-						_bids.put(query, randDouble(minbid, maxbid));
-//					}
 					debug("New bid: " + query + " = " + _bids.get(query));
 				}
 				
@@ -349,57 +338,8 @@ public class EEAgent extends AbstractAgent {
 			throw new RuntimeException("Query or Sales Report Null");
 		}
 	}
-
-
-	private void explore() {
-		ArrayList<Query> exploring = new ArrayList<Query>();
-		ArrayList<Query> notexploring = new ArrayList<Query>();
-		ArrayList<Query> newnotexploring = new ArrayList<Query>();
-		for(Query query: _querySpace) {
-			if(_exploring.get(query)){
-				if(_numdaysexploring.get(query) >= 5) {
-					_exploring.put(query, false);
-					_numdaysexploring.put(query,0.0);
-					newnotexploring.add(query);
-				}
-				else {
-					_numdaysexploring.put(query,_numdaysexploring.get(query)+1);
-					exploring.add(query);
-				}
-			}
-			else {
-				notexploring.add(query);
-				_numdaysexploring.put(query,_numdaysexploring.get(query)-1);
-			}
-		}
-		if((double)exploring.size()/(double)_querySpace.size() < RATIOEXPLORING) {
-			double n = Math.ceil((RATIOEXPLORING - (double)exploring.size()/(double)_querySpace.size())*_querySpace.size());
-			System.out.println("n = "+n);
-			for(int i = 0; i < n; i++) {
-				Query q = null;
-				double min = 10;
-				for(int j = 0; j < notexploring.size(); j++) {
-					Query query = notexploring.get(j);
-					double numdays = _numdaysexploring.get(query);
-					if(numdays < min) {
-						min = numdays;
-						q = query;
-					}
-				}
-				if(q != null) {
-					_exploring.put(q,true);
-					exploring.add(q);
-					notexploring.remove(q);
-				}
-				else {
-					break;
-				}
-			}
-		}
-		System.out.println("% Exploring: "+(double)exploring.size()/(double)_querySpace.size());
-		System.out.println("% Not Exploring: "+(1-(double)exploring.size()/(double)_querySpace.size()));
-	}
-
+	
+	
 	@Override
 	protected BidBundle buildBidBudle() {
 		
