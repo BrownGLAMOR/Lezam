@@ -90,7 +90,7 @@ public class PositionBidLinear implements PositionBidModel{
 			return _positionBid.get(q).get(slot);
 		}
 				
-		return 0.25;//Double.NaN;
+		return 1;
 	}
 
 }

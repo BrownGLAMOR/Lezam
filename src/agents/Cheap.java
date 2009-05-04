@@ -1,12 +1,9 @@
 package agents;
 
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.RetailCatalog;
 
 public class Cheap extends AbstractAgent {
 
@@ -31,11 +28,17 @@ public class Cheap extends AbstractAgent {
 				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				queryBid = 1.8;
+				queryBid = 1.5;
+				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+					queryBid = 2;
+				}
 				queryBudget = dailyCap;
 			}
 			else {
-				queryBid = 2.4;
+				queryBid = 2.3;
+				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+					queryBid = 3;
+				}
 				queryBudget = dailyCap;
 			}
 			bidBundle.addQuery(q, queryBid, null);

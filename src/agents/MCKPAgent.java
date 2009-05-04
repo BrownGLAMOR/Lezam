@@ -16,6 +16,13 @@ public class MCKPAgent extends AbstractAgent {
 	protected int _distributionWindow;
 	protected int _numSlots;
 	
+	//hashtable to retain our previous bids
+	private HashMap<Integer, Double> lastBid; //query ID to bid;
+	
+	/**
+	 * These three fields are where this agent can be improved.  The success of this agent is definitely
+	 * dependent on the accuracy of the capacity, bid, and click models.
+	 */
 	protected UnitsSoldModel _unitsSold;
 	protected PositionBidLinear _positionBid;
 	protected PositionClicksExponential _positionClicks;
@@ -37,6 +44,8 @@ public class MCKPAgent extends AbstractAgent {
 
 	@Override
 	protected void initBidder() {
+		lastBid = new HashMap<Integer, Double>();
+		
 		printAdvertiserInfo();
 		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		_distributionWindow = _advertiserInfo.getDistributionWindow();
@@ -102,7 +111,7 @@ public class MCKPAgent extends AbstractAgent {
 		SalesReport sr = _salesReports.remove();
 		_unitsSold.updateReport(sr);
 		
-		if(_day > 2){
+		if(_day > 4){
 			//generate undominated items and convert them to inc items
 			//LinkedList<IncItem> iis = new LinkedList<IncItem>();
 			int numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
@@ -116,7 +125,10 @@ public class MCKPAgent extends AbstractAgent {
 				double rpc = _rpc.get(q);
 				double convProb = _noOversellConversion.get(q);
 				
-				//let's generate an item set for this query
+				/**
+				 * Uses the a position click exponential model and a position bid linear model to 
+				 * generate the item set for each query
+				 */
 				Item[] items = new Item[numSlots];
 				for(int s=0; s<items.length; s++) {//slot
 					int numClicks = _positionClicks.getClicks(q, s);//!!!getClicks
@@ -158,23 +170,22 @@ public class MCKPAgent extends AbstractAgent {
 			//set bids
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = 0.25;
-				//double spendLimit = Double.MAX_VALUE;
 				Integer isID = _queryId.get(q);
-				if(solution.containsKey(isID)) { 
+				double bid;
+				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
-					//spendLimit = solution.get(isID).w();
-					//_bidBundle.setDailyLimit(q, spendLimit);
+					lastBid.put(isID, bid);
 				}
-				
+				else bid = lastBid.get(isID);
 				_bidBundle.addQuery(q, bid, new Ad());
 			}
 		}
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = 0.75;
+				double bid = (_day)/2 + 1;
 				_bidBundle.addQuery(q, bid, new Ad());
+				lastBid.put(_queryId.get(q), bid);
 			}
 		}
 		
@@ -222,7 +233,8 @@ public class MCKPAgent extends AbstractAgent {
 				}
 			}
 			//while there are at least three elements and ...
-			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) <= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
+			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
+					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
 				q.remove(l-1);
 				l--;
 			}
@@ -287,7 +299,9 @@ public class MCKPAgent extends AbstractAgent {
 	@Override
 	protected BidBundle buildBidBudle(){
 		System.out.println("****************************************");
-		System.out.println(_bidBundle);
+		for (Query q: _querySpace){
+			System.out.println("Query: " + q + ", Bid: " + _bidBundle.getBid(q));
+		}
 		System.out.println("****************************************");
 		return _bidBundle;
 	}

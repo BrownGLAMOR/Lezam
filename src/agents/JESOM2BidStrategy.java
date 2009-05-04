@@ -34,8 +34,17 @@ public class JESOM2BidStrategy extends GenericBidStrategy {
 		buff.append("\t").append("ConversionRevenue: ").append(getProperty(q,CONVERSION_REVENUE)).append("\n");
 		buff.append("\t").append("WantedSales: ").append(getProperty(q,WANTED_SALES)).append("\n");
 		buff.append("\t").append("clicks: ").append(getProperty(q,WANTED_SALES) / getProperty(q,CONVERSION_PR)).append("\n");
-		
-		
+	}
+	
+	public String toString(){
+		String toReturn = "";
+		StringBuffer buff;
+		for (Query q: _querySpace){
+			buff = new StringBuffer();
+			propertiesToString(buff, q);
+			toReturn += buff;
+		}
+		return toReturn;
 	}
 	
 }
