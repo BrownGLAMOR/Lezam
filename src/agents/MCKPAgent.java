@@ -2,6 +2,7 @@ package agents;
 
 import java.util.*;
 import modelers.*;
+import modelers.bidtoposition.*;
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
@@ -16,13 +17,15 @@ public class MCKPAgent extends AbstractAgent {
 	//hashtable to retain our previous bids
 	private HashMap<Integer, Double> lastBid; //query ID to bid;
 	
+	private int numUsers;
+	
 	/**
 	 * These three fields are where this agent can be improved.  The success of this agent is definitely
 	 * dependent on the accuracy of the capacity, bid, and click models.
 	 */
 	protected UnitsSoldModel _unitsSold;
-	protected PositionBidLinear _positionBid;
-	protected PositionClicksExponential _positionClicks;
+	protected BidToPositionModel _positionBid;
+	protected PositionToClicksAverage _positionClicks;
 	
 	protected Hashtable<Query,Integer> _queryId;
 	
@@ -41,6 +44,7 @@ public class MCKPAgent extends AbstractAgent {
 
 	@Override
 	protected void initBidder() {
+		numUsers = 4000; //I'm not sure how to get this value actually
 		lastBid = new HashMap<Integer, Double>();
 		
 		printAdvertiserInfo();
@@ -50,8 +54,8 @@ public class MCKPAgent extends AbstractAgent {
 		_numSlots = _slotInfo.getRegularSlots();
 		
 		_unitsSold = new UnitsSoldModelMean(_distributionWindow);
-		_positionBid = new PositionBidLinear(_numSlots, 0.5);
-		_positionClicks = new PositionClicksExponential(_numSlots, 2.5);
+		_positionBid = new BucketBidToPositionModel(_querySpace, _numSlots);
+		_positionClicks = new PositionToClicksAverage(_numSlots, _querySpace, numUsers/3); //estimate
 		
 		_baseLineConversion = new Hashtable<Query,Double>();
 		_noOversellConversion = new Hashtable<Query,Double>();
@@ -145,8 +149,8 @@ public class MCKPAgent extends AbstractAgent {
 			
 			//pick items greedily is order of decreasing efficiency
 			Collections.sort(allIncItems);
-			Misc.println("sorted incremental items", Output.OPTIMAL);
-			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			//Misc.println("sorted incremental items", Output.OPTIMAL);
+			//Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 			
 			HashMap<Integer,Item> solution = new HashMap<Integer,Item>();
 			//_advertiserInfo.getDistributionCapacity()/_advertiserInfo.getDistributionWindow()
@@ -154,7 +158,7 @@ public class MCKPAgent extends AbstractAgent {
 			
 			//4. greedily fill the knapsack
 			for(IncItem ii: allIncItems) {
-				Misc.println("adding item " + ii, Output.OPTIMAL);
+				//Misc.println("adding item " + ii, Output.OPTIMAL);
 				//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 				//set replace lighter items as we want
 				if(budget >= ii.w()) {
@@ -192,10 +196,10 @@ public class MCKPAgent extends AbstractAgent {
 	
 	
 	public static Item[] getUndominated(Item[] items) {
-		Misc.printArray("getUndominated. all items", items);
+		//Misc.printArray("getUndominated. all items", items);
 		Arrays.sort(items,new ItemComparatorByWeight());
 
-		Misc.printArray("sorted by weight", items);
+		//Misc.printArray("sorted by weight", items);
 		
 		//remove dominated items (higher weight, lower value)		
 		LinkedList<Item> temp = new LinkedList<Item>();

@@ -41,6 +41,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 			
 		}
 	}
+	
 	public void updateBidBundle(BidBundle bb) {
 		_bids.add(bb);
 	}

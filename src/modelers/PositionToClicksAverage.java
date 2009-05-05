@@ -1,0 +1,68 @@
+package modelers;
+
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Set;
+
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+
+public class PositionToClicksAverage implements PositionClicksModel {
+	private int _slots;
+	private Hashtable<Query,Hashtable<Integer,Double>> _positionClicks;
+	
+	private double continuation;
+	private double avgBaseClick;
+	private double fTARfPRO;
+	private double avgNoConv;
+	
+	public PositionToClicksAverage(int slots, Set<Query> queries, int searchingUsers){
+		//These are average value assumptions that could be very wrong
+		continuation = .5;
+		avgBaseClick = .5;
+		fTARfPRO = 1.2;
+		avgNoConv = .8;
+		double prClick = eta(avgBaseClick, fTARfPRO);
+		
+		_slots = slots;
+		_positionClicks = new Hashtable<Query,Hashtable<Integer,Double>>();
+		
+		Hashtable<Integer,Double> slotClicks;
+		for (Query q : queries){
+			slotClicks = new Hashtable<Integer,Double>();
+			for (int i = 1; i <= slots; i++){
+				double clicks = clickSlot(i);
+				slotClicks.put(i, clicks*((double) searchingUsers));
+			}
+			_positionClicks.put(q, slotClicks);
+		}
+	}
+	
+	private double eta(double e, double ff){
+		return e*ff/(e*ff + (1-e));
+	}
+	
+	private double clickSlot(int slot){
+		double prClick = eta(avgBaseClick, fTARfPRO);
+		return prClick * Math.pow(continuation*(avgNoConv*prClick + 1 - prClick), slot-1);
+	}
+	
+	public void updateReport(QueryReport queryReport){
+		if(queryReport == null){
+			return;
+		}
+		for(Query q : queryReport){
+			Hashtable<Integer,Double> slotClicks = _positionClicks.get(q);
+			//narsty update method just updates ours or the slot above us's numClicks to be what we saw
+			slotClicks.put(((Double) queryReport.getPosition(q)).intValue(), 
+					((Integer) queryReport.getClicks(q)).doubleValue());
+		}
+	}
+	
+	@Override
+	public int getClicks(Query q, int slot) {
+		return _positionClicks.get(q).get(slot).intValue();
+	}
+
+}
