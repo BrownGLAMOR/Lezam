@@ -11,6 +11,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 public class PositionToClicksAverage implements PositionClicksModel {
 	private int _slots;
 	private Hashtable<Query,Hashtable<Integer,Double>> _positionClicks;
+	private Set<Query> _querySpace;
 	
 	private double continuation;
 	private double avgBaseClick;
@@ -27,13 +28,14 @@ public class PositionToClicksAverage implements PositionClicksModel {
 		
 		_slots = slots;
 		_positionClicks = new Hashtable<Query,Hashtable<Integer,Double>>();
+		_querySpace = queries;
 		
 		Hashtable<Integer,Double> slotClicks;
 		for (Query q : queries){
 			slotClicks = new Hashtable<Integer,Double>();
-			for (int i = 1; i <= slots; i++){
-				double clicks = clickSlot(i);
-				slotClicks.put(i, clicks*((double) searchingUsers));
+			for (int i = 1; i <= _slots; i++){
+				double clicks = clickSlot(i)*((double) searchingUsers)/16.;
+				slotClicks.put(i, clicks);
 			}
 			_positionClicks.put(q, slotClicks);
 		}
@@ -62,7 +64,19 @@ public class PositionToClicksAverage implements PositionClicksModel {
 	
 	@Override
 	public int getClicks(Query q, int slot) {
-		return _positionClicks.get(q).get(slot).intValue();
+		Hashtable<Integer,Double> slotClicks = _positionClicks.get(q);
+		return slotClicks.get(slot).intValue();
+	}
+	
+	public String toString(){
+		String toReturn = "";
+		for (Query q : _querySpace){
+			toReturn += q + "\n";
+			for (int i = 1; i <= _slots; i++){
+				toReturn += "\tSlot: " + i + ", Clicks: " + getClicks(q,i) + "\n";
+			}
+		}
+		return toReturn;
 	}
 
 }

@@ -22,6 +22,7 @@ public abstract class UnitsSoldModel extends AbstractModel {
 		_distributionWindow = distributionWindow;
 		_sold = new LinkedList<Integer>();
 	}
+	
 	public void updateReport(SalesReport salesReport){
 		int conversions = 0;
 		for(Query q : salesReport){

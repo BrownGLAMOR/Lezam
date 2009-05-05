@@ -1,6 +1,7 @@
 package modelers;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 
@@ -21,7 +22,7 @@ public class PositionBidLinear implements PositionBidModel{
 		_interpolation = interpolation;
 	}
 	
-	public void updateReport(QueryReport queryReport){
+	public void updateReport(QueryReport queryReport, HashMap<Query, Double> lastBids){
 		if(queryReport == null){
 			return;
 		}
@@ -29,11 +30,12 @@ public class PositionBidLinear implements PositionBidModel{
 		for(Query q : queryReport){
 			Hashtable<Integer,Double> queryPositionBid = new Hashtable<Integer,Double>();
 			double position = queryReport.getPosition(q);
-			double bid = queryReport.getCPC(q);//this is a hack, should be our actual bid.
+			double bid = lastBids.get(q);//this is a hack, should be our actual bid.
 			
 			if(!Double.isNaN(position)){
 				int pos = (int)position;
 				queryPositionBid.put(pos, bid);
+				
 				for(int i = pos-1; i >= 1; i--){
 					queryPositionBid.put(i, bid+_interpolation*(pos-i));
 				}
@@ -41,9 +43,9 @@ public class PositionBidLinear implements PositionBidModel{
 					queryPositionBid.put(i, bid-_interpolation*(i-pos));
 				}
 				
-				for(int i = 0; i < _slots; i++){
-					if(queryPositionBid.get(i+1) < 0){
-						queryPositionBid.put(i+1, 0.0);
+				for(int i = 1; i <= _slots; i++){
+					if(queryPositionBid.get(i) < 0){
+						queryPositionBid.put(i, 0.0);
 					}
 				}
 				
