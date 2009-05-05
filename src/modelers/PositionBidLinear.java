@@ -10,24 +10,18 @@ import edu.umich.eecs.tac.props.QueryReport;
 public class PositionBidLinear implements PositionBidModel{
 	protected double _interpolation;
 	protected int _slots;
-	protected LinkedList<Hashtable<Query,Double>> _position;
-	protected LinkedList<Hashtable<Query,Double>> _bid;
+	//protected LinkedList<Hashtable<Query,Double>> _position;
+	//protected LinkedList<Hashtable<Query,Double>> _bid;
 	protected Hashtable<Query,Hashtable<Integer,Double>> _positionBid;
 	
 	public PositionBidLinear(int slots, double interpolation){
 		_slots = slots;
-		_position = new LinkedList<Hashtable<Query,Double>>();
-		_bid = new LinkedList<Hashtable<Query,Double>>();
 		_positionBid = new Hashtable<Query,Hashtable<Integer,Double>>();
 		
 		_interpolation = interpolation;
 	}
 	
 	public void updateReport(QueryReport queryReport){
-		Hashtable<Query,Double> positionsToday = new Hashtable<Query,Double>();
-		Hashtable<Query,Double> bidsToday = new Hashtable<Query,Double>();
-		_position.add(positionsToday);
-		_bid.add(bidsToday);
 		if(queryReport == null){
 			return;
 		}
@@ -36,9 +30,6 @@ public class PositionBidLinear implements PositionBidModel{
 			Hashtable<Integer,Double> queryPositionBid = new Hashtable<Integer,Double>();
 			double position = queryReport.getPosition(q);
 			double bid = queryReport.getCPC(q);//this is a hack, should be our actual bid.
-			
-			positionsToday.put(q, position);
-			bidsToday.put(q, bid); 
 			
 			if(!Double.isNaN(position)){
 				int pos = (int)position;
@@ -52,7 +43,7 @@ public class PositionBidLinear implements PositionBidModel{
 				
 				for(int i = 0; i < _slots; i++){
 					if(queryPositionBid.get(i+1) < 0){
-						queryPositionBid.put(i+1, 0.25);
+						queryPositionBid.put(i+1, 0.0);
 					}
 				}
 				
@@ -68,17 +59,6 @@ public class PositionBidLinear implements PositionBidModel{
 				
 				
 			}
-			/*
-			else{
-				if(!_positionBid.containsKey(q)){
-					for(int i = _slots-1; i >= 0; i--){
-						queryPositionBid.put(i+1, _interpolation*(_slots-i));
-					}
-					_positionBid.put(q, queryPositionBid);
-				}
-		
-			}
-			*/
 			
 			
 		}

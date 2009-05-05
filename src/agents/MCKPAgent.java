@@ -1,10 +1,7 @@
 package agents;
 
 import java.util.*;
-import modelers.PositionBidLinear;
-import modelers.PositionClicksExponential;
-import modelers.UnitsSoldModel;
-import modelers.UnitsSoldModelMax;
+import modelers.*;
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
@@ -52,7 +49,7 @@ public class MCKPAgent extends AbstractAgent {
 		
 		_numSlots = _slotInfo.getRegularSlots();
 		
-		_unitsSold = new UnitsSoldModelMax(_distributionWindow);
+		_unitsSold = new UnitsSoldModelMean(_distributionWindow);
 		_positionBid = new PositionBidLinear(_numSlots, 0.5);
 		_positionClicks = new PositionClicksExponential(_numSlots, 2.5);
 		
@@ -105,6 +102,7 @@ public class MCKPAgent extends AbstractAgent {
 	@Override
 	protected void updateBidStrategy() {
 		QueryReport qr = _queryReports.remove();
+		
 		_positionBid.updateReport(qr);
 		_positionClicks.updateReport(qr);
 		
@@ -183,7 +181,7 @@ public class MCKPAgent extends AbstractAgent {
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = (_day)/2 + 1;
+				double bid = 1;
 				_bidBundle.addQuery(q, bid, new Ad());
 				lastBid.put(_queryId.get(q), bid);
 			}
