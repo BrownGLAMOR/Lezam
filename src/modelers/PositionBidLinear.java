@@ -18,7 +18,6 @@ public class PositionBidLinear implements PositionBidModel{
 	public PositionBidLinear(int slots, double interpolation){
 		_slots = slots;
 		_positionBid = new Hashtable<Query,Hashtable<Integer,Double>>();
-		
 		_interpolation = interpolation;
 	}
 	
@@ -31,6 +30,9 @@ public class PositionBidLinear implements PositionBidModel{
 			Hashtable<Integer,Double> queryPositionBid = new Hashtable<Integer,Double>();
 			double position = queryReport.getPosition(q);
 			double bid = lastBids.get(q);//this is a hack, should be our actual bid.
+			if (!((Double) queryReport.getCPC(q)).isNaN()){
+				_interpolation = bid - queryReport.getCPC(q); //make a smarter interpolation
+			}
 			
 			if(!Double.isNaN(position)){
 				int pos = (int)position;
@@ -51,8 +53,6 @@ public class PositionBidLinear implements PositionBidModel{
 				
 				_positionBid.put(q, queryPositionBid);
 				
-				System.out.println();
-				System.out.println(q+"Position Bid Given : "+bid+" in position "+position);
 				double[] slotbids = new double[_slots];
 				for(int i = 0; i < _slots; i++){
 					slotbids[i] = queryPositionBid.get(i+1);
@@ -62,7 +62,7 @@ public class PositionBidLinear implements PositionBidModel{
 				
 			}
 			
-			
+			//Keep the values the same if the last bid didn't get a position...
 		}
 		
 	}
@@ -73,6 +73,21 @@ public class PositionBidLinear implements PositionBidModel{
 		}
 				
 		return 1;
+	}
+	
+	public double getCPC(Query q, int slot) {
+		if(_positionBid.containsKey(q) && _positionBid.get(q).containsKey(slot)){
+			if (slot == _slots){
+				double poss = _positionBid.get(q).get(slot) - _interpolation;
+				if (poss < 0){
+					return 0;
+				}
+				return poss;
+			}
+			return _positionBid.get(q).get(slot+1);
+		}
+				
+		return .5;
 	}
 
 }

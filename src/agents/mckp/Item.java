@@ -47,7 +47,7 @@ public class Item {
 	}
 	
 	public String toString() {
-		return _q+" [" + _w + "," + _v + "]";
+		return _q+" [W: " + _w + ", V: " + _v + ", B: " + _b + "]";
 	}
 
 }

@@ -44,7 +44,7 @@ public class IncItem implements Comparable<IncItem>{
 	}
 	
 	public String toString() {
-		return _item.q()+" [" + _w + "," + _v + "]";
+		return _item.q()+" [W: " + _w + ", V: " + _v + ", B: " + _item.b() + "]";
 	}
 
 }

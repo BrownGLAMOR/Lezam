@@ -11,6 +11,7 @@ public class MCKPAgent extends AbstractAgent {
 	protected int _day;
 	
 	protected int _distributionCapacity;
+	private double _distCapacDiscount;
 	protected int _distributionWindow;
 	protected int _numSlots;
 	
@@ -51,6 +52,7 @@ public class MCKPAgent extends AbstractAgent {
 		
 		printAdvertiserInfo();
 		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
+		_distCapacDiscount = _advertiserInfo.getDistributionCapacityDiscounter();
 		_distributionWindow = _advertiserInfo.getDistributionWindow();
 
 		_numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
@@ -143,10 +145,11 @@ public class MCKPAgent extends AbstractAgent {
 				for(int s=1; s<=_numSlots; s++) {//slot
 					int numClicks = _positionClicks.getClicks(q, s);//!!!getClicks
 					double bid = _positionBid.getBid(q, s);
-					//This area is very wrong because some models think the slots start at zero
+					double CPC = _positionBid.getCPC(q, s);
 					
+					if (bid == 0) numClicks = 0;
 					double w = numClicks*convProb; 				//weight = numClicks * convProb
-					double v = numClicks*(rpc*convProb - bid);	//value = numClicks(USP * convPromb - CPC)
+					double v = numClicks*(rpc*convProb - CPC);	//value = numClicks(USP * convProb - CPC)
 					
 					int isID = _queryId.get(q);
 					items[s-1] = new Item(q,w,v,bid,isID);	
@@ -160,31 +163,13 @@ public class MCKPAgent extends AbstractAgent {
 			
 			//pick items greedily is order of decreasing efficiency
 			Collections.sort(allIncItems);
-			//Misc.println("sorted incremental items", Output.OPTIMAL);
-			//Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 			
-			HashMap<Integer,Item> solution = new HashMap<Integer,Item>();
-			//_advertiserInfo.getDistributionCapacity()/_advertiserInfo.getDistributionWindow()
-			double budget;
-			if (_day>_distributionWindow){
-				budget = _distributionCapacity - _unitsSold.getWindowSold();
-			}
-			else budget = (_distributionCapacity - _unitsSold.getWindowSold()) / _distributionWindow;
+			double budget = _distributionCapacity + _distributionCapacity/_distributionWindow - _unitsSold.getWindowSold();
 			System.out.println("\nCap: " + _distributionCapacity + ", Window: " + 
 					_unitsSold.getWindowSold() + ", Budget: " + budget + "\n");
 			
-			//4. greedily fill the knapsack
-			for(IncItem ii: allIncItems) {
-				//Misc.println("adding item " + ii, Output.OPTIMAL);
-				//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
-				//set replace lighter items as we want
-				if(budget >= ii.w()) {
-					solution.put(ii.item().isID(), ii.item());
-					budget -= ii.w();
-				}else{
-					break;
-				}
-			}
+			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 			
 			//set bids
 			_bidBundle = new BidBundle();
@@ -199,14 +184,14 @@ public class MCKPAgent extends AbstractAgent {
 				}
 				else bid = lastBid.get(q);
 				
-				_bidBundle.addQuery(q, bid, new Ad());
+				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 			}
 		}
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
 				double bid = 1;
-				_bidBundle.addQuery(q, bid, new Ad());
+				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 				lastBid.put(q, bid);
 			}
 		}
@@ -214,12 +199,38 @@ public class MCKPAgent extends AbstractAgent {
 		_day++;
 	}
 	
+	/**
+	 * Greedily fill the knapsack by selecting incremental items ----------------------------------------
+	 * @param incItems
+	 * @param budget
+	 * @return
+	 */
+	private HashMap<Integer,Item> fillKnapsack(LinkedList<IncItem> incItems, double budget){
+		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
+		
+		for(IncItem ii: incItems) {
+			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
+			//set replace lighter items as we want
+			if(budget >= ii.w()) {
+				Misc.println("adding item " + ii, Output.OPTIMAL);
+				solution.put(ii.item().isID(), ii.item());
+				budget -= ii.w();
+			}else{
+				double capacityInc = 10;
+				double valueInc;
+				//TODO - a little bit left
+			}
+		}
+		return solution;
+	}
 	
+	/**
+	 * Get undominated items ...................................................... getUndominated
+	 * @param items
+	 * @return
+	 */
 	public static Item[] getUndominated(Item[] items) {
-		//Misc.printArray("getUndominated. all items", items);
 		Arrays.sort(items,new ItemComparatorByWeight());
-
-		//Misc.printArray("sorted by weight", items);
 		
 		//remove dominated items (higher weight, lower value)		
 		LinkedList<Item> temp = new LinkedList<Item>();
@@ -235,15 +246,14 @@ public class MCKPAgent extends AbstractAgent {
 		
 		//items now contain only undominated items
 		items = temp.toArray(new Item[0]);
-		
+		Misc.printArray("undominated 1", items);
 	
 		//remove lp-dominated items
-		//see Figure 2 in http://www.cs.brown.edu/people/vnarodit/troa.pdf
 		LinkedList<Item> q = new LinkedList<Item>();
 		q.add(new Item(new Query(),0,0,-1,-1));//add item with zero weight and value
 		
 		for(int i=0; i<items.length; i++) {
-			q.add(items[i]);//has at least 2 items
+			q.add(items[i]);//has at least 2 items now
 			int l = q.size()-1;
 			//Misc.println("l=" + l);
 			Item li = q.get(l);//last item
@@ -255,8 +265,9 @@ public class MCKPAgent extends AbstractAgent {
 					q.remove(l);
 				}
 			}
+			l = q.size()-1; //reset in case an item was removed
 			//while there are at least three elements and ...
-			while(l > 2 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
+			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
 					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
 				q.remove(l-1);
 				l--;
@@ -301,19 +312,28 @@ public class MCKPAgent extends AbstractAgent {
 		
 	}
 
-	
+	/**
+	 * Get incremental items ...................................................... getIncremental
+	 * @param items
+	 * @return
+	 */
 	public static IncItem[] getIncremental(Item[] items) {
 		Misc.printArray("getIncremental", items);
 		//items are still sorted by weight - create incremental items
+		
 		Item[] uItems = getUndominated(items);
 		IncItem[] ii = new IncItem[uItems.length];
-		ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
-		for(int item=1; item<uItems.length; item++) {
-			Item prev = uItems[item-1];
-			Item cur = uItems[item];
-			ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
+		
+		if (uItems.length != 0){ //getUndominated can return an empty array
+			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
+			for(int item=1; item<uItems.length; item++) {
+				Item prev = uItems[item-1];
+				Item cur = uItems[item];
+				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
+			}
+			Misc.printArray("inc items", ii);
 		}
-		Misc.printArray("inc items", ii);
+		
 		return ii;
 	}
 		
