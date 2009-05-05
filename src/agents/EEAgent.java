@@ -70,6 +70,8 @@ public class EEAgent extends AbstractAgent {
 		NumPS = _slotInfo.getPromotedSlots();
 		NumRS = _slotInfo.getRegularSlots();
 		manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		System.out.println("CS = " + _advertiserInfo.getComponentSpecialty());
+		System.out.println("MS = " + manufacturerSpecialty);
 		ourspecialty = _queryManufacturer.get(manufacturerSpecialty);
 		_capacity = _advertiserInfo.getDistributionCapacity();
 		_window = _advertiserInfo.getDistributionWindow();
@@ -132,7 +134,7 @@ public class EEAgent extends AbstractAgent {
 
 		QueryReport queryReport = _queryReports.poll();
 		SalesReport salesReport = _salesReports.poll();
-
+		
 
 		if(!(queryReport == null || salesReport == null)) {
 			debug("Day: " + _currentday);
@@ -374,7 +376,6 @@ public class EEAgent extends AbstractAgent {
 		}
 		if((double)exploring.size()/(double)_querySpace.size() < RATIOEXPLORING) {
 			double n = Math.ceil((RATIOEXPLORING - (double)exploring.size()/(double)_querySpace.size())*_querySpace.size());
-			System.out.println("n = "+n);
 			for(int i = 0; i < n; i++) {
 				Query q = null;
 				double min = 10;
