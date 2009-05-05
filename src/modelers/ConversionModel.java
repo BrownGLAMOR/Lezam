@@ -1,5 +1,6 @@
 package modelers;
 
+import agents.rules.Constants;
 import modelers.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.*;
 
@@ -27,13 +28,13 @@ public class ConversionModel extends AbstractModel {
     public double getConversionProbability(UserState state) {
         double baseline = 0;
         if(state == UserState.F0) 
-            baseline = .1;
+            baseline = Constants.CONVERSION_F0;
         else if(state == UserState.F1) 
-            baseline = .2;
+            baseline = Constants.CONVERSION_F1;
         else if(state == UserState.F2) 
-            baseline = .3;
+            baseline = Constants.CONVERSION_F2;
 
-        return baseline*_capacityDiscounter;
+        return baseline*_capacityDiscounter*_userModel.getSearchingRatio();
     }
 
 }
