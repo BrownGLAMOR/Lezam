@@ -35,6 +35,7 @@ public class PositionBidLinear implements PositionBidModel{
 				_interpolation = bid - queryReport.getCPC(q); //make a smarter interpolation
 			}
 			else _interpolation = _givenInterpol;
+			if (_interpolation < .02) _interpolation = _givenInterpol; //clearly too small of an interpolation
 			
 			if(!Double.isNaN(position)){
 				int pos = (int)position;

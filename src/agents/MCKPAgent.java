@@ -2,7 +2,6 @@ package agents;
 
 import java.util.*;
 import modelers.*;
-import modelers.bidtoposition.*;
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
@@ -38,6 +37,8 @@ public class MCKPAgent extends AbstractAgent {
 	Set<Query> _F1componentSpecialty;
 	Set<Query> _F2componentSpecialty;
 	
+	private int _knapSackIter;
+	private int _capacityInc;
 	protected BidBundle _bidBundle;
 	
 	public MCKPAgent(){}
@@ -48,9 +49,12 @@ public class MCKPAgent extends AbstractAgent {
 	@Override
 	protected void initBidder() {
 		numUsers = 4000; //I'm not sure how to get this value actually
+		
 		lastBid = new HashMap<Query, Double>();
 		previousBid = new HashMap<Query, Double>();
 		initBid = 1;
+		
+		_capacityInc = 18; //This sets how much we attempt to go over budget
 		
 		printAdvertiserInfo();
 		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
@@ -173,6 +177,13 @@ public class MCKPAgent extends AbstractAgent {
 			System.out.println("\nCap: " + _distributionCapacity + ", Window: " + 
 					_unitsSold.getWindowSold() + ", Budget: " + budget + "\n");
 			
+			/**
+			 * I suggest adding some code here that checks to see what the budget value is, and if it is pretty
+			 * high, and the _day value is past 59 (it goes to 61), then is jacks up the bid for the last two days
+			 * to try and sneak in some last minute sales.
+			 */
+			
+			_knapSackIter = 0;
 			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 			
 			//set bids
@@ -200,7 +211,7 @@ public class MCKPAgent extends AbstractAgent {
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
 					bid = 1.3;
 				else 
-					bid = 2;
+					bid = 1.7;
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 				lastBid.put(q, bid);
 			}
@@ -217,20 +228,57 @@ public class MCKPAgent extends AbstractAgent {
 	 */
 	private HashMap<Integer,Item> fillKnapsack(LinkedList<IncItem> incItems, double budget){
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
+		LinkedList<IncItem> temp = new LinkedList<IncItem>();
 		
+		boolean incremented = false;
+		double valueLost = 0;
+		double valueGained = 0;
 		for(IncItem ii: incItems) {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
+			
 			if(budget >= ii.w()) {
-				Misc.println("adding item " + ii, Output.OPTIMAL);
-				solution.put(ii.item().isID(), ii.item());
-				budget -= ii.w();
-			}else{
-				double capacityInc = 10;
-				double valueLost;
-				for (int i = 1; i <= capacityInc; i++){
-					double avgConvProb;
+				if (incremented){
+					temp.addLast(ii);
+					budget -= ii.w();
+					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
+				else {
+					Misc.println("adding item " + ii, Output.OPTIMAL);
+					solution.put(ii.item().isID(), ii.item());
+					budget -= ii.w();
+				}
+			}
+			else{
+				if (incremented){
+					if (valueGained >= valueLost){ //checks to see if it was worth extending our capacity
+						while (!temp.isEmpty()){
+							IncItem inc = temp.removeFirst();
+							Misc.println("adding item " + ii, Output.OPTIMAL);
+							solution.put(inc.item().isID(), inc.item());
+						}
+						valueLost = 0;
+						valueGained = 0;
+					}
+					else break;
+				}
+				double avgConvProb = .253; //the average probability of conversion;
+				/*
+				double avgUSP = 0;
+				for (Query q : _querySpace){
+					avgUSP += _rpc.get(q);
+				}
+				avgUSP /= 16;
+				*/// This can be used later if the values actually change for the sales bonus
+				double avgUSP = 11.25;
+				for (int i = _capacityInc*_knapSackIter+1; i <= _capacityInc*(_knapSackIter+1); i++){
+					double iD = Math.pow(_distCapacDiscount, i);
+					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+					valueLost += (avgConvProb - worseConvProb)*avgUSP;
+				}
+				budget+=_capacityInc;
+				incremented = true;
+				_knapSackIter++;
 			}
 		}
 		return solution;
@@ -353,11 +401,11 @@ public class MCKPAgent extends AbstractAgent {
 	
 	@Override
 	protected BidBundle buildBidBudle(){
-		System.out.println("****************************************");
+		System.out.println("**************************************** Day: " + _day);
 		for (Query q: _querySpace){
 			System.out.println(q + ", Bid: " + _bidBundle.getBid(q) + ", Budget: " + _bidBundle.getDailyLimit(q));
 		}
-		System.out.println("****************************************");
+		System.out.println("**************************************** Day: " + _day);
 		return _bidBundle;
 	}
 
