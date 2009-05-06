@@ -3,7 +3,6 @@ package modelers;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.LinkedList;
 
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

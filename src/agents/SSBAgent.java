@@ -16,6 +16,7 @@ import agents.rules.NoImpressions;
 import agents.rules.ReinvestmentCap;
 import agents.rules.Targeted;
 import agents.rules.TopPosition;
+import agents.rules.Walking;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -32,6 +33,7 @@ public class SSBAgent extends AbstractAgent {
 	protected ReinvestmentCap _reinvestmentCap2;
 	protected ReinvestmentCap _reinvestmentCap2s;
 	protected TopPosition _topPosition;
+	protected Walking _walking;
 	protected NoImpressions _noImpressions;
 	protected AdjustConversionPr _adjustConversionPr;
 	
@@ -67,11 +69,12 @@ public class SSBAgent extends AbstractAgent {
 		
 		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
 		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
+		_walking = new Walking(_advertiserInfo.getAdvertiserId());
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05);
-		_reinvestmentCap0 = new ReinvestmentCap(0.50);
-		_reinvestmentCap1 = new ReinvestmentCap(0.70);
-		_reinvestmentCap1s = new ReinvestmentCap(0.75);
-		_reinvestmentCap2 = new ReinvestmentCap(0.80);
+		_reinvestmentCap0 = new ReinvestmentCap(0.70);
+		_reinvestmentCap1 = new ReinvestmentCap(0.75);
+		_reinvestmentCap1s = new ReinvestmentCap(0.80);
+		_reinvestmentCap2 = new ReinvestmentCap(0.85);
 		_reinvestmentCap2s = new ReinvestmentCap(0.90);
 		
 		
@@ -112,29 +115,24 @@ public class SSBAgent extends AbstractAgent {
 	protected void updateBidStrategy() {
 		QueryReport qr = _queryReports.remove();
 		_topPosition.updateReport(qr);
+		_walking.updateReport(qr);
 		_noImpressions.updateReport(qr);
 		
 		SalesReport sr = _salesReports.remove();
-		//_distributionCap.updateReport(sr);
 		_unitsSold.updateReport(sr);
-		
-		//int oversold = _adjustConversionPr.getOversold();
-		//if(oversold > _advertiserInfo.getDistributionCapacity()/2){
-		
-		//}
-		
+
 		_adjustConversionPr.apply(_bidStrategy);
 		
 		_topPosition.apply(_bidStrategy);
 		_noImpressions.apply(_bidStrategy);
+		_walking.apply(_bidStrategy);
 		
 		_reinvestmentCap0.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		_reinvestmentCap1.apply(_F1notComponentSpecialty, _bidStrategy);
 		_reinvestmentCap1s.apply(_F1componentSpecialty, _bidStrategy);
 		_reinvestmentCap2.apply(_F2notComponentSpecialty, _bidStrategy); 
 		_reinvestmentCap2s.apply(_F2componentSpecialty, _bidStrategy);
-
-		//_distributionCap.apply(_bidStrategy);
+		
 	}
 	
 	
