@@ -3,8 +3,9 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
+import modelers.ConversionPrModel;
+import modelers.ConversionPrModelNoIS;
 import modelers.UnitsSoldModel;
-import modelers.UnitsSoldModelMaxWindow;
 import modelers.UnitsSoldModelMean;
 
 import agents.rules.AdjustConversionPr;
@@ -37,9 +38,12 @@ public class SSBAgent extends AbstractAgent {
 	protected Hashtable<Query,Double> _baseLineConversion;
 	
 	Set<Query> _F1componentSpecialty;
+	Set<Query> _F1notComponentSpecialty;
 	Set<Query> _F2componentSpecialty;
+	Set<Query> _F2notComponentSpecialty;
 	
 	protected UnitsSoldModel _unitsSold;
+	protected ConversionPrModel _conversionPr;
 	
 	
 	public SSBAgent(){}
@@ -56,6 +60,7 @@ public class SSBAgent extends AbstractAgent {
 		int distributionWindow = _advertiserInfo.getDistributionWindow();
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
+		double componentSpecialtyBonus = _advertiserInfo.getComponentBonus();
 		
 		//_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
 		_unitsSold = new UnitsSoldModelMean(distributionWindow);
@@ -75,7 +80,9 @@ public class SSBAgent extends AbstractAgent {
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
 		
-		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty);
+		_conversionPr = new ConversionPrModelNoIS(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty, componentSpecialtyBonus);
+		
+		_adjustConversionPr = new AdjustConversionPr(_conversionPr);
 		
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
@@ -84,10 +91,12 @@ public class SSBAgent extends AbstractAgent {
 		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
 		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
+		_F1notComponentSpecialty = subtract(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE),_F1componentSpecialty);
 		new ConversionPr(0.27).apply(_F1componentSpecialty, _bidStrategy);
 		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);}
 		
 		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
+		_F2notComponentSpecialty = subtract(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO),_F2componentSpecialty);
 		new ConversionPr(0.39).apply(_F2componentSpecialty, _bidStrategy);
 		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);}
 		
@@ -120,10 +129,10 @@ public class SSBAgent extends AbstractAgent {
 		_noImpressions.apply(_bidStrategy);
 		
 		_reinvestmentCap0.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
+		_reinvestmentCap1.apply(_F1notComponentSpecialty, _bidStrategy);
 		_reinvestmentCap1s.apply(_F1componentSpecialty, _bidStrategy);
-		_reinvestmentCap1.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy); //TODO need to do set subtracion here
+		_reinvestmentCap2.apply(_F2notComponentSpecialty, _bidStrategy); 
 		_reinvestmentCap2s.apply(_F2componentSpecialty, _bidStrategy);
-		_reinvestmentCap2.apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy); //TODO need to do set subtracion here
 
 		//_distributionCap.apply(_bidStrategy);
 	}

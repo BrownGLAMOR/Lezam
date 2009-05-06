@@ -13,9 +13,9 @@ public class ReinvestmentCap extends StrategyTransformation{
 	
 	@Override
 	protected void transform(Query q, GenericBidStrategy strategy) {
-		System.out.println("!@#$*********** "+q+" " + strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) + " : "+_maxValue);
+		//System.out.println("!@#$*********** "+q+" " + strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) + " : "+_maxValue);
 		if(strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) > _maxValue){
-			System.out.println("!@#$***********2 "+q+" " + strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) + " <- "+_maxValue);
+			//System.out.println("!@#$***********2 "+q+" " + strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR) + " <- "+_maxValue);
 			strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, _maxValue);
 		}
 	}

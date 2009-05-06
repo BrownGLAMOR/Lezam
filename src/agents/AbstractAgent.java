@@ -324,7 +324,7 @@ public abstract class AbstractAgent extends Agent {
 	
 	
 	/**
-	 * Helper methods for generating more interesting sets of queries
+	 * Helper method for generating more interesting sets of queries
 	 * 
 	 * @param s1
 	 * @param s2
@@ -336,6 +336,21 @@ public abstract class AbstractAgent extends Agent {
 		inter.retainAll(s2);
 		return inter;
 	}
+	
+	/**
+	 * Helper method for generating s1 - s2
+	 * 
+	 * @param s1
+	 * @param s2
+	 * @return
+	 */
+	protected Set<Query> subtract(Set<Query> s1, Set<Query> s2){
+		Set<Query> sub = new LinkedHashSet<Query>();
+		sub.addAll(s1);
+		sub.removeAll(s2);
+		return sub;
+	}
+	
 	
 	protected void printAdvertiserInfo(){
 		System.out.println("Agent Info");
