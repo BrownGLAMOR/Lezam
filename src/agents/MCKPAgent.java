@@ -196,9 +196,9 @@ public class MCKPAgent extends AbstractAgent {
 			for(Query q : _querySpace){
 				double bid;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = 1;
+					bid = .7;
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = 1.5;
+					bid = 1.3;
 				else 
 					bid = 2;
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
@@ -229,7 +229,7 @@ public class MCKPAgent extends AbstractAgent {
 				double capacityInc = 10;
 				double valueLost;
 				for (int i = 1; i <= capacityInc; i++){
-					double 
+					double avgConvProb;
 				}
 			}
 		}
