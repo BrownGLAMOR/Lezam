@@ -253,7 +253,7 @@ public class KBWAgentMkII extends AbstractAgent {
 	  _maxF2Bid = Constants.CONVERSION_F2*Constants.SALE_VALUE;
 
 		for(Query query: _querySpace) {
-			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) 			  _
+			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) 
 				_bids.put(query, _maxF0Bid * INITIAL_CHEAPNESS);
 			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) 
 				_bids.put(query, _maxF1Bid * INITIAL_CHEAPNESS);
@@ -343,11 +343,11 @@ public class KBWAgentMkII extends AbstractAgent {
 						_bids.put(query, _bids.get(query) * DEC_RATE);
 						
     			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-    			  _bids.put(query, Math.min(_maxF0Bid, _bids.get(query));
+    			  _bids.put(query, Math.min(_maxF0Bid, _bids.get(query)));
     			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-    			  _bids.put(query, Math.min(_maxF1Bid, _bids.get(query));
+    			  _bids.put(query, Math.min(_maxF1Bid, _bids.get(query)));
     			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-    			  _bids.put(query, Math.min(_maxF2Bid, _bids.get(query));
+    			  _bids.put(query, Math.min(_maxF2Bid, _bids.get(query)));
 					
 					debug("New bid: " + query + " = " + _bids.get(query));
 				}
