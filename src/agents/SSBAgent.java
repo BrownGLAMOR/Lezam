@@ -71,10 +71,10 @@ public class SSBAgent extends AbstractAgent {
 		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
 		_walking = new Walking(_advertiserInfo.getAdvertiserId());
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05);
-		_reinvestmentCap0 = new ReinvestmentCap(0.70);
-		_reinvestmentCap1 = new ReinvestmentCap(0.75);
-		_reinvestmentCap1s = new ReinvestmentCap(0.80);
-		_reinvestmentCap2 = new ReinvestmentCap(0.85);
+		_reinvestmentCap0 = new ReinvestmentCap(0.90);
+		_reinvestmentCap1 = new ReinvestmentCap(0.90);
+		_reinvestmentCap1s = new ReinvestmentCap(0.90);
+		_reinvestmentCap2 = new ReinvestmentCap(0.90);
 		_reinvestmentCap2s = new ReinvestmentCap(0.90);
 		
 		
@@ -123,7 +123,7 @@ public class SSBAgent extends AbstractAgent {
 
 		_adjustConversionPr.apply(_bidStrategy);
 		
-		_topPosition.apply(_bidStrategy);
+		//_topPosition.apply(_bidStrategy);
 		_noImpressions.apply(_bidStrategy);
 		_walking.apply(_bidStrategy);
 		

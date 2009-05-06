@@ -21,15 +21,17 @@ public class Walking extends StrategyTransformation{
 		if(_queryReport != null && strategy.getQueryBid(q) > 0.25){//this may be a bad idea, need bidding from yesterday...
 			double position = _queryReport.getPosition(q, _advertiser);
 			double cpc = _queryReport.getCPC(q);
-			if(!(Double.isNaN(position) || position < 1.1 || Double.isNaN(cpc))){
+			if(!(Double.isNaN(position) || Double.isNaN(cpc))){
 				double current = strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR);
 				double currentBid = strategy.getQueryBid(q);
 				double y = currentBid/current;
 				double distance = Math.abs(currentBid - cpc);
-				double rfDistance = (current - (distance/y))/5;
+				double rfDistance = (current - (distance/y))/10;
 				
 				if(Math.random() > 0.5){
-					strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current+rfDistance);
+					if(position > 1.1){
+						strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current+rfDistance);
+					}
 				}
 				else {
 					strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current-rfDistance);
@@ -38,5 +40,4 @@ public class Walking extends StrategyTransformation{
 			}
 		}
 	}
-
 }
