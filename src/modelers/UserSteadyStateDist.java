@@ -8,51 +8,51 @@ public class UserSteadyStateDist {
 	
 	public enum UserState {NS, IS, F0, F1, F2, T};
 
-	static Random _R = new Random();
+	 Random _R = new Random();
 	
-	protected final static BigDecimal epsilon = new BigDecimal(".0001");
-	protected final static BigDecimal burstprobability = new BigDecimal("0.1");
+	protected final  BigDecimal epsilon = new BigDecimal(".0001");
+	protected final  BigDecimal burstprobability = new BigDecimal("0.1");
 	//All these probabilities should sum to 1
 	// From NS:
-	protected final static BigDecimal standard_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.99");
-	protected final static BigDecimal standard_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.01");
-	protected final static BigDecimal burst_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.95");
-	protected final static BigDecimal burst_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.05");
+	protected final  BigDecimal standard_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.99");
+	protected final  BigDecimal standard_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.01");
+	protected final  BigDecimal burst_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.95");
+	protected final  BigDecimal burst_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.05");
 	// From IS:
-	protected final static BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
-	protected final static BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final static BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
-	protected final static BigDecimal standard_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
-	protected final static BigDecimal standard_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
-	protected final static BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
-	protected final static BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.2");
-	protected final static BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
-	protected final static BigDecimal burst_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
-	protected final static BigDecimal burst_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
+	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
+	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
+	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
+	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
+	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
+	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
+	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.2");
+	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
+	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
+	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
 	// From F0
-	protected final static BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
-	protected final static BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final static BigDecimal standard_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
 	// From F1
-	protected final static BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.70");
-	protected final static BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.20");
-	protected final static BigDecimal standard_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.7");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.2");
-	protected final static BigDecimal burst_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.70");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.20");
+	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.7");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.2");
+	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
 	// From F2
-	protected final static BigDecimal standard_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
-	protected final static BigDecimal standard_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
-	protected final static BigDecimal burst_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
-	protected final static BigDecimal burst_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal standard_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
+	protected final  BigDecimal standard_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
+	protected final  BigDecimal burst_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
+	protected final  BigDecimal burst_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
 	// From T
-	protected final static BigDecimal standard_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
-	protected final static BigDecimal standard_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
-	protected final static BigDecimal burst_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
-	protected final static BigDecimal burst_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
+	protected final  BigDecimal standard_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
+	protected final  BigDecimal standard_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
+	protected final  BigDecimal burst_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
+	protected final  BigDecimal burst_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
 	
 	public UserSteadyStateDist() {
 	}
@@ -60,7 +60,7 @@ public class UserSteadyStateDist {
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public  void main(String[] args) {
 		BigDecimal[][] steadyStateM = new BigDecimal[UserState.values().length][UserState.values().length];
 		steadyStateM = findSteadyState();
 		for(int i = 0; i < UserState.values().length; i++) {
@@ -71,7 +71,7 @@ public class UserSteadyStateDist {
 	}
 
 
-	protected static BigDecimal[][] simulateVirtualization() {
+	protected  BigDecimal[][] simulateVirtualization() {
 		BigDecimal[][] m = new BigDecimal[UserState.values().length][UserState.values().length];
 		BigDecimal[][] standardMatrix = makeStandardMatrix();
 		BigDecimal[][] burstMatrix = makeBurstMatrix();
@@ -94,7 +94,7 @@ public class UserSteadyStateDist {
 		return m;
 	}
 
-	protected static BigDecimal[][] findSteadyState() {
+	protected  BigDecimal[][] findSteadyState() {
 		BigDecimal[][] probMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
 		probMatrix = makeProbMatrix();
 		int count = 0;
@@ -111,7 +111,7 @@ public class UserSteadyStateDist {
 	}
 	
 
-	protected static boolean convergenceTest(BigDecimal[][] m) {
+	protected  boolean convergenceTest(BigDecimal[][] m) {
 		BigDecimal[][] m2 = matrixMultiplication(m,m);
 		for (int i = 0; i < UserState.values().length; i++) {                                  
 			for (int j = 0; j < UserState.values().length; j++) {
@@ -123,7 +123,7 @@ public class UserSteadyStateDist {
 		return true;
 	}
 
-	protected static BigDecimal[][] makeProbMatrix() {
+	protected  BigDecimal[][] makeProbMatrix() {
 		BigDecimal[][] standardMatrix = makeStandardMatrix();
 		BigDecimal[][] burstMatrix = makeBurstMatrix();
 		BigDecimal[][] probMatrix = combineMarkovChains(standardMatrix, burstMatrix, burstprobability); 
@@ -131,7 +131,7 @@ public class UserSteadyStateDist {
 	}
 	
 	//NS=0, IS=1, F0=2, F1=3, F2=4, NS=5
-	protected static BigDecimal[][] makeStandardMatrix() {
+	protected  BigDecimal[][] makeStandardMatrix() {
 		BigDecimal[][] standardMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
 		//transitions from non-searching to other states
 		standardMatrix[0][0] = standard_NON_SEARCHING_NON_SEARCHING;
@@ -178,7 +178,7 @@ public class UserSteadyStateDist {
 		return normalizeCols(standardMatrix);
 	}
 	
-	protected static BigDecimal[][] makeBurstMatrix() {
+	protected  BigDecimal[][] makeBurstMatrix() {
 		BigDecimal[][] burstMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
 		//transitions from non-searching to other states
 		burstMatrix[0][0] = burst_NON_SEARCHING_NON_SEARCHING;
@@ -225,7 +225,7 @@ public class UserSteadyStateDist {
 		return normalizeCols(burstMatrix);
 	}
 	
-	protected static BigDecimal[][] combineMarkovChains(BigDecimal[][] standard, BigDecimal[][] burst, BigDecimal burstprob) {
+	protected  BigDecimal[][] combineMarkovChains(BigDecimal[][] standard, BigDecimal[][] burst, BigDecimal burstprob) {
 		BigDecimal[][] newMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
 		for(int i=0; i < UserState.values().length; i++){
 			for(int j=0; j < UserState.values().length; j++){
@@ -235,7 +235,7 @@ public class UserSteadyStateDist {
 		return newMatrix;
 	}
 	
-	protected static BigDecimal[][] matrixMultiplication(BigDecimal[][] m1, BigDecimal[][] m2) {
+	protected  BigDecimal[][] matrixMultiplication(BigDecimal[][] m1, BigDecimal[][] m2) {
 		BigDecimal[][] newMatrix = new BigDecimal[UserState.values().length][UserState.values().length];                                                   
 		for (int i = 0; i < UserState.values().length; i++) {                                  
 			for (int j = 0; j < UserState.values().length; j++) {               
@@ -248,7 +248,7 @@ public class UserSteadyStateDist {
 		return newMatrix;
 	}
 	
-	protected static BigDecimal[][] normalizeCols(BigDecimal[][] mat) {
+	protected  BigDecimal[][] normalizeCols(BigDecimal[][] mat) {
 		BigDecimal[][] newmat = new BigDecimal[mat[0].length][mat.length];
 		for(int i = 0; i < mat[0].length; i++) {
 			BigDecimal tot = new BigDecimal("0");
@@ -271,7 +271,7 @@ public class UserSteadyStateDist {
 	 * This function returns an array of the number of users in a given
 	 * query class.  Index 0 is F0, 1 is F1, and 2 is F2
 	 */
-	protected static int[] getBadEstimates(int numUsers) {
+	public int[] getBadEstimates(int numUsers) {
 		int[] users = new int[3];
 		double minF0 = .1241;
 		double maxF0 = .2643;
@@ -287,7 +287,7 @@ public class UserSteadyStateDist {
 		return users;
 	}
 	
-	protected static double randDouble(double a, double b) {
+	protected  double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}

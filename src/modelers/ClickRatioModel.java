@@ -69,7 +69,7 @@ public class ClickRatioModel {
 		for(int i = 0; i < clickprob.length; i++) {
 			clickprobtot[i] = 0;
 		}
-		int N = 250000;
+		int N = 2500;
 		for(int i = 0; i < N; i ++) {
 			double adveff = randDouble(adveffect[focuslevel][LOW],adveffect[focuslevel][HIGH]);
 			double gamma = randDouble(contprob[focuslevel][LOW],contprob[focuslevel][HIGH]);
@@ -87,8 +87,8 @@ public class ClickRatioModel {
 	}
 
 	public double[] getClickProb() {
-		if(clickprob[0] == 1) {
-			generateClickProb();
+		if(clickprob[0] == 0) {
+			this.generateClickProb();
 			return clickprob;
 		}
 		else {
@@ -106,7 +106,6 @@ public class ClickRatioModel {
 		Query q = new Query(null,"dvd");
 		System.out.println(q.getType());
 		ClickRatioModel crm = new ClickRatioModel(q,5);
-		crm.generateClickProb();
 		double[] clickprob = crm.getClickProb();
 		for(int i = 0; i < clickprob.length; i++) {
 			System.out.println("Slot "+(i+1)+": "+clickprob[i]);

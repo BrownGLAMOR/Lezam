@@ -9,9 +9,10 @@ public class PositionGivenBid {
 	private double m = .8;
 	private Query Q;
 	private ArrayList<double[]> dataPoints;
-	private boolean isLogLinear = true;
+	private boolean isLogLinear = false;
 	
 	//The position function is psi*e^{zeta*bid}
+	// or psi - zeta*bid
 	double PSI, ZETA;
 	
 	//PositionGivenBid is a separate calculation for each query, so we instantiate it
@@ -63,15 +64,21 @@ public class PositionGivenBid {
 
 		//do regressions stuff here;
 		WLSRegression linReg = new WLSRegression();
+		double psi,zeta;
 		if(linReg.Regress(Y, X, W)) {
 			if(isLogLinear) {
-				PSI = Math.exp(linReg.Coefficients()[0]);  //Log-linear version
+				psi = Math.exp(linReg.Coefficients()[0]);  //Log-linear version
 			}
 			else {
-				PSI = linReg.Coefficients()[0];
+				psi = linReg.Coefficients()[0];
 			}
-			ZETA = linReg.Coefficients()[1];
-			return true;
+			zeta = linReg.Coefficients()[1];
+			if(psi < 0) {
+				return false;
+			}
+			PSI = psi;
+			ZETA = zeta;
+			return true;	
 		}
 
 		return false;
