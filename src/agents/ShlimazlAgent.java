@@ -368,7 +368,6 @@ public class ShlimazlAgent extends AbstractAgent {
 				//This is vaguely arbitrary :)
 				model.addDataPoint(_allpositions.size(), bids.get(query), LAST);
 			}
-			debug(query);
 		}
 		
 		for(Query query: _querySpace) {
@@ -418,13 +417,16 @@ public class ShlimazlAgent extends AbstractAgent {
 	private void setBids() {
 		//TODO
 		for(Query query:_querySpace) {
-			if(pgbModelUpdated.get(query)) {
+			if(pgbModelUpdated.get(query) && _goalpos.get(query) <= 4) {
 				PositionGivenBid pgbmodel = pgbModels.get(query);
-				debug(query+"  "+pgbmodel.getBid(_goalpos.get(query)));
+				debug(query+"  bid:"+pgbmodel.getBid(_goalpos.get(query)));
 				_bids.put(query, pgbmodel.getBid(_goalpos.get(query)));
 			}
 			else {
 				//Our Model's aren't good so bid randomly
+				if(_goalpos.get(query) > 4) {
+					debug("EXPLORING INSTEAD OF SLOT 5");
+				}
 				double minbid = .40;
 				double maxbid;
 				if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
@@ -510,7 +512,6 @@ public class ShlimazlAgent extends AbstractAgent {
 			}
 			//Test to see if we are getting enough conversions overall, if so break
 			double totconv = 0;
-			int cap = (int) Math.ceil((1.0/((double)_querySpace.size()))* _capacity * .2);
 			for(Query query: _querySpace) {
 				double pos = _goalpos.get(query);
 				ClickRatioModel crm = crModels.get(query);
@@ -534,8 +535,10 @@ public class ShlimazlAgent extends AbstractAgent {
 					else
 						conversions = (clicks*(Constants.CONVERSION_F2))*(1.0/9.0);
 				}
+				debug(query+"   conversions: "+conversions);
 				totconv += conversions;
 			}
+			debug("Total conversions: "+totconv);
 			if(totconv >= _capacity * .2) {
 				break;
 			}
@@ -553,7 +556,10 @@ public class ShlimazlAgent extends AbstractAgent {
 		// For each query, figure out how much to devote to that specific query
 		for(Query query:_querySpace) {
 //			bidBundle.addQuery(query, _bids.get(query), new Ad(), _budget.get(query)*BUDGETCHEAPNESS);	
-			bidBundle.addQuery(query, _bids.get(query), new Ad());	
+			bidBundle.addQuery(query, _bids.get(query), new Ad());
+//			if(_currentday < 5) {
+//				bidBundle.setCampaignDailySpendLimit(_capacity*.25*10*.2); //Capacity*daily allotment*USP*conversionratio
+//			}
 		}
 		
 		// There is no whole limit, as we set limits on the individual parts

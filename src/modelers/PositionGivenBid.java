@@ -78,6 +78,7 @@ public class PositionGivenBid {
 			}
 			PSI = psi;
 			ZETA = zeta;
+			System.out.println("ZETA: "+ZETA+"  PSI: "+PSI);
 			return true;	
 		}
 
