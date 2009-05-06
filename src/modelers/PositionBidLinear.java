@@ -9,6 +9,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 
 public class PositionBidLinear implements PositionBidModel{
 	protected double _interpolation;
+	private double _givenInterpol;
 	protected int _slots;
 	//protected LinkedList<Hashtable<Query,Double>> _position;
 	//protected LinkedList<Hashtable<Query,Double>> _bid;
@@ -18,6 +19,7 @@ public class PositionBidLinear implements PositionBidModel{
 		_slots = slots;
 		_positionBid = new Hashtable<Query,Hashtable<Integer,Double>>();
 		_interpolation = interpolation;
+		_givenInterpol = interpolation;
 	}
 	
 	public void updateReport(QueryReport queryReport, HashMap<Query, Double> lastBids){
@@ -32,6 +34,7 @@ public class PositionBidLinear implements PositionBidModel{
 			if (!((Double) queryReport.getCPC(q)).isNaN()){
 				_interpolation = bid - queryReport.getCPC(q); //make a smarter interpolation
 			}
+			else _interpolation = _givenInterpol;
 			
 			if(!Double.isNaN(position)){
 				int pos = (int)position;

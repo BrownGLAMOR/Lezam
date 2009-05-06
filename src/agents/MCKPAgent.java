@@ -60,7 +60,7 @@ public class MCKPAgent extends AbstractAgent {
 		_numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
 		
 		_unitsSold = new UnitsSoldModelMeanWindow(_distributionWindow);
-		_positionBid = new PositionBidLinear(_numSlots, .5);
+		_positionBid = new PositionBidLinear(_numSlots, .75);
 		_positionClicks = new PositionToClicksAverage(_numSlots, _querySpace, numUsers/3); //estimate
 		
 		_baseLineConversion = new Hashtable<Query,Double>();
@@ -194,7 +194,13 @@ public class MCKPAgent extends AbstractAgent {
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
-				double bid = 1;
+				double bid;
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = 1;
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = 1.5;
+				else 
+					bid = 2;
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 				lastBid.put(q, bid);
 			}
@@ -221,8 +227,10 @@ public class MCKPAgent extends AbstractAgent {
 				budget -= ii.w();
 			}else{
 				double capacityInc = 10;
-				double valueInc;
-				//TODO - a little bit left
+				double valueLost;
+				for (int i = 1; i <= capacityInc; i++){
+					double 
+				}
 			}
 		}
 		return solution;
@@ -347,7 +355,7 @@ public class MCKPAgent extends AbstractAgent {
 	protected BidBundle buildBidBudle(){
 		System.out.println("****************************************");
 		for (Query q: _querySpace){
-			System.out.println(q + ", Bid: " + _bidBundle.getBid(q));
+			System.out.println(q + ", Bid: " + _bidBundle.getBid(q) + ", Budget: " + _bidBundle.getDailyLimit(q));
 		}
 		System.out.println("****************************************");
 		return _bidBundle;

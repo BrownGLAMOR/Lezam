@@ -19,8 +19,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class JESOM2Agent extends AbstractAgent {
 	protected JESOM2BidStrategy _bidStrategy;
-
-	protected AdjustConversionPr _adjustConversionPr;
 	protected Hashtable<Query,Double> _baseLineConversion;
 
 	protected UnitsSoldModel _unitsSold;
@@ -46,9 +44,6 @@ public class JESOM2Agent extends AbstractAgent {
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
-
-		_adjustConversionPr = new AdjustConversionPr(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty);
-
 
 		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
 		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
