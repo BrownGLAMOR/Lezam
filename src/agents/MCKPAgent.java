@@ -17,6 +17,7 @@ public class MCKPAgent extends AbstractAgent {
 	
 	//hashtable to retain our previous bids
 	private HashMap<Query, Double> lastBid; //query ID to bid;
+	private HashMap<Query, Double> previousBid; //query ID to bid;
 	double initBid;
 	
 	private int numUsers;
@@ -48,6 +49,7 @@ public class MCKPAgent extends AbstractAgent {
 	protected void initBidder() {
 		numUsers = 4000; //I'm not sure how to get this value actually
 		lastBid = new HashMap<Query, Double>();
+		previousBid = new HashMap<Query, Double>();
 		initBid = 1;
 		
 		printAdvertiserInfo();
@@ -94,6 +96,7 @@ public class MCKPAgent extends AbstractAgent {
 		for(Query q : _querySpace) {
 			_rpc.put(q, 10.0);
 			lastBid.put(q, initBid);
+			previousBid.put(q, initBid);
 		}
 		for(Query q : manufacturerSpecialty) 
 			_rpc.put(q, manufacturerBonus*_rpc.get(q));
@@ -113,7 +116,8 @@ public class MCKPAgent extends AbstractAgent {
 	protected void updateBidStrategy() {
 		if (!_queryReports.isEmpty()){
 			QueryReport qr = _queryReports.remove();
-			_positionBid.updateReport(qr, lastBid);
+			_positionBid.updateReport(qr, previousBid);
+			previousBid = new HashMap<Query, Double>(lastBid);
 			_positionClicks.updateReport(qr);
 			System.out.println(_positionClicks);
 		}
