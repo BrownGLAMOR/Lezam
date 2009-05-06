@@ -244,7 +244,7 @@ public class MCKPAgent extends AbstractAgent {
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					Misc.println("adding item " + ii, Output.OPTIMAL);
+					Misc.println("adding item over capacity" + ii, Output.OPTIMAL);
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
