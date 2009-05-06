@@ -1,6 +1,6 @@
 package modelers;
 
-public class UnitsSoldModelMax extends UnitsSoldModel {
+public class UnitsSoldModelMax extends UnitsSoldModelBasic {
 
 	public UnitsSoldModelMax(int distributionWindow) {
 		super(distributionWindow);

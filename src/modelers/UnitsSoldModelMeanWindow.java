@@ -2,7 +2,7 @@ package modelers;
 
 import java.util.Iterator;
 
-public class UnitsSoldModelMeanWindow extends UnitsSoldModel {
+public class UnitsSoldModelMeanWindow extends UnitsSoldModelBasic {
 
 	public UnitsSoldModelMeanWindow(int distributionWindow) {
 		super(distributionWindow);

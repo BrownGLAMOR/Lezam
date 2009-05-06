@@ -1,6 +1,6 @@
 package modelers;
 
-public class UnitsSoldModelMean extends UnitsSoldModel {
+public class UnitsSoldModelMean extends UnitsSoldModelBasic {
 
 	public UnitsSoldModelMean(int distributionWindow) {
 		super(distributionWindow);

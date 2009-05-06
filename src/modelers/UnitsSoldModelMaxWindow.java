@@ -2,7 +2,7 @@ package modelers;
 
 import java.util.Iterator;
 
-public class UnitsSoldModelMaxWindow extends UnitsSoldModel {
+public class UnitsSoldModelMaxWindow extends UnitsSoldModelBasic {
 
 	public UnitsSoldModelMaxWindow(int distributionWindow) {
 		super(distributionWindow);
