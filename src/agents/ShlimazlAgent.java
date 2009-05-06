@@ -21,7 +21,7 @@ public class ShlimazlAgent extends AbstractAgent {
 	private double CHEAPNESS = .6;				//Discounter for bidding
 	private double BUDGETCHEAPNESS = .7;		//Discounter for budget
 	private double LAST = 6.5;					//What slot we say that out of the auction is
-	private double MINBID = .25;				//Our minimum bid for all auctions
+	private double MINBID = .5;				//Our minimum bid for all auctions
 	private double CSB;							//Component Specialty Bonus
 	private double MSB;							//Manufacturer Specialty Bonus
 	private double PSB;							//Promoted Slot Bonus
@@ -415,8 +415,8 @@ public class ShlimazlAgent extends AbstractAgent {
 	}
 
 	private void setBids() {
-		//TODO
 		for(Query query:_querySpace) {
+			double maxbid = MAXBID.get(query)*randDouble(1.0, 1.15);
 			if(pgbModelUpdated.get(query) && _goalpos.get(query) <= 4) {
 				PositionGivenBid pgbmodel = pgbModels.get(query);
 				debug(query+"  bid:"+pgbmodel.getBid(_goalpos.get(query)));
@@ -427,36 +427,26 @@ public class ShlimazlAgent extends AbstractAgent {
 				if(_goalpos.get(query) > 4) {
 					debug("EXPLORING INSTEAD OF SLOT 5");
 				}
-				double minbid = .40;
-				double maxbid;
-				if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-					maxbid = Constants.CONVERSION_F0*USP.get(query);
-				else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-					maxbid = Constants.CONVERSION_F1*USP.get(query);
-				else
-					maxbid = Constants.CONVERSION_F2*USP.get(query);
-
-				maxbid *= 1.25;  
-
-				_bids.put(query, randDouble(minbid, maxbid));
+				_bids.put(query, randDouble(MINBID, maxbid));
 			}
 		}
 		//Make sure bids are in a reasonable interval
 		for(Query query:_querySpace) {
+			double maxbid = MAXBID.get(query)*randDouble(1.0, 1.1);
 			double bid = _bids.get(query);
 			if(bid < MINBID) {
 				_bids.put(query, MINBID);
 			}
 			else if(bid > MAXBID.get(query)) {
-				_bids.put(query, MAXBID.get(query));
+				_bids.put(query, maxbid);
 			}
 			else if(Double.isNaN(bid)) {
-				_bids.put(query,randDouble(MINBID, MAXBID.get(query)));
+				_bids.put(query,randDouble(MINBID, maxbid));
 			}
 		}
 		//Modify bid slightly to make it not the same everytime
 		for(Query query: _querySpace) {
-			_bids.put(query,_bids.get(query)*randDouble(.95, 1.05));
+			_bids.put(query,_bids.get(query)*randDouble(.95, 1.15));
 			debug("New bid: " + query + " = " + _bids.get(query));	
 		}
 	}
@@ -555,11 +545,8 @@ public class ShlimazlAgent extends AbstractAgent {
 		
 		// For each query, figure out how much to devote to that specific query
 		for(Query query:_querySpace) {
-//			bidBundle.addQuery(query, _bids.get(query), new Ad(), _budget.get(query)*BUDGETCHEAPNESS);	
-			bidBundle.addQuery(query, _bids.get(query), new Ad());
-//			if(_currentday < 5) {
-//				bidBundle.setCampaignDailySpendLimit(_capacity*.25*10*.2); //Capacity*daily allotment*USP*conversionratio
-//			}
+//			bidBundle.addQuery(query, _bids.get(query), new Ad(), _budget.get(query)*BUDGETCHEAPNESS);
+				bidBundle.addQuery(query, _bids.get(query), new Ad());
 		}
 		
 		// There is no whole limit, as we set limits on the individual parts
