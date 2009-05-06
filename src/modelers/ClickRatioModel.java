@@ -75,7 +75,7 @@ public class ClickRatioModel {
 			double gamma = randDouble(contprob[focuslevel][LOW],contprob[focuslevel][HIGH]);
 			clickprob[0] = adveff;
 			for(int j = 1; j < clickprob.length; j++) {
-				clickprob[j] = adveff*Math.pow(gamma,j)*(1-conv[focuslevel]);
+				clickprob[j] = adveff*Math.pow(gamma,j)*(1-conv[focuslevel]*(clickprob[j-1]));
 			}
 			for(int j = 0; j < clickprob.length; j++) {
 				clickprobtot[j] += clickprob[j];

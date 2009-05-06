@@ -451,6 +451,10 @@ public class ShlimazlAgent extends AbstractAgent {
 			else if(Double.isNaN(bid)) {
 				_bids.put(query,randDouble(MINBID, MAXBID.get(query)));
 			}
+		}
+		//Modify bid slightly to make it not the same everytime
+		for(Query query: _querySpace) {
+			_bids.put(query,_bids.get(query)*randDouble(.95, 1.05));
 			debug("New bid: " + query + " = " + _bids.get(query));	
 		}
 	}
