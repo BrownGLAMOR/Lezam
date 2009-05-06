@@ -47,7 +47,7 @@ public class ShlimazlAgent extends AbstractAgent {
 	
 	private HashMap<Query,Double> _goalpos;		//A hashmap from queries to our goal positions
 	private HashMap<Query,Double> MAXBID;		//A hashmap from queries to our maximum bid for that auction
-	private double maxbidcoeff = .25;
+	private double maxbidcoeff = 1.25;
 	private HashMap<Query,Double> _bids;		//A hashmap from queries to our bid for that auction
 	private HashMap<Query,Double> _budget;		//A hashmap from queries to our budget for that auction
 	private HashMap<Query,Double> USP;			//A hashmap from queries to our sales price query
@@ -447,7 +447,12 @@ public class ShlimazlAgent extends AbstractAgent {
 		}
 		//Modify bid slightly to make it not the same everytime
 		for(Query query: _querySpace) {
-			_bids.put(query,_bids.get(query)*randDouble(.95, 1.05));
+			if(_currentday < 4) {
+				_bids.put(query,_bids.get(query)*randDouble(.80, .90));
+			}
+			else {
+				_bids.put(query,_bids.get(query)*randDouble(.95, 1.05));
+			}
 			debug("New bid: " + query + " = " + _bids.get(query));	
 		}
 	}
