@@ -17,7 +17,7 @@ public class MCKPAgent extends AbstractAgent {
 	//hashtable to retain our previous bids
 	private HashMap<Query, Double> lastBid; //query ID to bid;
 	private HashMap<Query, Double> previousBid; //query ID to bid;
-	double initBid;
+	double defaultBid;
 	
 	private int numUsers;
 	
@@ -52,7 +52,7 @@ public class MCKPAgent extends AbstractAgent {
 		
 		lastBid = new HashMap<Query, Double>();
 		previousBid = new HashMap<Query, Double>();
-		initBid = 1;
+		defaultBid = 1; /******************* this is a useful value for staying in the auctions for informational purposes, could be more specific though */
 		
 		_capacityInc = 18; //This sets how much we attempt to go over budget
 		
@@ -99,8 +99,8 @@ public class MCKPAgent extends AbstractAgent {
 		_rpc = new Hashtable<Query,Double>();
 		for(Query q : _querySpace) {
 			_rpc.put(q, 10.0);
-			lastBid.put(q, initBid);
-			previousBid.put(q, initBid);
+			lastBid.put(q, defaultBid);
+			previousBid.put(q, defaultBid);
 		}
 		for(Query q : manufacturerSpecialty) 
 			_rpc.put(q, manufacturerBonus*_rpc.get(q));
@@ -197,7 +197,7 @@ public class MCKPAgent extends AbstractAgent {
 					bid = solution.get(isID).b();
 					lastBid.put(q, bid);
 				}
-				else bid = lastBid.get(q);
+				else bid = defaultBid; //this is a hack that was the result of the fact that the item sets were empty
 				
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 			}

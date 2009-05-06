@@ -35,6 +35,7 @@ public class PositionToClicksAverage implements PositionClicksModel {
 			slotClicks = new Hashtable<Integer,Double>();
 			for (int i = 1; i <= _slots; i++){
 				double clicks = clickSlot(i)*((double) searchingUsers)/16.;
+				if (clicks<1) clicks = 1; //numClicks has to be at least 1
 				slotClicks.put(i, clicks);
 			}
 			_positionClicks.put(q, slotClicks);
@@ -57,8 +58,10 @@ public class PositionToClicksAverage implements PositionClicksModel {
 		for(Query q : queryReport){
 			Hashtable<Integer,Double> slotClicks = _positionClicks.get(q);
 			//narsty update method just updates ours or the slot above us's numClicks to be what we saw
-			slotClicks.put(((Double) queryReport.getPosition(q)).intValue(), 
-					((Integer) queryReport.getClicks(q)).doubleValue());
+			if (((Integer) queryReport.getClicks(q)).doubleValue() >= 1){ //numClicks has to be at least 1
+				slotClicks.put( ((Double) queryReport.getPosition(q)).intValue(), 
+						((Integer) queryReport.getClicks(q)).doubleValue() );
+			}
 		}
 	}
 	
