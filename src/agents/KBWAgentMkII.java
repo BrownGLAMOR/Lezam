@@ -35,6 +35,11 @@ public class KBWAgentMkII extends AbstractAgent {
 	private Set<Query> ourspecialty;
 
 	private int recentConvHist;
+	
+	// Initialized to our actual cost, we never want to bid above this
+	private final double _maxF0Bid;
+	private final double _maxF1Bid;
+	private final double _maxF2Bid;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
 	protected final static double CHEAPNESS = .5;
@@ -243,13 +248,17 @@ public class KBWAgentMkII extends AbstractAgent {
 		// even on the first day. We will use the cheapness value until we get 
 		// more information from reports (when we can use different heuristics)
 
+	  _maxF0Bid = Constants.CONVERSION_F0*Constants.SALE_VALUE;
+	  _maxF1Bid = Constants.CONVERSION_F1*Constants.SALE_VALUE;
+	  _maxF2Bid = Constants.CONVERSION_F2*Constants.SALE_VALUE;
+
 		for(Query query: _querySpace) {
-			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_bids.put(query, Constants.CONVERSION_F0*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-				_bids.put(query, Constants.CONVERSION_F1*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
-			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-				_bids.put(query, Constants.CONVERSION_F2*Constants.SALE_VALUE*INITIAL_CHEAPNESS);
+			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) 			  _
+				_bids.put(query, _maxF0Bid * INITIAL_CHEAPNESS);
+			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) 
+				_bids.put(query, _maxF1Bid * INITIAL_CHEAPNESS);
+			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) 
+				_bids.put(query, _maxF2Bid * INITIAL_CHEAPNESS);
 			
 			debug("Initial bid: " + query + " = " +_bids.get(query));
 		}
@@ -332,7 +341,14 @@ public class KBWAgentMkII extends AbstractAgent {
 						_bids.put(query, _bids.get(query) * INC_RATE);
 					else 
 						_bids.put(query, _bids.get(query) * DEC_RATE);
-
+						
+    			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+    			  _bids.put(query, Math.min(_maxF0Bid, _bids.get(query));
+    			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+    			  _bids.put(query, Math.min(_maxF1Bid, _bids.get(query));
+    			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+    			  _bids.put(query, Math.min(_maxF2Bid, _bids.get(query));
+					
 					debug("New bid: " + query + " = " + _bids.get(query));
 				}
 				
