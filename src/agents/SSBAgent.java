@@ -1,5 +1,27 @@
 package agents;
 
+/*
+ * Commented by Max. All comments made by cjc are marked with "// (cjc)"
+ * 
+ * Simplifying assumptions:
+ * 
+ * - CPC is close to bid
+ * - conversion probability is close to what it would be with no informational searchers
+ * - the 2 assumptions above sort of cancel each other out
+ * 
+ * 
+ * 
+ * Constants:
+ * 
+ * - reinvestment caps
+ * 
+ * 
+ * 
+ * Models:
+ * 
+ * - ConversionPrModelNoIS
+ */
+
 import java.util.Hashtable;
 import java.util.Set;
 
@@ -64,47 +86,47 @@ public class SSBAgent extends AbstractAgent {
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		double componentSpecialtyBonus = _advertiserInfo.getComponentBonus();
 		
-		//_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		//_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow); // (cjc)
 		_unitsSold = new UnitsSoldModelMean(distributionWindow);
 		
-		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
-		_walking = new Walking(_advertiserInfo.getAdvertiserId());
-		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05);
-		_reinvestmentCap0 = new ReinvestmentCap(0.90);
-		_reinvestmentCap1 = new ReinvestmentCap(0.90);
-		_reinvestmentCap1s = new ReinvestmentCap(0.90);
-		_reinvestmentCap2 = new ReinvestmentCap(0.90);
-		_reinvestmentCap2s = new ReinvestmentCap(0.90);
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8); // don't know what this 8 is
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10); // don't know what this is
+		_walking = new Walking(_advertiserInfo.getAdvertiserId()); // don't know what this is
+		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05); // don't know what this is
+		_reinvestmentCap0 = new ReinvestmentCap(0.90); //constant to be entered by user
+		_reinvestmentCap1 = new ReinvestmentCap(0.90); //constant to be entered by user
+		_reinvestmentCap1s = new ReinvestmentCap(0.90); //constant to be entered by user
+		_reinvestmentCap2 = new ReinvestmentCap(0.90); //constant to be entered by user
+		_reinvestmentCap2s = new ReinvestmentCap(0.90); //constant to be entered by user
 		
 		
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);} // constant set by game server info
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);} // constant set by game server info
+		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);} // constant set by game server info
 		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
 		
-		_conversionPr = new ConversionPrModelNoIS(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty, componentSpecialtyBonus);
+		_conversionPr = new ConversionPrModelNoIS(distributionCapacity, _unitsSold, _baseLineConversion, componentSpecialty, componentSpecialtyBonus); // model used
 		
 		_adjustConversionPr = new AdjustConversionPr(_conversionPr);
 		
-		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
-		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
-		new ConversionPr(0.30).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy);
+		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy); // constant set by game server info
+		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy); // constant set by game server info
+		new ConversionPr(0.30).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy); // constant set by game server info
 		
 		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
 		
 		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
 		_F1notComponentSpecialty = subtract(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE),_F1componentSpecialty);
-		new ConversionPr(0.27).apply(_F1componentSpecialty, _bidStrategy);
-		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);}
+		new ConversionPr(0.27).apply(_F1componentSpecialty, _bidStrategy); // constant set by game server info
+		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);} // (cjc)
 		
 		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
 		_F2notComponentSpecialty = subtract(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO),_F2componentSpecialty);
-		new ConversionPr(0.39).apply(_F2componentSpecialty, _bidStrategy);
-		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);}
+		new ConversionPr(0.39).apply(_F2componentSpecialty, _bidStrategy); // constant set by game server info
+		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);} // (cjc)
 		
 		
-		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
+		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy); // (cjc)
 		new Targeted().apply(_F2componentSpecialty, _bidStrategy);
 	}
 	
@@ -123,7 +145,7 @@ public class SSBAgent extends AbstractAgent {
 
 		_adjustConversionPr.apply(_bidStrategy);
 		
-		//_topPosition.apply(_bidStrategy);
+		//_topPosition.apply(_bidStrategy); // (cjc)
 		_noImpressions.apply(_bidStrategy);
 		_walking.apply(_bidStrategy);
 		
