@@ -37,9 +37,9 @@ public class KBWAgentMkII extends AbstractAgent {
 	private int recentConvHist;
 	
 	// Initialized to our actual cost, we never want to bid above this
-	private final double _maxF0Bid;
-	private final double _maxF1Bid;
-	private final double _maxF2Bid;
+	private double _maxF0Bid;
+	private double _maxF1Bid;
+	private double _maxF2Bid;
 
 	protected final static double INITIAL_CHEAPNESS = 1.0; //currently obsolete because of the entire cheapness factor
 	protected final static double CHEAPNESS = .5;
