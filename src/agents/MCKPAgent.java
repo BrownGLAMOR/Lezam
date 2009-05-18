@@ -6,6 +6,19 @@ import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;
 
+/**
+ * _unitsSold is an instance of UnitsSoldModelMeanWindow (day -> units sold during window model)
+ * _positionBid is an instance of PositionBidLinear (position -> bid model)
+ * _positionClicks is an instance of PositionToClicksAverage (position -> clicks model)
+ * 
+ * The simplifying assumptions made are mostly in the fillKnapsack method.  In the absence of 
+ * a model for estimating the loss from going over capacity, I've made some simple assumptions
+ * for the value the new and old average probability of conversion, as well as assuming that
+ * the value lost is equal to the lost conversion probability times the average unit sales price.
+ * 
+ * @author spucci, carleton, and victor
+ */
+
 public class MCKPAgent extends AbstractAgent {
 	protected int _day;
 	
@@ -14,8 +27,8 @@ public class MCKPAgent extends AbstractAgent {
 	protected int _distributionWindow;
 	protected int _numSlots;
 	
-	//hashtable to retain our previous bids
-	private HashMap<Query, Double> lastBid; //query ID to bid;
+	//hash table to retain our previous bids
+	private HashMap<Query, Double> recentBid; //query ID to bid;
 	private HashMap<Query, Double> previousBid; //query ID to bid;
 	double defaultBid;
 	
@@ -37,7 +50,6 @@ public class MCKPAgent extends AbstractAgent {
 	Set<Query> _F1componentSpecialty;
 	Set<Query> _F2componentSpecialty;
 	
-	private int _knapSackIter;
 	private int _capacityInc;
 	protected BidBundle _bidBundle;
 	
@@ -50,7 +62,7 @@ public class MCKPAgent extends AbstractAgent {
 	protected void initBidder() {
 		numUsers = 4000; //I'm not sure how to get this value actually
 		
-		lastBid = new HashMap<Query, Double>();
+		recentBid = new HashMap<Query, Double>();
 		previousBid = new HashMap<Query, Double>();
 		defaultBid = 1; /******************* this is a useful value for staying in the auctions for informational purposes, could be more specific though */
 		
@@ -99,7 +111,7 @@ public class MCKPAgent extends AbstractAgent {
 		_rpc = new Hashtable<Query,Double>();
 		for(Query q : _querySpace) {
 			_rpc.put(q, 10.0);
-			lastBid.put(q, defaultBid);
+			recentBid.put(q, defaultBid);
 			previousBid.put(q, defaultBid);
 		}
 		for(Query q : manufacturerSpecialty) 
@@ -118,14 +130,17 @@ public class MCKPAgent extends AbstractAgent {
 	
 	@Override
 	protected void updateBidStrategy() {
+		//update models
 		if (!_queryReports.isEmpty()){
 			QueryReport qr = _queryReports.remove();
 			_positionBid.updateReport(qr, previousBid);
-			previousBid = new HashMap<Query, Double>(lastBid);
+			
+			previousBid = new HashMap<Query, Double>(recentBid);
+			//saves the most recent bids to the previous bids hashMap
+			
 			_positionClicks.updateReport(qr);
 			System.out.println(_positionClicks);
 		}
-		
 		if (!_salesReports.isEmpty()){
 			SalesReport sr = _salesReports.remove();
 			_unitsSold.updateReport(sr);
@@ -174,16 +189,17 @@ public class MCKPAgent extends AbstractAgent {
 			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 			
 			double budget = _distributionCapacity + _distributionCapacity/_distributionWindow - _unitsSold.getWindowSold();
+			// unitsSold.getWindowSold returns the items sold over the course of the last window, so this is :
+			// budget = capacity(1+1/windowLength) - soldInWindow
 			System.out.println("\nCap: " + _distributionCapacity + ", Window: " + 
 					_unitsSold.getWindowSold() + ", Budget: " + budget + "\n");
 			
 			/**
-			 * I suggest adding some code here that checks to see what the budget value is, and if it is pretty
+			 * TODO I suggest adding some code here that checks to see what the budget value is, and if it is pretty
 			 * high, and the _day value is past 59 (it goes to 61), then is jacks up the bid for the last two days
 			 * to try and sneak in some last minute sales.
 			 */
 			
-			_knapSackIter = 0;
 			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 			
 			//set bids
@@ -195,13 +211,16 @@ public class MCKPAgent extends AbstractAgent {
 				
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
-					lastBid.put(q, bid);
+					recentBid.put(q, bid);
 				}
-				else bid = defaultBid; //this is a hack that was the result of the fact that the item sets were empty
+				else bid = defaultBid; // TODO this is a hack that was the result of the fact that the item sets were empty
 				
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
 			}
 		}
+		//bid bundle for first two days
+		//TODO The values .7, 1.3, and 1.7 are game specific, and then agent would be more 
+		//     robust if it had a better estimate for starting defaults
 		else {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace){
@@ -213,7 +232,7 @@ public class MCKPAgent extends AbstractAgent {
 				else 
 					bid = 1.7;
 				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
-				lastBid.put(q, bid);
+				recentBid.put(q, bid);
 			}
 		}
 		
@@ -221,7 +240,7 @@ public class MCKPAgent extends AbstractAgent {
 	}
 	
 	/**
-	 * Greedily fill the knapsack by selecting incremental items ----------------------------------------
+	 * Greedily fill the knapsack by selecting incremental items ---------TODO get real model
 	 * @param incItems
 	 * @param budget
 	 * @return
@@ -233,6 +252,8 @@ public class MCKPAgent extends AbstractAgent {
 		boolean incremented = false;
 		double valueLost = 0;
 		double valueGained = 0;
+		int knapSackIter = 0;
+		
 		for(IncItem ii: incItems) {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
@@ -271,14 +292,14 @@ public class MCKPAgent extends AbstractAgent {
 				avgUSP /= 16;
 				*/// This can be used later if the values actually change for the sales bonus
 				double avgUSP = 11.25;
-				for (int i = _capacityInc*_knapSackIter+1; i <= _capacityInc*(_knapSackIter+1); i++){
+				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(_distCapacDiscount, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP;
 				}
 				budget+=_capacityInc;
 				incremented = true;
-				_knapSackIter++;
+				knapSackIter++;
 			}
 		}
 		return solution;
