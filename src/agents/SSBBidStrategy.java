@@ -10,7 +10,7 @@ public class SSBBidStrategy extends GenericBidStrategy {
 		super(querySpace);
 		setDefaultProperty(CONVERSION_PR, 0.1);
 		setDefaultProperty(REINVEST_FACTOR, 0.3);
-		setDefaultProperty(CONVERSION_REVENUE, 10);
+		setDefaultProperty(CONVERSION_REVENUE, 10); // constant set by game
 	}
 
 	@Override
