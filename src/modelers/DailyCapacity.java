@@ -3,6 +3,7 @@ package modelers;
 import java.util.HashMap;
 import java.util.Set;
 import modelers.BidtoCPC;
+import modelers.ClickProbabilityModel;
 
 import edu.umich.eecs.tac.props.Query;
 
@@ -21,19 +22,22 @@ public class DailyCapacity {
 	protected final double LAMBDA = 0.995;
 	protected final int CAP = 31; // most allowed to oversell in 1 normal day
 	
-	public double getOptimalDailyCapacity (HashMap<Query,Double> weights, HashMap<Query,Double> bids, HashMap<Query,Double> pi_fromClickProfitabilityModel, int maxCap, Set<Query> querySpace, int soldInLast4Days) {
+	public double getOptimalDailyCapacity (HashMap<Query,Double> weights, HashMap<Query,Double> bids, 
+			int maxCap, Set<Query> querySpace, int soldInLast4Days, String componentSpecialty, 
+			String manufacturerSpecialty) {
 		_cpc = 0;
 		_revPerClick = 0;
 		
 		BidtoCPC CPCModel = new BidtoCPC(querySpace, bids);
 		HashMap<Query,Double> CPCs = CPCModel.getCPCs();
 		
-		//TODO: add click revenue model
+		ClickProbabilityModel ClProbMod = new ClickProbabilityModel(querySpace, componentSpecialty, manufacturerSpecialty);
+		HashMap<Query,Double> _clickRevs = ClProbMod.getClickRevenue();
 		
 		for (Query q: querySpace){
 			double weight = weights.get(q);
 			_cpc += weight * CPCs.get(q);
-			_revPerClick += weight * pi_fromClickProfitabilityModel.get(q);
+			_revPerClick += weight * _clickRevs.get(q);
 		}
 		_profPerClick = _revPerClick - _cpc;
 		
@@ -54,6 +58,6 @@ public class DailyCapacity {
 		deltaOptimal = Math.max(deltaOptimal - 1, 0);
 
 		
-		return .2;
+		return (.2 + (deltaOptimal/maxCap));
 	}
 }

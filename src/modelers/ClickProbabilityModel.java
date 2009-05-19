@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.QueryType;
  * currently has constants that could possibly change with the server
  */
 
-public class ClickProbability {
+public class ClickProbabilityModel {
 
 	private final double MSB = 0.5;
 	private final double CSB = 0.5;
@@ -20,7 +20,7 @@ public class ClickProbability {
 	private final double F2_CONVERSION_BASELINE = 0.3;
 	
 	private HashMap<Query,Double> clickProbability_;
-	private HashMap<Query,Double> clickProfitability_;
+	private HashMap<Query,Double> clickRevenue_;
 
 	private double eta(Query q, String componentSpecialty, String manufacturerSpecialty){
 		double p;
@@ -50,11 +50,11 @@ public class ClickProbability {
 		return (p*x)/(p*x + (1-p));
 	}
 
-	public ClickProbability (Set<Query> querySpace, String componentSpecialty, String manufacturerSpecialty){
+	public ClickProbabilityModel(Set<Query> querySpace, String componentSpecialty, String manufacturerSpecialty){
 		clickProbability_ = new HashMap<Query,Double>();
 		for (Query q: querySpace){
 			clickProbability_.put(q, eta(q,componentSpecialty,"nullXnull"));
-			clickProfitability_.put(q, eta(q,componentSpecialty,manufacturerSpecialty));
+			clickRevenue_.put(q, eta(q,componentSpecialty,manufacturerSpecialty));
 		}
 	}
 	
@@ -62,7 +62,7 @@ public class ClickProbability {
 		return clickProbability_;
 	}
 	
-	public HashMap<Query,Double> getClickProfitability(){
-		return clickProfitability_;
+	public HashMap<Query,Double> getClickRevenue(){
+		return clickRevenue_;
 	}
 }
