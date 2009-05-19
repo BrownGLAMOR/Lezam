@@ -19,7 +19,11 @@ package agents;
  * 
  * Models:
  * 
- * - ConversionPrModelNoIS
+ * - ConversionPrModel;
+ * - ConversionPrModelNoIS;
+ * - UnitsSoldModel;
+ * - UnitsSoldModelMean;
+ * 
  */
 
 import java.util.Hashtable;
