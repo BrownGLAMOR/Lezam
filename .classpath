@@ -9,6 +9,6 @@
 	<classpathentry kind="lib" path="lib/tasim-0.8.0-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib/tasim-0.8.0.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/Jama-1.0.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
