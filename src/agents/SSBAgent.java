@@ -29,10 +29,10 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
-import modelers.ConversionPrModel;
-import modelers.ConversionPrModelNoIS;
-import modelers.UnitsSoldModel;
-import modelers.UnitsSoldModelMean;
+import modelers.conversionprob.ConversionPrModel;
+import modelers.conversionprob.ConversionPrModelNoIS;
+import modelers.unitssold.UnitsSoldModel;
+import modelers.unitssold.UnitsSoldModelMean;
 
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;

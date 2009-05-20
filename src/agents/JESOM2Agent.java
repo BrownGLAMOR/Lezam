@@ -3,8 +3,8 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
-import modelers.UnitsSoldModel;
-import modelers.UnitsSoldModelMaxWindow;
+import modelers.unitssold.UnitsSoldModel;
+import modelers.unitssold.UnitsSoldModelMaxWindow;
 
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;

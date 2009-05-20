@@ -1,4 +1,4 @@
-package modelers;
+package modelers.unitssold;
 
 public class UnitsSoldModelMean extends UnitsSoldModelBasic {
 

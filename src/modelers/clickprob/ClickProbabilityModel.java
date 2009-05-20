@@ -1,4 +1,4 @@
-package modelers;
+package modelers.clickprob;
 
 import java.util.HashMap;
 import java.util.Set;

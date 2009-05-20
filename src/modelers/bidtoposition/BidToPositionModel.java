@@ -1,6 +1,6 @@
 package modelers.bidtoposition;
 
-import modelers.ModelPoint;
+import regressions.ModelPoint;
 
 public abstract class BidToPositionModel {
 

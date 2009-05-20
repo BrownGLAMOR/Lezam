@@ -1,7 +1,9 @@
-package modelers;
+package modelers.conversionprob;
 
+import usermodel.UserModel;
+import usermodel.UserStateTransitionModel;
+import usermodel.UserStateTransitionModel.UserState;
 import agents.rules.Constants;
-import modelers.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.*;
 
 public class ConversionModel {

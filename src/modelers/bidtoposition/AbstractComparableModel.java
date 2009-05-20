@@ -1,4 +1,6 @@
-package modelers;
+package modelers.bidtoposition;
+
+import regressions.ModelPoint;
 
 
 /**

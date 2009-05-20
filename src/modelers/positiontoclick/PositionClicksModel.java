@@ -1,4 +1,4 @@
-package modelers;
+package modelers.positiontoclick;
 
 import edu.umich.eecs.tac.props.Query;
 

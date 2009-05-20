@@ -1,4 +1,4 @@
-package modelers;
+package regressions;
 
 
 public class ModelPoint {

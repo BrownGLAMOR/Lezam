@@ -1,4 +1,4 @@
-package modelers;
+package modelers.unitssold;
 
 import java.util.Collection;
 

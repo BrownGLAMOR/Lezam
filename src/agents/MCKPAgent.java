@@ -2,6 +2,10 @@ package agents;
 
 import java.util.*;
 import modelers.*;
+import modelers.bidtoposition.PositionBidLinear;
+import modelers.positiontoclick.PositionToClicksAverage;
+import modelers.unitssold.UnitsSoldModel;
+import modelers.unitssold.UnitsSoldModelMeanWindow;
 import props.*;
 import agents.mckp.*;
 import edu.umich.eecs.tac.props.*;

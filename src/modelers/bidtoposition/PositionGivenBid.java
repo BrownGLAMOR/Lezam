@@ -1,6 +1,9 @@
-package modelers;
+package modelers.bidtoposition;
 
 import java.util.ArrayList;
+
+import regressions.WLSRegression;
+
 
 import edu.umich.eecs.tac.props.Query;
 

@@ -1,25 +1,24 @@
-package modelers;
+package modelers.unitssold;
 
 import java.util.Iterator;
 
-public class UnitsSoldModelMaxWindow extends UnitsSoldModelBasic {
+public class UnitsSoldModelMeanWindow extends UnitsSoldModelBasic {
 
-	public UnitsSoldModelMaxWindow(int distributionWindow) {
+	public UnitsSoldModelMeanWindow(int distributionWindow) {
 		super(distributionWindow);
 	}
 
 	@Override
 	protected int updateLastDaySold() {
-		int max = 0;
+		int sum = 0;
+
 		Iterator<Integer> iter = buildWindowIterator();
 		while(iter.hasNext()){
 			int val = iter.next();
-			if(val > max){
-				max = val;
-			}
+			sum += val;
 		}
 		
-		return max;
+		return sum/(_distributionWindow-1);
 	}
 	
 }

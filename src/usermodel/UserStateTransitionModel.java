@@ -1,4 +1,4 @@
-package modelers;
+package usermodel;
 
 import java.util.HashMap;
 import java.util.Random;

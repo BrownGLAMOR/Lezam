@@ -1,7 +1,9 @@
-package modelers;
+package modelers.conversionprob;
 
 import java.util.Hashtable;
 import java.util.Set;
+
+import modelers.unitssold.UnitsSoldModel;
 
 import edu.umich.eecs.tac.props.Query;
 

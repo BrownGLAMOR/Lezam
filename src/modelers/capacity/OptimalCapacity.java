@@ -1,4 +1,4 @@
-package modelers;
+package modelers.capacity;
 
 public class OptimalCapacity {
 	

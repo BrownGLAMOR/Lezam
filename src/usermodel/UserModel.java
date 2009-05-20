@@ -1,11 +1,12 @@
-package modelers;
+package usermodel;
 
 import java.util.HashMap;
 import java.util.Set;
 
+import usermodel.UserStateTransitionModel.UserState;
+
 import agents.rules.Constants;
 
-import modelers.UserStateTransitionModel.UserState;
 
 import edu.umich.eecs.tac.props.*;
 

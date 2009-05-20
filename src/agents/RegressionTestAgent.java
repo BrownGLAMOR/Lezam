@@ -3,7 +3,7 @@ package agents;
 
 import java.util.*;
 
-import modelers.PositionGivenBid;
+import modelers.bidtoposition.PositionGivenBid;
 
 import se.sics.tasim.props.SimulationStatus;
 

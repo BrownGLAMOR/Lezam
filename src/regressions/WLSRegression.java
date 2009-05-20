@@ -1,4 +1,4 @@
-package modelers;
+package regressions;
 
 import Jama.LUDecomposition;
 import Jama.Matrix;

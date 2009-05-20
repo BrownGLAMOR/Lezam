@@ -3,12 +3,12 @@ package agents;
 
 import java.util.*;
 
-import modelers.ClickRatioModel;
-import modelers.PositionGivenBid;
-import modelers.UserSteadyStateDist;
+import modelers.bidtoposition.PositionGivenBid;
+import modelers.clickprob.ClickRatioModel;
 
 import se.sics.tasim.props.SimpleContent;
 import se.sics.tasim.props.SimulationStatus;
+import usermodel.UserSteadyStateDist;
 
 import agents.rules.Constants;
 import edu.umich.eecs.tac.props.*;

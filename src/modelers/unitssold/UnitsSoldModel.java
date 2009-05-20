@@ -1,4 +1,4 @@
-package modelers;
+package modelers.unitssold;
 
 import edu.umich.eecs.tac.props.SalesReport;
 

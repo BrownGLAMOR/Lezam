@@ -1,4 +1,4 @@
-package modelers;
+package usermodel;
 
 import java.math.BigDecimal;
 import java.math.MathContext;

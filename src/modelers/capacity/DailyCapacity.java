@@ -1,9 +1,9 @@
-package modelers;
+package modelers.capacity;
 
 import java.util.HashMap;
 import java.util.Set;
-import modelers.BidtoCPC;
-import modelers.ClickProbabilityModel;
+import modelers.bidtocpc.BidtoCPC;
+import modelers.clickprob.ClickProbabilityModel;
 
 import edu.umich.eecs.tac.props.Query;
 
