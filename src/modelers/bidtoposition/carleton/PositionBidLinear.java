@@ -1,4 +1,4 @@
-package modelers.bidtoposition;
+package modelers.bidtoposition.carleton;
 
 import java.util.Arrays;
 import java.util.HashMap;

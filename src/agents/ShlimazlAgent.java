@@ -3,7 +3,7 @@ package agents;
 
 import java.util.*;
 
-import modelers.bidtoposition.PositionGivenBid;
+import modelers.bidtoposition.jordan.PositionGivenBid;
 import modelers.clickprob.ClickRatioModel;
 
 import se.sics.tasim.props.SimpleContent;

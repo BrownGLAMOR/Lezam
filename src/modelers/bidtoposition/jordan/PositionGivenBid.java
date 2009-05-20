@@ -1,4 +1,4 @@
-package modelers.bidtoposition;
+package modelers.bidtoposition.jordan;
 
 import java.util.ArrayList;
 

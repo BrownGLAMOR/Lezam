@@ -1,4 +1,4 @@
-package modelers.bidtoposition;
+package modelers.bidtoposition.carleton;
 
 import edu.umich.eecs.tac.props.Query;
 

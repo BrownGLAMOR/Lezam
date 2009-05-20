@@ -2,7 +2,7 @@ package agents;
 
 import java.util.ArrayList;
 
-import modelers.bidtoposition.BucketBidToPositionModel;
+import modelers.bidtoposition.ilke.BucketBidToPositionModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

@@ -2,7 +2,7 @@ package agents;
 
 import java.util.*;
 import modelers.*;
-import modelers.bidtoposition.PositionBidLinear;
+import modelers.bidtoposition.carleton.PositionBidLinear;
 import modelers.positiontoclick.PositionToClicksAverage;
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMeanWindow;
