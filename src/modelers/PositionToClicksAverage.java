@@ -65,7 +65,6 @@ public class PositionToClicksAverage implements PositionClicksModel {
 		}
 	}
 	
-	@Override
 	public int getClicks(Query q, int slot) {
 		Hashtable<Integer,Double> slotClicks = _positionClicks.get(q);
 		return slotClicks.get(slot).intValue();
