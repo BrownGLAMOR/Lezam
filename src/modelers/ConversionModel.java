@@ -4,7 +4,7 @@ import agents.rules.Constants;
 import modelers.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.*;
 
-public class ConversionModel extends AbstractModel {
+public class ConversionModel {
 
     private UserModel _userModel;
     private int _maxCapacity;

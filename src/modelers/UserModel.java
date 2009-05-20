@@ -9,7 +9,7 @@ import modelers.UserStateTransitionModel.UserState;
 
 import edu.umich.eecs.tac.props.*;
 
-public class UserModel extends AbstractModel {
+public class UserModel {
         // --------------
         // Output stuff
         // Note: NS users are both NS and T

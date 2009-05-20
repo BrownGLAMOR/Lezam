@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author cjc
  *
  */
-public abstract class UnitsSoldModelBasic extends AbstractModel implements UnitsSoldModel {
+public abstract class UnitsSoldModelBasic implements UnitsSoldModel {
 	//protected SalesReport _salesReport;
 	protected int _distributionWindow;
 	protected LinkedList<Integer> _sold;

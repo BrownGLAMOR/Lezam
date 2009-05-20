@@ -5,7 +5,7 @@ import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;
 
-public class ConversionPrModelNoIS extends AbstractModel implements ConversionPrModel {
+public class ConversionPrModelNoIS implements ConversionPrModel {
 	protected static double LAMBDA = 0.995;
 	
 	/**
