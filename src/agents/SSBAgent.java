@@ -21,7 +21,7 @@ package agents;
  * 
  * - ConversionPrModel;
  * - ConversionPrModelNoIS;
- * - UnitsSoldModel;
+ * - UnitsSoldModel; (also in: DistributionCap.java)
  * - UnitsSoldModelMean;
  * 
  */
@@ -84,17 +84,17 @@ public class SSBAgent extends AbstractAgent {
 		printAdvertiserInfo();
 		_baseLineConversion = new Hashtable<Query,Double>();
 		_bidStrategy = new SSBBidStrategy(_querySpace);
-		int distributionCapacity = _advertiserInfo.getDistributionCapacity();
-		int distributionWindow = _advertiserInfo.getDistributionWindow();
+		int distributionCapacity = _advertiserInfo.getDistributionCapacity(); // max capacity
+		int distributionWindow = _advertiserInfo.getDistributionWindow(); // number of days 
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		double componentSpecialtyBonus = _advertiserInfo.getComponentBonus();
 		
 		//_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow); // (cjc)
-		_unitsSold = new UnitsSoldModelMean(distributionWindow);
+		_unitsSold = new UnitsSoldModelMean(distributionWindow); // model calculates total sold over last 4 days
 		
-		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8); // don't know what this 8 is
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10); // don't know what this is
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8); // 8 is the _magicDivisor...
+		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10); // 0.10 is _decrease
 		_walking = new Walking(_advertiserInfo.getAdvertiserId()); // don't know what this is
 		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.05); // don't know what this is
 		_reinvestmentCap0 = new ReinvestmentCap(0.90); //constant to be entered by user

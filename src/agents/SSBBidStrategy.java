@@ -9,13 +9,13 @@ public class SSBBidStrategy extends GenericBidStrategy {
 	public SSBBidStrategy(Set<Query> querySpace){
 		super(querySpace);
 		setDefaultProperty(CONVERSION_PR, 0.1); // constant set by game info
-		setDefaultProperty(REINVEST_FACTOR, 0.3); // constant set by user, why .3?
+		setDefaultProperty(REINVEST_FACTOR, 0.3); // constant set by user
 		setDefaultProperty(CONVERSION_REVENUE, 10); // constant set by game
 	}
 
 	@Override
 	public double getQueryBid(Query q){
-		return getProperty(q,CONVERSION_PR)*getProperty(q,CONVERSION_REVENUE)*getProperty(q,REINVEST_FACTOR);
+		return getProperty(q,CONVERSION_PR)*getProperty(q,CONVERSION_REVENUE)*getProperty(q,REINVEST_FACTOR); // Carlton's bid strategy
 	}
 
 	public void propertiesToString(StringBuffer buff, Query q){
