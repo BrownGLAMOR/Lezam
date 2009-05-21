@@ -20,7 +20,7 @@ public class NoImpressions extends StrategyTransformation{
 	@Override
 	protected void transform(Query q, GenericBidStrategy strategy) {
 		
-		if(_queryReport != null && strategy.getQueryBid(q) > 0.25){//this may be a bad idea, need bidding from yesterday...
+		if(_queryReport != null && strategy.getQueryBid(q) > 0.25){//this may be a bad idea, need bidding from yesterday... (cjc)
 			if(Double.isNaN(_queryReport.getPosition(q, _advertiser))){
 				double current = strategy.getProperty(q, SSBBidStrategy.REINVEST_FACTOR);
 				strategy.setProperty(q, SSBBidStrategy.REINVEST_FACTOR, current+_increase);

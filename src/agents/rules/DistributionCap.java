@@ -1,6 +1,6 @@
 package agents.rules;
 
-import modelers.unitssold.UnitsSoldModel;
+import modelers.UnitsSoldModel;
 
 import agents.GenericBidStrategy;
 import edu.umich.eecs.tac.props.Query;
@@ -8,7 +8,7 @@ import edu.umich.eecs.tac.props.Query;
 public class DistributionCap extends StrategyTransformation{	
 	protected int _distributionCapacity;
 	protected UnitsSoldModel _unitsSold;
-	protected double _magicDevisor;
+	protected double _magicDevisor;	// I think this _magicDivisor corresponds to an estimated clicks/conversion. Carlton uses 8...
 	
 	public DistributionCap(int distributionCapacity, UnitsSoldModel unitsSold, double magicDevisor){
 		_distributionCapacity = distributionCapacity;

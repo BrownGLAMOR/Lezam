@@ -18,7 +18,7 @@ public class Walking extends StrategyTransformation{
 	@Override
 	protected void transform(Query q, GenericBidStrategy strategy) {
 		
-		if(_queryReport != null && strategy.getQueryBid(q) > 0.25){//this may be a bad idea, need bidding from yesterday...
+		if(_queryReport != null && strategy.getQueryBid(q) > 0.25){//this may be a bad idea, need bidding from yesterday... (cjc)
 			double position = _queryReport.getPosition(q, _advertiser);
 			double cpc = _queryReport.getCPC(q);
 			if(!(Double.isNaN(position) || Double.isNaN(cpc))){

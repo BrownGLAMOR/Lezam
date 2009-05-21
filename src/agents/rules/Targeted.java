@@ -5,6 +5,10 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 
+/*
+ * sets the ad as targeted
+ */
+
 public class Targeted extends StrategyTransformation{
 	private Product _product;
 	
