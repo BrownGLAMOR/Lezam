@@ -11,11 +11,22 @@ import edu.umich.eecs.tac.props.QueryType;
 
 public class BasicSimulator {
 	
+	//TODO!!
+	/*
+	 * -Build User Model
+	 * -Build Conversion Model (depends on user model)
+	 * -Build Click Model
+	 */
+	
 	Random _R = new Random();					//Random number generator
 	
 	private double _squashing;
 	private double _numUsers;
 	private int _numAgents;
+	private int _numPromSlots;
+	private int _numSlots;
+	private double _regReserve;
+	private double _proReserve;
 	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
@@ -23,9 +34,12 @@ public class BasicSimulator {
 	private HashMap<String,HashMap<Query,Double>> _budgets;
 	private HashMap<String,Double> _totBudget;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
+	private HashMap<String,String> _manfactBonus;
+	private HashMap<String,String> _compBonus;
+	private HashMap<String,Integer> _overCap;
 	private HashMap<Query,Double> _contProb;
 	private HashMap<QueryType,Double> _users;
-	protected Set<Query> _querySpace;
+	private Set<Query> _querySpace;
 	
 	/*
 	 * 
@@ -33,12 +47,16 @@ public class BasicSimulator {
 	public BasicSimulator() {
 		_numUsers = 90000;
 		_numAgents = 7;
+		_numSlots = 5;
 		_agents = new String[_numAgents];
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
 		_bids = new HashMap<String,HashMap<Query,Double>>();
 		_budgets = new HashMap<String,HashMap<Query,Double>>();
 		_totBudget = new HashMap<String,Double>();
 		_advEffect = new HashMap<String,HashMap<Query,Double>>();
+		_manfactBonus = new HashMap<String,String>();
+		_compBonus = new HashMap<String,String>();
+		_overCap = new HashMap<String, Integer>();
 		_contProb = new HashMap<Query,Double>();
 		_users = new HashMap<QueryType,Double>();
 		_querySpace = new LinkedHashSet<Query>();
@@ -48,6 +66,9 @@ public class BasicSimulator {
 	 * Initializes the state of the simulation
 	 */
 	public void initializeGameState() {
+		_numPromSlots = 2;
+		_regReserve = randDouble(.02, .05);
+		_proReserve = randDouble(_regReserve,.4);
 		/*
 		 * Initialize QuerySpace
 		 */
@@ -107,6 +128,9 @@ public class BasicSimulator {
 			_adType.put(_agents[i], ads);
 			_totBudget.put(_agents[i], Double.NaN);
 			_advEffect.put(_agents[i], advEffect);
+			_manfactBonus.put(_agents[i], "lioneer");
+			_compBonus.put(_agents[i],"tv");
+			_overCap.put(_agents[i], (int) Math.ceil(randDouble(1,50)));
 		}
 		
 		/*
@@ -121,7 +145,7 @@ public class BasicSimulator {
 	 * Generates the perfect models to pass to the bidder
 	 */
 	public void generateModels() {
-		
+
 	}
 	
 	/*

@@ -5,8 +5,6 @@ import java.math.MathContext;
 import java.util.Random;
 
 public class UserSteadyStateDist {
-	
-	public enum UserState {NS, IS, F0, F1, F2, T};
 
 	 Random _R = new Random();
 	
