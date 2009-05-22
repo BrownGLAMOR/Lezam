@@ -5,18 +5,13 @@ import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
 
+import usermodel.UserState;
+
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 public class BasicSimulator {
-	
-	//TODO!!
-	/*
-	 * -Build User Model
-	 * -Build Conversion Model (depends on user model)
-	 * -Build Click Model
-	 */
 	
 	Random _R = new Random();					//Random number generator
 	
@@ -27,6 +22,8 @@ public class BasicSimulator {
 	private int _numSlots;
 	private double _regReserve;
 	private double _proReserve;
+	private double _targEffect;
+	private double _promSlotBonus;
 	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
@@ -38,7 +35,7 @@ public class BasicSimulator {
 	private HashMap<String,String> _compBonus;
 	private HashMap<String,Integer> _overCap;
 	private HashMap<Query,Double> _contProb;
-	private HashMap<QueryType,Double> _users;
+	private HashMap<UserState,Double> _users;
 	private Set<Query> _querySpace;
 	
 	/*
@@ -48,6 +45,8 @@ public class BasicSimulator {
 		_numUsers = 90000;
 		_numAgents = 7;
 		_numSlots = 5;
+		_targEffect = .5;
+		_promSlotBonus = .5;
 		_agents = new String[_numAgents];
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
 		_bids = new HashMap<String,HashMap<Query,Double>>();
@@ -58,7 +57,7 @@ public class BasicSimulator {
 		_compBonus = new HashMap<String,String>();
 		_overCap = new HashMap<String, Integer>();
 		_contProb = new HashMap<Query,Double>();
-		_users = new HashMap<QueryType,Double>();
+		_users = new HashMap<UserState,Double>();
 		_querySpace = new LinkedHashSet<Query>();
 	}
 	
@@ -136,9 +135,12 @@ public class BasicSimulator {
 		/*
 		 * Initialize the User Population
 		 */
-		_users.put(QueryType.FOCUS_LEVEL_ZERO, _numUsers/10);
-		_users.put(QueryType.FOCUS_LEVEL_ONE, _numUsers/10);
-		_users.put(QueryType.FOCUS_LEVEL_TWO, _numUsers/10);
+		_users.put(UserState.IS, (_numUsers*2)/10);
+		_users.put(UserState.F0, _numUsers/10);
+		_users.put(UserState.F1, _numUsers/10);
+		_users.put(UserState.F2, _numUsers/10);
+		_users.put(UserState.T, _numUsers/10);
+		_users.put(UserState.NS, (_numUsers*4)/10);
 	}
 	
 	/*
