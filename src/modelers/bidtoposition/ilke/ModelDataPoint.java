@@ -1,11 +1,11 @@
 package modelers.bidtoposition.ilke;
 
 
-public class ModelPoint {
+public class ModelDataPoint {
 	protected Object[] _given;
 	protected double _toBePredicted;
 	
-	public ModelPoint(Object[] given, double toBePredicted) {
+	public ModelDataPoint(Object[] given, double toBePredicted) {
 		_given = given;
 		_toBePredicted = toBePredicted;
 	}	

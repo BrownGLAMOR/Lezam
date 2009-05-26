@@ -1,14 +1,16 @@
 package modelers.bidtoposition.ilke;
 
+import modelers.bidtoposition.ilke.AbstractComparableModel;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 
-public abstract class BidToPositionModel {
-
-	public abstract double getPrediction(Object[] given);
+public abstract class BidToPositionModel extends AbstractComparableModel{
 	
-	public abstract void insertPoint(ModelPoint mp);
+	public abstract double getPosition(Query q, double bid);
 	
-	public abstract void reset();
-		
-	public abstract void train();
+	public abstract void updateBidBundle(BidBundle bids);
+	
+	public abstract void updateQueryReport(QueryReport qr);
 	
 }

@@ -1,7 +1,6 @@
 package modelers.bidtoposition.ilke;
 
 
-
 /**
  * Extend this class if you want to use ModelComparator with your model
  * @author ilkekaya
@@ -9,7 +8,7 @@ package modelers.bidtoposition.ilke;
  */
 public abstract class AbstractComparableModel {
 		
-	public abstract void insertPoint(ModelPoint mp);
+	public abstract void insertPoint(ModelDataPoint mp);
 	
 	public abstract void train();
 	

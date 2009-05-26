@@ -4,8 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-
-
+import modelers.bidtoposition.ilke.ModelDataPoint;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -14,7 +13,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 	static double BUCKET_SIZE = 0.40;
 	protected int _slots;
 	protected double _noposition;
-	protected ArrayList<ModelPoint> _data;
+	protected ArrayList<ModelDataPoint> _data;
 	protected HashMap<Query, HashMap<Integer, Double>> _buckets;
 	protected HashMap<Query, HashMap<Integer, Integer>> _bucketAppearances;
 	protected ArrayList<BidBundle> _bids;
@@ -26,7 +25,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 		_slots = slots;
 		_noposition = _slots + 1;		
 		_bids = new ArrayList<BidBundle>();
-		_data = new ArrayList<ModelPoint>();
+		_data = new ArrayList<ModelDataPoint>();
 		_queries = queries;
 		
 		initBuckets();
@@ -42,7 +41,6 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 			
 		}
 	}
-	
 	public void updateBidBundle(BidBundle bb) {
 		_bids.add(bb);
 	}
@@ -101,7 +99,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 			given[0] = q;
 			given[1] = bids.getBid(q);
 			
-			ModelPoint mp = new ModelPoint(given, reportedPos);
+			ModelDataPoint mp = new ModelDataPoint(given, reportedPos);
 			
 			insertPoint(mp);
 		}	
@@ -126,6 +124,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 	}
 	
 	protected double getMeanPosition(Query q, double bid) {
+	
 		int bucket = getBucket(bid);
 		Double sum = _buckets.get(q).get(bucket);
 		Integer appearance = _bucketAppearances.get(q).get(bucket);
@@ -185,7 +184,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 	}
 
 	@Override
-	public void insertPoint(ModelPoint mp) {
+	public void insertPoint(ModelDataPoint mp) {
 		_data.add(mp);
 	}
 
@@ -202,7 +201,7 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 	public void train() {
 		initBuckets();
 		
-		for(ModelPoint point: _data) {
+		for(ModelDataPoint point: _data) {
 			Object[] given = point.getGiven();
 			Query q = (Query) given[0];
 			double bid = (Double) given[1];
@@ -212,5 +211,9 @@ public class BucketBidToPositionModel extends BidToPositionModel {
 			updateBucketAppearance(q, bid);
 		}
 		
+	}
+	
+	public String toString() {
+		return "BucketBidToPositionModel";
 	}
 }
