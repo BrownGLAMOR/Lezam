@@ -1,6 +1,5 @@
 package modelers.bidtoposition.ilke;
 
-import regressions.ModelPoint;
 
 public abstract class BidToPositionModel {
 

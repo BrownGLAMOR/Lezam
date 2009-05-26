@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Set;
 
 
-import regressions.ModelPoint;
 
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
