@@ -45,7 +45,7 @@ public class ShlimazlAgent extends AbstractAgent {
 	
 	private HashMap<Query,Double> _goalpos;		//A hashmap from queries to our goal positions
 	private HashMap<Query,Double> MAXBID;		//A hashmap from queries to our maximum bid for that auction
-	private double maxbidcoeff = 1.25;
+	private double maxbidcoeff = 1.0;
 	private HashMap<Query,Double> _bids;		//A hashmap from queries to our bid for that auction
 	private HashMap<Query,Double> _budget;		//A hashmap from queries to our budget for that auction
 	private HashMap<Query,Double> USP;			//A hashmap from queries to our sales price query

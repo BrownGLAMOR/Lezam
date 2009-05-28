@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/aa-agent-0.9.3.jar"/>
-	<classpathentry kind="lib" path="lib/aa-common-0.9.3-javadoc.jar"/>
-	<classpathentry kind="lib" path="lib/aa-common-0.9.3.jar"/>
-	<classpathentry kind="lib" path="lib/example-agent-0.9.3.jar"/>
 	<classpathentry kind="lib" path="lib/org.mortbay.jetty-4.2.27.jar"/>
-	<classpathentry kind="lib" path="lib/tasim-0.8.0-javadoc.jar"/>
-	<classpathentry kind="lib" path="lib/tasim-0.8.0.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/aa-agent-0.9.5.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/aa-common-0.9.5.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/example-agent-0.9.5.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/org.mortbay.jetty-4.2.27.jar"/>
+	<classpathentry kind="lib" path="/pro/aa/usr/jberg/clients/lib/tasim-0.8.0.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
