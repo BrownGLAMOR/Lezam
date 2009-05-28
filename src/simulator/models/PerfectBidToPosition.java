@@ -1,4 +1,4 @@
-package simulator;
+package simulator.models;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,7 +10,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 import modelers.AbstractModel;
 
-public class PerfectPositionToBid extends AbstractModel {
+public class PerfectBidToPosition extends AbstractModel {
 	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Double>> _bids;
@@ -19,7 +19,7 @@ public class PerfectPositionToBid extends AbstractModel {
 	private double _ourAdEffect;
 	private Query _query;
 	
-	public PerfectPositionToBid(String[] agents,
+	public PerfectBidToPosition(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
 			HashMap<String,HashMap<Query,Double>> advEffect,
 			double squashing,
@@ -47,11 +47,19 @@ public class PerfectPositionToBid extends AbstractModel {
 			double realbid = Math.pow(advEff,_squashing)*bid;
 			bids.add(realbid);
 		}
+		double bid = (Double) info;
+		double realbid = Math.pow(_ourAdEffect, _squashing)*bid;
+		bids.add(realbid);
 		Collections.sort(bids,Collections.reverseOrder());
-		int pos = (int) Math.ceil((Double) info);
-		double bidtobeat = bids.get(pos);
-		double bid = bidtobeat / Math.pow(_ourAdEffect, _squashing);
-		return bid+.01;
+		for(int i = 0; i < bids.size()-1;i++) {
+			if(bids.get(i) == realbid) {
+				/*
+				 * Return the position this bid puts us in
+				 */
+				return i+1;
+			}
+		}
+		throw new RuntimeException("Error on Bid Calculation");
 	}
 
 	@Override

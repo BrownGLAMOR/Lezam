@@ -1,15 +1,36 @@
 package simulator;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import se.sics.isl.transport.Transportable;
+import se.sics.tasim.logtool.LogReader;
+import se.sics.tasim.props.SimulationStatus;
+import simulator.parser.GameLogParser;
+import simulator.parser.SimParserMessage;
 import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.AdvertiserInfo;
+import edu.umich.eecs.tac.props.BankStatus;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.ReserveInfo;
+import edu.umich.eecs.tac.props.RetailCatalog;
+import edu.umich.eecs.tac.props.SalesReport;
+import edu.umich.eecs.tac.props.SlotInfo;
+import edu.umich.eecs.tac.props.UserClickModel;
 
 public class BasicSimulator {
 	
@@ -59,6 +80,52 @@ public class BasicSimulator {
 		_contProb = new HashMap<Query,Double>();
 		_users = new HashMap<UserState,Double>();
 		_querySpace = new LinkedHashSet<Query>();
+	}
+	
+	public void parseGameLog(String filename) throws IOException, ParseException {
+	    InputStream inputStream = new FileInputStream(filename);
+    	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
+        parser.start();
+        parser.stop();
+	    LinkedList<SimParserMessage> messages = parser.getMessages();
+	    for(int i = 0; i < messages.size(); i++) {
+	    	SimParserMessage mes = messages.get(i);
+	    	Transportable content = mes.getContent();
+	    	if (content instanceof BankStatus) {
+	    	}
+	    	else if (content instanceof SimulationStatus) {
+	    	}
+	    	else if (content instanceof SlotInfo) {
+	    	}
+	    	else if (content instanceof ReserveInfo) {
+	    	}
+	    	else if (content instanceof PublisherInfo) {
+	    	}
+	    	else if (content instanceof SalesReport) {
+	    	}
+	    	else if (content instanceof QueryReport) {
+	    	}
+	    	else if (content instanceof RetailCatalog) {
+	    	}
+	    	else if (content instanceof BidBundle) {
+	    	}
+	    	else if (content instanceof UserClickModel) {
+	    	}
+	    	else if (content instanceof AdvertiserInfo) {
+	    	}
+	    	else {
+	    		throw new RuntimeException("Unexpected parse token");
+	    	}
+	    }
+	}
+	
+	public void initializeGameState(String filename, int day) throws IOException, ParseException {
+	    InputStream inputStream = new FileInputStream(filename);
+    	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
+        parser.start();
+        parser.stop();
+	    LinkedList<SimParserMessage> messages = parser.getMessages();
+	    System.out.println(messages.size());
 	}
 	
 	/*
@@ -176,5 +243,7 @@ public class BasicSimulator {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
+	
+	
 	
 }
