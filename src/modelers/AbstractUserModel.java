@@ -14,12 +14,6 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public abstract class AbstractUserModel extends AbstractModel {
 	
-	private Query _query;
-
-	public AbstractUserModel(Query query) {
-		_query = query;
-	}
-	
 	public abstract void updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	

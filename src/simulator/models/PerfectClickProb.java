@@ -11,8 +11,9 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 import modelers.AbstractModel;
+import modelers.AbstractSlotToPrClick;
 
-public class PerfectClickProb extends AbstractModel {
+public class PerfectClickProb extends AbstractSlotToPrClick {
 	
 	private double LAMBDA = .995;
 	private String[] _agents;
@@ -29,7 +30,6 @@ public class PerfectClickProb extends AbstractModel {
 	private double _proReserve;
 	private double _targEffect;
 	private double _promSlotBonus;
-	private Query _query;
 	
 	public PerfectClickProb(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
@@ -47,6 +47,7 @@ public class PerfectClickProb extends AbstractModel {
 			double promSlotBonus,
 			Query query) {
 		
+		super(query);
 		_agents = agents;
 		_bids = bids;
 		_advEffect = advEffect;
@@ -61,11 +62,10 @@ public class PerfectClickProb extends AbstractModel {
 		_proReserve = proReserve;
 		_targEffect = targEffect;
 		_promSlotBonus = promSlotBonus;
-		_query = query;
 	}
 
 	@Override
-	public Object getPrediction(Object info) {
+	public double getPrediction(double info) {
 		/*
 		 * Click Prob Models should take in a slot
 		 * and return the click probability
@@ -135,7 +135,7 @@ public class PerfectClickProb extends AbstractModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport, Object otherInfo) {
+	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
 	}
 	

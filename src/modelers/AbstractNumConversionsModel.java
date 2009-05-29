@@ -11,17 +11,17 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractSlotToPrConversion extends AbstractModel {
+public abstract class AbstractNumConversionsModel extends AbstractModel {
 	
-	private Query _query;
+	protected Query _query;
 
-	public AbstractSlotToPrConversion(Query query) {
+	public AbstractNumConversionsModel(Query query) {
 		_query = query;
 	}
 	
 	public abstract void updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract double getPrediction(double bid);
+	public abstract int getPrediction(double bid);
 
 }

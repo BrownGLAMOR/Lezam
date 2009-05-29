@@ -12,8 +12,9 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 import modelers.AbstractModel;
+import modelers.AbstractUserModel;
 
-public class PerfectUserModel extends AbstractModel {
+public class PerfectUserModel extends AbstractUserModel {
 	
 	private int _numUsers;
 
@@ -25,7 +26,7 @@ public class PerfectUserModel extends AbstractModel {
 	}
 
 	@Override
-	public Object getPrediction(Object info) {
+	public double getPrediction(UserState info) {
 		/*
 		 * The incoming info for a User model should always be a UserState and
 		 * we will return the ratio of users in that state
@@ -35,7 +36,7 @@ public class PerfectUserModel extends AbstractModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport, Object otherInfo) {
+	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
 	}
 	

@@ -9,15 +9,15 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 import modelers.AbstractModel;
+import modelers.AbstractSlotToBidModel;
 
-public class PerfectPositionToBid extends AbstractModel {
+public class PerfectPositionToBid extends AbstractSlotToBidModel {
 	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Double>> _bids;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
 	private double _squashing;
 	private double _ourAdEffect;
-	private Query _query;
 	
 	public PerfectPositionToBid(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
@@ -26,16 +26,16 @@ public class PerfectPositionToBid extends AbstractModel {
 			double ourAdEffect,
 			Query query) {
 		
+		super(query);
 		_agents = agents;
 		_bids = bids;
 		_advEffect = advEffect;
 		_squashing = squashing;
 		_ourAdEffect = ourAdEffect;
-		_query = query;
 	}
 
 	@Override
-	public Object getPrediction(Object info) {
+	public double getPrediction(double info) {
 		/*
 		 * The incoming info for a bid to position model
 		 * should always be a double which is the bid
@@ -55,7 +55,7 @@ public class PerfectPositionToBid extends AbstractModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport, Object otherInfo) {
+	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
 	}
 

@@ -13,8 +13,9 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 import modelers.AbstractModel;
+import modelers.AbstractPrConversionModel;
 
-public class PerfectConversionProb extends AbstractModel {
+public class PerfectConversionProb extends AbstractPrConversionModel {
 	
 
 	
@@ -32,15 +33,15 @@ public class PerfectConversionProb extends AbstractModel {
 			Query query,
 			PerfectUserModel userModel) {
 		
+		super(query);
 		_overcap = overcap;
 		_compSpecialtyBonus = compSpecialtyBonus;
 		_compSpecialty = compSpecialty;
-		_query = query;
 		_userModel = userModel;
 	}
 
 	@Override
-	public Object getPrediction(Object info) {
+	public double getPrediction(double info) {
 		double baselineconv;
 		double users;
 		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
@@ -71,7 +72,7 @@ public class PerfectConversionProb extends AbstractModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport, Object otherInfo) {
+	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
 	}
 	

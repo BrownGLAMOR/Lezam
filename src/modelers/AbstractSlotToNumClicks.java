@@ -13,7 +13,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public abstract class AbstractSlotToNumClicks extends AbstractModel {
 	
-	private Query _query;
+	protected Query _query;
 
 	public AbstractSlotToNumClicks(Query query) {
 		_query = query;

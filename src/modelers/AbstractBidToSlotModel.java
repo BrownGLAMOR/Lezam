@@ -13,7 +13,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public abstract class AbstractBidToSlotModel extends AbstractModel {
 	
-	private Query _query;
+	protected Query _query;
 
 	public AbstractBidToSlotModel(Query query) {
 		_query = query;
