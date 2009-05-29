@@ -16,54 +16,37 @@ import se.sics.isl.transport.Transportable;
 
 
 /**
- * <code>BankStatusParser</code> is a simple example of a TAC AA
- * parser that prints out all advertiser's BankStatus received in
- * a simulation from the simulation log file.<p>
- * <p/>
- * The class <code>Parser</code> is inherited to
- * provide base functionality for TAC AA log processing.
  *
- * @author - Lee Callender
+ * @author jberg
  * 
- * @see edu.umich.eecs.tac.Parser
  */
 public class GameLogParser extends Parser {
-    private int day = 0;
-    private String[] participantNames;
-    private boolean[] is_Advertiser;
-    private ParticipantInfo[] participants;
+    private String[] _participantNames;
+    private boolean[] _is_Advertiser;
+    private ParticipantInfo[] _participants;
     
     LinkedList<SimParserMessage> _messages;
 
     public GameLogParser(LogReader reader) {
         super(reader);
 
-        participants = reader.getParticipants();
-        if (participants == null) {
+        _participants = reader.getParticipants();
+        if (_participants == null) {
             throw new IllegalStateException("no participants");
         }
-        int agent;
-        participantNames = new String[participants.length];
-        is_Advertiser = new boolean[participants.length];
-        for (int i = 0, n = participants.length; i < n; i++) {
-            ParticipantInfo info = participants[i];
-            agent = info.getIndex();
-            System.out.println(info.getName() + ": " + agent);
-            participantNames[agent] = info.getName();
+        _participantNames = new String[_participants.length];
+        _is_Advertiser = new boolean[_participants.length];
+        for (int i = 0, n = _participants.length; i < n; i++) {
+            ParticipantInfo info = _participants[i];
+            int agent = info.getIndex();
+            _participantNames[agent] = info.getName();
             if (info.getRole() == TACAAConstants.ADVERTISER) {
-                is_Advertiser[agent] = true;
+                _is_Advertiser[agent] = true;
             } else
-                is_Advertiser[agent] = false;
+                _is_Advertiser[agent] = false;
         }
         _messages = new LinkedList<SimParserMessage>();
     }
-
-    // -------------------------------------------------------------------
-    // Callbacks from the parser.
-    // Please see the class edu.umich.eecs.tac.Parser for more callback
-    // methods.
-    // -------------------------------------------------------------------
-
 
     /**
      * Invoked when a message to a specific receiver is encountered in the log
@@ -76,11 +59,23 @@ public class GameLogParser extends Parser {
      */
     protected void message(int sender, int receiver, Transportable content) {
     	SimParserMessage parseMessage = new SimParserMessage(sender,receiver,content);
-    	_messages.add(parseMessage);
+    	_messages.addLast(parseMessage);
     }
 
 	public LinkedList<SimParserMessage> getMessages() {
 		return _messages;
+	}
+
+	public String[] getParticipantNames() {
+		return _participantNames;
+	}
+
+	public ParticipantInfo[] getParticipants() {
+		return _participants;
+	}
+
+	public boolean[] getIsAdvertiser() {
+		return _is_Advertiser;
 	}
 
 }

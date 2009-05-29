@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -13,8 +14,10 @@ import java.util.Set;
 
 import se.sics.isl.transport.Transportable;
 import se.sics.tasim.logtool.LogReader;
+import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
 import simulator.parser.GameLogParser;
+import simulator.parser.GameStatus;
 import simulator.parser.SimParserMessage;
 import usermodel.UserState;
 
@@ -32,10 +35,15 @@ import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.SlotInfo;
 import edu.umich.eecs.tac.props.UserClickModel;
 
+/**
+ *
+ * @author jberg
+ * 
+ */
 public class BasicSimulator {
-	
+
 	Random _R = new Random();					//Random number generator
-	
+
 	private double _squashing;
 	private double _numUsers;
 	private int _numAgents;
@@ -45,7 +53,7 @@ public class BasicSimulator {
 	private double _proReserve;
 	private double _targEffect;
 	private double _promSlotBonus;
-	
+
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
 	private HashMap<String,HashMap<Query,Double>> _bids;
@@ -58,7 +66,7 @@ public class BasicSimulator {
 	private HashMap<Query,Double> _contProb;
 	private HashMap<UserState,Double> _users;
 	private Set<Query> _querySpace;
-	
+
 	/*
 	 * 
 	 */
@@ -81,53 +89,16 @@ public class BasicSimulator {
 		_users = new HashMap<UserState,Double>();
 		_querySpace = new LinkedHashSet<Query>();
 	}
-	
-	public void parseGameLog(String filename) throws IOException, ParseException {
-	    InputStream inputStream = new FileInputStream(filename);
-    	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
-        parser.start();
-        parser.stop();
-	    LinkedList<SimParserMessage> messages = parser.getMessages();
-	    for(int i = 0; i < messages.size(); i++) {
-	    	SimParserMessage mes = messages.get(i);
-	    	Transportable content = mes.getContent();
-	    	if (content instanceof BankStatus) {
-	    	}
-	    	else if (content instanceof SimulationStatus) {
-	    	}
-	    	else if (content instanceof SlotInfo) {
-	    	}
-	    	else if (content instanceof ReserveInfo) {
-	    	}
-	    	else if (content instanceof PublisherInfo) {
-	    	}
-	    	else if (content instanceof SalesReport) {
-	    	}
-	    	else if (content instanceof QueryReport) {
-	    	}
-	    	else if (content instanceof RetailCatalog) {
-	    	}
-	    	else if (content instanceof BidBundle) {
-	    	}
-	    	else if (content instanceof UserClickModel) {
-	    	}
-	    	else if (content instanceof AdvertiserInfo) {
-	    	}
-	    	else {
-	    		throw new RuntimeException("Unexpected parse token");
-	    	}
-	    }
-	}
-	
+
 	public void initializeGameState(String filename, int day) throws IOException, ParseException {
-	    InputStream inputStream = new FileInputStream(filename);
-    	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
-        parser.start();
-        parser.stop();
-	    LinkedList<SimParserMessage> messages = parser.getMessages();
-	    System.out.println(messages.size());
+		InputStream inputStream = new FileInputStream(filename);
+		GameLogParser parser = new GameLogParser(new LogReader(inputStream));
+		parser.start();
+		parser.stop();
+		LinkedList<SimParserMessage> messages = parser.getMessages();
+		System.out.println(messages.size());
 	}
-	
+
 	/*
 	 * Initializes the state of the simulation
 	 */
@@ -154,11 +125,11 @@ public class BasicSimulator {
 		_querySpace.add(new Query("flat","tv"));
 		_querySpace.add(new Query("flat","dvd"));
 		_querySpace.add(new Query("flat","audio"));
-		
+
 		/*
 		 * Initialize all the bidding information
 		 */
-		
+
 		HashMap<Query,Double> bids;
 		HashMap<Query,Double> budgets;
 		HashMap<Query,Ad> ads;
@@ -198,7 +169,7 @@ public class BasicSimulator {
 			_compBonus.put(_agents[i],"tv");
 			_overCap.put(_agents[i], (int) Math.ceil(randDouble(1,50)));
 		}
-		
+
 		/*
 		 * Initialize the User Population
 		 */
@@ -209,33 +180,33 @@ public class BasicSimulator {
 		_users.put(UserState.T, _numUsers/10);
 		_users.put(UserState.NS, (_numUsers*4)/10);
 	}
-	
+
 	/*
 	 * Generates the perfect models to pass to the bidder
 	 */
 	public void generateModels() {
 
 	}
-	
+
 	/*
 	 * Initializes a bidding agent with the proper models
 	 */
 	public void intializeBidder() {
-		
+
 	}
-	
+
 	/*
 	 * Gets the bids from the agent using perfect models
 	 */
 	public void getBids() {
-		
+
 	}
-	
+
 	/*
 	 * Runs the simulation and generates reports
 	 */
 	public void runSimulation() {
-		
+
 	}
 
 	//Returns a random double rand such that a <= r < b
@@ -243,7 +214,7 @@ public class BasicSimulator {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
-	
-	
+
+
+
 }

@@ -2,6 +2,11 @@ package simulator.parser;
 
 import se.sics.isl.transport.Transportable;
 
+/**
+*
+* @author jberg
+* 
+*/
 public class SimParserMessage {
 	
 	int _sender;
