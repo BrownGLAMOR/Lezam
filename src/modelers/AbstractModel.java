@@ -9,11 +9,10 @@ import edu.umich.eecs.tac.props.SalesReport;
 /**
  * @author jberg
  *
+ * This class links all the other abstract classes in a hierarchy
+ *
  */
 public abstract class AbstractModel {
 	
-	public abstract void updateModel(QueryReport queryReport, SalesReport salesReport, Object otherInfo);
-	
-	public abstract Object getPrediction(Object info);
 
 }
