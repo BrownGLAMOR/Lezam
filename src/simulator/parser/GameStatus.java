@@ -20,7 +20,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 * 
 */
 public class GameStatus {
-	
+
+	private String[] _advertisers;
 	private HashMap<String, LinkedList<BankStatus>> _bankStatuses;
 	private HashMap<String, LinkedList<BidBundle>> _bidBundles;
 	private HashMap<String, LinkedList<QueryReport>> _queryReports;
@@ -33,7 +34,8 @@ public class GameStatus {
 	private RetailCatalog _retailCatalog;
 	private UserClickModel _userClickModel;
 
-	public GameStatus(HashMap<String, LinkedList<BankStatus>> bankStatuses,
+	public GameStatus(String[] advertisers,
+					HashMap<String, LinkedList<BankStatus>> bankStatuses,
 					HashMap<String, LinkedList<BidBundle>> bidBundles,
 					HashMap<String, LinkedList<QueryReport>> queryReports,
 					HashMap<String, LinkedList<SalesReport>> salesReports,
@@ -44,6 +46,7 @@ public class GameStatus {
 					AdvertiserInfo advInfo,
 					RetailCatalog retailCatalog,
 					UserClickModel userClickModel) {
+		_advertisers = advertisers;
 		_bankStatuses = bankStatuses;
 		_bidBundles = bidBundles;
 		_queryReports = queryReports;
@@ -57,6 +60,10 @@ public class GameStatus {
 		_userClickModel = userClickModel;
 	}
 
+	public String[] getAdvertisers() {
+		return _advertisers;
+	}
+	
 	public HashMap<String, AdvertiserInfo> getAdvertiserInfos() {
 		return _advertiserInfos;
 	}

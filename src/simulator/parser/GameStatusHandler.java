@@ -1,6 +1,7 @@
 package simulator.parser;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import se.sics.isl.transport.Transportable;
+import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
@@ -37,8 +39,7 @@ public class GameStatusHandler {
 	public GameStatusHandler(String filename) throws IOException, ParseException {
 		_gameStatus = parseGameLog(filename);
 	}
-	
-	
+
 	public GameStatus parseGameLog(String filename) throws IOException, ParseException {
 	    InputStream inputStream = new FileInputStream(filename);
     	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
@@ -77,8 +78,14 @@ public class GameStatusHandler {
 	    UserClickModel userClickModel = null;
 	    
 	    for(int i = 0; i < advertisers.length; i++) {
-	    	LinkedList<BankStatus> bankStatus = new LinkedList<BankStatus>();
-	    	bankStatuses.put(advertisers[i], bankStatus);
+	    	LinkedList<BankStatus> bankStatuslist = new LinkedList<BankStatus>();
+	    	LinkedList<BidBundle> bidBundlelist = new LinkedList<BidBundle>();
+	    	LinkedList<QueryReport> queryReportlist = new LinkedList<QueryReport>();
+	    	LinkedList<SalesReport> salesReportlist = new LinkedList<SalesReport>();
+	    	bankStatuses.put(advertisers[i], bankStatuslist);
+	    	bidBundles.put(advertisers[i], bidBundlelist);
+	    	queryReports.put(advertisers[i], queryReportlist);
+	    	salesReports.put(advertisers[i], salesReportlist);
 	    }
 	    
 	    boolean slotinfoflag = false;
@@ -172,7 +179,7 @@ public class GameStatusHandler {
 	    		 * because of the two day lag.
 	    		 */
 	    		if(day >= 2) {
-	    			String name = participantNames[to];
+	    			String name = participantNames[from];
 	    			LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
 	    			bidbundlelist.addLast(bidbundletemp);
 	    			bidBundles.put(name, bidbundlelist);
@@ -191,13 +198,59 @@ public class GameStatusHandler {
 
 	    	}
 	    	else {
-	    		throw new RuntimeException("Unexpected parse token");
+//	    		throw new RuntimeException("Unexpected parse token");
 	    	}
 	    }
 	    
-	    GameStatus gameStatus = new GameStatus(bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
-	    						slotInfo, reserveInfo, pubInfo, advInfo, retailCatalog, userClickModel);
+	    GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
+	    		slotInfo, reserveInfo, pubInfo, advInfo, retailCatalog, userClickModel);
 	    return gameStatus;
 	}
+
+
+	public GameStatus getGameStatus() {
+		return _gameStatus;
+	}
 	
+	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
+		String filename = "/pro/aa/usr/jberg/server/ver0.9.5/logs/sims/localhost_sim3.slg";
+		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
+		GameStatus gameStatus = gameStatusHandler.getGameStatus();
+		String[] advertisers = gameStatus.getAdvertisers();
+		HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
+		HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+		HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+		HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+		HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
+		SlotInfo slotInfo = gameStatus.getSlotInfo();
+		ReserveInfo reserveInfo = gameStatus.getReserveInfo();
+		PublisherInfo pubInfo = gameStatus.getPubInfo();
+		AdvertiserInfo advInfo = gameStatus.getAdvInfo();
+		RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
+		UserClickModel userClickModel = gameStatus.getUserClickModel();
+		for(int i = 0; i < advertisers.length; i++) {
+			LinkedList<BankStatus> bankStatusList = bankStatuses.get(advertisers[i]);
+			LinkedList<BidBundle> bidBundlesList = bidBundles.get(advertisers[i]);
+			LinkedList<QueryReport> queryReportsList = queryReports.get(advertisers[i]);
+			LinkedList<SalesReport> salesReportsList = salesReports.get(advertisers[i]);
+			System.out.println(advertisers[i]);
+			System.out.println("\t # of Bank Statuses: " + bankStatusList.size());
+			for(int j = 0; j < bankStatusList.size(); j++) {
+				System.out.println("\t\t " + bankStatusList.get(j));
+			}
+			System.out.println("\t # of Bid Bundles: " + bidBundlesList.size());
+			for(int j = 0; j < bidBundlesList.size(); j++) {
+				System.out.println("\t\t " + bidBundlesList.get(j));
+			}
+			System.out.println("\t # of Query Reports: " + queryReportsList.size());
+			System.out.println("\t # of Sales Reports: " + salesReportsList.size());
+		}
+		
+		/*
+		 * TODO
+		 * 
+		 * Check that parsed log actually matches the game.....
+		 */
+	}
+
 }
