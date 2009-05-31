@@ -159,6 +159,8 @@ public class SSBAgent extends AbstractAgent {
 		_reinvestmentCap2.apply(_F2notComponentSpecialty, _bidStrategy); 
 		_reinvestmentCap2s.apply(_F2componentSpecialty, _bidStrategy);
 		
+		_distributionCap.apply(_bidStrategy);
+		
 	}
 	
 	
