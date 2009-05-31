@@ -170,7 +170,7 @@ public class JESOM2Agent extends AbstractAgent {
 				
 			}
 		}
-		//_distributionCap.apply(_bidStrategy);
+		_distributionCap.apply(_bidStrategy);
 
 
 	}
