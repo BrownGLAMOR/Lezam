@@ -1,7 +1,7 @@
 /**
  * 
  */
-package newmodels.numconv;
+package newmodels.slottonumconv;
 
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
@@ -12,11 +12,11 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractNumConversionsModel extends AbstractModel {
+public abstract class AbstractSlotToNumConvModel extends AbstractModel {
 	
 	protected Query _query;
 
-	public AbstractNumConversionsModel(Query query) {
+	public AbstractSlotToNumConvModel(Query query) {
 		_query = query;
 	}
 	
