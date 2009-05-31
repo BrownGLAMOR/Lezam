@@ -5,9 +5,11 @@ import java.util.Set;
 
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMaxWindow;
+import modelers.unitssold.UnitsSoldModelMean;
 
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
+import agents.rules.DistributionCap;
 import agents.rules.ManufacurerBonus;
 import agents.rules.SetProperty;
 import agents.rules.Targeted;
@@ -20,6 +22,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class JESOM2Agent extends AbstractAgent {
 	protected JESOM2BidStrategy _bidStrategy;
 	protected Hashtable<Query,Double> _baseLineConversion;
+	protected DistributionCap _distributionCap;
 
 	protected UnitsSoldModel _unitsSold;
 
@@ -64,7 +67,7 @@ public class JESOM2Agent extends AbstractAgent {
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 
-		_unitsSold = new UnitsSoldModelMaxWindow(distributionWindow);
+		_unitsSold = new UnitsSoldModelMean(distributionWindow); //new UnitsSoldModelMaxWindow(distributionWindow);
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}  // constant set by game server info
@@ -87,6 +90,8 @@ public class JESOM2Agent extends AbstractAgent {
 
 		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
 		//new Targeted().apply(F2componentSpecialty, _bidStrategy);
+		
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8); 
 
 		int slice = distributionCapacity/(20*distributionWindow);
 		new SetProperty(JESOM2BidStrategy.WANTED_SALES, slice).apply(_querySpace, _bidStrategy); //constant to be entered by user
@@ -116,7 +121,12 @@ public class JESOM2Agent extends AbstractAgent {
 				double conversionRevenue = _bidStrategy.getProperty(q, JESOM2BidStrategy.CONVERSION_REVENUE);
 				double conversionPr = _bidStrategy.getProperty(q, JESOM2BidStrategy.CONVERSION_PR);
 
-				if (clicksGot < wantedSales/conversionPr){
+				int distributionCapacity = _advertiserInfo.getDistributionCapacity();
+				int distributionWindow = _advertiserInfo.getDistributionWindow();
+				
+				if (clicksGot < wantedSales/conversionPr &&
+						wantedSales < distributionCapacity/distributionWindow * 1.2 &&
+						_distributionCap.getRemainingCap() > distributionCapacity/distributionWindow * .8/8){
 					// Didn't get enough sales, but had a good position (spucci)
 					// -> raise other sales, lower this query's wanted sales (spucci)
 					if (qr.getPosition(q) < 4){  //constant to be entered by user (spucci)
@@ -129,16 +139,18 @@ public class JESOM2Agent extends AbstractAgent {
 					}
 					// Not enough sales, bad position (spucci)
 					// -> raise bid (spucci)
-					else {
+					else if (wantedSales < _distributionCap.getRemainingCap()/_distributionCap.getMagicDivisor()) {
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, honestyFactor*1.3 + .1); //constant to be entered by user
+						
 						System.out.println("\n=============" + q + "\nGot: " + clicksGot + ", Wanted: " +
-								(wantedSales/conversionPr) + ", Position: " + qr.getPosition(q) + "\n=============\n");
+								(wantedSales/conversionPr) + ", Position: " + qr.getPosition(q) + "\n remainingCap: "+ _distributionCap.getRemainingCap() + "\n=============\n");
+						
 					}
 				}
-				else {
+				else if (clicksGot >= wantedSales/conversionPr) {
 					// Have enough sales, and our slot is quite low (spucci)
 					// -> increase desired sales in this query, lower for others (spucci)
-					if (!(qr.getPosition(q) < 4) || qr.getCPC(q) < .2){
+					if ((!(qr.getPosition(q) < 4) || qr.getCPC(q) < .2) && wantedSales < distributionCapacity/distributionWindow * 1.2){
 						for (Query qu : _querySpace){
 							if (qu != q){
 								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*.95);
@@ -154,8 +166,11 @@ public class JESOM2Agent extends AbstractAgent {
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, newHonesty);
 					}
 				}
+				
+				
 			}
 		}
+		//_distributionCap.apply(_bidStrategy);
 
 
 	}
