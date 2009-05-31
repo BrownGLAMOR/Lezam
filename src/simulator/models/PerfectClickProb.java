@@ -136,8 +136,9 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
+		return true;
 	}
 	
 	public double eta(double p, double x) {

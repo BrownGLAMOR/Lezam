@@ -37,8 +37,9 @@ public class PerfectUserModel extends AbstractUserModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
+		return true;
 	}
 	
 	public int getNumUsers() {

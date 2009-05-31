@@ -56,8 +56,9 @@ public class PerfectPositionToBid extends AbstractSlotToBidModel {
 	}
 
 	@Override
-	public void updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
+		return true;
 	}
 
 }
