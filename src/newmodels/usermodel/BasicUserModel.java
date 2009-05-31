@@ -77,7 +77,7 @@ public class BasicUserModel extends AbstractUserModel {
 		double rand = _R.nextGaussian();
 		double mean = (a+b)/2;
 		//How many deviations away from the mean is the min value
-		double deviations = 2.8;
+		double deviations = 3;
 		double stddev = (mean-a)/deviations;
 		return rand*stddev+mean;
 	}
