@@ -9,7 +9,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 
-import modelers.AbstractModel;
+import newmodels.AbstractModel;
+
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
@@ -119,12 +120,113 @@ public abstract class SimAbstractAgent extends Agent {
      * List of all the possible queries made available in the {@link RetailCatalog retail catalog}.
      */
     protected Set<Query> _querySpace;
+    
+    /**
+     * Set of models that our agent uses
+     */
     protected Set<AbstractModel> _models;
-    protected Hashtable<QueryType,Set<Query>> _queryFocus;
-    protected Hashtable<String,Set<Query>> _queryComponent;
-    protected Hashtable<String,Set<Query>> _queryManufacturer;
-    protected Hashtable<String,Hashtable<String,Set<Query>>> _querySingleton;
+
+    /**
+     * The current day, or -1 for pregame
+     */
     protected double _day;
+    
+    /**
+     * The squashing parameter
+     */
+	protected double _squashing;
+	
+	/**
+	 * Most recent Query Report
+	 */
+	protected QueryReport _queryReport;
+	
+	/**
+	 * Most recent Sales Report
+	 */
+	protected SalesReport _salesReport;
+	
+	/**
+	 * Promoted Slot Bonus
+	 */
+	protected double _PSB;
+	
+	/**
+	 * Number of Promoted Slots
+	 */
+	protected int _numPS;
+	
+	/**
+	 * Number of Regular Slots
+	 */
+	protected int _numRS;
+	
+	/**
+	 * Number of days in the simulation
+	 */
+	protected int _numDays;
+	
+	/**
+	 * Our advertiser string
+	 */
+	protected String _advId;
+	
+	/**
+	 * Component Specialty Bonus
+	 */
+	protected double _CSB;
+	
+	/**
+	 * Component Specialty
+	 */
+	protected String _compSpecialty;
+
+	/**
+	 * Capacity limit
+	 */
+	protected int _capacity;
+
+	/**
+	 * Capacity Discounter
+	 */
+	protected double _lambda;
+
+	/**
+	 * Capacity window length
+	 */
+	protected int _capWindow;
+
+	/**
+	 * Baseline conversion rate for F0 users
+	 */
+	protected double _piF0;
+
+	/**
+	 * Baseline conversion rate for F1 users
+	 */
+	protected double _piF1;
+
+	/**
+	 * Baseline conversion rate for F2 users
+	 */
+	protected double _piF2;
+
+	/**
+	 * Manufacturer Specialty Bonus
+	 */
+	protected double _MSB;
+
+	/**
+	 * Manufacturer Specilaty
+	 */
+	protected String _manSpecialty;
+
+	/**
+	 * Targeted Ad Effect
+	 */
+	protected double _targEffect;
+
+	
 	
 	/**
 	 * 
@@ -133,13 +235,7 @@ public abstract class SimAbstractAgent extends Agent {
 		_salesReports = new LinkedList<SalesReport>();
 		_queryReports = new LinkedList<QueryReport>();
 		_querySpace = new LinkedHashSet<Query>();
-		
-		_queryFocus = new Hashtable<QueryType, Set<Query>>();
-		_queryManufacturer = new Hashtable<String, Set<Query>>();
-		_queryComponent = new Hashtable<String, Set<Query>>();
-		_querySingleton = new Hashtable<String, Hashtable<String, Set<Query>>>();
-
-		_day = 0;
+		_day = -1;
 	}
 
     /**
@@ -176,16 +272,9 @@ public abstract class SimAbstractAgent extends Agent {
      * Sends a constructed {@link BidBundle} from any updated bids, ads, or spend limits.
      */
     protected void sendBidAndAds() {
-    	
-    	SalesReport salesReport = _salesReports.poll();
-    	QueryReport queryReport = _queryReports.poll();
-    	
-    	updateModels(salesReport, queryReport, _models);
-    	
+    	updateModels(_salesReport, _queryReport, _models);
         BidBundle bidBundle = getBidBundle(_models);
-        
         String publisherAddress = _advertiserInfo.getPublisherId();
-
         // Send the bid bundle to the publisher
         if (publisherAddress != null) {
             sendMessage(publisherAddress, bidBundle);
@@ -200,6 +289,7 @@ public abstract class SimAbstractAgent extends Agent {
      */
     protected void handleQueryReport(QueryReport queryReport) {
         _queryReports.add(queryReport);
+        _queryReport = queryReport;
     }
 
     
@@ -210,6 +300,7 @@ public abstract class SimAbstractAgent extends Agent {
      */
     protected void handleSalesReport(SalesReport salesReport) {
         _salesReports.add(salesReport);
+        _salesReport = salesReport;
     }
 
     /**
@@ -219,8 +310,8 @@ public abstract class SimAbstractAgent extends Agent {
      * @param simulationStatus the daily simulation status.
      */
     protected void handleSimulationStatus(SimulationStatus simulationStatus) {
-        sendBidAndAds();
-        _day += 1;
+    	_day = simulationStatus.getCurrentDate();
+    	sendBidAndAds();
     }
 
     /**
@@ -228,6 +319,7 @@ public abstract class SimAbstractAgent extends Agent {
      * @param publisherInfo the publisher information.
      */
     protected void handlePublisherInfo(PublisherInfo publisherInfo) {
+    	_squashing = publisherInfo.getSquashingParameter();
         this._publisherInfo = publisherInfo;
     }
 
@@ -236,6 +328,9 @@ public abstract class SimAbstractAgent extends Agent {
      * @param slotInfo the slot information.
      */
     protected void handleSlotInfo(SlotInfo slotInfo) {
+    	_PSB = slotInfo.getPromotedSlotBonus();
+    	_numPS = slotInfo.getPromotedSlots();
+    	_numRS = slotInfo.getRegularSlots();
         this._slotInfo = slotInfo;
     }
 
@@ -245,7 +340,6 @@ public abstract class SimAbstractAgent extends Agent {
      */
     protected void handleRetailCatalog(RetailCatalog retailCatalog) {
         this._retailCatalog = retailCatalog;
-
         // The query space is all the F0, F1, and F2 queries for each product
         // The F0 query class
         if(retailCatalog.size() > 0) {
@@ -270,6 +364,18 @@ public abstract class SimAbstractAgent extends Agent {
      */
     protected void handleAdvertiserInfo(AdvertiserInfo advertiserInfo) {
         this._advertiserInfo = advertiserInfo;
+        _advId = advertiserInfo.getAdvertiserId();
+        _CSB = advertiserInfo.getComponentBonus();
+        _compSpecialty = advertiserInfo.getComponentSpecialty();
+        _capacity = advertiserInfo.getDistributionCapacity();
+        _lambda = advertiserInfo.getDistributionCapacityDiscounter();
+        _capWindow = advertiserInfo.getDistributionWindow();
+        _piF0 = advertiserInfo.getFocusEffects(QueryType.FOCUS_LEVEL_ZERO);
+        _piF1 = advertiserInfo.getFocusEffects(QueryType.FOCUS_LEVEL_ONE);
+        _piF2 = advertiserInfo.getFocusEffects(QueryType.FOCUS_LEVEL_TWO);
+        _MSB = advertiserInfo.getManufacturerBonus();
+        _manSpecialty = advertiserInfo.getManufacturerSpecialty();
+        _targEffect = advertiserInfo.getTargetEffect();
     }
 
     /**
@@ -278,12 +384,14 @@ public abstract class SimAbstractAgent extends Agent {
      */
     protected void handleStartInfo(StartInfo startInfo) {
         this._startInfo = startInfo;
+        _numDays = startInfo.getNumberOfDays();
     }
 
     /**
      * Prepares the agent for a new simulation.
      */
     protected void simulationSetup() {
+    	initModels();
     	initBidder();
     }
 
@@ -297,10 +405,12 @@ public abstract class SimAbstractAgent extends Agent {
         _day = 0;
     }
     
+    
     /*
-     * This method will be run once at the beginning of each simulation
+     * This method will be run once at the beginning of each simulation to initialize the
+     * models that our agent will use
      */
-    protected abstract void initBidder();
+    protected abstract void initModels();
     
     /*
      * This will be called once each day before getBidBundle to update all the models
@@ -309,6 +419,12 @@ public abstract class SimAbstractAgent extends Agent {
     protected abstract Set<AbstractModel> updateModels(SalesReport salesReport,
     													QueryReport queryReport,
     													Set<AbstractModel> models);
+    
+    /*
+     * This method will be run once at the beginning of each simulation to initialize the
+     * bidding strategy that our agent will use
+     */
+    protected abstract void initBidder();
     
     /*
      * This will be called once each day to get the bid bundle for the day, i.e. the bids,

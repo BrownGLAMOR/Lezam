@@ -1,8 +1,9 @@
 /**
  * 
  */
-package modelers;
+package newmodels.bidtoslot;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -11,15 +12,15 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractSlotToBidModel extends AbstractModel {
+public abstract class AbstractBidToSlotModel extends AbstractModel {
 	
 	protected Query _query;
 
-	public AbstractSlotToBidModel(Query query) {
+	public AbstractBidToSlotModel(Query query) {
 		_query = query;
 	}
 	
-	public abstract void updateModel(QueryReport queryReport,
+	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
 	public abstract double getPrediction(double bid);

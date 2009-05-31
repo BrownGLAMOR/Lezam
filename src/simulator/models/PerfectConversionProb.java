@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 
+import newmodels.AbstractModel;
+import newmodels.prconv.AbstractPrConversionModel;
+
 import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
@@ -12,8 +15,6 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
-import modelers.AbstractModel;
-import modelers.AbstractPrConversionModel;
 
 public class PerfectConversionProb extends AbstractPrConversionModel {
 	

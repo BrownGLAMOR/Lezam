@@ -1,8 +1,9 @@
 /**
  * 
  */
-package modelers;
+package newmodels.slottoprclick;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -19,7 +20,7 @@ public abstract class AbstractSlotToPrClick extends AbstractModel {
 		_query = query;
 	}
 	
-	public abstract void updateModel(QueryReport queryReport,
+	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
 	public abstract double getPrediction(double bid);

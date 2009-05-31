@@ -1,8 +1,9 @@
 /**
  * 
  */
-package modelers;
+package newmodels.usermodel;
 
+import newmodels.AbstractModel;
 import usermodel.UserState;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -14,7 +15,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public abstract class AbstractUserModel extends AbstractModel {
 	
-	public abstract void updateModel(QueryReport queryReport,
+	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
 	public abstract double getPrediction(UserState userState);

@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import newmodels.AbstractModel;
+import newmodels.usermodel.AbstractUserModel;
+
 import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
@@ -11,8 +14,6 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
-import modelers.AbstractModel;
-import modelers.AbstractUserModel;
 
 public class PerfectUserModel extends AbstractUserModel {
 	

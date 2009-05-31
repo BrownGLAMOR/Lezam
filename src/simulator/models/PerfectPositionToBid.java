@@ -4,12 +4,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import newmodels.AbstractModel;
+import newmodels.slottobid.AbstractSlotToBidModel;
+
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
-import modelers.AbstractModel;
-import modelers.AbstractSlotToBidModel;
 
 public class PerfectPositionToBid extends AbstractSlotToBidModel {
 	

@@ -1,8 +1,9 @@
 /**
  * 
  */
-package modelers;
+package newmodels.numconv;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -19,7 +20,7 @@ public abstract class AbstractNumConversionsModel extends AbstractModel {
 		_query = query;
 	}
 	
-	public abstract void updateModel(QueryReport queryReport,
+	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
 	public abstract int getPrediction(double bid);
