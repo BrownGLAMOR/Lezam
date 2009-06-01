@@ -1,13 +1,15 @@
-package modelers.clickprob;
-
+package newmodels.slottoprclick;
 
 import java.util.Random;
 
+import modelers.clickprob.ClickRatioModel;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickRatioModel {
+public class BasicSlotToPrClick extends AbstractSlotToPrClick {
 	
-	private Query Q;
+	private Query _query;
 	private int F0 = 0;
 	private int F1 = 1;
 	private int F2 = 2;
@@ -18,6 +20,7 @@ public class ClickRatioModel {
 	private double[] conv;
 	private double[] clickprob;
 	private int focuslevel;
+	private int numslots = 5;
 	Random _R = new Random();
 	
 /*
@@ -40,9 +43,9 @@ public class ClickRatioModel {
 	advertiser.focuseffect.FOCUS_LEVEL_ONE=0.20
 	advertiser.focuseffect.FOCUS_LEVEL_TWO=0.30*/
 
-	public ClickRatioModel(Query q, int numslots) {
-		Q = q;
-		focuslevel = Q.getType().ordinal();
+	public BasicSlotToPrClick(Query q) {
+		super(q);
+		focuslevel = q.getType().ordinal();
 		clickprob = new double[numslots];
 		adveffect = new double[3][2];
 		contprob = new double[3][2];
@@ -101,15 +104,34 @@ public class ClickRatioModel {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
-	public static void main(String[] args) {
-		Query q = new Query(null,"dvd");
-		System.out.println(q.getType());
-		ClickRatioModel crm = new ClickRatioModel(q,5);
-		double[] clickprob = crm.getClickProb();
-		for(int i = 0; i < clickprob.length; i++) {
-			System.out.println("Slot "+(i+1)+": "+clickprob[i]);
+
+	@Override
+	public double getPrediction(double bid) {
+		double[] clickprobs = getClickProb();
+		int min = (int) Math.floor(bid);
+		int max = (int) Math.ceil(bid);
+		if(min == max) {
+			return clickprobs[min-1];
+		}
+		else {
+			double avg = (bid - min) * clickprobs[min-1] + (max - bid) * clickprobs[max-1];
+			return avg;
 		}
 	}
 
+	@Override
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+		//Nothing to do
+		return true;
+	}
+
+	public static void main(String[] args) {
+		Query q = new Query(null,"dvd");
+		BasicSlotToPrClick crm = new BasicSlotToPrClick(q);
+		double[] clickprob = crm.getClickProb();
+		for(int i = 2; i < clickprob.length*2 + 1; i++) {
+			System.out.println("Slot "+(i/2.0)+": "+ crm.getPrediction(i/2.0));
+		}
+	}
+	
 }
