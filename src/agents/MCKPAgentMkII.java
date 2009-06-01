@@ -100,6 +100,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 
 	@Override
 	protected void initBidder() {
+		
+		
 		_numUsers = 4000; //I'm not sure how to get this value actually
 
 		_recentBids = new HashMap<Query, Double>();
@@ -120,7 +122,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				_salesPrices.put(q, 15.0);
 			}
 			else {
-				_salesPrices.put(q, 10.0);	
+				_salesPrices.put(q, 10.0);
 			}
 			
 			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
@@ -141,6 +143,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
 			}
 		}
+		
 		
 		/*
 		 * Not really sure what these are used for, but I will leave them
@@ -200,7 +203,6 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
 			for(Query q : _querySpace) {
-
 				double salesPrice = _salesPrices.get(q);
 				double convProb = _baseConvProbs.get(q);
 

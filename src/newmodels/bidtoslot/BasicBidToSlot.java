@@ -78,6 +78,9 @@ public class BasicBidToSlot extends AbstractBidToSlotModel {
 		}
 		_weight++;
 		
+		if(_dataPoints.size() < 2) {
+			return false;
+		}
 		//prepare matrices for regression
 		double[] Y = new double[_dataPoints.size()];
 		double[][] X = new double[_dataPoints.size()][2];

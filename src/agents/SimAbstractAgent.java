@@ -14,6 +14,7 @@ import newmodels.AbstractModel;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
+import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.PublisherInfo;
@@ -240,7 +241,7 @@ public abstract class SimAbstractAgent extends Agent {
 		_salesReports = new LinkedList<SalesReport>();
 		_queryReports = new LinkedList<QueryReport>();
 		_querySpace = new LinkedHashSet<Query>();
-		_day = -1;
+		_day = 0;
 	}
 
     /**
@@ -267,6 +268,8 @@ public abstract class SimAbstractAgent extends Agent {
             handleAdvertiserInfo((AdvertiserInfo) content);
         } else if (content instanceof StartInfo) {
             handleStartInfo((StartInfo) content);
+        } else if (content instanceof BankStatus) {
+        	//TODO
         }
         else {
         	throw new RuntimeException("received unexpected message: "+content);
@@ -277,7 +280,13 @@ public abstract class SimAbstractAgent extends Agent {
      * Sends a constructed {@link BidBundle} from any updated bids, ads, or spend limits.
      */
     protected void sendBidAndAds() {
-    	updateModels(_salesReport, _queryReport, _models);
+    	if(_day == 0) {
+    		_models = initModels();
+    		initBidder();
+    	}
+    	if(_day >= 2) {
+    		updateModels(_salesReport, _queryReport, _models);
+    	}
         BidBundle bidBundle = getBidBundle(_models);
         String publisherAddress = _advertiserInfo.getPublisherId();
         // Send the bid bundle to the publisher
@@ -397,8 +406,6 @@ public abstract class SimAbstractAgent extends Agent {
      * Prepares the agent for a new simulation.
      */
     protected void simulationSetup() {
-    	_models = initModels();
-    	initBidder();
     }
 
     /**

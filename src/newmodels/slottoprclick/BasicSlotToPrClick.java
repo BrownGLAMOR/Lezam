@@ -111,15 +111,16 @@ public class BasicSlotToPrClick extends AbstractSlotToPrClick {
 	}
 
 	@Override
-	public double getPrediction(double bid) {
+	public double getPrediction(double slot) {
+		slot -= 1;
 		double[] clickprobs = getClickProb();
-		int min = (int) Math.floor(bid);
-		int max = (int) Math.ceil(bid);
+		int min = (int) Math.floor(slot);
+		int max = (int) Math.ceil(slot);
 		if(min == max) {
-			return clickprobs[min-1];
+			return clickprobs[min];
 		}
 		else {
-			double avg = (bid - min) * clickprobs[min-1] + (max - bid) * clickprobs[max-1];
+			double avg = (slot - min) * clickprobs[min] + (max - slot) * clickprobs[max];
 			return avg;
 		}
 	}
