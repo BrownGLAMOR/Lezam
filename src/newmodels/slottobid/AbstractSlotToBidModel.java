@@ -23,6 +23,6 @@ public abstract class AbstractSlotToBidModel extends AbstractModel {
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract double getPrediction(double bid);
+	public abstract double getPrediction(double slot);
 
 }

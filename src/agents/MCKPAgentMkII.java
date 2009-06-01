@@ -45,177 +45,116 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 public class MCKPAgentMkII extends SimAbstractAgent {
+	
+	private int _numUsers = 90000;
+	private int _overCap;
+	private double _defaultBid;
+	private HashMap<Query, Double> _recentBids;
+	private HashMap<Query, Double> _previousBids;
+	private HashMap<Query, Double> _salesPrices;
+	private HashMap<Query, Double> _baseConvProbs;
+	private AbstractUserModel _userModel;
+	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels;
+	private HashMap<Query, AbstractSlotToBidModel> _slotToBidModels;
+	private HashMap<Query, AbstractSlotToPrClick> _slotToPrClickModels;
+	private HashMap<Query, AbstractSlotToNumImp> _slotToNumImptModels;
+	private HashMap<Query, AbstractSlotToNumClicks> _slotToNumClicks;
+	private Hashtable<Query, Integer> _queryId;
 
-	/**
-	 * 
-	 */
-	public MCKPAgentMkII() {
-		// TODO Auto-generated constructor stub
-	}
+
 
 	@Override
-	protected BidBundle getBidBundle(Set<AbstractModel> models) {
-		// TODO Auto-generated method stub
-		if(_day > 2){
-
-			//generate undominated items and convert them to inc items
-			//LinkedList<IncItem> iis = new LinkedList<IncItem>();
-			int numSlots = _numPS + _numRS;
-
-			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
-			//want the queries to be in a guaranteed order - put them in an array
-			//index will be used as the id of the query
-			for(Query q : _querySpace) {
-
-				double rpc = _rpc.get(q);
-				double convProb = _noOversellConversion.get(q);
-
-				/**
-				 * Uses a position click average model and a position bid linear model to 
-				 * generate the item set for each query
-				 */
-				Item[] items = new Item[numSlots];
-				for(int s=1; s<=_numSlots; s++) {//slot
-					int numClicks = _positionClicks.getClicks(q, s);//!!!getClicks
-					double bid = _positionBid.getBid(q, s);
-					double CPC = _positionBid.getCPC(q, s);
-
-					if (bid == 0) numClicks = 0;
-					double w = numClicks*convProb; 				//weight = numClicks * convProb
-					double v = numClicks*(rpc*convProb - CPC);	//value = numClicks(USP * convProb - CPC)
-
-					int isID = _queryId.get(q);
-					items[s-1] = new Item(q,w,v,bid,isID);	
-					System.out.println(q + ", slot " + s + ", numCl " + numClicks + ", bid " + bid +
-							", weight " + w + ", value " + v);
-				}
-
-				IncItem[] iItems = getIncremental(items);
-				allIncItems.addAll(Arrays.asList(iItems));
-			}
-
-			//pick items greedily is order of decreasing efficiency
-			Collections.sort(allIncItems);
-			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
-
-			double budget = _distributionCapacity + _distributionCapacity/_distributionWindow - _unitsSold.getWindowSold();
-			// unitsSold.getWindowSold returns the items sold over the course of the last window, so this is :
-			// budget = capacity(1+1/windowLength) - soldInWindow
-			System.out.println("\nCap: " + _distributionCapacity + ", Window: " + 
-					_unitsSold.getWindowSold() + ", Budget: " + budget + "\n");
-
-			/**
-			 * TODO I suggest adding some code here that checks to see what the budget value is, and if it is pretty
-			 * high, and the _day value is past 59 (it goes to 61), then is jacks up the bid for the last two days
-			 * to try and sneak in some last minute sales.
-			 */
-
-			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
-
-			//set bids
-			_bidBundle = new BidBundle();
-			for(Query q : _querySpace){
-
-				Integer isID = _queryId.get(q);
-				double bid;
-
-				if(solution.containsKey(isID)) {
-					bid = solution.get(isID).b();
-					recentBid.put(q, bid);
-				}
-				else bid = defaultBid; // TODO this is a hack that was the result of the fact that the item sets were empty
-
-				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
-			}
+	protected Set<AbstractModel> initModels() {
+		/*
+		 * Order is important because some of our models use other models
+		 * so we use a LinkedHashSet
+		 */
+		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
+		_bidToSlotModels = new HashMap<Query, AbstractBidToSlotModel>();
+		_slotToBidModels = new HashMap<Query, AbstractSlotToBidModel>();
+		_slotToPrClickModels = new HashMap<Query, AbstractSlotToPrClick>();
+		_slotToNumImptModels = new HashMap<Query, AbstractSlotToNumImp>();
+		_slotToNumClicks = new HashMap<Query, AbstractSlotToNumClicks>();
+		AbstractUserModel userModel = new BasicUserModel();
+		models.add(userModel);
+		_userModel = userModel;
+		for(Query query: _querySpace) {
+			AbstractBidToSlotModel bidToSlot = new BasicBidToSlot(query,false);
+			AbstractSlotToBidModel slotToBid = new BasicSlotToBid(query,false);
+			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
+			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
+			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
+			models.add(bidToSlot);
+			models.add(slotToBid);
+			models.add(slotToPrClick);
+			models.add(slotToNumImp);
+			models.add(slotToNumClicks);
+			_bidToSlotModels.put(query,bidToSlot);
+			_slotToBidModels.put(query,slotToBid);
+			_slotToPrClickModels.put(query,slotToPrClick);
+			_slotToNumImptModels.put(query,slotToNumImp);
+			_slotToNumClicks.put(query,slotToNumClicks);
 		}
-		//bid bundle for first two days
-		//TODO The values .7, 1.3, and 1.7 are game specific, and then agent would be more 
-		//     robust if it had a better estimate for starting defaults
-		else {
-			_bidBundle = new BidBundle();
-			for(Query q : _querySpace){
-				double bid;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = .7;
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = 1.3;
-				else 
-					bid = 1.7;
-				_bidBundle.addQuery(q, bid, new Ad(), bid*_distributionCapacity);
-				recentBid.put(q, bid);
-			}
-		}
-
-		_day++;
-		return null;
+		return models;
 	}
-
 
 	@Override
 	protected void initBidder() {
-		// TODO Auto-generated method stub
-		numUsers = 4000; //I'm not sure how to get this value actually
+		_numUsers = 4000; //I'm not sure how to get this value actually
 
-		recentBid = new HashMap<Query, Double>();
-		previousBid = new HashMap<Query, Double>();
-		defaultBid = 1; /******************* this is a useful value for staying in the auctions for informational purposes, could be more specific though */
+		_recentBids = new HashMap<Query, Double>();
+		_previousBids = new HashMap<Query, Double>();
+		_baseConvProbs = new HashMap<Query, Double>();
+		_defaultBid = .4;
 
-		_capacityInc = 18; //This sets how much we attempt to go over budget
-
-		printAdvertiserInfo();
-
-
-		_numSlots = _slotInfo.getPromotedSlots()+ _slotInfo.getRegularSlots();
-
-		_baseLineConversion = new Hashtable<Query,Double>();
-		_noOversellConversion = new Hashtable<Query,Double>();
-
-		// BEGIN -> Set probability of conversion for queries
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {
-			_baseLineConversion.put(q, 0.1); 
-			_noOversellConversion.put(q, 0.1);
-		}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {
-			_baseLineConversion.put(q, 0.2); 
-			_noOversellConversion.put(q, 0.2);
-		}
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {
-			_baseLineConversion.put(q, 0.3); 
-			_noOversellConversion.put(q, 0.3);
-		}
-		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
-		_F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
-		for(Query q : _F1componentSpecialty) 
-			_noOversellConversion.put(q, 0.27);
-		_F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
-		for(Query q : _F2componentSpecialty) 
-			_noOversellConversion.put(q, 0.39);
-		// END -> Set probability of conversion for queries
-
-		Set<Query> manufacturerSpecialty = _queryManufacturer.get(_advertiserInfo.getManufacturerSpecialty());
-		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
+		_overCap = 18; //This sets how much we attempt to go over budget
 
 		// set revenue prices
-		_rpc = new Hashtable<Query,Double>();
+		_salesPrices = new HashMap<Query,Double>();
 		for(Query q : _querySpace) {
-			_rpc.put(q, 10.0);
-			recentBid.put(q, defaultBid);
-			previousBid.put(q, defaultBid);
+			_recentBids.put(q, _defaultBid);
+			_previousBids.put(q, _defaultBid);
+			
+			String manufacturer = q.getManufacturer();
+			if(manufacturer == _manSpecialty) {
+				_salesPrices.put(q, 15.0);
+			}
+			else {
+				_salesPrices.put(q, 10.0);	
+			}
+			
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baseConvProbs.put(q, _piF0);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baseConvProbs.put(q, _piF1);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baseConvProbs.put(q, _piF2);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
+			
+			String component = q.getComponent();
+			if(component == _compSpecialty) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
+			}
 		}
-		for(Query q : manufacturerSpecialty) 
-			_rpc.put(q, manufacturerBonus*_rpc.get(q));
-
-		// assign IDs to the queries
+		
+		/*
+		 * Not really sure what these are used for, but I will leave them
+		 * for now -jberg
+		 */
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
 			i++;
 			_queryId.put(q, i);
 		}
-
-		_day = 0;
 	}
-
+	
+	
 	@Override
 	protected void updateModels(SalesReport salesReport,
 			QueryReport queryReport,
@@ -248,34 +187,98 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			}
 		}
 	}
+	
 
 	@Override
-	protected Set<AbstractModel> initModels() {
-		/*
-		 * Order is important because some of our models use other models
-		 * so we use a LinkedHashSet
-		 */
-		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		AbstractUserModel userModel = new BasicUserModel();
-		models.add(userModel);
-		for(Query query: _querySpace) {
-			AbstractBidToSlotModel bidToSlot = new BasicBidToSlot(query,false);
-			AbstractSlotToBidModel slotToBid = new BasicSlotToBid(query,false);
-			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
-			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
-			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
-			models.add(bidToSlot);
-			models.add(slotToBid);
-			models.add(slotToPrClick);
-			models.add(slotToNumImp);
-			models.add(slotToNumClicks);
+	protected BidBundle getBidBundle(Set<AbstractModel> models) {
+		BidBundle bidBundle = new BidBundle();
+		if(_day > 2){
+
+			//generate undominated items and convert them to inc items
+			//LinkedList<IncItem> iis = new LinkedList<IncItem>();
+			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
+			//want the queries to be in a guaranteed order - put them in an array
+			//index will be used as the id of the query
+			for(Query q : _querySpace) {
+
+				double salesPrice = _salesPrices.get(q);
+				double convProb = _baseConvProbs.get(q);
+
+				/**
+				 * Uses a position click average model and a position bid linear model to 
+				 * generate the item set for each query
+				 */
+				Item[] items = new Item[_numSlots];
+				for(int s=1; s<=_numSlots; s++) {//slot
+					int numClicks = _slotToNumClicks.get(q).getPrediction(s);
+					double bid = _slotToBidModels.get(q).getPrediction(s);
+					double CPC = _slotToBidModels.get(q).getPrediction(s+1);
+
+					if (bid == 0) numClicks = 0;
+					double w = numClicks*convProb; 				//weight = numClicks * convProb
+					double v = numClicks*(salesPrice*convProb - CPC);	//value = numClicks(USP * convProb - CPC)
+
+					int isID = _queryId.get(q);
+					items[s-1] = new Item(q,w,v,bid,isID);	
+					System.out.println(q + ", slot " + s + ", numCl " + numClicks + ", bid " + bid +
+							", weight " + w + ", value " + v);
+				}
+
+				IncItem[] iItems = getIncremental(items);
+				allIncItems.addAll(Arrays.asList(iItems));
+			}
+
+			//pick items greedily is order of decreasing efficiency
+			Collections.sort(allIncItems);
+			Misc.printList(allIncItems,"\n", true);
+
+			double budget = (_capacity+_overCap)/_capWindow;
+			// unitsSold.getWindowSold returns the items sold over the course of the last window, so this is :
+			// budget = capacity(1+1/windowLength) - soldInWindow
+//			System.out.println("\nCap: " + _capacity + ", Window: " + 
+//					_unitsSold.getWindowSold() + ", Budget: " + budget + "\n");
+
+
+			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
+
+			//set bids
+			for(Query q : _querySpace){
+
+				Integer isID = _queryId.get(q);
+				double bid;
+
+				if(solution.containsKey(isID)) {
+					bid = solution.get(isID).b();
+					_recentBids.put(q, bid);
+				}
+				else bid = _defaultBid; // TODO this is a hack that was the result of the fact that the item sets were empty
+
+				bidBundle.addQuery(q, bid, new Ad(), bid*_capacity);
+			}
 		}
-		return models;
+		//bid bundle for first two days
+		//TODO The values .7, 1.3, and 1.7 are game specific, and then agent would be more 
+		//     robust if it had a better estimate for starting defaults
+		else {
+			for(Query q : _querySpace){
+				double bid;
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = .7;
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = 1.3;
+				else 
+					bid = 1.7;
+				bidBundle.addQuery(q, bid, new Ad(), bid*_capacity);
+				_recentBids.put(q, bid);
+			}
+		}
+
+		return bidBundle;
 	}
 
 
 	/**
-	 * Greedily fill the knapsack by selecting incremental items ---------TODO get real model
+	 * Greedily fill the knapsack by selecting incremental items
 	 * @param incItems
 	 * @param budget
 	 * @return
@@ -327,12 +330,12 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				avgUSP /= 16;
 				 */// This can be used later if the values actually change for the sales bonus
 				double avgUSP = 11.25;
-				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
-					double iD = Math.pow(_distCapacDiscount, i);
+				for (int i = _overCap*knapSackIter+1; i <= _overCap*(knapSackIter+1); i++){
+					double iD = Math.pow(_lambda, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP;
 				}
-				budget+=_capacityInc;
+				budget+=_overCap;
 				incremented = true;
 				knapSackIter++;
 			}

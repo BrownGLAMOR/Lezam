@@ -411,6 +411,10 @@ public abstract class SimAbstractAgent extends Agent {
         _day = 0;
     }
     
+	protected double eta(double p, double x) {
+		return (p*x) / (p*x + (1-p));
+	}
+    
     
     /*
      * This method will be run once at the beginning of each simulation to initialize the

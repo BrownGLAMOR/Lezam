@@ -23,6 +23,6 @@ public abstract class AbstractSlotToNumClicks extends AbstractModel {
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract int getPrediction(double bid);
+	public abstract int getPrediction(double slot);
 
 }
