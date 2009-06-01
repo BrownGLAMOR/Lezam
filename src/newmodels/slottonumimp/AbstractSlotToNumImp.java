@@ -1,7 +1,7 @@
 /**
  * 
  */
-package newmodels.slottonumconv;
+package newmodels.slottonumimp;
 
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
@@ -12,17 +12,17 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractSlotToNumConvModel extends AbstractModel {
+public abstract class AbstractSlotToNumImp extends AbstractModel {
 	
 	protected Query _query;
 
-	public AbstractSlotToNumConvModel(Query query) {
+	public AbstractSlotToNumImp(Query query) {
 		_query = query;
 	}
 	
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract int getPrediction(double bid);
+	public abstract int getPrediction(double slot);
 
 }
