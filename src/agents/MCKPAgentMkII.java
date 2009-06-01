@@ -7,10 +7,23 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.bidtoslot.BasicBidToSlot;
+import newmodels.slottobid.AbstractSlotToBidModel;
+import newmodels.slottobid.BasicSlotToBid;
+import newmodels.slottonumclicks.AbstractSlotToNumClicks;
+import newmodels.slottonumclicks.BasicSlotToNumClicks;
+import newmodels.slottonumimp.AbstractSlotToNumImp;
+import newmodels.slottonumimp.BasicSlotToNumImp;
+import newmodels.slottoprclick.AbstractSlotToPrClick;
+import newmodels.slottoprclick.BasicSlotToPrClick;
+import newmodels.usermodel.AbstractUserModel;
+import newmodels.usermodel.BasicUserModel;
 
 import props.Misc;
 import agents.mckp.IncItem;
@@ -204,35 +217,60 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	}
 
 	@Override
-	protected Set<AbstractModel> updateModels(SalesReport salesReport,
+	protected void updateModels(SalesReport salesReport,
 			QueryReport queryReport,
 			Set<AbstractModel> models) {
-		// TODO Auto-generated method stub
-		//update models
-		if (!_queryReports.isEmpty()){
-			QueryReport qr = _queryReports.remove();
-			_positionBid.updateReport(qr, previousBid);
 
-			previousBid = new HashMap<Query, Double>(recentBid);
-			//saves the most recent bids to the previous bids hashMap
-
-			_positionClicks.updateReport(qr);
-			System.out.println(_positionClicks);
+		for(AbstractModel model:models) {
+			if(model instanceof AbstractUserModel) {
+				AbstractUserModel userModel = (AbstractUserModel) model;
+				userModel.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractBidToSlotModel) {
+				AbstractBidToSlotModel bidToSlot = (AbstractBidToSlotModel) model;
+				bidToSlot.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractSlotToBidModel) {
+				AbstractSlotToBidModel slotToBid = (AbstractSlotToBidModel) model;
+				slotToBid.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractSlotToPrClick) {
+				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
+				slotToPrClick.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractSlotToNumImp) {
+				AbstractSlotToNumImp slotToNumImp = (AbstractSlotToNumImp) model;
+				slotToNumImp.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractSlotToNumClicks) {
+				AbstractSlotToNumClicks slotToNumClicks = (AbstractSlotToNumClicks) model;
+				slotToNumClicks.updateModel(queryReport, salesReport);
+			}
 		}
-		if (!_salesReports.isEmpty()){
-			SalesReport sr = _salesReports.remove();
-			_unitsSold.updateReport(sr);
-		}
-
-		return null;
 	}
 
 	@Override
-	protected void initModels() {
-		// TODO Auto-generated method stub
-		_unitsSold = new UnitsSoldModelMeanWindow(_distributionWindow);
-		_positionBid = new PositionBidLinear(_numSlots, .75);
-		_positionClicks = new PositionToClicksAverage(_numSlots, _querySpace, numUsers/3); //estimate
+	protected Set<AbstractModel> initModels() {
+		/*
+		 * Order is important because some of our models use other models
+		 * so we use a LinkedHashSet
+		 */
+		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
+		AbstractUserModel userModel = new BasicUserModel();
+		models.add(userModel);
+		for(Query query: _querySpace) {
+			AbstractBidToSlotModel bidToSlot = new BasicBidToSlot(query,false);
+			AbstractSlotToBidModel slotToBid = new BasicSlotToBid(query,false);
+			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
+			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
+			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
+			models.add(bidToSlot);
+			models.add(slotToBid);
+			models.add(slotToPrClick);
+			models.add(slotToNumImp);
+			models.add(slotToNumClicks);
+		}
+		return models;
 	}
 
 
@@ -262,7 +300,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					Misc.println("adding item over capacity" + ii, Output.OPTIMAL);
+					System.out.println("adding item over capacity" + ii);
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
@@ -272,7 +310,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					if (valueGained >= valueLost){ //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
 							IncItem inc = temp.removeFirst();
-							Misc.println("adding item " + ii, Output.OPTIMAL);
+							System.out.println("adding item " + ii);
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;

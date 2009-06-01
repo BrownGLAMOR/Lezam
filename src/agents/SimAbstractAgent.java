@@ -162,6 +162,11 @@ public abstract class SimAbstractAgent extends Agent {
 	protected int _numRS;
 	
 	/**
+	 * Total number of Slots
+	 */
+	protected int _numSlots;
+	
+	/**
 	 * Number of days in the simulation
 	 */
 	protected int _numDays;
@@ -331,6 +336,7 @@ public abstract class SimAbstractAgent extends Agent {
     	_PSB = slotInfo.getPromotedSlotBonus();
     	_numPS = slotInfo.getPromotedSlots();
     	_numRS = slotInfo.getRegularSlots();
+    	_numSlots = _numPS + _numRS;
         this._slotInfo = slotInfo;
     }
 
@@ -391,7 +397,7 @@ public abstract class SimAbstractAgent extends Agent {
      * Prepares the agent for a new simulation.
      */
     protected void simulationSetup() {
-    	initModels();
+    	_models = initModels();
     	initBidder();
     }
 
@@ -410,13 +416,13 @@ public abstract class SimAbstractAgent extends Agent {
      * This method will be run once at the beginning of each simulation to initialize the
      * models that our agent will use
      */
-    protected abstract void initModels();
+    protected abstract Set<AbstractModel> initModels();
     
     /*
      * This will be called once each day before getBidBundle to update all the models
      * that the agent needs to make a bid bundle
      */
-    protected abstract Set<AbstractModel> updateModels(SalesReport salesReport,
+    protected abstract void updateModels(SalesReport salesReport,
     													QueryReport queryReport,
     													Set<AbstractModel> models);
     

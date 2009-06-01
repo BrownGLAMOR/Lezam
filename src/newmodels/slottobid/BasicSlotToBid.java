@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class BasicSlotToBid extends AbstractBidToSlotModel {
+public class BasicSlotToBid extends AbstractSlotToBidModel {
 	
 	private double m = .7;
 	private ArrayList<double[]> _dataPoints;
