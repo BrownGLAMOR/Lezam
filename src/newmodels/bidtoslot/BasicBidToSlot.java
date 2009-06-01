@@ -1,5 +1,10 @@
 package newmodels.bidtoslot;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.ArrayList;
 import java.util.HashMap;
 

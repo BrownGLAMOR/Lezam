@@ -1,7 +1,10 @@
-/**
- * 
- */
+
 package newmodels.bidtocpc;
+
+/**
+ * @author jberg
+ *
+ */
 
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;

@@ -1,5 +1,10 @@
 package modelers.bidtoposition.jordan;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.ArrayList;
 
 import regressions.WLSRegression;

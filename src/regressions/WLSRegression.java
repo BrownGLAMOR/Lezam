@@ -1,4 +1,10 @@
+
 package regressions;
+
+/**
+ * @author jberg
+ *
+ */
 
 import Jama.LUDecomposition;
 import Jama.Matrix;

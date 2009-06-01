@@ -1,5 +1,10 @@
 package newmodels.usermodel;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.Random;
 
 import usermodel.UserState;

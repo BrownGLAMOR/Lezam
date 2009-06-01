@@ -1,5 +1,10 @@
 package newmodels.slottonumclicks;
 
+/**
+ * @author jberg
+ *
+ */
+
 import newmodels.slottonumimp.AbstractSlotToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import edu.umich.eecs.tac.props.Query;

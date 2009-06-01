@@ -1,5 +1,9 @@
 package agents;
 
+/**
+ * @author jberg
+ *
+ */
 
 import java.util.*;
 

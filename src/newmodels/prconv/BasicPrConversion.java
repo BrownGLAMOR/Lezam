@@ -1,5 +1,10 @@
 package newmodels.prconv;
 
+/**
+ * @author jberg
+ *
+ */
+
 import agents.rules.Constants;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

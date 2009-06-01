@@ -3,6 +3,11 @@
  */
 package newmodels;
 
+/**
+ * @author jberg
+ *
+ */
+
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 

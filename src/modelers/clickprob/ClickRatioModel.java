@@ -1,5 +1,9 @@
 package modelers.clickprob;
 
+/**
+ * @author jberg
+ *
+ */
 
 import java.util.Random;
 

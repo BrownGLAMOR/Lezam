@@ -1,5 +1,10 @@
 package newmodels.slottonumimp;
 
+/**
+ * @author jberg
+ *
+ */
+
 import usermodel.UserState;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;

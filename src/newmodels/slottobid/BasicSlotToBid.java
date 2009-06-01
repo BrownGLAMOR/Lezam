@@ -1,5 +1,10 @@
 package newmodels.slottobid;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.ArrayList;
 
 import newmodels.bidtoslot.AbstractBidToSlotModel;

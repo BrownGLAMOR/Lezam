@@ -1,5 +1,10 @@
 package newmodels.slottoprclick;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.Random;
 
 import modelers.clickprob.ClickRatioModel;
