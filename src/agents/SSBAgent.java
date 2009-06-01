@@ -130,7 +130,7 @@ public class SSBAgent extends AbstractAgent {
 		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);} // (cjc)
 		
 		
-		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy); // (cjc)
+		new Targeted().apply(_F1componentSpecialty, _bidStrategy); // (cjc)
 		new Targeted().apply(_F2componentSpecialty, _bidStrategy);
 	}
 	
@@ -160,6 +160,7 @@ public class SSBAgent extends AbstractAgent {
 		_reinvestmentCap2s.apply(_F2componentSpecialty, _bidStrategy);
 		
 		_distributionCap.apply(_bidStrategy);
+		
 		
 	}
 	
