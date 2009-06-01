@@ -19,9 +19,6 @@ public class JESOM2BidStrategy extends GenericBidStrategy {
 		double clicks = getProperty(q,WANTED_SALES) / getProperty(q,CONVERSION_PR);
 		return bid * clicks;
 	}
-	
-	public void setQuerySpendLimit(Query q, double d){}
-	public void setDefaultQuerySpendLimit(double d){}
 
 	@Override
 	public double getQueryBid(Query q){
@@ -36,7 +33,7 @@ public class JESOM2BidStrategy extends GenericBidStrategy {
 		buff.append("\t").append("clicks: ").append(getProperty(q,WANTED_SALES) / getProperty(q,CONVERSION_PR)).append("\n");
 	}
 	
-	public String toString(){
+	/*public String toString(){
 		String toReturn = "";
 		StringBuffer buff;
 		for (Query q: _querySpace){
@@ -45,6 +42,6 @@ public class JESOM2BidStrategy extends GenericBidStrategy {
 			toReturn += buff;
 		}
 		return toReturn;
-	}
+	}*/
 	
 }
