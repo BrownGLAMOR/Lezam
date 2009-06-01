@@ -23,6 +23,9 @@ public abstract class AbstractPrConversionModel extends AbstractModel {
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract double getPrediction(double bid);
+	/*
+	 * Takes in the amount of sales over the capacity window
+	 */
+	public abstract double getPrediction(double overcap);
 
 }
