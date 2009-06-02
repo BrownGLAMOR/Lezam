@@ -3,9 +3,17 @@ package simulator.parser;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import edu.umich.eecs.tac.props.AdvertiserInfo;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.PublisherInfo;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.ReserveInfo;
 import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.BankStatus;
+import edu.umich.eecs.tac.props.SalesReport;
+import edu.umich.eecs.tac.props.SlotInfo;
 import edu.umich.eecs.tac.props.UserClickModel;
+import edu.umich.eecs.tac.props.UserPopulationState;
 import edu.umich.eecs.tac.TACAAConstants;
 import edu.umich.eecs.tac.Parser;
 import se.sics.tasim.props.StartInfo;
@@ -60,6 +68,12 @@ public class GameLogParser extends Parser {
     protected void message(int sender, int receiver, Transportable content) {
     	SimParserMessage parseMessage = new SimParserMessage(sender,receiver,content);
     	_messages.addLast(parseMessage);
+    }
+    
+    protected void dataUpdated(int agent, int type, Transportable content) {
+    	if(content instanceof UserPopulationState){
+    		//TODO
+    	}
     }
 
 	public LinkedList<SimParserMessage> getMessages() {
