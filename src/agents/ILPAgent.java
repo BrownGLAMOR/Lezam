@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.Hashtable;
 import java.util.Vector;
 
 import agents.rules.SetProperty;
@@ -14,6 +15,10 @@ public class ILPAgent extends AbstractAgent{
 	Vector<Double> bids;
 	Vector<Integer> quantities;
 	
+	public ILPAgent(){		System.out.println("AAAAAAA");
+};
+	protected void simulationSetup() {}
+
 	@Override
 	protected BidBundle buildBidBudle() {
 //		System.out.println("**********");
@@ -25,21 +30,23 @@ public class ILPAgent extends AbstractAgent{
 	@Override
 	protected void initBidder() {
 		// TODO Auto-generated method stub
-		ILPBidStrategy _bidStrategy = new ILPBidStrategy(_querySpace);
+		System.out.println("AAAAAAA");
+		_bidStrategy = new ILPBidStrategy(_querySpace);
 		
-		_bidStrategy.setDefaultProperty(ILPBidStrategy.CAPACITY, (double)_advertiserInfo.getDistributionCapacity() / _advertiserInfo.getDistributionWindow());
-		_bidStrategy.setDefaultProperty(ILPBidStrategy.NUMUSERS, 4000); // TODO CHANGE CONSTANT
+		_bidStrategy.setDefaultProperty(ILPBidStrategy.DAILYCAPACITY, (double)_advertiserInfo.getDistributionCapacity() / _advertiserInfo.getDistributionWindow());
+		_bidStrategy.setDefaultProperty(ILPBidStrategy.NUMUSERS, 9000); // TODO CHANGE CONSTANT
 		_bidStrategy.setDefaultProperty(ILPBidStrategy.DISCOUNTER, _advertiserInfo.getDistributionCapacityDiscounter());
 		
 		for (Product p : _retailCatalog) {
 			int givesBonus=0;
 			if (p.getManufacturer().equals(_advertiserInfo.getManufacturerSpecialty())) givesBonus = 1;
 			double profit = _retailCatalog.getSalesProfit(p)*(1+_advertiserInfo.getComponentBonus()*givesBonus);
-			_bidStrategy.setProductsRevenue(p, profit);
+			System.out.println("product " + p.getComponent() + " " + p.getManufacturer() + " with profit " + profit);
+			//_bidStrategy.setProductsRevenue(p, profit);
 		}
 		
-		bids = _bidStrategy.setPossibleBids(0, getAvaregeProductPrice(), 0.01); //TODO replace getAverageProduct with a lower bid
-		quantities = _bidStrategy.setPossibleQuantities(0, 30, 1); //TODO replace maximum quantities with a max's offer
+		bids = new Vector<Double>(_bidStrategy.setPossibleBids(0, getAvaregeProductPrice(), 0.01)); //TODO replace getAverageProduct with a lower bid
+		quantities = new Vector<Integer>(_bidStrategy.setPossibleQuantities(0, 30, 1)); //TODO replace maximum quantities with a max's offer
 		System.out.println("b size = " + bids.size());
 		System.out.println("q size = " + quantities.size());
 	}
