@@ -158,11 +158,6 @@ public abstract class SimAbstractAgent extends Agent {
 	protected int _numPS;
 	
 	/**
-	 * Number of Regular Slots
-	 */
-	protected int _numRS;
-	
-	/**
 	 * Total number of Slots
 	 */
 	protected int _numSlots;
@@ -344,8 +339,7 @@ public abstract class SimAbstractAgent extends Agent {
     protected void handleSlotInfo(SlotInfo slotInfo) {
     	_PSB = slotInfo.getPromotedSlotBonus();
     	_numPS = slotInfo.getPromotedSlots();
-    	_numRS = slotInfo.getRegularSlots();
-    	_numSlots = _numPS + _numRS;
+    	_numSlots = slotInfo.getRegularSlots();
         this._slotInfo = slotInfo;
     }
 

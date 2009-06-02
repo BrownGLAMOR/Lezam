@@ -1,4 +1,4 @@
-package agents.mckp;
+package agents.mckpmkii;
 
 public class IncItem implements Comparable<IncItem>{
 	Item _item;
