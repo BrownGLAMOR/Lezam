@@ -14,11 +14,7 @@ public class JESOM2BidStrategy extends GenericBidStrategy {
 		setDefaultProperty(HONESTY_FACTOR, 0.75);
 	}
 	
-	public double getQuerySpendLimit(Query q){
-		double bid = getQueryBid(q);
-		double clicks = getProperty(q,WANTED_SALES) / getProperty(q,CONVERSION_PR);
-		return bid * clicks;
-	}
+
 
 	@Override
 	public double getQueryBid(Query q){
