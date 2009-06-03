@@ -1,7 +1,13 @@
 package agents;
 
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Set;
+import java.util.Vector;
+
+import se.sics.tasim.props.SimulationStatus;
 
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
@@ -26,6 +32,7 @@ public class G3Agent extends AbstractAgent {
 
 	protected double _campaignSpendLimit;
 	
+	protected int _day;
 	
 	public G3Agent(){}
 	
@@ -37,38 +44,12 @@ public class G3Agent extends AbstractAgent {
 		printAdvertiserInfo();
 
 		_bidStrategy = new G3BidStrategy(_querySpace);
-		for(Query q : _querySpace) {
+		/*for(Query q : _querySpace) {
 			_bidStrategy.setData(q, -1.0, 0.2);
-		}
+		}*/
 		
-/*		int distributionCapacity = _advertiserInfo.getDistributionCapacity();
-		int distributionWindow = _advertiserInfo.getDistributionWindow();
-		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
-		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		
-		_distributionCap = new DistributionCap(distributionCapacity, distributionWindow);
-		_reinvestmentCap = new ReinvestmentCap(0.80);
-		_topPosition = new TopPosition(_advertiserInfo.getAdvertiserId(), 0.10);
-		_noImpressions = new NoImpressions(_advertiserInfo.getAdvertiserId(), 0.10);
-		
-		new ConversionPr(0.10).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ZERO), _bidStrategy);
-		new ConversionPr(0.20).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), _bidStrategy);
-		new ConversionPr(0.30).apply(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), _bidStrategy);
-		
-		new ManufacurerBonus(manufacturerBonus).apply(_queryManufacturer.get(manufacturerSpecialty), _bidStrategy);
-		
-		Set<Query> componentSpecialty = _queryComponent.get(_advertiserInfo.getComponentSpecialty());
-		
-		Set<Query> F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
-		new ConversionPr(0.27).apply(F1componentSpecialty, _bidStrategy);
-		
-		Set<Query> F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
-		new ConversionPr(0.39).apply(F2componentSpecialty, _bidStrategy);
-		
-		//??? new Targeted().apply(F1componentSpecialty, _bidStrategy);
-		new Targeted().apply(F2componentSpecialty, _bidStrategy);*/
-		
-		_bidStrategy.setDistributionCapacity(_advertiserInfo.getDistributionCapacity());
+		_bidStrategy.setDistributionCapacity(_advertiserInfo.getDistributionCapacity(),_advertiserInfo.getDistributionWindow());
+		_bidStrategy.setPP(getAvaregeProductPrice());
 		
 	}
 	
@@ -77,28 +58,33 @@ public class G3Agent extends AbstractAgent {
 	protected void updateBidStrategy() {
 		QueryReport qr = _queryReports.remove();
 		SalesReport sr = _salesReports.remove();
-		if (qr == null || sr == null) {
-			return;
-		}
 		int quantity = 0;
-		for(Query q : _querySpace) {
-			if (qr.getPosition(q) == 0) return;
-			else System.out.println("i'm in!");
+		double cost = 0;
+		if (_day < 3) return;
+		else for(Query q : _querySpace) {
+			//else System.out.println("i'm in!");
+			_bidStrategy._day3 = true;
 			double CTR = qr.getClicks(q) / (double)qr.getImpressions(q);
 			double convProb = (double)sr.getConversions(q) / qr.getClicks(q);
+			HashMap<String,Double> p = new HashMap<String,Double>();
 			//double CPS = _bidStrategy.getQueryBid(q) / convProb;
 			//System.out.println ("ubs_CPS: " + CPS);
-			System.out.println ("ubs_CTR: " + CTR);
-			System.out.println ("ubs_CcP: " + convProb);
-			System.out.println ("ubs_getClicks: " + qr.getClicks(q));
-			System.out.println ("ubs_getImpressions: " + qr.getImpressions(q));
-			System.out.println ("ubs_getConversions(q): " + sr.getConversions(q));
-			
+			//System.out.println ("ubs_CTR: " + CTR);
+			//System.out.println ("ubs_CcP: " + convProb);
+			//System.out.print ("ubs_getClicks: " + qr.getClicks(q) + " || ");
+			//System.out.print ("ubs_getImpressions: " + qr.getImpressions(q) + " || ");
+			//System.out.println ("ubs_getConversions(q): " + sr.getConversions(q));
+			p.put("getClicks",(double)qr.getClicks(q));
+			p.put("ubs_getImpressions",(double)qr.getImpressions(q));
+			p.put("ubs_getConversions(q)", (double)sr.getConversions(q));
+//			printit(p);
+						
 			_bidStrategy.setData(q, CTR, convProb);
-			quantity =+ sr.getConversions(q);
+			quantity = quantity + sr.getConversions(q);
+			cost = cost + qr.getCost(q);
 		}
 		_bidStrategy.setConvertions (quantity);
-		_bidStrategy.setPP(getAvaregeProductPrice());
+		_bidStrategy.setCost(cost);
 		
 	}
 	
@@ -110,7 +96,19 @@ public class G3Agent extends AbstractAgent {
 		System.out.println("**********");
 		return _bidStrategy.buildBidBundle();
 	}
+	
+	private void printit(HashMap<String, Double> p) {
+		for (Map.Entry<String, Double> s :  p.entrySet()) {
+			System.out.print(s.getKey() + ": " + s.getValue() + " || ");
+		}
+		System.out.println();
+	}
 
+	protected void handleSimulationStatus(SimulationStatus simulationStatus) {
+		//System.out.println ("FOUND IT!!!!! = " + simulationStatus.getCurrentDate() + " ###################################################################");
+		_day = simulationStatus.getCurrentDate();
+		super.handleSimulationStatus(simulationStatus);
+	}
 
 
 }
