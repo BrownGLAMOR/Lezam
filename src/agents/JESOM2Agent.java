@@ -9,6 +9,7 @@ import modelers.unitssold.UnitsSoldModelMean;
 
 import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
+import agents.rules.DistributionCap;
 import agents.rules.ManufacurerBonus;
 import agents.rules.SetProperty;
 import agents.rules.Targeted;
@@ -21,7 +22,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class JESOM2Agent extends AbstractAgent {
 	protected JESOM2BidStrategy _bidStrategy;
 	protected Hashtable<Query,Double> _baseLineConversion;
-
+	protected DistributionCap _distributionCap;
 
 	protected UnitsSoldModel _unitsSold;
 
@@ -65,8 +66,9 @@ public class JESOM2Agent extends AbstractAgent {
 		int distributionWindow = _advertiserInfo.getDistributionWindow();
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-
 		_unitsSold = new UnitsSoldModelMean(distributionWindow); //new UnitsSoldModelMaxWindow(distributionWindow);
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
+		
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}  // constant set by game server info
@@ -80,15 +82,15 @@ public class JESOM2Agent extends AbstractAgent {
 
 		Set<Query> F1componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_ONE), componentSpecialty);
 		new ConversionPr(0.27).apply(F1componentSpecialty, _bidStrategy); // constant set by game server info
-		//for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);} (spucci)
+		for(Query q : F1componentSpecialty) {_baseLineConversion.put(q, 0.27);} 
 
 		Set<Query> F2componentSpecialty = intersect(_queryFocus.get(QueryType.FOCUS_LEVEL_TWO), componentSpecialty);
 		new ConversionPr(0.39).apply(F2componentSpecialty, _bidStrategy); // constant set by game server info
-		//for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);} (spucci)
+		for(Query q : F2componentSpecialty) {_baseLineConversion.put(q, 0.39);} 
 
 
 		//new Targeted().apply(F1componentSpecialty, _bidStrategy);
-		//new Targeted().apply(F2componentSpecialty, _bidStrategy);
+		new Targeted().apply(F2componentSpecialty, _bidStrategy);
 		
 
 		int slice = distributionCapacity/(20*distributionWindow);
@@ -124,17 +126,17 @@ public class JESOM2Agent extends AbstractAgent {
 				int remainingCap = distributionCapacity - _unitsSold.getWindowSold();
 				int magicDivisor = 8;
 				
-				if (clicksGot < wantedSales/conversionPr &&
-						remainingCap > distributionCapacity/distributionWindow * .8){
+				// if we are overselling, lower our bid
+				if (_bidStrategy.getProperty(q, JESOM2BidStrategy.CONVERSION_PR) < _baseLineConversion.get(q) ) {
+					double cpc = qr.getCPC(q)-.01;
+					double newHonesty = cpc / (conversionRevenue * conversionPr);
+					_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, newHonesty);
+				}
+				else if (clicksGot < wantedSales/conversionPr){
 					// Didn't get enough sales, but had a good position (spucci)
-					// -> raise other sales, lower this query's wanted sales (spucci)
+					// -> raise other sales
 					if (qr.getPosition(q) < 4){  //constant to be entered by user (spucci)
-						for (Query qu : _querySpace){
-							if (qu != q){
-								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.05); //constant to be entered by user
-							}
-						}
-						_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*.5); //constant to be entered by user
+						_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*.625); //constant to be entered by user
 					}
 					// Not enough sales, bad position (spucci)
 					// -> raise bid (spucci)
@@ -146,16 +148,10 @@ public class JESOM2Agent extends AbstractAgent {
 						
 					}
 				}
-				else if (clicksGot >= wantedSales/conversionPr) {
+				else {
 					// Have enough sales, and our slot is quite low (spucci)
-					// -> increase desired sales in this query, lower for others (spucci)
-					if ((!(qr.getPosition(q) < 4) || qr.getCPC(q) < .2) && 
-							remainingCap > distributionCapacity/distributionWindow * .8){
-						for (Query qu : _querySpace){
-							if (qu != q){
-								_bidStrategy.setProperty(qu, JESOM2BidStrategy.WANTED_SALES, wantedSales*.95);
-							}
-						}
+					// -> increase desired sales in this query
+					if (!(qr.getPosition(q) < 4) || qr.getCPC(q) < .2){
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.WANTED_SALES, wantedSales*1.6);
 					}
 					// Have enough sales, and our slot is high (spucci)
@@ -166,6 +162,13 @@ public class JESOM2Agent extends AbstractAgent {
 						_bidStrategy.setProperty(q, JESOM2BidStrategy.HONESTY_FACTOR, newHonesty);
 					}
 				}
+				
+				// set spending limit
+				double bid = _bidStrategy.getQueryBid(q);
+				double clicks = Math.max(1,_bidStrategy.getProperty(q,_bidStrategy.WANTED_SALES)) / _bidStrategy.getProperty(q,_bidStrategy.CONVERSION_PR);
+				_bidStrategy.setQuerySpendLimit(q, bid * clicks);
+				//_distributionCap.apply(_bidStrategy);
+				
 				
 			}
 		}
