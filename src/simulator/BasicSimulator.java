@@ -18,6 +18,7 @@ import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
 import simulator.parser.GameLogParser;
 import simulator.parser.GameStatus;
+import simulator.parser.GameStatusHandler;
 import simulator.parser.SimParserMessage;
 import usermodel.UserState;
 
@@ -25,6 +26,7 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -46,7 +48,6 @@ public class BasicSimulator {
 
 	private double _squashing;
 	private double _numUsers;
-	private int _numAgents;
 	private int _numPromSlots;
 	private int _numSlots;
 	private double _regReserve;
@@ -71,12 +72,6 @@ public class BasicSimulator {
 	 * 
 	 */
 	public BasicSimulator() {
-		_numUsers = 90000;
-		_numAgents = 7;
-		_numSlots = 5;
-		_targEffect = .5;
-		_promSlotBonus = .5;
-		_agents = new String[_numAgents];
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
 		_bids = new HashMap<String,HashMap<Query,Double>>();
 		_budgets = new HashMap<String,HashMap<Query,Double>>();
@@ -90,95 +85,76 @@ public class BasicSimulator {
 		_querySpace = new LinkedHashSet<Query>();
 	}
 
-	public void initializeGameState(String filename, int day) throws IOException, ParseException {
-		InputStream inputStream = new FileInputStream(filename);
-		GameLogParser parser = new GameLogParser(new LogReader(inputStream));
-		parser.start();
-		parser.stop();
-		LinkedList<SimParserMessage> messages = parser.getMessages();
-		System.out.println(messages.size());
-	}
+	public void initializeGameState(String filename, int day, int advertiseridx) throws IOException, ParseException {
+		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
+		GameStatusHandler statusHandler = new GameStatusHandler(filename);
+		GameStatus status = statusHandler.getGameStatus();
+		LinkedList<HashMap<UserState, Double>> userDists = status.getUserDistributions();
+		HashMap<String, AdvertiserInfo> advInfos = status.getAdvertiserInfos();
+		HashMap<String, LinkedList<BankStatus>> bankStatuses = status.getBankStatuses();
+		HashMap<String, LinkedList<BidBundle>> bidBundles = status.getBidBundles();
+		HashMap<String, LinkedList<QueryReport>> queryReports = status.getQueryReports();
+		HashMap<String, LinkedList<SalesReport>> salesReports = status.getSalesReports();
+		PublisherInfo pubInfo = status.getPubInfo();
+		ReserveInfo reserveInfo = status.getReserveInfo();
+		RetailCatalog retailCatalog = status.getRetailCatalog();
+		SlotInfo slotInfo = status.getSlotInfo();
+		UserClickModel userClickModel = status.getUserClickModel();
+    	_agents = status.getAdvertisers();
+		
+		AdvertiserInfo advInfo = advInfos.get(_agents[advertiseridx]);
+		
+    	_squashing = pubInfo.getSquashingParameter();;
+    	_numUsers = 90000;
+    	_numPromSlots = slotInfo.getPromotedSlots();
+    	_numSlots = slotInfo.getRegularSlots();
+    	_regReserve = reserveInfo.getRegularReserve();
+    	_proReserve = reserveInfo.getPromotedReserve();
+    	_targEffect = advInfo.getTargetEffect();;
+    	_promSlotBonus = slotInfo.getPromotedSlotBonus();;
+    	
+    	_users = userDists.get(day);
+    	
+    	_querySpace.add(new Query(null, null));
+        for(Product product : retailCatalog) {
+            // The F1 query classes
+            // F1 Manufacturer only
+            _querySpace.add(new Query(product.getManufacturer(), null));
+            // F1 Component only
+            _querySpace.add(new Query(null, product.getComponent()));
 
-	/*
-	 * Initializes the state of the simulation
-	 */
-	public void initializeGameState() {
-		_numPromSlots = 2;
-		_regReserve = randDouble(.02, .05);
-		_proReserve = randDouble(_regReserve,.4);
-		/*
-		 * Initialize QuerySpace
-		 */
-		_querySpace.add(new Query(null,null));
-		_querySpace.add(new Query("pg",null));
-		_querySpace.add(new Query("lioneer",null));
-		_querySpace.add(new Query("flat",null));
-		_querySpace.add(new Query(null,"tv"));
-		_querySpace.add(new Query(null,"dvd"));
-		_querySpace.add(new Query(null,"audio"));
-		_querySpace.add(new Query("pg","tv"));
-		_querySpace.add(new Query("pg","dvd"));
-		_querySpace.add(new Query("pg","audio"));
-		_querySpace.add(new Query("lioneer","tv"));
-		_querySpace.add(new Query("lioneer","dvd"));
-		_querySpace.add(new Query("lioneer","audio"));
-		_querySpace.add(new Query("flat","tv"));
-		_querySpace.add(new Query("flat","dvd"));
-		_querySpace.add(new Query("flat","audio"));
+            // The F2 query class
+            _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+        }
+        
+        for(Query query : _querySpace) {
+        	_contProb.put(query, userClickModel.getContinuationProbability(userClickModel.queryIndex(query)));
+        }
+    	
+    	for(int i = 0; i < _agents.length; i++) {
+    		AdvertiserInfo adInfo = advInfos.get(_agents[i]);
+    		BidBundle bidBundleTemp = bidBundles.get(_agents[i]).get(day);
+    		String manfactBonus = adInfo.getManufacturerSpecialty();
+    		_manfactBonus.put(_agents[i], manfactBonus);
+    		String compBonus = adInfo.getComponentSpecialty();
+    		_compBonus.put(_agents[i], compBonus);
+    		_totBudget.put(_agents[i], bidBundleTemp.getCampaignDailySpendLimit());
+    		HashMap<Query,Ad> adType = new HashMap<Query, Ad>();
+    		HashMap<Query,Double> bids = new HashMap<Query, Double>();
+    		HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+    		HashMap<Query,Double> advEffect = new HashMap<Query, Double>();
 
-		/*
-		 * Initialize all the bidding information
-		 */
-
-		HashMap<Query,Double> bids;
-		HashMap<Query,Double> budgets;
-		HashMap<Query,Ad> ads;
-		HashMap<Query,Double> advEffect;
-		for(int i = 0; i < _numAgents; i++) {
-			_agents[i] = "Agent" + i;
-			bids = new HashMap<Query,Double>();
-			budgets = new HashMap<Query,Double>();
-			advEffect = new HashMap<Query, Double>();
-			ads = new HashMap<Query,Ad>();
-			for(Query query:_querySpace) {
-				bids.put(query, randDouble(.5,3.5));
-				budgets.put(query, bids.get(query)*50);
-				ads.put(query,new Ad());
-				if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-					advEffect.put(query, randDouble(.2,.3));
-					_contProb.put(query, randDouble(.2,.5));
-				}
-				else if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-					advEffect.put(query, randDouble(.3,.4));
-					_contProb.put(query, randDouble(.3,.6));
-				}
-				else if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-					advEffect.put(query, randDouble(.4,.5));
-					_contProb.put(query, randDouble(.4,.7));
-				}
-				else {
-					throw new RuntimeException("Bad QuerySpace");
-				}
-			}
-			_bids.put(_agents[i], bids);
-			_budgets.put(_agents[i], budgets);
-			_adType.put(_agents[i], ads);
-			_totBudget.put(_agents[i], Double.NaN);
-			_advEffect.put(_agents[i], advEffect);
-			_manfactBonus.put(_agents[i], "lioneer");
-			_compBonus.put(_agents[i],"tv");
-			_overCap.put(_agents[i], (int) Math.ceil(randDouble(1,50)));
-		}
-
-		/*
-		 * Initialize the User Population
-		 */
-		_users.put(UserState.IS, (_numUsers*2)/10);
-		_users.put(UserState.F0, _numUsers/10);
-		_users.put(UserState.F1, _numUsers/10);
-		_users.put(UserState.F2, _numUsers/10);
-		_users.put(UserState.T, _numUsers/10);
-		_users.put(UserState.NS, (_numUsers*4)/10);
+    		for(Query query : _querySpace) {
+    			adType.put(query, bidBundleTemp.getAd(query));
+    			bids.put(query, bidBundleTemp.getBid(query));
+    			budgets.put(query,bidBundleTemp.getDailyLimit(query));
+    			advEffect.put(query, userClickModel.getAdvertiserEffect(userClickModel.queryIndex(query), i));
+    		}
+    		_adType.put(_agents[i], adType);
+    		_bids.put(_agents[i], bids);
+    		_budgets.put(_agents[i], budgets);
+    		_advEffect.put(_agents[i], advEffect);
+    	}
 	}
 
 	/*
@@ -214,7 +190,5 @@ public class BasicSimulator {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-
-
 
 }

@@ -1,6 +1,7 @@
 package simulator.parser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import edu.umich.eecs.tac.props.AdvertiserInfo;
@@ -21,6 +22,7 @@ import se.sics.tasim.props.SimulationStatus;
 import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.isl.transport.Transportable;
+import usermodel.UserState;
 
 
 /**
@@ -72,7 +74,8 @@ public class GameLogParser extends Parser {
     
     protected void dataUpdated(int agent, int type, Transportable content) {
     	if(content instanceof UserPopulationState){
-    		//TODO
+    		SimParserMessage parseMessage = new SimParserMessage(agent,type,content);
+        	_messages.addLast(parseMessage);
     	}
     }
 

@@ -62,6 +62,7 @@ public class test {
 	    int retailcatalog = 0;
 	    int salesrep = 0;
 	    int userclickmodel = 0;
+	    int userPop = 0;
 	    int other = 0;
 	    for(int i = 0; i < messages.size(); i++) {
 	    	SimParserMessage mes = messages.get(i);
@@ -223,6 +224,20 @@ public class test {
 	    		System.out.println(i+": from "+from+" to "+to+"  AdvertiserInfo");
 	    		advinfo++;
 	    	}
+	    	else if (content instanceof UserPopulationState) {
+	    		UserPopulationState userPopState = (UserPopulationState) content;
+//	    		System.out.println(i+": from "+from+" to "+to+"  UserPopulationState");
+//	    		for(Product p : userPop) {
+//	    			System.out.println("\t"+p);
+//	    			System.out.println("\t\t NS: "+userPop.getDistribution(p)[0]);
+//	    			System.out.println("\t\t IS: "+userPop.getDistribution(p)[1]);
+//	    			System.out.println("\t\t F0: "+userPop.getDistribution(p)[2]);
+//	    			System.out.println("\t\t F1: "+userPop.getDistribution(p)[3]);
+//	    			System.out.println("\t\t F2: "+userPop.getDistribution(p)[4]);
+//	    			System.out.println("\t\t T: "+userPop.getDistribution(p)[5]);
+//	    		}
+	    		userPop++;
+	    	}
 	    	else {
 	    		other++;
 	    	}
@@ -238,6 +253,7 @@ public class test {
 	    System.out.println("Retail Catalog: " + retailcatalog);
 	    System.out.println("Sales Report: " + salesrep);
 	    System.out.println("User Click Model: " + userclickmodel);
+	    System.out.println("User Population State: " + userPop);
 	    System.out.println("Other: " + other);
 	}
 

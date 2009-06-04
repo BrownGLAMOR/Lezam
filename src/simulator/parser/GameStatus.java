@@ -1,7 +1,9 @@
-package simulator.parser;
+	package simulator.parser;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+
+import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
@@ -27,10 +29,10 @@ public class GameStatus {
 	private HashMap<String, LinkedList<QueryReport>> _queryReports;
 	private HashMap<String, LinkedList<SalesReport>> _salesReports;
 	private HashMap<String, AdvertiserInfo> _advertiserInfos;
+	private LinkedList<HashMap<UserState, Double>> _userDistributions;
 	private SlotInfo _slotInfo;
 	private ReserveInfo _reserveInfo;
 	private PublisherInfo _pubInfo;
-	private AdvertiserInfo _advInfo;
 	private RetailCatalog _retailCatalog;
 	private UserClickModel _userClickModel;
 
@@ -40,10 +42,10 @@ public class GameStatus {
 					HashMap<String, LinkedList<QueryReport>> queryReports,
 					HashMap<String, LinkedList<SalesReport>> salesReports,
 					HashMap<String, AdvertiserInfo> advertiserInfos,
+					LinkedList<HashMap<UserState,Double>> userDistributions,
 					SlotInfo slotInfo,
 					ReserveInfo reserveInfo,
 					PublisherInfo pubInfo,
-					AdvertiserInfo advInfo,
 					RetailCatalog retailCatalog,
 					UserClickModel userClickModel) {
 		_advertisers = advertisers;
@@ -52,10 +54,10 @@ public class GameStatus {
 		_queryReports = queryReports;
 		_salesReports = salesReports;
 		_advertiserInfos = advertiserInfos;
+		_userDistributions = userDistributions;
 		_slotInfo = slotInfo;
 		_reserveInfo = reserveInfo;
 		_pubInfo = pubInfo;
-		_advInfo = advInfo;
 		_retailCatalog = retailCatalog;
 		_userClickModel = userClickModel;
 	}
@@ -64,13 +66,14 @@ public class GameStatus {
 		return _advertisers;
 	}
 	
+	public LinkedList<HashMap<UserState, Double>> getUserDistributions() {
+		return _userDistributions;
+	}
+	
 	public HashMap<String, AdvertiserInfo> getAdvertiserInfos() {
 		return _advertiserInfos;
 	}
 
-	public AdvertiserInfo getAdvInfo() {
-		return _advInfo;
-	}
 
 	public HashMap<String, LinkedList<BankStatus>> getBankStatuses() {
 		return _bankStatuses;
