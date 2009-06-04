@@ -25,4 +25,8 @@ public abstract class AbstractSlotToBidModel extends AbstractModel {
 	
 	public abstract double getPrediction(double slot);
 
+	public Query getQuery() {
+		return _query;
+	}
+	
 }

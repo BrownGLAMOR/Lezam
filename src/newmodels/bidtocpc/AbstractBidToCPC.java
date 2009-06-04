@@ -28,4 +28,8 @@ public abstract class AbstractBidToCPC extends AbstractModel {
 	
 	public abstract double getPrediction(double bid);
 
+	public Query getQuery() {
+		return _query;
+	}
+	
 }

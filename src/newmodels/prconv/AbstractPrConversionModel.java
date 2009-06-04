@@ -28,4 +28,8 @@ public abstract class AbstractPrConversionModel extends AbstractModel {
 	 */
 	public abstract double getPrediction(double overcap);
 
+	public Query getQuery() {
+		return _query;
+	}
+	
 }

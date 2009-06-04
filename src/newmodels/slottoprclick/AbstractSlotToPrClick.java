@@ -24,5 +24,9 @@ public abstract class AbstractSlotToPrClick extends AbstractModel {
 									SalesReport salesReport);
 	
 	public abstract double getPrediction(double bid);
+	
+	public Query getQuery() {
+		return _query;
+	}
 
 }

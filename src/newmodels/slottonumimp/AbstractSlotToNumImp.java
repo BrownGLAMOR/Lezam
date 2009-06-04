@@ -25,4 +25,8 @@ public abstract class AbstractSlotToNumImp extends AbstractModel {
 	
 	public abstract int getPrediction(double slot);
 
+	public Query getQuery() {
+		return _query;
+	}
+	
 }
