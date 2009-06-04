@@ -89,7 +89,7 @@ public class BasicSimulator {
 		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
-		LinkedList<HashMap<UserState, Double>> userDists = status.getUserDistributions();
+		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = status.getUserDistributions();
 		HashMap<String, AdvertiserInfo> advInfos = status.getAdvertiserInfos();
 		HashMap<String, LinkedList<BankStatus>> bankStatuses = status.getBankStatuses();
 		HashMap<String, LinkedList<BidBundle>> bidBundles = status.getBidBundles();
@@ -113,6 +113,7 @@ public class BasicSimulator {
     	_targEffect = advInfo.getTargetEffect();;
     	_promSlotBonus = slotInfo.getPromotedSlotBonus();;
     	
+    	//TODO Change this to handle all the different product types
     	_users = userDists.get(day);
     	
     	_querySpace.add(new Query(null, null));
