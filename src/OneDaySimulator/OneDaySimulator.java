@@ -1,11 +1,5 @@
-package simulator;
+package OneDaySimulator;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -16,22 +10,15 @@ import java.util.Set;
 
 import agents.G3Agent;
 import agents.ILPAgent;
+import agents.old.OldILPAgent;
 
-import se.sics.tasim.aw.Agent;
-import se.sics.tasim.aw.Message;
-import se.sics.tasim.logtool.LogReader;
-import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
 import se.sics.tasim.props.StartInfo;
-import simulator.parser.GameLogParser;
-import simulator.parser.GameStatus;
-import simulator.parser.SimParserMessage;
 import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
-import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
@@ -48,21 +35,15 @@ import edu.umich.eecs.tac.props.UserClickModel;
  * @author ml63 (taken from jberg)
  * 
  */
-public class OneDaySimulator extends ILPAgent{	//TODO you only need to change this line in order to choose an agent
+public class OneDaySimulator extends ILPAgent{	// You only need to change this line in order to choose an agent
 
 	Random _R = new Random();
 
 	private static final String[] manSet = {"pg","lioneer","flat"};
 	private static final String[] prodSet = {"tv","dvd","audio"};
-	private double _squashing;
 	private double _numUsers;
 	private int _numAgents;
-	private int _numPromSlots;
 	private int _numSlots;
-	private double _regReserve;
-	private double _proReserve;
-	private double _targEffect;
-	private double _promSlotBonus;
 
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
@@ -75,7 +56,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 	private HashMap<String,Integer> _overCap;
 	private HashMap<Query,Double> _contProb;
 	private HashMap<UserState,Double> _users;
-	private Set<Query> _querySpace;
+	private Set<Query> _thisQuerySpace;
 
 	/*
 	 * 
@@ -84,8 +65,6 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		_numUsers = 90000;
 		_numAgents = agents.length;
 		_numSlots = 5;
-		_targEffect = .5;
-		_promSlotBonus = .5;
 		_agents = new String[_numAgents];
 		_agents = agents.clone();
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
@@ -98,17 +77,25 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		_overCap = new HashMap<String, Integer>();
 		_contProb = new HashMap<Query,Double>();
 		_users = new HashMap<UserState,Double>();
-		_querySpace = new LinkedHashSet<Query>();
+		_thisQuerySpace = new LinkedHashSet<Query>();
+
+		for (String sm : manSet) {
+			for (String sp : prodSet) {
+				_thisQuerySpace.add(new Query(sm,sp));
+			}
+			_thisQuerySpace.add(new Query(sm,null));			
+		}
+		_thisQuerySpace.add(new Query(null,"tv"));
+		_thisQuerySpace.add(new Query(null,"dvd"));
+		_thisQuerySpace.add(new Query(null,"audio"));
+		_thisQuerySpace.add(new Query(null,null));
+		
 	}
 
 	/*
 	 * Initializes the state of the simulation
 	 */
 	public void initializeGameState() {
-		_numPromSlots = 2;
-		_regReserve = 0.2;
-		_proReserve = 0.4;
-
 		/*
 		 * Initialize all the bidding information
 		 */
@@ -122,7 +109,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 			budgets = new HashMap<Query,Double>();
 			advEffect = new HashMap<Query, Double>();
 			ads = new HashMap<Query,Ad>();
-			for(Query query:_querySpace) {
+			for(Query query:_thisQuerySpace) {
 				bids.put(query, randDouble(.5,3.5));
 				budgets.put(query, bids.get(query)*50);
 				ads.put(query,new Ad());
@@ -130,11 +117,11 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 					advEffect.put(query, 0.2);
 					_contProb.put(query, 0.2);
 				}
-				else if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
 					advEffect.put(query, 0.3);
 					_contProb.put(query, 0.3);
 				}
-				else if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
 					advEffect.put(query, 0.4);
 					_contProb.put(query, 0.4);
 				}
@@ -197,6 +184,13 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		return rand * (b - a) + a;
 	}
 	
+	private Set<Query> getQuerySpace() {
+		/**
+		 * List of all the possible queries made available in the {@link RetailCatalog retail catalog}.
+		 */
+		return _thisQuerySpace;
+	}
+
 	private StartInfo getStartInfo() {
 		/**
 		 * Basic simulation information. {@link StartInfo} contains
@@ -208,7 +202,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		 * </ul>
 		 * An agent should receive the {@link StartInfo} at the beginning of the game or during recovery.
 		 */
-		StartInfo si = new StartInfo();
+		StartInfo si = new myStartInfo();
 		return si;
 	}
 
@@ -319,7 +313,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		Queue<SalesReport> srQueue = new LinkedList<SalesReport>();
 		SalesReport sr = new SalesReport();
 		int add = 0;
-		for (Query q : _querySpace) {
+		for (Query q : _thisQuerySpace) {
 			sr.setConversionsAndRevenue(q, 50+add, 750+add*10);
 			add += 5;
 		}
@@ -327,30 +321,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		
 		return srQueue;
 	}
-	
-	private Set<Query> getQuerySpace() {
-		/**
-		 * List of all the possible queries made available in the {@link RetailCatalog retail catalog}.
-		 */
-		/*
-		 * Initialize QuerySpace
-		 */
-		Set<Query> querySpace = new HashSet<Query>();
 		
-		for (String sm : manSet) {
-			for (String sp : prodSet) {
-				querySpace.add(new Query(sm,sp));
-			}
-			querySpace.add(new Query(sm,null));			
-		}
-		querySpace.add(new Query(null,"tv"));
-		querySpace.add(new Query(null,"dvd"));
-		querySpace.add(new Query(null,"audio"));
-		querySpace.add(new Query(null,null));
-		
-		return querySpace;
-	}
-	
 	private Queue<QueryReport> getQueryReport() {
 		/**
 		 * The list contains all of the {@link QueryReport query reports} delivered to the agent.  Each
@@ -360,7 +331,7 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		 */
 		Queue<QueryReport> qrQueue = new LinkedList<QueryReport>();
 		QueryReport qr = new QueryReport();
-		for (Query q : _querySpace) {
+		for (Query q : _thisQuerySpace) {
 			//qr.setAd(q, ad)
 			qr.setClicks(q, 500);
 			qr.setCost(q, 5000);
@@ -372,32 +343,56 @@ public class OneDaySimulator extends ILPAgent{	//TODO you only need to change th
 		return qrQueue;
 	}
 
-	private SimulationStatus getSimulationStatus() {
-		SimulationStatus ss = new SimulationStatus();
+	private SimulationStatus getSimulationStatus(String s) {
+		SimulationStatus ss;
+		if (s.equals("first day")) ss = new SimulationStatus();
+		else ss = new mySimulationStatus();
 		return ss;
 	}
+
+	private BankStatus getBankStatus() {
+		BankStatus bs = new BankStatus();
+		bs.setAccountBalance(10000);
+		return bs;
+	}
+	
+	private ReserveInfo getReserveInfo() {
+		ReserveInfo ri = new ReserveInfo();
+		ri.setPromotedReserve(0.2);
+		ri.setRegularReserve(0.4);
+		return ri;
+	}
+
+	
 	public static void main(String[] args) {
 		String agents[] = {"MyAgent"};
 		OneDaySimulator cds = new OneDaySimulator(agents);
-		Queue<QueryReport> queryReports = cds.getQueryReport();
+		Set<Query> querySpace = new HashSet<Query>(cds.getQuerySpace());
+		Queue<QueryReport> queryReports = new LinkedList<QueryReport>(cds.getQueryReport());
 		StartInfo startInfo = cds.getStartInfo(); 
 		SlotInfo slotInfo = cds.getSlotInfo();
 		RetailCatalog retailCatalog = cds.getRetailCatalog();
 		AdvertiserInfo advertiserInfo = cds.getAdvertiserInfo(agents[0]);
 		PublisherInfo publisherInfo = cds.getPublisherInfo();
 		Queue<SalesReport> salesReports = cds.getSalesReport();
-		Set<Query> querySpace = cds.getQuerySpace();
-		SimulationStatus simulationStatus = cds.getSimulationStatus();
+		SimulationStatus simulationStatus = cds.getSimulationStatus("first day");
+		BankStatus bankStatus = cds.getBankStatus();	// there is no handler, so this is never used
+		ReserveInfo reserveInfo = cds.getReserveInfo();	// there is no handler, so this is never used
 
 		cds.initializeGameState();
 		
-		cds.handleQueryReport(queryReports.remove());
-		cds.handleSalesReport(salesReports.remove());
 		cds.handlePublisherInfo(publisherInfo);
 		cds.handleSlotInfo(slotInfo);
 		cds.handleRetailCatalog(retailCatalog);
 		cds.handleAdvertiserInfo(advertiserInfo);
 		cds.handleStartInfo(startInfo);
+
 		cds.handleSimulationStatus(simulationStatus);
+		
+		simulationStatus = cds.getSimulationStatus("after first day");
+		cds.handleQueryReport(queryReports.remove());
+		cds.handleSalesReport(salesReports.remove());
+		cds.handleSimulationStatus(simulationStatus);
+
 	}
 }

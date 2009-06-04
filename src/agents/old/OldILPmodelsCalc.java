@@ -1,9 +1,11 @@
-package agents;
+package agents.old;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Queue;
 import java.util.Vector;
+
+import agents.Pair;
 
 import usermodel.UserState;
 
@@ -12,7 +14,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.RetailCatalog;
 
-public class ILPmodelsCalc {
+public class OldILPmodelsCalc {
 	private static final int NUMOFUSERFOCUS = 4;
 
 	private static final int NUMOFUSERS = 9000;
@@ -26,7 +28,7 @@ public class ILPmodelsCalc {
 	private Hashtable <Product,Integer> revenueP;
 	RetailCatalog _retailCatalog;
 	
-	public ILPmodelsCalc (Vector<Double> bids , Vector<Integer> quantities, RetailCatalog retailCatalog , Queue<QueryReport> queryReport, int numOfSlots) {
+	public OldILPmodelsCalc (Vector<Double> bids , Vector<Integer> quantities, RetailCatalog retailCatalog , Queue<QueryReport> queryReport, int numOfSlots) {
 		
 		_retailCatalog = retailCatalog;
 		

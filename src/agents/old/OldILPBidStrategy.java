@@ -1,9 +1,11 @@
-package agents;
+package agents.old;
 
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+
+import agents.GenericBidStrategy;
 
 import ilog.concert.*;
 import ilog.cplex.*;
@@ -13,7 +15,7 @@ import modelers.bidtocpc.BidtoCPC;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
-public class ILPBidStrategy extends GenericBidStrategy{
+public class OldILPBidStrategy extends GenericBidStrategy{
 
 	public static final String DAILYCAPACITY = "MaximumDailyCapacity";
 	public static final String NUMUSERS = "NumberOfUsers";
@@ -30,7 +32,7 @@ public class ILPBidStrategy extends GenericBidStrategy{
 	
 	protected int _day;
 	
-	public ILPBidStrategy(Set<Query> querySpace) {
+	public OldILPBidStrategy(Set<Query> querySpace) {
 		super(querySpace);
 		_day = 0;
 		_day = 1 - 1;
@@ -75,7 +77,7 @@ public class ILPBidStrategy extends GenericBidStrategy{
 		return quantity;
 	}
 
-	public void refreshData(ILPmodelsCalc ilp) {
+	public void refreshData(OldILPmodelsCalc ilp) {
 		//TODO calculate the new bids according to new results coming from the models
 		
 		Double[] bids = new Double[_bidSet.size()];

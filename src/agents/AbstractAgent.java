@@ -377,7 +377,9 @@ public abstract class AbstractAgent extends Agent {
 		double price = 0;
 
 		for (Product p : _retailCatalog) {
-			price =+ _retailCatalog.getSalesProfit(p);
+			int givesBonus=0;
+			if (p.getManufacturer().equals(_advertiserInfo.getManufacturerSpecialty())) givesBonus = 1;
+			price += _retailCatalog.getSalesProfit(p)*(1+_advertiserInfo.getComponentBonus()*givesBonus);
 		}
 		
 		return price/_retailCatalog.size();
