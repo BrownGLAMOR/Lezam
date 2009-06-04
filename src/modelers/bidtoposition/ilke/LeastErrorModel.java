@@ -7,10 +7,8 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 
-import modelers.bidtoposition.ilke.AbstractComparableModel;
-import modelers.bidtoposition.ilke.ModelDataPoint;
 
-public class LeastErrorModel extends BidToPositionModel{
+public class LeastErrorModel extends PositionToBidModel{
 	protected ArrayList<AbstractComparableModel> _candidateModels;
 	protected AbstractComparableModel _bestModel;
 	protected ArrayList<ModelDataPoint> _data;
@@ -65,18 +63,12 @@ public class LeastErrorModel extends BidToPositionModel{
 	}
 
 	@Override
-	public double getPosition(Query q, double bid) {
+	public double getBid(Query q, double position) {
 		Object[] given = new Object[2];
 		given[1] = q;
-		given[2] = bid;
+		given[2] = position;
 		
 		double prediction = getPrediction(given);
-		if(prediction < 1.0) {
-			prediction = 1.0;
-		}
-		else if(prediction > _slots) {
-			prediction = Double.NaN;
-		}
 		
 		return prediction;
 	}
