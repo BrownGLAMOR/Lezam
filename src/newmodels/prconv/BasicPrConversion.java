@@ -36,12 +36,11 @@ public class BasicPrConversion extends AbstractPrConversionModel {
 	}
 
 	@Override
-	public double getPrediction(double sales) {
+	public void setPrediction(double sales) {
 		double capdiscount = Math.pow(_lambda,Math.max(sales - _capacity, 0));
-		return _baselineConv*capdiscount;
+		_prediction = _baselineConv*capdiscount;
 	}
 
-	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing to do
 		return true;
