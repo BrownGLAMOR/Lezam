@@ -191,31 +191,7 @@ public class GameStatusHandler {
 	    		advInfo = advertiserinfotemp;
 	    		String name = participantNames[to];
 	    		advertiserInfos.put(name, advInfo);
-
 	    	}
-//	    	else if (content instanceof UserPopulationState) {
-//	    		UserPopulationState userPopState = (UserPopulationState) content;
-//	    		HashMap<UserState,Double> userDist = new HashMap<UserState, Double>();
-//	    		for(UserState userState : UserState.values()) {
-//	    			userDist.put(userState, 0.0);
-//	    		}
-//	    		for(Product p : userPopState) {
-//	    			int[] users = userPopState.getDistribution(p);
-//	    			userDist.put(UserState.NS, userDist.get(UserState.NS) + users[0]);
-//	    			userDist.put(UserState.IS, userDist.get(UserState.IS) + users[1]);
-//	    			userDist.put(UserState.F0, userDist.get(UserState.F0) + users[2]);
-//	    			userDist.put(UserState.F1, userDist.get(UserState.F1) + users[3]);
-//	    			userDist.put(UserState.F2, userDist.get(UserState.F2) + users[4]);
-//	    			userDist.put(UserState.T, userDist.get(UserState.T) + users[5]);
-//	    		}
-//	    		double tot = 0.0;
-//	    		for(UserState userState : UserState.values()) {
-//	    			tot += userDist.get(userState);
-//	    		}
-//	    		for(UserState userState : UserState.values()) {
-//	    			userDist.put(userState,userDist.get(userState)/tot);
-//	    		}
-//	    	}
 	    	else if (content instanceof UserPopulationState) {
 	    		UserPopulationState userPopState = (UserPopulationState) content;
 	    		HashMap<Product, HashMap<UserState,Integer>> userDist = new HashMap<Product, HashMap<UserState,Integer>>();
@@ -257,7 +233,7 @@ public class GameStatusHandler {
 		HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
 		HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
 		HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
-		LinkedList<HashMap<UserState, Double>> usersDists = gameStatus.getUserDistributions();
+		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> usersDists = gameStatus.getUserDistributions();
 		SlotInfo slotInfo = gameStatus.getSlotInfo();
 		ReserveInfo reserveInfo = gameStatus.getReserveInfo();
 		PublisherInfo pubInfo = gameStatus.getPubInfo();

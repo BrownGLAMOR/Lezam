@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractPrConversionModel;
+import newmodels.usermodel.AbstractUserModel;
 
 import usermodel.UserState;
 
@@ -29,7 +30,7 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 	private double _compSpecialtyBonus;
 	private String _compSpecialty;
 	private Query _query;
-	private PerfectUserModel _userModel;
+	private AbstractUserModel _userModel;
 	
 	private double LAMBDA = .995;
 
@@ -37,7 +38,7 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 			double compSpecialtyBonus,
 			String compSpecialty,
 			Query query,
-			PerfectUserModel userModel) {
+			AbstractUserModel userModel) {
 		
 		super(query);
 		_overcap = overcap;

@@ -12,10 +12,22 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.prconv.AbstractPrConversionModel;
+import newmodels.slottobid.AbstractSlotToBidModel;
+import newmodels.slottoprclick.AbstractSlotToPrClick;
+import newmodels.usermodel.AbstractUserModel;
+
 import se.sics.isl.transport.Transportable;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
+import simulator.models.PerfectBidToPosition;
+import simulator.models.PerfectClickProb;
+import simulator.models.PerfectConversionProb;
+import simulator.models.PerfectPositionToBid;
+import simulator.models.PerfectUserModel;
 import simulator.parser.GameLogParser;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -47,13 +59,19 @@ public class BasicSimulator {
 	Random _R = new Random();					//Random number generator
 
 	private double _squashing;
-	private double _numUsers;
+	private int _numUsers;
 	private int _numPromSlots;
 	private int _numSlots;
 	private double _regReserve;
 	private double _proReserve;
 	private double _targEffect;
 	private double _promSlotBonus;
+	private double _CSB;
+	private double _MSB;
+	//TODO!!!
+	private double _ourOverCap;
+	private String _compSpecialty;
+	private String _manSpecialty;
 
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
@@ -67,6 +85,7 @@ public class BasicSimulator {
 	private HashMap<Query,Double> _contProb;
 	private HashMap<UserState,Double> _users;
 	private Set<Query> _querySpace;
+	private HashMap<Query,Double> _ourAdvEffect;
 
 	/*
 	 * 
@@ -101,20 +120,42 @@ public class BasicSimulator {
 		SlotInfo slotInfo = status.getSlotInfo();
 		UserClickModel userClickModel = status.getUserClickModel();
     	_agents = status.getAdvertisers();
+    	_compSpecialty = _compBonus.get(_agents[advertiseridx]);
+    	_manSpecialty = _manfactBonus.get(_agents[advertiseridx]);
 		
 		AdvertiserInfo advInfo = advInfos.get(_agents[advertiseridx]);
 		
-    	_squashing = pubInfo.getSquashingParameter();;
+    	_squashing = pubInfo.getSquashingParameter();
     	_numUsers = 90000;
     	_numPromSlots = slotInfo.getPromotedSlots();
     	_numSlots = slotInfo.getRegularSlots();
     	_regReserve = reserveInfo.getRegularReserve();
     	_proReserve = reserveInfo.getPromotedReserve();
-    	_targEffect = advInfo.getTargetEffect();;
-    	_promSlotBonus = slotInfo.getPromotedSlotBonus();;
+    	_targEffect = advInfo.getTargetEffect();
+    	_promSlotBonus = slotInfo.getPromotedSlotBonus();
+    	_CSB = advInfo.getComponentBonus();
+    	_MSB = advInfo.getManufacturerBonus();
     	
-    	//TODO Change this to handle all the different product types
-    	_users = userDists.get(day);
+    	HashMap<Product, HashMap<UserState, Integer>> usersMap = userDists.get(day);
+    	for(UserState state : UserState.values()) { 
+    		_users.put(state,0.0);
+    	}
+		for(Product p : retailCatalog) {
+			HashMap<UserState, Integer> users = usersMap.get(p);
+			for(UserState state : UserState.values()) {
+				_users.put(state, _users.get(state) + users.get(state));
+			}
+		}
+		double tot = 0.0;
+		for(UserState userState : UserState.values()) {
+			tot += _users.get(userState);
+		}
+		for(UserState userState : UserState.values()) {
+			_users.put(userState,_users.get(userState)/tot);
+		}    	
+    	for(Product p : retailCatalog) {
+    		
+    	}
     	
     	_querySpace.add(new Query(null, null));
         for(Product product : retailCatalog) {
@@ -156,13 +197,28 @@ public class BasicSimulator {
     		_budgets.put(_agents[i], budgets);
     		_advEffect.put(_agents[i], advEffect);
     	}
+    	_ourAdvEffect = _advEffect.get(_agents[advertiseridx]);
 	}
 
 	/*
 	 * Generates the perfect models to pass to the bidder
 	 */
-	public void generateModels() {
+	public Set<AbstractModel> generateModels() {
+		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
+		AbstractUserModel userModel = new PerfectUserModel(_numUsers,_users);
+		models.add(userModel);
+		for(Query query : _querySpace) {
+			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(_agents,_bids,_advEffect,_squashing,_ourAdvEffect.get(query),query);
+			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bids,_advEffect,_contProb,_adType,_compBonus,_overCap,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,query);
+			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_ourOverCap,_CSB, _compSpecialty,query,userModel);
+			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bids,_advEffect,_squashing,_ourAdvEffect.get(query),query);
+			models.add(bidToSlotModel);
+			models.add(slotToClickModel);
+			models.add(convPrModel);
+			models.add(slotToBidModel);
+		}
 
+		return models;
 	}
 
 	/*
