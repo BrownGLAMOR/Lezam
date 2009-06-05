@@ -248,6 +248,10 @@ public class BasicSimulator {
 	public void getBids() {
 
 	}
+	
+	public void buildAgents() {
+		
+	}
 
 	/*
 	 * Runs the simulation and generates reports
