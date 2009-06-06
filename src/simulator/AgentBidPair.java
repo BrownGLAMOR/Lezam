@@ -22,7 +22,7 @@ public class AgentBidPair implements Comparable<AgentBidPair> {
 		_agent = agent;
 	}
 
-	public double getBid() {
+	public double getSquashedBid() {
 		return _bid;
 	}
 
@@ -36,7 +36,7 @@ public class AgentBidPair implements Comparable<AgentBidPair> {
 	 */
 	public int compareTo(AgentBidPair agentBidPair) {
 		double ourBid = this._bid;
-		double otherBid = agentBidPair.getBid();
+		double otherBid = agentBidPair.getSquashedBid();
 		if(ourBid < otherBid) {
 			return -1;
 		}

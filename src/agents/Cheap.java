@@ -1,20 +1,19 @@
 package agents;
 
+import java.util.Set;
+
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class Cheap extends AbstractAgent {
-
-	@Override
-	protected void handleAdvertiserInfo(AdvertiserInfo advertiserInfo) {
-		// TODO Auto-generated method stub
-		super.handleAdvertiserInfo(advertiserInfo);
-	}
+public class Cheap extends SimAbstractAgent {
 	
 	@Override
-	protected BidBundle buildBidBudle() {
+	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
 		double distCap = (double) _advertiserInfo.getDistributionCapacity();
 		double distWind = (double) _advertiserInfo.getDistributionWindow();
@@ -50,14 +49,20 @@ public class Cheap extends AbstractAgent {
 
 	@Override
 	protected void initBidder() {
-		// TODO Auto-generated method stub
+			//No initialization necessary
 		
 	}
 
 	@Override
-	protected void updateBidStrategy() {
-		// TODO Auto-generated method stub
-		
+	protected Set<AbstractModel> initModels() {
+		//No initialization necessary
+		return null;
+	}
+
+	@Override
+	protected void updateModels(SalesReport salesReport,
+			QueryReport queryReport, Set<AbstractModel> models) {
+		//No models used
 	}
 
 }
