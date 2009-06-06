@@ -84,11 +84,11 @@ public class SimAgent {
 	public String getCompSpecialty() {
 		return _compSpecialty;
 	}
-	
+
 	public double getBudget(Query query) {
 		return _budgets.get(query);
 	}
-	
+
 	public double getTotBudget(Query query) {
 		return _totBudget;
 	}

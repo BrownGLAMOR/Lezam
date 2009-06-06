@@ -41,6 +41,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 	private double _proReserve;
 	private double _targEffect;
 	private double _promSlotBonus;
+	private int _ourAdvIdx;
 	
 	public PerfectClickProb(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
@@ -56,6 +57,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 			double proReserve,
 			double targEffect,
 			double promSlotBonus,
+			int ourAdvIdx,
 			Query query) {
 		
 		super(query);
@@ -73,6 +75,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		_proReserve = proReserve;
 		_targEffect = targEffect;
 		_promSlotBonus = promSlotBonus;
+		_ourAdvIdx = ourAdvIdx;
 	}
 
 	@Override
@@ -88,23 +91,25 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		ArrayList<Double> bids = new ArrayList<Double>();
 		HashMap<Double,String> bidToAdv = new HashMap<Double,String>();
 		for(int i = 0; i < _agents.length; i++) {
-			double advEff = _advEffect.get(_agents[i]).get(_query);
-			double bid = _bids.get(_agents[i]).get(_query);
-			double realbid = Math.pow(advEff,_squashing)*bid;
-			bids.add(realbid);
-			bidToAdv.put(realbid, _agents[i]);
+			if(i != _ourAdvIdx) {
+				double advEff = _advEffect.get(_agents[i]).get(_query);
+				double bid = _bids.get(_agents[i]).get(_query);
+				double realbid = Math.pow(advEff,_squashing)*bid;
+				bids.add(realbid);
+				bidToAdv.put(realbid, _agents[i]);
+			}
 		}
-		
+
 		Collections.sort(bids,Collections.reverseOrder());
 		double clickprob = 1.0;
-		
+
 		for(int i = 0; i < slot; i++) {
 			double bid = bids.get(i);
 			String adv = bidToAdv.get(bid);
 			double advEffect = _advEffect.get(adv).get(_query);
 			double contProb = _contProb.get(_query);
 			Ad ad = _adType.get(adv).get(_query);
-			int overCap = _overCap.get(_query);
+			int overCap = _overCap.get(adv);
 			boolean generic = ad.isGeneric();
 			double ftarg = 1.0;
 			if(!generic) {
@@ -128,16 +133,16 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 				if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 					convProb = .1;
 				}
-				else if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
 					convProb = .2;
 				}
-				else if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
 					convProb = .3;
 				}
 				else {
 					throw new RuntimeException("Bad QuerySpace");
 				}
-				convProb *= Math.pow(LAMBDA,overCap);
+//				convProb *= Math.pow(LAMBDA,overCap);
 				clickprob = baseline*(1 - clickprob*convProb);
 			}
 		}

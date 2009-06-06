@@ -71,6 +71,7 @@ public class GameStatusHandler {
 	    HashMap<String,LinkedList<BidBundle>> bidBundles = new HashMap<String, LinkedList<BidBundle>>();
 	    HashMap<String,LinkedList<QueryReport>> queryReports = new HashMap<String, LinkedList<QueryReport>>();
 	    HashMap<String,LinkedList<SalesReport>> salesReports = new HashMap<String, LinkedList<SalesReport>>();
+	    HashMap<String,LinkedList<SimulationStatus>> simulationStatuses = new HashMap<String, LinkedList<SimulationStatus>>();
 	    HashMap<String,AdvertiserInfo> advertiserInfos = new HashMap<String, AdvertiserInfo>();
 	    LinkedList<HashMap<Product,HashMap<UserState,Integer>>> userDists = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();
 	    
@@ -86,10 +87,12 @@ public class GameStatusHandler {
 	    	LinkedList<BidBundle> bidBundlelist = new LinkedList<BidBundle>();
 	    	LinkedList<QueryReport> queryReportlist = new LinkedList<QueryReport>();
 	    	LinkedList<SalesReport> salesReportlist = new LinkedList<SalesReport>();
+	    	LinkedList<SimulationStatus> simulationStatusList = new LinkedList<SimulationStatus>();
 	    	bankStatuses.put(advertisers[i], bankStatuslist);
 	    	bidBundles.put(advertisers[i], bidBundlelist);
 	    	queryReports.put(advertisers[i], queryReportlist);
 	    	salesReports.put(advertisers[i], salesReportlist);
+	    	simulationStatuses.put(advertisers[i], simulationStatusList);
 	    }
 	    
 	    boolean slotinfoflag = false;
@@ -122,17 +125,20 @@ public class GameStatusHandler {
 	    	else if (content instanceof SimulationStatus) {
 	    		SimulationStatus simstatustemp = (SimulationStatus) content;
 	    		day = simstatustemp.getCurrentDate();
+    			String name = participantNames[to];
+    			LinkedList<SimulationStatus> simulationStatusList = simulationStatuses.get(name);
+    			simulationStatusList.addLast(simstatustemp);
+    			simulationStatuses.put(name, simulationStatusList);
 	    	}
 	    	else if (content instanceof SlotInfo && !slotinfoflag) {
 	    		SlotInfo slotinfotemp = (SlotInfo) content;
 	    		slotInfo = slotinfotemp;
 	    		slotinfoflag = true;
 	    	}
-	    	else if (content instanceof ReserveInfo  && !reserveinfoflag) {
+	    	else if (content instanceof ReserveInfo && !reserveinfoflag) {
 	    		ReserveInfo reserveinfotemp = (ReserveInfo) content;
 	    		reserveInfo = reserveinfotemp;
 	    		reserveinfoflag = true;
-	    		
 	    	}
 	    	else if (content instanceof PublisherInfo && !pubinfoflag) {
 	    		PublisherInfo publisherinfotemp = (PublisherInfo) content;
@@ -172,7 +178,7 @@ public class GameStatusHandler {
 	    	else if (content instanceof RetailCatalog && !retailcatalogflag) {
 	    		RetailCatalog retailcatalogtemp = (RetailCatalog) content;
 	    		retailCatalog = retailcatalogtemp;
-	    		reserveinfoflag = true;
+	    		retailcatalogflag = true;
 	    	}
 	    	else if (content instanceof BidBundle) {
 	    		BidBundle bidbundletemp = (BidBundle) content;
@@ -213,7 +219,7 @@ public class GameStatusHandler {
 	    	}
 	    }
 	    
-	    GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
+	    GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, simulationStatuses, advertiserInfos,
 	    		userDists, slotInfo, reserveInfo, pubInfo, retailCatalog, userClickModel);
 	    return gameStatus;
 	}
@@ -224,7 +230,7 @@ public class GameStatusHandler {
 	}
 	
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim44.slg";
+		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim2.slg";
 		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
 		GameStatus gameStatus = gameStatusHandler.getGameStatus();
 		String[] advertisers = gameStatus.getAdvertisers();
@@ -239,35 +245,16 @@ public class GameStatusHandler {
 		PublisherInfo pubInfo = gameStatus.getPubInfo();
 		RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
 		UserClickModel userClickModel = gameStatus.getUserClickModel();
-		for(int i = 0; i < advertisers.length; i++) {
-			LinkedList<BankStatus> bankStatusList = bankStatuses.get(advertisers[i]);
-			LinkedList<BidBundle> bidBundlesList = bidBundles.get(advertisers[i]);
-			LinkedList<QueryReport> queryReportsList = queryReports.get(advertisers[i]);
-			LinkedList<SalesReport> salesReportsList = salesReports.get(advertisers[i]);
-			System.out.println(advertisers[i]);
-			System.out.println("\t # of Bank Statuses: " + bankStatusList.size());
-			for(int j = 0; j < bankStatusList.size(); j++) {
-				System.out.println("\t\t " + bankStatusList.get(j));
-			}
-			System.out.println("\t # of Bid Bundles: " + bidBundlesList.size());
-			for(int j = 0; j < bidBundlesList.size(); j++) {
-				System.out.println("\t\t " + bidBundlesList.get(j));
-			}
-			System.out.println("\t # of Query Reports: " + queryReportsList.size());
-			System.out.println("\t # of Sales Reports: " + salesReportsList.size());
-		}
-		
 		System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[0]).size());
 		System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[0]).size());
 		System.out.println("Num Query Reports: " + queryReports.get(advertisers[0]).size());
 		System.out.println("Num Sales Reports: " + salesReports.get(advertisers[0]).size());
 		System.out.println("Num User Dists: " + salesReports.size());
-		
-		/*
-		 * TODO
-		 * 
-		 * Make sure days line up correctly
-		 */
+		System.out.println("Slot info: " + slotInfo);
+		System.out.println("Reserve info: " + reserveInfo);
+		System.out.println("Pub info: " + pubInfo);
+		System.out.println("Retail info: " + retailCatalog);
+		System.out.println("User Click info: " + userClickModel);
 	}
 
 }

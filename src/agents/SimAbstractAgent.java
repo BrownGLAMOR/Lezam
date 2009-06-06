@@ -238,6 +238,10 @@ public abstract class SimAbstractAgent extends Agent {
 		_querySpace = new LinkedHashSet<Query>();
 		_day = 0;
 	}
+	
+	public void sendSimMessage(Message message) {
+		messageReceived(message);
+	}
 
     /**
      * Processes the messages received the by agent from the server.
@@ -415,6 +419,10 @@ public abstract class SimAbstractAgent extends Agent {
 	protected double eta(double p, double x) {
 		return (p*x) / (p*x + (1-p));
 	}
+	
+	public void setDay(int day) {
+		_day = day;
+	}
     
     
     /*
@@ -435,7 +443,7 @@ public abstract class SimAbstractAgent extends Agent {
      * This method will be run once at the beginning of each simulation to initialize the
      * bidding strategy that our agent will use
      */
-    protected abstract void initBidder();
+    public abstract void initBidder();
     
     /*
      * This will be called once each day to get the bid bundle for the day, i.e. the bids,

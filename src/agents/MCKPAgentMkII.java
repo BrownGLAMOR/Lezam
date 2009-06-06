@@ -14,8 +14,10 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.BasicBidToSlot;
+import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.BasicSlotToBid;
+import newmodels.slottobid.ReallyBadSlotToBid;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.slottonumclicks.BasicSlotToNumClicks;
 import newmodels.slottonumimp.AbstractSlotToNumImp;
@@ -59,6 +61,10 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	private HashMap<Query, AbstractSlotToNumImp> _slotToNumImptModels;
 	private HashMap<Query, AbstractSlotToNumClicks> _slotToNumClicks;
 	private Hashtable<Query, Integer> _queryId;
+	
+	public MCKPAgentMkII() {
+		System.out.println("TITTIES");
+	}
 
 
 
@@ -72,8 +78,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 		AbstractUserModel userModel = new BasicUserModel();
 		models.add(userModel);
 		for(Query query: _querySpace) {
-			AbstractBidToSlotModel bidToSlot = new BasicBidToSlot(query,false);
-			AbstractSlotToBidModel slotToBid = new BasicSlotToBid(query,false);
+			AbstractBidToSlotModel bidToSlot = new ReallyBadBidToSlot(query);
+			AbstractSlotToBidModel slotToBid = new ReallyBadSlotToBid(query);
 			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
 			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
 			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
@@ -83,7 +89,6 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			models.add(slotToNumImp);
 			models.add(slotToNumClicks);
 		}
-		buildMaps(models);
 		return models;
 	}
 	
@@ -122,7 +127,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	}
 
 	@Override
-	protected void initBidder() {
+	public void initBidder() {
 		
 		_recentBids = new HashMap<Query, Double>();
 		_previousBids = new HashMap<Query, Double>();
@@ -204,6 +209,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			}
 			else if(model instanceof AbstractSlotToNumClicks) {
 				AbstractSlotToNumClicks slotToNumClicks = (AbstractSlotToNumClicks) model;
+				System.out.println("YOYO");
 				slotToNumClicks.updateModel(queryReport, salesReport);
 			}
 		}
@@ -214,8 +220,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
 		if(_day >= 2){
-			//NEED TO USE THE MODELS WE ARE PASSED!!!
 			buildMaps(models);
+			//NEED TO USE THE MODELS WE ARE PASSED!!!
 			HashMap<Query,IncItem[]> incItems = new HashMap<Query,IncItem[]>();
 
 			//want the queries to be in a guaranteed order - put them in an array
@@ -234,6 +240,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					double bid = _slotToBidModels.get(q).getPrediction(s);
 					double CPC = _slotToBidModels.get(q).getPrediction(s+1);
 
+					System.out.println("Numer of clicks" + numClicks);
+					
 					if (bid == 0) numClicks = 0;
 					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
 					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]

@@ -29,12 +29,14 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
 	private double _squashing;
 	private double _ourAdEffect;
+	private int _ourAdvIdx;
 	
 	public PerfectBidToPosition(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
 			HashMap<String,HashMap<Query,Double>> advEffect,
 			double squashing,
 			double ourAdEffect,
+			int ourAdvIdx,
 			Query query) {
 		
 		super(query);
@@ -43,6 +45,7 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 		_advEffect = advEffect;
 		_squashing = squashing;
 		_ourAdEffect = ourAdEffect;
+		_ourAdvIdx = ourAdvIdx;
 	}
 
 	@Override
@@ -53,10 +56,12 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 		 */
 		ArrayList<Double> bids = new ArrayList<Double>();
 		for(int i = 0; i < _agents.length; i++) {
-			double advEff = _advEffect.get(_agents[i]).get(_query);
-			double bid = _bids.get(_agents[i]).get(_query);
-			double realbid = Math.pow(advEff,_squashing)*bid;
-			bids.add(realbid);
+			if(i != _ourAdvIdx) {
+				double advEff = _advEffect.get(_agents[i]).get(_query);
+				double bid = _bids.get(_agents[i]).get(_query);
+				double realbid = Math.pow(advEff,_squashing)*bid;
+				bids.add(realbid);
+			}
 		}
 		double bid = (Double) info;
 		double realbid = Math.pow(_ourAdEffect, _squashing)*bid;
