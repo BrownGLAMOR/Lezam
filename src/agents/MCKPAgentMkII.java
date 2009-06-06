@@ -211,10 +211,11 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	
 
 	@Override
-	protected BidBundle getBidBundle(Set<AbstractModel> models) {
+	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
 		if(_day >= 2){
-
+			//NEED TO USE THE MODELS WE ARE PASSED!!!
+			buildMaps(models);
 			HashMap<Query,IncItem[]> incItems = new HashMap<Query,IncItem[]>();
 
 			//want the queries to be in a guaranteed order - put them in an array

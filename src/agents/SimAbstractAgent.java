@@ -441,7 +441,7 @@ public abstract class SimAbstractAgent extends Agent {
      * This will be called once each day to get the bid bundle for the day, i.e. the bids,
      * budgets, and ad types
      */
-    protected abstract BidBundle getBidBundle(Set<AbstractModel> models);
+    public abstract BidBundle getBidBundle(Set<AbstractModel> models);
 
 
 }

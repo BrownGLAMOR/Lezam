@@ -26,7 +26,6 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 	
 
 	
-	private double _overcap;
 	private double _compSpecialtyBonus;
 	private String _compSpecialty;
 	private Query _query;
@@ -34,21 +33,19 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 	
 	private double LAMBDA = .995;
 
-	public PerfectConversionProb(double overcap,
-			double compSpecialtyBonus,
+	public PerfectConversionProb(double compSpecialtyBonus,
 			String compSpecialty,
 			Query query,
 			AbstractUserModel userModel) {
 		
 		super(query);
-		_overcap = overcap;
 		_compSpecialtyBonus = compSpecialtyBonus;
 		_compSpecialty = compSpecialty;
 		_userModel = userModel;
 	}
 
 	@Override
-	public double getPrediction(double info) {
+	public double getPrediction(double amountOverCap) {
 		double baselineconv;
 		double users;
 		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
@@ -68,7 +65,7 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 		}
 		double ISUsers = (Double) _userModel.getPrediction(UserState.IS);
 		double ISUserDiscount = users/(users+(ISUsers/3));
-		double capDiscount = Math.pow(LAMBDA ,_overcap);
+		double capDiscount = Math.pow(LAMBDA ,amountOverCap);
 		double convRate = baselineconv*capDiscount*ISUserDiscount;
 		if(_query.getComponent() == _compSpecialty) {
 			return eta(convRate,1+_compSpecialtyBonus);

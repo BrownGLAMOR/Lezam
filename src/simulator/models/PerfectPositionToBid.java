@@ -19,6 +19,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectPositionToBid extends AbstractSlotToBidModel {
 	
+	/*
+	 * TODO
+	 * Change to make sure that our bids are not in the bids array!!!
+	 */
+	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Double>> _bids;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
@@ -41,7 +46,7 @@ public class PerfectPositionToBid extends AbstractSlotToBidModel {
 	}
 
 	@Override
-	public double getPrediction(double info) {
+	public double getPrediction(double slot) {
 		/*
 		 * The incoming info for a bid to position model
 		 * should always be a double which is the bid
@@ -54,7 +59,7 @@ public class PerfectPositionToBid extends AbstractSlotToBidModel {
 			bids.add(realbid);
 		}
 		Collections.sort(bids,Collections.reverseOrder());
-		int pos = (int) Math.ceil((Double) info);
+		int pos = (int) Math.ceil((Double) slot);
 		double bidtobeat = bids.get(pos);
 		double bid = bidtobeat / Math.pow(_ourAdEffect, _squashing);
 		return bid+.01;

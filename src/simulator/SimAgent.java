@@ -25,6 +25,8 @@ public class SimAgent {
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Integer> _unitsSold;
 	private int _totUnitsSold;
+	private double _totCost;
+	private String _advId;
 
 	public SimAgent(HashMap<Query,Double> bids,
 					HashMap<Query,Double> budgets,
@@ -34,6 +36,7 @@ public class SimAgent {
 					int oneDayCap,
 					String manSpecialty,
 					String compSpecialty,
+					String advId,
 					double squashing,
 					Set<Query> querySpace) {
 		_bids = bids;
@@ -44,6 +47,7 @@ public class SimAgent {
 		_oneDayCap = oneDayCap;
 		_manSpecialty = manSpecialty;
 		_compSpecialty = compSpecialty;
+		_advId = advId;
 		_squashing = squashing;
 		_querySpace = querySpace;
 		
@@ -52,6 +56,7 @@ public class SimAgent {
 		_revenue = new HashMap<Query, Double>();
 		_unitsSold = new HashMap<Query, Integer>();
 		_totUnitsSold = 0;
+		_totCost = 0.0;
 		for(Query query : _querySpace) {
 			_CPC.put(query, 0.0);
 			_cost.put(query, 0.0);
@@ -62,6 +67,22 @@ public class SimAgent {
 	
 	public double getSquashedBid(Query query) {
 		return Math.pow(_advEffect.get(query), _squashing) * _bids.get(query);
+	}
+	
+	public double getBid(Query query) {
+		return _bids.get(query);
+	}
+	
+	public double getAdvEffect(Query query) {
+		return _advEffect.get(query);
+	}
+	
+	public String getManSpecialty() {
+		return _manSpecialty;
+	}
+	
+	public String getCompSpecialty() {
+		return _compSpecialty;
 	}
 	
 	public double getBudget(Query query) {
@@ -94,6 +115,7 @@ public class SimAgent {
 	
 	public void addCost(Query query, double cost) {
 		_cost.put(query, _cost.get(query) + cost);
+		_totCost += cost;
 	}
 	
 	public double getRevenue(Query query) {
@@ -128,5 +150,9 @@ public class SimAgent {
 		else {
 			return 0;
 		}
+	}
+	
+	public double getTotCost() {
+		return _totCost;
 	}
 }

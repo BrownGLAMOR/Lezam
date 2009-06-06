@@ -6,12 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import agents.MCKPAgentMkII;
 import agents.SimAbstractAgent;
 
 import newmodels.AbstractModel;
@@ -63,6 +65,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BasicSimulator {
 
 	Random _R = new Random();					//Random number generator
+	
+	private double _LAMBDA = .995;
 
 	private double _squashing;
 	private int _numUsers;
@@ -82,6 +86,7 @@ public class BasicSimulator {
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Ad>> _adType;
 	private HashMap<String,HashMap<Query,Double>> _bids;
+	private HashMap<String,HashMap<Query,Double>> _bidsWithoutOurs;
 	private HashMap<String,HashMap<Query,Double>> _budgets;
 	private HashMap<String,Double> _totBudget;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
@@ -97,12 +102,21 @@ public class BasicSimulator {
 
 	private HashMap<Product, HashMap<UserState, Integer>> _usersMap;
 
-	/*
-	 * 
-	 */
+	private int _ourAdvIdx;
+
+	private int _day;
+
+	
 	public BasicSimulator() {
+	}
+
+	public void initializeGameState(String filename, int day, int advertiseridx) throws IOException, ParseException {
+		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
+		_ourAdvIdx = advertiseridx;
+		_day = day;
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
 		_bids = new HashMap<String,HashMap<Query,Double>>();
+		_bidsWithoutOurs = new HashMap<String,HashMap<Query,Double>>();
 		_budgets = new HashMap<String,HashMap<Query,Double>>();
 		_totBudget = new HashMap<String,Double>();
 		_advEffect = new HashMap<String,HashMap<Query,Double>>();
@@ -112,10 +126,6 @@ public class BasicSimulator {
 		_contProb = new HashMap<Query,Double>();
 		_users = new HashMap<UserState,Double>();
 		_querySpace = new LinkedHashSet<Query>();
-	}
-
-	public void initializeGameState(String filename, int day, int advertiseridx) throws IOException, ParseException {
-		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = status.getUserDistributions();
@@ -130,10 +140,10 @@ public class BasicSimulator {
 		SlotInfo slotInfo = status.getSlotInfo();
 		UserClickModel userClickModel = status.getUserClickModel();
     	_agents = status.getAdvertisers();
-    	_compSpecialty = _compSpecialties.get(_agents[advertiseridx]);
-    	_manSpecialty = _manSpecialties.get(_agents[advertiseridx]);
+    	_compSpecialty = _compSpecialties.get(_agents[_ourAdvIdx]);
+    	_manSpecialty = _manSpecialties.get(_agents[_ourAdvIdx]);
 		
-		AdvertiserInfo advInfo = advInfos.get(_agents[advertiseridx]);
+		AdvertiserInfo advInfo = advInfos.get(_agents[_ourAdvIdx]);
 		
     	_squashing = pubInfo.getSquashingParameter();
     	_numUsers = 90000;
@@ -146,7 +156,7 @@ public class BasicSimulator {
     	_CSB = advInfo.getComponentBonus();
     	_MSB = advInfo.getManufacturerBonus();
     	
-    	_usersMap = userDists.get(day);
+    	_usersMap = userDists.get(_day);
     	for(UserState state : UserState.values()) { 
     		_users.put(state,0.0);
     	}
@@ -185,7 +195,7 @@ public class BasicSimulator {
     	
     	for(int i = 0; i < _agents.length; i++) {
     		AdvertiserInfo adInfo = advInfos.get(_agents[i]);
-    		BidBundle bidBundleTemp = bidBundles.get(_agents[i]).get(day);
+    		BidBundle bidBundleTemp = bidBundles.get(_agents[i]).get(_day);
     		String manfactBonus = adInfo.getManufacturerSpecialty();
     		_manSpecialties.put(_agents[i], manfactBonus);
     		String compBonus = adInfo.getComponentSpecialty();
@@ -194,20 +204,27 @@ public class BasicSimulator {
     		HashMap<Query,Ad> adType = new HashMap<Query, Ad>();
     		HashMap<Query,Double> bids = new HashMap<Query, Double>();
     		HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+    		HashMap<Query,Double> bidsWithoutOurs = new HashMap<Query, Double>();
     		HashMap<Query,Double> advEffect = new HashMap<Query, Double>();
 
     		for(Query query : _querySpace) {
     			adType.put(query, bidBundleTemp.getAd(query));
     			bids.put(query, bidBundleTemp.getBid(query));
+    			if(i != _ourAdvIdx) {
+    				bidsWithoutOurs.put(query, bidBundleTemp.getBid(query));
+    			}
     			budgets.put(query,bidBundleTemp.getDailyLimit(query));
     			advEffect.put(query, userClickModel.getAdvertiserEffect(userClickModel.queryIndex(query), i));
     		}
     		_adType.put(_agents[i], adType);
     		_bids.put(_agents[i], bids);
+    		if(i != _ourAdvIdx) {
+    			_bidsWithoutOurs.put(_agents[i], bids);
+    		}
     		_budgets.put(_agents[i], budgets);
     		_advEffect.put(_agents[i], advEffect);
     	}
-    	_ourAdvEffect = _advEffect.get(_agents[advertiseridx]);
+    	_ourAdvEffect = _advEffect.get(_agents[_ourAdvIdx]);
 	}
 
 	/*
@@ -218,11 +235,11 @@ public class BasicSimulator {
 		AbstractUserModel userModel = new PerfectUserModel(_numUsers,_users);
 		models.add(userModel);
 		for(Query query : _querySpace) {
-			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(_agents,_bids,_advEffect,_squashing,_ourAdvEffect.get(query),query);
+			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),query);
 			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,bidToSlotModel);
-			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bids,_advEffect,_contProb,_adType,_compSpecialties,_overCap,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,query);
-			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_ourOverCap,_CSB, _compSpecialty,query,userModel);
-			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bids,_advEffect,_squashing,_ourAdvEffect.get(query),query);
+			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bidsWithoutOurs,_advEffect,_contProb,_adType,_compSpecialties,_overCap,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,query);
+			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _compSpecialty,query,userModel);
+			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),query);
 			AbstractSlotToNumImp slotToNumImp = new PerfectSlotToNumImp(_usersMap,_numSlots,_retailCatalog,query);
 			models.add(bidToSlotModel);
 			models.add(bidToCPCModel);
@@ -231,7 +248,6 @@ public class BasicSimulator {
 			models.add(slotToBidModel);
 			models.add(slotToNumImp);
 		}
-
 		return models;
 	}
 
@@ -239,25 +255,100 @@ public class BasicSimulator {
 	 * Initializes a bidding agent with the proper models
 	 */
 	public SimAbstractAgent intializeBidder() {
-		return null;
+		SimAbstractAgent agent = new MCKPAgentMkII();
+		return agent;
 	}
 
 	/*
 	 * Gets the bids from the agent using perfect models
 	 */
-	public void getBids() {
-
+	public BidBundle getBids() {
+		Set<AbstractModel> models = generatePerfectModels();
+		SimAbstractAgent agent = intializeBidder();
+		BidBundle bundle = agent.getBidBundle(models);
+		return bundle;
 	}
 	
-	public void buildAgents() {
-		
+	public ArrayList<SimAgent> buildAgents() {
+		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
+		for(int i = 0; i < _agents.length; i++) {
+			SimAgent agent;
+			if(i == _ourAdvIdx) {
+				BidBundle bundle = getBids();
+				double totBudget = bundle.getCampaignDailySpendLimit();
+				HashMap<Query,Double> bids = new HashMap<Query, Double>();
+				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
+				for(Query query : _querySpace) {
+					bids.put(query, bundle.getBid(query));
+					budgets.put(query,bundle.getDailyLimit(query));
+					adTypes.put(query, bundle.getAd(query));
+				}
+				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_overCap.get(_agents[i]),_manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+			}
+			else {
+				agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_overCap.get(_agents[i]),_manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+			}
+			agents.add(agent);
+		}
+		return agents;
+	}
+	
+	public ArrayList<SimUser> buildSearchingUserBase(HashMap<Product, HashMap<UserState, Integer>> usersMap) {
+		ArrayList<SimUser> usersList = new ArrayList<SimUser>();
+		for(Product prod : _retailCatalog) {
+			for(UserState state : UserState.values()) {
+				int users = usersMap.get(prod).get(state);
+				for(int i = 0; i < users; i++) {
+					SimUser user = new SimUser(prod,state);
+					usersList.add(user);
+				}
+			}
+		}
+		return usersList;
 	}
 
 	/*
 	 * Runs the simulation and generates reports
 	 */
 	public void runSimulation() {
-
+		ArrayList<SimAgent> agents = buildAgents();
+		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
+		Collections.shuffle(users);
+		for(int i = 0; i < users.size(); i++) {
+			SimUser user = users.get(i);
+			Query query = user.generateQuery();
+			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
+			for(int j = 0; j < agents.size(); j++) {
+				SimAgent agent = agents.get(j);
+				double budget = agent.getBudget(query);
+				double cost = agent.getCost(query);
+				if(budget > cost) {
+					double totBudget = agent.getTotBudget(query);
+					double totCost = agent.getTotCost();
+					if(totBudget > totCost) {
+						double squashedBid = agent.getSquashedBid(query);
+						AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
+						pairList.add(pair);
+					}
+				}
+			}
+			/*
+			 * This sorts the list by squashed bid
+			 */
+			Collections.sort(pairList);
+			for(int j = 1; j < _numSlots; j++) {
+				
+				//do something with this
+				if(j <= _numPromSlots) {
+					
+				}
+				else {
+					
+				}
+				
+			}
+		}
 	}
 
 	//Returns a random double rand such that a <= r < b

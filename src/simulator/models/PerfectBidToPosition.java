@@ -19,6 +19,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectBidToPosition extends AbstractBidToSlotModel {
 	
+	/*
+	 * TODO
+	 * Change to make sure that our bids are not in the bids array!!!
+	 */
+	
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Double>> _bids;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;

@@ -21,6 +21,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectClickProb extends AbstractSlotToPrClick {
 	
+	/*
+	 * TODO
+	 * Change to make sure that our bids are not in the bids array!!!
+	 */
+	
 	private double LAMBDA = .995;
 	private String[] _agents;
 	private HashMap<String,HashMap<Query,Double>> _bids;

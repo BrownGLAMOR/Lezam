@@ -29,7 +29,11 @@ public class AgentBidPair implements Comparable<AgentBidPair> {
 	public void setBid(double bid) {
 		_bid = bid;
 	}
-	
+	/*
+	 * 
+	 * TODO take Double.NaN into account.. :(
+	 * 
+	 */
 	public int compareTo(AgentBidPair agentBidPair) {
 		double ourBid = this._bid;
 		double otherBid = agentBidPair.getBid();
