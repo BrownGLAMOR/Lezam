@@ -26,6 +26,7 @@ public class SimAgent {
 	private HashMap<Query, Integer> _unitsSold;
 	private int _totUnitsSold;
 	private double _totCost;
+	private double _totRevenue;
 	private String _advId;
 
 	public SimAgent(HashMap<Query,Double> bids,
@@ -57,6 +58,7 @@ public class SimAgent {
 		_unitsSold = new HashMap<Query, Integer>();
 		_totUnitsSold = 0;
 		_totCost = 0.0;
+		_totRevenue = 0.0;
 		for(Query query : _querySpace) {
 			_CPC.put(query, 0.0);
 			_cost.put(query, 0.0);
@@ -89,7 +91,7 @@ public class SimAgent {
 		return _budgets.get(query);
 	}
 
-	public double getTotBudget(Query query) {
+	public double getTotBudget() {
 		return _totBudget;
 	}
 	
@@ -128,6 +130,8 @@ public class SimAgent {
 	
 	public void addRevenue(Query query, double revenue) {
 		_revenue.put(query, _revenue.get(query) + revenue);
+		_totRevenue += revenue;
+		addUnitSold(query);
 	}
 	
 	public double getUnitsSold(Query query) {
@@ -154,5 +158,17 @@ public class SimAgent {
 	
 	public double getTotCost() {
 		return _totCost;
+	}
+	
+	public double getTotRevenue() {
+		return _totRevenue;
+	}
+	
+	public double getTotUnitsSold() {
+		return _totUnitsSold;
+	}
+	
+	public String getAdvId() {
+		return _advId;
 	}
 }

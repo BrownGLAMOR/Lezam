@@ -63,7 +63,6 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	
 	public MCKPAgentMkII() {
-		System.out.println("TITTIES");
 	}
 
 
@@ -243,7 +242,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					System.out.println("Numer of clicks" + numClicks);
 					
 					if (bid == 0) numClicks = 0;
-					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
+					double w = numClicks*bid; 				//weight = numClicks * CPC 		[cost]
 					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
 
 					int isID = _queryId.get(q);
@@ -311,11 +310,12 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 		for(Query q : _querySpace) {
 			temp.put(q,-1);
 			System.out.println("Num Inc Items " + q + ": " + incItems.get(q).length);
+			for(int i = 0; i < incItems.get(q).length; i++) {
+				System.out.println("\t" + incItems.get(q)[i]);
+			}
 		}
 		
-		//TODO FOR TESTING
-		
-		budget *= 5;
+		budget *= 2;
 		
 		while(budget > 0) {
 			/*
@@ -345,12 +345,16 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 
 		for(Query q : _querySpace) {
 			if(temp.get(q) >= 0) {
-				solution.put(q,incItems.get(q)[temp.get(q)].item());
+				Item item = incItems.get(q)[temp.get(q)].item();
+				solution.put(q,item);
+				System.out.println("Slot for " + q + ": " + (temp.get(q)+1));
+				System.out.println("\t Slot Weight: "+(item.v()/_salesPrices.get(q)));
 			}
 			else {
 				solution.put(q, new Item(q,0,0,0,-1));
+				System.out.println("Slot for " + q + ": No Slot");
+				System.out.println("\t Slot Weight: 0");
 			}
-			System.out.println("Slot for " + q + ": " + temp.get(q));
 		}
 
 		return solution;

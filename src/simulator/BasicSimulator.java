@@ -128,8 +128,9 @@ public class BasicSimulator {
 	public BasicSimulator() {
 	}
 
-	public void initializeGameState(String filename, int day, int advertiseridx) throws IOException, ParseException {
+	public void initializeGameState(GameStatus gameStatus, int day, int advertiseridx) throws IOException, ParseException {
 		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
+		_status = gameStatus;
 		_ourAdvIdx = advertiseridx;
 		_day = day;
 		_adType = new HashMap<String,HashMap<Query,Ad>>();
@@ -144,8 +145,6 @@ public class BasicSimulator {
 		_contProb = new HashMap<Query,Double>();
 		_users = new HashMap<UserState,Double>();
 		_querySpace = new LinkedHashSet<Query>();
-		GameStatusHandler statusHandler = new GameStatusHandler(filename);
-		_status = statusHandler.getGameStatus();
 		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = _status.getUserDistributions();
 		HashMap<String, AdvertiserInfo> advInfos = _status.getAdvertiserInfos();
 		HashMap<String, LinkedList<BankStatus>> bankStatuses = _status.getBankStatuses();
@@ -363,7 +362,7 @@ public class BasicSimulator {
 				double budget = agent.getBudget(query);
 				double cost = agent.getCost(query);
 				if(budget > cost || Double.isNaN(budget)) {
-					double totBudget = agent.getTotBudget(query);
+					double totBudget = agent.getTotBudget();
 					double totCost = agent.getTotCost();
 					if(totBudget > totCost || Double.isNaN(totBudget)) {
 						double squashedBid = agent.getSquashedBid(query);
@@ -458,9 +457,24 @@ public class BasicSimulator {
 				}
 			}
 		}
-		//COMPILE INFO ABOUT AGENTS!!
 		for(int i = 0; i < agents.size(); i++) {
-			
+			SimAgent agent = agents.get(i);
+			if(i == _ourAdvIdx) {
+				System.out.println("****US****");
+			}
+			System.out.println("Adv Id: " + agent.getAdvId());
+			System.out.println("\tTotal Cost: " + agent.getTotCost());
+			System.out.println("\tTotal Budget: " + agent.getTotBudget());
+			System.out.println("\tTotal revenue: " + agent.getTotRevenue());
+			System.out.println("\tTotal Units Sold: " + agent.getTotUnitsSold());
+			for(Query query : _querySpace) {
+				System.out.println("\t Query: " + query);
+				System.out.println("\t\t Bid: " + agent.getBid(query));
+				System.out.println("\t\t Cost: " + agent.getCost(query));
+				System.out.println("\t\t Budget: " + agent.getBudget(query));
+				System.out.println("\t\t Revenue: " + agent.getRevenue(query));
+				System.out.println("\t\t Units Sold: " + agent.getUnitsSold(query));
+			}
 		}
 	}
 
@@ -476,10 +490,12 @@ public class BasicSimulator {
 	
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim1.slg";
-		int advId = 2;
-		int day = 5;
-		sim.initializeGameState(filename, day, advId);
+		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim51.slg";
+		int advId = 7;
+		int day = 30;
+		GameStatusHandler statusHandler = new GameStatusHandler(filename);
+		GameStatus status = statusHandler.getGameStatus();
+		sim.initializeGameState(status, day, advId);
 		sim.runSimulation();
 	}
 
