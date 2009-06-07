@@ -5,6 +5,7 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -16,11 +17,21 @@ public class SimplePrConversion extends AbstractPrConversionModel{
 	private double _componentBonus;
 	private AbstractUnitsSoldModel _unitsSoldModel;
 
-	public SimplePrConversion(Query query, double baselineConv, double lambda, double componentBonus, AbstractUnitsSoldModel unitsSoldModel) {
+	public SimplePrConversion(Query query, AdvertiserInfo advertiserInfo, AbstractUnitsSoldModel unitsSoldModel) {
 		super(query);
-		this._lambda = lambda;
-		this._baselineConv = baselineConv;
-		this._componentBonus = componentBonus;
+		this._lambda = advertiserInfo.getDistributionCapacityDiscounter();
+		
+		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+			_baselineConv = .1;
+		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+			_baselineConv = .2;
+		else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+			_baselineConv = .3;
+		
+		_componentBonus = 1;
+		if (query.getComponent() != null && query.getComponent().equals(advertiserInfo.getComponentSpecialty()))
+			_componentBonus = advertiserInfo.getComponentBonus();
+		
 		this._unitsSoldModel = unitsSoldModel;
 	}	
 
@@ -34,7 +45,6 @@ public class SimplePrConversion extends AbstractPrConversionModel{
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
-		
 		return true;
 	}
 	
