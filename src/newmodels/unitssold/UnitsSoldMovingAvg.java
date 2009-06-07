@@ -25,7 +25,7 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	public double getWindowSold(){
 		double total = 0;
 		for (int i = 0; i < _distributionWindow; i++) {
-			int index = _sold.size() - i + 1;
+			int index = _sold.size() - i - 1;
 			if (index >= 0) total += _sold.get(index);	
 		}
 		total += estimate;
