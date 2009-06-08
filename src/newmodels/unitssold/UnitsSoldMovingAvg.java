@@ -24,7 +24,7 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	@Override
 	public double getWindowSold(){
 		double total = 0;
-		for (int i = 0; i < _distributionWindow; i++) {
+		for (int i = 0; i < _distributionWindow - 1; i++) {
 			int index = _sold.size() - i - 1;
 			if (index >= 0) total += _sold.get(index);	
 		}
@@ -39,7 +39,8 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 			conversions += salesReport.getConversions(q);
 		}
 		_sold.add(conversions);
-		estimate = alpha*conversions + (1 - alpha)*estimate;
+		if (_sold.size() == 1) estimate = conversions;
+		else estimate = alpha*conversions + (1 - alpha)*estimate;
 	}
 
 	public double getEstimate() {
