@@ -40,10 +40,6 @@ public class EqPftAgent extends SimAbstractAgent {
 	protected HashMap<Query, AbstractPrConversionModel> _prConversionModels;
 	protected HashMap<Query, ProfitsMovingAvg> _profitsModels;
 	protected double _avgProfit;
-	//HashMap<Query,AbstractModel> bidToClicks;
-	
-	/*protected AbstractRule _capacityCap;
-	protected AbstractRule _equateProfits;*/
 	
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
@@ -246,7 +242,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
 			buff.append("\t").append("Predicted Revenue:").append(_revenueModels.get(q).getRevenue()).append("\n");
 			if (_queryReport.getClicks(q) > 0) 
-				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)/_queryReport.getClicks(q)).append("\n");
+				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
 			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
 			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction(overcap)).append("\n");
