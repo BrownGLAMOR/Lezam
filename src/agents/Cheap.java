@@ -48,7 +48,7 @@ public class Cheap extends SimAbstractAgent {
 	}
 
 	@Override
-	protected void initBidder() {
+	public void initBidder() {
 			//No initialization necessary
 		
 	}

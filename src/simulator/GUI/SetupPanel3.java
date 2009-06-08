@@ -3,6 +3,8 @@ package simulator.GUI;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.text.ParseException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -78,7 +80,15 @@ public class SetupPanel3 extends JPanel {
 			String agentIn = (String) _agentList.getSelectedItem();
 			String agentOut = (String) _agentList2.getSelectedItem();
 			int numSims = Integer.parseInt(_numSims.getText());
-			_simulatorGUI.setNumSims(_simulator,agentIn, agentOut, numSims);
+			try {
+				_simulatorGUI.setNumSims(_simulator,agentIn, agentOut, numSims);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				throw new RuntimeException("Encountered an error parsing the logs: " + e1);
+			} catch (ParseException e1) {
+				e1.printStackTrace();
+				throw new RuntimeException("Encountered an error parsing the logs: " + e1);
+			}
 		}
 	}
 }

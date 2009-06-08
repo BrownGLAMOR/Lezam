@@ -111,6 +111,7 @@ public class BasicSimulator {
 	private HashMap<Query,Double> _contProb;
 	private HashMap<UserState,Double> _users;
 	private Set<Query> _querySpace;
+
 	private HashMap<Query,Double> _ourAdvEffect;
 
 	private RetailCatalog _retailCatalog;
@@ -140,7 +141,7 @@ public class BasicSimulator {
 	}
 
 	public void initializeGameState(GameStatus gameStatus, int day, int advertiseridx) throws IOException, ParseException {
-		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
+//		assert day >= 2 && advertiseridx >= 0 && advertiseridx <= 7;
 		_status = gameStatus;
 		_ourAdvIdx = advertiseridx;
 		_day = day;
@@ -287,8 +288,8 @@ public class BasicSimulator {
 	/*
 	 * Initializes a bidding agent with the proper models
 	 */
-	public SimAbstractAgent intializeBidder() {
-		SimAbstractAgent agent = new MCKPAgentMkII();
+	public SimAbstractAgent intializeBidder(String agentToRun) {
+		SimAbstractAgent agent = stringToAgent(agentToRun);
 		agent.setDay(_day);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
@@ -302,9 +303,9 @@ public class BasicSimulator {
 	/*
 	 * Gets the bids from the agent using perfect models
 	 */
-	public BidBundle getBids() {
+	public BidBundle getBids(String agentToRun) {
 		Set<AbstractModel> models = generatePerfectModels();
-		SimAbstractAgent agent = intializeBidder();
+		SimAbstractAgent agent = intializeBidder(agentToRun);
 		BidBundle bundle = agent.getBidBundle(models);
 		for(Query query : _querySpace) {
 			debug(query+" :");
@@ -314,12 +315,12 @@ public class BasicSimulator {
 		return bundle;
 	}
 	
-	public ArrayList<SimAgent> buildAgents() {
+	public ArrayList<SimAgent> buildAgents(String agentToRun) {
 		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
 		for(int i = 0; i < _agents.length; i++) {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
-				BidBundle bundle = getBids();
+				BidBundle bundle = getBids(agentToRun);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
@@ -356,8 +357,8 @@ public class BasicSimulator {
 	/*
 	 * Runs the simulation and generates reports
 	 */
-	public ArrayList<SimAgent> runSimulation() {
-		ArrayList<SimAgent> agents = buildAgents();
+	public ArrayList<SimAgent> runSimulation(String agentToRun) {
+		ArrayList<SimAgent> agents = buildAgents(agentToRun);
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
 		Collections.shuffle(users);
 		for(int i = 0; i < users.size(); i++) {
@@ -409,7 +410,7 @@ public class BasicSimulator {
 				Ad ad = agent.getAd(query);
 				double advEffect = agent.getAdvEffect(query);
 				double fTarg = 1;
-				if(!ad.isGeneric()) {
+				if(ad != null && !ad.isGeneric()) {
 					if(ad.getProduct() == new Product(query.getManufacturer(),query.getComponent())) {
 						fTarg = 1 + _targEffect;
 					}
@@ -467,10 +468,11 @@ public class BasicSimulator {
 						String queryMan = query.getManufacturer();
 						String manSpecialty = agent.getManSpecialty();
 						double revenue = 10;
-						if(queryMan == manSpecialty) {
+						if(manSpecialty.equals(queryMan)) {
 							revenue = (1+_MSB)*10;
 						}
 						agent.addRevenue(query, revenue);
+						break;
 					}
 					else {
 						rand = _R.nextDouble();
@@ -519,15 +521,15 @@ public class BasicSimulator {
 	}
 	
 	public String[] getUsableAgents() {
-		String[] agentStrings = { "MCKP (default)", "Cheap" };
+		String[] agentStrings = { "MCKP", "Cheap" };
 		return agentStrings;
 	}
 	
 	public SimAbstractAgent stringToAgent(String string) {
-		if(string == "MCKP (default)") {
+		if(string.equals("MCKP")) {
 			return new MCKPAgentMkII();
 		}
-		else if(string == "Cheap") {
+		else if(string.equals("Cheap")) {
 			return new Cheap();
 		}
 		else {
@@ -551,21 +553,26 @@ public class BasicSimulator {
 		}
 	}
 	
+	public Set<Query> getQuerySpace() {
+		return _querySpace;
+	}
+	
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
 		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim51.slg";
 		int advId = 7;
-		int day = 30;
+		int day = 59;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();
-		for(int i = 0; i < 60; i++) {
+		int numSims = 1;
+		for(int i = 0; i < numSims; i++) {
 			sim.initializeGameState(status, day, advId);
-			ArrayList<SimAgent> agents = sim.runSimulation();
+			ArrayList<SimAgent> agents = sim.runSimulation("Cheap");
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + ((elapsed / 1000)/60.0) + " seconds");
+		System.out.println("This took " + ((elapsed / 1000)/numSims) + " seconds");
 	}
 	
 }
