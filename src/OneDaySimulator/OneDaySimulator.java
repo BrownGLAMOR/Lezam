@@ -281,7 +281,9 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 		ai.setDistributionCapacity(400);
 		ai.setDistributionCapacityDiscounter(0.995);
 		ai.setDistributionWindow(5);
-		//ai.setFocusEffects(
+		ai.setFocusEffects(QueryType.FOCUS_LEVEL_ZERO, 0.1);
+		ai.setFocusEffects(QueryType.FOCUS_LEVEL_ONE, 0.2);
+		ai.setFocusEffects(QueryType.FOCUS_LEVEL_TWO, 0.3);
 		ai.setManufacturerBonus(0.5);
 		ai.setManufacturerSpecialty(manSet[2]);
 		//ai.setPublisherId(publisherId);
@@ -332,12 +334,11 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 		Queue<QueryReport> qrQueue = new LinkedList<QueryReport>();
 		QueryReport qr = new QueryReport();
 		for (Query q : _thisQuerySpace) {
-			//qr.setAd(q, ad)
+			qr.setAd(q, new Ad());
 			qr.setClicks(q, 500);
-			qr.setCost(q, 5000);
+			qr.setCost(q, 500);
 			qr.setImpressions(q, 5000, 1000);
 			for (int i=0 ; i<_numAgents ; i++) qr.setPosition(q, _agents[i], Math.min(2+i, _numSlots+1));
-			//qr.setPositionSum(q, positionSum); 
 		}
 		qrQueue.add(qr);
 		return qrQueue;

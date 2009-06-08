@@ -17,14 +17,18 @@ import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.BasicBidToSlot;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.BasicPrConversion;
+import newmodels.prconv.TrinaryPrConversion;
 import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.BasicSlotToBid;
+import newmodels.slottocpc.AbstractSlotToCPCModel;
+import newmodels.slottocpc.LinearSlotToCPC;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.slottonumclicks.BasicSlotToNumClicks;
 import newmodels.slottonumimp.AbstractSlotToNumImp;
 import newmodels.slottonumimp.BasicSlotToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import newmodels.slottoprclick.BasicSlotToPrClick;
+import newmodels.slottoprclick.DetBasicSlotToPrClick;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
 
@@ -42,7 +46,7 @@ public class ILPAgent extends SimAbstractAgent{
 	// ###################
 	// #### Variables ####
 	// ###################
-	protected double _day;
+	//protected double _day;
 	Vector<Double> _possibleBids;
 	Vector<Integer> _possibleQuantities;
 	protected static int NUMOFQUERIES;
@@ -53,11 +57,12 @@ public class ILPAgent extends SimAbstractAgent{
 	protected HashMap<Query, Double> _bids;
 	private Hashtable<Integer, Query> _queryIndexing;
 	
-	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels;
+//	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels;
 	private HashMap<Query, AbstractSlotToBidModel> _slotToBidModels;
 	private HashMap<Query, AbstractSlotToPrClick> _slotToPrClickModels;
 	private HashMap<Query, AbstractSlotToNumImp> _slotToNumImptModels;
 	private HashMap<Query, AbstractSlotToNumClicks> _slotToNumClicks;
+	private HashMap<Query, AbstractSlotToCPCModel> _slotToCPC;
 	private HashMap<Query, AbstractPrConversionModel> _convModel;
 	private AbstractUserModel _userModel;
 	
@@ -130,10 +135,10 @@ public class ILPAgent extends SimAbstractAgent{
 		//TODO calculate the new bids according to new results coming from the models
 		
 		//HashMap<Query,Double> newBids = new HashMap<Query, Double>();
-		int bsize = _possibleBids.size();
+		//int bsize = _possibleBids.size();
 		int qsize = _possibleQuantities.size();
-		Double[] bids = new Double[bsize];
-		_possibleBids.copyInto(bids);
+		//Double[] slots = new Double[_numSlots];
+		//_possibleBids.copyInto(bids);
 		Integer[] quantities = new Integer[qsize];
 		_possibleQuantities.copyInto(quantities);
 
@@ -141,15 +146,15 @@ public class ILPAgent extends SimAbstractAgent{
 			IloCplex cplex = new IloCplex();
 			IloIntVar[] overQuantVar = cplex.boolVarArray(qsize);
 //			IloIntVar[] overQuantVar = cplex.intVarArray(quantities.length, 0, 1);
-			IloIntVar[][] bidsVar = new IloIntVar[NUMOFQUERIES][bsize];
+			IloIntVar[][] slotsVar = new IloIntVar[NUMOFQUERIES][_numSlots];	//TODO consider making the slots real and not discreat
 			for (int query=0 ; query<NUMOFQUERIES ; query++) {
-				bidsVar[query] = cplex.boolVarArray(bsize);
+				slotsVar[query] = cplex.boolVarArray(_numSlots);
 //				bidsVar[query] = cplex.intVarArray(bids.length, 0, 1);
 			}
 			IloLinearNumExpr expr = cplex.linearNumExpr();
 			for (int query=0 ; query<NUMOFQUERIES ; query++) {
-				for (int bid=0 ; bid<bsize ; bid++) {
-					expr.addTerm(bidsVar[query][bid], getBidCoefficient(bids[bid] , _queryIndexing.get(query)));
+				for (int slot=1 ; slot<=_numSlots ; slot++) {
+					expr.addTerm(slotsVar[query][slot-1], getSlotCoefficient(slot , _queryIndexing.get(query)));
 				}
 			}
 			for (int quantity=0 ; quantity < qsize ; quantity++) {
@@ -159,13 +164,13 @@ public class ILPAgent extends SimAbstractAgent{
 			cplex.addMaximize(expr);
 			expr.clear();
 			IloLinearNumExpr exprOverQ = cplex.linearNumExpr();
-			IloLinearNumExpr exprBid = cplex.linearNumExpr();
+			IloLinearNumExpr exprSlot = cplex.linearNumExpr();
 			for (int query=0 ; query<NUMOFQUERIES ; query++) {
-				for (int bid=0 ; bid<bsize ; bid++) {
-					expr.addTerm(bidsVar[query][bid] , getQuantityBoundCoef(bids[bid] , _queryIndexing.get(query)));
-					exprBid.addTerm(1.0, bidsVar[query][bid]);
+				for (int slot=1 ; slot<=_numSlots; slot++) {
+					expr.addTerm(slotsVar[query][slot-1] , getQuantityBoundCoef(slot , _queryIndexing.get(query)));
+					exprSlot.addTerm(1.0, slotsVar[query][slot-1]);
 				}
-				cplex.addLe(exprBid, 1);
+				cplex.addLe(exprSlot, 1);
 			}
 			for (int quantity=0 ; quantity<quantities.length ; quantity++) {
 				expr.addTerm(overQuantVar[quantity] , -quantities[quantity]);				
@@ -180,11 +185,11 @@ public class ILPAgent extends SimAbstractAgent{
 				
 				//double[] bidsPerQuery = new double[NUMOFQUERIES];
 				for (int query=0 ; query<NUMOFQUERIES ; query++) {
-					double[] queryResults = cplex.getValues(bidsVar[query]);
-					for (int i=0 ; i<queryResults.length ; i++) {
+					double[] queryResults = cplex.getValues(slotsVar[query]);
+					for (int slot=0 ; slot<queryResults.length ; slot++) {
 						//if (queryResults[i] == 1.0) bidsPerQuery[query] = bids[i];
-						if (queryResults[i] == 1.0) _bids.put(_queryIndexing.get(query) , bids[i]);
-						System.out.print(queryResults[i] + " - ");
+						if (queryResults[slot] == 1.0) _bids.put(_queryIndexing.get(query) , _slotToBidModels.get(query).getPrediction(slot+1));  //slot+1 because the first index represents the first slot and so on
+						System.out.print(queryResults[slot] + " - " + query + "-" + slot);
 					}
 					System.out.println();
 				}
@@ -200,36 +205,25 @@ public class ILPAgent extends SimAbstractAgent{
 	 * return the sum of n*Pr(p,x)*Pr(click|q,p,x,s(b))(pi(p,x)*r-cpc(b))
 	 * @param bid
 	 * @param query
-	 * @return a dounle representing the sum
+	 * @return a double representing the sum
 	 */
-	public double getBidCoefficient(double bid , Query query) {
-		/*HashMap <Pair<Product,UserState> , Double> p_x_Pr;
-		HashMap <Pair<Pair<Product,UserState>,Pair<Query,Integer>>,Double> click_Pr_q_p_x_s;
-		HashMap <Double,Integer> slotOfBid;
-		HashMap <Pair<Product,UserState> , Double> p_x_convPr;
-		HashMap <Pair<Pair<Product,UserState>,Integer>,Double> p_x_i_convPr;
-		HashMap <Double,Double> cpcOfBid;
-		HashMap <Product,Double> revenueP;*/
-		
-		
+	public double getSlotCoefficient(double slot , Query query) {		
 		double result = 0;
-		//Pair<Query,Integer> q_s = new Pair<Query,Integer>(query,slotOfBid.get(bid));
-		//double cpcBid = cpcOfBid.get(bid);
-		//AbstractBidToSlotModel slotOfBid_q = ;
-		double slotOfBid = _bidToSlotModels.get(query).getPrediction(bid);
+
 		AbstractPrConversionModel convPr = _convModel.get(query);
+		double slot2cpc = _slotToCPC.get(query).getPrediction(slot);
 		
 		for (Product p : _retailCatalog) {
-			for (UserState userFocus:UserState.values()) {
-				double p_x_Pr = 0.5; // TODO change this arbitrary constant
-				double click_Pr_q_p_x_s = 0.5; // TODO change this arbitrary constant
-				// find all models
-				/*Pair<Product , Integer> p_x = new Pair<Product , Integer>(p,userFocus);
-				Pair<Pair<Product,Integer>,Pair<Query,Integer>> q_p_x_s = new Pair<Pair<Product,Integer>,Pair<Query,Integer>>(p_x,q_s);
-				result += NUMOFUSERS * p_x_Pr.get(p_x) * click_Pr_q_p_x_s.get(q_p_x_s) * (p_x_convPr.get(p_x)*revenueP.get(p) - cpcBid);*/
+			for (UserState us : UserState.values()) {
+				double p_x_Pr = _userModel.getPrediction(us);	//TODO change this, I just used the percentage of users
+				double click_Pr_q_p_x_s = _slotToPrClickModels.get(query).getPrediction(slot); // TODO change this arbitrary constant
+				double p_x_convPr = convPr.getPrediction(0); //TODO add p and x to the prediction
+				
+				result += p_x_Pr * click_Pr_q_p_x_s * (p_x_convPr*_productRevenue.get(p) - slot2cpc);
 			}
 		}
-		return result;
+		
+		return NUMOFUSERS * result;
 	}
 
 	/**
@@ -238,22 +232,22 @@ public class ILPAgent extends SimAbstractAgent{
 	 * @param query
 	 * @return a double representing the sum
 	 */
-	public double getQuantityBoundCoef(double bid, Query query) {
+	public double getQuantityBoundCoef(double slot, Query query) {
 		
 		double result = 0;
 		
-		AbstractPrConversionModel convPr = _convModel.get(query);
+		double p_x_convPr = _convModel.get(query).getPrediction(0);
 
 		for (Product p : _retailCatalog) {
 			for (UserState us : UserState.values()) {
-				double p_x_Pr = 0.5; // TODO change this arbitrary constant
-				double click_Pr_q_p_x_s = 0.5; // TODO change this arbitrary constant
-				double p_x_convPr = convPr.getPrediction(0);
+				double p_x_Pr = _userModel.getPrediction(us); // TODO change this arbitrary constant
+				double click_Pr_q_p_x_s = _slotToPrClickModels.get(query).getPrediction(slot); // TODO change this arbitrary constant
 				
 				result += p_x_Pr * click_Pr_q_p_x_s * p_x_convPr;
 			}
 		}
-		return result;
+		
+		return NUMOFUSERS * result;
 	}
 
 	/**
@@ -270,16 +264,17 @@ public class ILPAgent extends SimAbstractAgent{
 		
 		for (Product p : _retailCatalog) {
 			double revenue = _productRevenue.get(p); 
-			for (UserState x : UserState.values()) {
+			for (UserState us : UserState.values()) {
 				double p_x_convPr = convPr.getPrediction(0); // TODO find a better model, one that uses p and x
 				for (int i=1 ; i < quantity ; i++) {
 					double p_x_i_convPr = convPr.getPrediction(i); // TODO find a better model, one that uses p and x
-					double p_x_Pr = 0.5; // TODO find a model
+					double p_x_Pr = _userModel.getPrediction(us); // TODO find a model
 					
 					result += p_x_Pr * (p_x_convPr - p_x_i_convPr) * revenue;
 				}
 			}
 		}
+		
 		return result;
 	}
 
@@ -295,7 +290,7 @@ public class ILPAgent extends SimAbstractAgent{
 		 * so we use a LinkedHashSet
 		 */
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		_bidToSlotModels = new HashMap<Query, AbstractBidToSlotModel>();
+		//_bidToSlotModels = new HashMap<Query, AbstractBidToSlotModel>();
 		_slotToBidModels = new HashMap<Query, AbstractSlotToBidModel>();
 		_slotToPrClickModels = new HashMap<Query, AbstractSlotToPrClick>();
 		_slotToNumImptModels = new HashMap<Query, AbstractSlotToNumImp>();
@@ -307,17 +302,18 @@ public class ILPAgent extends SimAbstractAgent{
 		for(Query query: _querySpace) {
 			AbstractBidToSlotModel bidToSlot = new BasicBidToSlot(query,false);
 			AbstractSlotToBidModel slotToBid = new BasicSlotToBid(query,false);
-			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
+			AbstractSlotToPrClick slotToPrClick = new DetBasicSlotToPrClick(query);
 			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
 			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
-			AbstractPrConversionModel convModel = new BasicPrConversion(query,DAILYCAPACITY,(int)_lambda);
+			AbstractSlotToCPCModel slotToCPC = new LinearSlotToCPC(query, _numSlots);
+			AbstractPrConversionModel convModel = new TrinaryPrConversion(query, _lambda, _compSpecialty, _advertiserInfo.getComponentBonus());
 			models.add(bidToSlot);
 			models.add(slotToBid);
 			models.add(slotToPrClick);
 			models.add(slotToNumImp);
 			models.add(slotToNumClicks);
 			models.add(convModel);
-			_bidToSlotModels.put(query,bidToSlot);
+			//_bidToSlotModels.put(query,bidToSlot);
 			_slotToBidModels.put(query,slotToBid);
 			_slotToPrClickModels.put(query,slotToPrClick);
 			_slotToNumImptModels.put(query,slotToNumImp);
@@ -356,6 +352,10 @@ public class ILPAgent extends SimAbstractAgent{
 			else if(model instanceof AbstractSlotToNumClicks) {
 				AbstractSlotToNumClicks slotToNumClicks = (AbstractSlotToNumClicks) model;
 				slotToNumClicks.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractSlotToCPCModel) {
+				AbstractSlotToCPCModel slotToCPC = (AbstractSlotToCPCModel) model;
+				slotToCPC.updateModel(queryReport, salesReport, _bids);
 			}
 		}
 	}
