@@ -57,7 +57,7 @@ public class EqPftAgent extends SimAbstractAgent {
 	protected PrintStream output;
 	
 	@Override
-	protected void initBidder() {
+	public void initBidder() {
 		
 		// set constants
 		
@@ -116,7 +116,7 @@ public class EqPftAgent extends SimAbstractAgent {
 	}
 
 	@Override
-	protected BidBundle getBidBundle(Set<AbstractModel> models) {
+	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		
 		// update models
 		_unitsSoldModel.update(_salesReport);
