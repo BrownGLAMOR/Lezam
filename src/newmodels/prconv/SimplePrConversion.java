@@ -36,10 +36,11 @@ public class SimplePrConversion extends AbstractPrConversionModel{
 	}	
 
 	
-	public void setPrediction(double overcap) {
+	public double getPrediction(double overcap) {
 		 double newPrediction = _baselineConv*Math.pow(_lambda,Math.max(overcap, 0));
 		 newPrediction = (newPrediction*_componentBonus)/(newPrediction*_componentBonus + 1 - newPrediction);
 		 _prediction = newPrediction;
+		 return _prediction;
 	}
 
 
