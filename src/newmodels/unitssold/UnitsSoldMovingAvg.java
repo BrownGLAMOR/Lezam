@@ -14,10 +14,12 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	
 	protected final double alpha = .75;
 	protected double estimate;
+	protected double latestSample;
 	
-	public UnitsSoldMovingAvg(int distributionWindow) {
+	public UnitsSoldMovingAvg(int distributionCapacity, int distributionWindow) {
 		_distributionWindow = distributionWindow;
 		_sold = new ArrayList<Integer>();
+		estimate = 1.0*distributionCapacity/distributionWindow;
 	}
 	
 	
@@ -39,11 +41,16 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 			conversions += salesReport.getConversions(q);
 		}
 		_sold.add(conversions);
+		latestSample = conversions;
 		if (_sold.size() == 1) estimate = conversions;
 		else estimate = alpha*conversions + (1 - alpha)*estimate;
 	}
 
 	public double getEstimate() {
 		return estimate;
+	}
+	
+	public double getLatestSample() {
+		return latestSample;
 	}
 }
