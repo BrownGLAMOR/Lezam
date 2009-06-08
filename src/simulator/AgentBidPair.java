@@ -38,10 +38,10 @@ public class AgentBidPair implements Comparable<AgentBidPair> {
 		double ourBid = this._bid;
 		double otherBid = agentBidPair.getSquashedBid();
 		if(ourBid < otherBid) {
-			return -1;
+			return 1;
 		}
 		if(otherBid < ourBid) {
-			return 1;
+			return -1;
 		}
 		else {
 			return 0;

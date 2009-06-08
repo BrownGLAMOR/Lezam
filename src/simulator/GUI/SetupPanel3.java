@@ -12,6 +12,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.text.NumberFormatter;
 
+import simulator.BasicSimulator;
 import simulator.parser.GameStatus;
 
 public class SetupPanel3 extends JPanel {
@@ -21,6 +22,7 @@ public class SetupPanel3 extends JPanel {
 	private JComboBox _agentList2;
 	private JFormattedTextField _numSims;
 	private GameStatus _gameStatus;
+	private BasicSimulator _simulator;
 
 	public SetupPanel3(SimulatorGUI simulatorGUI, GameStatus gameStatus) {
 		super();
@@ -30,10 +32,12 @@ public class SetupPanel3 extends JPanel {
 		_simulatorGUI = simulatorGUI;
 		_gameStatus = gameStatus;
 		
+		_simulator = new BasicSimulator();
+		
 		JPanel panel1 = new JPanel(new FlowLayout());
 		JLabel label1 = new JLabel("Which agent do you want to simulate: ");
 		panel1.add(label1);
-		String[] agentStrings = { "MCKP", "Cheap" };
+		String[] agentStrings = _simulator.getUsableAgents();
 		_agentList = new JComboBox(agentStrings);
 		_agentList.setSelectedIndex(0);
 		panel1.add(_agentList);
@@ -42,10 +46,7 @@ public class SetupPanel3 extends JPanel {
 		JPanel panel2 = new JPanel(new FlowLayout());
 		JLabel label2 = new JLabel("Which agent do you want to remove: ");
 		panel2.add(label2);
-		/*
-		 * Actually parse these from game logs
-		 */
-		String[] agentStrings2 = { "Dummy", "Dummy1" , "Dummy2" , "Dummy3" , "Dummy4" , "Dummy5" , "Dummy6" , "Dummy7" };
+		String[] agentStrings2 = _gameStatus.getAdvertisers();
 		_agentList2 = new JComboBox(agentStrings2);
 		_agentList2.setSelectedIndex(0);
 		panel2.add(_agentList2);
@@ -59,9 +60,7 @@ public class SetupPanel3 extends JPanel {
 		panel3.add(_numSims);
 		
 		JPanel panel4 = new JPanel(new FlowLayout());
-//		BoxLayout layout2 =  new BoxLayout(panel4,BoxLayout.PAGE_AXIS);
-//		panel4.setLayout(layout2);
-		JLabel label4 = new JLabel("This may take a few minutes...");
+		JLabel label4 = new JLabel("This may take a few minutes... (I clocked it at roughly 20 seconds per simulation)");
 		panel4.add(label4);
 		JButton simulateButton = new JButton("Simulate");
 		simulateButton.addActionListener(new SimButtonListener());
@@ -78,8 +77,8 @@ public class SetupPanel3 extends JPanel {
 		public void actionPerformed(ActionEvent e) {
 			String agentIn = (String) _agentList.getSelectedItem();
 			String agentOut = (String) _agentList2.getSelectedItem();
-			int numSims = (Integer) _numSims.getValue();
-			_simulatorGUI.setNumSims(agentIn, agentOut, numSims);
+			int numSims = Integer.parseInt(_numSims.getText());
+			_simulatorGUI.setNumSims(_simulator,agentIn, agentOut, numSims);
 		}
 	}
 }

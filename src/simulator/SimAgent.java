@@ -5,6 +5,8 @@ import java.util.Set;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class SimAgent {
 	
@@ -24,7 +26,12 @@ public class SimAgent {
 	private HashMap<Query, Double> _cost;
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Integer> _unitsSold;
+	private HashMap<Query, Integer> _numClicks;
+	private HashMap<Query, Integer> _regImps;
+	private HashMap<Query, Integer> _promImps;
+	private HashMap<Query, Double> _posSum;
 	private int _totUnitsSold;
+	private int _totClicks;
 	private double _totCost;
 	private double _totRevenue;
 	private String _advId;
@@ -56,7 +63,12 @@ public class SimAgent {
 		_cost = new HashMap<Query, Double>();
 		_revenue = new HashMap<Query, Double>();
 		_unitsSold = new HashMap<Query, Integer>();
+		_numClicks = new HashMap<Query, Integer>();
+		_regImps = new HashMap<Query, Integer>();
+		_promImps = new HashMap<Query, Integer>();
+		_posSum = new HashMap<Query, Double>();
 		_totUnitsSold = 0;
+		_totClicks = 0;
 		_totCost = 0.0;
 		_totRevenue = 0.0;
 		for(Query query : _querySpace) {
@@ -64,6 +76,10 @@ public class SimAgent {
 			_cost.put(query, 0.0);
 			_revenue.put(query, 0.0);
 			_unitsSold.put(query, 0);
+			_numClicks.put(query,0);
+			_regImps.put(query,0);
+			_promImps.put(query,0);
+			_posSum.put(query, 0.0);
 		}
 	}
 	
@@ -118,6 +134,8 @@ public class SimAgent {
 	public void addCost(Query query, double cost) {
 		_cost.put(query, _cost.get(query) + cost);
 		_totCost += cost;
+		_totClicks++;
+		_numClicks.put(query, _numClicks.get(query) + 1);
 	}
 	
 	public double getRevenue(Query query) {
@@ -146,6 +164,12 @@ public class SimAgent {
 		_unitsSold.put(query, _unitsSold.get(query) + 1);
 		_totUnitsSold++;
 	}
+
+	public void addImpressions(Query query, int regImps, int promImps, int pos) {
+		_regImps.put(query,_regImps.get(query) + regImps);
+		_promImps.put(query, _promImps.get(query) + promImps);
+		_posSum.put(query, _posSum.get(query) + pos);
+	}
 	
 	public int getOverCap() {
 		if(_totUnitsSold > _oneDayCap) {
@@ -171,4 +195,40 @@ public class SimAgent {
 	public String getAdvId() {
 		return _advId;
 	}
+	
+	public int getNumClicks(Query query) {
+		return _numClicks.get(query);
+	}
+	
+	public int getNumPromImps(Query query) {
+		return _promImps.get(query);
+	}
+	
+	public int getNumRegImps(Query query) {
+		return _regImps.get(query);
+	}
+	
+	public double getPosSum(Query query) {
+		return _posSum.get(query);
+	}
+	
+	public QueryReport buildQueryReport() {
+		QueryReport queryReport = new QueryReport();
+		for(Query query : _querySpace) {
+			queryReport.addQuery(query,_regImps.get(query),_promImps.get(query),_numClicks.get(query),_cost.get(query),_posSum.get(query));
+			queryReport.setAd(query, _adType.get(query));
+		}
+		return queryReport;
+	}
+	
+	public SalesReport buildSalesReport() {
+		SalesReport salesReport = new SalesReport();
+		for(Query query : _querySpace) {
+			salesReport.addQuery(query);
+			salesReport.addConversions(query,_unitsSold.get(query));
+			salesReport.addRevenue(query,_revenue.get(query));
+		}
+		return salesReport;
+	}
+	
 }

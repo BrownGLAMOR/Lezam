@@ -31,7 +31,6 @@ public class SetupPanel extends JPanel {
 			int returnVal = fc.showOpenDialog((Component) e.getSource());
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
 				File file = fc.getSelectedFile();
-				System.out.println("Selected File: " + file.getAbsolutePath());
 				_simulatorGUI.setGameToParse(file);
 			}
 		}

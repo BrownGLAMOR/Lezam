@@ -48,6 +48,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkII extends SimAbstractAgent {
 	
+	private boolean DEBUG = false;
 	private int _numUsers = 90000;
 	private double _defaultBid;
 	private HashMap<Query, Double> _recentBids;
@@ -208,7 +209,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			}
 			else if(model instanceof AbstractSlotToNumClicks) {
 				AbstractSlotToNumClicks slotToNumClicks = (AbstractSlotToNumClicks) model;
-				System.out.println("YOYO");
+				debug("YOYO");
 				slotToNumClicks.updateModel(queryReport, salesReport);
 			}
 		}
@@ -239,7 +240,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					double bid = _slotToBidModels.get(q).getPrediction(s);
 					double CPC = _slotToBidModels.get(q).getPrediction(s+1);
 
-					System.out.println("Numer of clicks" + numClicks);
+					debug("Numer of clicks" + numClicks);
 					
 					if (bid == 0) numClicks = 0;
 					double w = numClicks*bid; 				//weight = numClicks * CPC 		[cost]
@@ -249,7 +250,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					items[s-1] = new Item(q,w,v,bid,isID);	
 
 				}
-				System.out.println("Items for " + q);
+				debug("Items for " + q);
 				IncItem[] iItems = getIncremental(items);
 				incItems.put(q,iItems);
 			}
@@ -309,9 +310,9 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 		HashMap<Query,Integer> temp = new HashMap<Query, Integer>();
 		for(Query q : _querySpace) {
 			temp.put(q,-1);
-			System.out.println("Num Inc Items " + q + ": " + incItems.get(q).length);
+			debug("Num Inc Items " + q + ": " + incItems.get(q).length);
 			for(int i = 0; i < incItems.get(q).length; i++) {
-				System.out.println("\t" + incItems.get(q)[i]);
+				debug("\t" + incItems.get(q)[i]);
 			}
 		}
 		
@@ -347,13 +348,13 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			if(temp.get(q) >= 0) {
 				Item item = incItems.get(q)[temp.get(q)].item();
 				solution.put(q,item);
-				System.out.println("Slot for " + q + ": " + (temp.get(q)+1));
-				System.out.println("\t Slot Weight: "+(item.v()/_salesPrices.get(q)));
+				debug("Slot for " + q + ": " + (temp.get(q)+1));
+				debug("\t Slot Weight: "+(item.v()/_salesPrices.get(q)));
 			}
 			else {
 				solution.put(q, new Item(q,0,0,0,-1));
-				System.out.println("Slot for " + q + ": No Slot");
-				System.out.println("\t Slot Weight: 0");
+				debug("Slot for " + q + ": No Slot");
+				debug("\t Slot Weight: 0");
 			}
 		}
 
@@ -421,9 +422,9 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	 * @param items
 	 * @return
 	 */
-	public static IncItem[] getIncremental(Item[] items) {
+	public IncItem[] getIncremental(Item[] items) {
 		for(int i = 0; i < items.length; i++) {
-			System.out.println("\t" + items[i]);
+			debug("\t" + items[i]);
 		}
 		
 		Item[] uItems = getUndominated(items);
@@ -441,5 +442,10 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 		return ii;
 	}
 
+	public void debug(Object str) {
+		if(DEBUG) {
+			System.out.println(str);
+		}
+	}
 
 }

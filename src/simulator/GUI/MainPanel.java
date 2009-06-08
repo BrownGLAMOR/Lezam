@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -14,6 +15,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import simulator.GUI.SetupPanel2.RechooseFileButtonListener;
 import simulator.parser.GameStatus;
 
 public class MainPanel  extends JPanel {
@@ -24,7 +26,7 @@ public class MainPanel  extends JPanel {
 	private String _agentIn;
 	private int _numSims;
 	private JComboBox _numSimsList;
-	private JPanel panel1;
+	private JPanel simsPanel;
 	private JSlider simSlider;
 	private Dimension _prefSize;
 
@@ -38,28 +40,33 @@ public class MainPanel  extends JPanel {
 		_agentOut = agentOut;
 		_numSims = numSims;
 		_prefSize = prefSize;
-		panel1 = new JPanel(new FlowLayout());
+		
+		simsPanel = new JPanel(new FlowLayout());
 		String[] numSimsStrings = { "Average Simulation", "Specific Simulation" };
 		_numSimsList = new JComboBox(numSimsStrings);
 		_numSimsList.setSelectedIndex(0);
 		_numSimsList.addActionListener(new NumSimsListener());
-		panel1.add(_numSimsList);
+		simsPanel.add(_numSimsList);
 		
 		int sliderStart = 1;
 		simSlider = new JSlider(JSlider.HORIZONTAL, sliderStart, _numSims, 1);
 		simSlider.setMajorTickSpacing(10);
 		simSlider.setMinorTickSpacing(1);
 		simSlider.setPaintTicks(true);
-		simSlider.setPaintLabels(true);
 		simSlider.setEnabled(false);
 		JLabel sliderLabel = new JLabel(""+sliderStart);
 		simSlider.addChangeListener(new SimSliderListener(sliderLabel));
-		panel1.add(simSlider);
-		panel1.add(sliderLabel);
+		simsPanel.add(simSlider);
+		simsPanel.add(sliderLabel);
 		
-		JPanel panel2 = new JPanel(new FlowLayout());
-		panel2.setSize(prefSize);
-		panel2.setPreferredSize(prefSize);
+		JPanel newParsePanel = new JPanel(new FlowLayout());
+		JButton newParseButton = new JButton("Select a new file to parse");
+		newParseButton.addActionListener(new RechooseFileButtonListener());
+		newParsePanel.add(newParseButton);
+		
+		JPanel tabbedPanePanel = new JPanel(new FlowLayout());
+		tabbedPanePanel.setSize(prefSize);
+		tabbedPanePanel.setPreferredSize(prefSize);
 		JTabbedPane tabbedPane = new JTabbedPane();
 		tabbedPane.setSize(prefSize);
 		tabbedPane.setPreferredSize(prefSize);
@@ -85,10 +92,20 @@ public class MainPanel  extends JPanel {
 		pane2.setPreferredSize(prefSize);
 		tabbedPane.add("Three",pane3);
 		
-		panel2.add(tabbedPane);
+		tabbedPanePanel.add(tabbedPane);
 		
-		this.add(panel1);
-		this.add(panel2);
+		this.add(simsPanel);
+		this.add(newParsePanel);
+		this.add(tabbedPanePanel);
+	}
+	
+	class RechooseFileButtonListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			/*
+			 * Parse game log here
+			 */
+			_simulatorGUI.resetFile();
+		}
 	}
 
 	class NumSimsListener implements ActionListener {

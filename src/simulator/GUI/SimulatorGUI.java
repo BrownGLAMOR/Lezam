@@ -17,6 +17,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 
+import simulator.BasicSimulator;
 import simulator.parser.GameStatus;
 
 public class SimulatorGUI extends JFrame {
@@ -28,6 +29,7 @@ public class SimulatorGUI extends JFrame {
 	private String _agentIn;
 	private int _numSims;
 	private Dimension prefSize;
+	private BasicSimulator _simulator;
 
 	public SimulatorGUI() {
 		super("TAC AA Simulator");
@@ -54,7 +56,8 @@ public class SimulatorGUI extends JFrame {
 		switchFrames(simPanel);
 	}
 	
-	public void setNumSims(String agentIn, String agentOut, int numSims) {
+	public void setNumSims(BasicSimulator simulator, String agentIn, String agentOut, int numSims) {
+		_simulator = simulator;
 		_agentIn = agentIn;
 		_agentOut = agentOut;
 		_numSims = numSims;

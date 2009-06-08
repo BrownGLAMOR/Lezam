@@ -5,6 +5,8 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -12,18 +14,24 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import simulator.BasicSimulator;
 import simulator.GUI.SetupPanel.LogButtonListener;
 import simulator.parser.GameStatus;
+import simulator.parser.GameStatusHandler;
 
 public class SetupPanel2 extends JPanel {
 
 	private SimulatorGUI _simulatorGUI;
+	private File _file;
 
 	SetupPanel2(SimulatorGUI simulatorGUI, File file) {
 		super();
 		BoxLayout layout = new BoxLayout(this,BoxLayout.PAGE_AXIS);
 		this.setLayout(layout);
+		
 		_simulatorGUI = simulatorGUI;
+		_file = file;
+		
 		JLabel label = new JLabel("Selected " + file.getName() + " to parse.\n This may take a few seconds");
 		label.setAlignmentX(CENTER_ALIGNMENT);
 		this.add(label);
@@ -42,7 +50,18 @@ public class SetupPanel2 extends JPanel {
 			/*
 			 * Parse game log here
 			 */
-			GameStatus status = null;
+			String filename = _file.getAbsolutePath();
+			GameStatusHandler statusHandler;
+			try {
+				statusHandler = new GameStatusHandler(filename);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+				throw new RuntimeException("IOException upon opening game log: " + e1);
+			} catch (ParseException e1) {
+				e1.printStackTrace();
+				throw new RuntimeException("ParseException upon opening game log: " + e1);
+			}
+			GameStatus status = statusHandler.getGameStatus();
 			_simulatorGUI.setGameStatus(status);
 		}
 	}
