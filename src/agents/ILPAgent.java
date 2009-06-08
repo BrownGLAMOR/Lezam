@@ -80,7 +80,7 @@ public class ILPAgent extends SimAbstractAgent{
 	protected void simulationSetup() {}
 
 	@Override
-	protected void initBidder() {
+	public void initBidder() {
 		System.out.println("Initilizing Bids");
 		
 		DAILYCAPACITY = _advertiserInfo.getDistributionCapacity() / _advertiserInfo.getDistributionWindow();
@@ -113,7 +113,7 @@ public class ILPAgent extends SimAbstractAgent{
 	}
 	
 	@Override
-	protected BidBundle getBidBundle(Set<AbstractModel> models) {		
+	public BidBundle getBidBundle(Set<AbstractModel> models) {		
 		if (_day > 1) {
 			updateBids();
 		}
