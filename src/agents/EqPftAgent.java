@@ -9,8 +9,6 @@ import java.util.HashMap;
 import java.util.Set;
 
 import agents.rules.AbstractRule;
-import agents.rules.eqpft.CapacityCap;
-import agents.rules.eqpft.EquateProfits;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractPrConversionModel;
