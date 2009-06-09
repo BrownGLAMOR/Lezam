@@ -18,7 +18,8 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	protected double estimate;
 	protected double latestSample;
 	
-	public UnitsSoldMovingAvg(Set<Query> _querySpace, int distributionCapacity, int distributionWindow) {
+	public UnitsSoldMovingAvg(Set<Query> querySpace, int distributionCapacity, int distributionWindow) {
+		_querySpace = querySpace;
 		_distributionWindow = distributionWindow;
 		_sold = new ArrayList<Integer>();
 		estimate = 1.0*distributionCapacity/distributionWindow;
