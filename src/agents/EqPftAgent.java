@@ -109,6 +109,10 @@ public class EqPftAgent extends SimAbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		
+		if(_salesReport == null || _queryReport == null) {
+			return new BidBundle();
+		}
+		
 		// update models
 		if (_salesReport != null) _unitsSoldModel.update(_salesReport);
 		overcap = _unitsSoldModel.getWindowSold() - _distributionCapacity; 
@@ -256,9 +260,9 @@ public class EqPftAgent extends SimAbstractAgent {
 			buff.append("****************\n");
 		}
 		
-		System.out.println(buff);
-		output.append(buff);
-		output.flush();
+//		System.out.println(buff);
+//		output.append(buff);
+//		output.flush();
 	
 	}
 

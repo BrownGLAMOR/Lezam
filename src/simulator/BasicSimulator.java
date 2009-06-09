@@ -162,19 +162,20 @@ public class BasicSimulator {
 		for(int day = firstDay; day < 60; day++) {
 
 			if(day >= 2) {
+				LinkedList<Reports> reportsList = reportsListMap.get(_agents[advertiseridx]);
 				/*
 				 * Two day delay
 				 */
 				//Why is there one less query report?
-				SalesReport salesReport = status.getSalesReports().get(_agents[advertiseridx]).get(day-2);
-				if(day != 59) {
-					QueryReport queryReport = status.getQueryReports().get(_agents[advertiseridx]).get(day-2);
-					agent.handleQueryReport(queryReport);
-				}
+				Reports reports = reportsList.get(day-2);
+				SalesReport salesReport = reports.getSalesReport();
+				QueryReport queryReport = reports.getQueryReport();
+				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
 			}
 			initializeDaySpecificInfo(day, advertiseridx);
-			 HashMap<String, Reports> maps = runSimulation(agent);
+			agent.setDay(day);
+			HashMap<String, Reports> maps = runSimulation(agent);
 			 
 			 /*
 			  * Keep track of capacities
@@ -613,7 +614,7 @@ public class BasicSimulator {
 	}
 	
 	public String[] getUsableAgents() {
-		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit"};
+		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit", "ILP"};
 		return agentStrings;
 	}
 	
@@ -625,6 +626,9 @@ public class BasicSimulator {
 			return new Cheap();
 		}
 		else if(string.equals("EqProfit")) {
+			return new EqPftAgent();
+		}
+		else if(string.equals("ILP")) {
 			return new EqPftAgent();
 		}
 		else {
@@ -663,7 +667,7 @@ public class BasicSimulator {
 		int numSims = 1;
 		sim.initializeBasicInfo(status,advId);
 		for(int i = 0; i < numSims; i++) {
-			sim.runFullSimulation(status, "MCKP",advId);
+			sim.runFullSimulation(status, "EqProfit",advId);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

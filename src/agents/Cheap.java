@@ -40,7 +40,7 @@ public class Cheap extends SimAbstractAgent {
 				}
 				queryBudget = dailyCap;
 			}
-			bidBundle.addQuery(q, queryBid, null);
+			bidBundle.addQuery(q, queryBid*.5, null);
 			bidBundle.setDailyLimit(q, Double.NaN);
 		}
 		
