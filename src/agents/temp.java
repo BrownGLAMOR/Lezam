@@ -12,6 +12,8 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class temp extends SimAbstractAgent {
 
+	protected int counter = 0;
+	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
@@ -26,7 +28,7 @@ public class temp extends SimAbstractAgent {
 			    if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 			    else if(_queryReport.getPostion(q)== 1) queryBid = _queryReport.getCPC(q);
 			    else if(_queryReport.getPosition(q)==2 && _numPromo ==2) queryBid = _queryReport.getCPC(q);
-			    else queryBid = 1.2;
+			    else if(counter == 1) queryBid = 1.2;
 				//queryBid = 1.2;
 				queryBudget = dailyCap;
 			}
@@ -34,7 +36,7 @@ public class temp extends SimAbstractAgent {
 				 if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 				  else if(_queryReport.getPostion(q)== 1) queryBid = _queryReport.getCPC(q);
 				  else if(_queryReport.getPosition(q)==2 && _numPromo ==2) queryBid = _queryReport.getCPC(q);
-				  else queryBid = 1.5;
+				  else if(counter == 1) queryBid = 1.5;
 				//queryBid = 1.5;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 				}
@@ -44,15 +46,16 @@ public class temp extends SimAbstractAgent {
 				    if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 				    else if(_queryReport.getPostion(q)== 1) queryBid = _queryReport.getCPC(q);
 				    else if(_queryReport.getPosition(q)==2 && _numPromo ==2) queryBid = _queryReport.getCPC(q);
-				    else queryBid = 2.3;
+				    else if(counter == 1) queryBid = 2.3;
 				//queryBid = 2.3;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					queryBid = 3;
+					if(counter == 1) queryBid = 3;
 				}
 				queryBudget = dailyCap;
 			}
 			bidBundle.addQuery(q, queryBid*.5, null);
 			bidBundle.setDailyLimit(q, queryBudget);
+			counter ++;
 		}
 
 		return bidBundle;
