@@ -88,7 +88,7 @@ public class newSSB extends SimAbstractAgent{
 	public void initBidder() {
 		// TODO Auto-generated method stub
 		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_capacity, _capWindow);
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 		
 		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
 		for (Query query : _querySpace) {
