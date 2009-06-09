@@ -34,6 +34,7 @@ public class temp extends SimAbstractAgent{
 			
 			_conversionPrModel.get(query).setPrediction(_unitsSoldModel.getWindowSold() - _capacity);
 			
+			
 			//adjust reinvestment factor
 			//handle the case of no impression (the agent got no slot)
 			handleNoImpression(query);
