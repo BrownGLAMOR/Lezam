@@ -12,7 +12,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class temp extends SimAbstractAgent {
 
-	protected int counter = 0;
+	protected int counter = 1;
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -22,31 +22,34 @@ public class temp extends SimAbstractAgent {
 		double dailyCap = distCap/distWind;
 
 		for(Query q : _querySpace) {
-			double queryBid;
+			double queryBid = 0.0;
 			double queryBudget;
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO){
-			    if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
+				if(counter == 1) queryBid = 1.2;
+				else if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 			    else if(_queryReport.getPosition(q)== 1) queryBid = _queryReport.getCPC(q);
 			    else if(_queryReport.getPosition(q)==2 && _numPS ==2) queryBid = _queryReport.getCPC(q);
-			    else if(counter == 1) queryBid = 1.2;
+			    
 				//queryBid = 1.2;
 				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				 if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
+				 if(counter == 1) queryBid = 1.5;
+				 else if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 				  else if(_queryReport.getPosition(q)== 1) queryBid = _queryReport.getCPC(q);
 				  else if(_queryReport.getPosition(q)==2 && _numPS ==2) queryBid = _queryReport.getCPC(q);
-				  else if(counter == 1) queryBid = 1.5;
+				  
 				//queryBid = 1.5;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 				}
 				queryBudget = dailyCap;
 			}
 			else {
-				    if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
+				    if(counter == 1) queryBid = 2.3;
+				    else if(_queryReport.getPosition(q)== Double.NaN) queryBid = queryBid*1.3;
 				    else if(_queryReport.getPosition(q)== 1) queryBid = _queryReport.getCPC(q);
 				    else if(_queryReport.getPosition(q)==2 && _numPS ==2) queryBid = _queryReport.getCPC(q);
-				    else if(counter == 1) queryBid = 2.3;
+				    
 				//queryBid = 2.3;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 					if(counter == 1) queryBid = 3;
