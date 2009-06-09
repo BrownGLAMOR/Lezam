@@ -11,39 +11,38 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class Cheap extends SimAbstractAgent {
-	
+
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
 		double distCap = (double) _advertiserInfo.getDistributionCapacity();
 		double distWind = (double) _advertiserInfo.getDistributionWindow();
 		double dailyCap = distCap/distWind;
-		
+
 		for(Query q : _querySpace) {
 			double queryBid;
 			double queryBudget;
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO){
-				queryBid = .7;
+				queryBid = 1.2;
 				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				queryBid = 1.0;
+				queryBid = 1.5;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					queryBid = 1.2;
 				}
 				queryBudget = dailyCap;
 			}
 			else {
-				queryBid = 1.5;
+				queryBid = 2.3;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					queryBid = 2;
+					queryBid = 3;
 				}
 				queryBudget = dailyCap;
 			}
 			bidBundle.addQuery(q, queryBid*.5, null);
-			bidBundle.setDailyLimit(q, Double.NaN);
+			bidBundle.setDailyLimit(q, queryBudget);
 		}
-		
+
 		return bidBundle;
 	}
 

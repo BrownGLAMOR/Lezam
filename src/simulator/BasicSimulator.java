@@ -25,6 +25,7 @@ import agents.Cheap;
 import agents.EqPftAgent;
 import agents.MCKPAgentMkII;
 import agents.SimAbstractAgent;
+import agents.newSSB;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
@@ -614,7 +615,7 @@ public class BasicSimulator {
 	}
 	
 	public String[] getUsableAgents() {
-		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit", "ILP"};
+		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit", "ILP", "newSSB"};
 		return agentStrings;
 	}
 	
@@ -630,6 +631,9 @@ public class BasicSimulator {
 		}
 		else if(string.equals("ILP")) {
 			return new EqPftAgent();
+		}
+		else if(string.equals("newSSB")) {
+			return new newSSB();
 		}
 		else {
 			return new MCKPAgentMkII();
