@@ -269,8 +269,9 @@ public class EqPftAgent extends SimAbstractAgent {
 	}
 
 	@Override
-	protected void updateModels(SalesReport salesReport) {
-		// Not used		
+	protected void updateModels(SalesReport salesReport, QueryReport queryReport) {
+		// TODO Auto-generated method stub
+		
 	}
 
 

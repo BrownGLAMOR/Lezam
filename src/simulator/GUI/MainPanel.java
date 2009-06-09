@@ -57,6 +57,7 @@ public class MainPanel  extends JPanel {
 	private LinkedList<LinkedList<Reports>> _reportsList;
 	private BasicSimulator _simulator;
 	private JLabel lblChart;
+	private int _minSims = 3; //Minimum Number of sims for a deviation graphic
 
 	public MainPanel(SimulatorGUI simulatorGUI, BasicSimulator simulator, GameStatus status, String agentIn, String agentOut, int numSims, Dimension prefSize, LinkedList<LinkedList<Reports>> reportsList) {
 		super();
@@ -72,10 +73,9 @@ public class MainPanel  extends JPanel {
 		_reportsList = reportsList;
 		
 		simsPanel = new JPanel(new FlowLayout());
-		String[] numSimsStrings = { "Total Profits", "Daily Profits" };
+		String[] numSimsStrings = { "Total Profits", "Daily Profits" , "Daily Impressions" , "Daily Clicks" , "Daily Conversions"};
 		_numSimsList = new JComboBox(numSimsStrings);
 		_numSimsList.setSelectedIndex(0);
-		_numSimsList.addActionListener(new NumSimsListener());
 		simsPanel.add(_numSimsList);
 		
 		JPanel rechartPanel = new JPanel(new FlowLayout());
@@ -154,7 +154,7 @@ public class MainPanel  extends JPanel {
 		yIntervalSeriesColl.addSeries(series);
 		XYDataset xyDataset = yIntervalSeriesColl;
 		JFreeChart chart = ChartFactory.createXYLineChart
-		("Simulation ",  // Title
+		("Avg Profit over " + list.size() + " sims",  // Title
 				"Day",           // X-Axis label
 				"Profit",           // Y-Axis label
 				xyDataset,          // Dataset
@@ -164,28 +164,9 @@ public class MainPanel  extends JPanel {
 				false);
 		
 
-        chart.setBackgroundPaint(Color.white);
-        
-        // get a reference to the plot for further customisation...
-        XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(Color.lightGray);
-        plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
-        plot.setDomainGridlinePaint(Color.white);
-        plot.setRangeGridlinePaint(Color.white);
-        
-        DeviationRenderer renderer = new DeviationRenderer(true, false);
-        renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND));
-        renderer.setSeriesStroke(0, new BasicStroke(3.0f));
-        renderer.setSeriesStroke(1, new BasicStroke(3.0f));
-        renderer.setSeriesFillPaint(0, new Color(0, 0, 255));
-        renderer.setSeriesFillPaint(1, new Color(255, 0, 0));
-        plot.setRenderer(renderer);
-
-        // change the auto tick unit selection to integer units only...
-        NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
-        yAxis.setAutoRangeIncludesZero(false);
-        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+		if(list.size() >= _minSims) {
+			chart = addDeviation(chart);
+		}
 		return chart;
 	}
 
@@ -234,7 +215,7 @@ public class MainPanel  extends JPanel {
 		yIntervalSeriesColl.addSeries(series);
 		XYDataset xyDataset = yIntervalSeriesColl;
 		JFreeChart chart = ChartFactory.createXYLineChart
-		("Simulation ",  // Title
+		("Avg Daily Profit over " + list.size() + " sims",  // Title
 				"Day",           // X-Axis label
 				"Profit",           // Y-Axis label
 				xyDataset,          // Dataset
@@ -244,31 +225,208 @@ public class MainPanel  extends JPanel {
 				false);
 		
 
-        chart.setBackgroundPaint(Color.white);
-        
-        // get a reference to the plot for further customisation...
-        XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(Color.lightGray);
-        plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
-        plot.setDomainGridlinePaint(Color.white);
-        plot.setRangeGridlinePaint(Color.white);
-        
-        DeviationRenderer renderer = new DeviationRenderer(true, false);
-        renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_ROUND,
-                BasicStroke.JOIN_ROUND));
-        renderer.setSeriesStroke(0, new BasicStroke(3.0f));
-        renderer.setSeriesStroke(1, new BasicStroke(3.0f));
-        renderer.setSeriesFillPaint(0, new Color(0, 0, 255));
-        renderer.setSeriesFillPaint(1, new Color(255, 0, 0));
-        plot.setRenderer(renderer);
-
-        // change the auto tick unit selection to integer units only...
-        NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
-        yAxis.setAutoRangeIncludesZero(false);
-        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
-		return chart;
+		if(list.size() >= _minSims) {
+			chart = addDeviation(chart);
+		}
+        return chart;
 	}
 	
+	public JFreeChart dailyClicksChart(LinkedList<LinkedList<Reports>> list) {
+		double[] minClicks = new double[list.get(0).size()];
+		double[] maxClicks = new double[list.get(0).size()];
+		double[] avgClicks = new double[list.get(0).size()];
+		
+		for(int i = 0; i < list.get(0).size(); i++) {
+			minClicks[i] = Double.MAX_VALUE;
+			maxClicks[i] = -Double.MAX_VALUE;
+			avgClicks[i] = 0.0;
+		}
+		
+		for(int day = 0; day < list.get(0).size(); day++) {
+			for(int sim = 0; sim < list.size(); sim++) {
+				Reports reports = list.get(sim).get(day);
+				QueryReport queryReport = reports.getQueryReport();
+				double totClicks = 0.0;
+				for(Query query : _simulator.getQuerySpace()) {
+					totClicks += queryReport.getClicks(query);
+				}
+				avgClicks[day] += totClicks;
+				if(totClicks > maxClicks[day]) {
+					maxClicks[day] = totClicks;
+				}
+				else if(totClicks < minClicks[day]) {
+					minClicks[day] = totClicks;
+				}
+			}
+		}
+		for(int day = 0; day < list.get(0).size(); day++) {
+			avgClicks[day] = avgClicks[day] / list.size();
+		}
+		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
+
+		YIntervalSeries series = new YIntervalSeries(_agentIn);
+
+		for(int day = 0; day < list.get(0).size(); day++) {
+			series.add(day, avgClicks[day], minClicks[day], maxClicks[day]);
+		}
+		yIntervalSeriesColl.addSeries(series);
+		XYDataset xyDataset = yIntervalSeriesColl;
+		JFreeChart chart = ChartFactory.createXYLineChart
+		("Avg Daily Clicks over " + list.size() + " sims",  // Title
+				"Day",           // X-Axis label
+				"Profit",           // Y-Axis label
+				xyDataset,          // Dataset
+				PlotOrientation.VERTICAL,
+				true,
+				true,
+				false);
+		
+
+		if(list.size() >= _minSims) {
+			chart = addDeviation(chart);
+		}
+        return chart;
+	}
+	
+	public JFreeChart dailyImpsChart(LinkedList<LinkedList<Reports>> list) {
+		double[] minImps = new double[list.get(0).size()];
+		double[] maxImps = new double[list.get(0).size()];
+		double[] avgImps = new double[list.get(0).size()];
+		
+		for(int i = 0; i < list.get(0).size(); i++) {
+			minImps[i] = Double.MAX_VALUE;
+			maxImps[i] = -Double.MAX_VALUE;
+			avgImps[i] = 0.0;
+		}
+		
+		for(int day = 0; day < list.get(0).size(); day++) {
+			for(int sim = 0; sim < list.size(); sim++) {
+				Reports reports = list.get(sim).get(day);
+				QueryReport queryReport = reports.getQueryReport();
+				double totImps = 0.0;
+				for(Query query : _simulator.getQuerySpace()) {
+					totImps += queryReport.getImpressions(query);
+				}
+				avgImps[day] += totImps;
+				if(totImps > maxImps[day]) {
+					maxImps[day] = totImps;
+				}
+				else if(totImps < minImps[day]) {
+					minImps[day] = totImps;
+				}
+			}
+		}
+		for(int day = 0; day < list.get(0).size(); day++) {
+			avgImps[day] = avgImps[day] / list.size();
+		}
+		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
+
+		YIntervalSeries series = new YIntervalSeries(_agentIn);
+
+		for(int day = 0; day < list.get(0).size(); day++) {
+			series.add(day, avgImps[day], minImps[day], maxImps[day]);
+		}
+		yIntervalSeriesColl.addSeries(series);
+		XYDataset xyDataset = yIntervalSeriesColl;
+		JFreeChart chart = ChartFactory.createXYLineChart
+		("Avg Daily Impressions over " + list.size() + " sims",  // Title
+				"Day",           // X-Axis label
+				"Profit",           // Y-Axis label
+				xyDataset,          // Dataset
+				PlotOrientation.VERTICAL,
+				true,
+				true,
+				false);
+		
+
+		if(list.size() >= _minSims) {
+			chart = addDeviation(chart);
+		}
+        return chart;
+	}
+	
+	public JFreeChart dailyConvsChart(LinkedList<LinkedList<Reports>> list) {
+		double[] minConvs = new double[list.get(0).size()];
+		double[] maxConvs = new double[list.get(0).size()];
+		double[] avgConvs = new double[list.get(0).size()];
+		
+		for(int i = 0; i < list.get(0).size(); i++) {
+			minConvs[i] = Double.MAX_VALUE;
+			maxConvs[i] = -Double.MAX_VALUE;
+			avgConvs[i] = 0.0;
+		}
+		
+		for(int day = 0; day < list.get(0).size(); day++) {
+			for(int sim = 0; sim < list.size(); sim++) {
+				Reports reports = list.get(sim).get(day);
+				SalesReport salesReport = reports.getSalesReport();
+				double totConvs = 0.0;
+				for(Query query : _simulator.getQuerySpace()) {
+					totConvs += salesReport.getConversions(query);
+				}
+				avgConvs[day] += totConvs;
+				if(totConvs > maxConvs[day]) {
+					maxConvs[day] = totConvs;
+				}
+				else if(totConvs < minConvs[day]) {
+					minConvs[day] = totConvs;
+				}
+			}
+		}
+		for(int day = 0; day < list.get(0).size(); day++) {
+			avgConvs[day] = avgConvs[day] / list.size();
+		}
+		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
+
+		YIntervalSeries series = new YIntervalSeries(_agentIn);
+
+		for(int day = 0; day < list.get(0).size(); day++) {
+			series.add(day, avgConvs[day], minConvs[day], maxConvs[day]);
+		}
+		yIntervalSeriesColl.addSeries(series);
+		XYDataset xyDataset = yIntervalSeriesColl;
+		JFreeChart chart = ChartFactory.createXYLineChart
+		("Avg Daily Conversions over " + list.size() + " sims",  // Title
+				"Day",           // X-Axis label
+				"Profit",           // Y-Axis label
+				xyDataset,          // Dataset
+				PlotOrientation.VERTICAL,
+				true,
+				true,
+				false);
+		
+		if(list.size() >= _minSims ) {
+			chart = addDeviation(chart);
+		}
+        return chart;
+	}
+
+	private JFreeChart addDeviation(JFreeChart chart) {
+		chart.setBackgroundPaint(Color.white);
+
+		// get a reference to the plot for further customisation...
+		XYPlot plot = (XYPlot) chart.getPlot();
+		plot.setBackgroundPaint(Color.lightGray);
+		plot.setAxisOffset(new RectangleInsets(5.0, 5.0, 5.0, 5.0));
+		plot.setDomainGridlinePaint(Color.white);
+		plot.setRangeGridlinePaint(Color.white);
+
+		DeviationRenderer renderer = new DeviationRenderer(true, false);
+		renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_ROUND,
+				BasicStroke.JOIN_ROUND));
+		renderer.setSeriesStroke(0, new BasicStroke(3.0f));
+		renderer.setSeriesStroke(1, new BasicStroke(3.0f));
+		renderer.setSeriesFillPaint(0, new Color(0, 0, 255));
+		renderer.setSeriesFillPaint(1, new Color(255, 0, 0));
+		plot.setRenderer(renderer);
+
+		// change the auto tick unit selection to integer units only...
+		NumberAxis yAxis = (NumberAxis) plot.getRangeAxis();
+		yAxis.setAutoRangeIncludesZero(false);
+		yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+		return chart;
+	}
+
 	class RechooseFileButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			_simulatorGUI.resetFile();
@@ -286,23 +444,20 @@ public class MainPanel  extends JPanel {
 		    else if (simSelection.equals("Daily Profits")) {
 		    	chart = dailyProfitsChart(_reportsList);
 		    }
+		    else if (simSelection.equals("Daily Impressions")) {
+		    	chart = dailyImpsChart(_reportsList);
+		    }
+		    else if (simSelection.equals("Daily Clicks")) {
+		    	chart = dailyClicksChart(_reportsList);
+		    }
+		    else if (simSelection.equals("Daily Conversions")) {
+		    	chart = dailyConvsChart(_reportsList);
+		    }
 		    else {
 		    	throw new RuntimeException("Bad Selection");
 		    }
 			BufferedImage image = chart.createBufferedImage((_prefSize.width*4)/5,(_prefSize.height*4)/5);
 			lblChart.setIcon(new ImageIcon(image));
-		}
-	}
-
-	class NumSimsListener implements ActionListener {
-
-		public void actionPerformed(ActionEvent e) {
-			JComboBox cb = (JComboBox)e.getSource();
-		    String simSelection = (String)cb.getSelectedItem();
-		    if(simSelection == "Average Simulation") {
-		    }
-		    else if (simSelection == "Specific Simulation") {
-		    }
 		}
 	}
 	
