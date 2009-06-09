@@ -40,7 +40,7 @@ public class SimulatorGUI extends JFrame {
 
 	public SimulatorGUI() {
 		super("TAC AA Simulator");
-		prefSize = new Dimension(1280,800);
+		prefSize = new Dimension(900,675);
 		this.setSize(prefSize);
 		this.setPreferredSize(prefSize);
 		this.setLayout(new FlowLayout());

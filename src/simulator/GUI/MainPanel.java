@@ -57,7 +57,7 @@ public class MainPanel  extends JPanel {
 	private LinkedList<LinkedList<Reports>> _reportsList;
 	private BasicSimulator _simulator;
 	private JLabel lblChart;
-	private int _minSims = 3; //Minimum Number of sims for a deviation graphic
+	private int _minSims = 2; //Minimum Number of sims for a deviation graphic
 
 	public MainPanel(SimulatorGUI simulatorGUI, BasicSimulator simulator, GameStatus status, String agentIn, String agentOut, int numSims, Dimension prefSize, LinkedList<LinkedList<Reports>> reportsList) {
 		super();

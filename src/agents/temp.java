@@ -100,13 +100,13 @@ public class temp extends SimAbstractAgent{
 	}
 
 	@Override
-	protected Set<AbstractModel> initModels() {
+	public Set<AbstractModel> initModels() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	protected void updateModels(SalesReport salesReport,
+	public void updateModels(SalesReport salesReport,
 			QueryReport queryReport) {
 		// TODO Auto-generated method stub
 		

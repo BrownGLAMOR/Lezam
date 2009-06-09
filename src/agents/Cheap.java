@@ -54,13 +54,13 @@ public class Cheap extends SimAbstractAgent {
 	}
 
 	@Override
-	protected Set<AbstractModel> initModels() {
+	public Set<AbstractModel> initModels() {
 		//No initialization necessary
 		return null;
 	}
 
 	@Override
-	protected void updateModels(SalesReport salesReport, QueryReport queryReport) {
+	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		for(Query query : _querySpace)  {
 			System.out.println(query);
 			System.out.println("\tNum Impressions: " + queryReport.getImpressions(query));

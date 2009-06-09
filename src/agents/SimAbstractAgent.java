@@ -429,13 +429,13 @@ public abstract class SimAbstractAgent extends Agent {
      * This method will be run once at the beginning of each simulation to initialize the
      * models that our agent will use
      */
-    protected abstract Set<AbstractModel> initModels();
+    public abstract Set<AbstractModel> initModels();
     
     /*
      * This will be called once each day before getBidBundle to update all the models
      * that the agent needs to make a bid bundle
      */
-    protected abstract void updateModels(SalesReport salesReport,QueryReport queryReport);
+    public abstract void updateModels(SalesReport salesReport,QueryReport queryReport);
     
     /*
      * This method will be run once at the beginning of each simulation to initialize the

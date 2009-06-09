@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.Set;
 
 import agents.Cheap;
+import agents.EqPftAgent;
 import agents.MCKPAgentMkII;
 import agents.SimAbstractAgent;
 
@@ -357,22 +358,22 @@ public class BasicSimulator {
 	/*
 	 * Initializes a bidding agent with the proper models
 	 */
-	public SimAbstractAgent intializeBidder(String agentToRun) {
-		SimAbstractAgent agent = stringToAgent(agentToRun);
-		agent.setDay(_day);
-		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
-		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
-		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
-		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
-		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		agent.initBidder();
-		return agent;
+	public SimAbstractAgent intializeBidder(SimAbstractAgent agentToRun) {
+		agentToRun.setDay(_day);
+		agentToRun.sendSimMessage(new Message("doesn't","matter",_pubInfo));
+		agentToRun.sendSimMessage(new Message("doesn't","matter",_slotInfo));
+		agentToRun.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
+		agentToRun.sendSimMessage(new Message("doesn't","matter",_slotInfo));
+		agentToRun.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
+		agentToRun.initBidder();
+		agentToRun.initModels();
+		return agentToRun;
 	}
 
 	/*
 	 * Gets the bids from the agent using perfect models
 	 */
-	public BidBundle getBids(String agentToRun) {
+	public BidBundle getBids(SimAbstractAgent agentToRun) {
 		Set<AbstractModel> models = generatePerfectModels();
 		SimAbstractAgent agent = intializeBidder(agentToRun);
 		BidBundle bundle = agent.getBidBundle(models);
@@ -384,7 +385,7 @@ public class BasicSimulator {
 		return bundle;
 	}
 	
-	public ArrayList<SimAgent> buildAgents(String agentToRun) {
+	public ArrayList<SimAgent> buildAgents(SimAbstractAgent agentToRun) {
 		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
 		for(int i = 0; i < _agents.length; i++) {
 			SimAgent agent;
@@ -426,7 +427,7 @@ public class BasicSimulator {
 	/*
 	 * Runs the simulation and generates reports
 	 */
-	public HashMap<String, Reports> runSimulation(String agentToRun) {
+	public HashMap<String, Reports> runSimulation(SimAbstractAgent agentToRun) {
 		ArrayList<SimAgent> agents = buildAgents(agentToRun);
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
 		Collections.shuffle(users);
@@ -606,7 +607,7 @@ public class BasicSimulator {
 	}
 	
 	public String[] getUsableAgents() {
-		String[] agentStrings = { "MCKP", "Cheap" };
+		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit"};
 		return agentStrings;
 	}
 	
@@ -616,6 +617,9 @@ public class BasicSimulator {
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
+		}
+		else if(string.equals("EqProfit")) {
+			return new EqPftAgent();
 		}
 		else {
 			return new MCKPAgentMkII();

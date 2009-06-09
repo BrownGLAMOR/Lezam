@@ -69,7 +69,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 
 
 	@Override
-	protected Set<AbstractModel> initModels() {
+	public Set<AbstractModel> initModels() {
 		/*
 		 * Order is important because some of our models use other models
 		 * so we use a LinkedHashSet
@@ -182,7 +182,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	
 	
 	@Override
-	protected void updateModels(SalesReport salesReport,
+	public void updateModels(SalesReport salesReport,
 			QueryReport queryReport) {
 
 		for(AbstractModel model:_models) {
