@@ -3,12 +3,14 @@ package newmodels.unitssold;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 
+	protected Set<Query> _querySpace;
 	protected int _distributionWindow;
 	protected List<Integer> _sold;
 	
@@ -16,7 +18,7 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	protected double estimate;
 	protected double latestSample;
 	
-	public UnitsSoldMovingAvg(int distributionCapacity, int distributionWindow) {
+	public UnitsSoldMovingAvg(Set<Query> _querySpace, int distributionCapacity, int distributionWindow) {
 		_distributionWindow = distributionWindow;
 		_sold = new ArrayList<Integer>();
 		estimate = 1.0*distributionCapacity/distributionWindow;
@@ -37,7 +39,7 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	@Override
 	public void update(SalesReport salesReport) {
 		int conversions = 0;
-		for(Query q : salesReport){
+		for(Query q : _querySpace){
 			conversions += salesReport.getConversions(q);
 		}
 		_sold.add(conversions);
