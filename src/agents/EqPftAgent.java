@@ -206,7 +206,7 @@ public class EqPftAgent extends SimAbstractAgent {
 		double result = 0;
 		int n = 0;
 		for (Query query : _querySpace) 
-			if (_salesReport.getConversions(query) > 0) {
+			if (_salesReport != null && _salesReport.getConversions(query) > 0) {
 				result += _profitsModels.get(query).getProfit()*_salesReport.getConversions(query);
 				n += _salesReport.getConversions(query);
 			}

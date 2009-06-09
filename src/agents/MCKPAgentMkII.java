@@ -182,8 +182,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	
 	
 	@Override
-	public void updateModels(SalesReport salesReport,
-			QueryReport queryReport) {
+	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
 		for(AbstractModel model:_models) {
 			if(model instanceof AbstractUserModel) {

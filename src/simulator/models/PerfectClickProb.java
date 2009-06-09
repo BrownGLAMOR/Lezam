@@ -146,9 +146,8 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 
 		Ad ad = _adType.get(advertiser).get(_query);
 		double bid = _bids.get(advertiser).get(_query);
-		boolean generic = ad.isGeneric();
 		double ftarg = 1.0;
-		if(!generic) {
+		if(ad != null && !ad.isGeneric()) {
 			/*
 			 * On average we get our target effect 1 in 9 times
 			 */
@@ -187,9 +186,8 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 
 			ad = _adType.get(advertiser).get(_query);
 			bid = _bids.get(advertiser).get(_query);
-			generic = ad.isGeneric();
 			ftarg = 1.0;
-			if(!generic) {
+			if(ad != null && !ad.isGeneric()) {
 				/*
 				 * On average we get our target effect 1 in 9 times
 				 */

@@ -300,7 +300,7 @@ public abstract class SimAbstractAgent extends Agent {
      *
      * @param queryReport the daily query report.
      */
-    protected void handleQueryReport(QueryReport queryReport) {
+    public void handleQueryReport(QueryReport queryReport) {
         _queryReports.add(queryReport);
         _queryReport = queryReport;
     }
@@ -311,7 +311,7 @@ public abstract class SimAbstractAgent extends Agent {
      *
      * @param salesReport the daily sales report.
      */
-    protected void handleSalesReport(SalesReport salesReport) {
+    public void handleSalesReport(SalesReport salesReport) {
         _salesReports.add(salesReport);
         _salesReport = salesReport;
     }

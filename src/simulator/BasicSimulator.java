@@ -144,15 +144,37 @@ public class BasicSimulator {
 	
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, String agentIn, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
+		SimAbstractAgent agent = stringToAgent(agentIn);
 		initializeBasicInfo(status, advertiseridx);
+		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
+		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
+		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
+		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
+		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
+		agent.initBidder();
+		agent.initModels();
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
 			reportsListMap.put(_agents[i], reports);
 		}
 		int firstDay = 0;
+
 		for(int day = firstDay; day < 60; day++) {
-			 initializeDaySpecificInfo(day, advertiseridx);
-			 HashMap<String, Reports> maps = runSimulation(agentIn);
+
+			if(day >= 2) {
+				/*
+				 * Two day delay
+				 */
+				//Why is there one less query report?
+				SalesReport salesReport = status.getSalesReports().get(_agents[advertiseridx]).get(day-2);
+				if(day != 59) {
+					QueryReport queryReport = status.getQueryReports().get(_agents[advertiseridx]).get(day-2);
+					agent.handleQueryReport(queryReport);
+				}
+				agent.handleSalesReport(salesReport);
+			}
+			initializeDaySpecificInfo(day, advertiseridx);
+			 HashMap<String, Reports> maps = runSimulation(agent);
 			 
 			 /*
 			  * Keep track of capacities
@@ -356,27 +378,11 @@ public class BasicSimulator {
 	}
 
 	/*
-	 * Initializes a bidding agent with the proper models
-	 */
-	public SimAbstractAgent intializeBidder(SimAbstractAgent agentToRun) {
-		agentToRun.setDay(_day);
-		agentToRun.sendSimMessage(new Message("doesn't","matter",_pubInfo));
-		agentToRun.sendSimMessage(new Message("doesn't","matter",_slotInfo));
-		agentToRun.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
-		agentToRun.sendSimMessage(new Message("doesn't","matter",_slotInfo));
-		agentToRun.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		agentToRun.initBidder();
-		agentToRun.initModels();
-		return agentToRun;
-	}
-
-	/*
 	 * Gets the bids from the agent using perfect models
 	 */
 	public BidBundle getBids(SimAbstractAgent agentToRun) {
 		Set<AbstractModel> models = generatePerfectModels();
-		SimAbstractAgent agent = intializeBidder(agentToRun);
-		BidBundle bundle = agent.getBidBundle(models);
+		BidBundle bundle = agentToRun.getBidBundle(models);
 		for(Query query : _querySpace) {
 			debug(query+" :");
 			debug("\t" + bundle.getBid(query));
@@ -648,7 +654,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/Users/jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim51.slg";
+		String filename = "/u/jberg/localhost_sim75.slg";
 		int advId = 7;
 		int day = 30;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -657,7 +663,7 @@ public class BasicSimulator {
 		int numSims = 1;
 		sim.initializeBasicInfo(status,advId);
 		for(int i = 0; i < numSims; i++) {
-			sim.runFullSimulation(status, "Cheap",advId);
+			sim.runFullSimulation(status, "MCKP",advId);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
