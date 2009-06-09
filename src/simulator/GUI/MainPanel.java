@@ -47,11 +47,11 @@ public class MainPanel  extends JPanel {
 	private JPanel simsPanel;
 	private JSlider simSlider;
 	private Dimension _prefSize;
-	private HashMap<String, LinkedList<LinkedList<Reports>>> _allReportsLists;
+	private LinkedList<LinkedList<Reports>> _reportsList;
 	private BasicSimulator _simulator;
 	private JLabel lblChart;
 
-	public MainPanel(SimulatorGUI simulatorGUI, BasicSimulator simulator, GameStatus status, String agentIn, String agentOut, int numSims, Dimension prefSize, HashMap<String,LinkedList<LinkedList<Reports>>> allReportsLists) {
+	public MainPanel(SimulatorGUI simulatorGUI, BasicSimulator simulator, GameStatus status, String agentIn, String agentOut, int numSims, Dimension prefSize, LinkedList<LinkedList<Reports>> reportsList) {
 		super();
 		BoxLayout layout = new BoxLayout(this,BoxLayout.PAGE_AXIS);
 		this.setLayout(layout);
@@ -62,7 +62,7 @@ public class MainPanel  extends JPanel {
 		_agentOut = agentOut;
 		_numSims = numSims;
 		_prefSize = prefSize;
-		_allReportsLists = allReportsLists;
+		_reportsList = reportsList;
 		
 		simsPanel = new JPanel(new FlowLayout());
 		String[] numSimsStrings = { "Average Simulation", "Specific Simulation" };
@@ -103,48 +103,44 @@ public class MainPanel  extends JPanel {
 		this.add(chartPanel);
 		this.add(newParsePanel);
 	}
-	
-	public JFreeChart fullSimProfitsChart(HashMap<String, LinkedList<LinkedList<Reports>>> reportsLists, int simNum) {
+
+	public JFreeChart fullSimProfitsChart(LinkedList<LinkedList<Reports>> list, int simNum) {
 		XYSeriesCollection xySeriesCollection = new XYSeriesCollection();
-		String[] advertisers = _gameStatus.getAdvertisers();
-		for(int i = 0; i < advertisers.length; i++) {
-			LinkedList<LinkedList<Reports>> reportsList = reportsLists.get(advertisers[i]);
-			LinkedList<Reports> reports = reportsList.get(simNum);
-			
-			/*
-			 * TODO
-			 * make our name display properly
-			 */
-			XYSeries series = new XYSeries(advertisers[i]);
-			double totProfit = 0.0;
-			for(int day = 0; day < reports.size(); day++) {
-				Reports report = reports.get(day);
-				SalesReport salesReport = report.getSalesReport();
-				QueryReport queryReport = report.getQueryReport();
-				double totRevenue = 0.0;
-				double totCost = 0.0;
-				for(Query query : _simulator.getQuerySpace()) {
-					totRevenue += salesReport.getRevenue(query);
-					totCost += queryReport.getCost(query);
-				}
-				totProfit = totProfit + totRevenue - totCost;
-				series.add(day, totProfit);
+		LinkedList<Reports> reports = list.get(simNum);
+
+		/*
+		 * TODO
+		 * make our name display properly
+		 */
+		XYSeries series = new XYSeries("US!");
+		double totProfit = 0.0;
+		for(int day = 0; day < reports.size(); day++) {
+			Reports report = reports.get(day);
+			SalesReport salesReport = report.getSalesReport();
+			QueryReport queryReport = report.getQueryReport();
+			double totRevenue = 0.0;
+			double totCost = 0.0;
+			for(Query query : _simulator.getQuerySpace()) {
+				totRevenue += salesReport.getRevenue(query);
+				totCost += queryReport.getCost(query);
 			}
-			xySeriesCollection.addSeries(series);
+			totProfit = totProfit + totRevenue - totCost;
+			series.add(day, totProfit);
 		}
+		xySeriesCollection.addSeries(series);
 		XYDataset xyDataset = xySeriesCollection;
 		JFreeChart chart = ChartFactory.createXYLineChart
-		                     ("Simulation " + (simNum+1),  // Title
-		                      "Day",           // X-Axis label
-		                      "Profit",           // Y-Axis label
-		                      xyDataset,          // Dataset
-		                      PlotOrientation.VERTICAL,
-		                      true,
-		                      true,
-		                      true);
+		("Simulation " + (simNum+1),  // Title
+				"Day",           // X-Axis label
+				"Profit",           // Y-Axis label
+				xyDataset,          // Dataset
+				PlotOrientation.VERTICAL,
+				true,
+				true,
+				true);
 		return chart;
 	}
-	
+
 	class RechooseFileButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			_simulatorGUI.resetFile();
@@ -161,7 +157,7 @@ public class MainPanel  extends JPanel {
 		    else if (simSelection == "Specific Simulation") {
 		    		sim = simSlider.getValue() - 1;
 		    }
-			JFreeChart chart = fullSimProfitsChart(_allReportsLists,sim);
+			JFreeChart chart = fullSimProfitsChart(_reportsList,sim);
 			BufferedImage image = chart.createBufferedImage((_prefSize.width*4)/5,(_prefSize.height*4)/5);
 			lblChart.setIcon(new ImageIcon(image));
 		}

@@ -23,25 +23,25 @@ public class Cheap extends SimAbstractAgent {
 			double queryBid;
 			double queryBudget;
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO){
-				queryBid = 1.2;
+				queryBid = .7;
 				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
+				queryBid = 1.0;
+				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+					queryBid = 1.2;
+				}
+				queryBudget = dailyCap;
+			}
+			else {
 				queryBid = 1.5;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 					queryBid = 2;
 				}
 				queryBudget = dailyCap;
 			}
-			else {
-				queryBid = 2.3;
-				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					queryBid = 3;
-				}
-				queryBudget = dailyCap;
-			}
 			bidBundle.addQuery(q, queryBid, null);
-			bidBundle.setDailyLimit(q, queryBudget);
+			bidBundle.setDailyLimit(q, Double.NaN);
 		}
 		
 		return bidBundle;
@@ -62,6 +62,12 @@ public class Cheap extends SimAbstractAgent {
 	@Override
 	protected void updateModels(SalesReport salesReport,
 			QueryReport queryReport, Set<AbstractModel> models) {
+		for(Query query : _querySpace)  {
+			System.out.println(query);
+			System.out.println("\tNum Impressions: " + queryReport.getImpressions(query));
+			System.out.println("\tNum Clicks: " + queryReport.getClicks(query));
+			System.out.println("\tAverage Position: " + queryReport.getPosition(query));
+		}
 		//No models used
 	}
 

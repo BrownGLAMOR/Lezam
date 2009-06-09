@@ -43,7 +43,7 @@ public class test {
 	 */
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
 		
-		String filename = "/Users/Jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim1.slg";
+		String filename = "/Users/Jordan/Desktop/Class/CS2955/Server/ver0.9.5/logs/sims/localhost_sim51.slg";
 	    InputStream inputStream = new FileInputStream(filename);
     	GameLogParser parser = new GameLogParser(new LogReader(inputStream));
         parser.start();

@@ -64,7 +64,7 @@ public class PerfectPositionToBid extends AbstractSlotToBidModel {
 			}
 		}
 		Collections.sort(bids,Collections.reverseOrder());
-		int pos = (int) Math.ceil((Double) slot);
+		int pos = (int) Math.ceil((Double) slot)-1;
 		double bidtobeat = bids.get(pos);
 		double bid = bidtobeat / Math.pow(_ourAdEffect, _squashing);
 		return bid+.01;

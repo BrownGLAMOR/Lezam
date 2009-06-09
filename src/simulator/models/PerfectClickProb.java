@@ -1,5 +1,9 @@
 package simulator.models;
 
+/*
+ * DISCOUONT FOR IS USERS
+ */
+
 /**
  * @author jberg
  *
@@ -9,8 +13,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
+import simulator.AgentBidPair;
+import simulator.SimAgent;
+import usermodel.UserState;
+
 import newmodels.AbstractModel;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
+import newmodels.usermodel.AbstractUserModel;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
@@ -24,16 +33,24 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 	/*
 	 * TODO
 	 * Change to make sure that our bids are not in the bids array!!!
+	 * 
+	 * Make overcap reflect what we are passing it
+	 * 
+	 * Figure out some way of estimating how overcapacity each person is based on how over capacity they are now
+	 * (we will probably need more data, specifically there actual daily alotted capacity (_capacity/window), and 
+	 * the sales from 5 days ago
+	 * 
 	 */
 	
 	private double LAMBDA = .995;
 	private String[] _agents;
+	private double[] _clickPr;
 	private HashMap<String,HashMap<Query,Double>> _bids;
 	private HashMap<String,HashMap<Query,Double>> _advEffect;
 	private HashMap<Query, Double> _contProb;
 	private HashMap<String, HashMap<Query, Ad>> _adType;
-	private HashMap<String, String> _compbonus;
-	private HashMap<String, Integer> _overCap;
+	private HashMap<String, String> _compSpecialties;
+	private HashMap<String, Integer[]> _salesOverWindow;
 	private double _ourAdEffect;
 	private double _squashing;
 	private int _numSlots;
@@ -42,14 +59,17 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 	private double _targEffect;
 	private double _promSlotBonus;
 	private int _ourAdvIdx;
+	private HashMap<String, Integer> _capacities;
+	private AbstractUserModel _userModel;
 	
 	public PerfectClickProb(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
 			HashMap<String,HashMap<Query,Double>> advEffect,
 			HashMap<Query,Double> contProb,
 			HashMap<String,HashMap<Query,Ad>> adType,
-			HashMap<String,String> compBonus,
-			HashMap<String,Integer> overCap,
+			HashMap<String,String> compSpecialties,
+			HashMap<String, Integer[]> salesOverWindow,
+			HashMap<String, Integer> capacities,
 			double ourAdEffect,
 			double squashing,
 			int numPromSlots,
@@ -58,6 +78,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 			double targEffect,
 			double promSlotBonus,
 			int ourAdvIdx,
+			AbstractUserModel userModel,
 			Query query) {
 		
 		super(query);
@@ -66,8 +87,9 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		_advEffect = advEffect;
 		_contProb = contProb;
 		_adType = adType;
-		_compbonus = compBonus;
-		_overCap = overCap;
+		_compSpecialties = compSpecialties;
+		_salesOverWindow = salesOverWindow;
+		_capacities = capacities;
 		_ourAdEffect = ourAdEffect;
 		_squashing = squashing;
 		_numPromSlots = numPromSlots;
@@ -76,78 +98,147 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		_targEffect = targEffect;
 		_promSlotBonus = promSlotBonus;
 		_ourAdvIdx = ourAdvIdx;
+		_userModel = userModel;
+		_clickPr = new double[_numSlots];
+		initializeProbablities();
 	}
 
-	@Override
-	public double getPrediction(double info) {
-		/*
-		 * Click Prob Models should take in a slot
-		 * and return the click probability
-		 */
-		double slot = (Double) info;
-		if(slot > _numSlots) {
-			return 0.0;
-		}
-		ArrayList<Double> bids = new ArrayList<Double>();
+	private void initializeProbablities() {
+		double contProb = _contProb.get(_query);
+		_clickPr[0] = _ourAdEffect;
+
+		ArrayList<Double> realBids = new ArrayList<Double>();
 		HashMap<Double,String> bidToAdv = new HashMap<Double,String>();
 		for(int i = 0; i < _agents.length; i++) {
 			if(i != _ourAdvIdx) {
 				double advEff = _advEffect.get(_agents[i]).get(_query);
 				double bid = _bids.get(_agents[i]).get(_query);
 				double realbid = Math.pow(advEff,_squashing)*bid;
-				bids.add(realbid);
+				realBids.add(realbid);
 				bidToAdv.put(realbid, _agents[i]);
 			}
 		}
+		
+		Collections.sort(realBids,Collections.reverseOrder());
+		
+		double users;
 
-		Collections.sort(bids,Collections.reverseOrder());
-		double clickprob = 1.0;
+		double baselineConvPr;
+		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			baselineConvPr = .1;
+			users = _userModel.getPrediction(UserState.F0);
+		}
+		else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+			baselineConvPr = .2;
+			users = _userModel.getPrediction(UserState.F1);
+		}
+		else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+			baselineConvPr = .3;users = _userModel.getPrediction(UserState.F2);
+		}
+		else {
+			throw new RuntimeException("Bad QuerySpace");
+		}
+		double ISUsers = _userModel.getPrediction(UserState.IS);
+		double ISUserDiscount = users/(users+(ISUsers/3));
+		baselineConvPr *= ISUserDiscount*.75;
+		
+		String advertiser = bidToAdv.get(realBids.get(0));
 
-		for(int i = 0; i < slot; i++) {
-			double bid = bids.get(i);
-			String adv = bidToAdv.get(bid);
-			double advEffect = _advEffect.get(adv).get(_query);
-			double contProb = _contProb.get(_query);
-			Ad ad = _adType.get(adv).get(_query);
-			int overCap = _overCap.get(adv);
-			boolean generic = ad.isGeneric();
-			double ftarg = 1.0;
+		Ad ad = _adType.get(advertiser).get(_query);
+		double bid = _bids.get(advertiser).get(_query);
+		boolean generic = ad.isGeneric();
+		double ftarg = 1.0;
+		if(!generic) {
+			/*
+			 * On average we get our target effect 1 in 9 times
+			 */
+			ftarg = ((1+_targEffect) + 8*(1/(1+_targEffect)))/9;
+		}
+		double fpro = 1.0;
+		if(_numPromSlots > 0 && bid >= _proReserve) {
+			fpro = 1 + _promSlotBonus;
+		}
+		
+		double prevClickPr = eta(_advEffect.get(advertiser).get(_query),ftarg*fpro);
+		
+		Integer[] sales = _salesOverWindow.get(advertiser);
+		double prevConvs = 0;
+		int avgSales = 0;
+		for(int j = 0; j < sales.length; j++) {
+			avgSales += sales[j];
+			if(j != sales.length-1) {
+				prevConvs += sales[j];
+			}
+		}
+		avgSales /= sales.length;
+		double avgLambda = 0.0;
+		for(int j = 0; j < avgSales; j++) {
+			avgLambda += Math.pow(LAMBDA,prevConvs + avgSales - _capacities.get(advertiser));
+		}
+		avgLambda /= avgSales;
+		double compBonus = 1;
+		if(_compSpecialties.get(advertiser).equals(_query.getComponent())) {
+			compBonus += _targEffect;
+		}
+		double prevConvPr = eta(baselineConvPr*avgLambda,compBonus);
+
+		for(int i = 1; i < _numSlots; i++) {
+			advertiser = bidToAdv.get(realBids.get(i));
+
+			ad = _adType.get(advertiser).get(_query);
+			bid = _bids.get(advertiser).get(_query);
+			generic = ad.isGeneric();
+			ftarg = 1.0;
 			if(!generic) {
 				/*
 				 * On average we get our target effect 1 in 9 times
 				 */
 				ftarg = ((1+_targEffect) + 8*(1/(1+_targEffect)))/9;
 			}
-			double fpro = 1.0;
-			if(i < _numPromSlots && bid >= _proReserve) {
+			fpro = 1.0;
+			if(i < _numSlots && bid >= _proReserve) {
 				fpro = 1 + _promSlotBonus;
 			}
-			double baseline = eta(advEffect,ftarg*fpro);
-			baseline *= Math.pow(contProb, i);
-			if(i == 0) {
-				clickprob *= baseline;
-				continue;
+			
+			double clickPr = eta(_advEffect.get(advertiser).get(_query),ftarg*fpro)*Math.pow(contProb, i)*(1-prevConvPr*prevClickPr);
+			prevClickPr = clickPr;
+			_clickPr[i] = clickPr;
+			
+			sales = _salesOverWindow.get(advertiser);
+			prevConvs = 0;
+			avgSales = 0;
+			for(int j = 0; j < sales.length; j++) {
+				avgSales += sales[j];
+				if(j != sales.length-1) {
+					prevConvs += sales[j];
+				}
 			}
-			else {
-				double convProb;
-				if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-					convProb = .1;
-				}
-				else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-					convProb = .2;
-				}
-				else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-					convProb = .3;
-				}
-				else {
-					throw new RuntimeException("Bad QuerySpace");
-				}
-//				convProb *= Math.pow(LAMBDA,overCap);
-				clickprob = baseline*(1 - clickprob*convProb);
+			avgSales /= sales.length;
+			avgLambda = 0.0;
+			for(int j = 0; j < avgSales; j++) {
+				avgLambda += Math.pow(LAMBDA,prevConvs + avgSales - _capacities.get(advertiser));
 			}
+			avgLambda /= avgSales;
+			compBonus = 1;
+			if(_compSpecialties.get(advertiser).equals(_query.getComponent())) {
+				compBonus += _targEffect;
+			}
+			prevConvPr = eta(baselineConvPr*avgLambda,compBonus);
 		}
-		
-		return clickprob;
+	}
+
+	@Override
+	public double getPrediction(double slot) {
+		slot -= 1;
+		int min = (int) Math.floor(slot);
+		int max = (int) Math.ceil(slot);
+		if(min == max) {
+			return _clickPr[min];
+		}
+		else {
+			double avg = (slot - min) * _clickPr[min] + (max - slot) * _clickPr[max];
+			return avg;
+		}
 	}
 
 	@Override

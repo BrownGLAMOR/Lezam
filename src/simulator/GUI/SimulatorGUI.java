@@ -40,7 +40,7 @@ public class SimulatorGUI extends JFrame {
 
 	public SimulatorGUI() {
 		super("TAC AA Simulator");
-		prefSize = new Dimension(800,600);
+		prefSize = new Dimension(1280,800);
 		this.setSize(prefSize);
 		this.setPreferredSize(prefSize);
 		this.setLayout(new FlowLayout());
@@ -76,34 +76,14 @@ public class SimulatorGUI extends JFrame {
 			}
 		}
 
-		HashMap<String, LinkedList<LinkedList<Reports>>> allReportsLists = new HashMap<String, LinkedList<LinkedList<Reports>>>();
-		
-		for(int i = 0; i < advertisers.length; i++) {
-			/*
-			 * First index is for simulation #, second index is for day
-			 */
-			LinkedList<LinkedList<Reports>> reportsLists = new LinkedList<LinkedList<Reports>>();
-			for(int j = 0; j < _numSims; j++) {
-				LinkedList<Reports> reportsList = new LinkedList<Reports>();
-				reportsLists.add(reportsList);
-			}
-				allReportsLists.put(advertisers[i], reportsLists);
-		}
+		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		
 		for(int i = 0; i < _numSims; i++) {
-			for(int day = 2; day <= 59; day++) {
-				_simulator.initializeGameState(_gameStatus, day, advIdx);
-				ArrayList<SimAgent> agents = _simulator.runSimulation(agentIn);
-				for(SimAgent agent : agents) {
-					String agentID = agent.getAdvId();
-					LinkedList<LinkedList<Reports>>	reportsLists = allReportsLists.get(agentID);
-					LinkedList<Reports> reportsList = reportsLists.get(i);
-					reportsList.add(new Reports(agent.buildQueryReport(),agent.buildSalesReport()));
-				}
-			}
+			HashMap<String, LinkedList<Reports>> maps = _simulator.runFullSimulation(_gameStatus, advIdx);
+			reportsList.add(maps.get(advertisers[advIdx]));
 		}
 		
-		MainPanel mainPanel = new MainPanel(this,_simulator,_gameStatus,_agentIn,_agentOut,_numSims, prefSize,allReportsLists);
+		MainPanel mainPanel = new MainPanel(this,_simulator,_gameStatus,_agentIn,_agentOut,_numSims, prefSize,reportsList);
 		switchFrames(mainPanel);
 	}
 

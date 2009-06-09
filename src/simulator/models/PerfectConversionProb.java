@@ -50,20 +50,20 @@ public class PerfectConversionProb extends AbstractPrConversionModel {
 		double users;
 		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 			baselineconv = .1;
-			users = (Double) _userModel.getPrediction(UserState.F0);
+			users = _userModel.getPrediction(UserState.F0);
 		}
 		else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
 			baselineconv = .2;
-			users = (Double) _userModel.getPrediction(UserState.F1);
+			users = _userModel.getPrediction(UserState.F1);
 		}
 		else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
 			baselineconv = .3;
-			users = (Double) _userModel.getPrediction(UserState.F2);
+			users = _userModel.getPrediction(UserState.F2);
 		}
 		else {
 			throw new RuntimeException("Bad Query");
 		}
-		double ISUsers = (Double) _userModel.getPrediction(UserState.IS);
+		double ISUsers = _userModel.getPrediction(UserState.IS);
 		double ISUserDiscount = users/(users+(ISUsers/3));
 		double capDiscount = Math.pow(LAMBDA ,amountOverCap);
 		double convRate = baselineconv*capDiscount*ISUserDiscount;

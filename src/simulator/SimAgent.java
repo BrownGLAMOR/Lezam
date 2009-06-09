@@ -16,7 +16,7 @@ public class SimAgent {
 	private double _totBudget;
 	private HashMap<Query, Double> _advEffect;
 	private HashMap<Query, Ad> _adType;
-	private int _oneDayCap;
+	private Integer[] _salesOverWindow;
 	private String _manSpecialty;
 	private String _compSpecialty;
 	private double _squashing;
@@ -35,13 +35,16 @@ public class SimAgent {
 	private double _totCost;
 	private double _totRevenue;
 	private String _advId;
+	private int _capacity;
+	private int _prevConvs;
 
 	public SimAgent(HashMap<Query,Double> bids,
 					HashMap<Query,Double> budgets,
 					double totBudget,
 					HashMap<Query,Double> advEffect,
 					HashMap<Query,Ad> adType,
-					int oneDayCap,
+					Integer[] salesOverWindow,
+					int capacity,
 					String manSpecialty,
 					String compSpecialty,
 					String advId,
@@ -52,7 +55,8 @@ public class SimAgent {
 		_totBudget = totBudget;
 		_advEffect = advEffect;
 		_adType = adType;
-		_oneDayCap = oneDayCap;
+		_salesOverWindow = salesOverWindow;
+		_capacity = capacity;
 		_manSpecialty = manSpecialty;
 		_compSpecialty = compSpecialty;
 		_advId = advId;
@@ -81,6 +85,11 @@ public class SimAgent {
 			_promImps.put(query,0);
 			_posSum.put(query, 0.0);
 		}
+		_prevConvs = 0;
+		for(int i = 0; i < _salesOverWindow.length-1; i++) {
+			_prevConvs += _salesOverWindow[i];
+		}
+		
 	}
 	
 	public double getSquashedBid(Query query) {
@@ -172,12 +181,8 @@ public class SimAgent {
 	}
 	
 	public int getOverCap() {
-		if(_totUnitsSold > _oneDayCap) {
-			return _totUnitsSold - _oneDayCap;
-		}
-		else {
-			return 0;
-		}
+		int overCap = _prevConvs + _totUnitsSold - _capacity;
+		return Math.max(overCap,0);
 	}
 	
 	public double getTotCost() {
