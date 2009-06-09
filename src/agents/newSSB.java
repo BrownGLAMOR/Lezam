@@ -76,7 +76,7 @@ public class newSSB extends SimAbstractAgent{
 			buff.append("\t").append("Spend Limit: ").append(setQuerySpendLimit(query)).append("\n");
 			buff.append("\t").append("Slot: ").append(_queryReport.getPosition(query)).append("\n");
 			System.out.print(buff);
-			output.append(buff);
+			//output.append(buff);
 			
 		}
 	   output.flush();
@@ -115,13 +115,13 @@ public class newSSB extends SimAbstractAgent{
 		}
 		
 		
-		
+		/*
 		try {
 			output = new PrintStream(new File("log.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		} */
 		
 		
 		_bidBundle = new BidBundle();
