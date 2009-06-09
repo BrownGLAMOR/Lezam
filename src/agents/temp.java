@@ -107,7 +107,7 @@ public class temp extends SimAbstractAgent{
 
 	@Override
 	protected void updateModels(SalesReport salesReport,
-			QueryReport queryReport, Set<AbstractModel> models) {
+			QueryReport queryReport) {
 		// TODO Auto-generated method stub
 		
 	}

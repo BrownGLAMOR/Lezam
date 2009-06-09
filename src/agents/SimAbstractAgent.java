@@ -284,7 +284,7 @@ public abstract class SimAbstractAgent extends Agent {
     		initBidder();
     	}
     	if(_day >= 2) {
-    		updateModels(_salesReport, _queryReport, _models);
+    		updateModels(_salesReport, _queryReport);
     	}
         BidBundle bidBundle = getBidBundle(_models);
         String publisherAddress = _advertiserInfo.getPublisherId();
@@ -435,9 +435,7 @@ public abstract class SimAbstractAgent extends Agent {
      * This will be called once each day before getBidBundle to update all the models
      * that the agent needs to make a bid bundle
      */
-    protected abstract void updateModels(SalesReport salesReport,
-    													QueryReport queryReport,
-    													Set<AbstractModel> models);
+    protected abstract void updateModels(SalesReport salesReport,QueryReport queryReport);
     
     /*
      * This method will be run once at the beginning of each simulation to initialize the

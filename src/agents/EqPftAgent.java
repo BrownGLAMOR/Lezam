@@ -269,8 +269,7 @@ public class EqPftAgent extends SimAbstractAgent {
 	}
 
 	@Override
-	protected void updateModels(SalesReport salesReport,
-			QueryReport queryReport, Set<AbstractModel> models) {
+	protected void updateModels(SalesReport salesReport) {
 		// Not used		
 	}
 

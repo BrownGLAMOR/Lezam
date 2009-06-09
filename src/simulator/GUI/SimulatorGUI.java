@@ -79,7 +79,7 @@ public class SimulatorGUI extends JFrame {
 		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		
 		for(int i = 0; i < _numSims; i++) {
-			HashMap<String, LinkedList<Reports>> maps = _simulator.runFullSimulation(_gameStatus, advIdx);
+			HashMap<String, LinkedList<Reports>> maps = _simulator.runFullSimulation(_gameStatus, agentIn, advIdx);
 			reportsList.add(maps.get(advertisers[advIdx]));
 		}
 		

@@ -325,10 +325,9 @@ public class ILPAgent extends SimAbstractAgent{
 
 	@Override
 	protected void updateModels(SalesReport salesReport,
-			QueryReport queryReport,
-			Set<AbstractModel> models) {
+			QueryReport queryReport) {
 
-		for(AbstractModel model:models) {
+		for(AbstractModel model:_models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
 				userModel.updateModel(queryReport, salesReport);

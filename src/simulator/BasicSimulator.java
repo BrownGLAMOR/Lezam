@@ -141,7 +141,7 @@ public class BasicSimulator {
 
 	private HashMap<String, AdvertiserInfo> _advInfos;
 	
-	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, int advertiseridx) {
+	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, String agentIn, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		for(int i = 0; i < _agents.length; i++) {
@@ -151,7 +151,7 @@ public class BasicSimulator {
 		int firstDay = 0;
 		for(int day = firstDay; day < 60; day++) {
 			 initializeDaySpecificInfo(day, advertiseridx);
-			 HashMap<String, Reports> maps = runSimulation(_agents[advertiseridx]);
+			 HashMap<String, Reports> maps = runSimulation(agentIn);
 			 
 			 /*
 			  * Keep track of capacities
@@ -653,7 +653,7 @@ public class BasicSimulator {
 		int numSims = 1;
 		sim.initializeBasicInfo(status,advId);
 		for(int i = 0; i < numSims; i++) {
-			sim.runFullSimulation(status, advId);
+			sim.runFullSimulation(status, "Cheap",advId);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
