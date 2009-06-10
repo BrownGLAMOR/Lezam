@@ -37,6 +37,9 @@ public class newSSB extends SimAbstractAgent{
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		// TODO Auto-generated method stub
+		if(_salesReport == null || _queryReport == null) {
+			return new BidBundle();
+		}
 		_unitsSoldModel.update(_salesReport);
 		
 		for (Query query : _querySpace) {
@@ -65,21 +68,21 @@ public class newSSB extends SimAbstractAgent{
 			
 			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 			
-			//print out the properties
-			StringBuffer buff = new StringBuffer("");
-			buff.append("\t").append("day").append(counter).append("\n");
-			buff.append("\t").append("product: ").append(query.getManufacturer()).append(", ").append(query.getComponent());
-			buff.append("\t").append("bid: ").append(getQueryBid(query)).append("\n");
-			buff.append("\t").append("Conversion: ").append(_conversionPrModel.get(query)).append("\n");
-			buff.append("\t").append("ReinvestFactor: ").append(_reinvestment.get(query)).append("\n");
-			buff.append("\t").append("ConversionRevenue: ").append(_revenue.get(query)).append("\n");
-			buff.append("\t").append("Spend Limit: ").append(setQuerySpendLimit(query)).append("\n");
-			buff.append("\t").append("Slot: ").append(_queryReport.getPosition(query)).append("\n");
-			System.out.print(buff);
-			//output.append(buff);
+//			//print out the properties
+//			StringBuffer buff = new StringBuffer("");
+//			buff.append("\t").append("day").append(counter).append("\n");
+//			buff.append("\t").append("product: ").append(query.getManufacturer()).append(", ").append(query.getComponent());
+//			buff.append("\t").append("bid: ").append(getQueryBid(query)).append("\n");
+//			buff.append("\t").append("Conversion: ").append(_conversionPrModel.get(query)).append("\n");
+//			buff.append("\t").append("ReinvestFactor: ").append(_reinvestment.get(query)).append("\n");
+//			buff.append("\t").append("ConversionRevenue: ").append(_revenue.get(query)).append("\n");
+//			buff.append("\t").append("Spend Limit: ").append(setQuerySpendLimit(query)).append("\n");
+//			buff.append("\t").append("Slot: ").append(_queryReport.getPosition(query)).append("\n");
+//			System.out.print(buff);
+//			//output.append(buff);
 			
 		}
-	   output.flush();
+//	   output.flush();
 	   counter++;
 		return _bidBundle;
 	}

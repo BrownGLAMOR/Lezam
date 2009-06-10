@@ -70,7 +70,7 @@ public class EqPftAgent extends SimAbstractAgent {
 		
 		// initialize models
 		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_distributionCapacity, _distributionWindow);
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace,_distributionCapacity, _distributionWindow);
 		
 		_revenueModels = new HashMap<Query, RevenueMovingAvg>(); 
 		for (Query query : _querySpace) {

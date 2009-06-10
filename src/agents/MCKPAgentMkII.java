@@ -314,7 +314,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			}
 		}
 		
-		budget *= 2;
+		budget *= 2.75;
 		
 		while(budget > 0) {
 			/*

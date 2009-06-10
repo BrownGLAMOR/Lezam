@@ -383,6 +383,7 @@ public class MainPanel  extends JPanel {
 		for(int day = 0; day < list.get(0).size(); day++) {
 			series.add(day, avgConvs[day], minConvs[day], maxConvs[day]);
 		}
+
 		yIntervalSeriesColl.addSeries(series);
 		XYDataset xyDataset = yIntervalSeriesColl;
 		JFreeChart chart = ChartFactory.createXYLineChart
