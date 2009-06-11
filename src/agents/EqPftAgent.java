@@ -56,7 +56,7 @@ public class EqPftAgent extends SimAbstractAgent {
 		
 		// initialize strategy related variables
 		
-		double initProfitMargin = .8;
+		double initProfitMargin = .5;
 		_profitMargins = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_profitMargins.put(query, initProfitMargin);
@@ -70,7 +70,7 @@ public class EqPftAgent extends SimAbstractAgent {
 		
 		// initialize models
 		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace,_distributionCapacity, _distributionWindow);
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
 		
 		_revenueModels = new HashMap<Query, RevenueMovingAvg>(); 
 		for (Query query : _querySpace) {
@@ -139,17 +139,16 @@ public class EqPftAgent extends SimAbstractAgent {
 			double avgProfit = this.getAvgProfit();
 			
 			if (latestProfit > avgProfit) {	
-				if (_salesReport.getConversions(query) > _desiredSales.get(query)) 
-					_desiredSales.put(query, _desiredSales.get(query)*2);
+				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query)<=1.1) 
+					_desiredSales.put(query, _desiredSales.get(query)*1.25);
 			}
 			else {
 				if (_salesReport.getConversions(query) < _desiredSales.get(query))
-					_desiredSales.put(query, _desiredSales.get(query)*0.5);
+					_desiredSales.put(query, _desiredSales.get(query)*0.8);
 			}
 			
-			if (_unitsSoldModel.getEstimate() < .8*_distributionCapacity/_distributionWindow
-				||(_unitsSoldModel.getEstimate() < 1.5*_distributionCapacity/_distributionWindow && _salesReport.getConversions(query) < _desiredSales.get(query))
-				|| _queryReport.getPosition(query) == Double.NaN) {
+			if (_salesReport.getConversions(query) < _desiredSales.get(query)||
+				_queryReport.getPosition(query) == Double.NaN) {
 				double newProfitMargin;
 				if (latestProfit > avgProfit)
 					//newProfitMargin = Math.min(avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModels.get(query).getPrediction()),
@@ -160,14 +159,13 @@ public class EqPftAgent extends SimAbstractAgent {
 				newProfitMargin = Math.max(0.01, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
 			}
-			else if (_unitsSoldModel.getEstimate() > 1.2*_distributionCapacity/_distributionWindow || 
-					(_unitsSoldModel.getEstimate() > .5*_distributionCapacity/_distributionWindow && _salesReport.getConversions(query) > _desiredSales.get(query))) {
+			else if (_salesReport.getConversions(query) > _desiredSales.get(query)) {
 				double newProfitMargin;
 				if (latestProfit < avgProfit)
 					//newProfitMargin = Math.max(avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModels.get(query).getPrediction()),
 					//						_profitMargins.get(query)*1.1);
 					newProfitMargin = Math.max(avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModels.get(query).getPrediction(overcap)),_profitMargins.get(query)*1.1);
-				else newProfitMargin = _profitMargins.get(query)*1.3;
+				else newProfitMargin = _profitMargins.get(query);
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.01, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
@@ -260,9 +258,9 @@ public class EqPftAgent extends SimAbstractAgent {
 			buff.append("****************\n");
 		}
 		
-//		System.out.println(buff);
-//		output.append(buff);
-//		output.flush();
+		//System.out.println(buff);
+		output.append(buff);
+		output.flush();
 	
 	}
 
