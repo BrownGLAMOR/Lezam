@@ -26,7 +26,6 @@ public class newSSB extends SimAbstractAgent{
 	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
     protected HashMap<Query, Double> _reinvestment;
     protected HashMap<Query, Double> _revenue;
-    protected HashMap<Query, Double> _wantedSales;
     protected BidBundle _bidBundle;
     protected int counter = 1;
     
@@ -53,8 +52,6 @@ public class newSSB extends SimAbstractAgent{
 			//walk otherwise
 			walking(query);
 			
-			//adjust reinvestment factor and wanted sales
-			modify(query);
 			
 			//if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
 			if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
@@ -107,14 +104,6 @@ public class newSSB extends SimAbstractAgent{
 		for (Query query: _querySpace){
 			if (query.getManufacturer() == _manSpecialty) _revenue.put(query, 15.0);
 			else _revenue.put(query,10.0);
-		}
-		
-		//from JESOM2
-		double slice = _capacity/(20*_capWindow);
-		_wantedSales = new HashMap<Query,Double>();
-		for (Query query: _querySpace){
-			if(query.getManufacturer() == _manSpecialty) _wantedSales.put(query, 2*slice);
-			else _wantedSales.put(query, slice);
 		}
 		
 		
@@ -202,50 +191,11 @@ public class newSSB extends SimAbstractAgent{
    }
  
    
-   //from JESOM2
-   protected void modify(Query q){
-	   if(Double.isNaN(_queryReport.getCPC(q))) return; 
-	   double _conversionPr = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity);
-	   if(_queryReport.getClicks(q) < _wantedSales.get(q)/_conversionPr)
-	   {
-		   if(_queryReport.getPosition(q)< 4) _wantedSales.put(q,_wantedSales.get(q)*0.625);
-		   else{
-			   /*if(_wantedSales.get(q) < (_capacity - _unitsSoldModel.getWindowSold())/magicDivisor){
-				  double newReinvest = _reinvestment.get(q)*1.3 + .1;
-				  if(newReinvest >= 0.95) _reinvestment.put(q, 0.95);
-				  else _reinvestment.put(q,newReinvest);
-			   }*/
-		   }
-	   }
-	   else{
-		  if (_queryReport.getPosition(q) >= 4 || _queryReport.getCPC(q) < .2){
-			  _wantedSales.put(q,_wantedSales.get(q)*1.6);
-		  }
-		  else{
-			  /*
-			  double cpc = _queryReport.getCPC(q)-.01;
-		      double newReinvest = _queryReport.getCPC(q) / (_revenue.get(q) * _conversionPr);
-			  if(newReinvest >= 0.95) _reinvestment.put(q, 0.95);
-			  else _reinvestment.put(q,newReinvest);*/
-		  }
-	   }
-		
-	   
-   }
-   
-   //mix JESOM2 & SSB
 	protected double setQuerySpendLimit(Query q) {
-		
-		//from JESOM2
-		double conversionPr = _conversionPrModel. get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		double bid = getQueryBid(q);
-		double clicks = Math.max(1, _wantedSales.get(q)/conversionPr);
-		
+			
 		double remainCap = _capacity - _unitsSoldModel.getWindowSold();
 		if(remainCap < 0) remainCap = 0;
-		//if(_capacity == 500) return bid*remainCap/8;
-		//else return bid*clicks;
-		return Math.max(bid*remainCap/8,bid*clicks);
+		return getQueryBid(q)*remainCap/8;
 	}
 	
  
