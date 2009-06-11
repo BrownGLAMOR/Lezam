@@ -146,9 +146,9 @@ public class newJESOM2 extends SimAbstractAgent{
 			              }
 			        }
 			    }else{
-			  //if we sold more than what expected, and we got bad position, then lower the bid
+			  //if we sold more than what expected, and we got good position, then lower the bid
 			    	if(_queryReport.getClicks(q)*conversion >= _wantedSales.get(q)){
-			    		if(!(_queryReport.getPosition(q) < 4)){
+			    		if(_queryReport.getPosition(q) < 4){
 			    			newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
 							if(newHonest < 0.1) newHonest = 0.1;
 							_honestFactor.put(q,newHonest);
@@ -164,15 +164,11 @@ public class newJESOM2 extends SimAbstractAgent{
 		if(conversion >= _baseLineConversion.get(q)){
 		//if we sold less than what we expected, but we got good position, then lower our expectation
 		   if(_queryReport.getClicks(q)*conversion < _wantedSales.get(q)){
-			    if(!(_queryReport.getPosition(q)< 4)){
+			    if(_queryReport.getPosition(q)< 4){
 				   _wantedSales.put(q, _wantedSales.get(q)*.625);
-			     }
-			     //if we sold more than what we expected, and we got bad position, then increase our expectation
-			     if (!(_queryReport.getPosition(q) < 4)|| _queryReport.getCPC(q)< 0.2){
-				    _wantedSales.put(q,_wantedSales.get(q)*1.6);
-			     }
+			     }			     
 		    }else{
-		   //if we sold more than what we expected, and we got bad position, then increase our expectation
+		   //if we sold more than what we expected, but we got bad position, then increase our expectation
 			    if (!(_queryReport.getPosition(q) < 4)|| _queryReport.getCPC(q)< 0.2){
 				    _wantedSales.put(q,_wantedSales.get(q)*1.6);
 			    }
