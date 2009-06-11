@@ -29,7 +29,7 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	@Override
 	public double getWindowSold(){
 		double total = 0;
-		for (int i = 0; i < _distributionWindow - 1; i++) {
+		for (int i = 0; i < _distributionWindow - 2; i++) {
 			int index = _sold.size() - i - 1;
 			if (index >= 0) total += _sold.get(index);	
 		}
