@@ -23,39 +23,115 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class newJESOM2 extends SimAbstractAgent{
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
-	protected HashMap<Query, Double> _baselineConversion;
-    protected HashMap<Query, Double> _reinvestment;
+	protected HashMap<Query, Double> _baseLineConversion;
     protected HashMap<Query, Double> _revenue;
+    protected HashMap<Query, Double> _honestFactor;
     protected HashMap<Query, Double> _wantedSales;
+    
     protected BidBundle _bidBundle;
-    protected int counter = 1;
-    
+    //protected int counter = 1;
     protected double magicDivisor = 8;
-    
-	protected PrintStream output;
+    //protected PrintStream output;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		// TODO Auto-generated method stub
-		return null;
+		for(Query q: _querySpace){
+			//if we over-sold, lower our bid price to CPC
+		    double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+			if (conversion < _baseLineConversion.get(q)) {
+				double newHonestFactor = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
+				if(newHonestFactor < 0.1) _honestFactor.put(q, 0.1);
+				else _honestFactor.put(q,newHonestFactor);
+			}
+			else{
+			
+				if(_queryReport.getClicks(q)*conversion < _wantedSales.get(q)){
+			        //if we sold less than what we expected, but we got good position, then lower our expectation 
+			        if(_queryReport.getPosition(q) < 4){
+					    _wantedSales.put(q, _wantedSales.get(q)*.625);
+			         }	
+			        else{
+			       //if we sold less than what we expected, and we got bad position
+			        	//if wanted sales does not tend to go over capacity, then higher our bid
+			        	if(_wantedSales.get(q)< _capacity - _unitsSoldModel.getWindowSold())
+			        	      _honestFactor.put(q, _honestFactor.get(q)*1.3+.1);
+			        }
+				}
+				else{
+				   //if we sold more than what we expected, and we got bad position, then increase our expectation
+					if (!(_queryReport.getPosition(q) < 4)){
+						_wantedSales.put(q,_wantedSales.get(q)*1.6);
+					}
+					else{
+					//if we sold more than what expected, and we got bad position, then lower the bid
+						_honestFactor.put(q, (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion));
+					
+					}
+				}
+			}
+		     
+			if(q.getType() == QueryType.FOCUS_LEVEL_TWO)
+			{
+				_bidBundle.setBidAndAd(q, getQueryBid(q), new Ad(new Product(q.getManufacturer(), q.getComponent())));
+			}
+			else{
+				_bidBundle.setBid(q, getQueryBid(q));
+			}
+			_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
+	
+		}
+		return _bidBundle;
 	}
 
 	@Override
 	public void initBidder() {
 		// TODO Auto-generated method stub
-		_baselineConversion = new HashMap<Query, Double>();
+	    _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+		
+		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
+		for (Query query : _querySpace) {
+			_conversionPrModel.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
+		}
+		
+		_honestFactor = new HashMap<Query, Double>();
+		for(Query q: _querySpace){
+			_honestFactor.put(q, 0.75);
+		}
+		
+		_baseLineConversion = new HashMap<Query, Double>();
         for(Query q: _querySpace){
-        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConversion.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baseLineConversion.put(q, 0.1);
         	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-        		if(q.getComponent() == _compSpecialty) _baselineConversion.put(q, 0.27);
-        		else _baselineConversion.put(q, 0.2);
+        		if(q.getComponent() == _compSpecialty) _baseLineConversion.put(q, 0.27);
+        		else _baseLineConversion.put(q, 0.2);
         	}
         	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
-        		if(q.getComponent()== _compSpecialty) _baselineConversion.put(q, 0.39);
-        		else _baselineConversion.put(q,0.3);
+        		if(q.getComponent()== _compSpecialty) _baseLineConversion.put(q, 0.39);
+        		else _baseLineConversion.put(q,0.3);
         	}
         }
-				
+        
+        double slice = _capacity/(20*_capWindow);
+        _wantedSales = new HashMap<Query, Double>();
+        for(Query q:_querySpace){
+        	if(q.getManufacturer()== _manSpecialty) _wantedSales.put(q, 2*slice);
+        	else _wantedSales.put(q, slice);
+        	
+        }
+		
+    	_revenue = new HashMap<Query, Double>();
+		for (Query query: _querySpace){
+			if (query.getManufacturer() == _manSpecialty) _revenue.put(query, 15.0);
+			else _revenue.put(query,10.0);
+		}
+		
+		_bidBundle = new BidBundle();
+	    for (Query query : _querySpace) {
+			_bidBundle.setBid(query, getQueryBid(query));
+			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+		}
+		
 	}
 
 	@Override
@@ -68,6 +144,16 @@ public class newJESOM2 extends SimAbstractAgent{
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	protected double getQueryBid(Query q){
+	    return _revenue.get(q)*_honestFactor.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity);	
+	}
+	
+	protected double setQuerySpendLimit(Query q){
+		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+		double clicks = Math.max(1,_wantedSales.get(q) / conversion);
+		return getQueryBid(q)*clicks;
 	}
 	
 	}
