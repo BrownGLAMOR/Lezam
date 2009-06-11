@@ -38,11 +38,11 @@ public class newJESOM2 extends SimAbstractAgent{
 		// TODO Auto-generated method stub
 		for(Query q: _querySpace){
 			double newHonest;
-			handlePromotedSlot(q);
+			handleTopPosition(q);
 			//if we over-sold, lower our bid price to CPC
 		    double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
 			if (conversion < _baseLineConversion.get(q)) {
-				newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
+				newHonest = (_queryReport.getCPC(q)-1e-2)/(_revenue.get(q)*conversion);
 				if(newHonest < 0.1) _honestFactor.put(q, 0.1);
 				else _honestFactor.put(q,newHonest);
 			}
@@ -65,7 +65,7 @@ public class newJESOM2 extends SimAbstractAgent{
 				}
 				else{
 				   //if we sold more than what we expected, and we got bad position, then increase our expectation
-					if (!(_queryReport.getPosition(q) < 3) || Double.isNaN(_queryReport.getPosition(q))|| _queryReport.getCPC(q)< 0.2){
+					if (!(_queryReport.getPosition(q) < 3)|| _queryReport.getCPC(q)< 0.2){
 						_wantedSales.put(q,_wantedSales.get(q)*1.6);
 					}
 					else{
@@ -86,8 +86,8 @@ public class newJESOM2 extends SimAbstractAgent{
 				_bidBundle.setBid(q, getQueryBid(q));
 			}
 			_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
-	
-		}
+			
+			}
 		return _bidBundle;
 	}
 
@@ -103,7 +103,7 @@ public class newJESOM2 extends SimAbstractAgent{
 		
 		_honestFactor = new HashMap<Query, Double>();
 		for(Query q: _querySpace){
-			_honestFactor.put(q, 0.4);
+			_honestFactor.put(q, 0.75);
 		}
 		
 		_baseLineConversion = new HashMap<Query, Double>();
@@ -163,16 +163,15 @@ public class newJESOM2 extends SimAbstractAgent{
 		return getQueryBid(q)*clicks;
 	}
 	
-	protected void handlePromotedSlot(Query q){
+	protected void handleTopPosition(Query q){
 	   if(_queryReport.getPosition(q)==1){
-		   if(_queryReport.getCPC(q) <= 0.6*getQueryBid(q)){
+		   if(_queryReport.getCPC(q) <= 0.8*getQueryBid(q)){
 			   double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-			   double newHonest = (_queryReport.getCPC(q)*1.2)/(_revenue.get(q)*conversion);
+			   double newHonest = (_queryReport.getCPC(q) + 1e-2)/(_revenue.get(q)*conversion);
 			   if(newHonest < 0.1) _honestFactor.put(q, 0.1);
 			   else _honestFactor.put(q,newHonest);
 		   }
 	   }
 	}
 	
-	
-	}
+		}
