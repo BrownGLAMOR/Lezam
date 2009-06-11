@@ -45,13 +45,17 @@ public class newJESOM2 extends SimAbstractAgent{
 		// TODO Auto-generated method stub
 		_baselineConversion = new HashMap<Query, Double>();
         for(Query q: _querySpace){
-        	if(query>)
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConversion.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConversion.put(q, 0.27);
+        		else _baselineConversion.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConversion.put(q, 0.39);
+        		else _baselineConversion.put(q,0.3);
+        	}
         }
-		
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}  // constant set by game server info
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}  // constant set by game server info
-		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}  // 
-		
+				
 	}
 
 	@Override
