@@ -200,7 +200,8 @@ public class newSSB extends SimAbstractAgent{
 		      }
 	       }
    }
-  
+ 
+   
    //from JESOM2
    protected void modify(Query q){
 	   if(Double.isNaN(_queryReport.getCPC(q))) return; 
@@ -235,6 +236,7 @@ public class newSSB extends SimAbstractAgent{
    //mix JESOM2 & SSB
 	protected double setQuerySpendLimit(Query q) {
 		
+		//from JESOM2
 		double conversionPr = _conversionPrModel. get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
 		double bid = getQueryBid(q);
 		double clicks = Math.max(1, _wantedSales.get(q)/conversionPr);
