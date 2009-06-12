@@ -37,9 +37,11 @@ public class newJESOM2 extends SimAbstractAgent{
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		// TODO Auto-generated method stub
 		for(Query q: _querySpace){
+			double currentWantedSale = _wantedSales.get(q);
+			double currentHonestFactor = _honestFactor.get(q);
 			handleTopPosition(q);
-		    adjustHonestFactor(q);
-		    adjustWantedSales(q);
+		    adjustHonestFactor(q, currentWantedSale, currentWantedSale);
+		    adjustWantedSales(q,currentWantedSale);
 			if(q.getType() == QueryType.FOCUS_LEVEL_TWO)
 			{
 				_bidBundle.setBidAndAd(q, getQueryBid(q), new Ad(new Product(q.getManufacturer(), q.getComponent())));
@@ -65,7 +67,7 @@ public class newJESOM2 extends SimAbstractAgent{
 		
 		_honestFactor = new HashMap<Query, Double>();
 		for(Query q: _querySpace){
-			_honestFactor.put(q, 0.4);
+			_honestFactor.put(q, 0.75);
 		}
 		
 		_baseLineConversion = new HashMap<Query, Double>();
@@ -125,7 +127,7 @@ public class newJESOM2 extends SimAbstractAgent{
 		return getQueryBid(q)*clicks;
 	}
 
-	protected void adjustHonestFactor(Query q)
+	protected void adjustHonestFactor(Query q, double currentHonestFactor, double currentWantedSale)
     {
 		double newHonest;
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
@@ -137,17 +139,17 @@ public class newJESOM2 extends SimAbstractAgent{
 		}else{
 		  //if we sold less than what we expected, and we got bad position
      	  //and also wanted sales does not tend to go over capacity, then higher our bid
-			    if(_queryReport.getClicks(q)*conversion < _wantedSales.get(q)){
+			    if(_queryReport.getClicks(q)*conversion < currentWantedSale){
 			    	if(!(_queryReport.getPosition(q) < 4)){
-			             if(_wantedSales.get(q) < (_capacity - _unitsSoldModel.getWindowSold())/magicDivisor){
-        	                   newHonest = _honestFactor.get(q)*1.3 + .1;
+			             if(currentWantedSale < (_capacity - _unitsSoldModel.getWindowSold())/magicDivisor){
+        	                   newHonest = currentHonestFactor*1.3 + .1;
         		               if(newHonest >= 0.95) newHonest = 0.95;
         		               _honestFactor.put(q, newHonest);
 			              }
 			        }
 			    }else{
 			  //if we sold more than what expected, and we got good position, then lower the bid
-			    	if(_queryReport.getClicks(q)*conversion >= _wantedSales.get(q)){
+			    	if(_queryReport.getClicks(q)*conversion >= currentWantedSale){
 			    		if(_queryReport.getPosition(q) < 4){
 			    			newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
 							if(newHonest < 0.1) newHonest = 0.1;
@@ -159,24 +161,25 @@ public class newJESOM2 extends SimAbstractAgent{
 		 
 	}
 	
-	protected void adjustWantedSales(Query q){
+	protected void adjustWantedSales(Query q, double currentWantedSale){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
 		if(conversion >= _baseLineConversion.get(q)){
 		//if we sold less than what we expected, but we got good position, then lower our expectation
-		   if(_queryReport.getClicks(q)*conversion < _wantedSales.get(q)){
-			    if(_queryReport.getPosition(q)< 4){
-				   _wantedSales.put(q, _wantedSales.get(q)*.625);
-			     }			     
+		   if(_queryReport.getClicks(q)*conversion < currentWantedSale){
+			    if(_queryReport.getPosition(q)< 3){
+				   _wantedSales.put(q, currentWantedSale*.625);
+			    }
 		    }else{
 		   //if we sold more than what we expected, but we got bad position, then increase our expectation
-			    if (!(_queryReport.getPosition(q) < 4)|| _queryReport.getCPC(q)< 0.2){
-				    _wantedSales.put(q,_wantedSales.get(q)*1.6);
+			    if (!(_queryReport.getPosition(q) < 3)|| _queryReport.getCPC(q)< 0.2){
+				    _wantedSales.put(q,currentWantedSale*1.6);
 			    }
 		    }
 	}
 		
 	}
 	
+	//tend to avoid bidding too high
 	protected void handleTopPosition(Query q){
 		if(_queryReport.getPosition(q)==1){
 			if(_queryReport.getCPC(q)< 0.8*getQueryBid(q)){
