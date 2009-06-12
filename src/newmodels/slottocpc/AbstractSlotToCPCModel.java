@@ -26,5 +26,8 @@ public abstract class AbstractSlotToCPCModel extends AbstractModel {
 	
 	public abstract double getPrediction(double slot);
 	
+	public Query getQuery() {
+		return _query;
+	}
 
 }

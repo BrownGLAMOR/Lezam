@@ -1,10 +1,11 @@
 package newmodels.prconv;
 
-import com.sun.java.swing.plaf.gtk.GTKConstants.PositionType;
+import agents.Pair;
+import usermodel.UserState;
 
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class TrinaryPrConversion extends AbstractPrConversionModel{
@@ -14,25 +15,31 @@ public class TrinaryPrConversion extends AbstractPrConversionModel{
 	private double _componentBonus;
 	public enum GetsBonus {YES,NO,MAYBE};
 	private GetsBonus _getBonus;
+	protected UserState _userState;
+	protected Product _product;
 
-	public TrinaryPrConversion(Query query, double lambda, String componentSpeciality, double componentBonus) {
-		super(query);
+	public TrinaryPrConversion(Product product, UserState us, double lambda, String componentSpeciality, double componentBonus) {
+		super(new Query());
 		_getBonus = GetsBonus.MAYBE;
 		_lambda = lambda;
 		_componentBonus = componentBonus;
-		String component = query.getComponent();
-		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+		_userState = us;
+		_product = product;
+		String component = product.getComponent();
+		if(us.equals(UserState.F0)) {
 			_baselineConv = .1;
 		}
 		else {
-			if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+			if(us.equals(UserState.F1)) {
 				_baselineConv = .2;
 				if (componentSpeciality.equals(component)) {
 					_getBonus = GetsBonus.YES;
 				} else if (component == null) _getBonus = GetsBonus.NO;
-			} else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+			} else if(us.equals(UserState.F2)) {
 				_baselineConv = .3;
 				if (componentSpeciality.equals(component)) _getBonus = GetsBonus.YES;
+			} else if (us.equals(UserState.IS)){
+				_baselineConv = 0.0;
 			} else {
 				throw new RuntimeException("Malformed query");
 			}	
@@ -56,6 +63,11 @@ public class TrinaryPrConversion extends AbstractPrConversionModel{
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+	
+	public Pair<Product,UserState> getPair() {
+		Pair<Product,UserState> pus = new Pair<Product, UserState>(_product, _userState);
+		return pus;
 	}
 
 }

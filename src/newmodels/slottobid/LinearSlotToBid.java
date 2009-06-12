@@ -1,4 +1,4 @@
-package newmodels.slottocpc;
+package newmodels.slottobid;
 
 import java.util.HashMap;
 
@@ -6,13 +6,13 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class LinearSlotToCPC extends AbstractSlotToCPCModel {
+public class LinearSlotToBid extends AbstractSlotToBidModel {
 
 	int _numOfSlots;
 	double _cpcs[];
 	double _delta;
 	
-	public LinearSlotToCPC(Query query, int numOfSlots) {
+	public LinearSlotToBid(Query query, int numOfSlots) {
 		super(query);
 		_cpcs = new double[10*numOfSlots];
 		_numOfSlots = numOfSlots;		                  
@@ -22,6 +22,12 @@ public class LinearSlotToCPC extends AbstractSlotToCPCModel {
 	@Override
 	public double getPrediction(double slot) {
 		return _cpcs[(int)((slot-1)*10)];
+	}
+
+	@Override
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, HashMap<Query,Double> bids) {
@@ -59,7 +65,7 @@ public class LinearSlotToCPC extends AbstractSlotToCPCModel {
 		
 		HashMap<Query,Double> bids = new HashMap<Query, Double>();
 		bids.put(q,0.4);
-		LinearSlotToCPC lstc = new LinearSlotToCPC(q,5);
+		LinearSlotToBid lstc = new LinearSlotToBid(q,5);
 		lstc.updateModel(qr, sr, bids);
 		System.out.println(lstc.getPrediction(2.9));
 	}

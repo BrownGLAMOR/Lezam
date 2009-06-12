@@ -220,7 +220,7 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 		SlotInfo si = new SlotInfo();
 		si.setPromotedSlotBonus(0.5);
 		si.setPromotedSlots(2);
-		si.setRegularSlots(3);
+		si.setRegularSlots(5);
 		return si;
 	}
 	private RetailCatalog getRetailCatalog() {
