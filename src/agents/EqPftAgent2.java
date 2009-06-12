@@ -132,7 +132,6 @@ public class EqPftAgent2 extends SimAbstractAgent {
 		
 		// try to equate profit
 		
-		//double remainingCap = _distributionCapacity - _unitsSoldModel.getWindowSold();
 		for (Query query: _querySpace) {
 			
 			double latestProfit = _profitsModels.get(query).getLatestSample();
@@ -151,8 +150,6 @@ public class EqPftAgent2 extends SimAbstractAgent {
 				_queryReport.getPosition(query) == Double.NaN) {
 				double newProfitMargin;
 				if (latestProfit > avgProfit)
-					//newProfitMargin = Math.min(avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModels.get(query).getPrediction()),
-					//						_profitMargins.get(query)*0.9);
 					newProfitMargin = Math.min(avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*0.9);
 				else newProfitMargin = _profitMargins.get(query)*0.9;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
@@ -162,8 +159,6 @@ public class EqPftAgent2 extends SimAbstractAgent {
 			else if (_salesReport.getConversions(query) > _desiredSales.get(query)) {
 				double newProfitMargin;
 				if (latestProfit < avgProfit)
-					//newProfitMargin = Math.max(avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModels.get(query).getPrediction()),
-					//						_profitMargins.get(query)*1.1);
 					newProfitMargin = Math.max(avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*1.1);
 				else newProfitMargin = _profitMargins.get(query)*1.1;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
@@ -193,7 +188,6 @@ public class EqPftAgent2 extends SimAbstractAgent {
 			_bidBundle.setBid(query, _prConversionModels.get(query).getPrediction(overcap)*_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query)));
 			
 			// set spend limit
-			//double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(),1);
 			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(overcap),1);
 			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*.9;
 			_bidBundle.setDailyLimit(query, dailyLimit);
