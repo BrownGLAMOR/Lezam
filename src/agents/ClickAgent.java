@@ -43,7 +43,7 @@ public class ClickAgent extends SimAbstractAgent{
 	@Override
 	public void initBidder() {
 		// TODO Auto-generated method stub
-		_desiredSale = _capacity/(5*16);
+		_desiredSale = _capacity/_capWindow/_querySpace.size();
 		
 		  _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 			
@@ -103,9 +103,10 @@ public class ClickAgent extends SimAbstractAgent{
 	   
 	protected double setQuerySpendLimit(Query q){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		double remainingCap = _capacity - _unitsSoldModel.getWindowSold();
+		/*double remainingCap = _capacity - _unitsSoldModel.getWindowSold();
 		if(remainingCap < 0) remainingCap = 0;
-		else if (_day < 2) remainingCap = _capacity/_capWindow;
+		else if (_day < 2) remainingCap = _capacity/_capWindow;*/
+		double remainingCap = _capacity/_capWindow;
 		return _lamda*remainingCap/(16*conversion);
 	}
 
