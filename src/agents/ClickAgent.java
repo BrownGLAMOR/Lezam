@@ -87,17 +87,20 @@ public class ClickAgent extends SimAbstractAgent{
 	
 	protected void adjustPM(Query q){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		//if we does not get enough clicks, then decrease PM (increase bids, and hence slot)
+		//if we does not get enough clicks (and bad position), then decrease PM (increase bids, and hence slot)
 			    if(_queryReport.getClicks(q)*conversion < _desiredSale){
+			    	if(!(_queryReport.getPosition(q) < 4)){
 			    		double newHonest = (1-_PM.get(q))*1.3 + .1;
       		               if(newHonest >= 0.9) newHonest = 0.9;
       		               _PM.put(q, 1-newHonest);
-			              
+			    	}     
 			    }else{
-			    	//if we get too many clicks, increase PM(decrease bids and hence slot)
+			    	//if we get too many clicks (and good position), increase PM(decrease bids and hence slot)
+			    	if(_queryReport.getPosition(q) < 4){
 			            double  newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
 						if(newHonest < 0.1) newHonest = 0.1;
 						_PM.put(q,1-newHonest);
+			    	}
 			    }
 	}
 	   
