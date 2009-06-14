@@ -142,6 +142,7 @@ public class SlotAgent extends SimAbstractAgent{
 			else if (_queryReport.getPosition(q)< 2.1 && _numPS == 2) {
 				_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q)));
 			}
+			if(_reinvestment.get(q) > 0.9) _reinvestment.put(q,0.9);
   }   
    
    protected void walking(Query q){
@@ -169,9 +170,7 @@ public class SlotAgent extends SimAbstractAgent{
    
 	protected double setQuerySpendLimit(Query q) {
 			
-		double remainCap = _capacity - _unitsSoldModel.getWindowSold();
-		if(remainCap < 0) remainCap = 0;
-		else if (_day < 2) remainCap = _capacity/_capWindow;
+		double remainCap = _capacity/_capWindow;
 		return getQueryBid(q)*remainCap/_conversionPrModel.get(q).getPrediction(remainCap)/_querySpace.size()*.9;
 	}
 	
