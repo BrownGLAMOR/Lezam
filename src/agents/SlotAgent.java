@@ -45,7 +45,7 @@ public class SlotAgent extends SimAbstractAgent{
 			//handle the case of no impression (the agent got no slot)
 			handleNoImpression(query, current);
 			//handle the case when the agent got the promoted slots
-			handlePromotedSlots(query.current);
+			handlePromotedSlots(query);
 			//walk otherwise
 			walking(query, current);
 			
@@ -137,7 +137,7 @@ public class SlotAgent extends SimAbstractAgent{
 	    
    }
 	
-   protected void handlePromotedSlots(Query q,double currentReinvest){
+   protected void handlePromotedSlots(Query q){
 			if(_queryReport.getPosition(q) < 1.1){
 				double newReinvest = _queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q));
 				if(newReinvest < 0.1) newReinvest = 0.1;
