@@ -36,16 +36,18 @@ public class SlotAgent extends SimAbstractAgent{
 		}
 		_unitsSoldModel.update(_salesReport);
 		
-		for (Query query : _querySpace) {
+		for (Query query : _querySpace) {			
 			
 			_conversionPrModel.get(query).getPrediction(_unitsSoldModel.getWindowSold() - _capacity);
 			
+			double current = _reinvestment.get(query);
+			
 			//handle the case of no impression (the agent got no slot)
-			handleNoImpression(query);
+			handleNoImpression(query, current);
 			//handle the case when the agent got the promoted slots
-			handlePromotedSlots(query);
+			handlePromotedSlots(query.current);
 			//walk otherwise
-			walking(query);
+			walking(query, current);
 			
 			
 			//if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
@@ -125,9 +127,9 @@ public class SlotAgent extends SimAbstractAgent{
 		return _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_reinvestment.get(q)*_revenue.get(q);
 	}
 	
-	protected void handleNoImpression(Query q){
+	protected void handleNoImpression(Query q, double currentReinvest){
 	    if(Double.isNaN(_queryReport.getPosition(q))){
-	    	 double increase = Math.max(_reinvestment.get(q)*1.3, _reinvestment.get(q)+0.1);
+	    	 double increase = Math.max(currentReinvest*1.3,currentReinvest+0.1);
 	    	 if(increase > 0.9) _reinvestment.put(q,0.9);
 	    	 else _reinvestment.put(q, increase);
 	    	
@@ -135,34 +137,37 @@ public class SlotAgent extends SimAbstractAgent{
 	    
    }
 	
-   protected void handlePromotedSlots(Query q){
+   protected void handlePromotedSlots(Query q,double currentReinvest){
 			if(_queryReport.getPosition(q) < 1.1){
-				_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q)));
+				double newReinvest = _queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q));
+				if(newReinvest < 0.1) newReinvest = 0.1;
+				_reinvestment.put(q,newReinvest);
 			}
 			else if (_queryReport.getPosition(q)< 2.1 && _numPS == 2) {
-				_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q)));
+				double newReinvest = _queryReport.getCPC(q)/(_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q));
+				if(newReinvest < 0.1) newReinvest = 0.1;
+				_reinvestment.put(q,newReinvest);
 			}
 			if(_reinvestment.get(q) > 0.9) _reinvestment.put(q,0.9);
   }   
    
-   protected void walking(Query q){
+   protected void walking(Query q, double currentReinvest){
 
 	   if((_queryReport.getPosition(q) > 1 || (_queryReport.getPosition(q) > 2 && _numPS == 2)) && _queryReport.getPosition(q) < 5){
 		      Random random = new Random();
-		      double current = _reinvestment.get(q);
 			  double currentBid = getQueryBid(q);
-			  double y = currentBid/current;
+			  double y = currentBid/currentReinvest;
 			  double distance = Math.abs(currentBid - _queryReport.getCPC(q));
-			  double rfDistance = (current - (distance/y))/10;
+			  double rfDistance = (currentReinvest - (distance/y))/10;
 			
 		      if(random.nextDouble() < 0.5){
-		        if(current + rfDistance >= 0.90)  _reinvestment.put(q,0.90);
-		        else _reinvestment.put(q,current + rfDistance);
+		        if(currentReinvest + rfDistance >= 0.90)  _reinvestment.put(q,0.90);
+		        else _reinvestment.put(q,currentReinvest + rfDistance);
 		      }
 		      else{
                  
-                if(current - rfDistance <= 0.1)	_reinvestment.put(q,0.1);	    	
-                else  _reinvestment.put(q, current - rfDistance);
+                if(currentReinvest - rfDistance <= 0.1)	_reinvestment.put(q,0.1);	    	
+                else  _reinvestment.put(q, currentReinvest - rfDistance);
 		      }
 	       }
    }
