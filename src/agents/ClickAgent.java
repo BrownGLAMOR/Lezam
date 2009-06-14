@@ -87,13 +87,14 @@ public class ClickAgent extends SimAbstractAgent{
 	
 	protected void adjustPM(Query q){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		//if we sold less than what we expected, and we got bad position, then higher our bid
+		//if we does not get enough clicks, then decrease PM (increase bids, and hence slot)
 			    if(_queryReport.getClicks(q)*conversion < _desiredSale){
 			    		double newHonest = (1-_PM.get(q))*1.3 + .1;
       		               if(newHonest >= 0.9) newHonest = 0.9;
       		               _PM.put(q, 1-newHonest);
 			              
 			    }else{
+			    	//if we get too many clicks, increase PM(decrease bids and hence slot)
 			            double  newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
 						if(newHonest < 0.1) newHonest = 0.1;
 						_PM.put(q,1-newHonest);
@@ -103,6 +104,8 @@ public class ClickAgent extends SimAbstractAgent{
 	protected double setQuerySpendLimit(Query q){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
 		double remainingCap = _capacity - _unitsSoldModel.getWindowSold();
+		if(remainingCap < 0) remainingCap = 0;
+		else if (_day < 2) remainingCap = _capacity/_capWindow;
 		return _lamda*remainingCap/(16*conversion);
 	}
 
