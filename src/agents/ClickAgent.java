@@ -83,6 +83,7 @@ public class ClickAgent extends SimAbstractAgent{
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// TODO Auto-generated method stub
 		
+		
 	}
 	
 	protected void adjustPM(Query q){
