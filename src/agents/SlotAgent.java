@@ -30,7 +30,8 @@ public class SlotAgent extends SimAbstractAgent{
     
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		// TODO Auto-generated method stub
+		_unitsSoldModel.update(_salesReport);
+		
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
 		}
