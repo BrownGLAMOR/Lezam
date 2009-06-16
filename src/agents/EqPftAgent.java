@@ -118,7 +118,6 @@ public class EqPftAgent extends SimAbstractAgent {
 		overcap = _unitsSoldModel.getWindowSold() - _distributionCapacity; 
 		
 		for (Query query : _querySpace) {
-			//_prConversionModels.get(query).setPrediction(_unitsSoldModel.getWindowSold() - _distributionCapacity);
 			
 			if (_salesReport != null && _salesReport.getRevenue(query) > 0) 
 				_revenueModels.get(query).update(_salesReport.getRevenue(query)/_salesReport.getConversions(query));
@@ -259,8 +258,8 @@ public class EqPftAgent extends SimAbstractAgent {
 		}
 		
 		//System.out.println(buff);
-		output.append(buff);
-		output.flush();
+		//output.append(buff);
+		//output.flush();
 	
 	}
 
