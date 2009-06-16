@@ -21,6 +21,7 @@ import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.ReserveInfo;
 import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.SlotInfo;
@@ -227,7 +228,15 @@ public abstract class SimAbstractAgent extends Agent {
 	 */
 	protected double _targEffect;
 
+	/**
+	 * Regular slot reserve score
+	 */
+	protected double _regReserveScore;
 	
+	/**
+	 * Promoted slot reserve score
+	 */
+	protected double _proReserveScore;
 	
 	/**
 	 * 
@@ -236,6 +245,7 @@ public abstract class SimAbstractAgent extends Agent {
 		_salesReports = new LinkedList<SalesReport>();
 		_queryReports = new LinkedList<QueryReport>();
 		_querySpace = new LinkedHashSet<Query>();
+		
 		_day = 0;
 	}
 	
@@ -267,6 +277,8 @@ public abstract class SimAbstractAgent extends Agent {
             handleAdvertiserInfo((AdvertiserInfo) content);
         } else if (content instanceof StartInfo) {
             handleStartInfo((StartInfo) content);
+        } else if (content instanceof ReserveInfo) {
+            handleReserveInfo((ReserveInfo) content);
         } else if (content instanceof BankStatus) {
         	//TODO
         }
@@ -275,7 +287,7 @@ public abstract class SimAbstractAgent extends Agent {
         }
     }
 
-    /**
+	/**
      * Sends a constructed {@link BidBundle} from any updated bids, ads, or spend limits.
      */
     protected void sendBidAndAds() {
@@ -294,6 +306,15 @@ public abstract class SimAbstractAgent extends Agent {
         }
     }
 
+
+    /**
+     * Process an incoming reserve score info
+     * @param reserveInfo this game reserve info
+     */
+    public void handleReserveInfo(ReserveInfo reserveInfo) {
+		_regReserveScore = reserveInfo.getRegularReserve();		
+		_proReserveScore = reserveInfo.getPromotedReserve();		
+	}
 
     /**
      * Processes an incoming query report.

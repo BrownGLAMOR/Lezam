@@ -21,7 +21,8 @@ public class LinearSlotToBid extends AbstractSlotToBidModel {
 
 	@Override
 	public double getPrediction(double slot) {
-		return _cpcs[(int)((slot-1)*10)];
+		if ((slot >= 0) && (slot <= 5)) return _cpcs[(int)((slot-1)*10)];
+		else return 0;
 	}
 
 	@Override

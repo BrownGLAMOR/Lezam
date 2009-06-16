@@ -3,6 +3,8 @@
  */
 package newmodels.slottobid;
 
+import java.util.HashMap;
+
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -23,6 +25,10 @@ public abstract class AbstractSlotToBidModel extends AbstractModel {
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
+	public boolean updateModel(QueryReport queryReport,
+			SalesReport salesReport,
+			HashMap<Query,Double> lastBids){return false;};
+
 	public abstract double getPrediction(double slot);
 
 	public Query getQuery() {

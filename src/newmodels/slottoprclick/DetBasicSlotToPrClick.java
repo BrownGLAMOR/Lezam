@@ -28,7 +28,7 @@ public class DetBasicSlotToPrClick extends AbstractSlotToPrClick{
 		
 		clickprob[0] = adveffect[focuslevel];
 		for (int slot=1 ; slot<NUMOFREGSLOTS ; slot++) {
-			clickprob[slot] = ((1-clickprob[slot-1]) + (clickprob[slot-1]*conv[focuslevel]))*contprob[focuslevel];
+			clickprob[slot] = ((1-clickprob[slot-1]) + (clickprob[slot-1]*(1-conv[focuslevel])))*contprob[focuslevel]*adveffect[focuslevel];
 		}
 	}
 	

@@ -219,7 +219,7 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 		 */
 		SlotInfo si = new SlotInfo();
 		si.setPromotedSlotBonus(0.5);
-		si.setPromotedSlots(2);
+		si.setPromotedSlots(0);
 		si.setRegularSlots(5);
 		return si;
 	}
@@ -316,7 +316,7 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 		SalesReport sr = new SalesReport();
 		int add = 0;
 		for (Query q : _thisQuerySpace) {
-			sr.setConversionsAndRevenue(q, 50+add, 750+add*10);
+			sr.setConversionsAndRevenue(q, 20+add, 750+add*10);
 			add += 5;
 		}
 		srQueue.add(sr);
@@ -337,8 +337,10 @@ public class OneDaySimulator extends ILPAgent{	// You only need to change this l
 			qr.setAd(q, new Ad());
 			qr.setClicks(q, 500);
 			qr.setCost(q, 500);
-			qr.setImpressions(q, 5000, 1000);
-			for (int i=0 ; i<_numAgents ; i++) qr.setPosition(q, _agents[i], Math.min(2+i, _numSlots+1));
+			qr.setImpressions(q, 5000, 0, new Ad(), 10000);
+			for (int i=0 ; i<_numAgents ; i++) {
+				qr.setPosition(q, _agents[i], Math.min(2+i, _numSlots+1));
+			}
 		}
 		qrQueue.add(qr);
 		return qrQueue;
