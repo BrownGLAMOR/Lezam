@@ -31,7 +31,10 @@ public class ClickAgent extends SimAbstractAgent{
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		// TODO Auto-generated method stub
+		// update models
+		_unitsSoldModel.update(_salesReport);
+		
+		// build bid bundle
 		for(Query q: _querySpace){ 
 			adjustPM(q);
 			_bidBundle.setBid(q, getQueryBid(q));
@@ -42,7 +45,7 @@ public class ClickAgent extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-		// TODO Auto-generated method stub
+
 		_desiredSale = _capacity/_capWindow/_querySpace.size();
 		
 		  _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
