@@ -1,5 +1,8 @@
 package agents;
 
+import java.util.Set;
+
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -18,11 +21,30 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	protected String component;
 	
 	protected double getValue(Query query){
-		
+		return 0;
 	}
 	
 	@Override
 	public void initBidder() {
-		manufacturer = _advertiserInfo.getManufacturer();
+		manufacturer = _advertiserInfo.getManufacturerSpecialty();
+		component = _advertiserInfo.getComponentSpecialty();
+	}
+
+	@Override
+	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<AbstractModel> initModels() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
+		// TODO Auto-generated method stub
+		
 	}
 }
