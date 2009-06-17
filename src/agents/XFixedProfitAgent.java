@@ -7,6 +7,7 @@ import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 /**
@@ -29,38 +30,32 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	
 	protected HashMap<Query, Double> _values;
 	
-	protected int getFocusLevel(Query query){
-		String manufacturer = query.getManufacturer();
-		String component = query.getComponent();
-		if (manufacturer.equals(null) && component.equals(null)){
-			return 0;
-		} else if (!manufacturer.equals(null) && !component.equals(null)){
-			return 2;
-		} else {
-			return 1;
-		}
-	}
-	
 	protected double eta(double pi){
-		return 1.5*pi/(0.5*pi+1);
+		double num = 1.5*pi;
+		double den = (0.5*pi+1);
+		return num/den;
 	}
 	
 	protected double getValue(Query query){
-		double value = 10;
+		double value = 0;
+		double revenue = 10;
 		double conversionPr = 0;
-		int focusLvl = getFocusLevel(query);
 		String manufacturer = query.getManufacturer();
 		String component = query.getComponent();
-		if (manufacturer.equals(null)){
-			value = (10*2 + 15)/3;
+		
+		if (manufacturer == null){
+			revenue = 11.666666;
 		} else if (manufacturer.equals(_manufacturer)){
-			value = 15;
+			revenue = 15;
 		}
-		if (focusLvl == 0){
-			conversionPr = (FO_BASELINE_PR_CONV*2 + eta(FO_BASELINE_PR_CONV))/3;
-		} else if (focusLvl == 1){
-			if (component.equals(null)){
-				conversionPr = (F1_BASELINE_PR_CONV*2 + eta(F1_BASELINE_PR_CONV))/3;
+		
+		if (query.getType() == QueryType.FOCUS_LEVEL_ZERO){
+			conversionPr = (FO_BASELINE_PR_CONV*2 + eta(FO_BASELINE_PR_CONV));
+			conversionPr /= 3;
+		} else if (query.getType() == QueryType.FOCUS_LEVEL_ONE){
+			if (component == null){
+				conversionPr = (F1_BASELINE_PR_CONV*2 + eta(F1_BASELINE_PR_CONV));
+				conversionPr /= 3;
 			} else if (component.equals(_component)){
 				conversionPr = eta(F1_BASELINE_PR_CONV);
 			} else {
@@ -73,7 +68,8 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 				conversionPr = F2_BASELINE_PR_CONV;
 			}
 		}
-		value = Math.max(value*conversionPr, 0);
+		value = revenue*conversionPr;
+		//value = Math.max(revenue*conversionPr, 0);
 		return value;
 	}
 	
@@ -81,25 +77,39 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	public void initBidder() {
 		_manufacturer = _advertiserInfo.getManufacturerSpecialty();
 		_component = _advertiserInfo.getComponentSpecialty();
-		
+		/*
 		// set values
 		
 		_values = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_values.put(query, getValue(query));
 		}
-		
+		*/
 		// initialize the bid bundle
 		
-		_bidBundle = new BidBundle();
+		buildBidBundle();
+		//_bidBundle = new BidBundle();
 	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		
+		//for debugging
+		_manufacturer = _advertiserInfo.getManufacturerSpecialty();
+		_component = _advertiserInfo.getComponentSpecialty();
+		
+		return buildBidBundle();
+	}
+
+	public BidBundle buildBidBundle(){
+		
+		_bidBundle = new BidBundle();
+		
 		for (Query query : _querySpace) {
 			// set bids
-			double bid = _values.get(query) - X;
-			_bidBundle.setBid(query, bid);
+			//double bid = _values.get(query);
+			_bidBundle.addQuery(query, getValue(query), null);
+			//_bidBundle.setBid(query, 1.0);
 			// TODO: allow for sales in not all of the queries
 			// TODO: target ads
 			
@@ -108,9 +118,10 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1; // magic factor
 			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
+		
 		return _bidBundle;
 	}
-
+	
 	@Override
 	public Set<AbstractModel> initModels() {
 		// TODO Auto-generated method stub
