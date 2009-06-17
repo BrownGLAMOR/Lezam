@@ -21,7 +21,7 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	protected String component;
 	
 	protected double getValue(Query query){
-		return 0;
+		return 0.0;
 	}
 	
 	@Override
