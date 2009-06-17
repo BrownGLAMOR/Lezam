@@ -23,6 +23,7 @@ import java.util.Set;
 
 import agents.Cheap;
 import agents.EqPftAgent;
+import agents.ILPAgent;
 import agents.MCKPAgentMkII;
 import agents.SimAbstractAgent;
 import agents.newSSB;
@@ -630,7 +631,7 @@ public class BasicSimulator {
 			return new EqPftAgent();
 		}
 		else if(string.equals("ILP")) {
-			return new EqPftAgent();
+			return new ILPAgent();
 		}
 		else if(string.equals("newSSB")) {
 			return new newSSB();

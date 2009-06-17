@@ -229,16 +229,6 @@ public abstract class SimAbstractAgent extends Agent {
 	protected double _targEffect;
 
 	/**
-	 * Regular slot reserve score
-	 */
-	protected double _regReserveScore;
-	
-	/**
-	 * Promoted slot reserve score
-	 */
-	protected double _proReserveScore;
-	
-	/**
 	 * 
 	 */
 	public SimAbstractAgent() {
@@ -277,8 +267,7 @@ public abstract class SimAbstractAgent extends Agent {
             handleAdvertiserInfo((AdvertiserInfo) content);
         } else if (content instanceof StartInfo) {
             handleStartInfo((StartInfo) content);
-        } else if (content instanceof ReserveInfo) {
-            handleReserveInfo((ReserveInfo) content);
+        
         } else if (content instanceof BankStatus) {
         	//TODO
         }
@@ -305,16 +294,6 @@ public abstract class SimAbstractAgent extends Agent {
             sendMessage(publisherAddress, bidBundle);
         }
     }
-
-
-    /**
-     * Process an incoming reserve score info
-     * @param reserveInfo this game reserve info
-     */
-    public void handleReserveInfo(ReserveInfo reserveInfo) {
-		_regReserveScore = reserveInfo.getRegularReserve();		
-		_proReserveScore = reserveInfo.getPromotedReserve();		
-	}
 
     /**
      * Processes an incoming query report.
