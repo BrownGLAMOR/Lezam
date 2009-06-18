@@ -32,8 +32,8 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.AbstractPrConversionModel;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.slottobid.AbstractSlotToBidModel;
-import newmodels.slottonumimp.AbstractSlotToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.usermodel.AbstractUserModel;
@@ -79,7 +79,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 
 	Random _R = new Random();					//Random number generator
 	
@@ -367,7 +367,7 @@ public class BasicSimulator {
 			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bidsWithoutOurs,_advEffect,_contProb,_adType,_compSpecialties,_salesOverWindow,_capacities,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,_ourAdvIdx,userModel,query);
 			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,userModel);
 			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),_ourAdvIdx,query);
-			AbstractSlotToNumImp slotToNumImp = new PerfectSlotToNumImp(_usersMap,_numSlots,_retailCatalog,query);
+			AbstractQueryToNumImp slotToNumImp = new PerfectSlotToNumImp(_usersMap,_numSlots,_retailCatalog,query);
 			AbstractSlotToNumClicks slotToNumClicks = new PerfectSlotToNumClicks(slotToClickModel,slotToNumImp,query);
 			models.add(bidToSlotModel);
 			models.add(bidToCPCModel);
@@ -468,7 +468,6 @@ public class BasicSimulator {
 			 * This sorts the list by squashed bid
 			 */
 			Collections.sort(pairList);
-			debug(query);
 			/*
 			 * Adds impressions
 			 */
@@ -482,12 +481,11 @@ public class BasicSimulator {
 					pair.getAgent().addImpressions(query, 1, 0, j);
 				}
 
-				debug(pair.getAgent().getAdvId() + ": " + pair.getAgent().getSquashedBid(query));
 			}
 			/*
 			 * Actually generates clicks and what not
 			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+			for(int j = 1; j <= _numSlots && j < pairList.size() + 1; j++) {
 				AgentBidPair pair = pairList.get(j-1);
 				SimAgent agent = pair.getAgent();
 				double squashedBid = pair.getSquashedBid();
@@ -663,7 +661,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/u/jberg/localhost_sim75.slg";
+		String filename = "/Users/jordan/Desktop/localhost_sim96.slg";
 		int advId = 7;
 		int day = 30;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -672,7 +670,7 @@ public class BasicSimulator {
 		int numSims = 1;
 		sim.initializeBasicInfo(status,advId);
 		for(int i = 0; i < numSims; i++) {
-			sim.runFullSimulation(status, "EqProfit",advId);
+			sim.runFullSimulation(status, "MCKP",advId);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

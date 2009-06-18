@@ -15,13 +15,13 @@ import newmodels.AbstractModel;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.BasicBidToSlot;
 import newmodels.bidtoslot.ReallyBadBidToSlot;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
+import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.BasicSlotToBid;
 import newmodels.slottobid.ReallyBadSlotToBid;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.slottonumclicks.BasicSlotToNumClicks;
-import newmodels.slottonumimp.AbstractSlotToNumImp;
-import newmodels.slottonumimp.BasicSlotToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import newmodels.slottoprclick.BasicSlotToPrClick;
 import newmodels.usermodel.AbstractUserModel;
@@ -48,7 +48,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkII extends SimAbstractAgent {
 	
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	private int _numUsers = 90000;
 	private double _defaultBid;
 	private HashMap<Query, Double> _recentBids;
@@ -59,7 +59,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels;
 	private HashMap<Query, AbstractSlotToBidModel> _slotToBidModels;
 	private HashMap<Query, AbstractSlotToPrClick> _slotToPrClickModels;
-	private HashMap<Query, AbstractSlotToNumImp> _slotToNumImptModels;
+	private HashMap<Query, AbstractQueryToNumImp> _slotToNumImptModels;
 	private HashMap<Query, AbstractSlotToNumClicks> _slotToNumClicks;
 	private Hashtable<Query, Integer> _queryId;
 	
@@ -81,7 +81,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			AbstractBidToSlotModel bidToSlot = new ReallyBadBidToSlot(query);
 			AbstractSlotToBidModel slotToBid = new ReallyBadSlotToBid(query);
 			AbstractSlotToPrClick slotToPrClick = new BasicSlotToPrClick(query);
-			AbstractSlotToNumImp slotToNumImp = new BasicSlotToNumImp(query,userModel);
+			AbstractQueryToNumImp slotToNumImp = new BasicQueryToNumImp(query,userModel);
 			AbstractSlotToNumClicks slotToNumClicks = new BasicSlotToNumClicks(query, slotToPrClick, slotToNumImp);
 			models.add(bidToSlot);
 			models.add(slotToBid);
@@ -96,7 +96,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 		_bidToSlotModels = new HashMap<Query, AbstractBidToSlotModel>();
 		_slotToBidModels = new HashMap<Query, AbstractSlotToBidModel>();
 		_slotToPrClickModels = new HashMap<Query, AbstractSlotToPrClick>();
-		_slotToNumImptModels = new HashMap<Query, AbstractSlotToNumImp>();
+		_slotToNumImptModels = new HashMap<Query, AbstractQueryToNumImp>();
 		_slotToNumClicks = new HashMap<Query, AbstractSlotToNumClicks>();
 		for(AbstractModel model : models) {
 			if(model instanceof AbstractUserModel) {
@@ -115,8 +115,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
 				_slotToPrClickModels.put(slotToPrClick.getQuery(), slotToPrClick);
 			}
-			else if(model instanceof AbstractSlotToNumImp) {
-				AbstractSlotToNumImp slotToNumImp = (AbstractSlotToNumImp) model;
+			else if(model instanceof AbstractQueryToNumImp) {
+				AbstractQueryToNumImp slotToNumImp = (AbstractQueryToNumImp) model;
 				_slotToNumImptModels.put(slotToNumImp.getQuery(), slotToNumImp);
 			}
 			else if(model instanceof AbstractSlotToNumClicks) {
@@ -201,8 +201,8 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
 				slotToPrClick.updateModel(queryReport, salesReport);
 			}
-			else if(model instanceof AbstractSlotToNumImp) {
-				AbstractSlotToNumImp slotToNumImp = (AbstractSlotToNumImp) model;
+			else if(model instanceof AbstractQueryToNumImp) {
+				AbstractQueryToNumImp slotToNumImp = (AbstractQueryToNumImp) model;
 				slotToNumImp.updateModel(queryReport, salesReport);
 			}
 			else if(model instanceof AbstractSlotToNumClicks) {

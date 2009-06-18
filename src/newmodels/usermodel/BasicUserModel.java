@@ -8,6 +8,7 @@ package newmodels.usermodel;
 import java.util.Random;
 
 import usermodel.UserState;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
@@ -31,9 +32,19 @@ public class BasicUserModel extends AbstractUserModel {
 	private double ISusers;
 	private double Tusers;
 	private double NSusers;
+	private int numProducts = 9;
 
+	public BasicUserModel() {
+		F0users = randGaussian(minF0,maxF0)/numProducts;
+		F1users = randGaussian(minF1,maxF1)/numProducts;
+		F2users = randGaussian(minF2,maxF2)/numProducts;
+		ISusers = randGaussian(minIS,maxIS)/numProducts;
+		Tusers = randGaussian(minT,maxT)/numProducts;
+		NSusers = (numUsers - F0users - F1users - F2users - ISusers - Tusers)/numProducts;
+	}
+	
 	@Override
-	public double getPrediction(UserState userState) {
+	public double getPrediction(Product product, UserState userState) {
 		
 		/*
 		 * I just simulated a game for a really long time to get the minimum
@@ -69,12 +80,6 @@ public class BasicUserModel extends AbstractUserModel {
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
-		F0users = randGaussian(minF0,maxF0);
-		F1users = randGaussian(minF1,maxF1);
-		F2users = randGaussian(minF2,maxF2);
-		ISusers = randGaussian(minIS,maxIS);
-		Tusers = randGaussian(minT,maxT);
-		NSusers = numUsers - F0users - F1users - F2users - ISusers - Tusers;
 		return true;
 	}
 	
@@ -85,16 +90,5 @@ public class BasicUserModel extends AbstractUserModel {
 		double deviations = 3;
 		double stddev = (mean-a)/deviations;
 		return rand*stddev+mean;
-	}
-
-	public static void main(String[] args) {
-		BasicUserModel usermodel = new BasicUserModel();
-		usermodel.updateModel(null,null);
-		System.out.println("F0: " + usermodel.getPrediction(UserState.F0));
-		System.out.println("F1: " + usermodel.getPrediction(UserState.F1));
-		System.out.println("F2: " + usermodel.getPrediction(UserState.F2));
-		System.out.println("IS: " + usermodel.getPrediction(UserState.IS));
-		System.out.println("T: " + usermodel.getPrediction(UserState.T));
-		System.out.println("NS: " + usermodel.getPrediction(UserState.NS));
 	}
 }

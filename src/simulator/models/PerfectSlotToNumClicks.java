@@ -3,16 +3,16 @@ package simulator.models;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
-import newmodels.slottonumimp.AbstractSlotToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 
 public class PerfectSlotToNumClicks extends AbstractSlotToNumClicks {
 
 	private AbstractSlotToPrClick _clickPrModel;
-	private AbstractSlotToNumImp _numImpModel;
+	private AbstractQueryToNumImp _numImpModel;
 
-	public PerfectSlotToNumClicks(AbstractSlotToPrClick clickPrModel, AbstractSlotToNumImp numImpModel, Query query) {
+	public PerfectSlotToNumClicks(AbstractSlotToPrClick clickPrModel, AbstractQueryToNumImp numImpModel, Query query) {
 		super(query);
 		_clickPrModel = clickPrModel;
 		_numImpModel = numImpModel;

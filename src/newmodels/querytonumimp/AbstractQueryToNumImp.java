@@ -1,7 +1,7 @@
 /**
  * 
  */
-package newmodels.slottonumimp;
+package newmodels.querytonumimp;
 
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
@@ -12,21 +12,11 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractSlotToNumImp extends AbstractModel {
-	
-	protected Query _query;
-
-	public AbstractSlotToNumImp(Query query) {
-		_query = query;
-	}
+public abstract class AbstractQueryToNumImp extends AbstractModel {
 	
 	public abstract boolean updateModel(QueryReport queryReport,
 									SalesReport salesReport);
 	
-	public abstract int getPrediction(double slot);
+	public abstract int getPrediction(Query query);
 
-	public Query getQuery() {
-		return _query;
-	}
-	
 }

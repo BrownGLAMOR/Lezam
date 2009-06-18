@@ -5,7 +5,7 @@ package newmodels.slottonumclicks;
  *
  */
 
-import newmodels.slottonumimp.AbstractSlotToNumImp;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -13,12 +13,12 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class BasicSlotToNumClicks extends AbstractSlotToNumClicks {
 
-	private AbstractSlotToNumImp _slotToNumImp;
+	private AbstractQueryToNumImp _slotToNumImp;
 	private AbstractSlotToPrClick _slotToPrClick;
 
 	public BasicSlotToNumClicks(Query query,
 								AbstractSlotToPrClick slotToPrClick,
-								AbstractSlotToNumImp slotToNumImp) {
+								AbstractQueryToNumImp slotToNumImp) {
 		super(query);
 		_slotToPrClick = slotToPrClick;
 		_slotToNumImp = slotToNumImp;

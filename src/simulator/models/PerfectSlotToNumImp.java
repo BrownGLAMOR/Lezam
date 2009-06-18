@@ -12,10 +12,10 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.SalesReport;
-import newmodels.slottonumimp.AbstractSlotToNumImp;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 
-public class PerfectSlotToNumImp extends AbstractSlotToNumImp {
+public class PerfectSlotToNumImp extends AbstractQueryToNumImp {
 
 	private HashMap<Product,HashMap<UserState,Integer>> _userDists;
 	private int _numSlots;
