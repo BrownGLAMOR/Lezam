@@ -585,6 +585,18 @@ public class BasicSimulator {
 				}
 			}
 		}
+		////TESTIOGs
+		for(Query q : _querySpace) {
+			System.out.println(q);
+			for(int i = 0; i < agents.size(); i++) {
+				if(i == _ourAdvIdx) {
+					SimAgent agent = agents.get(i);
+					System.out.println("Slot " + (agent.getPosSum(q)/(agent.getNumPromImps(q)+agent.getNumRegImps(q))) + "  clicks " + agent.getNumClicks(q));
+				}
+			}
+		}
+
+		//ASPIDMPASD
 		HashMap<String,Reports> reportsMap = new HashMap<String, Reports>();
 		for(SimAgent agent : agents) {
 			QueryReport queryReport = agent.buildQueryReport();

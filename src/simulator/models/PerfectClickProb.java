@@ -128,7 +128,6 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		
 		Collections.sort(realBids,Collections.reverseOrder());
 		
-		double users;
 
 		double baselineconv;
 		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
@@ -161,7 +160,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		}
 		int numImps = _queryToNumImp.getPrediction(_query);
 		double ISUserDiscount = 1 - numISUsers/numImps;
-		baselineconv *= ISUserDiscount*.75;
+		baselineconv *= ISUserDiscount;
 		
 		String advertiser = bidToAdv.get(realBids.get(0));
 
@@ -208,12 +207,6 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 			ad = _adType.get(advertiser).get(_query);
 			bid = _bids.get(advertiser).get(_query);
 			ftarg = 1.0;
-			if(ad != null && !ad.isGeneric()) {
-				/*
-				 * On average we get our target effect 1 in 9 times
-				 */
-				ftarg = ((1+_targEffect) + 8*(1/(1+_targEffect)))/9;
-			}
 			fpro = 1.0;
 			if(i < _numSlots && bid >= _proReserve) {
 				fpro = 1 + _promSlotBonus;

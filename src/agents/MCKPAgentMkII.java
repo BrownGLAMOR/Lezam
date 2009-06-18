@@ -231,14 +231,14 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 				 * generate the item set for each query
 				 */
 				Item[] items = new Item[_numSlots];
-				debug(q);
+				System.out.println(q);
 				debug("Num Imps: " + _queryToNumImpModel.getPrediction(q));
 				for(int s=1; s<=_numSlots; s++) {//slot
 					int numClicks = _slotToNumClicks.get(q).getPrediction(s);
 					double bid = _slotToBidModels.get(q).getPrediction(s);
 					double CPC = _slotToBidModels.get(q).getPrediction(s+1);
 
-					debug("Numer of clicks" + numClicks);
+					System.out.println("Numer of clicks" + numClicks);
 					
 					if (bid == 0) numClicks = 0;
 					double w = numClicks*bid; 				//weight = numClicks * CPC 		[cost]
