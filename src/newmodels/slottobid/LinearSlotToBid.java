@@ -2,6 +2,7 @@ package newmodels.slottobid;
 
 import java.util.HashMap;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -31,14 +32,14 @@ public class LinearSlotToBid extends AbstractSlotToBidModel {
 		return false;
 	}
 
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, HashMap<Query,Double> bids) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		if (queryReport.equals(null)) return false;
 		if (Double.isNaN(queryReport.getCPC(_query))) return false;
 		int lastSlot = (int)((queryReport.getPosition(_query)-1)*10.0);
 		double CPC = queryReport.getCPC(_query);
 		double lastBid = 1;
-		if (!(bids.get(_query).equals(Double.NaN) || bids.get(_query).equals(0.0))) {
-			lastBid = bids.get(_query);
+		if (!(bidBundle.getBid(_query) == Double.NaN) || bidBundle.getBid(_query) == 0.0 ) {
+			lastBid = bidBundle.getBid(_query);
 		} else {
 			if (!Double.isNaN(_delta)) lastBid = CPC+_delta;
 			else {
@@ -51,7 +52,7 @@ public class LinearSlotToBid extends AbstractSlotToBidModel {
 		_delta = (lastBid - CPC)/10;
 		for (int slot=0 ; slot<10*_numOfSlots ; slot++) {
 			_cpcs[slot] = CPC + (lastSlot - slot)*_delta;
-			if (Double.isInfinite(_cpcs[slot])) System.out.print("\n infinity problem because cpc=" + CPC + " or lastSlot=" + lastSlot + " or slot=" + slot + " or delta=" + _delta + " or bid=" + lastBid + " or we got the bid=" + bids.get(_query) + "\n");
+			if (Double.isInfinite(_cpcs[slot])) System.out.print("\n infinity problem because cpc=" + CPC + " or lastSlot=" + lastSlot + " or slot=" + slot + " or delta=" + _delta + " or bid=" + lastBid + " or we got the bid=" + bidBundle.getBid(_query) + "\n");
 			
 		}
 		return true;
@@ -64,10 +65,10 @@ public class LinearSlotToBid extends AbstractSlotToBidModel {
 		System.out.println(qr.getCPC(q));
 		SalesReport sr = new SalesReport();
 		
-		HashMap<Query,Double> bids = new HashMap<Query, Double>();
-		bids.put(q,0.4);
+		BidBundle bidBundle = new BidBundle();
+		bidBundle.setBid(q,0.4);
 		LinearSlotToBid lstc = new LinearSlotToBid(q,5);
-		lstc.updateModel(qr, sr, bids);
+		lstc.updateModel(qr, sr, bidBundle);
 		System.out.println(lstc.getPrediction(2.9));
 	}
 
