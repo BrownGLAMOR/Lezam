@@ -1,5 +1,10 @@
 package newmodels.usermodel;
 
+/**
+ * 
+ * @author hchen
+ *
+ */
 import java.util.HashMap;
 
 import usermodel.UserState;
@@ -39,13 +44,13 @@ public class TempUserModel extends AbstractUserModel{
 	//the doubt is quantified as a number between 0 and 1.
 	//if the double is above 0.9, then it is worth considering it
 	public double detectBurstDay(){
-		// 
+		 return 0; 
 	}
 	
 	//return null in the first two days
 	//assume all agents target their ads rationally, i.e. they target their ads on F2 users, and possibly on F1 users
 	public double[] detectManufactureOpponent(){
-		
+		return null;
 	}
 	
 	//return null in the first two days
