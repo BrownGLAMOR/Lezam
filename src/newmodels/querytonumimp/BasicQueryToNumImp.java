@@ -55,11 +55,6 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
             _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
         }
 
-        //Initialize Num Impressions Map
-        for(Query query : _querySpace) {
-        	_numImps.put(query, 0);
-        }
-
         //Set num impressions per query
         for(Query query : _querySpace) {
         	int numImps = 0;

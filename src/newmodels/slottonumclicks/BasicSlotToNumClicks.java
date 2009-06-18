@@ -13,21 +13,21 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class BasicSlotToNumClicks extends AbstractSlotToNumClicks {
 
-	private AbstractQueryToNumImp _slotToNumImp;
+	private AbstractQueryToNumImp _queryToNumImp;
 	private AbstractSlotToPrClick _slotToPrClick;
 
 	public BasicSlotToNumClicks(Query query,
 								AbstractSlotToPrClick slotToPrClick,
-								AbstractQueryToNumImp slotToNumImp) {
+								AbstractQueryToNumImp queryToNumImp) {
 		super(query);
 		_slotToPrClick = slotToPrClick;
-		_slotToNumImp = slotToNumImp;
+		_queryToNumImp = queryToNumImp;
 	}
 
 	@Override
 	public int getPrediction(double slot) {
 		double clickPr = _slotToPrClick.getPrediction(slot);
-		int numImp = _slotToNumImp.getPrediction(slot);
+		int numImp = _queryToNumImp.getPrediction(_query);
 		return (int) (clickPr * numImp);
 	}
 

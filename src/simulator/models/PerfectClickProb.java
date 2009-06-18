@@ -26,6 +26,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectClickProb extends AbstractSlotToPrClick {
@@ -61,6 +62,8 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 	private int _ourAdvIdx;
 	private HashMap<String, Integer> _capacities;
 	private AbstractUserModel _userModel;
+	private RetailCatalog _retailCatalog;
+	private PerfectQueryToNumImp _queryToNumImp;
 	
 	public PerfectClickProb(String[] agents,
 			HashMap<String,HashMap<Query,Double>> bids,
@@ -78,7 +81,9 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 			double targEffect,
 			double promSlotBonus,
 			int ourAdvIdx,
-			AbstractUserModel userModel,
+			RetailCatalog retailCatalog,
+			PerfectQueryToNumImp queryToNumImp,
+			PerfectUserModel userModel,
 			Query query) {
 		
 		super(query);
@@ -98,6 +103,8 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		_targEffect = targEffect;
 		_promSlotBonus = promSlotBonus;
 		_ourAdvIdx = ourAdvIdx;
+		_retailCatalog = retailCatalog;
+		_queryToNumImp = queryToNumImp;
 		_userModel = userModel;
 		_clickPr = new double[_numSlots];
 		initializeProbablities();
@@ -123,24 +130,38 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		
 		double users;
 
-		double baselineConvPr;
+		double baselineconv;
 		if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-			baselineConvPr = .1;
-			users = _userModel.getPrediction(UserState.F0);
+			baselineconv = .1;
 		}
 		else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-			baselineConvPr = .2;
-			users = _userModel.getPrediction(UserState.F1);
+			baselineconv = .2;
 		}
 		else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-			baselineConvPr = .3;users = _userModel.getPrediction(UserState.F2);
+			baselineconv = .3;
 		}
 		else {
-			throw new RuntimeException("Bad QuerySpace");
+			throw new RuntimeException("Bad Query");
 		}
-		double ISUsers = _userModel.getPrediction(UserState.IS);
-		double ISUserDiscount = users/(users+(ISUsers/3));
-		baselineConvPr *= ISUserDiscount*.75;
+		int numISUsers = 0;
+		for(Product product : _retailCatalog) {
+			if(_query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				numISUsers += _userModel.getPrediction(product, UserState.IS) / 3;
+			}
+			else if(_query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+    			if(product.getComponent().equals(_query.getComponent()) || product.getManufacturer().equals(_query.getManufacturer())) {
+    				numISUsers += _userModel.getPrediction(product, UserState.IS) / 6;
+    			}
+			}
+			else if(_query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+    			if(product.getComponent().equals(_query.getComponent()) && product.getManufacturer().equals(_query.getManufacturer())) {
+    				numISUsers += _userModel.getPrediction(product, UserState.IS) / 3;
+    			}
+			}
+		}
+		int numImps = _queryToNumImp.getPrediction(_query);
+		double ISUserDiscount = 1 - numISUsers/numImps;
+		baselineconv *= ISUserDiscount*.75;
 		
 		String advertiser = bidToAdv.get(realBids.get(0));
 
@@ -179,7 +200,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 		if(_compSpecialties.get(advertiser).equals(_query.getComponent())) {
 			compBonus += _targEffect;
 		}
-		double prevConvPr = eta(baselineConvPr*avgLambda,compBonus);
+		double prevConvPr = eta(baselineconv*avgLambda,compBonus);
 
 		for(int i = 1; i < _numSlots; i++) {
 			advertiser = bidToAdv.get(realBids.get(i));
@@ -221,7 +242,7 @@ public class PerfectClickProb extends AbstractSlotToPrClick {
 			if(_compSpecialties.get(advertiser).equals(_query.getComponent())) {
 				compBonus += _targEffect;
 			}
-			prevConvPr = eta(baselineConvPr*avgLambda,compBonus);
+			prevConvPr = eta(baselineconv*avgLambda,compBonus);
 		}
 	}
 

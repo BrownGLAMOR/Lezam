@@ -15,6 +15,7 @@ import newmodels.usermodel.AbstractUserModel;
 import usermodel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -22,23 +23,20 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectUserModel extends AbstractUserModel {
 	
-	private int _numUsers;
 
-	private HashMap<UserState, Double> _users;
+	private HashMap<Product, HashMap<UserState, Integer>> _users;
 
-	public PerfectUserModel(int numUsers, HashMap<UserState,Double> users) {
-		_numUsers = numUsers;
+	public PerfectUserModel(int numUsers, HashMap<Product, HashMap<UserState, Integer>> users) {
 		_users = users;
 	}
 
 	@Override
-	public double getPrediction(UserState info) {
+	public int getPrediction(Product product, UserState state) {
 		/*
 		 * The incoming info for a User model should always be a UserState and
 		 * we will return the ratio of users in that state
 		 */
-		UserState state = (UserState) info;
-		return _users.get(state)/_numUsers;
+		return _users.get(product).get(state);
 	}
 
 	@Override
@@ -47,12 +45,4 @@ public class PerfectUserModel extends AbstractUserModel {
 		return true;
 	}
 	
-	public int getNumUsers() {
-		return _numUsers;
-	}
-
-	public void setNumUsers(int numUsers) {
-		_numUsers = numUsers;
-	}
-
 }

@@ -201,7 +201,7 @@ public class GameStatusHandler {
 	    	else if (content instanceof UserPopulationState) {
 	    		UserPopulationState userPopState = (UserPopulationState) content;
 	    		HashMap<Product, HashMap<UserState,Integer>> userDist = new HashMap<Product, HashMap<UserState,Integer>>();
-	    		for(Product p : userPopState) {
+	    		for(Product p : retailCatalog) {
 	    			int[] users = userPopState.getDistribution(p);
 	    			HashMap<UserState,Integer> userDistperProd = new HashMap<UserState, Integer>();
 	    			userDistperProd.put(UserState.NS, users[0]);
@@ -249,7 +249,7 @@ public class GameStatusHandler {
 		System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[0]).size());
 		System.out.println("Num Query Reports: " + queryReports.get(advertisers[0]).size());
 		System.out.println("Num Sales Reports: " + salesReports.get(advertisers[0]).size());
-		System.out.println("Num User Dists: " + salesReports.size());
+		System.out.println("Num User Dists: " + usersDists.size());
 		System.out.println("Slot info: " + slotInfo);
 		System.out.println("Reserve info: " + reserveInfo);
 		System.out.println("Pub info: " + pubInfo);

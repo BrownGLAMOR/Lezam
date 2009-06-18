@@ -40,11 +40,11 @@ public class BasicUserModel extends AbstractUserModel {
 		F2users = randGaussian(minF2,maxF2)/numProducts;
 		ISusers = randGaussian(minIS,maxIS)/numProducts;
 		Tusers = randGaussian(minT,maxT)/numProducts;
-		NSusers = (numUsers - F0users - F1users - F2users - ISusers - Tusers)/numProducts;
+		NSusers = (numUsers/numProducts - F0users - F1users - F2users - ISusers - Tusers);
 	}
 	
 	@Override
-	public double getPrediction(Product product, UserState userState) {
+	public int getPrediction(Product product, UserState userState) {
 		
 		/*
 		 * I just simulated a game for a really long time to get the minimum
@@ -56,22 +56,22 @@ public class BasicUserModel extends AbstractUserModel {
 		 */
 
 		if(userState == UserState.F0) {
-			return F0users/numUsers;
+			return (int) F0users;
 		}
 		else if(userState == UserState.F1) {
-			return F1users/numUsers;
+			return (int) F1users;
 		}
 		else if(userState == UserState.F2) {
-			return F2users/numUsers;
+			return (int) F2users;
 		}
 		else if(userState == UserState.IS) {
-			return ISusers/numUsers;
+			return (int) ISusers;
 		}
 		else if(userState == UserState.T) {
-			return Tusers/numUsers;
+			return (int) Tusers;
 		}
 		else if(userState == UserState.NS) {
-			return NSusers/numUsers;
+			return (int) NSusers;
 		}
 		else {
 			throw new RuntimeException("");

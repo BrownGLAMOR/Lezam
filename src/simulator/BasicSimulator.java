@@ -49,7 +49,7 @@ import simulator.models.PerfectClickProb;
 import simulator.models.PerfectConversionProb;
 import simulator.models.PerfectPositionToBid;
 import simulator.models.PerfectSlotToNumClicks;
-import simulator.models.PerfectSlotToNumImp;
+import simulator.models.PerfectQueryToNumImp;
 import simulator.models.PerfectUserModel;
 import simulator.parser.GameLogParser;
 import simulator.parser.GameStatus;
@@ -79,7 +79,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 
 	Random _R = new Random();					//Random number generator
 	
@@ -115,7 +115,6 @@ public class BasicSimulator {
 	private HashMap<String,Integer[]> _salesOverWindow;
 	private HashMap<String,Integer> _capacities;
 	private HashMap<Query,Double> _contProb;
-	private HashMap<UserState,Double> _users;
 	private Set<Query> _querySpace;
 
 	private HashMap<Query,Double> _ourAdvEffect;
@@ -300,7 +299,6 @@ public class BasicSimulator {
 		_bidsWithoutOurs = new HashMap<String,HashMap<Query,Double>>();
 		_budgets = new HashMap<String,HashMap<Query,Double>>();
 		_totBudget = new HashMap<String,Double>();
-		_users = new HashMap<UserState,Double>();
 		
 		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = _status.getUserDistributions();
 		HashMap<String, LinkedList<BankStatus>> bankStatuses = _status.getBankStatuses();
@@ -311,23 +309,12 @@ public class BasicSimulator {
 		
 		_ourSimulationStatus = simulationStatuses.get(_agents[_ourAdvIdx]).get(day);
 		
-    	_usersMap = userDists.get(_day);
-    	for(UserState state : UserState.values()) { 
-    		_users.put(state,0.0);
-    	}
-		for(Product p : _retailCatalog) {
-			HashMap<UserState, Integer> users = _usersMap.get(p);
-			for(UserState state : UserState.values()) {
-				_users.put(state, _users.get(state) + users.get(state));
-			}
+		if(_day >= 59) {
+			_usersMap = userDists.get(59);
 		}
-		double tot = 0.0;
-		for(UserState userState : UserState.values()) {
-			tot += _users.get(userState);
+		else {
+			_usersMap = userDists.get(_day + 1);
 		}
-		for(UserState userState : UserState.values()) {
-			_users.put(userState,_users.get(userState)/tot);
-		} 
 		
 		for(int i = 0; i < _agents.length; i++) {
 			AdvertiserInfo adInfo = _advInfos.get(_agents[i]);
@@ -359,22 +346,22 @@ public class BasicSimulator {
 	 */
 	public Set<AbstractModel> generatePerfectModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		AbstractUserModel userModel = new PerfectUserModel(_numUsers,_users);
+		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
+		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
 		models.add(userModel);
+		models.add(queryToNumImp);
 		for(Query query : _querySpace) {
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),_ourAdvIdx,query);
 			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,bidToSlotModel);
-			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bidsWithoutOurs,_advEffect,_contProb,_adType,_compSpecialties,_salesOverWindow,_capacities,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,_ourAdvIdx,userModel,query);
-			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,userModel);
+			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bidsWithoutOurs,_advEffect,_contProb,_adType,_compSpecialties,_salesOverWindow,_capacities,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,_ourAdvIdx,_retailCatalog, queryToNumImp, userModel,query);
+			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,_retailCatalog,userModel, queryToNumImp);
 			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),_ourAdvIdx,query);
-			AbstractQueryToNumImp slotToNumImp = new PerfectSlotToNumImp(_usersMap,_numSlots,_retailCatalog,query);
-			AbstractSlotToNumClicks slotToNumClicks = new PerfectSlotToNumClicks(slotToClickModel,slotToNumImp,query);
+			AbstractSlotToNumClicks slotToNumClicks = new PerfectSlotToNumClicks(slotToClickModel,queryToNumImp,query);
 			models.add(bidToSlotModel);
 			models.add(bidToCPCModel);
 			models.add(slotToClickModel);
 			models.add(convPrModel);
 			models.add(slotToBidModel);
-			models.add(slotToNumImp);
 			models.add(slotToNumClicks);
 		}
 		return models;
@@ -386,11 +373,6 @@ public class BasicSimulator {
 	public BidBundle getBids(SimAbstractAgent agentToRun) {
 		Set<AbstractModel> models = generatePerfectModels();
 		BidBundle bundle = agentToRun.getBidBundle(models);
-		for(Query query : _querySpace) {
-			debug(query+" :");
-			debug("\t" + bundle.getBid(query));
-			debug("\t" + bundle.getDailyLimit(query));
-		}
 		return bundle;
 	}
 	
@@ -405,7 +387,7 @@ public class BasicSimulator {
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				for(Query query : _querySpace) {
-					bids.put(query, bundle.getBid(query)+.05);
+					bids.put(query, bundle.getBid(query));
 					budgets.put(query,bundle.getDailyLimit(query));
 					adTypes.put(query, bundle.getAd(query));
 				}
@@ -663,7 +645,6 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		String filename = "/Users/jordan/Desktop/localhost_sim96.slg";
 		int advId = 7;
-		int day = 30;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();

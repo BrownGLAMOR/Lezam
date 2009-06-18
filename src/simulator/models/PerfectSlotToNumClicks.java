@@ -20,7 +20,7 @@ public class PerfectSlotToNumClicks extends AbstractSlotToNumClicks {
 
 	@Override
 	public int getPrediction(double slot) {
-		return (int) (_clickPrModel.getPrediction(slot)*_numImpModel.getPrediction(slot));
+		return (int) (_clickPrModel.getPrediction(slot)*_numImpModel.getPrediction(_query));
 	}
 
 	@Override
