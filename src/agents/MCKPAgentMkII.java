@@ -238,10 +238,10 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 					double bid = _slotToBidModels.get(q).getPrediction(s);
 					double CPC = _slotToBidModels.get(q).getPrediction(s+1);
 
-					System.out.println("Numer of clicks" + numClicks);
+					System.out.println("Number of convs" + numClicks*convProb);
 					
 					if (bid == 0) numClicks = 0;
-					double w = numClicks*bid; 				//weight = numClicks * CPC 		[cost]
+					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
 					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
 
 					int isID = _queryId.get(q);
@@ -254,7 +254,7 @@ public class MCKPAgentMkII extends SimAbstractAgent {
 			}
 
 			double budget = _capacity/_capWindow;
-
+			
 			HashMap<Query,Item> solution = fillKnapsack(incItems, budget);
 
 			//set bids

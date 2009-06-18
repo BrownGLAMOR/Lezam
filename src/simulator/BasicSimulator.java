@@ -467,7 +467,7 @@ public class BasicSimulator {
 			/*
 			 * Actually generates clicks and what not
 			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size() + 1; j++) {
+			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
 				AgentBidPair pair = pairList.get(j-1);
 				SimAgent agent = pair.getAgent();
 				double squashedBid = pair.getSquashedBid();
@@ -591,7 +591,7 @@ public class BasicSimulator {
 			for(int i = 0; i < agents.size(); i++) {
 				if(i == _ourAdvIdx) {
 					SimAgent agent = agents.get(i);
-					System.out.println("Slot " + (agent.getPosSum(q)/(agent.getNumPromImps(q)+agent.getNumRegImps(q))) + "  clicks " + agent.getNumClicks(q));
+					System.out.println("Slot " + (agent.getPosSum(q)/(agent.getNumPromImps(q)+agent.getNumRegImps(q))) + "  conversions " + agent.getUnitsSold(q));
 				}
 			}
 		}
@@ -655,7 +655,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/Users/jordan/Desktop/localhost_sim96.slg";
+		String filename = "/game156.slg";
 		int advId = 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
