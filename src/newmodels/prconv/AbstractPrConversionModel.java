@@ -3,7 +3,10 @@
  */
 package newmodels.prconv;
 
+import usermodel.UserState;
+import agents.Pair;
 import newmodels.AbstractModel;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -31,4 +34,5 @@ public abstract class AbstractPrConversionModel extends AbstractModel {
 		return _query;
 	}
 	
+	public Pair<Product,UserState> getPair() {return null;}
 }

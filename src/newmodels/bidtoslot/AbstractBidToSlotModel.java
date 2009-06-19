@@ -3,6 +3,8 @@
  */
 package newmodels.bidtoslot;
 
+import java.util.HashMap;
+
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -29,4 +31,7 @@ public abstract class AbstractBidToSlotModel extends AbstractModel {
 		return _query;
 	}
 	
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, HashMap<Query,Double> lastBids) {
+		return false;
+	}
 }
