@@ -20,36 +20,27 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	
 	protected BidBundle _bidBundle;
 
-	protected double X = 1.75; //X is the amount of profit an agent will try to make on each query at minimum
+	protected double X = 1.5; //X is the amount of profit an agent will try to make on each query at minimum
 	protected String _manufacturer;
 	protected String _component;
+	protected int _day;
 	
 	protected final double FO_BASELINE_PR_CONV = 0.1;
 	protected final double F1_BASELINE_PR_CONV = 0.2;
 	protected final double F2_BASELINE_PR_CONV = 0.3;
 	
 	protected double magic_factor = 1/.3;
-	protected double IS_factor = .9;
+	protected double IS_factor = .9; // assumes roughly 10% IS users
 	
 	protected HashMap<Query, Double> _values;
 	
 	protected double eta(double pi){
-		return 1.5*pi/(0.5*pi+1);
+		return 1.5*pi/(0.5*pi+1); 
 	}
 	
-	protected double getValue(Query query){
-		double value = 0;
-		double revenue = 10;
-		double conversionPr = 0;
-		String manufacturer = query.getManufacturer();
+	protected double getPrConversion(Query query){
 		String component = query.getComponent();
-		
-		if (manufacturer == null){
-			revenue = 11.666666;
-		} else if (manufacturer.equals(_manufacturer)){
-			revenue = 15;
-		}
-		
+		double conversionPr = 0;
 		if (query.getType() == QueryType.FOCUS_LEVEL_ZERO){
 			conversionPr = (FO_BASELINE_PR_CONV*2 + eta(FO_BASELINE_PR_CONV));
 			conversionPr /= 3;
@@ -69,7 +60,23 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 				conversionPr = F2_BASELINE_PR_CONV;
 			}
 		}
-		value = revenue*conversionPr*IS_factor;
+		return conversionPr*IS_factor;
+	}
+	
+	protected double getValue(Query query){
+		double value = 0;
+		double revenue = 10;
+		double conversionPr = getPrConversion(query);
+		String manufacturer = query.getManufacturer();
+		
+		if (manufacturer == null){
+			revenue = 11.666666;
+		} else if (manufacturer.equals(_manufacturer)){
+			revenue = 15;
+		}
+		
+		
+		value = revenue*conversionPr;
 		//value = Math.max(revenue*conversionPr, 0);
 		return value;
 	}
@@ -78,6 +85,10 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	public void initBidder() {
 		_manufacturer = _advertiserInfo.getManufacturerSpecialty();
 		_component = _advertiserInfo.getComponentSpecialty();
+		
+		//X += 0.75; // artifact of sales reports of 0
+		_day = -3;
+		
 		/*
 		// set values
 		
@@ -104,6 +115,8 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 
 	public BidBundle buildBidBundle(){
 		
+		_day++;
+		
 		int sum = 0;
 		
 		for (Query query : _querySpace) {
@@ -112,11 +125,12 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 			sum += _salesReport.getConversions(query);
 		}
 		
-		int oversold = sum -_advertiserInfo.getDistributionCapacity()/5;
+		int oversold = sum -_advertiserInfo.getDistributionCapacity()/5 -20;
 		
 		System.out.println(sum + " / " + _advertiserInfo.getDistributionCapacity()/5 + " units sold");
-		System.out.println("magic factor: " + magic_factor);
+		//System.out.println("magic factor: " + magic_factor);
 		System.out.println("X: " + X);
+		System.out.println("Day: " + _day);
 		
 		/*
 		// underselling
@@ -133,9 +147,11 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		}
 		*/
 		
-		double delta = ((double)sum/(_advertiserInfo.getDistributionCapacity()/5)-1)/4;
+		double delta = ((double)sum/(_advertiserInfo.getDistributionCapacity()/5+20)-1)/4;
 		System.out.println("delta = " + delta);
-		X += delta;
+		if (_day>=0){
+			X += delta;
+		}
 		
 		_bidBundle = new BidBundle();
 		
@@ -143,9 +159,9 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		
 		
 		for (Query query : _querySpace) {
-			System.out.println(query.getManufacturer() + "," + query.getComponent());
-			System.out.println(_salesReport.getConversions(query));
-			sum += _salesReport.getConversions(query);
+			//System.out.println(query.getManufacturer() + "," + query.getComponent());
+			//System.out.println(_salesReport.getConversions(query));
+			//sum += _salesReport.getConversions(query);
 			// set bids
 			double bid = getValue(query)-X;
 			if (bid < 0){
@@ -165,9 +181,13 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		
 		for (Query query : _querySpace) {
 			// set spend limit
-			double dailySalesLimit = (_advertiserInfo.getDistributionCapacity()-oversold)/5/(16-numberOfZeroQueries);
-			double dailyLimit = _bidBundle.getBid(query)*(dailySalesLimit+1)*magic_factor; // magic factor
-			_bidBundle.setDailyLimit(query, dailyLimit);
+			double dailySalesLimit = Math.max(0,(_advertiserInfo.getDistributionCapacity()-oversold))/5/(16-numberOfZeroQueries);
+			double dailyLimit = _bidBundle.getBid(query)*(dailySalesLimit+1)/getPrConversion(query);
+			if (_day<58){
+				_bidBundle.setDailyLimit(query, dailyLimit);
+			} else {
+				_bidBundle.setDailyLimit(query, dailyLimit*2);
+			}
 		}
 		
 		return _bidBundle;
