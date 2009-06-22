@@ -1,5 +1,6 @@
 package simulator.models;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -24,7 +25,7 @@ public class PerfectSlotToNumClicks extends AbstractSlotToNumClicks {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
 	}
 

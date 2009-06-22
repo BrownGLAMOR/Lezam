@@ -33,7 +33,7 @@ public class SimulatorGUI extends JFrame {
 	private GameStatus _gameStatus;
 	private SetupPanel startPanel;
 	private String _agentOut;
-	private String _agentIn;
+	private String[] _agentsIn;
 	private int _numSims;
 	private Dimension prefSize;
 	private BasicSimulator _simulator;
@@ -50,22 +50,22 @@ public class SimulatorGUI extends JFrame {
 		this.pack();
 		this.setVisible(true);
 	}
-	
+
 	public void setGameToParse(File file) {
 		_fileToParse = file;
 		SetupPanel2 parsePanel = new SetupPanel2(this,file);
 		switchFrames(parsePanel);
 	}
-	
+
 	public void setGameStatus(GameStatus status) {
 		_gameStatus = status;
 		SetupPanel3 simPanel = new SetupPanel3(this, status);
 		switchFrames(simPanel);
 	}
-	
-	public void setNumSims(BasicSimulator simulator, String agentIn, String agentOut, int numSims) throws IOException, ParseException {
+
+	public void setNumSims(BasicSimulator simulator, String[] agentsIn, String agentOut, int numSims) throws IOException, ParseException {
 		_simulator = simulator;
-		_agentIn = agentIn;
+		_agentsIn = agentsIn;
 		_agentOut = agentOut;
 		_numSims = numSims;
 		String[] advertisers = _gameStatus.getAdvertisers();
@@ -76,14 +76,17 @@ public class SimulatorGUI extends JFrame {
 			}
 		}
 
-		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		
-		for(int i = 0; i < _numSims; i++) {
-			HashMap<String, LinkedList<Reports>> maps = _simulator.runFullSimulation(_gameStatus, agentIn, advIdx);
-			reportsList.add(maps.get(advertisers[advIdx]));
-		}
-		
-		MainPanel mainPanel = new MainPanel(this,_simulator,_gameStatus,_agentIn,_agentOut,_numSims, prefSize,reportsList);
+		HashMap<String, LinkedList<LinkedList<Reports>>> reportsListMap = new HashMap<String, LinkedList<LinkedList<Reports>>>();
+		for(int i = 0 ; i < _agentsIn.length; i++) {
+			LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
+			for(int j = 0; j < _numSims; j++) {
+				HashMap<String, LinkedList<Reports>> maps = _simulator.runFullSimulation(_gameStatus, agentsIn[i], advIdx);
+				reportsList.add(maps.get(advertisers[advIdx]));
+			}
+			reportsListMap.put(_agentsIn[i], reportsList);
+		}		
+		MainPanel mainPanel = new MainPanel(this,_simulator,_gameStatus,_agentsIn,_agentOut,_numSims, prefSize,reportsListMap);
 		switchFrames(mainPanel);
 	}
 

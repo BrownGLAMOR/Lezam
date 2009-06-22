@@ -11,6 +11,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.text.NumberFormatter;
 
@@ -20,7 +21,7 @@ import simulator.parser.GameStatus;
 public class SetupPanel3 extends JPanel {
 
 	private SimulatorGUI _simulatorGUI;
-	private JComboBox _agentList;
+	private JList _agentList;
 	private JComboBox _agentList2;
 	private JFormattedTextField _numSims;
 	private GameStatus _gameStatus;
@@ -40,8 +41,8 @@ public class SetupPanel3 extends JPanel {
 		JLabel label1 = new JLabel("Which agent do you want to simulate: ");
 		panel1.add(label1);
 		String[] agentStrings = _simulator.getUsableAgents();
-		_agentList = new JComboBox(agentStrings);
-		_agentList.setSelectedIndex(0);
+		_agentList = new JList(agentStrings);
+		_agentList.setVisibleRowCount(-1);
 		panel1.add(_agentList);
 
 		
@@ -77,11 +78,15 @@ public class SetupPanel3 extends JPanel {
 	class SimButtonListener implements ActionListener {
 
 		public void actionPerformed(ActionEvent e) {
-			String agentIn = (String) _agentList.getSelectedItem();
+			int[] selectedIndices = _agentList.getSelectedIndices();
+			String[] agentsIn = new String[selectedIndices.length];
+			for(int i = 0; i < selectedIndices.length; i++) {
+				agentsIn[i] = (String) _agentList.getModel().getElementAt(selectedIndices[i]);
+			}
 			String agentOut = (String) _agentList2.getSelectedItem();
 			int numSims = Integer.parseInt(_numSims.getText());
 			try {
-				_simulatorGUI.setNumSims(_simulator,agentIn, agentOut, numSims);
+				_simulatorGUI.setNumSims(_simulator,agentsIn, agentOut, numSims);
 			} catch (IOException e1) {
 				e1.printStackTrace();
 				throw new RuntimeException("Encountered an error parsing the logs: " + e1);
