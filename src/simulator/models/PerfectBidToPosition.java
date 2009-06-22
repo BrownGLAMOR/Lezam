@@ -67,7 +67,7 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 		double realbid = Math.pow(_ourAdEffect, _squashing)*bid;
 		bids.add(realbid);
 		Collections.sort(bids,Collections.reverseOrder());
-		for(int i = 0; i < bids.size()-1;i++) {
+		for(int i = 0; i < bids.size();i++) {
 			if(bids.get(i) == realbid) {
 				/*
 				 * Return the position this bid puts us in
