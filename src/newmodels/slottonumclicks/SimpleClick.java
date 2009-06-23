@@ -1,6 +1,8 @@
 package newmodels.slottonumclicks;
 
 
+import com.sun.org.apache.bcel.internal.generic.RETURN;
+
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -57,6 +59,7 @@ public class SimpleClick extends AbstractSlotToNumClicks{
 	
 	@Override
 	public int getPrediction(double targetSlot) {
+		if (targetSlot > 5 || targetSlot < 1) return -1; 
 		return (int)estimate[(int)targetSlot];
 	}
 
