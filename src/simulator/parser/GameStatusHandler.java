@@ -115,7 +115,6 @@ public class GameStatusHandler {
 				 * days one and two before we actually get bank information back
 				 * because of the two day lag.
 				 */
-				System.out.println(bankstatustemp);
 				if(day >= 0) {
 					String name = participantNames[to];
 					LinkedList<BankStatus> bankstatuslist = bankStatuses.get(name);

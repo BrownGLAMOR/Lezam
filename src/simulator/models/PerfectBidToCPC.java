@@ -21,7 +21,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	@Override
 	public double getPrediction(double bid) {
 		Reports reports = _simulator.getSingleQueryReport(_query, bid);
-		return reports.getQueryReport().getCost(_query);
+		return reports.getQueryReport().getCPC(_query);
 	}
 
 	@Override

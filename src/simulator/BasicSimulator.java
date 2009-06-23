@@ -1,17 +1,6 @@
 package simulator;
 
-/*
- * TODO
- * NEED TO CHECK PERFECT MODELS!!!
- * 
- * CHANGE USER MODELS TO BE ACCESSED BY PRODUCT AND USERSTATE AND RETURN AN INT!
- * 
- */
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,42 +10,30 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtonumclicks.AbstractBidToNumClicks;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.prconv.AbstractPrConversionModel;
+import se.sics.tasim.aw.Message;
+import se.sics.tasim.props.SimulationStatus;
+import simulator.models.PerfectBidToCPC;
+import simulator.models.PerfectBidToNumClicks;
+import simulator.models.PerfectBidToPosition;
+import simulator.models.PerfectBidToPrClick;
+import simulator.models.PerfectConversionProb;
+import simulator.models.PerfectQueryToNumImp;
+import simulator.models.PerfectUserModel;
+import simulator.parser.GameStatus;
+import simulator.parser.GameStatusHandler;
+import usermodel.UserState;
 import agents.Cheap;
 import agents.EqPftAgent;
 import agents.ILPAgent;
-import agents.MCKPAgentMkII;
-import agents.SimAbstractAgent;
+import agents.MCKPAgentMkIIBids;
 import agents.NewSSB;
-
-import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
-import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.querytonumimp.AbstractQueryToNumImp;
-import newmodels.slottobid.AbstractSlotToBidModel;
-import newmodels.slottoprclick.AbstractSlotToPrClick;
-import newmodels.slottonumclicks.AbstractSlotToNumClicks;
-import newmodels.usermodel.AbstractUserModel;
-
-import se.sics.isl.transport.Transportable;
-import se.sics.tasim.aw.Message;
-import se.sics.tasim.logtool.LogReader;
-import se.sics.tasim.logtool.ParticipantInfo;
-import se.sics.tasim.props.SimulationStatus;
-import simulator.models.PerfectBidToCPC;
-import simulator.models.PerfectBidToPosition;
-import simulator.models.PerfectClickProb;
-import simulator.models.PerfectConversionProb;
-import simulator.models.PerfectPositionToBid;
-import simulator.models.PerfectSlotToNumClicks;
-import simulator.models.PerfectQueryToNumImp;
-import simulator.models.PerfectUserModel;
-import simulator.parser.GameLogParser;
-import simulator.parser.GameStatus;
-import simulator.parser.GameStatusHandler;
-import simulator.parser.SimParserMessage;
-import usermodel.UserState;
-
+import agents.SimAbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
@@ -187,6 +164,7 @@ public class BasicSimulator {
 			for(Query query : _querySpace) {
 				singleQueryReports.put(query,new HashMap<Double, Reports>());
 			}
+
 			HashMap<String, Reports> maps = runSimulation(agent);
 
 			/*
@@ -351,13 +329,15 @@ public class BasicSimulator {
 			_budgets.put(_agents[i], budgets);
 		}
 	}
-	
+
 	public Reports getSingleQueryReport(Query query, double bid) {
 		Reports reports = singleQueryReports.get(query).get(bid);
 		if(reports == null) {
 			HashMap<Double, Reports> reportsMap = singleQueryReports.get(query);
-			reportsMap.put(bid, runQuerySimulation(bid, new Ad(), query));
+			Reports tempReports = runQuerySimulation(bid, new Ad(), query);
+			reportsMap.put(bid, tempReports);
 			singleQueryReports.put(query, reportsMap);
+			return tempReports;
 		}
 		else {
 			return reports;
@@ -374,18 +354,16 @@ public class BasicSimulator {
 		models.add(userModel);
 		models.add(queryToNumImp);
 		for(Query query : _querySpace) {
-			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),_ourAdvIdx,query);
-			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,bidToSlotModel);
-			AbstractSlotToPrClick slotToClickModel = new PerfectClickProb(_agents,_bidsWithoutOurs,_advEffect,_contProb,_adType,_compSpecialties,_salesOverWindow,_capacities,_ourAdvEffect.get(query),_squashing,_numPromSlots,_numSlots,_proReserve,_targEffect,_promSlotBonus,_ourAdvIdx,_retailCatalog, queryToNumImp, userModel,query);
+			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,this);
+			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
+			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
+			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(query,this);
 			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,_retailCatalog,userModel, queryToNumImp);
-			AbstractSlotToBidModel slotToBidModel = new PerfectPositionToBid(_agents,_bidsWithoutOurs,_advEffect,_squashing,_ourAdvEffect.get(query),_ourAdvIdx,query);
-			AbstractSlotToNumClicks slotToNumClicks = new PerfectSlotToNumClicks(slotToClickModel,queryToNumImp,query);
-			models.add(bidToSlotModel);
 			models.add(bidToCPCModel);
-			models.add(slotToClickModel);
+			models.add(bidToNumClicks);
+			models.add(bidToSlotModel);
+			models.add(bidToClickPrModel);
 			models.add(convPrModel);
-			models.add(slotToBidModel);
-			models.add(slotToNumClicks);
 		}
 		return models;
 	}
@@ -434,14 +412,16 @@ public class BasicSimulator {
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				double totBudget = Double.NaN;
 				for(Query query : _querySpace) {
-					if(query == simQuery) {
+					if(query.equals(simQuery)) {
 						bids.put(query, simBid);
 						budgets.put(query,Double.NaN);
 						adTypes.put(query, simAd);
 					}
-					bids.put(query,0.0);
-					budgets.put(query,0.0);
-					adTypes.put(query,new Ad());
+					else{
+						bids.put(query,0.0);
+						budgets.put(query,0.0);
+						adTypes.put(query,new Ad());
+					}
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_testId ,_squashing,_querySpace);
 			}
@@ -474,120 +454,130 @@ public class BasicSimulator {
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
-			if(query == null || query != simQuery) {
+			if(query == null) {
 				//This means the user is IS or T
 				//Second part is because we are only simulating one query
 				continue;
 			}
-			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
-			for(int j = 0; j < agents.size(); j++) {
-				SimAgent agent = agents.get(j);
-				double budget = agent.getBudget(query);
-				double cost = agent.getCost(query);
-				if(budget > cost || Double.isNaN(budget)) {
-					double totBudget = agent.getTotBudget();
-					double totCost = agent.getTotCost();
-					if(totBudget > totCost || Double.isNaN(totBudget)) {
-						double squashedBid = agent.getSquashedBid(query);
-						if(squashedBid >= _regReserve) {
-							AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
-							pairList.add(pair);
+			if(query.equals(simQuery)){
+				ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
+				for(int j = 0; j < agents.size(); j++) {
+					SimAgent agent = agents.get(j);
+					double budget = agent.getBudget(query);
+					double cost = agent.getCost(query);
+					if(budget > cost || Double.isNaN(budget)) {
+						double totBudget = agent.getTotBudget();
+						double totCost = agent.getTotCost();
+						if(totBudget > totCost || Double.isNaN(totBudget)) {
+							double squashedBid = agent.getSquashedBid(query);
+							if(squashedBid >= _regReserve) {
+								AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
+								pairList.add(pair);
+							}
 						}
 					}
 				}
-			}
-			/*
-			 * This sorts the list by squashed bid
-			 */
-			Collections.sort(pairList);
-			/*
-			 * Adds impressions
-			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
-				AgentBidPair pair = pairList.get(j-1);
-				double squashedBid = pair.getSquashedBid();
-				if(j <= _numPromSlots && squashedBid >= _proReserve) {
-					pair.getAgent().addImpressions(query, 0, 1, j);
-				}
-				else {
-					pair.getAgent().addImpressions(query, 1, 0, j);
-				}
-
-			}
-			/*
-			 * Actually generates clicks and what not
-			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
-				AgentBidPair pair = pairList.get(j-1);
-				SimAgent agent = pair.getAgent();
-				double squashedBid = pair.getSquashedBid();
-				double contProb = _contProb.get(query);
-				Ad ad = agent.getAd(query);
-				double advEffect = agent.getAdvEffect(query);
-				double fTarg = 1;
-				if(ad != null && !ad.isGeneric()) {
-					if(ad.getProduct() == new Product(query.getManufacturer(),query.getComponent())) {
-						fTarg = 1 + _targEffect;
+				/*
+				 * This sorts the list by squashed bid
+				 */
+				Collections.sort(pairList);
+				/*
+				 * Adds impressions
+				 */
+				for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+					AgentBidPair pair = pairList.get(j-1);
+					double squashedBid = pair.getSquashedBid();
+					if(j <= _numPromSlots && squashedBid >= _proReserve) {
+						pair.getAgent().addImpressions(query, 0, 1, j);
 					}
 					else {
-						fTarg = 1/(1+_targEffect);
+						pair.getAgent().addImpressions(query, 1, 0, j);
 					}
+
 				}
-
-				double fProm = 1;
-				if(j <= _numPromSlots && squashedBid >= _proReserve) {
-					fProm = 1 + _promSlotBonus;
-				}
-				double clickPr = eta(advEffect,fTarg*fProm);
-				double rand = _R.nextDouble();
-				if(clickPr >= rand) {
-					AgentBidPair underPair = pairList.get(j);
-					SimAgent agentUnder = underPair.getAgent();
-					double bidUnder = agentUnder.getBid(query);
-					double advEffUnder = agentUnder.getAdvEffect(query);
-					double squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
-					if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
-						squashedBidUnder = _proReserve;
-					}
-					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing);
-					agent.addCost(query, cpc);
-
-					double baselineConv;
-
-					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-						baselineConv = .1;
-					}
-					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-						baselineConv = .2;
-					}
-					else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-						baselineConv = .3;
-					}
-					else {
-						throw new RuntimeException("Malformed Query");
-					}
-
-					double overCap = agent.getOverCap();
-					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
-
-					String queryComp = query.getComponent();
-					String compSpecialty = agent.getCompSpecialty();
-
-					if(queryComp == compSpecialty) {
-						convPr = eta(convPr,1+_CSB);
-					}
-
-					rand = _R.nextDouble();
-
-					if(convPr >= rand) {
-						String queryMan = query.getManufacturer();
-						String manSpecialty = agent.getManSpecialty();
-						double revenue = 10;
-						if(manSpecialty.equals(queryMan)) {
-							revenue = (1+_MSB)*10;
+				/*
+				 * Actually generates clicks and what not
+				 */
+				for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+					AgentBidPair pair = pairList.get(j-1);
+					SimAgent agent = pair.getAgent();
+					double squashedBid = pair.getSquashedBid();
+					double contProb = _contProb.get(query);
+					Ad ad = agent.getAd(query);
+					double advEffect = agent.getAdvEffect(query);
+					double fTarg = 1;
+					if(ad != null && !ad.isGeneric()) {
+						if(ad.getProduct() == new Product(query.getManufacturer(),query.getComponent())) {
+							fTarg = 1 + _targEffect;
 						}
-						agent.addRevenue(query, revenue);
-						break;
+						else {
+							fTarg = 1/(1+_targEffect);
+						}
+					}
+
+					double fProm = 1;
+					if(j <= _numPromSlots && squashedBid >= _proReserve) {
+						fProm = 1 + _promSlotBonus;
+					}
+					double clickPr = eta(advEffect,fTarg*fProm);
+					double rand = _R.nextDouble();
+					if(clickPr >= rand) {
+						AgentBidPair underPair = pairList.get(j);
+						SimAgent agentUnder = underPair.getAgent();
+						double bidUnder = agentUnder.getBid(query);
+						double advEffUnder = agentUnder.getAdvEffect(query);
+						double squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
+						if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
+							squashedBidUnder = _proReserve;
+						}
+						double cpc = squashedBidUnder / Math.pow(advEffect, _squashing);
+						agent.addCost(query, cpc);
+						double baselineConv;
+
+						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+							baselineConv = .1;
+						}
+						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+							baselineConv = .2;
+						}
+						else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+							baselineConv = .3;
+						}
+						else {
+							throw new RuntimeException("Malformed Query");
+						}
+
+						double overCap = agent.getOverCap();
+						double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
+
+						String queryComp = query.getComponent();
+						String compSpecialty = agent.getCompSpecialty();
+
+						if(queryComp == compSpecialty) {
+							convPr = eta(convPr,1+_CSB);
+						}
+
+						rand = _R.nextDouble();
+
+						if(convPr >= rand) {
+							String queryMan = query.getManufacturer();
+							String manSpecialty = agent.getManSpecialty();
+							double revenue = 10;
+							if(manSpecialty.equals(queryMan)) {
+								revenue = (1+_MSB)*10;
+							}
+							agent.addRevenue(query, revenue);
+							break;
+						}
+						else {
+							rand = _R.nextDouble();
+							if(contProb >= rand) {
+								continue;
+							}
+							else {
+								break;
+							}
+						}
 					}
 					else {
 						rand = _R.nextDouble();
@@ -599,15 +589,6 @@ public class BasicSimulator {
 						}
 					}
 				}
-				else {
-					rand = _R.nextDouble();
-					if(contProb >= rand) {
-						continue;
-					}
-					else {
-						break;
-					}
-				}
 			}
 		}
 		SimAgent ourAgent = agents.get(_ourAdvIdx);
@@ -616,7 +597,7 @@ public class BasicSimulator {
 		Reports reports = new Reports(queryReport,salesReport);
 		return reports;
 	}
-	
+
 	/*
 	 * Runs the simulation and generates reports
 	 */
@@ -816,7 +797,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkII();
+			return new MCKPAgentMkIIBids();
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -831,7 +812,7 @@ public class BasicSimulator {
 			return new NewSSB();
 		}
 		else {
-			return new MCKPAgentMkII();
+			return new MCKPAgentMkIIBids();
 		}
 	}
 
@@ -857,7 +838,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/game156.slg";
+		String filename = "/Users/jordan/Desktop/localhost_sim96.slg";
 		int advId = 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
