@@ -61,7 +61,7 @@ public class MainPanel  extends JPanel {
 	private JLabel lblChart;
 	private boolean _deviation;
 	private JCheckBox deviationButton;
-	
+
 	public MainPanel(SimulatorGUI simulatorGUI, BasicSimulator simulator, GameStatus status, String[] agentsIn, String agentOut, int numSims, Dimension prefSize, HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap) {
 		super();
 		BoxLayout layout = new BoxLayout(this,BoxLayout.PAGE_AXIS);
@@ -76,15 +76,15 @@ public class MainPanel  extends JPanel {
 		_reportsListMap = reportsListMap;
 
 		simsPanel = new JPanel(new FlowLayout());
-		String[] numSimsStrings = { "Total Profits", "Daily Profits" , "Daily Impressions" , "Daily Clicks" , "Daily Conversions"};
+		String[] numSimsStrings = { "Total Profits", "Daily Profits" , "Daily Impressions" , "Daily Clicks" , "Daily Conversions", "Windowed Conversions"};
 		_numSimsList = new JComboBox(numSimsStrings);
 		_numSimsList.setSelectedIndex(0);
 		simsPanel.add(_numSimsList);
-		
+
 		JPanel deviationPanel = new JPanel(new FlowLayout());
 		deviationButton = new JCheckBox("Min/Max Deviations",true);
 		deviationPanel.add(deviationButton);
-		
+
 		simsPanel.add(deviationPanel);
 
 		JPanel rechartPanel = new JPanel(new FlowLayout());
@@ -235,7 +235,7 @@ public class MainPanel  extends JPanel {
 
 		return chart;
 	}
-	
+
 	public JFreeChart dailyClicksChart(HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap, String[] agentsIn) {
 		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
 		for(int i = 0; i < agentsIn.length; i++) {
@@ -291,8 +291,8 @@ public class MainPanel  extends JPanel {
 
 		return chart;
 	}
-	
-	
+
+
 	public JFreeChart dailyImpsChart(HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap, String[] agentsIn) {
 		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
 		for(int i = 0; i < agentsIn.length; i++) {
@@ -347,7 +347,7 @@ public class MainPanel  extends JPanel {
 
 		return chart;
 	}
-	
+
 	public JFreeChart dailyConvsChart(HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap, String[] agentsIn) {
 		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
 		for(int i = 0; i < agentsIn.length; i++) {
@@ -403,6 +403,69 @@ public class MainPanel  extends JPanel {
 		return chart;
 	}
 
+	public JFreeChart dailyWindowChart(HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap, String[] agentsIn) {
+		YIntervalSeriesCollection yIntervalSeriesColl = new YIntervalSeriesCollection();
+		for(int i = 0; i < agentsIn.length; i++) {
+			double[] minConvs = new double[reportsListMap.get(agentsIn[i]).get(0).size()];
+			double[] maxConvs = new double[reportsListMap.get(agentsIn[i]).get(0).size()];
+			double[] avgConvs = new double[reportsListMap.get(agentsIn[i]).get(0).size()];
+
+			for(int j = 0; j < reportsListMap.get(agentsIn[i]).get(0).size(); j++) {
+				minConvs[j] = Double.MAX_VALUE;
+				maxConvs[j] = -Double.MAX_VALUE;
+				avgConvs[j] = 0.0;
+			}
+
+			for(int day = 0; day < reportsListMap.get(agentsIn[i]).get(0).size(); day++) {
+				for(int sim = 0; sim < reportsListMap.get(agentsIn[i]).size(); sim++) {
+					LinkedList<Reports> windowedConvsList = new LinkedList<Reports>();
+					for(int day2 = 0; day2 < 5; day2++) {
+						if(day-day2 >= 0) {
+							Reports reports = reportsListMap.get(agentsIn[i]).get(sim).get(day-day2);
+							windowedConvsList.add(reports);
+						}
+					}
+					double totConvs = 0.0;
+					for(Reports reports : windowedConvsList) {
+						SalesReport salesReport = reports.getSalesReport();
+						for(Query query : _simulator.getQuerySpace()) {
+							totConvs += salesReport.getConversions(query);
+						}
+					}
+					avgConvs[day] += totConvs;
+					if(totConvs > maxConvs[day]) {
+						maxConvs[day] = totConvs;
+					}
+					else if(totConvs < minConvs[day]) {
+						minConvs[day] = totConvs;
+					}
+				}
+			}
+			for(int day = 0; day < reportsListMap.get(agentsIn[i]).get(0).size(); day++) {
+				avgConvs[day] = avgConvs[day] / reportsListMap.get(agentsIn[i]).size();
+			}
+
+			YIntervalSeries series = new YIntervalSeries(_agentsIn[i]);
+
+			for(int day = 0; day < reportsListMap.get(agentsIn[i]).get(0).size(); day++) {
+				series.add(day, avgConvs[day], minConvs[day], maxConvs[day]);
+			}
+			yIntervalSeriesColl.addSeries(series);
+		}
+		XYDataset xyDataset = yIntervalSeriesColl;
+		JFreeChart chart = ChartFactory.createXYLineChart
+		("Avg Conversions over 5 day window over " + reportsListMap.get(agentsIn[0]).size() + " sims",  // Title
+				"Day",           // X-Axis label
+				"Conversions",           // Y-Axis label
+				xyDataset,          // Dataset
+				PlotOrientation.VERTICAL,
+				true,
+				true,
+				false);
+
+		return chart;
+	}
+
 
 	private JFreeChart addDeviation(JFreeChart chart) {
 		chart.setBackgroundPaint(Color.white);
@@ -415,12 +478,12 @@ public class MainPanel  extends JPanel {
 		plot.setRangeGridlinePaint(Color.white);
 
 		DeviationRenderer renderer = new DeviationRenderer(true, false);
-//		renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_ROUND,
-//				BasicStroke.JOIN_ROUND));
-//		renderer.setSeriesStroke(0, new BasicStroke(3.0f));
-//		renderer.setSeriesStroke(1, new BasicStroke(3.0f));
-//		renderer.setSeriesFillPaint(0, new Color(0, 0, 255));
-//		renderer.setSeriesFillPaint(1, new Color(255, 0, 0));
+		//		renderer.setSeriesStroke(0, new BasicStroke(3.0f, BasicStroke.CAP_ROUND,
+		//				BasicStroke.JOIN_ROUND));
+		//		renderer.setSeriesStroke(0, new BasicStroke(3.0f));
+		//		renderer.setSeriesStroke(1, new BasicStroke(3.0f));
+		//		renderer.setSeriesFillPaint(0, new Color(0, 0, 255));
+		//		renderer.setSeriesFillPaint(1, new Color(255, 0, 0));
 		plot.setRenderer(renderer);
 
 		// change the auto tick unit selection to integer units only...
@@ -457,6 +520,9 @@ public class MainPanel  extends JPanel {
 			}
 			else if (simSelection.equals("Daily Conversions")) {
 				chart = dailyConvsChart(_reportsListMap,_agentsIn);
+			}
+			else if (simSelection.equals("Windowed Conversions")) {
+				chart = dailyWindowChart(_reportsListMap,_agentsIn);
 			}
 			else {
 				throw new RuntimeException("Bad Selection");

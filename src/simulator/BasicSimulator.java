@@ -26,6 +26,7 @@ import simulator.models.PerfectBidToPrClick;
 import simulator.models.PerfectBidToPrConv;
 import simulator.models.PerfectConversionProb;
 import simulator.models.PerfectQueryToNumImp;
+import simulator.models.PerfectUnitsSoldModel;
 import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -58,7 +59,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 
 	Random _R = new Random();					//Random number generator
 
@@ -174,15 +175,18 @@ public class BasicSimulator {
 			 */
 			for(int i = 0; i < _agents.length; i++) {
 				Integer[] sales = _salesOverWindow.get(_agents[i]);
-				for(int j = sales.length-1; j >=1; j--) {
-					sales[j] = sales[j-1];
-				}
+				Integer[] newSales = new Integer[sales.length];
+
 				int totConversions = 0;
 				for(Query query : _querySpace) {
 					totConversions += maps.get(_agents[i]).getSalesReport().getConversions(query);
 				}
-				sales[0] = totConversions;
-				_salesOverWindow.put(_agents[i], sales);
+				newSales[0] = totConversions;
+
+				for(int j = 0; j < sales.length-1; j++) {
+					newSales[j+1] = sales[j];
+				}
+				_salesOverWindow.put(_agents[i], newSales);
 			}
 			/*
 			 * Keep track of all the reports
@@ -267,7 +271,8 @@ public class BasicSimulator {
 			_advEffect.put(_agents[i], advEffect);
 			Integer[] sales = new Integer[adInfo.getDistributionWindow()];
 			for(int j = 0; j < adInfo.getDistributionWindow(); j++) {
-				sales[j] = adInfo.getDistributionCapacity()/adInfo.getDistributionWindow();
+				//				sales[j] = adInfo.getDistributionCapacity()/adInfo.getDistributionWindow();
+				sales[j] = 0;
 			}
 			_salesOverWindow.put(_agents[i], sales);
 			if(i == _ourAdvIdx) {
@@ -356,8 +361,10 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
+		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]));
 		models.add(userModel);
 		models.add(queryToNumImp);
+		models.add(unitsSold);
 		for(Query query : _querySpace) {
 			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,this);
 			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
@@ -846,7 +853,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/u/jberg/Desktop/game.slg";
+		String filename = "/game156.slg";
 		int advId = 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();

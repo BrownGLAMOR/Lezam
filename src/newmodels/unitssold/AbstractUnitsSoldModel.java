@@ -9,7 +9,7 @@ import newmodels.AbstractModel;
  * @author cjc
  *
  */
-public abstract class AbstractUnitsSoldModel extends AbstractModel{
+public abstract class AbstractUnitsSoldModel extends AbstractModel {
 
 	public abstract void update(SalesReport salesReport);
 	

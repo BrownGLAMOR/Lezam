@@ -32,6 +32,7 @@ import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.slottonumclicks.BasicSlotToNumClicks;
 import newmodels.slottoprclick.AbstractSlotToPrClick;
 import newmodels.slottoprclick.BasicSlotToPrClick;
+import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
 
@@ -56,7 +57,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 	private int _numUsers = 90000;
 	private double _defaultBid;
 	private HashMap<Query, Double> _recentBids;
@@ -72,11 +73,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractQueryToNumImp _queryToNumImpModel;
 	private LinkedList<Double> bidList;
 	private HashMap<Query, AbstractBidToPrConv> _bidToPrConv;
+	private AbstractUnitsSoldModel _unitsSold;
 
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
-				double increment = .25;
-//		double increment  = .1;
+		double increment = .25;
+		//		double increment  = .1;
 		double min = 0;
 		double max = 4;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -127,6 +129,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else if(model instanceof AbstractQueryToNumImp) {
 				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 				_queryToNumImpModel = queryToNumImp;
+			}
+			else if(model instanceof AbstractUnitsSoldModel) {
+				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
+				_unitsSold = unitsSold;
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
@@ -221,6 +227,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 				queryToNumImp.updateModel(queryReport, salesReport);
 			}
+			else if(model instanceof AbstractUnitsSoldModel) {
+				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
+				unitsSold.update(salesReport);
+			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
 				bidToCPC.updateModel(queryReport, salesReport);
@@ -251,7 +261,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
-		if(_day >= 2){
+		if(models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 			HashMap<Query,IncItem[]> incItems = new HashMap<Query,IncItem[]>();
@@ -276,7 +286,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					debug("\tnumClicks: " + numClicks);
 					debug("\tCPC: " + CPC);
 					debug("\tPos: " + _bidToSlotModels.get(q).getPrediction(bid));
-					
+
 					AbstractBidToPrConv prConvModel = _bidToPrConv.get(q);
 					double convProb;
 					if(prConvModel != null) {
@@ -288,7 +298,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
 					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
-//										double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					//										double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 					if(Double.isNaN(CPC)) {
 						w = 0.0;
@@ -305,6 +315,14 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 
 			double budget = _capacity/_capWindow; 
+			if(_unitsSold != null) {
+				System.out.println("Average Budget: " + budget);
+				budget = _capacity - _unitsSold.getWindowSold();
+				if(budget < 20) {
+					budget = 20;
+				}
+				System.out.println("Unit Sold Model Budget "  +budget);
+			}
 
 			HashMap<Query,Item> solution = fillKnapsack(incItems, budget);
 
@@ -322,8 +340,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					weight = 0;
 				}
 
-//												bidBundle.addQuery(q, bid, new Ad(), weight);
-				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				bidBundle.addQuery(q, bid, new Ad(), weight);
+				//				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
 		//bid bundle for first two days
@@ -373,19 +391,19 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			double besteff = -Double.MAX_VALUE;
 			Query bestQ = null;
 			for(Query q : _querySpace) {
-				System.out.println("Query: " + q);
+				debug("Query: " + q);
 				int currIdx = temp.get(q);
 				IncItem[] incItem = incItems.get(q);
 				if(currIdx + 1 < incItem.length) {
 					double eff = incItem[currIdx + 1].eff();
-					System.out.println("\tEff: " + eff);
+					debug("\tEff: " + eff);
 					if(eff > besteff) {
 						besteff = eff;
 						bestQ = q;
 					}
 				}
 			}
-			System.out.println("Chose: " + bestQ);
+			debug("Chose: " + bestQ);
 			if(bestQ == null) {
 				break;
 			}
