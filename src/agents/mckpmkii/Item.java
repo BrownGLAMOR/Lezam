@@ -8,7 +8,17 @@ public class Item {
 	double _v;
 	double _b;//bid
 	int _isID;//item set id (i.e., id for the query)
+	private int _numConv;
 	public static int UNDEFINED = -1;
+	
+	public Item(Query q, double w, double v, double b, int numConv, int isID) {
+		_q = q;
+		_w = w;
+		_v = v;
+		_b = b;
+		_numConv = numConv;
+		_isID = isID;
+	}
 	
 	public Item(Query q, double w, double v, double b, int isID) {
 		_q = q;
@@ -32,6 +42,10 @@ public class Item {
 
 	public double v() {
 		return _v;
+	}
+	
+	public int numConv() {
+		return _numConv;
 	}
 
 	public double b() {

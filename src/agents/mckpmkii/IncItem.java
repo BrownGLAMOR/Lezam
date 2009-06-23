@@ -4,6 +4,15 @@ public class IncItem implements Comparable<IncItem>{
 	Item _item;
 	double _w;
 	double _v;
+	private int _numConv;
+	
+	
+	public IncItem(double w, double v, int numConv, Item item) {
+		_item = item;
+		_w = w;
+		_v = v;
+		_numConv = numConv;
+	}
 	
 	public IncItem(double w, double v, Item item) {
 		_item = item;
@@ -21,6 +30,10 @@ public class IncItem implements Comparable<IncItem>{
 
 	public double v() {
 		return _v;
+	}
+	
+	public double numConv() {
+		return _numConv;
 	}
 
 	public double eff() {

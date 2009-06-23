@@ -14,6 +14,7 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.AbstractPrConversionModel;
 import se.sics.tasim.aw.Message;
@@ -22,6 +23,7 @@ import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToNumClicks;
 import simulator.models.PerfectBidToPosition;
 import simulator.models.PerfectBidToPrClick;
+import simulator.models.PerfectBidToPrConv;
 import simulator.models.PerfectConversionProb;
 import simulator.models.PerfectQueryToNumImp;
 import simulator.models.PerfectUserModel;
@@ -268,6 +270,9 @@ public class BasicSimulator {
 				sales[j] = adInfo.getDistributionCapacity()/adInfo.getDistributionWindow();
 			}
 			_salesOverWindow.put(_agents[i], sales);
+			if(i == _ourAdvIdx) {
+				System.out.println(adInfo.getDistributionCapacity());
+			}
 			_capacities.put(_agents[i],adInfo.getDistributionCapacity());
 		}
 		_ourAdvEffect = _advEffect.get(_agents[_ourAdvIdx]);
@@ -358,11 +363,13 @@ public class BasicSimulator {
 			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
 			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(query,this);
+			AbstractBidToPrConv bidToConvPrModel = new PerfectBidToPrConv(query,this);
 			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,_retailCatalog,userModel, queryToNumImp);
 			models.add(bidToCPCModel);
 			models.add(bidToNumClicks);
 			models.add(bidToSlotModel);
 			models.add(bidToClickPrModel);
+			models.add(bidToConvPrModel);
 			models.add(convPrModel);
 		}
 		return models;
@@ -838,13 +845,12 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/Users/jordan/Desktop/localhost_sim96.slg";
+		String filename = "/game156.slg";
 		int advId = 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();
 		int numSims = 1;
-		sim.initializeBasicInfo(status,advId);
 		for(int i = 0; i < numSims; i++) {
 			sim.runFullSimulation(status, "MCKP",advId);
 		}
