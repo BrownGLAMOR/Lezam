@@ -1,19 +1,14 @@
 package simulator.models;
 
-/**
- * @author jberg
- *
- */
-
-import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPosition extends AbstractBidToSlotModel {
+public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
-	public PerfectBidToPosition(Query query) {
-		super(query);
+	public PerfectBidToPrClick(Query q) {
+		super(q);
 		// TODO Auto-generated constructor stub
 	}
 
@@ -28,6 +23,5 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 		// TODO Auto-generated method stub
 		return false;
 	}
-
 
 }

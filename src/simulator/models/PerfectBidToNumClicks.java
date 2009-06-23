@@ -4,26 +4,24 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 
-public class PerfectBidToCPC extends AbstractBidToCPC {
+public class PerfectBidToNumClicks extends AbstractBidToNumClicks {
 
-	
-	public PerfectBidToCPC(Query query) {
+	public PerfectBidToNumClicks(Query query) {
 		super(query);
 		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	public double getPrediction(double bid) {
+	public int getPrediction(double bid) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport) {
+			SalesReport salesReport, BidBundle bidBundle) {
 		// TODO Auto-generated method stub
 		return false;
 	}
