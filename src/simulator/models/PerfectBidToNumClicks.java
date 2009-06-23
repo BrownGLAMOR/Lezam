@@ -1,5 +1,7 @@
 package simulator.models;
 
+import simulator.BasicSimulator;
+import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -8,22 +10,23 @@ import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 
 public class PerfectBidToNumClicks extends AbstractBidToNumClicks {
 
-	public PerfectBidToNumClicks(Query query) {
+	private BasicSimulator _simulator;
+
+	public PerfectBidToNumClicks(Query query, BasicSimulator simulator) {
 		super(query);
-		// TODO Auto-generated constructor stub
+		_simulator = simulator;
 	}
 
 	@Override
 	public int getPrediction(double bid) {
-		// TODO Auto-generated method stub
-		return 0;
+		Reports reports = _simulator.getSingleQueryReport(_query, bid);
+		return reports.getQueryReport().getClicks(_query);
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 }

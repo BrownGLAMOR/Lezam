@@ -1,5 +1,7 @@
 package simulator.models;
 
+import simulator.BasicSimulator;
+import simulator.Reports;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -7,21 +9,23 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
-	public PerfectBidToPrClick(Query q) {
+	private BasicSimulator _simulator;
+
+	public PerfectBidToPrClick(Query q, BasicSimulator simulator) {
 		super(q);
-		// TODO Auto-generated constructor stub
+		_simulator = simulator;
 	}
 
 	@Override
 	public double getPrediction(double bid) {
-		// TODO Auto-generated method stub
-		return 0;
+		Reports reports = _simulator.getSingleQueryReport(_query, bid);
+		//TODO may need to cast to double!
+		return reports.getQueryReport().getClicks(_query)/reports.getQueryReport().getImpressions(_query);
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 }

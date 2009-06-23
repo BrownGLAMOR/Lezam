@@ -145,6 +145,8 @@ public class BasicSimulator {
 
 	private String _testId = "testId";
 
+	private HashMap<Query, HashMap<Double, Reports>> singleQueryReports;
+
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, String agentIn, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		SimAbstractAgent agent = stringToAgent(agentIn);
@@ -178,6 +180,13 @@ public class BasicSimulator {
 			}
 			initializeDaySpecificInfo(day, advertiseridx);
 			agent.setDay(day);
+			/*
+			 * Make the maps used in the perfect models
+			 */
+			singleQueryReports = new HashMap<Query, HashMap<Double,Reports>>();
+			for(Query query : _querySpace) {
+				singleQueryReports.put(query,new HashMap<Double, Reports>());
+			}
 			HashMap<String, Reports> maps = runSimulation(agent);
 
 			/*
@@ -340,6 +349,18 @@ public class BasicSimulator {
 				_bidsWithoutOurs.put(_agents[i], bids);
 			}
 			_budgets.put(_agents[i], budgets);
+		}
+	}
+	
+	public Reports getSingleQueryReport(Query query, double bid) {
+		Reports reports = singleQueryReports.get(query).get(bid);
+		if(reports == null) {
+			HashMap<Double, Reports> reportsMap = singleQueryReports.get(query);
+			reportsMap.put(bid, runQuerySimulation(bid, new Ad(), query));
+			singleQueryReports.put(query, reportsMap);
+		}
+		else {
+			return reports;
 		}
 	}
 
@@ -595,7 +616,7 @@ public class BasicSimulator {
 		Reports reports = new Reports(queryReport,salesReport);
 		return reports;
 	}
-
+	
 	/*
 	 * Runs the simulation and generates reports
 	 */
