@@ -58,7 +58,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 
 	Random _R = new Random();					//Random number generator
 
@@ -764,6 +764,7 @@ public class BasicSimulator {
 				for(Query query : _querySpace) {
 					debug("\t Query: " + query);
 					debug("\t\t Bid: " + agent.getBid(query));
+					debug("\t\t CPC: " + agent.getCPC(query));
 					debug("\t\t Cost: " + agent.getCost(query));
 					debug("\t\t Budget: " + agent.getBudget(query));
 					debug("\t\t Revenue: " + agent.getRevenue(query));
@@ -845,7 +846,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/game156.slg";
+		String filename = "/u/jberg/Desktop/game.slg";
 		int advId = 7;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();

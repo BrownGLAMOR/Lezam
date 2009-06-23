@@ -56,7 +56,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	private int _numUsers = 90000;
 	private double _defaultBid;
 	private HashMap<Query, Double> _recentBids;
@@ -275,7 +275,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					debug("\tBid: " + bid);
 					debug("\tnumClicks: " + numClicks);
 					debug("\tCPC: " + CPC);
-
+					debug("\tPos: " + _bidToSlotModels.get(q).getPrediction(bid));
+					
 					AbstractBidToPrConv prConvModel = _bidToPrConv.get(q);
 					double convProb;
 					if(prConvModel != null) {
@@ -286,8 +287,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 
 					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
-//					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
-										double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
+//										double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 					if(Double.isNaN(CPC)) {
 						w = 0.0;
@@ -321,8 +322,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					weight = 0;
 				}
 
-												bidBundle.addQuery(q, bid, new Ad(), weight);
-//				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+//												bidBundle.addQuery(q, bid, new Ad(), weight);
+				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
 		//bid bundle for first two days
