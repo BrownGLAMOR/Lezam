@@ -1,5 +1,6 @@
 package newmodels.slottobid;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -21,7 +22,7 @@ public class ReallyBadSlotToBid extends AbstractSlotToBidModel {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		return true;
 	}
 

@@ -11,7 +11,7 @@ import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 import regressions.WLSRegression;
 
-
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -68,7 +68,7 @@ public class BasicSlotToBid extends AbstractSlotToBidModel {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		double pos = queryReport.getPosition(_query);
 		double cpc = queryReport.getCPC(_query);
 		//Make sure that we actually got a position

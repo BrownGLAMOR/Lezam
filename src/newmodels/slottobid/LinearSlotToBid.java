@@ -26,12 +26,6 @@ public class LinearSlotToBid extends AbstractSlotToBidModel {
 		else return 0;
 	}
 
-	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		if (queryReport.equals(null)) return false;
 		if (Double.isNaN(queryReport.getCPC(_query))) return false;
