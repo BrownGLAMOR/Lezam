@@ -58,7 +58,6 @@ public class NewJESOM2 extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-		// TODO Auto-generated method stub
 	    _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 		
 		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
@@ -108,13 +107,11 @@ public class NewJESOM2 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		// TODO Auto-generated method stub
 		
 	}
 	
