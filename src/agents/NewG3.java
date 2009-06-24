@@ -6,15 +6,10 @@ package agents;
  *
  */
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Set;
-import java.io.File;
-import java.io.FileNotFoundException;
 
 import newmodels.AbstractModel;
 import newmodels.bidtoslot.BasicBidToClick;
-import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.SimplePrConversion;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -111,11 +106,12 @@ public class NewG3 extends SimAbstractAgent{
    protected double updateK(){
 	  double dailyLimit = _capacity/5;
 	  double error = 1e-2;
+	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
 	  double k = 5;
 	  double sum = 0.0;
 	  boolean done = false;
-	  while(done == false){
+	  while(done == false && counter <= 500){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query, k);
 		  }
@@ -134,6 +130,7 @@ public class NewG3 extends SimAbstractAgent{
 			  
 			  }
 		  }
+		  counter ++;
 	  }
 	 
 	  return k;
@@ -155,4 +152,5 @@ public class NewG3 extends SimAbstractAgent{
    protected double getQueryBid(Query q){
 	   return (_estimatedPrice.get(q) -k)*_baselineConv.get(q);
    }
+
 }
