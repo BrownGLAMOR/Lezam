@@ -24,6 +24,7 @@ public class NewG4 extends SimAbstractAgent{
 	protected HashMap<Query, BasicBidToClick> _bidToclick;
 	//k is a constant that equates EPPC across queries
 	protected double k;
+	protected double err = 0.1;
 	protected BidBundle _bidBundle;
 	
 	@Override
@@ -31,10 +32,13 @@ public class NewG4 extends SimAbstractAgent{
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
 		}
-		updateModels(_salesReport, _queryReport);
-		updateK();
 		for(Query query: _querySpace){
-	
+			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
+		}
+		
+		updateK();
+		adjustK();
+		for(Query query: _querySpace){
 			
 			//if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
 			if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
@@ -55,11 +59,11 @@ public class NewG4 extends SimAbstractAgent{
 	    for(Query query:_querySpace){
 	    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(query, 0.1);
 	    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-	    		if(query.getComponent().equals(_compSpecialty)) _baselineConv.put(query,0.27);
+	    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.27);
 	    		else _baselineConv.put(query,0.2);
 	    	}
 	    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-	    		if(query.getComponent().equals(_compSpecialty)) _baselineConv.put(query,0.39);
+	    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.39);
 	    		else _baselineConv.put(query,0.3);
 	    	}
 	    }
@@ -70,14 +74,14 @@ public class NewG4 extends SimAbstractAgent{
 	    		_estimatedPrice.put(query, 10.0 + 5/3);
 	    	}
 	    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-	    	  if(query.getManufacturer().equals(_manSpecialty)) _estimatedPrice.put(query, 15.0);
+	    	  if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
 	    	  else{
 	    	     if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
 	    	     else _estimatedPrice.put(query, 10.0 + 5/3);
 	    	  }
 	    	}
 	    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-	    		if(query.getManufacturer().equals(_manSpecialty)) _estimatedPrice.put(query, 15.0);
+	    		if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
 	    		else _estimatedPrice.put(query, 10.0);
 	    	}
 	    }
@@ -88,6 +92,10 @@ public class NewG4 extends SimAbstractAgent{
 			_bidToclick.put(query, new BasicBidToClick(query, true));	
 		}
 	    	
+		_bidBundle = new BidBundle();
+	    for (Query query : _querySpace) {	
+			_bidBundle.setBid(query, getQueryBid(query));
+		}
 	}
 
 	@Override
@@ -97,9 +105,7 @@ public class NewG4 extends SimAbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		for(Query query: _querySpace){
-			_bidToclick.get(query).updateModel(salesReport, queryReport);
-		}
+		
 	}
 
 
@@ -108,10 +114,10 @@ public class NewG4 extends SimAbstractAgent{
 	  double error = 1e-2;
 	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
-	  double k = 5;
+	  double k = 0.5;
 	  double sum = 0.0;
 	  boolean done = false;
-	  while(done == false && counter <= 500){
+	  while(done == false && counter <= 10000){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query, k);
 		  }
@@ -121,7 +127,7 @@ public class NewG4 extends SimAbstractAgent{
 		  }
 		  else{
 			  if(sum > dailyLimit && sum - dailyLimit > error) {
-				  k = (10 + k)/2;
+				  k = (1 + k)/2;
 				  sum = 0.0;
 			  }
 			  else{ 
@@ -137,20 +143,32 @@ public class NewG4 extends SimAbstractAgent{
    }
    
    protected double calcUnitSold(Query q, double k){
-	  double bid = _estimatedPrice.get(q)*_baselineConv.get(q) - k;
+	  double bid = _estimatedPrice.get(q)*_baselineConv.get(q) - k + err;
 	  //use the bid to click model to estimate #clicks
 	  double clicks = _bidToclick.get(q).getPrediction(bid);
 	  //estimated sales = clicks * conv prob 
 	  return clicks*_baselineConv.get(q);
    }
- 
+   
    protected double initializeK(){
 	   //will change later
-	   return 5.0;
+	   return 0.5;
+   }
+   
+   protected void adjustK(){
+	   double sum = 0.0;
+	   double dailyLimit = _capacity/5;
+	   for(Query query: _querySpace){
+		   sum += _salesReport.getConversions(query);
+	   }
+	   if(sum > dailyLimit + 5) k = k*0.7 - 0.1;
+	   if(sum < dailyLimit - 10) k = k*1.3 + 0.1;
    }
    
    protected double getQueryBid(Query q){
-	   return _estimatedPrice.get(q)*_baselineConv.get(q) - k;
+	   double bid = _estimatedPrice.get(q)*_baselineConv.get(q) - k + err;
+	   if(bid <= 0) return 0;
+	   else return 0;
    }
 
 }
