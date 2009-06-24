@@ -28,10 +28,12 @@ public class NewG3 extends SimAbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		if(_salesReport == null || _queryReport == null) {
+		if(_day < 2) {
 			return new BidBundle();
 		}
-		updateModels(_salesReport, _queryReport);
+		for(Query query: _querySpace){
+			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
+		}
 		updateK();
 		for(Query query: _querySpace){
 	
@@ -51,43 +53,47 @@ public class NewG3 extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-	    _baselineConv = new HashMap<Query,Double>();
-	    for(Query query:_querySpace){
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(query, 0.1);
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-	    		if(query.getComponent().equals(_compSpecialty)) _baselineConv.put(query,0.27);
-	    		else _baselineConv.put(query,0.2);
-	    	}
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-	    		if(query.getComponent().equals(_compSpecialty)) _baselineConv.put(query,0.39);
-	    		else _baselineConv.put(query,0.3);
-	    	}
-	    }
-	    
-	    _estimatedPrice = new HashMap<Query, Double>();
-	    for(Query query:_querySpace){
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
-	    		_estimatedPrice.put(query, 10.0 + 5/3);
-	    	}
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-	    	  if(query.getManufacturer().equals(_manSpecialty)) _estimatedPrice.put(query, 15.0);
-	    	  else{
-	    	     if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
-	    	     else _estimatedPrice.put(query, 10.0 + 5/3);
-	    	  }
-	    	}
-	    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-	    		if(query.getManufacturer().equals(_manSpecialty)) _estimatedPrice.put(query, 15.0);
-	    		else _estimatedPrice.put(query, 10.0);
-	    	}
-	    }
-	    
+		  _baselineConv = new HashMap<Query,Double>();
+		    for(Query query:_querySpace){
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(query, 0.1);
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
+		    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.27);
+		    		else _baselineConv.put(query,0.2);
+		    	}
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
+		    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.39);
+		    		else _baselineConv.put(query,0.3);
+		    	}
+		    }
+		    
+		    _estimatedPrice = new HashMap<Query, Double>();
+		    for(Query query:_querySpace){
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
+		    		_estimatedPrice.put(query, 10.0 + 5/3);
+		    	}
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
+		    	  if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
+		    	  else{
+		    	     if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
+		    	     else _estimatedPrice.put(query, 10.0 + 5/3);
+		    	  }
+		    	}
+		    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
+		    		if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
+		    		else _estimatedPrice.put(query, 10.0);
+		    	}
+		    }
+		    
 
-		_bidToclick = new HashMap<Query, BasicBidToClick>();
-		for (Query query : _querySpace) {
-			_bidToclick.put(query, new BasicBidToClick(query, true));	
-		}
-	    	
+			_bidToclick = new HashMap<Query, BasicBidToClick>();
+			for (Query query : _querySpace) {
+				_bidToclick.put(query, new BasicBidToClick(query, true));	
+			}
+		    	
+			_bidBundle = new BidBundle();
+		    for (Query query : _querySpace) {	
+				_bidBundle.setBid(query, getQueryBid(query));
+			}
 	}
 
 	@Override
@@ -97,9 +103,7 @@ public class NewG3 extends SimAbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		for(Query query: _querySpace){
-			_bidToclick.get(query).updateModel(salesReport, queryReport);
-		}
+	
 	}
 
 
