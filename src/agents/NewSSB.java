@@ -35,7 +35,7 @@ public class NewSSB extends SimAbstractAgent{
     
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		// TODO Auto-generated method stub
+
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
 		}
@@ -86,7 +86,6 @@ public class NewSSB extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-		// TODO Auto-generated method stub
 		
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 		
@@ -128,14 +127,14 @@ public class NewSSB extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		// TODO Auto-generated method stub
+		
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport,
 			QueryReport queryReport) {
-		// TODO Auto-generated method stub
+		
 		
 	}
    
