@@ -5,6 +5,8 @@ package simulator.models;
  *
  */
 
+import java.util.LinkedList;
+
 import simulator.BasicSimulator;
 import simulator.Reports;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
@@ -23,8 +25,13 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 
 	@Override
 	public double getPrediction(double bid) {
-		Reports reports = _simulator.getSingleQueryReport(_query, bid);
-		return reports.getQueryReport().getPosition(_query);
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+		double avgPos = 0;
+		for(Reports report : reports) {
+			avgPos += report.getQueryReport().getPosition(_query);
+		}
+		avgPos = avgPos/((double) reports.size());
+		return avgPos;
 	}
 
 	@Override

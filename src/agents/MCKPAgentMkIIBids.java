@@ -57,6 +57,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
+	private static final double CAP_MULTIPLIER = 1.5;
 	private boolean DEBUG = false;
 	private int _numUsers = 90000;
 	private double _defaultBid;
@@ -77,8 +78,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
-		double increment = .25;
-		//		double increment  = .1;
+		//		double increment = .25;
+		double increment  = .1;
 		double min = 0;
 		double max = 4;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -316,12 +317,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 			double budget = _capacity/_capWindow; 
 			if(_unitsSold != null) {
-				System.out.println("Average Budget: " + budget);
-				budget = _capacity - _unitsSold.getWindowSold();
+				debug("Average Budget: " + budget);
+				budget = _capacity*CAP_MULTIPLIER - _unitsSold.getWindowSold();
 				if(budget < 20) {
 					budget = 20;
 				}
-				System.out.println("Unit Sold Model Budget "  +budget);
+				debug("Unit Sold Model Budget "  +budget);
 			}
 
 			HashMap<Query,Item> solution = fillKnapsack(incItems, budget);

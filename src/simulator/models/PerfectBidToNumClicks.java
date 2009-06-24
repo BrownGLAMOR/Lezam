@@ -1,5 +1,7 @@
 package simulator.models;
 
+import java.util.LinkedList;
+
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -19,8 +21,13 @@ public class PerfectBidToNumClicks extends AbstractBidToNumClicks {
 
 	@Override
 	public int getPrediction(double bid) {
-		Reports reports = _simulator.getSingleQueryReport(_query, bid);
-		return reports.getQueryReport().getClicks(_query);
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+		int avgNumClicks = 0;
+		for(Reports report : reports) {
+			avgNumClicks += report.getQueryReport().getClicks(_query);
+		}
+		avgNumClicks = (int) (avgNumClicks/((double) reports.size()));
+		return avgNumClicks;
 	}
 
 	@Override

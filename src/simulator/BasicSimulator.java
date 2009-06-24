@@ -59,6 +59,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
+	private static final int NUM_PERF_ITERS = 2; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+
 	private boolean DEBUG = false;
 
 	Random _R = new Random();					//Random number generator
@@ -125,7 +127,7 @@ public class BasicSimulator {
 
 	private String _testId = "testId";
 
-	private HashMap<Query, HashMap<Double, Reports>> singleQueryReports;
+	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> singleQueryReports;
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, String agentIn, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
@@ -151,7 +153,6 @@ public class BasicSimulator {
 				/*
 				 * Two day delay
 				 */
-				//Why is there one less query report?
 				Reports reports = reportsList.get(day-2);
 				SalesReport salesReport = reports.getSalesReport();
 				QueryReport queryReport = reports.getQueryReport();
@@ -163,9 +164,9 @@ public class BasicSimulator {
 			/*
 			 * Make the maps used in the perfect models
 			 */
-			singleQueryReports = new HashMap<Query, HashMap<Double,Reports>>();
+			singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 			for(Query query : _querySpace) {
-				singleQueryReports.put(query,new HashMap<Double, Reports>());
+				singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 			}
 
 			HashMap<String, Reports> maps = runSimulation(agent);
@@ -197,6 +198,35 @@ public class BasicSimulator {
 				reportsListMap.put(_agents[i],reports);
 			}
 		}
+//		/*
+//		 * TESTING
+//		 */
+//		for(int i = 0; i < _agents.length; i++ ) {
+//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
+//			System.out.println("Agent: "  + _agents[i]);
+//			double totalRevenue = 0;
+//			double totalCost = 0;
+//			double totalImp = 0;
+//			double totalClick = 0;
+//			double totalConv = 0;
+//			for(Reports report : reports) {
+//				QueryReport queryReport = report.getQueryReport();
+//				SalesReport salesReport = report.getSalesReport();
+//				for(Query query : _querySpace) {
+//					totalRevenue += salesReport.getRevenue(query);
+//					totalCost += queryReport.getCost(query);
+//					totalImp += queryReport.getImpressions(query);
+//					totalClick += queryReport.getClicks(query);
+//					totalConv += salesReport.getConversions(query);
+//				}
+//			}
+//			System.out.println("\tTotal Revenue: " + totalRevenue);
+//			System.out.println("\tTotal Cost: " + totalCost);
+//			System.out.println("\tTotal Impressions: " + totalImp);
+//			System.out.println("\tTotal Clicks: " + totalClick);
+//			System.out.println("\tTotal Conversions: " + totalConv);
+//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
+//		}
 		return reportsListMap;
 	}
 
@@ -340,14 +370,18 @@ public class BasicSimulator {
 		}
 	}
 
-	public Reports getSingleQueryReport(Query query, double bid) {
-		Reports reports = singleQueryReports.get(query).get(bid);
+	public LinkedList<Reports> getSingleQueryReport(Query query, double bid) {
+		LinkedList<Reports> reports = singleQueryReports.get(query).get(bid);
 		if(reports == null) {
-			HashMap<Double, Reports> reportsMap = singleQueryReports.get(query);
-			Reports tempReports = runQuerySimulation(bid, new Ad(), query);
-			reportsMap.put(bid, tempReports);
+			HashMap<Double, LinkedList<Reports>> reportsMap = singleQueryReports.get(query);
+			LinkedList<Reports> tempReportsList = new LinkedList<Reports>();
+			for(int i = 0; i < NUM_PERF_ITERS; i++) {
+				Reports tempReports = runQuerySimulation(bid, new Ad(), query);
+				tempReportsList.add(tempReports);
+			}
+			reportsMap.put(bid, tempReportsList);
 			singleQueryReports.put(query, reportsMap);
-			return tempReports;
+			return tempReportsList;
 		}
 		else {
 			return reports;
@@ -715,6 +749,9 @@ public class BasicSimulator {
 					}
 
 					double overCap = agent.getOverCap();
+					if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
+						debug(agent.getAdvId() + " is overcap by " + overCap);
+					}
 					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
 
 					String queryComp = query.getComponent();
@@ -853,8 +890,8 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/game156.slg";
-		int advId = 7;
+		String filename = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim12.slg";
+		int advId = 0;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();
@@ -865,6 +902,7 @@ public class BasicSimulator {
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + ((elapsed / 1000)/numSims) + " seconds");
+
 	}
 
 }

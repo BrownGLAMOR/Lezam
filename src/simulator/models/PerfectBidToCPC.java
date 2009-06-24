@@ -1,5 +1,7 @@
 package simulator.models;
 
+import java.util.LinkedList;
+
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -20,8 +22,13 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public double getPrediction(double bid) {
-		Reports reports = _simulator.getSingleQueryReport(_query, bid);
-		return reports.getQueryReport().getCPC(_query);
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+		double avgCPC = 0;
+		for(Reports report : reports) {
+			avgCPC += report.getQueryReport().getCPC(_query);
+		}
+		avgCPC = avgCPC/((double) reports.size());
+		return avgCPC;
 	}
 
 	@Override

@@ -1,5 +1,7 @@
 package simulator.models;
 
+import java.util.LinkedList;
+
 import simulator.BasicSimulator;
 import simulator.Reports;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
@@ -18,14 +20,15 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public double getPrediction(double bid) {
-		Reports reports = _simulator.getSingleQueryReport(_query, bid);
-		//TODO may need to cast to double!
-		if(reports.getQueryReport().getImpressions(_query) == 0) {
-			return 0;
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+		double avgPrClick = 0;
+		for(Reports report : reports) {
+			if(report.getQueryReport().getImpressions(_query) != 0) {
+				avgPrClick += report.getQueryReport().getClicks(_query)/((double)report.getQueryReport().getImpressions(_query));
+			}
 		}
-		else {
-			return reports.getQueryReport().getClicks(_query)/((double)reports.getQueryReport().getImpressions(_query));
-		}
+		avgPrClick = avgPrClick/((double) reports.size());
+		return avgPrClick;
 	}
 
 	@Override
