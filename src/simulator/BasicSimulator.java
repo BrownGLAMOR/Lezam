@@ -1,5 +1,6 @@
 package simulator;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -10,6 +11,9 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtonumclicks.AbstractBidToNumClicks;
@@ -19,12 +23,12 @@ import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.AbstractPrConversionModel;
 import se.sics.tasim.aw.Message;
 import se.sics.tasim.props.SimulationStatus;
+import simulator.GUI.ChartUtils;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToNumClicks;
 import simulator.models.PerfectBidToPosition;
 import simulator.models.PerfectBidToPrClick;
 import simulator.models.PerfectBidToPrConv;
-import simulator.models.PerfectConversionProb;
 import simulator.models.PerfectQueryToNumImp;
 import simulator.models.PerfectUnitsSoldModel;
 import simulator.models.PerfectUserModel;
@@ -198,35 +202,35 @@ public class BasicSimulator {
 				reportsListMap.put(_agents[i],reports);
 			}
 		}
-//		/*
-//		 * TESTING
-//		 */
-//		for(int i = 0; i < _agents.length; i++ ) {
-//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
-//			System.out.println("Agent: "  + _agents[i]);
-//			double totalRevenue = 0;
-//			double totalCost = 0;
-//			double totalImp = 0;
-//			double totalClick = 0;
-//			double totalConv = 0;
-//			for(Reports report : reports) {
-//				QueryReport queryReport = report.getQueryReport();
-//				SalesReport salesReport = report.getSalesReport();
-//				for(Query query : _querySpace) {
-//					totalRevenue += salesReport.getRevenue(query);
-//					totalCost += queryReport.getCost(query);
-//					totalImp += queryReport.getImpressions(query);
-//					totalClick += queryReport.getClicks(query);
-//					totalConv += salesReport.getConversions(query);
-//				}
-//			}
-//			System.out.println("\tTotal Revenue: " + totalRevenue);
-//			System.out.println("\tTotal Cost: " + totalCost);
-//			System.out.println("\tTotal Impressions: " + totalImp);
-//			System.out.println("\tTotal Clicks: " + totalClick);
-//			System.out.println("\tTotal Conversions: " + totalConv);
-//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
-//		}
+		//		/*
+		//		 * TESTING
+		//		 */
+		//		for(int i = 0; i < _agents.length; i++ ) {
+		//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
+		//			System.out.println("Agent: "  + _agents[i]);
+		//			double totalRevenue = 0;
+		//			double totalCost = 0;
+		//			double totalImp = 0;
+		//			double totalClick = 0;
+		//			double totalConv = 0;
+		//			for(Reports report : reports) {
+		//				QueryReport queryReport = report.getQueryReport();
+		//				SalesReport salesReport = report.getSalesReport();
+		//				for(Query query : _querySpace) {
+		//					totalRevenue += salesReport.getRevenue(query);
+		//					totalCost += queryReport.getCost(query);
+		//					totalImp += queryReport.getImpressions(query);
+		//					totalClick += queryReport.getClicks(query);
+		//					totalConv += salesReport.getConversions(query);
+		//				}
+		//			}
+		//			System.out.println("\tTotal Revenue: " + totalRevenue);
+		//			System.out.println("\tTotal Cost: " + totalCost);
+		//			System.out.println("\tTotal Impressions: " + totalImp);
+		//			System.out.println("\tTotal Clicks: " + totalClick);
+		//			System.out.println("\tTotal Conversions: " + totalConv);
+		//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
+		//		}
 		return reportsListMap;
 	}
 
@@ -405,13 +409,11 @@ public class BasicSimulator {
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
 			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(query,this);
 			AbstractBidToPrConv bidToConvPrModel = new PerfectBidToPrConv(query,this);
-			AbstractPrConversionModel convPrModel = new PerfectConversionProb(_CSB, _ourCompSpecialty,query,_retailCatalog,userModel, queryToNumImp);
 			models.add(bidToCPCModel);
 			models.add(bidToNumClicks);
 			models.add(bidToSlotModel);
 			models.add(bidToClickPrModel);
 			models.add(bidToConvPrModel);
-			models.add(convPrModel);
 		}
 		return models;
 	}
@@ -896,9 +898,41 @@ public class BasicSimulator {
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();
 		int numSims = 1;
+		String agent = "Cheap";
+
+		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		for(int i = 0; i < numSims; i++) {
-			sim.runFullSimulation(status, "MCKP",advId);
+			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, agent, advId);
+			reportsList.add(maps.get(sim._agents[advId]));
 		}
+		
+		String[] agents = new String[1];
+		agents[0] = agent;
+		
+		ChartUtils chartUtils = new ChartUtils(sim,agents);
+		
+		HashMap<String,LinkedList<LinkedList<Reports>>> map = new HashMap<String, LinkedList<LinkedList<Reports>>>();
+		map.put(agent, reportsList);
+		
+		JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/dailyProfitsChart.png"), chart, 1280, 800);
+		
+		chart = chartUtils.dailyClicksChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/dailyClicksChart.png"), chart, 1280, 800);
+		
+		chart = chartUtils.dailyConvsChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/dailyConvsChart.png"), chart, 1280, 800);
+		
+		chart = chartUtils.dailyImpsChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/dailyImpsChart.png"), chart, 1280, 800);
+		
+		chart = chartUtils.dailyWindowChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/dailyWindowChart.png"), chart, 1280, 800);
+		
+		chart = chartUtils.fullSimProfitsChart(map, agents);
+		ChartUtilities.saveChartAsPNG(new File("charts/fullSimProfitsChart.png"), chart, 1280, 800);
+		
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + ((elapsed / 1000)/numSims) + " seconds");
