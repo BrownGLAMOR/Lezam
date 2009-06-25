@@ -42,10 +42,10 @@ public class BasicBidToClick {
 		return ZETA;
 	}
 
-	public void addDataPoint(int time, double bid, double click) {
+	public void addDataPoint(int time, double cpc, double click) {
 		double[] arr = new double[3];
 		arr[0] = (double)time;
-		arr[1] = bid;
+		arr[1] = cpc;
 		arr[2] = click;
 		_dataPoints.add(arr);
 	}
