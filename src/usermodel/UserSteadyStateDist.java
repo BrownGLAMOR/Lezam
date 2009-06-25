@@ -1,293 +1,498 @@
 package usermodel;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
+
+
+/*
+ * How This is all going to work:
+ *
+ * First:  Analyze the virtualization
+ * What does the analysis entail:
+ * 		Mean, std deviation, etc.
+ * 		How different are the different possibilities of bursting and not
+ * 			-i.e. maybe a burst on day one or two in the virtualization don't really make a difference?
+ * 		Use confidence intervals to determine what our best guess for the start of the game is.... 
+ * 
+ * Analyze the game with transactions:
+ * 		Remember that we need to do a separate analysis depending on how the virtualization went
+ * 		mean, std deviation, etc for all the different bursting probs
+ * 		Remember now we need to do a bunch of different simulations depending on the sales to see how this effects things
+ * 
+ * 
+ * Use probabilities and confidence intervals to try to narrow it down to less than 1000? (100?) possible user states depending on when bursts happened and whatnot!
+ * 
+ * This is going to take forever to run....
+ * 
+ * Difficulties::
+ * 		-Remember to predict how long this will take to run (make sure it won't take like years hahahah)
+ * 		-This is going to take a while to run, need to think of best method to aggregate data
+ * 		-So I am going to have like 10-20 different types of virtualizations that can all happen, all with different means, std devs,
+ * 		and probabilities of occurrence.  How do I go from these to inferring things about game dynamics.  Clearly I need to consider what could happen starting from any
+ * 		starting configuration, but how do I make sure to consider the variance in each one of these options?
+ * 
+ * 
+ * 	IDEA:
+ * 
+ *  Build a binary string recursively and keep a count of how many ones it has and make sure that it does not go voer the total...
+ * 
+ */
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
+
+import edu.umich.eecs.tac.props.Product;
 
 public class UserSteadyStateDist {
 
-	 Random _R = new Random();
-	
-	protected final  BigDecimal epsilon = new BigDecimal(".0001");
-	protected final  BigDecimal burstprobability = new BigDecimal("0.1");
-	//All these probabilities should sum to 1
-	// From NS:
-	protected final  BigDecimal standard_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.99");
-	protected final  BigDecimal standard_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.01");
-	protected final  BigDecimal burst_NON_SEARCHING_NON_SEARCHING=new BigDecimal("0.95");
-	protected final  BigDecimal burst_NON_SEARCHING_INFORMATIONAL_SEARCH=new BigDecimal("0.05");
-	// From IS:
-	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
-	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
-	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
-	protected final  BigDecimal standard_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
-	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO=new BigDecimal("0.6");
-	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE=new BigDecimal("0.2");
-	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO=new BigDecimal("0.05");
-	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_NON_SEARCHING=new BigDecimal("0.05");
-	protected final  BigDecimal burst_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH=new BigDecimal("0.2");
-	// From F0
-	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
-	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final  BigDecimal standard_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO=new BigDecimal("0.70");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE=new BigDecimal("0.20");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ZERO_NON_SEARCHING=new BigDecimal("0.10");
-	// From F1
-	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.70");
-	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.20");
-	protected final  BigDecimal standard_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE=new BigDecimal("0.7");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO=new BigDecimal("0.2");
-	protected final  BigDecimal burst_FOCUS_LEVEL_ONE_NON_SEARCHING=new BigDecimal("0.10");
-	// From F2
-	protected final  BigDecimal standard_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
-	protected final  BigDecimal standard_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
-	protected final  BigDecimal burst_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO=new BigDecimal("0.90");
-	protected final  BigDecimal burst_FOCUS_LEVEL_TWO_NON_SEARCHING=new BigDecimal("0.10");
-	// From T
-	protected final  BigDecimal standard_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
-	protected final  BigDecimal standard_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
-	protected final  BigDecimal burst_TRANSACTED_TRANSACTED=new BigDecimal("0.20");
-	protected final  BigDecimal burst_TRANSACTED_NON_SEARCHING=new BigDecimal("0.80");
-	
-	public UserSteadyStateDist() {
-	}
+	Random _R = new Random();
 
-	/**
-	 * @param args
-	 */
-	public  void main(String[] args) {
-		BigDecimal[][] steadyStateM = new BigDecimal[UserState.values().length][UserState.values().length];
-		steadyStateM = findSteadyState();
-		for(int i = 0; i < UserState.values().length; i++) {
-			for(int j = 0; j < UserState.values().length; j++) {
-				System.out.println(UserState.values()[i]+" to "+UserState.values()[j]+":  "+steadyStateM[i][j]+"");
+	protected double epsilon =  10;
+	protected double burstprobability =  0.1;
+
+	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
+
+	private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
+
+	private HashMap<Product, HashMap<UserState, Integer>> _users;
+
+	private HashSet<Product> _products;
+
+	public UserSteadyStateDist() {
+		//Probability of transitioning from the first state to the second state
+		_standardProbs = new HashMap<UserState,HashMap<UserState,Double>>();
+		_burstProbs = new HashMap<UserState,HashMap<UserState,Double>>();
+
+		HashMap<UserState,Double> standardFromNSProbs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> standardFromISProbs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> standardFromF0Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> standardFromF1Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> standardFromF2Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> standardFromTProbs = new HashMap<UserState, Double>();
+
+		HashMap<UserState,Double> burstFromNSProbs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> burstFromISProbs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> burstFromF0Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> burstFromF1Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> burstFromF2Probs = new HashMap<UserState, Double>();
+		HashMap<UserState,Double> burstFromTProbs = new HashMap<UserState, Double>();
+
+		standardFromNSProbs.put(UserState.NS,0.99);
+		standardFromNSProbs.put(UserState.IS,0.01);
+		standardFromNSProbs.put(UserState.F0,0.0);
+		standardFromNSProbs.put(UserState.F1,0.0);
+		standardFromNSProbs.put(UserState.F2,0.0);
+		standardFromNSProbs.put(UserState.T,0.0);
+
+		standardFromISProbs.put(UserState.NS,0.05);
+		standardFromISProbs.put(UserState.IS,0.2);
+		standardFromISProbs.put(UserState.F0,0.6);
+		standardFromISProbs.put(UserState.F1,0.1);
+		standardFromISProbs.put(UserState.F2,0.05);
+		standardFromISProbs.put(UserState.T,0.0);
+
+		standardFromF0Probs.put(UserState.NS,0.1);
+		standardFromF0Probs.put(UserState.IS,0.0);
+		standardFromF0Probs.put(UserState.F0,0.7);
+		standardFromF0Probs.put(UserState.F1,0.2);
+		standardFromF0Probs.put(UserState.F2,0.0);
+		standardFromF0Probs.put(UserState.T,0.0);
+
+		standardFromF1Probs.put(UserState.NS,0.1);
+		standardFromF1Probs.put(UserState.IS,0.0);
+		standardFromF1Probs.put(UserState.F0,0.0);
+		standardFromF1Probs.put(UserState.F1,0.7);
+		standardFromF1Probs.put(UserState.F2,0.2);
+		standardFromF1Probs.put(UserState.T,0.0);
+
+		standardFromF2Probs.put(UserState.NS,0.1);
+		standardFromF2Probs.put(UserState.IS,0.0);
+		standardFromF2Probs.put(UserState.F0,0.0);
+		standardFromF2Probs.put(UserState.F1,0.0);
+		standardFromF2Probs.put(UserState.F2,0.9);
+		standardFromF2Probs.put(UserState.T,0.0);
+
+		standardFromTProbs.put(UserState.NS,0.8);
+		standardFromTProbs.put(UserState.IS,0.0);
+		standardFromTProbs.put(UserState.F0,0.0);
+		standardFromTProbs.put(UserState.F1,0.0);
+		standardFromTProbs.put(UserState.F2,0.0);
+		standardFromTProbs.put(UserState.T,0.2);
+
+		burstFromNSProbs.put(UserState.NS,0.8);
+		burstFromNSProbs.put(UserState.IS,0.2);
+		burstFromNSProbs.put(UserState.F0,0.0);
+		burstFromNSProbs.put(UserState.F1,0.0);
+		burstFromNSProbs.put(UserState.F2,0.0);
+		burstFromNSProbs.put(UserState.T,0.0);
+
+		burstFromISProbs.put(UserState.NS,0.05);
+		burstFromISProbs.put(UserState.IS,0.2);
+		burstFromISProbs.put(UserState.F0,0.6);
+		burstFromISProbs.put(UserState.F1,0.1);
+		burstFromISProbs.put(UserState.F2,0.05);
+		burstFromISProbs.put(UserState.T,0.0);
+
+		burstFromF0Probs.put(UserState.NS,0.1);
+		burstFromF0Probs.put(UserState.IS,0.0);
+		burstFromF0Probs.put(UserState.F0,0.7);
+		burstFromF0Probs.put(UserState.F1,0.2);
+		burstFromF0Probs.put(UserState.F2,0.0);
+		burstFromF0Probs.put(UserState.T,0.0);
+
+		burstFromF1Probs.put(UserState.NS,0.1);
+		burstFromF1Probs.put(UserState.IS,0.0);
+		burstFromF1Probs.put(UserState.F0,0.0);
+		burstFromF1Probs.put(UserState.F1,0.7);
+		burstFromF1Probs.put(UserState.F2,0.2);
+		burstFromF1Probs.put(UserState.T,0.0);
+
+		burstFromF2Probs.put(UserState.NS,0.1);
+		burstFromF2Probs.put(UserState.IS,0.0);
+		burstFromF2Probs.put(UserState.F0,0.0);
+		burstFromF2Probs.put(UserState.F1,0.0);
+		burstFromF2Probs.put(UserState.F2,0.9);
+		burstFromF2Probs.put(UserState.T,0.0);
+
+		burstFromTProbs.put(UserState.NS,0.8);
+		burstFromTProbs.put(UserState.IS,0.0);
+		burstFromTProbs.put(UserState.F0,0.0);
+		burstFromTProbs.put(UserState.F1,0.0);
+		burstFromTProbs.put(UserState.F2,0.0);
+		burstFromTProbs.put(UserState.T,0.2);
+
+		_standardProbs.put(UserState.NS,standardFromNSProbs);
+		_standardProbs.put(UserState.IS,standardFromISProbs);
+		_standardProbs.put(UserState.F0,standardFromF0Probs);
+		_standardProbs.put(UserState.F1,standardFromF1Probs);
+		_standardProbs.put(UserState.F2,standardFromF2Probs);
+		_standardProbs.put(UserState.T,standardFromTProbs);
+
+		_burstProbs.put(UserState.NS,burstFromNSProbs);
+		_burstProbs.put(UserState.IS,burstFromISProbs);
+		_burstProbs.put(UserState.F0,burstFromF0Probs);
+		_burstProbs.put(UserState.F1,burstFromF1Probs);
+		_burstProbs.put(UserState.F2,burstFromF2Probs);
+		_burstProbs.put(UserState.T,burstFromTProbs);
+
+		//Sanity Check!
+		for(UserState fromState : UserState.values()) {
+			double standardTot = 0.0;
+			double burstTot = 0.0;
+			for(UserState toState : UserState.values()) {
+				standardTot += _standardProbs.get(fromState).get(toState);
+				burstTot += _burstProbs.get(fromState).get(toState);
+			}
+			if(standardTot != 1.0 || burstTot != 1.0) {
+				throw new RuntimeException("Make sure the probs sum to one!");
 			}
 		}
+
+		_users = new HashMap<Product,HashMap<UserState,Integer>>();
+
+		_products = new HashSet<Product>();
+
+		_products.add(new Product("pg","tv"));
+		_products.add(new Product("pg","dvd"));
+		_products.add(new Product("pg","audio"));
+
+		_products.add(new Product("flat","tv"));
+		_products.add(new Product("flat","dvd"));
+		_products.add(new Product("flat","audio"));
+
+		_products.add(new Product("lioneer","tv"));
+		_products.add(new Product("lioneer","dvd"));
+		_products.add(new Product("lioneer","audio"));
+
+		initializeUsers();
 	}
 
-
-	protected  BigDecimal[][] simulateVirtualization() {
-		BigDecimal[][] m = new BigDecimal[UserState.values().length][UserState.values().length];
-		BigDecimal[][] standardMatrix = makeStandardMatrix();
-		BigDecimal[][] burstMatrix = makeBurstMatrix();
-		if(Math.random() < burstprobability.doubleValue()) {
-			System.out.println("***");
-			m = burstMatrix;
+	private void transitionUsers(boolean burst) {
+		HashMap<UserState, HashMap<UserState, Double>> transProbs;
+		if(burst) {
+			transProbs = _burstProbs;
 		}
 		else {
-			m = standardMatrix;
+			transProbs = _standardProbs;
 		}
-		for(int i = 0; i < 9; i++) {
-			if(Math.random() < burstprobability.doubleValue()) {
-				System.out.println("***");
-				m = matrixMultiplication(m, burstMatrix);
-			}
-			else {
-				m = matrixMultiplication(m, standardMatrix);
-			}
-		}
-		return m;
-	}
-
-	protected  BigDecimal[][] findSteadyState() {
-		BigDecimal[][] probMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
-		probMatrix = makeProbMatrix();
-		int count = 0;
-		do {
-			System.out.println(count);
-			for(int i = 0; i < 1; i++) {
-				probMatrix = matrixMultiplication(probMatrix, probMatrix);
-				count++;
-			}
-		}
-		while(!convergenceTest(probMatrix));
-		System.out.println(count+" Iterations");
-		return probMatrix;
-	}
-	
-
-	protected  boolean convergenceTest(BigDecimal[][] m) {
-		BigDecimal[][] m2 = matrixMultiplication(m,m);
-		for (int i = 0; i < UserState.values().length; i++) {                                  
-			for (int j = 0; j < UserState.values().length; j++) {
-					if(m[i][j].subtract(m2[i][j]).abs().compareTo(epsilon) > 0) {
-						return false;
+		HashMap<Product,HashMap<UserState,Integer>> oldUsers = copyUsers(_users);
+		zeroOutUsers();
+		for(Product prod : _products) {
+			for(UserState state : UserState.values()) {
+				HashMap<UserState, Integer> users = oldUsers.get(prod);
+				for(int i = 0; i < users.get(state); i++) {
+					double rand = _R.nextDouble();
+					double threshhold = transProbs.get(state).get(UserState.NS);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.NS, tempUsers.get(UserState.NS)+1);
+						_users.put(prod,tempUsers);
+						continue;
 					}
-			}
-		}
-		return true;
-	}
-
-	protected  BigDecimal[][] makeProbMatrix() {
-		BigDecimal[][] standardMatrix = makeStandardMatrix();
-		BigDecimal[][] burstMatrix = makeBurstMatrix();
-		BigDecimal[][] probMatrix = combineMarkovChains(standardMatrix, burstMatrix, burstprobability); 
-		return probMatrix;
-	}
-	
-	//NS=0, IS=1, F0=2, F1=3, F2=4, NS=5
-	protected  BigDecimal[][] makeStandardMatrix() {
-		BigDecimal[][] standardMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
-		//transitions from non-searching to other states
-		standardMatrix[0][0] = standard_NON_SEARCHING_NON_SEARCHING;
-		standardMatrix[0][1] = standard_NON_SEARCHING_INFORMATIONAL_SEARCH;
-		standardMatrix[0][2] = new BigDecimal("0");
-		standardMatrix[0][3] = new BigDecimal("0");
-		standardMatrix[0][4] = new BigDecimal("0");
-		standardMatrix[0][5] = new BigDecimal("0");
-		//transitions from informational-searching to other states
-		standardMatrix[1][0] = standard_INFORMATIONAL_SEARCH_NON_SEARCHING;
-		standardMatrix[1][1] = standard_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH;
-		standardMatrix[1][2] = standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO;
-		standardMatrix[1][3] = standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE;
-		standardMatrix[1][4] = standard_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO;
-		standardMatrix[1][5] = new BigDecimal("0");
-		//transitions from F0 to other states
-		standardMatrix[2][0] = standard_FOCUS_LEVEL_ZERO_NON_SEARCHING;
-		standardMatrix[2][1] = new BigDecimal("0");
-		standardMatrix[2][2] = standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO;
-		standardMatrix[2][3] = standard_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE;
-		standardMatrix[2][4] = new BigDecimal("0");
-		standardMatrix[2][5] = new BigDecimal(".1");
-		//transitions from F1 to other states
-		standardMatrix[3][0] = standard_FOCUS_LEVEL_ONE_NON_SEARCHING;
-		standardMatrix[3][1] = new BigDecimal("0");
-		standardMatrix[3][2] = new BigDecimal("0");
-		standardMatrix[3][3] = standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE;
-		standardMatrix[3][4] = standard_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO;
-		standardMatrix[3][5] = new BigDecimal(".2");
-		//transitions from F2 to other states
-		standardMatrix[4][0] = standard_FOCUS_LEVEL_TWO_NON_SEARCHING;
-		standardMatrix[4][1] = new BigDecimal("0");
-		standardMatrix[4][2] = new BigDecimal("0");
-		standardMatrix[4][3] = new BigDecimal("0");
-		standardMatrix[4][4] = standard_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO;
-		standardMatrix[4][5] = new BigDecimal(".3");
-		//transitions from T to other states
-		standardMatrix[5][0] = standard_TRANSACTED_NON_SEARCHING;
-		standardMatrix[5][1] = new BigDecimal("0");
-		standardMatrix[5][2] = new BigDecimal("0");
-		standardMatrix[5][3] = new BigDecimal("0");
-		standardMatrix[5][4] = new BigDecimal("0");
-		standardMatrix[5][5] = standard_TRANSACTED_TRANSACTED;
-		return normalizeCols(standardMatrix);
-	}
-	
-	protected  BigDecimal[][] makeBurstMatrix() {
-		BigDecimal[][] burstMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
-		//transitions from non-searching to other states
-		burstMatrix[0][0] = burst_NON_SEARCHING_NON_SEARCHING;
-		burstMatrix[0][1] = burst_NON_SEARCHING_INFORMATIONAL_SEARCH;
-		burstMatrix[0][2] = new BigDecimal("0");
-		burstMatrix[0][3] = new BigDecimal("0");
-		burstMatrix[0][4] = new BigDecimal("0");
-		burstMatrix[0][5] = new BigDecimal("0");
-		//transitions from informational-searching to other states
-		burstMatrix[1][0] = burst_INFORMATIONAL_SEARCH_NON_SEARCHING;
-		burstMatrix[1][1] = burst_INFORMATIONAL_SEARCH_INFORMATIONAL_SEARCH;
-		burstMatrix[1][2] = burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ZERO;
-		burstMatrix[1][3] = burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_ONE;
-		burstMatrix[1][4] = burst_INFORMATIONAL_SEARCH_FOCUS_LEVEL_TWO;
-		burstMatrix[1][5] = new BigDecimal("0");
-		//transitions from F0 to other states
-		burstMatrix[2][0] = burst_FOCUS_LEVEL_ZERO_NON_SEARCHING;
-		burstMatrix[2][1] = new BigDecimal("0");
-		burstMatrix[2][2] = burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ZERO;
-		burstMatrix[2][3] = burst_FOCUS_LEVEL_ZERO_FOCUS_LEVEL_ONE;
-		burstMatrix[2][4] = new BigDecimal("0");
-		burstMatrix[2][5] = new BigDecimal(".1");
-		//transitions from F1 to other states
-		burstMatrix[3][0] = burst_FOCUS_LEVEL_ONE_NON_SEARCHING;
-		burstMatrix[3][1] = new BigDecimal("0");
-		burstMatrix[3][2] = new BigDecimal("0");
-		burstMatrix[3][3] = burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_ONE;
-		burstMatrix[3][4] = burst_FOCUS_LEVEL_ONE_FOCUS_LEVEL_TWO;
-		burstMatrix[3][5] = new BigDecimal(".2");
-		//transitions from F2 to other states
-		burstMatrix[4][0] = burst_FOCUS_LEVEL_TWO_NON_SEARCHING;
-		burstMatrix[4][1] = new BigDecimal("0");
-		burstMatrix[4][2] = new BigDecimal("0");
-		burstMatrix[4][3] = new BigDecimal("0");
-		burstMatrix[4][4] = burst_FOCUS_LEVEL_TWO_FOCUS_LEVEL_TWO;
-		burstMatrix[4][5] = new BigDecimal(".3");
-		//transitions from T to other states
-		burstMatrix[5][0] = burst_TRANSACTED_NON_SEARCHING;
-		burstMatrix[5][1] = new BigDecimal("0");
-		burstMatrix[5][2] = new BigDecimal("0");
-		burstMatrix[5][3] = new BigDecimal("0");
-		burstMatrix[5][4] = new BigDecimal("0");
-		burstMatrix[5][5] = burst_TRANSACTED_TRANSACTED;
-		return normalizeCols(burstMatrix);
-	}
-	
-	protected  BigDecimal[][] combineMarkovChains(BigDecimal[][] standard, BigDecimal[][] burst, BigDecimal burstprob) {
-		BigDecimal[][] newMatrix = new BigDecimal[UserState.values().length][UserState.values().length];
-		for(int i=0; i < UserState.values().length; i++){
-			for(int j=0; j < UserState.values().length; j++){
-				newMatrix[i][j] = standard[i][j].multiply(new BigDecimal("1").subtract(burstprob)).add(burst[i][j].multiply(burstprob));
-			}
-		}
-		return newMatrix;
-	}
-	
-	protected  BigDecimal[][] matrixMultiplication(BigDecimal[][] m1, BigDecimal[][] m2) {
-		BigDecimal[][] newMatrix = new BigDecimal[UserState.values().length][UserState.values().length];                                                   
-		for (int i = 0; i < UserState.values().length; i++) {                                  
-			for (int j = 0; j < UserState.values().length; j++) {               
-				newMatrix[i][j] = new BigDecimal("0");;
-				for(int k = 0; k < UserState.values().length; k++) {
-					newMatrix[i][j] = newMatrix[i][j].add(m1[i][k].multiply(m2[k][j],MathContext.DECIMAL32));
+					threshhold += transProbs.get(state).get(UserState.IS);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.IS, tempUsers.get(UserState.IS)+1);
+						_users.put(prod,tempUsers);
+						continue;
+					}
+					threshhold += transProbs.get(state).get(UserState.F0);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.F0, tempUsers.get(UserState.F0)+1);
+						_users.put(prod,tempUsers);
+						continue;
+					}
+					threshhold += transProbs.get(state).get(UserState.F1);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.F1, tempUsers.get(UserState.F1)+1);
+						_users.put(prod,tempUsers);
+						continue;
+					}
+					threshhold += transProbs.get(state).get(UserState.F2);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.F2, tempUsers.get(UserState.F2)+1);
+						_users.put(prod,tempUsers);
+						continue;
+					}
+					threshhold += transProbs.get(state).get(UserState.T);
+					if(rand <= threshhold) {
+						HashMap<UserState, Integer> tempUsers = _users.get(prod);
+						tempUsers.put(UserState.T, tempUsers.get(UserState.T)+1);
+						_users.put(prod,tempUsers);
+						continue;
+					}
+					else {
+						throw new RuntimeException("Transition Probs don't sum to 1");
+					}
 				}
 			}
 		}
-		return newMatrix;
 	}
-	
-	protected  BigDecimal[][] normalizeCols(BigDecimal[][] mat) {
-		BigDecimal[][] newmat = new BigDecimal[mat[0].length][mat.length];
-		for(int i = 0; i < mat[0].length; i++) {
-			BigDecimal tot = new BigDecimal("0");
-			for(int j = 0; j < mat.length; j++) {
-				tot = tot.add(mat[i][j]);
+
+	private void initializeUsers() {
+		for(Product prod : _products) {
+			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
+			for(UserState state : UserState.values()) {
+				if(state == UserState.NS) {
+					tempUsers.put(state, 10000);
+				}
+				else {
+					tempUsers.put(state, 0);
+				}
 			}
-			for(int j = 0; j < mat.length; j++) {
-				newmat[i][j] = mat[i][j].divide(tot,MathContext.DECIMAL32);
+			_users.put(prod, tempUsers);
+		}
+	}
+
+	private void zeroOutUsers() {
+		for(Product prod : _products) {
+			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
+			for(UserState state : UserState.values()) {
+				tempUsers.put(state, 0);
+			}
+			_users.put(prod, tempUsers);
+		}
+	}
+
+	private HashMap<Product, HashMap<UserState, Integer>> copyUsers(HashMap<Product, HashMap<UserState, Integer>> users) {
+		HashMap<Product, HashMap<UserState, Integer>> usersCopy = new HashMap<Product, HashMap<UserState,Integer>>();
+		for(Product prod : _products) {
+			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
+			for(UserState state : UserState.values()) {
+				tempUsers.put(state,users.get(prod).get(state));
+			}
+			usersCopy.put(prod, tempUsers);
+		}
+		return usersCopy;
+	}
+
+	/**
+	 * Simulates one virtual day with no impressions, clicks or conversions
+	 */
+	private void simulateVirtualDay() {
+		double rand = _R.nextDouble();
+		if(rand <= burstprobability) {
+			transitionUsers(false);
+		}
+		else {
+			transitionUsers(true);
+		}
+	}
+
+	/**
+	 * Simulates one normal game day with the specified transitions (burst or not)
+	 * @param transProbs State to state transition prob matrix
+	 */
+	private void simulateDayWithTransactions(boolean burst) {
+		transitionUsers(burst);
+		int numAdvertisers = 8;
+		int avgCapacity = 400;
+		int totalCapacity = numAdvertisers*avgCapacity;
+		int dailyTotCap = totalCapacity/5;
+		int perProdDailyTotCap = dailyTotCap/9;
+		for(Product prod : _products) {
+			int dailyCap = (int) (perProdDailyTotCap * randDouble(.9, 1.1));
+			HashMap<UserState, Integer> users = _users.get(prod);
+			int numF0Users = users.get(UserState.F0);
+			int numF1Users = users.get(UserState.F1)*2; //We multiply by 2 because F1 is twice as likely to convert as F0
+			int numF2Users = users.get(UserState.F2)*3;
+			int convertingUsers = numF0Users + numF1Users + numF2Users;
+			for(int i = 0; i < dailyCap; i++) {
+				double rand = _R.nextDouble();
+				double threshhold = numF0Users/((double)convertingUsers);
+				if(rand <= threshhold) {
+					users.put(UserState.F0, users.get(UserState.F0)-1);
+					users.put(UserState.T, users.get(UserState.T)+1);
+					continue;
+				}
+				threshhold += numF1Users/((double)convertingUsers);
+				if(rand <= threshhold) {
+					users.put(UserState.F1, users.get(UserState.F1)-1);
+					users.put(UserState.T, users.get(UserState.T)+1);
+					continue;
+				}
+				threshhold += numF2Users/((double)convertingUsers);
+				if(rand <= threshhold) {
+					users.put(UserState.F2, users.get(UserState.F2)-1);
+					users.put(UserState.T, users.get(UserState.T)+1);
+					continue;
+				}
+			}
+			_users.put(prod, users);
+		}
+	}
+
+	private void printUsers() {
+		for(Product prod : _products) {
+			System.out.println("Product: " + prod);
+			printMap(_users.get(prod));
+		}
+	}
+
+	private void printMap(HashMap<UserState,Integer> map) {
+		for(UserState state : UserState.values()) {
+			System.out.println("\t Users " + state + ": " + map.get(state));
+		}
+	}
+
+
+	/*
+	 * Normalize a map to have 10k users
+	 * 
+	 * TODO
+	 * 
+	 * Make this method actually work!
+	 */
+	private void normalizeMap(HashMap<UserState, Integer> map, int numRecurs) {
+		int desiredTot = 10000;
+		int tot = 0;
+		for(UserState state : UserState.values()) {
+			tot += map.get(state);
+		}
+		if(tot == desiredTot) {
+			return;
+		}
+		for(UserState state : UserState.values()) {
+			map.put(state, (int) ((map.get(state)/((double)tot*randDouble(1.0 - numRecurs/10, 1.0 + numRecurs/10)))* desiredTot));
+		}
+		normalizeMap(map,numRecurs++);
+	}
+
+	private Set<String> generateStringList(int numDays, int numBurstDays, Set<String> strings) {
+		if(strings == null && numDays > 0) {
+			strings = new HashSet<String>();
+			if(numDays != numBurstDays) {
+				strings.add("0");
+			}
+			if(numBurstDays != 0) {
+				strings.add("1");
+			}
+			return generateStringList(numDays-1,numBurstDays,strings);
+		}
+		if(numDays > 0) {
+			HashSet<String> newStrings = new HashSet<String>();
+			for(String string : strings) {
+				if(numDays-1 + sumOnes(string) >= numBurstDays) {
+					newStrings.add(string+"0");
+				}
+				if(sumOnes(string) < numBurstDays) {
+					newStrings.add(string+"1");
+				}
+			}
+			return generateStringList(numDays-1,numBurstDays,newStrings);
+		}
+		return strings;
+	}
+
+	private int sumOnes(String string) {
+		int tot = 0;
+		for(int i = 0; i < string.length(); i++) {
+			if(string.charAt(i) == '1') {
+				tot++;
 			}
 		}
-		return newmat;
+		return tot;
 	}
-	
-	/*
-	 * I just simulated a game for a really long time to get the minimum
-	 * and maximum % of users in F0,F1, and F2..Then I basically just
-	 * pick a random number between the two.  This will be improved when
-	 * the new server is released
-	 * 
-	 * This function returns an array of the number of users in a given
-	 * query class.  Index 0 is F0, 1 is F1, and 2 is F2
-	 */
-	public int[] getBadEstimates(int numUsers) {
-		int[] users = new int[3];
-		double minF0 = .1241;
-		double maxF0 = .2643;
-		double minF1 = .0876;
-		double maxF1 = .1868;
-		double minF2 = .0410;
-		double maxF2 = .1098;
-		
-		users[0] = (int) (numUsers*randDouble(minF0,maxF0));
-		users[1] = (int) (numUsers*randDouble(minF1,maxF1));
-		users[2] = (int) (numUsers*randDouble(minF2,maxF2));
-		
-		return users;
-	}
-	
-	protected  double randDouble(double a, double b) {
+
+	//Returns a random double rand such that a <= r < b
+	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
+
+
+	private void analyzeVirutalization() {
+		int totalIters = 0;
+		Set<String> strings = new HashSet<String>();
+		/*
+		 * The cumulative probability of more than 4 burst days in 10 days is 0.001634937
+		 * The cumulative probability of more than 5 burst days in 10 days is 0.0001469023
+		 */
+		for(int i = 0; i < 6; i++) {
+			Set<String> tempStrings = generateStringList(10, i, null);
+			strings.addAll(tempStrings);
+		}
+		int numSims = 10;
+		HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>> megaMap = new HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>>();
+		for(String string : strings) {
+			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> listOfMaps = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();
+			for(int i = 0; i < numSims; i++) {
+				initializeUsers();
+				for(int j = 0; j < string.length(); j++) {
+					totalIters++;
+					if(string.charAt(j) == '0') {
+						transitionUsers(false);
+					}
+					else if(string.charAt(j) == '1') {
+						transitionUsers(true);
+					}
+					else {
+						throw new RuntimeException("Malformed string");
+					}
+					if(totalIters % 1000 == 0) {
+						System.out.println(totalIters);
+					}
+				}
+				listOfMaps.add(copyUsers(_users));
+			}
+			megaMap.put(string, listOfMaps);
+		}
+	}
+
+	public static void main(String[] args) {
+		UserSteadyStateDist steadyState = new UserSteadyStateDist();
+		
+		
+		double start = System.currentTimeMillis();
+		
+		steadyState.analyzeVirutalization();
+		
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+	}
 }
