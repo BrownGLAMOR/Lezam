@@ -20,6 +20,7 @@ import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.PublisherInfo;
+import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.ReserveInfo;
 import edu.umich.eecs.tac.props.RetailCatalog;
@@ -106,6 +107,7 @@ public class GameStatusHandler {
 			SimParserMessage mes = messages.get(i);
 			int from = mes.getSender();
 			int to = mes.getReceiver();
+			int messageDay = mes.getDay();
 			Transportable content = mes.getContent();
 			if (content instanceof BankStatus) {
 				BankStatus bankstatustemp = (BankStatus) content;
@@ -153,7 +155,7 @@ public class GameStatusHandler {
 				 * days one and two before we actually get bank information back
 				 * because of the two day lag.
 				 */
-				if(salesreporttemp.size() != 0) {
+				if(day >= 1) {
 					String name = participantNames[to];
 					LinkedList<SalesReport> salesreportlist = salesReports.get(name);
 					salesreportlist.addLast(salesreporttemp);
@@ -168,7 +170,7 @@ public class GameStatusHandler {
 				 * days one and two before we actually get bank information back
 				 * because of the two day lag.
 				 */
-				if(queryreporttemp.size() != 0) {
+				if(day >= 1) {
 					String name = participantNames[to];
 					LinkedList<QueryReport> queryreportlist = queryReports.get(name);
 					queryreportlist.addLast(queryreporttemp);
@@ -184,7 +186,30 @@ public class GameStatusHandler {
 				BidBundle bidbundletemp = (BidBundle) content;
 				String name = participantNames[from];
 				LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
-				bidbundlelist.addLast(bidbundletemp);
+				/*
+				 * If a bid bundle is missing, it means the person uses the same
+				 * bundle as the last time
+				 */
+				int bundlesize =  bidbundlelist.size() -1;
+				if(messageDay - 1 > bundlesize) {
+					for(int j = 0; j < (messageDay-1-bundlesize); j++) {
+						BidBundle bundleTemp = bidbundlelist.getLast();
+						BidBundle newBundle = copyBundle(bundleTemp);
+						bidbundlelist.add(newBundle);
+					}
+				}
+				/*
+				 * This ensures we don't get too many
+				 */
+				if(messageDay == bidbundlelist.size()) {
+					bidbundlelist.addLast(bidbundletemp);
+				}
+				/*
+				 * This means that a bundle was sent on the wrong day and should be reported
+				 */
+				else {
+					throw new RuntimeException("Report this error to TAC AA");
+				}
 				bidBundles.put(name, bidbundlelist);
 			}
 			else if (content instanceof UserClickModel && !userclickmodelflag) {
@@ -219,18 +244,52 @@ public class GameStatusHandler {
 			}
 		}
 
+
+		//Ensure everyone has the right number of bid bundles!
+		for(int i = 0; i < participants.length; i++) { 
+			if(isAdvertiser[i]) {
+				String name = participantNames[i];
+				LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
+				int bundleListSize = bidbundlelist.size();
+				if(bundleListSize < 60) {
+					if(bundleListSize == 0) {
+						for(int j = 0; j < 60; j++) {
+							bidbundlelist.add(new BidBundle());
+						}
+					}
+					else {
+						for(int j = 0; j < (60 - bundleListSize); j++) {
+							BidBundle bundleTemp = bidbundlelist.getLast();
+							BidBundle newBundle = copyBundle(bundleTemp);
+							bidbundlelist.add(newBundle);
+						}
+					}
+				}
+			}
+		}
+
+
 		GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, simulationStatuses, advertiserInfos,
 				userDists, slotInfo, reserveInfo, pubInfo, retailCatalog, userClickModel);
 		return gameStatus;
 	}
 
 
+	private BidBundle copyBundle(BidBundle bundleTemp) {
+		BidBundle newBundle = new BidBundle();
+		for(Query query : bundleTemp) {
+			newBundle.addQuery(query, bundleTemp.getBid(query), bundleTemp.getAd(query), bundleTemp.getDailyLimit(query));
+		}
+		newBundle.setCampaignDailySpendLimit(bundleTemp.getCampaignDailySpendLimit());
+		return newBundle;
+	}
+
 	public GameStatus getGameStatus() {
 		return _gameStatus;
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/pro/aa/usr/jberg/localhost_sim1.slg";
+		String filename = "/pro/aa/qual/logs/parsed/game170.slg";
 		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
 		GameStatus gameStatus = gameStatusHandler.getGameStatus();
 		String[] advertisers = gameStatus.getAdvertisers();
@@ -245,10 +304,12 @@ public class GameStatusHandler {
 		PublisherInfo pubInfo = gameStatus.getPubInfo();
 		RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
 		UserClickModel userClickModel = gameStatus.getUserClickModel();
-		System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[0]).size());
-		System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[0]).size());
-		System.out.println("Num Query Reports: " + queryReports.get(advertisers[0]).size());
-		System.out.println("Num Sales Reports: " + salesReports.get(advertisers[0]).size());
+		for(int i = 0; i < 7; i++) {
+			System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[i]).size());
+			System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[i]).size());
+			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
+			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
+		}
 		System.out.println("Num User Dists: " + usersDists.size());
 		System.out.println("Slot info: " + slotInfo);
 		System.out.println("Reserve info: " + reserveInfo);

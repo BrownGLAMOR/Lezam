@@ -891,7 +891,7 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim12.slg";
+		String filename = "/pro/aa/qual/logs/parsed/game167.slg";
 		if(args.length > 0) { 
 			filename = args[0] + ".slg";
 		}
@@ -905,6 +905,7 @@ public class BasicSimulator {
 		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		for(int i = 0; i < numSims; i++) {
 			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
+//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new Cheap(), advId);
 			reportsList.add(maps.get(sim._agents[advId]));
 		}
 		

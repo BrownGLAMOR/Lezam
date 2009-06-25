@@ -31,53 +31,59 @@ import usermodel.UserState;
  * 
  */
 public class GameLogParser extends Parser {
-    private String[] _participantNames;
-    private boolean[] _is_Advertiser;
-    private ParticipantInfo[] _participants;
-    
-    LinkedList<SimParserMessage> _messages;
+	private String[] _participantNames;
+	private boolean[] _is_Advertiser;
+	private ParticipantInfo[] _participants;
+	private int _day;
 
-    public GameLogParser(LogReader reader) {
-        super(reader);
+	LinkedList<SimParserMessage> _messages;
 
-        _participants = reader.getParticipants();
-        if (_participants == null) {
-            throw new IllegalStateException("no participants");
-        }
-        _participantNames = new String[_participants.length];
-        _is_Advertiser = new boolean[_participants.length];
-        for (int i = 0, n = _participants.length; i < n; i++) {
-            ParticipantInfo info = _participants[i];
-            int agent = info.getIndex();
-            _participantNames[agent] = info.getName();
-            if (info.getRole() == TACAAConstants.ADVERTISER) {
-                _is_Advertiser[agent] = true;
-            } else
-                _is_Advertiser[agent] = false;
-        }
-        _messages = new LinkedList<SimParserMessage>();
-    }
+	public GameLogParser(LogReader reader) {
+		super(reader);
 
-    /**
-     * Invoked when a message to a specific receiver is encountered in the log
-     * file. Example of this is the offers sent by the manufacturers to the
-     * customers.
-     *
-     * @param sender   the sender of the message
-     * @param receiver the receiver of the message
-     * @param content  the message content
-     */
-    protected void message(int sender, int receiver, Transportable content) {
-    	SimParserMessage parseMessage = new SimParserMessage(sender,receiver,content);
-    	_messages.addLast(parseMessage);
-    }
-    
-    protected void dataUpdated(int agent, int type, Transportable content) {
-    	if(content instanceof UserPopulationState){
-    		SimParserMessage parseMessage = new SimParserMessage(agent,type,content);
-        	_messages.addLast(parseMessage);
-    	}
-    }
+		_day = -1;
+		_participants = reader.getParticipants();
+		if (_participants == null) {
+			throw new IllegalStateException("no participants");
+		}
+		_participantNames = new String[_participants.length];
+		_is_Advertiser = new boolean[_participants.length];
+		for (int i = 0, n = _participants.length; i < n; i++) {
+			ParticipantInfo info = _participants[i];
+			int agent = info.getIndex();
+			_participantNames[agent] = info.getName();
+			if (info.getRole() == TACAAConstants.ADVERTISER) {
+				_is_Advertiser[agent] = true;
+			} else
+				_is_Advertiser[agent] = false;
+		}
+		_messages = new LinkedList<SimParserMessage>();
+	}
+
+	/**
+	 * Invoked when a message to a specific receiver is encountered in the log
+	 * file. Example of this is the offers sent by the manufacturers to the
+	 * customers.
+	 *
+	 * @param sender   the sender of the message
+	 * @param receiver the receiver of the message
+	 * @param content  the message content
+	 */
+	protected void message(int sender, int receiver, Transportable content) {
+		SimParserMessage parseMessage = new SimParserMessage(sender,receiver,_day,content);
+		_messages.addLast(parseMessage);
+	}
+
+	protected void dataUpdated(int agent, int type, Transportable content) {
+		if(content instanceof UserPopulationState){
+			SimParserMessage parseMessage = new SimParserMessage(agent,type,_day,content);
+			_messages.addLast(parseMessage);
+		}
+	}
+
+	protected void nextDay(int date, long serverTime) {
+		_day = date;
+	}
 
 	public LinkedList<SimParserMessage> getMessages() {
 		return _messages;
