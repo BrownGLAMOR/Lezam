@@ -10,6 +10,10 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtoslot.BasicBidToClick;
+import newmodels.prconv.AbstractPrConversionModel;
+import newmodels.prconv.SimplePrConversion;
+import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -19,9 +23,13 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG3 extends SimAbstractAgent{
+	protected AbstractUnitsSoldModel _unitsSoldModel;
+	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected HashMap<Query, BasicBidToClick> _bidToclick;
+	//estimate the difference between bid and cpc
+	protected HashMap<Query, Double> _error;
 	//k is a constant that equates EPPS across queries
 	protected double k;
 	protected BidBundle _bidBundle;
@@ -53,18 +61,13 @@ public class NewG3 extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-		  _baselineConv = new HashMap<Query,Double>();
-		    for(Query query:_querySpace){
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(query, 0.1);
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-		    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.27);
-		    		else _baselineConv.put(query,0.2);
-		    	}
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-		    		if(_compSpecialty.equals(query.getComponent())) _baselineConv.put(query,0.39);
-		    		else _baselineConv.put(query,0.3);
-		    	}
-		    }
+		
+		    _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+			
+		    _conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
+			for (Query query : _querySpace) {
+				_conversionPrModel.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
+			}
 		    
 		    _estimatedPrice = new HashMap<Query, Double>();
 		    for(Query query:_querySpace){
@@ -132,7 +135,7 @@ public class NewG3 extends SimAbstractAgent{
 				  done = true;
 				  sum = 0.0;
 			  
-			  }
+			  } 
 		  }
 		  counter ++;
 	  }
@@ -141,7 +144,8 @@ public class NewG3 extends SimAbstractAgent{
    }
    
    protected double calcUnitSold(Query q, double k){
-	  double bid = (_estimatedPrice.get(q)-k)*_baselineConv.get(q);
+	   double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+	  double bid = (_estimatedPrice.get(q)-k)*conversion;
 	  //use the bid to click model to estimate #clicks
 	  double clicks = _bidToclick.get(q).getPrediction(bid);
 	  //estimated sales = clicks * conv prob 
@@ -152,9 +156,27 @@ public class NewG3 extends SimAbstractAgent{
 	   //will change later
 	   return 5.0;
    }
-   
+ 
    protected double getQueryBid(Query q){
-	   return (_estimatedPrice.get(q) -k)*_baselineConv.get(q);
+	   double bid = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) - k + _error.get(q);
+	   if(bid <= 0) return 0;
+	   else return bid;
    }
+   
+   protected void updateError(QueryReport queryReport){
+	   for(Query query:_querySpace){
+		   double dist = Math.abs(queryReport.getCPC(query) - getQueryBid(query)) ;
+		   if(dist >= 0.2){
+			   _error.put(query, dist*0.8);
+		   }
+		   
+	   }
+   }
+   
+   protected double setQuerySpendLimit(Query q){
+		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+		double clicks = Math.max(1,_capacity/(40*conversion));
+		return getQueryBid(q)*clicks;
+	}
 
 }
