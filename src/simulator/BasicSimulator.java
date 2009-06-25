@@ -63,7 +63,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 2; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private boolean DEBUG = false;
 
@@ -133,9 +133,8 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> singleQueryReports;
 
-	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, String agentIn, int advertiseridx) {
+	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
-		SimAbstractAgent agent = stringToAgent(agentIn);
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
@@ -851,7 +850,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkIIBids();
+			return new MCKPAgentMkIIBids("0");
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -866,7 +865,7 @@ public class BasicSimulator {
 			return new NewSSB();
 		}
 		else {
-			return new MCKPAgentMkIIBids();
+			return new MCKPAgentMkIIBids("0");
 		}
 	}
 
@@ -893,16 +892,19 @@ public class BasicSimulator {
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
 		String filename = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim12.slg";
+		if(args.length > 0) { 
+			filename = args[0] + ".slg";
+		}
 		int advId = 0;
 		GameStatusHandler statusHandler = new GameStatusHandler(filename);
 		GameStatus status = statusHandler.getGameStatus();
 		double start = System.currentTimeMillis();
 		int numSims = 1;
-		String agent = "Cheap";
+		String agent = "MCKP";
 
 		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
 		for(int i = 0; i < numSims; i++) {
-			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, agent, advId);
+			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
 			reportsList.add(maps.get(sim._agents[advId]));
 		}
 		
@@ -915,22 +917,22 @@ public class BasicSimulator {
 		map.put(agent, reportsList);
 		
 		JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/dailyProfitsChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("dailyProfitsChart.png"), chart, 1280, 800);
 		
 		chart = chartUtils.dailyClicksChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/dailyClicksChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("dailyClicksChart.png"), chart, 1280, 800);
 		
 		chart = chartUtils.dailyConvsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/dailyConvsChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("dailyConvsChart.png"), chart, 1280, 800);
 		
 		chart = chartUtils.dailyImpsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/dailyImpsChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("dailyImpsChart.png"), chart, 1280, 800);
 		
 		chart = chartUtils.dailyWindowChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/dailyWindowChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("dailyWindowChart.png"), chart, 1280, 800);
 		
 		chart = chartUtils.fullSimProfitsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("charts/fullSimProfitsChart.png"), chart, 1280, 800);
+		ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
 		
 		
 		double stop = System.currentTimeMillis();

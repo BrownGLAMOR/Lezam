@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
-	private static final double CAP_MULTIPLIER = 1.5;
+	private double CAP_MULTIPLIER = 1.5;
 	private boolean DEBUG = false;
 	private int _numUsers = 90000;
 	private double _defaultBid;
@@ -76,15 +76,18 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private HashMap<Query, AbstractBidToPrConv> _bidToPrConv;
 	private AbstractUnitsSoldModel _unitsSold;
 
-	public MCKPAgentMkIIBids() {
+	public MCKPAgentMkIIBids(String string) {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .1;
-		double min = 0;
-		double max = 4;
+		double increment  = .15;
+		double min = .25;
+		double max = 3;
+		int multi = Integer.parseInt(string);
+		CAP_MULTIPLIER = 1.0 + (multi/100.0)*5;
+		System.out.println(CAP_MULTIPLIER);
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
-			bidList.add(min+(i+1)*increment);
+			bidList.add(min+(i*increment));
 		}
 	}
 
@@ -342,7 +345,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 
 				bidBundle.addQuery(q, bid, new Ad(), weight);
-				//				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				//bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
 		//bid bundle for first two days
