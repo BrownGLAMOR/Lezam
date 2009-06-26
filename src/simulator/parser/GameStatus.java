@@ -30,7 +30,6 @@ public class GameStatus {
 	private HashMap<String, LinkedList<BidBundle>> _bidBundles;
 	private HashMap<String, LinkedList<QueryReport>> _queryReports;
 	private HashMap<String, LinkedList<SalesReport>> _salesReports;
-	private HashMap<String, LinkedList<SimulationStatus>> _simulationStatuses;
 	private HashMap<String, AdvertiserInfo> _advertiserInfos;
 	private LinkedList<HashMap<Product, HashMap<UserState, Integer>>> _userDistributions;
 	private SlotInfo _slotInfo;
@@ -44,7 +43,6 @@ public class GameStatus {
 					HashMap<String, LinkedList<BidBundle>> bidBundles,
 					HashMap<String, LinkedList<QueryReport>> queryReports,
 					HashMap<String, LinkedList<SalesReport>> salesReports,
-					HashMap<String,LinkedList<SimulationStatus>> simulationStatuses,
 					HashMap<String, AdvertiserInfo> advertiserInfos,
 					LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists,
 					SlotInfo slotInfo,
@@ -57,7 +55,6 @@ public class GameStatus {
 		_bidBundles = bidBundles;
 		_queryReports = queryReports;
 		_salesReports = salesReports;
-		_simulationStatuses = simulationStatuses;
 		_advertiserInfos = advertiserInfos;
 		_userDistributions = userDists;
 		_slotInfo = slotInfo;
@@ -82,10 +79,6 @@ public class GameStatus {
 
 	public HashMap<String, LinkedList<BankStatus>> getBankStatuses() {
 		return _bankStatuses;
-	}
-	
-	public HashMap<String, LinkedList<SimulationStatus>> getSimulationStatuses() {
-		return _simulationStatuses;
 	}
 
 	public HashMap<String, LinkedList<BidBundle>> getBidBundles() {

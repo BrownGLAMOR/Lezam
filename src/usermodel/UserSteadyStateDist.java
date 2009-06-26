@@ -456,7 +456,7 @@ public class UserSteadyStateDist {
 			Set<String> tempStrings = generateStringList(10, i, null);
 			strings.addAll(tempStrings);
 		}
-		int numSims = 10;
+		int numSims = 1;
 		HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>> megaMap = new HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>>();
 		for(String string : strings) {
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> listOfMaps = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();

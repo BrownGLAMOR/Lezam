@@ -72,7 +72,6 @@ public class GameStatusHandler {
 		HashMap<String,LinkedList<BidBundle>> bidBundles = new HashMap<String, LinkedList<BidBundle>>();
 		HashMap<String,LinkedList<QueryReport>> queryReports = new HashMap<String, LinkedList<QueryReport>>();
 		HashMap<String,LinkedList<SalesReport>> salesReports = new HashMap<String, LinkedList<SalesReport>>();
-		HashMap<String,LinkedList<SimulationStatus>> simulationStatuses = new HashMap<String, LinkedList<SimulationStatus>>();
 		HashMap<String,AdvertiserInfo> advertiserInfos = new HashMap<String, AdvertiserInfo>();
 		LinkedList<HashMap<Product,HashMap<UserState,Integer>>> userDists = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();
 
@@ -93,7 +92,6 @@ public class GameStatusHandler {
 			bidBundles.put(advertisers[i], bidBundlelist);
 			queryReports.put(advertisers[i], queryReportlist);
 			salesReports.put(advertisers[i], salesReportlist);
-			simulationStatuses.put(advertisers[i], simulationStatusList);
 		}
 
 		boolean slotinfoflag = false;
@@ -102,7 +100,6 @@ public class GameStatusHandler {
 		boolean retailcatalogflag = false;
 		boolean userclickmodelflag = false;
 
-		int day = -1;
 		for(int i = 0; i < messages.size(); i++) {
 			SimParserMessage mes = messages.get(i);
 			int from = mes.getSender();
@@ -110,27 +107,13 @@ public class GameStatusHandler {
 			int messageDay = mes.getDay();
 			Transportable content = mes.getContent();
 			if (content instanceof BankStatus) {
-				BankStatus bankstatustemp = (BankStatus) content;
-				/*
-				 * The first three bankstatus messages we get are all zeros.
-				 * The first one is sent pregame, and the next two are sent on
-				 * days one and two before we actually get bank information back
-				 * because of the two day lag.
-				 */
-				if(day >= 0) {
+				if(messageDay >= 1) {
+					BankStatus bankstatustemp = (BankStatus) content;
 					String name = participantNames[to];
 					LinkedList<BankStatus> bankstatuslist = bankStatuses.get(name);
 					bankstatuslist.addLast(bankstatustemp);
 					bankStatuses.put(name, bankstatuslist);
 				}
-			}
-			else if (content instanceof SimulationStatus) {
-				SimulationStatus simstatustemp = (SimulationStatus) content;
-				day = simstatustemp.getCurrentDate();
-				String name = participantNames[to];
-				LinkedList<SimulationStatus> simulationStatusList = simulationStatuses.get(name);
-				simulationStatusList.addLast(simstatustemp);
-				simulationStatuses.put(name, simulationStatusList);
 			}
 			else if (content instanceof SlotInfo && !slotinfoflag) {
 				SlotInfo slotinfotemp = (SlotInfo) content;
@@ -148,14 +131,14 @@ public class GameStatusHandler {
 				pubinfoflag = true;
 			}
 			else if (content instanceof SalesReport) {
-				SalesReport salesreporttemp = (SalesReport) content;
 				/*
 				 * The first three salesreports messages we get are all zeros.
 				 * The first one is sent pregame, and the next two are sent on
 				 * days one and two before we actually get bank information back
 				 * because of the two day lag.
 				 */
-				if(day >= 1) {
+				if(messageDay >= 2) {
+					SalesReport salesreporttemp = (SalesReport) content;
 					String name = participantNames[to];
 					LinkedList<SalesReport> salesreportlist = salesReports.get(name);
 					salesreportlist.addLast(salesreporttemp);
@@ -163,14 +146,14 @@ public class GameStatusHandler {
 				}
 			}
 			else if (content instanceof QueryReport) {
-				QueryReport queryreporttemp = (QueryReport) content;
 				/*
 				 * The first three queryreports messages we get are all zeros.
 				 * The first one is sent pregame, and the next two are sent on
 				 * days one and two before we actually get bank information back
 				 * because of the two day lag.
 				 */
-				if(day >= 1) {
+				if(messageDay >= 2) {
+					QueryReport queryreporttemp = (QueryReport) content;
 					String name = participantNames[to];
 					LinkedList<QueryReport> queryreportlist = queryReports.get(name);
 					queryreportlist.addLast(queryreporttemp);
@@ -183,34 +166,36 @@ public class GameStatusHandler {
 				retailcatalogflag = true;
 			}
 			else if (content instanceof BidBundle) {
-				BidBundle bidbundletemp = (BidBundle) content;
-				String name = participantNames[from];
-				LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
-				/*
-				 * If a bid bundle is missing, it means the person uses the same
-				 * bundle as the last time
-				 */
-				int bundlesize =  bidbundlelist.size() -1;
-				if(messageDay - 1 > bundlesize) {
-					for(int j = 0; j < (messageDay-1-bundlesize); j++) {
-						BidBundle bundleTemp = bidbundlelist.getLast();
-						BidBundle newBundle = copyBundle(bundleTemp);
-						bidbundlelist.add(newBundle);
+				if(messageDay <= 58) {
+					BidBundle bidbundletemp = (BidBundle) content;
+					String name = participantNames[from];
+					LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
+					/*
+					 * If a bid bundle is missing, it means the person uses the same
+					 * bundle as the last time
+					 */
+					int bundlesize =  bidbundlelist.size() -1;
+					if(messageDay - 1 > bundlesize) {
+						for(int j = 0; j < (messageDay-1-bundlesize); j++) {
+							BidBundle bundleTemp = bidbundlelist.getLast();
+							BidBundle newBundle = copyBundle(bundleTemp);
+							bidbundlelist.add(newBundle);
+						}
 					}
+					/*
+					 * This ensures we don't get too many
+					 */
+					if(messageDay == bidbundlelist.size()) {
+						bidbundlelist.addLast(bidbundletemp);
+					}
+					/*
+					 * This means that a bundle was sent on the wrong day and should be reported
+					 */
+					else {
+						throw new RuntimeException("Report this error to TAC AA");
+					}
+					bidBundles.put(name, bidbundlelist);
 				}
-				/*
-				 * This ensures we don't get too many
-				 */
-				if(messageDay == bidbundlelist.size()) {
-					bidbundlelist.addLast(bidbundletemp);
-				}
-				/*
-				 * This means that a bundle was sent on the wrong day and should be reported
-				 */
-				else {
-					throw new RuntimeException("Report this error to TAC AA");
-				}
-				bidBundles.put(name, bidbundlelist);
 			}
 			else if (content instanceof UserClickModel && !userclickmodelflag) {
 				UserClickModel userclickmodeltemp = (UserClickModel) content;
@@ -224,20 +209,22 @@ public class GameStatusHandler {
 				advertiserInfos.put(name, advInfo);
 			}
 			else if (content instanceof UserPopulationState) {
-				UserPopulationState userPopState = (UserPopulationState) content;
-				HashMap<Product, HashMap<UserState,Integer>> userDist = new HashMap<Product, HashMap<UserState,Integer>>();
-				for(Product p : retailCatalog) {
-					int[] users = userPopState.getDistribution(p);
-					HashMap<UserState,Integer> userDistperProd = new HashMap<UserState, Integer>();
-					userDistperProd.put(UserState.NS, users[0]);
-					userDistperProd.put(UserState.IS, users[1]);
-					userDistperProd.put(UserState.F0, users[2]);
-					userDistperProd.put(UserState.F1, users[3]);
-					userDistperProd.put(UserState.F2, users[4]);
-					userDistperProd.put(UserState.T, users[5]);
-					userDist.put(p, userDistperProd);
+				if(messageDay >= 0) {
+					UserPopulationState userPopState = (UserPopulationState) content;
+					HashMap<Product, HashMap<UserState,Integer>> userDist = new HashMap<Product, HashMap<UserState,Integer>>();
+					for(Product p : retailCatalog) {
+						int[] users = userPopState.getDistribution(p);
+						HashMap<UserState,Integer> userDistperProd = new HashMap<UserState, Integer>();
+						userDistperProd.put(UserState.NS, users[0]);
+						userDistperProd.put(UserState.IS, users[1]);
+						userDistperProd.put(UserState.F0, users[2]);
+						userDistperProd.put(UserState.F1, users[3]);
+						userDistperProd.put(UserState.F2, users[4]);
+						userDistperProd.put(UserState.T, users[5]);
+						userDist.put(p, userDistperProd);
+					}
+					userDists.add(userDist);
 				}
-				userDists.add(userDist);
 			}
 			else {
 				//	    		throw new RuntimeException("Unexpected parse token");
@@ -245,20 +232,20 @@ public class GameStatusHandler {
 		}
 
 
-		//Ensure everyone has the right number of bid bundles!
+		//Ensure everyone has the right number of bid bundles! (59)
 		for(int i = 0; i < participants.length; i++) { 
 			if(isAdvertiser[i]) {
 				String name = participantNames[i];
 				LinkedList<BidBundle> bidbundlelist = bidBundles.get(name);
 				int bundleListSize = bidbundlelist.size();
-				if(bundleListSize < 60) {
+				if(bundleListSize < 59) {
 					if(bundleListSize == 0) {
-						for(int j = 0; j < 60; j++) {
+						for(int j = 0; j < 59; j++) {
 							bidbundlelist.add(new BidBundle());
 						}
 					}
 					else {
-						for(int j = 0; j < (60 - bundleListSize); j++) {
+						for(int j = 0; j < (59 - bundleListSize); j++) {
 							BidBundle bundleTemp = bidbundlelist.getLast();
 							BidBundle newBundle = copyBundle(bundleTemp);
 							bidbundlelist.add(newBundle);
@@ -269,7 +256,7 @@ public class GameStatusHandler {
 		}
 
 
-		GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, simulationStatuses, advertiserInfos,
+		GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
 				userDists, slotInfo, reserveInfo, pubInfo, retailCatalog, userClickModel);
 		return gameStatus;
 	}
@@ -289,7 +276,7 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/pro/aa/qual/logs/parsed/game170.slg";
+		String filename = "/games/game163.slg";
 		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
 		GameStatus gameStatus = gameStatusHandler.getGameStatus();
 		String[] advertisers = gameStatus.getAdvertisers();
@@ -309,6 +296,9 @@ public class GameStatusHandler {
 			System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[i]).size());
 			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
 			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
+		}
+		for(int i = 0; i < queryReports.get(advertisers[0]).size(); i++) {
+			System.out.println(queryReports.get(advertisers[0]).get(i));
 		}
 		System.out.println("Num User Dists: " + usersDists.size());
 		System.out.println("Slot info: " + slotInfo);

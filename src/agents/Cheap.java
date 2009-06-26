@@ -24,21 +24,19 @@ public class Cheap extends SimAbstractAgent {
 			double queryBudget;
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO){
 				queryBid = 1.2;
-				queryBudget = dailyCap;
 			}
 			else if (q.getType() == QueryType.FOCUS_LEVEL_ONE){
 				queryBid = 1.5;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 				}
-				queryBudget = dailyCap;
 			}
 			else {
 				queryBid = 2.3;
 				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
 					queryBid = 3;
 				}
-				queryBudget = dailyCap;
 			}
+			queryBudget = dailyCap * queryBid;
 			bidBundle.addQuery(q, queryBid*.5, null);
 			bidBundle.setDailyLimit(q, queryBudget);
 		}

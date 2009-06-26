@@ -20,9 +20,7 @@ import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
-import newmodels.prconv.AbstractPrConversionModel;
 import se.sics.tasim.aw.Message;
-import se.sics.tasim.props.SimulationStatus;
 import simulator.GUI.ChartUtils;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToNumClicks;
@@ -64,6 +62,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+
+	private static boolean CHART = false;
 
 	private boolean DEBUG = false;
 
@@ -125,8 +125,6 @@ public class BasicSimulator {
 
 	private AdvertiserInfo _ourAdvInfo;
 
-	private SimulationStatus _ourSimulationStatus;
-
 	private HashMap<String, AdvertiserInfo> _advInfos;
 
 	private String _testId = "testId";
@@ -149,7 +147,7 @@ public class BasicSimulator {
 		}
 		int firstDay = 0;
 
-		for(int day = firstDay; day < 60; day++) {
+		for(int day = firstDay; day < 59; day++) {
 
 			if(day >= 2) {
 				LinkedList<Reports> reportsList = reportsListMap.get(_agents[advertiseridx]);
@@ -201,35 +199,35 @@ public class BasicSimulator {
 				reportsListMap.put(_agents[i],reports);
 			}
 		}
-		//		/*
-		//		 * TESTING
-		//		 */
-		//		for(int i = 0; i < _agents.length; i++ ) {
-		//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
-		//			System.out.println("Agent: "  + _agents[i]);
-		//			double totalRevenue = 0;
-		//			double totalCost = 0;
-		//			double totalImp = 0;
-		//			double totalClick = 0;
-		//			double totalConv = 0;
-		//			for(Reports report : reports) {
-		//				QueryReport queryReport = report.getQueryReport();
-		//				SalesReport salesReport = report.getSalesReport();
-		//				for(Query query : _querySpace) {
-		//					totalRevenue += salesReport.getRevenue(query);
-		//					totalCost += queryReport.getCost(query);
-		//					totalImp += queryReport.getImpressions(query);
-		//					totalClick += queryReport.getClicks(query);
-		//					totalConv += salesReport.getConversions(query);
-		//				}
-		//			}
-		//			System.out.println("\tTotal Revenue: " + totalRevenue);
-		//			System.out.println("\tTotal Cost: " + totalCost);
-		//			System.out.println("\tTotal Impressions: " + totalImp);
-		//			System.out.println("\tTotal Clicks: " + totalClick);
-		//			System.out.println("\tTotal Conversions: " + totalConv);
-		//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
-		//		}
+//		/*
+//		 * TESTING
+//		 */
+//		for(int i = 0; i < _agents.length; i++ ) {
+//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
+//			System.out.println("Agent: "  + _agents[i]);
+//			double totalRevenue = 0;
+//			double totalCost = 0;
+//			double totalImp = 0;
+//			double totalClick = 0;
+//			double totalConv = 0;
+//			for(Reports report : reports) {
+//				QueryReport queryReport = report.getQueryReport();
+//				SalesReport salesReport = report.getSalesReport();
+//				for(Query query : _querySpace) {
+//					totalRevenue += salesReport.getRevenue(query);
+//					totalCost += queryReport.getCost(query);
+//					totalImp += queryReport.getImpressions(query);
+//					totalClick += queryReport.getClicks(query);
+//					totalConv += salesReport.getConversions(query);
+//				}
+//			}
+//			System.out.println("\tTotal Revenue: " + totalRevenue);
+//			System.out.println("\tTotal Cost: " + totalCost);
+//			System.out.println("\tTotal Impressions: " + totalImp);
+//			System.out.println("\tTotal Clicks: " + totalClick);
+//			System.out.println("\tTotal Conversions: " + totalConv);
+//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
+//		}
 		return reportsListMap;
 	}
 
@@ -309,7 +307,7 @@ public class BasicSimulator {
 			}
 			_salesOverWindow.put(_agents[i], sales);
 			if(i == _ourAdvIdx) {
-				System.out.println(adInfo.getDistributionCapacity());
+				debug("Our capacity" + adInfo.getDistributionCapacity());
 			}
 			_capacities.put(_agents[i],adInfo.getDistributionCapacity());
 		}
@@ -333,23 +331,10 @@ public class BasicSimulator {
 		_totBudget = new HashMap<String,Double>();
 
 		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = _status.getUserDistributions();
-		HashMap<String, LinkedList<BankStatus>> bankStatuses = _status.getBankStatuses();
 		HashMap<String, LinkedList<BidBundle>> bidBundles = _status.getBidBundles();
-		HashMap<String, LinkedList<QueryReport>> queryReports = _status.getQueryReports();
-		HashMap<String, LinkedList<SalesReport>> salesReports = _status.getSalesReports();
-		HashMap<String, LinkedList<SimulationStatus>> simulationStatuses = _status.getSimulationStatuses();
-
-		_ourSimulationStatus = simulationStatuses.get(_agents[_ourAdvIdx]).get(day);
-
-		if(_day >= 59) {
-			_usersMap = userDists.get(59);
-		}
-		else {
-			_usersMap = userDists.get(_day + 1);
-		}
+		_usersMap = userDists.get(_day);
 
 		for(int i = 0; i < _agents.length; i++) {
-			AdvertiserInfo adInfo = _advInfos.get(_agents[i]);
 			BidBundle bidBundleTemp = bidBundles.get(_agents[i]).get(_day);
 			_totBudget.put(_agents[i], bidBundleTemp.getCampaignDailySpendLimit());
 			HashMap<Query,Ad> adType = new HashMap<Query, Ad>();
@@ -602,7 +587,7 @@ public class BasicSimulator {
 						String queryComp = query.getComponent();
 						String compSpecialty = agent.getCompSpecialty();
 
-						if(queryComp == compSpecialty) {
+						if(compSpecialty.equals(queryComp)) {
 							convPr = eta(convPr,1+_CSB);
 						}
 
@@ -758,7 +743,7 @@ public class BasicSimulator {
 					String queryComp = query.getComponent();
 					String compSpecialty = agent.getCompSpecialty();
 
-					if(queryComp == compSpecialty) {
+					if(compSpecialty.equals(queryComp)) {
 						convPr = eta(convPr,1+_CSB);
 					}
 
@@ -889,56 +874,238 @@ public class BasicSimulator {
 		return _querySpace;
 	}
 
+	/*
+	 * Returns the means and std deviation
+	 * index 0 is the mean
+	 * index 1 is the std deviation
+	 */
+	public double[] stdDeviation(Double[] revenueErrorArr) {
+		double[] meanAndStdDev = new double[2];
+		meanAndStdDev[0] = 0.0;
+		meanAndStdDev[1] = 0.0;
+		for(int i = 0; i < revenueErrorArr.length; i++) {
+			meanAndStdDev[0] += revenueErrorArr[i];
+		}
+		meanAndStdDev[0] /= revenueErrorArr.length;
+		for(int i = 0; i < revenueErrorArr.length; i++) {
+			meanAndStdDev[1] +=  (revenueErrorArr[i] - meanAndStdDev[0])*(revenueErrorArr[i] - meanAndStdDev[0]);
+		}
+		meanAndStdDev[1] /= revenueErrorArr.length;
+		meanAndStdDev[1] = Math.sqrt(meanAndStdDev[1]);
+		return meanAndStdDev;
+	}
+
+	public double[][] percentErrorOfSim() throws IOException, ParseException {
+		LinkedList<Double> revenueError = new LinkedList<Double>();
+		LinkedList<Double> costError = new LinkedList<Double>();
+		LinkedList<Double> impError = new LinkedList<Double>();
+		LinkedList<Double> clickError = new LinkedList<Double>();
+		LinkedList<Double> convError = new LinkedList<Double>();
+		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
+		int min = 18;
+		int max = 39; 
+		String[] filenames = new String[max-min];
+		for(int i = min; i < max; i++) { 
+			filenames[i-min] = baseFile + i + ".slg";
+		}
+		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
+			String filename = filenames[fileIdx];
+			int advId = 0;
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			_querySpace = new LinkedHashSet<Query>();
+			_querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				_querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				_querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				_querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+			
+			double[] totalRevenueList = new double[agents.length];
+			double[] totalCostList = new double[agents.length];
+			double[] totalImpList = new double[agents.length];
+			double[] totalClickList = new double[agents.length];
+			double[] totalConvList = new double[agents.length];		
+
+			HashMap<String, LinkedList<QueryReport>> queryReportListMap = status.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReportListMap = status.getSalesReports();
+			for(int i = 0; i < agents.length; i++ ) {
+				LinkedList<QueryReport> queryReportList = queryReportListMap.get(agents[i]);
+				LinkedList<SalesReport> salesReportList = salesReportListMap.get(agents[i]);
+				double totalRevenue = 0;
+				double totalCost = 0;
+				double totalImp = 0;
+				double totalClick = 0;
+				double totalConv = 0;
+				for(int j = 0; j < queryReportList.size(); j++) {
+					QueryReport queryReport = queryReportList.get(j);
+					SalesReport salesReport = salesReportList.get(j);
+					for(Query query : _querySpace) {
+						totalRevenue += salesReport.getRevenue(query);
+						totalCost += queryReport.getCost(query);
+						totalImp += queryReport.getImpressions(query);
+						totalClick += queryReport.getClicks(query);
+						totalConv += salesReport.getConversions(query);
+					}
+				}
+				totalRevenueList[i] = totalRevenue;
+				totalCostList[i] = totalCost;
+				totalImpList[i] = totalImp;
+				totalClickList[i] = totalClick;
+				totalConvList[i] = totalConv;
+			}
+
+			int numSims = 50;
+			HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap = new HashMap<String,LinkedList<LinkedList<Reports>>>();
+			for(int i = 0; i < agents.length; i++) {
+				LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
+				reportsListMap.put(agents[i], reportsList);
+			}
+			for(int i = 0; i < numSims; i++) {
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
+				for(int j = 0; j < agents.length; j++) {
+					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
+					reportsList.add(maps.get(agents[j]));
+					reportsListMap.put(agents[j], reportsList);
+				}
+			}
+
+			for(int i = 0; i < _agents.length; i++ ) {
+				double totRevenueReal = totalRevenueList[i];
+				double totCostReal = totalCostList[i];
+				double totImpReal = totalImpList[i];
+				double totClickReal = totalClickList[i];
+				double totConvReal = totalConvList[i];
+				LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(_agents[i]);
+				for(int j = 0; j < reportsList.size(); j++) {
+					LinkedList<Reports> reports = reportsList.get(j);
+					double totalRevenue = 0;
+					double totalCost = 0;
+					double totalImp = 0;
+					double totalClick = 0;
+					double totalConv = 0;
+					for(Reports report : reports) {
+						QueryReport queryReport = report.getQueryReport();
+						SalesReport salesReport = report.getSalesReport();
+						for(Query query : _querySpace) {
+							totalRevenue += salesReport.getRevenue(query);
+							totalCost += queryReport.getCost(query);
+							totalImp += queryReport.getImpressions(query);
+							totalClick += queryReport.getClicks(query);
+							totalConv += salesReport.getConversions(query);
+						}
+					}
+					revenueError.add(Math.abs(totalRevenue-totRevenueReal)/totRevenueReal);
+					costError.add(Math.abs(totalCost-totCostReal)/totCostReal);
+					impError.add(Math.abs(totalImp-totImpReal)/totImpReal);
+					clickError.add(Math.abs(totalClick-totClickReal)/totClickReal);
+					convError.add(Math.abs(totalConv-totConvReal)/totConvReal);
+				}
+			}
+		}
+		Double[] revenueErrorArr = revenueError.toArray(new Double[0]);
+		Double[] costErrorArr = costError.toArray(new Double[0]);
+		Double[] impErrorArr = impError.toArray(new Double[0]);
+		Double[] clickErrorArr = clickError.toArray(new Double[0]);
+		Double[] convErrorArr = convError.toArray(new Double[0]);
+		System.out.println(revenueErrorArr.length);
+		System.out.println(costErrorArr.length);
+		System.out.println(impErrorArr.length);
+		System.out.println(clickErrorArr.length);
+		System.out.println(convErrorArr.length);
+		double[] revenueStdDeviation =  stdDeviation(revenueErrorArr);
+		double[] costStdDeviation =  stdDeviation(costErrorArr);
+		double[] impStdDeviation =  stdDeviation(impErrorArr);
+		double[] clickStdDeviation =  stdDeviation(clickErrorArr);
+		double[] convStdDeviation =  stdDeviation(convErrorArr);
+		double[][] percentError = new double[2][5];
+		percentError[0][0] = revenueStdDeviation[0];
+		percentError[1][0] = revenueStdDeviation[1];
+		percentError[0][1] = costStdDeviation[0];
+		percentError[1][1] = costStdDeviation[1];
+		percentError[0][2] = impStdDeviation[0];
+		percentError[1][2] = impStdDeviation[1];
+		percentError[0][3] = clickStdDeviation[0];
+		percentError[1][3] = clickStdDeviation[1];
+		percentError[0][4] = convStdDeviation[0];
+		percentError[1][4] = convStdDeviation[1];
+		return percentError;
+	}
+
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-		String filename = "/pro/aa/qual/logs/parsed/game167.slg";
-		if(args.length > 0) { 
-			filename = args[0] + ".slg";
-		}
-		int advId = 0;
-		GameStatusHandler statusHandler = new GameStatusHandler(filename);
-		GameStatus status = statusHandler.getGameStatus();
+//		String filename = "/pro/aa/qual/logs/parsed/game167.slg";
+//		if(args.length > 0) { 
+//			filename = args[0] + ".slg";
+//		}
+//		int advId = 0;
+//		GameStatusHandler statusHandler = new GameStatusHandler(filename);
+//		GameStatus status = statusHandler.getGameStatus();
+//		
 		double start = System.currentTimeMillis();
-		int numSims = 1;
-		String agent = "MCKP";
 
-		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
-		for(int i = 0; i < numSims; i++) {
-			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
+		//		int numSims = 1;
+//		String agent = "MCKP";
+//
+//		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
+//		for(int i = 0; i < numSims; i++) {
+//			//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
 //			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new Cheap(), advId);
-			reportsList.add(maps.get(sim._agents[advId]));
-		}
+//			reportsList.add(maps.get(sim._agents[advId]));
+//		}
+//
+//		if(CHART ) {
+//
+//			String[] agents = new String[1];
+//			agents[0] = agent;
+//
+//			ChartUtils chartUtils = new ChartUtils(sim,agents);
+//
+//			HashMap<String,LinkedList<LinkedList<Reports>>> map = new HashMap<String, LinkedList<LinkedList<Reports>>>();
+//			map.put(agent, reportsList);
+//
+//			JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("dailyProfitsChart.png"), chart, 1280, 800);
+//
+//			chart = chartUtils.dailyClicksChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("dailyClicksChart.png"), chart, 1280, 800);
+//
+//			chart = chartUtils.dailyConvsChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("dailyConvsChart.png"), chart, 1280, 800);
+//
+//			chart = chartUtils.dailyImpsChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("dailyImpsChart.png"), chart, 1280, 800);
+//
+//			chart = chartUtils.dailyWindowChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("dailyWindowChart.png"), chart, 1280, 800);
+//
+//			chart = chartUtils.fullSimProfitsChart(map, agents);
+//			ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
+//		}
+
+		double[][] percentError = sim.percentErrorOfSim();
 		
-		String[] agents = new String[1];
-		agents[0] = agent;
-		
-		ChartUtils chartUtils = new ChartUtils(sim,agents);
-		
-		HashMap<String,LinkedList<LinkedList<Reports>>> map = new HashMap<String, LinkedList<LinkedList<Reports>>>();
-		map.put(agent, reportsList);
-		
-		JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("dailyProfitsChart.png"), chart, 1280, 800);
-		
-		chart = chartUtils.dailyClicksChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("dailyClicksChart.png"), chart, 1280, 800);
-		
-		chart = chartUtils.dailyConvsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("dailyConvsChart.png"), chart, 1280, 800);
-		
-		chart = chartUtils.dailyImpsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("dailyImpsChart.png"), chart, 1280, 800);
-		
-		chart = chartUtils.dailyWindowChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("dailyWindowChart.png"), chart, 1280, 800);
-		
-		chart = chartUtils.fullSimProfitsChart(map, agents);
-		ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
-		
+		System.out.println(percentError[0][0]);
+		System.out.println(percentError[1][0]);
+		System.out.println(percentError[0][1]);
+		System.out.println(percentError[1][1]);
+		System.out.println(percentError[0][2]);
+		System.out.println(percentError[1][2]);
+		System.out.println(percentError[0][3]);
+		System.out.println(percentError[1][3]);
+		System.out.println(percentError[0][4]);
+		System.out.println(percentError[1][4]);
 		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + ((elapsed / 1000)/numSims) + " seconds");
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
 
 	}
 
