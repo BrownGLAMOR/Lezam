@@ -1,4 +1,4 @@
-package simulator;
+package regressions;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
@@ -18,7 +18,7 @@ public class RTest {
 		RConnection c = new RConnection();
 		
 		double start = System.currentTimeMillis();
-		REXP mean = c.eval("sd(rnorm(100000))");
+		REXP mean = c.eval("max(rnorm(100))");
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
