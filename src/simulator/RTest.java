@@ -16,8 +16,14 @@ public class RTest {
 	 */
 	public static void main(String[] args) throws RserveException, REXPMismatchException {
 		RConnection c = new RConnection();
-		REXP x = c.eval("R.version.string");
-		System.out.println(x.asString());
+		
+		double start = System.currentTimeMillis();
+		REXP mean = c.eval("sd(rnorm(100000))");
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		
+		System.out.println(mean.asDouble());
 
 	}
 
