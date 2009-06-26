@@ -10,6 +10,7 @@ import java.util.Set;
 
 import agents.G3Agent;
 import agents.ILPAgent;
+import agents.ILPAgentQ;
 import agents.old.OldILPAgent;
 
 import se.sics.tasim.props.SimulationStatus;
@@ -35,7 +36,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  * @author ml63 (taken from jberg)
  * 
  */
-public class OneDaySimulator extends ILPAgent{	// You only need to change this line in order to choose an agent
+public class OneDaySimulator extends ILPAgentQ{	// You only need to change this line in order to choose an agent
 
 	Random _R = new Random();
 

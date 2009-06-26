@@ -8,21 +8,23 @@ import ilog.cplex.IloCplex;
 import java.awt.Toolkit;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import modelers.bidtocpc.BidtoCPC;
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.BasicBidToPrClick;
+import newmodels.bidtoprconv.AbstractBidToPrConv;
+import newmodels.bidtoprconv.TrinaryPrConversion;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.bidtoslot.WrapperIlkeBid2Slot;
-import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.TrinaryPrConversion;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.LinearSlotToBid;
@@ -39,7 +41,7 @@ import newmodels.usermodel.BasicUserModel;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToPosition;
 import simulator.models.PerfectBidToPrClick;
-import simulator.models.PerfectConversionProb;
+import simulator.models.PerfectBidToPrConv;
 import usermodel.UserState;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -86,7 +88,7 @@ public class ILPAgent extends SimAbstractAgent{
 	/// Models Needed
 	private HashMap<Query, AbstractBidToPrClick> _bidToClickPrModels; 
 	private HashMap<Query, AbstractBidToCPC> _bidToCPCModels;
-	private HashMap<Product, HashMap<UserState, AbstractPrConversionModel>> _convPrModel;	// probability of a conversion
+	private HashMap<Product, HashMap<UserState, AbstractBidToPrConv>> _convPrModel;	// probability of a conversion
 	private AbstractUserModel _userModel;	// the number of users in every state
 	/// Models extra used
 	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels_simple;	// I've made two models for bidding, one is simple
@@ -140,13 +142,13 @@ public class ILPAgent extends SimAbstractAgent{
 
 		int qvalue = 0;
 		for(Query query : _querySpace){	// just some reasonable numbers to start with 
-			double bid;
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-				bid = .7;
-			else if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-				bid = 1.3;
-			else 
-				bid = 1.7;
+			double bid = 0;
+//			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+//				bid = .5;
+//			else if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+//				bid = 0.8;
+//			else 
+//				bid = 1.2;
 			_bids.put(query, bid);
 			
 			_queryIndexing.put(qvalue, query);
@@ -156,21 +158,27 @@ public class ILPAgent extends SimAbstractAgent{
 		}
 
 		_possibleBids = new HashSet<Double>(setPossibleBids(0.1, 3.5, .1));
-		_possibleQuantities = new HashSet<Integer>(setPossibleQuantities(0, 40, 1));
+		_possibleQuantities = new HashSet<Integer>(setPossibleQuantities(0, 10, 1));
 	}
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {		
 		if (_day > 1) {
-			buildMaps(models);
-			updateBids();
+			try {
+				buildMaps(models);
+				updateBids();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		BidBundle bb = new BidBundle();
 		for (Query query:_querySpace) {
-			bb.addQuery(query, _bids.get(query), new Ad(), _dailyLimit.get(query)); //TODO add a daily limit
+			bb.addQuery(query, _bids.get(query), new Ad()); //TODO add a daily limit
 		}
 		return bb;
+		
 	}
 	
 	
@@ -179,8 +187,9 @@ public class ILPAgent extends SimAbstractAgent{
 	// ###############
 	/**
 	 * Creates the bids using the ILP calculation
+	 * @throws IOException 
 	 */
-	public void updateBids() {
+	public void updateBids() throws IOException {
 		
 		int missingSales = _wantedSales;
 		int qsize = _possibleQuantities.size();
@@ -190,21 +199,21 @@ public class ILPAgent extends SimAbstractAgent{
 		Double[] bidsSet = new Double[bsize];
 		bidsSet = _possibleBids.toArray(bidsSet).clone();
 		
-		try {
-			for (Query query : _previousDayData.keySet()) {
-				HashMap<String,Double> lastDay = _previousDayData.get(query);
-				_fout.write ("\n" + query.toString());
-				_fout.write ("\n\t Bid :: offered=" + cutDouble(lastDay.get("Bid")));
-				_fout.write ("\n\t Position :: wanted=" + cutDouble(lastDay.get("Position")) + " got=" + cutDouble(_queryReport.getPosition(query)));
-				_fout.write ("\n\t Sales :: wanted=" + cutDouble(lastDay.get("Sales")) + " got=" + cutDouble(_salesReport.getConversions(query)));
-				missingSales -= _salesReport.getConversions(query);
-			}
-			_fout.write ("\n\nDay:" + _day);
-			_fout.flush();
-		}
-		catch (Exception e) {
-			System.err.println("problem with writing to file - " + e.getMessage());
-		}
+//		try {
+//			for (Query query : _previousDayData.keySet()) {
+//				HashMap<String,Double> lastDay = _previousDayData.get(query);
+//				_fout.write ("\n" + query.toString());
+//				_fout.write ("\n\t Bid :: offered=" + cutDouble(lastDay.get("Bid")));
+//				_fout.write ("\n\t Position :: wanted=" + cutDouble(lastDay.get("Position")) + " got=" + cutDouble(_queryReport.getPosition(query)));
+//				_fout.write ("\n\t Sales :: wanted=" + cutDouble(lastDay.get("Sales")) + " got=" + cutDouble(_salesReport.getConversions(query)));
+//				missingSales -= _salesReport.getConversions(query);
+//			}
+//			_fout.write ("\n\nDay:" + _day);
+//			_fout.flush();
+//		}
+//		catch (Exception e) {
+//			System.err.println("problem with writing to file - " + e.getMessage());
+//		}
 		
 //		System.out.println("PROBABILITY OF A CONVERSION");
 //		for (Product p : _retailCatalog) {
@@ -229,7 +238,7 @@ public class ILPAgent extends SimAbstractAgent{
 		try {
 			IloCplex cplex = new IloCplex();
 			IloIntVar[] overCapVar = cplex.boolVarArray(qsize);
-			IloIntVar[][] bidsVar = new IloIntVar[NUMOFQUERIES][_numSlots];	//TODO consider making the slots real and not discreet
+			IloIntVar[][] bidsVar = new IloIntVar[NUMOFQUERIES][bsize];
 			IloLinearNumExpr exprObj = cplex.linearNumExpr();
 			for (int query=0 ; query<NUMOFQUERIES ; query++) {
 				bidsVar[query] = cplex.boolVarArray(bsize);
@@ -266,7 +275,7 @@ public class ILPAgent extends SimAbstractAgent{
 			}
 			_wantedSales = DAILYCAPACITY + missingSales;
 			cplex.addLe(exprCapacity, _wantedSales);	// the capacity sold minus the over capacity (=epxrCapacity) need to be less than the daily capacity
-//			_fout.write(exprCapacity.toString());
+			_fout.write(exprCapacity.toString());
 			_fout.write("\n We want to sell " + _wantedSales + "\n");
 			cplex.setOut(null);
 			if (cplex.solve()) {
@@ -299,6 +308,7 @@ public class ILPAgent extends SimAbstractAgent{
 							AbstractBidToSlotModel temp = _bidToSlotModels_simple.get(query);
 							double temp_predict = temp.getPrediction(bidsSet[bidIndex]);
 							expectedData.put("Position", temp_predict);
+//							_fout.write ("\nPosition used the class " + temp.getClass());
 						}
 					}
 					if (!bidThisQuery) _bids.put(_queryIndexing.get(queryIndex), 0.0);
@@ -306,7 +316,6 @@ public class ILPAgent extends SimAbstractAgent{
 						_previousDayData.put(query, expectedData);
 					}
 				}
-				//System.out.println("Sales=" + sales);
 				if (USEOVERQUANTITY) {
 					double[] quantityResults = cplex.getValues(overCapVar);
 					for (int quantity=0 ; quantity<quantityResults.length ; quantity++) {
@@ -320,8 +329,11 @@ public class ILPAgent extends SimAbstractAgent{
 		catch (IloException e) {
 			System.err.println ("Concert Exception" + e + "' caught");
 		}
-		catch (Exception e) {
-			System.err.println("problem with writing to file - " + e.getMessage());
+//		catch (Exception e) {
+//			System.err.println("problem with writing to file - " + e.getMessage());
+//		}
+		for (Query q : _querySpace) {
+//			_bids.put(q, 3.0);
 		}
 	}
 	
@@ -488,14 +500,14 @@ public class ILPAgent extends SimAbstractAgent{
 		
 		if (us.equals(UserState.NS) || us.equals(UserState.T) || us.equals(UserState.IS)) return result;
 
-		AbstractPrConversionModel convPr = _convPrModel.get(p).get(us);
+		AbstractBidToPrConv convPr = _convPrModel.get(p).get(us);
 		if (convPr.equals(null) || p.equals(null) || us.equals(null) || i<(Integer)(_possibleQuantities.toArray())[0] || (i>(Integer)(_possibleQuantities.toArray()[_possibleQuantities.size()-1]))) {
 			beep();
 			System.out.print("\n CONV PROBLEM--> " + p.getComponent() + p.getManufacturer() + us.toString() + i + "\n");
 		}
 		try {
 			result = convPr.getPrediction(i);
-			if (convPr instanceof PerfectConversionProb) {
+			if (convPr instanceof PerfectBidToPrConv) {
 				if (p.getComponent().equals(_compSpecialty)) result = unEta(result,_CSB);
 				result = result;
 				if (p.getComponent().equals(_compSpecialty)) result = eta(result,_CSB);
@@ -539,7 +551,7 @@ public class ILPAgent extends SimAbstractAgent{
 		_bidToSlotModels_ilke = new HashMap<Query, AbstractBidToSlotModel>();
 		_bidToCPCModels = new HashMap<Query, AbstractBidToCPC>();
 		_slotToClickPrModels = new HashMap<Query, AbstractSlotToPrClick>();
-		_convPrModel = new HashMap<Product,HashMap<UserState, AbstractPrConversionModel>>();
+		_convPrModel = new HashMap<Product,HashMap<UserState, AbstractBidToPrConv>>();
 		_slotToCPCModels = new HashMap<Query, AbstractSlotToCPCModel>();
 		_bidToClickPrModels = new HashMap<Query, AbstractBidToPrClick>();
 
@@ -577,9 +589,9 @@ public class ILPAgent extends SimAbstractAgent{
 		}
 		_numSearchingUsers = 0;
 		for (Product p : _retailCatalog) {
-			HashMap<UserState, AbstractPrConversionModel> temp = new HashMap<UserState, AbstractPrConversionModel>();
+			HashMap<UserState, AbstractBidToPrConv> temp = new HashMap<UserState, AbstractBidToPrConv>();
 			for (UserState us : searchingUserStates) {
-				AbstractPrConversionModel convModel = new TrinaryPrConversion(p, us, _lambda, _compSpecialty, _advertiserInfo.getComponentBonus());
+				AbstractBidToPrConv convModel = new TrinaryPrConversion(p, us, _lambda, _compSpecialty, _advertiserInfo.getComponentBonus());
 				models.add(convModel);
 				temp.put(us, convModel);
 
@@ -627,22 +639,26 @@ public class ILPAgent extends SimAbstractAgent{
 				AbstractSlotToCPCModel slotToCPC = (AbstractSlotToCPCModel) model;
 				slotToCPC.updateModel(queryReport, salesReport, _bids);
 			}
-			else if(model instanceof AbstractPrConversionModel) {
-				AbstractPrConversionModel convPr = (AbstractPrConversionModel) model;
+			else if(model instanceof AbstractBidToPrConv) {
+				AbstractBidToPrConv convPr = (AbstractBidToPrConv) model;
 				convPr.updateModel(queryReport, salesReport);
 			}
 		}
 	}
 	
-	protected void buildMaps(Set<AbstractModel> models) {
+	protected void buildMaps(Set<AbstractModel> models) throws Exception {
 		_bidToClickPrModels = new HashMap<Query, AbstractBidToPrClick>(); 
 		_bidToCPCModels = new HashMap<Query, AbstractBidToCPC>();
-		_convPrModel = new HashMap<Product, HashMap<UserState,AbstractPrConversionModel>>();	// probability of a conversion
+//		_convPrModel = new HashMap<Product, HashMap<UserState,AbstractPrConversionModel>>();	// probability of a conversion
 		_bidToSlotModels_simple = new HashMap<Query, AbstractBidToSlotModel>();	// I've made two models for bidding, one is simple
 		_bidToSlotModels_ilke = new HashMap<Query, AbstractBidToSlotModel>();	// and the second takes some days until it is good enough
 		_slotToClickPrModels = new HashMap<Query, AbstractSlotToPrClick>();
 //		_slotToCPCModels = new HashMap<Query, AbstractSlotToCPCModel>();
 		
+//		for (Query q : _querySpace) {
+//			System.out.println ("bidding 3 in the last day on query" + q.toString() + " would have gave you a slot of " + _queryReport.getPosition(q));
+//		}
+
 		for(AbstractModel model : models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
@@ -655,53 +671,57 @@ public class ILPAgent extends SimAbstractAgent{
 					}
 				}
 			}
-//			else if(model instanceof AbstractSlotToBidModel) {
-//				AbstractSlotToBidModel slotToBid = (AbstractSlotToBidModel) model;
-//				if (slotToBid instanceof LinearSlotToBid) _bidToSlotModels_simple.put(slotToBid.getQuery(), slotToBid);
-//				else _bidToSlotModels_ilke.put(slotToBid.getQuery(), slotToBid);
-//			}
 			else if(model instanceof AbstractBidToSlotModel) {
-			AbstractBidToSlotModel bidToSlot = (AbstractBidToSlotModel) model;
-			if (model instanceof PerfectBidToPosition) {
-				_bidToSlotModels_simple.put(bidToSlot.getQuery(), bidToSlot);
-				_bidToSlotModels_ilke.put(bidToSlot.getQuery(), bidToSlot);
-			} else {
-				if (bidToSlot instanceof ReallyBadBidToSlot) _bidToSlotModels_simple.put(bidToSlot.getQuery(), bidToSlot);
-				else _bidToSlotModels_ilke.put(bidToSlot.getQuery(), bidToSlot);
+				AbstractBidToSlotModel bidToSlot = (AbstractBidToSlotModel) model;
+				if (model instanceof PerfectBidToPosition) {
+					_bidToSlotModels_simple.put(bidToSlot.getQuery(), bidToSlot);
+					_bidToSlotModels_ilke.put(bidToSlot.getQuery(), bidToSlot);
+					_fout.write ("\n" + bidToSlot.getQuery() + "updating perfect bid->slot " + bidToSlot.getClass());
+				} else {
+					if (bidToSlot instanceof ReallyBadBidToSlot) _bidToSlotModels_simple.put(bidToSlot.getQuery(), bidToSlot);
+					else _bidToSlotModels_ilke.put(bidToSlot.getQuery(), bidToSlot);
+					_fout.write("\n" + bidToSlot.getQuery() + "updating regular bid->slot " + bidToSlot.getClass());
+				}
+//				System.out.println(bidToSlot.getQuery() + " with bid of 3 gives slot of " + bidToSlot.getPrediction(3));
 			}
-		}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
 				_bidToCPCModels.put(bidToCPC.getQuery(), bidToCPC);
+				_fout.write("\n" + bidToCPC.getQuery() + "updating bid->cpc " + bidToCPC.getClass());
 			}
 			else if(model instanceof AbstractBidToPrClick) {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				_bidToClickPrModels.put(bidToPrClick.getQuery(), bidToPrClick);
-			}
+				_fout.write("\n" + bidToPrClick.getQuery() + "updating bid->click " + bidToPrClick.getClass());
+		}
 			else if(model instanceof AbstractSlotToPrClick) {
 				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
 				_slotToClickPrModels.put(slotToPrClick.getQuery(), slotToPrClick);
+				_fout.write("\n" + slotToPrClick.getQuery() + "updating slot->click " + slotToPrClick.getClass());
 			}
 			else if(model instanceof AbstractSlotToCPCModel) {
 				AbstractSlotToCPCModel slotToCPC = (AbstractSlotToCPCModel) model;
 				_slotToCPCModels.put(slotToCPC.getQuery(), slotToCPC);
+				_fout.write("\n" + slotToCPC.getQuery() + "updating bid->click " + slotToCPC.getClass());
 			}
-			else if(model instanceof AbstractPrConversionModel) {
-				AbstractPrConversionModel convPr = (AbstractPrConversionModel) model;
-				if (convPr instanceof PerfectConversionProb) {
-					UserState userState = getStateFromQuery(convPr.getQuery());
-					for (Product product : setOfProducts(convPr.getQuery(), userState)) {
-						HashMap<UserState, AbstractPrConversionModel> temp = new HashMap<UserState, AbstractPrConversionModel>();
-						if (_convPrModel.containsKey(product)) {
-							temp.putAll((_convPrModel.get(product)));
-						}
-						temp.put(userState, convPr);
-						_convPrModel.put(product, temp);
-					}
+			else if(model instanceof AbstractBidToPrConv) {
+				AbstractBidToPrConv convPr = (AbstractBidToPrConv) model;
+				if (convPr instanceof PerfectBidToPrConv) {
+//					_fout.write("\n" + convPr.getQuery() + "updating perfect user/product->conversion " + convPr.getClass());
+//					UserState userState = getStateFromQuery(convPr.getQuery());
+//					for (Product product : setOfProducts(convPr.getQuery(), userState)) {
+//						HashMap<UserState, AbstractPrConversionModel> temp = new HashMap<UserState, AbstractPrConversionModel>();
+//						if (_convPrModel.containsKey(product)) {
+//							temp.putAll((_convPrModel.get(product)));
+//						}
+//						temp.put(userState, convPr);
+//						_convPrModel.put(product, temp);
+//					}
 				} else {
+					_fout.write("\n" + convPr.getQuery() + "updating regular user/product->conversion " + convPr.getClass());
 					Product product = convPr.getPair().getFirst();
 					UserState userState = convPr.getPair().getSecond();					
-					HashMap<UserState, AbstractPrConversionModel> temp = new HashMap<UserState, AbstractPrConversionModel>();
+					HashMap<UserState, AbstractBidToPrConv> temp = new HashMap<UserState, AbstractBidToPrConv>();
 					temp.putAll((_convPrModel.get(product)));
 					temp.put(userState, convPr);
 					_convPrModel.put(product, temp);
@@ -736,7 +756,7 @@ public class ILPAgent extends SimAbstractAgent{
 		return quantity;
 	}
 
-	private Set<UserState> setOfUserStates(Query query) {
+	protected Set<UserState> setOfUserStates(Query query) {
 		Set<UserState> us = new HashSet<UserState>();
 		us.add(UserState.IS);
 		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) us.add(UserState.F0); 
@@ -745,7 +765,7 @@ public class ILPAgent extends SimAbstractAgent{
 		return us;
 	}
 
-	private Set<Product> setOfProducts(Query query, UserState us) {
+	protected Set<Product> setOfProducts(Query query, UserState us) {
 		Set<Product> products = new HashSet<Product>();
 		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO) || us.equals(UserState.IS)) {
 			for (Product p : _retailCatalog) {
@@ -766,13 +786,6 @@ public class ILPAgent extends SimAbstractAgent{
 		}
 		return products;
 	}
-
-/*	private boolean equalStates(UserState us, Query q) {
-		if (us.equals(UserState.F0) && q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) return true; 
-		if (us.equals(UserState.F1) && q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) return true; 
-		if (us.equals(UserState.F2) && q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) return true;
-		return false;
-	}*/
 	
 	private UserState getStateFromQuery(Query q) {
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) return UserState.F0; 
@@ -806,11 +819,11 @@ public class ILPAgent extends SimAbstractAgent{
 		return (result) / (x-(result*(x-1)));
 	}
 	
-	private void beep() {
+	protected void beep() {
 		Toolkit.getDefaultToolkit().beep();
 	}
 	
-	private double cutDouble (double d) {
+	protected double cutDouble (double d) {
 		if (Double.isNaN(d)) return d;
 		int result = (int)(d*100);
 		return (((double)result)/100);
