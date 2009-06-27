@@ -4,10 +4,7 @@ import java.util.Hashtable;
 import java.util.Set;
 
 import modelers.unitssold.UnitsSoldModel;
-import modelers.unitssold.UnitsSoldModelMaxWindow;
 import modelers.unitssold.UnitsSoldModelMean;
-
-import agents.rules.AdjustConversionPr;
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
 import agents.rules.ManufacurerBonus;

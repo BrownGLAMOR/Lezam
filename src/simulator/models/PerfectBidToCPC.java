@@ -2,14 +2,12 @@ package simulator.models;
 
 import java.util.LinkedList;
 
+import newmodels.bidtocpc.AbstractBidToCPC;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 public class PerfectBidToCPC extends AbstractBidToCPC {
 	

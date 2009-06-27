@@ -1,14 +1,26 @@
 package agents;
 
-import java.util.*;
-import modelers.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Set;
+
 import modelers.bidtoposition.sam.PositionBidLinear;
 import modelers.positiontoclick.PositionToClicksAverage;
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMeanWindow;
-import props.*;
-import agents.mckp.*;
-import edu.umich.eecs.tac.props.*;
+import props.Misc;
+import agents.mckp.IncItem;
+import agents.mckp.Item;
+import agents.mckp.ItemComparatorByWeight;
+import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * _unitsSold is an instance of UnitsSoldModelMeanWindow (day -> units sold during window model)

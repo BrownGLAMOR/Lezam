@@ -1,23 +1,16 @@
 package agents;
 
-import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Set;
-import java.io.File;
-import java.io.FileNotFoundException;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class ClickAgent extends SimAbstractAgent{

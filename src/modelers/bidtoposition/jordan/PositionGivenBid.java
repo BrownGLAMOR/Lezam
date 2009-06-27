@@ -8,8 +8,6 @@ package modelers.bidtoposition.jordan;
 import java.util.ArrayList;
 
 import regressions.WLSRegression;
-
-
 import edu.umich.eecs.tac.props.Query;
 
 public class PositionGivenBid {

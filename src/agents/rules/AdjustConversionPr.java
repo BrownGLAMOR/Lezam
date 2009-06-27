@@ -1,7 +1,6 @@
 package agents.rules;
 
 import modelers.conversionprob.ConversionPrModel;
-
 import agents.GenericBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 

@@ -1,7 +1,5 @@
 package newmodels.slottobid;
 
-import java.util.HashMap;
-
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

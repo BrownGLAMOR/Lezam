@@ -1,7 +1,5 @@
 package simulator.GUI;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -17,33 +15,11 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JSlider;
-import javax.swing.JTabbedPane;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
-import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.DeviationRenderer;
-import org.jfree.data.xy.XYDataset;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.data.xy.YIntervalSeries;
-import org.jfree.data.xy.YIntervalSeriesCollection;
-import org.jfree.ui.RectangleInsets;
-
-import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
-
 
 import simulator.BasicSimulator;
 import simulator.Reports;
-import simulator.GUI.SetupPanel2.RechooseFileButtonListener;
 import simulator.parser.GameStatus;
 
 public class MainPanel  extends JPanel {

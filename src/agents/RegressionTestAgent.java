@@ -1,14 +1,21 @@
 package agents;
 
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Set;
 
 import modelers.bidtoposition.jordan.PositionGivenBid;
-
 import se.sics.tasim.props.SimulationStatus;
-
 import agents.rules.Constants;
-import edu.umich.eecs.tac.props.*;
+import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class RegressionTestAgent extends AbstractAgent {
 	

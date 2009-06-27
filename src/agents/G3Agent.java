@@ -1,26 +1,16 @@
 package agents;
 
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
 
 import se.sics.tasim.props.SimulationStatus;
-
-import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
-import agents.rules.ManufacurerBonus;
 import agents.rules.NoImpressions;
 import agents.rules.ReinvestmentCap;
-import agents.rules.Targeted;
 import agents.rules.TopPosition;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class G3Agent extends AbstractAgent {

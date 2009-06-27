@@ -2,9 +2,8 @@ package agents.rules;
 
 import java.util.Set;
 
-import edu.umich.eecs.tac.props.Query;
-
 import agents.GenericBidStrategy;
+import edu.umich.eecs.tac.props.Query;
 
 public abstract class StrategyTransformation {
 	

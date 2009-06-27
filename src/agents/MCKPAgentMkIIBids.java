@@ -4,7 +4,6 @@
 package agents;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
@@ -21,29 +20,15 @@ import newmodels.bidtoprclick.BasicBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoprconv.BasicBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
-import newmodels.bidtoslot.BasicBidToSlot;
 import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
-import newmodels.slottobid.AbstractSlotToBidModel;
-import newmodels.slottobid.BasicSlotToBid;
-import newmodels.slottobid.ReallyBadSlotToBid;
-import newmodels.slottonumclicks.AbstractSlotToNumClicks;
-import newmodels.slottonumclicks.BasicSlotToNumClicks;
-import newmodels.slottoprclick.AbstractSlotToPrClick;
-import newmodels.slottoprclick.BasicSlotToPrClick;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
-
-import props.Misc;
 import agents.mckpmkii.IncItem;
 import agents.mckpmkii.Item;
 import agents.mckpmkii.ItemComparatorByWeight;
-
-import modelers.bidtoposition.sam.PositionBidLinear;
-import modelers.positiontoclick.PositionToClicksAverage;
-import modelers.unitssold.UnitsSoldModelMeanWindow;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;

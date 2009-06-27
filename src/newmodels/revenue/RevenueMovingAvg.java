@@ -4,7 +4,6 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.RetailCatalog;
-import newmodels.usermodel.AbstractUserModel;
 
 public class RevenueMovingAvg {
 	protected final double _alpha = .75;

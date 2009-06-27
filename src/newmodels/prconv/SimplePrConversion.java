@@ -1,9 +1,5 @@
 package newmodels.prconv;
 
-import java.util.Map;
-import java.util.Set;
-
-import newmodels.AbstractModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.Query;

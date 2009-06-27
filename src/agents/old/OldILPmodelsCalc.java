@@ -1,14 +1,11 @@
 package agents.old;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Queue;
 import java.util.Vector;
 
-import agents.Pair;
-
 import usermodel.UserState;
-
+import agents.Pair;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

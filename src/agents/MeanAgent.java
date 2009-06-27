@@ -4,8 +4,8 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

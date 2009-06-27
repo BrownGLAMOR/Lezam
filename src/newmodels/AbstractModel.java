@@ -8,8 +8,6 @@ package newmodels;
  *
  */
 
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * @author jberg

@@ -6,12 +6,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class G3BidStrategy extends SSBBidStrategy{
 	

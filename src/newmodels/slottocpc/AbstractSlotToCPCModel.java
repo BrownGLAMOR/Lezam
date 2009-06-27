@@ -2,10 +2,10 @@ package newmodels.slottocpc;
 
 import java.util.HashMap;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
-import newmodels.AbstractModel;
 
 /**
  * 

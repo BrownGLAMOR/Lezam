@@ -12,7 +12,6 @@ import org.rosuda.REngine.Rserve.RserveException;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class RegressionBidToPrClick{
 	protected LinkedList<Double> _bids, _prClicks;

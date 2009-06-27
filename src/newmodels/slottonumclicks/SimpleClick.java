@@ -1,11 +1,8 @@
 package newmodels.slottonumclicks;
 
 
-import com.sun.org.apache.bcel.internal.generic.RETURN;
-
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;

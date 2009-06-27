@@ -1,11 +1,9 @@
 package agents.old;
 
-import java.util.Hashtable;
 import java.util.Vector;
 
-import agents.AbstractAgent;
-import agents.rules.SetProperty;
 import se.sics.tasim.props.SimulationStatus;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 

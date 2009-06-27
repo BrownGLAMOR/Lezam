@@ -1,9 +1,9 @@
 package agents.rules;
 
 import agents.GenericBidStrategy;
-import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
+import edu.umich.eecs.tac.props.Query;
 
 /*
  * sets the ad as targeted

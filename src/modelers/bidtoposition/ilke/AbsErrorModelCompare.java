@@ -3,9 +3,6 @@ package modelers.bidtoposition.ilke;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import modelers.bidtoposition.ilke.AbstractComparableModel;
-import modelers.bidtoposition.ilke.ModelDataPoint;
-
 public class AbsErrorModelCompare {
 	protected ArrayList<AbstractComparableModel> _candidateModels;
 	protected ArrayList<ModelDataPoint> _data;

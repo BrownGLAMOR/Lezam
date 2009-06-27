@@ -8,15 +8,10 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 
-import agents.G3Agent;
-import agents.ILPAgent;
-import agents.ILPAgentQ;
-import agents.old.OldILPAgent;
-
 import se.sics.tasim.props.SimulationStatus;
 import se.sics.tasim.props.StartInfo;
 import usermodel.UserState;
-
+import agents.ILPAgentQ;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
@@ -29,7 +24,6 @@ import edu.umich.eecs.tac.props.ReserveInfo;
 import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.SlotInfo;
-import edu.umich.eecs.tac.props.UserClickModel;
 
 /**
  *

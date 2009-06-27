@@ -1,6 +1,5 @@
 package modelers.bidtoposition.ilke;
 
-import modelers.bidtoposition.ilke.AbstractComparableModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

@@ -9,9 +9,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import usermodel.UserState;
 import newmodels.usermodel.AbstractUserModel;
-import newmodels.usermodel.BasicUserModel;
+import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

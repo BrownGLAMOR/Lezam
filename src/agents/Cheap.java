@@ -3,7 +3,6 @@ package agents;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

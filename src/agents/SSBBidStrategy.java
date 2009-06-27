@@ -1,6 +1,5 @@
 package agents;
 
-import java.util.Hashtable;
 import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;

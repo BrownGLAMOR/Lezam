@@ -1,7 +1,5 @@
 package simulator.GUI;
 
-import java.awt.Component;
-import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -10,12 +8,9 @@ import java.text.ParseException;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import simulator.BasicSimulator;
-import simulator.GUI.SetupPanel.LogButtonListener;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 

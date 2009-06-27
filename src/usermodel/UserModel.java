@@ -4,11 +4,10 @@ import java.util.HashMap;
 import java.util.Set;
 
 import usermodel.UserStateTransitionModel.UserState;
-
 import agents.rules.Constants;
-
-
-import edu.umich.eecs.tac.props.*;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 
 public class UserModel {
         // --------------

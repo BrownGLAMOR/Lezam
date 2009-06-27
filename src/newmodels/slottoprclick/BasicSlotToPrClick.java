@@ -7,7 +7,6 @@ package newmodels.slottoprclick;
 
 import java.util.Random;
 
-import modelers.clickprob.ClickRatioModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;

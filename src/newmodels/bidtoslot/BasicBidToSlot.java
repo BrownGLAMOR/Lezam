@@ -6,13 +6,8 @@ package newmodels.bidtoslot;
  */
 
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 import regressions.WLSRegression;
-
-
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;

@@ -1,10 +1,11 @@
 package agents;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Scanner;
 import java.util.StringTokenizer;
-import java.io.*;
-import java.util.Hashtable;
 
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;

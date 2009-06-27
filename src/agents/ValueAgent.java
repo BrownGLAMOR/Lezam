@@ -1,13 +1,15 @@
 package agents;
 
-import se.sics.tasim.aw.Agent;
-import se.sics.tasim.aw.Message;
-import se.sics.tasim.props.StartInfo;
-import se.sics.tasim.props.SimulationStatus;
-import se.sics.isl.transport.Transportable;
-import edu.umich.eecs.tac.props.*;
+import java.util.HashMap;
+import java.util.LinkedList;
 
-import java.util.*;
+import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 
 public class ValueAgent extends AbstractAgent {

@@ -3,9 +3,9 @@
  */
 package newmodels.prconv;
 
+import newmodels.AbstractModel;
 import usermodel.UserState;
 import agents.Pair;
-import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

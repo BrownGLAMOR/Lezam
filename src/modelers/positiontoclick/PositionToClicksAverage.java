@@ -1,8 +1,6 @@
 package modelers.positiontoclick;
 
-import java.util.Arrays;
 import java.util.Hashtable;
-import java.util.LinkedList;
 import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;

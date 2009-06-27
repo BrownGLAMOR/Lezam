@@ -1,9 +1,7 @@
 package simulator.models;
 
-import java.util.HashMap;
-
-import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import edu.umich.eecs.tac.props.SalesReport;
 
 
 public class PerfectUnitsSoldModel extends AbstractUnitsSoldModel {

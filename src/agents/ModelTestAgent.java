@@ -6,13 +6,11 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
-import org.rosuda.REngine.REXPMismatchException;
-import org.rosuda.REngine.REngineException;
+import newmodels.AbstractModel;
+import newmodels.bidtocpc.RegressionBidToCPC;
+
 import org.rosuda.REngine.Rserve.RserveException;
 
-import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.RegressionBidToCPC;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;

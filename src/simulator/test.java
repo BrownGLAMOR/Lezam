@@ -1,22 +1,29 @@
 package simulator;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.LinkedList;
-import java.util.zip.GZIPInputStream;
-
-import edu.umich.eecs.tac.props.*;
 
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
-import se.sics.tasim.props.*;
+import se.sics.tasim.props.SimulationStatus;
 import simulator.parser.GameLogParser;
 import simulator.parser.SimParserMessage;
+import edu.umich.eecs.tac.props.AdvertiserInfo;
+import edu.umich.eecs.tac.props.BankStatus;
+import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.PublisherInfo;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.ReserveInfo;
+import edu.umich.eecs.tac.props.RetailCatalog;
+import edu.umich.eecs.tac.props.SalesReport;
+import edu.umich.eecs.tac.props.SlotInfo;
+import edu.umich.eecs.tac.props.UserClickModel;
+import edu.umich.eecs.tac.props.UserPopulationState;
 /*
  * 
  * 

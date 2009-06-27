@@ -1,7 +1,7 @@
 package newmodels.unitssold;
 
-import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.AbstractModel;
+import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * Predicts the number of units sold over the distribution window.

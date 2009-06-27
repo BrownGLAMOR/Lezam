@@ -3,16 +3,16 @@
  */
 package agents;
 
-import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-
-
-import edu.umich.eecs.tac.props.Ad;
+import se.sics.isl.transport.Transportable;
+import se.sics.tasim.aw.Agent;
+import se.sics.tasim.aw.Message;
+import se.sics.tasim.props.SimulationStatus;
+import se.sics.tasim.props.StartInfo;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -21,15 +21,9 @@ import edu.umich.eecs.tac.props.PublisherInfo;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.ReserveInfo;
 import edu.umich.eecs.tac.props.RetailCatalog;
 import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.SlotInfo;
-import se.sics.isl.transport.Transportable;
-import se.sics.tasim.aw.Agent;
-import se.sics.tasim.aw.Message;
-import se.sics.tasim.props.SimulationStatus;
-import se.sics.tasim.props.StartInfo;
 
 /**
  * @author jberg

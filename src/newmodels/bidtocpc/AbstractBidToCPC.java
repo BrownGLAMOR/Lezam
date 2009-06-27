@@ -6,17 +6,15 @@ package newmodels.bidtocpc;
  *
  */
 
-import java.util.Set;
+import newmodels.AbstractModel;
 
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RserveException;
 
-import newmodels.AbstractModel;
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
-import edu.umich.eecs.tac.props.BidBundle;
 
 /**
  * @author jberg

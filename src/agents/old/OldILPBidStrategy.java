@@ -1,17 +1,16 @@
 package agents.old;
 
+import ilog.concert.IloException;
+import ilog.concert.IloIntVar;
+import ilog.concert.IloLinearNumExpr;
+import ilog.cplex.IloCplex;
+
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
 import agents.GenericBidStrategy;
-
-import ilog.concert.*;
-import ilog.cplex.*;
-
-import modelers.bidtocpc.BidtoCPC;
-
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 

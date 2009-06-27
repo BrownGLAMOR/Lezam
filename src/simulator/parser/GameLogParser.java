@@ -1,28 +1,13 @@
 package simulator.parser;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 
-import edu.umich.eecs.tac.props.AdvertiserInfo;
-import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.PublisherInfo;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.ReserveInfo;
-import edu.umich.eecs.tac.props.RetailCatalog;
-import edu.umich.eecs.tac.props.BankStatus;
-import edu.umich.eecs.tac.props.SalesReport;
-import edu.umich.eecs.tac.props.SlotInfo;
-import edu.umich.eecs.tac.props.UserClickModel;
-import edu.umich.eecs.tac.props.UserPopulationState;
-import edu.umich.eecs.tac.TACAAConstants;
-import edu.umich.eecs.tac.Parser;
-import se.sics.tasim.props.StartInfo;
-import se.sics.tasim.props.SimulationStatus;
-import se.sics.tasim.logtool.ParticipantInfo;
-import se.sics.tasim.logtool.LogReader;
 import se.sics.isl.transport.Transportable;
-import usermodel.UserState;
+import se.sics.tasim.logtool.LogReader;
+import se.sics.tasim.logtool.ParticipantInfo;
+import edu.umich.eecs.tac.Parser;
+import edu.umich.eecs.tac.TACAAConstants;
+import edu.umich.eecs.tac.props.UserPopulationState;
 
 
 /**

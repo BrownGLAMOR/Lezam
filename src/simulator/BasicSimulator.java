@@ -1,6 +1,5 @@
 package simulator;
 
-import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -11,9 +10,6 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
-import org.jfree.chart.ChartUtilities;
-import org.jfree.chart.JFreeChart;
-
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtonumclicks.AbstractBidToNumClicks;
@@ -21,7 +17,6 @@ import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import se.sics.tasim.aw.Message;
-import simulator.GUI.ChartUtils;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToNumClicks;
 import simulator.models.PerfectBidToPosition;
@@ -37,11 +32,9 @@ import agents.Cheap;
 import agents.EqPftAgent;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
-import agents.NewSSB;
 import agents.SimAbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
-import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.PublisherInfo;
@@ -853,7 +846,7 @@ public class BasicSimulator {
 		}
 		else if(string.equals("newSSB")) {
 			//TODO
-			
+			return null;
 		}
 		else {
 			return new MCKPAgentMkIIBids("0");

@@ -5,12 +5,11 @@ package agents;
  * @author hchen
  *
  */
-import java.util.HashMap;
-import java.util.Set;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtoslot.BasicBidToClick;

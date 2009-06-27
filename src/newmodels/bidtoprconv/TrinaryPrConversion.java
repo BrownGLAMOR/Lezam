@@ -1,8 +1,7 @@
 package newmodels.bidtoprconv;
 
-import agents.Pair;
 import usermodel.UserState;
-
+import agents.Pair;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
