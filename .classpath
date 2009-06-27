@@ -12,6 +12,13 @@
 	<classpathentry kind="lib" path="lib/cplex.jar"/>
 	<classpathentry kind="lib" path="lib/Rserve.jar"/>
 	<classpathentry kind="lib" path="lib/REngine.jar"/>
+	<classpathentry kind="lib" path="lib/aa-agent-0.9.6.jar"/>
+	<classpathentry kind="lib" path="lib/aa-logging-0.9.6.jar"/>
+	<classpathentry kind="lib" path="lib/example-agent-0.9.6.jar"/>
+	<classpathentry kind="lib" path="lib/JRI.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.7-bin.jar"/>
+	<classpathentry kind="lib" path="lib/tasim-0.8.0.4.jar"/>
+	<classpathentry kind="lib" path="lib/aa-common-0.9.6.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/Jama-1.0.2.jar"/>
 	<classpathentry kind="output" path="bin"/>

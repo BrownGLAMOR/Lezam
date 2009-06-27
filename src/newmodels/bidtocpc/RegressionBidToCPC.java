@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 
 public class RegressionBidToCPC extends AbstractBidToCPC {
 
-	protected ArrayList<Double> _bids, _CPCs;
+	protected ArrayList<Double> _bids , _CPCs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;

@@ -852,7 +852,8 @@ public class BasicSimulator {
 			return new ILPAgent();
 		}
 		else if(string.equals("newSSB")) {
-			return new NewSSB();
+			//TODO
+			
 		}
 		else {
 			return new MCKPAgentMkIIBids("0");
