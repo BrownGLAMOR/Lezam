@@ -67,7 +67,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private HashMap<Query, Double> _baseConvProbs;
 	private AbstractUserModel _userModel;
 	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels;
-	private HashMap<Query,AbstractBidToCPC> _bidToCPC;
+	AbstractBidToCPC _bidToCPC;
 	private HashMap<Query,AbstractBidToPrClick> _bidToPrClick;
 	private HashMap<Query,AbstractBidToNumClicks> _bidToNumClicks;
 	private Hashtable<Query, Integer> _queryId;
@@ -120,7 +120,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	}
 
 	protected void buildMaps(Set<AbstractModel> models) {
-		_bidToCPC = new HashMap<Query, AbstractBidToCPC>();
 		_bidToSlotModels = new HashMap<Query, AbstractBidToSlotModel>();
 		_bidToPrClick = new HashMap<Query, AbstractBidToPrClick>();
 		_bidToPrConv = new HashMap<Query, AbstractBidToPrConv>();
@@ -140,7 +139,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPC.put(bidToCPC.getQuery(), bidToCPC);
+				_bidToCPC = bidToCPC; 
 			}
 			else if(model instanceof AbstractBidToSlotModel) {
 				AbstractBidToSlotModel bidToSlot = (AbstractBidToSlotModel) model;
@@ -237,7 +236,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				bidToCPC.updateModel(queryReport, salesReport);
+				bidToCPC.updateModel(queryReport, _bidBundles.getLast());
 			}
 			else if(model instanceof AbstractBidToSlotModel) {
 				AbstractBidToSlotModel bidToSlot = (AbstractBidToSlotModel) model;
@@ -284,7 +283,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				for(int i = 0; i < bidList.size(); i++) {
 					double bid = bidList.get(i);
 					int numClicks = _bidToNumClicks.get(q).getPrediction(bid);
-					double CPC = _bidToCPC.get(q).getPrediction(bid);
+					double CPC = _bidToCPC.getPrediction(q,bid,null);
 
 					debug("\tBid: " + bid);
 					debug("\tnumClicks: " + numClicks);

@@ -240,6 +240,7 @@ public abstract class SimAbstractAgent extends Agent {
 	public SimAbstractAgent() {
 		_salesReports = new LinkedList<SalesReport>();
 		_queryReports = new LinkedList<QueryReport>();
+		_bidBundles = new LinkedList<BidBundle>();
 		_querySpace = new LinkedHashSet<Query>();
 		
 		_day = 0;

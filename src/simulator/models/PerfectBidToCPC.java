@@ -16,24 +16,22 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	private BasicSimulator _simulator;
 
 	public PerfectBidToCPC(Query query, BasicSimulator simulator) {
-		super(query);
 		_simulator = simulator;
 	}
 
 	@Override
-	public double getPrediction(double bid) {
-		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+	public double getPrediction(Query query, double bid, BidBundle bundle) {
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, bid);
 		double avgCPC = 0;
 		for(Reports report : reports) {
-			avgCPC += report.getQueryReport().getCPC(_query);
+			avgCPC += report.getQueryReport().getCPC(query);
 		}
 		avgCPC = avgCPC/((double) reports.size());
 		return avgCPC;
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, BidBundle bundle) {
 		return true;
 	}
 

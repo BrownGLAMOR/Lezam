@@ -35,8 +35,8 @@ public abstract class AbstractBidToCPC extends AbstractModel {
 	 * @throws REngineException 
 	*/
 	
-	public abstract double getPrediction(Query query, double bid, BidBundle bidbundle) throws RserveException, REXPMismatchException, REngineException;
+	public abstract double getPrediction(Query query, double bid, BidBundle bidbundle);
 
-	public abstract boolean updateModel(QueryReport queryreport, BidBundle bidbundle) throws RserveException, REngineException, REXPMismatchException;
+	public abstract boolean updateModel(QueryReport queryreport, BidBundle bidbundle);
 	
 }

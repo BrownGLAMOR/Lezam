@@ -906,10 +906,10 @@ public class BasicSimulator {
 		double totAvgImp = 0.0;
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
-		int numSims = 50;
+		int numSims = 25;
 		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		int min = 18;
-		int max = 28; 
+		int max = 118; 
 		String[] filenames = new String[max-min];
 		for(int i = min; i < max; i++) { 
 			filenames[i-min] = baseFile + i + ".slg";
