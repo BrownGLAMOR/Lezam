@@ -108,7 +108,7 @@ public abstract class SimAbstractAgent extends Agent {
      * {@link SalesReport sales report} contains the conversions and sales revenue accrued by the agent for each query
      * class during the period.
      */
-    protected Queue<SalesReport> _salesReports;
+    protected LinkedList<SalesReport> _salesReports;
 
     /**
      * The list contains all of the {@link QueryReport query reports} delivered to the agent.  Each
@@ -116,7 +116,12 @@ public abstract class SimAbstractAgent extends Agent {
      * by the agent for each query class during the period as well as the positions and displayed ads of all advertisers
      * during the period for each query class.
      */
-    protected Queue<QueryReport> _queryReports;
+    protected LinkedList<QueryReport> _queryReports;
+    
+    /*
+     * List of all bid bundles that we send to the publisher
+     */
+    protected LinkedList<BidBundle> _bidBundles;
 
     /**
      * List of all the possible queries made available in the {@link RetailCatalog retail catalog}.
@@ -228,6 +233,7 @@ public abstract class SimAbstractAgent extends Agent {
 	 */
 	protected double _targEffect;
 
+
 	/**
 	 * 
 	 */
@@ -288,6 +294,7 @@ public abstract class SimAbstractAgent extends Agent {
     		updateModels(_salesReport, _queryReport);
     	}
         BidBundle bidBundle = getBidBundle(_models);
+        _bidBundles.add(bidBundle);
         String publisherAddress = _advertiserInfo.getPublisherId();
         // Send the bid bundle to the publisher
         if (publisherAddress != null) {

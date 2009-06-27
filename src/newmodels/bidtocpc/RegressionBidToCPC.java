@@ -32,7 +32,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private LinkedList<BidBundle> _bidBundles;
 
 
-	public RegressionBidToCPC (QueryReport queryreport, Set<Query> queryspace) throws RserveException{
+	public RegressionBidToCPC (Set<Query> queryspace) throws RserveException{
 		c = new RConnection();
 		_bids = new LinkedList<Double>();
 		_CPCs = new LinkedList<Double>();

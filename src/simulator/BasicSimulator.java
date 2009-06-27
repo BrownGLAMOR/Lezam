@@ -895,15 +895,21 @@ public class BasicSimulator {
 		return meanAndStdDev;
 	}
 
-	public double[][] percentErrorOfSim() throws IOException, ParseException {
-		LinkedList<Double> revenueError = new LinkedList<Double>();
-		LinkedList<Double> costError = new LinkedList<Double>();
-		LinkedList<Double> impError = new LinkedList<Double>();
-		LinkedList<Double> clickError = new LinkedList<Double>();
-		LinkedList<Double> convError = new LinkedList<Double>();
+	public double[] percentErrorOfSim() throws IOException, ParseException {
+		double RMSRevenue = 0.0;
+		double RMSCost = 0.0;
+		double RMSImp = 0.0;
+		double RMSClick = 0.0;
+		double RMSConv = 0.0;
+		double totAvgRevenue = 0.0;
+		double totAvgCost = 0.0;
+		double totAvgImp = 0.0;
+		double totAvgClick = 0.0;
+		double totAvgConv = 0.0;
+		int numSims = 50;
 		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		int min = 18;
-		int max = 39; 
+		int max = 28; 
 		String[] filenames = new String[max-min];
 		for(int i = min; i < max; i++) { 
 			filenames[i-min] = baseFile + i + ".slg";
@@ -960,9 +966,13 @@ public class BasicSimulator {
 				totalImpList[i] = totalImp;
 				totalClickList[i] = totalClick;
 				totalConvList[i] = totalConv;
+				totAvgRevenue += totalRevenue;
+				totAvgCost += totalCost;
+				totAvgImp += totalImp;
+				totAvgClick += totalClick;
+				totAvgConv += totalConv;
 			}
 
-			int numSims = 50;
 			HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap = new HashMap<String,LinkedList<LinkedList<Reports>>>();
 			for(int i = 0; i < agents.length; i++) {
 				LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
@@ -1002,41 +1012,51 @@ public class BasicSimulator {
 							totalConv += salesReport.getConversions(query);
 						}
 					}
-					revenueError.add(Math.abs(totalRevenue-totRevenueReal)/totRevenueReal);
-					costError.add(Math.abs(totalCost-totCostReal)/totCostReal);
-					impError.add(Math.abs(totalImp-totImpReal)/totImpReal);
-					clickError.add(Math.abs(totalClick-totClickReal)/totClickReal);
-					convError.add(Math.abs(totalConv-totConvReal)/totConvReal);
+					RMSRevenue += ((totalRevenue-totRevenueReal)*(totalRevenue-totRevenueReal));
+					RMSCost += ((totalCost-totCostReal)*(totalCost-totCostReal));
+					RMSImp += ((totalImp-totImpReal)*(totalImp-totImpReal));
+					RMSClick += ((totalClick-totClickReal)*(totalClick-totClickReal));
+					RMSConv += ((totalConv-totConvReal)*(totalConv-totConvReal));
 				}
 			}
 		}
-		Double[] revenueErrorArr = revenueError.toArray(new Double[0]);
-		Double[] costErrorArr = costError.toArray(new Double[0]);
-		Double[] impErrorArr = impError.toArray(new Double[0]);
-		Double[] clickErrorArr = clickError.toArray(new Double[0]);
-		Double[] convErrorArr = convError.toArray(new Double[0]);
-		System.out.println(revenueErrorArr.length);
-		System.out.println(costErrorArr.length);
-		System.out.println(impErrorArr.length);
-		System.out.println(clickErrorArr.length);
-		System.out.println(convErrorArr.length);
-		double[] revenueStdDeviation =  stdDeviation(revenueErrorArr);
-		double[] costStdDeviation =  stdDeviation(costErrorArr);
-		double[] impStdDeviation =  stdDeviation(impErrorArr);
-		double[] clickStdDeviation =  stdDeviation(clickErrorArr);
-		double[] convStdDeviation =  stdDeviation(convErrorArr);
-		double[][] percentError = new double[2][5];
-		percentError[0][0] = revenueStdDeviation[0];
-		percentError[1][0] = revenueStdDeviation[1];
-		percentError[0][1] = costStdDeviation[0];
-		percentError[1][1] = costStdDeviation[1];
-		percentError[0][2] = impStdDeviation[0];
-		percentError[1][2] = impStdDeviation[1];
-		percentError[0][3] = clickStdDeviation[0];
-		percentError[1][3] = clickStdDeviation[1];
-		percentError[0][4] = convStdDeviation[0];
-		percentError[1][4] = convStdDeviation[1];
-		return percentError;
+		
+		/*
+		 * Average actual values
+		 * We divide by the number of sims times the number of advertisers
+		 */
+		totAvgRevenue /= ((max-min)*(_agents.length));
+		totAvgCost /= ((max-min)*(_agents.length));
+		totAvgImp /= ((max-min)*(_agents.length));
+		totAvgClick /= ((max-min)*(_agents.length));
+		totAvgConv /= ((max-min)*(_agents.length));
+		
+
+		/*
+		 * Mean Square calculation
+		 * need to divide by the number of samples
+		 */
+		RMSRevenue /= ((max-min)*(_agents.length)*numSims);
+		RMSCost /= ((max-min)*(_agents.length)*numSims);
+		RMSImp /= ((max-min)*(_agents.length)*numSims);
+		RMSClick /= ((max-min)*(_agents.length)*numSims);
+		RMSConv /= ((max-min)*(_agents.length)*numSims);
+		
+		//RMS
+		RMSRevenue = Math.sqrt(RMSRevenue);
+		RMSCost = Math.sqrt(RMSCost);
+		RMSImp = Math.sqrt(RMSImp);
+		RMSClick = Math.sqrt(RMSClick);
+		RMSConv = Math.sqrt(RMSConv);
+		
+		double[] error = new double[5];
+		error[0] = RMSRevenue/totAvgRevenue;
+		error[1] = RMSCost/totAvgCost;
+		error[2] = RMSImp/totAvgImp;
+		error[3] = RMSClick/totAvgClick;
+		error[4] = RMSConv/totAvgConv;
+
+		return error;
 	}
 
 	public static void main(String[] args) throws IOException, ParseException {
@@ -1090,18 +1110,13 @@ public class BasicSimulator {
 //			ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
 //		}
 
-		double[][] percentError = sim.percentErrorOfSim();
+		double[] percentError = sim.percentErrorOfSim();
 		
-		System.out.println(percentError[0][0]);
-		System.out.println(percentError[1][0]);
-		System.out.println(percentError[0][1]);
-		System.out.println(percentError[1][1]);
-		System.out.println(percentError[0][2]);
-		System.out.println(percentError[1][2]);
-		System.out.println(percentError[0][3]);
-		System.out.println(percentError[1][3]);
-		System.out.println(percentError[0][4]);
-		System.out.println(percentError[1][4]);
+		System.out.println(percentError[0]);
+		System.out.println(percentError[1]);
+		System.out.println(percentError[2]);
+		System.out.println(percentError[3]);
+		System.out.println(percentError[4]);
 		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
