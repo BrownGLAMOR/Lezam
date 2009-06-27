@@ -498,12 +498,13 @@ public class BasicSimulator {
 				ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
 				for(int j = 0; j < agents.size(); j++) {
 					SimAgent agent = agents.get(j);
+					double bid = agent.getBid(query);
 					double budget = agent.getBudget(query);
 					double cost = agent.getCost(query);
-					if(budget > cost || Double.isNaN(budget)) {
+					if(budget > cost + bid || Double.isNaN(budget)) {
 						double totBudget = agent.getTotBudget();
 						double totCost = agent.getTotCost();
-						if(totBudget > totCost || Double.isNaN(totBudget)) {
+						if(totBudget > totCost + bid || Double.isNaN(totBudget)) {
 							double squashedBid = agent.getSquashedBid(query);
 							if(squashedBid >= _regReserve) {
 								AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
@@ -565,7 +566,8 @@ public class BasicSimulator {
 						if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
 							squashedBidUnder = _proReserve;
 						}
-						double cpc = squashedBidUnder / Math.pow(advEffect, _squashing);
+						double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
+						cpc = ((int) ((cpc * 100) + 0.5)) / 100.0;
 						agent.addCost(query, cpc);
 						double baselineConv;
 
@@ -650,12 +652,13 @@ public class BasicSimulator {
 			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
 			for(int j = 0; j < agents.size(); j++) {
 				SimAgent agent = agents.get(j);
+				double bid = agent.getBid(query);
 				double budget = agent.getBudget(query);
 				double cost = agent.getCost(query);
-				if(budget > cost || Double.isNaN(budget)) {
+				if(budget > cost + bid || Double.isNaN(budget)) {
 					double totBudget = agent.getTotBudget();
 					double totCost = agent.getTotCost();
-					if(totBudget/10.0 > totCost || Double.isNaN(totBudget)) {
+					if(totBudget > totCost + bid || Double.isNaN(totBudget)) {
 						double squashedBid = agent.getSquashedBid(query);
 						if(squashedBid >= _regReserve) {
 							AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
@@ -718,8 +721,7 @@ public class BasicSimulator {
 						squashedBidUnder = _proReserve;
 					}
 					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
-					cpc = ((int) ((cpc * 100) + 0.5)) / 100;
-					System.out.println(cpc);
+					cpc = ((int) ((cpc * 100) + 0.5)) / 100.0;
 					agent.addCost(query, cpc);
 
 					double baselineConv;
@@ -909,11 +911,12 @@ public class BasicSimulator {
 		double totAvgImp = 0.0;
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
-		int numSims = 25;
+		int numSims = 75;
 		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		int min = 18;
-		int max = 118; 
+		int max = 38;
 		String[] filenames = new String[max-min];
+		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 
 			filenames[i-min] = baseFile + i + ".slg";
 		}
