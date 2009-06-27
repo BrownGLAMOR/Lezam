@@ -24,28 +24,52 @@ public class ModelTestAgent extends SimAbstractAgent {
 	private RegressionBidToCPC _bidToCPC;
 	Random _R = new Random();					//Random number generator
 	private LinkedList<HashMap<Query, Double>> CPCPredictions;
+	private double sumVar;
+	private int nancounter;
 
 	public ModelTestAgent() {
 		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
+		sumVar = 0.0;
+		nancounter = 0;	
 	}
-	
+
+
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+
+		if(_day >= 7) {
+			BidBundle tempBundle = _bidBundles.get(_bidBundles.size()-2);
+			HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-2);
+			QueryReport queryReport = _queryReports.getLast();
+
+
+			System.out.println("This is day: " + _day);
+			for(Query query : _querySpace) {
+				System.out.println("Bid: " + tempBundle.getBid(query) + "  CPC: " + queryReport.getCPC(query) + "  CPC predict: " + cpcpredictions.get(query) + "Diff: " + (queryReport.getCPC(query) - cpcpredictions.get(query)));
+
+				if (Double.isNaN(queryReport.getCPC(query)) && _day > 15){
+					nancounter++;
+				}else if (_day > 15){
+					sumVar += (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
+				}
+			}
+		}
+
+		if (_day > 15){
+			double stddev = Math.sqrt(sumVar/((_day - 15)*16 - nancounter));
+			System.out.println("Standard Deviation: " + stddev);
+		}
+		
 		BidBundle bundle = new BidBundle();
 		HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
 		for(Query query : _querySpace) {
-			double bid = randDouble(.25,3.5);
+			double bid = randDouble(.25,1.5);
 			bundle.addQuery(query, bid, new Ad());
-			try {
+			if(_day >= 5) {
 				dailyCPCPredictions.put(query, _bidToCPC.getPrediction(query, bid, _bidBundles.getLast()));
-			} catch (REXPMismatchException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (REngineException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
+		CPCPredictions.add(dailyCPCPredictions);
 		return bundle;
 	}
 
@@ -68,15 +92,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		try {
-			_bidToCPC.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
-		} catch (REngineException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (REXPMismatchException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		_bidToCPC.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
 	}
 
 	//Returns a random double rand such that a <= r < b
@@ -84,5 +100,5 @@ public class ModelTestAgent extends SimAbstractAgent {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
+
 }

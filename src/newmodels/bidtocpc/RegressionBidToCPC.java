@@ -45,7 +45,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid, BidBundle bidbundle) throws REXPMismatchException, REngineException{
+	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
 		double prediction = 0.00;
 		double oneDayOldBid = bidbundle.getBid(query);
 		double twoDayOldBid = _bidBundles.getLast().getBid(query);
@@ -53,6 +53,10 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		double currentBidSq = currentBid * currentBid;
 		double currentBidCube = currentBidSq * currentBid;
 		double oneDayOldBidSq = oneDayOldBid * oneDayOldBid;
+		
+		if(Double.isNaN(twoDayOldCPC)) {
+			twoDayOldCPC = 0.0;
+		}
 		
 		prediction = coeff[0] + coeff[1]*twoDayOldCPC + coeff[2]*currentBid + coeff[3]*oneDayOldBid + coeff[4]*twoDayOldBid + coeff[5]*currentBidSq + coeff[6]*oneDayOldBidSq + coeff[7]*currentBidCube ; 
 		
@@ -73,7 +77,9 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) throws REngineException, REXPMismatchException {
+	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
+		
+		double start = System.currentTimeMillis();
 		
 		_queryReports.add(queryreport);
 		_bidBundles.add(bidbundle);
@@ -143,21 +149,35 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 
 			//c.assign("i", _predCounter);
-			c.assign("bids3", bidsM3arr);
-			c.assign("bid3sq", bidsM3Sqarr);
-			c.assign("bid3cube", bidsM3Cubearr);
-			c.assign("bid2", bidsM2arr);
-			c.assign("bid2sq", bidsM2Sqarr);
-			c.assign("bid1", bidsM1arr);
-			c.assign("cpc1", CPCM1arr);
-			c.assign("cpc2", CPCM2arr);
-			c.assign("cpc3", CPCM3arr);
-			c.voidEval("pred = 1:16");
+			try {
+				c.assign("bid3", bidsM3arr);
+				c.assign("bid3sq", bidsM3Sqarr);
+				c.assign("bid3cube", bidsM3Cubearr);
+				c.assign("bid2", bidsM2arr);
+				c.assign("bid2sq", bidsM2Sqarr);
+				c.assign("bid1", bidsM1arr);
+				c.assign("cpc1", CPCM1arr);
+				c.assign("cpc2", CPCM2arr);
+				c.assign("cpc3", CPCM3arr);
+				c.voidEval("pred = 1:16");
 
-			c.voidEval("model = lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube");
-			c.voidEval("coefficients = model$coefficients");
-			coeff = c.eval("coefficients(model)").asDoubles();
+				c.voidEval("model = lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
+				c.voidEval("coefficients = model$coefficients");
+				coeff = c.eval("coefficients(model)").asDoubles();
+			} catch (REngineException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return false;
+			} catch (REXPMismatchException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return false;
+			}
 
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+			
 			return true;
 		}
 		else {
