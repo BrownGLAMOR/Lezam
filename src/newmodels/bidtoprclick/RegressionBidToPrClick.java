@@ -12,9 +12,10 @@ import org.rosuda.REngine.Rserve.RserveException;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class RegressionBidToPrClick {
-	protected LinkedList<Double> _bids, _CPCs;
+public class RegressionBidToPrClick{
+	protected LinkedList<Double> _bids, _prClicks;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
@@ -28,13 +29,13 @@ public class RegressionBidToPrClick {
 	public RegressionBidToPrClick (Set<Query> queryspace) throws RserveException{
 		c = new RConnection();
 		_bids = new LinkedList<Double>();
-		_CPCs = new LinkedList<Double>();
+		_prClicks = new LinkedList<Double>();
 		_queryReports = new LinkedList<QueryReport>();
 		_bidBundles = new LinkedList<BidBundle>();
 		_querySpace = queryspace;
 	}
 
-	@Override
+	
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
@@ -42,16 +43,12 @@ public class RegressionBidToPrClick {
 		double prediction = 0.00;
 		double oneDayOldBid = bidbundle.getBid(query);
 		double twoDayOldBid = _bidBundles.getLast().getBid(query);
-		double twoDayOldCPC = _queryReports.getLast().getCPC(query);
+		double twoDayOldPrClicks = _queryReports.getLast().getClicks(query)/(_queryReports.getLast().getImpressions(query));
 		double currentBidSq = currentBid * currentBid;
 		double currentBidCube = currentBidSq * currentBid;
 		double oneDayOldBidSq = oneDayOldBid * oneDayOldBid;
 		
-		if(Double.isNaN(twoDayOldCPC)) {
-			twoDayOldCPC = 0.0;
-		}
-		
-		prediction = coeff[0] + coeff[1]*twoDayOldCPC + coeff[2]*currentBid + coeff[3]*oneDayOldBid + coeff[4]*twoDayOldBid + coeff[5]*currentBidSq + coeff[6]*oneDayOldBidSq + coeff[7]*currentBidCube ; 
+		prediction = coeff[0] + coeff[1]*twoDayOldPrClicks + coeff[2]*currentBid + coeff[3]*oneDayOldBid + coeff[4]*twoDayOldBid + coeff[5]*currentBidSq + coeff[6]*oneDayOldBidSq + coeff[7]*currentBidCube ; 
 		
 		/**
 		 * c.voidEval("for (j in 1:16){" +
@@ -79,15 +76,10 @@ public class RegressionBidToPrClick {
 		
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
-			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC) || CPC == 0)) {
-				_bids.add(bid);
-				_CPCs.add(CPC);
-			}
-			else {
-				_bids.add(0.0);
-				_CPCs.add(0.0);
-			}
+			double prClicks = queryreport.getClicks(query)/queryreport.getImpressions(query);
+			_bids.add(bid);
+			_prClicks.add(prClicks);
+			
 		}
 
 		if(_bids.size() >= 3*numQueries) {
@@ -97,17 +89,17 @@ public class RegressionBidToPrClick {
 			List<Double> bidsM3 = _bids.subList(2*numQueries, _bids.size());
 
 
-			List<Double> CPCM1 = _CPCs.subList(0, _CPCs.size()-2*numQueries);
-			List<Double> CPCM2 = _CPCs.subList(1*numQueries, _CPCs.size()-1*numQueries);
-			List<Double> CPCM3 = _CPCs.subList(2*numQueries, _CPCs.size());
+			List<Double> PrClicksM1 = _prClicks.subList(0, _prClicks.size()-2*numQueries);
+			List<Double> PrClicksM2 = _prClicks.subList(1*numQueries, _prClicks.size()-1*numQueries);
+			List<Double> PrClicksM3 = _prClicks.subList(2*numQueries, _prClicks.size());
 
 			Double[] bidsM1Arr = bidsM1.toArray(new Double[0]);
 			Double[] bidsM2Arr = bidsM2.toArray(new Double[0]);
 			Double[] bidsM3Arr = bidsM3.toArray(new Double[0]);
 
-			Double[] CPCM1Arr = CPCM1.toArray(new Double[0]);
-			Double[] CPCM2Arr = CPCM2.toArray(new Double[0]);
-			Double[] CPCM3Arr = CPCM3.toArray(new Double[0]);
+			Double[] PrClicksM1Arr = PrClicksM1.toArray(new Double[0]);
+			Double[] PrClicksM2Arr = PrClicksM2.toArray(new Double[0]);
+			Double[] PrClicksM3Arr = PrClicksM3.toArray(new Double[0]);
 
 			double[] bidsM2Sqarr = new double[bidsM2Arr.length];
 			double[] bidsM3Sqarr = new double[bidsM3Arr.length];
@@ -121,18 +113,18 @@ public class RegressionBidToPrClick {
 			double[] bidsM1arr = new double[bidsM1Arr.length];
 			double[] bidsM2arr = new double[bidsM2Arr.length];
 			double[] bidsM3arr = new double[bidsM3Arr.length];
-			double[] CPCM1arr = new double[CPCM1Arr.length];
-			double[] CPCM2arr = new double[CPCM2Arr.length];
-			double[] CPCM3arr = new double[CPCM3Arr.length];
+			double[] PrClicksM1arr = new double[PrClicksM1Arr.length];
+			double[] PrClicksM2arr = new double[PrClicksM2Arr.length];
+			double[] PrClicksM3arr = new double[PrClicksM3Arr.length];
 
 			for(int i = 0; i < bidsM1Arr.length; i++) {
 				bidsM1arr[i] = bidsM1Arr[i].doubleValue();
 				bidsM2arr[i] = bidsM2Arr[i].doubleValue();
 				bidsM3arr[i] = bidsM3Arr[i].doubleValue();
 
-				CPCM1arr[i] = CPCM1Arr[i].doubleValue();
-				CPCM2arr[i] = CPCM2Arr[i].doubleValue();
-				CPCM3arr[i] = CPCM3Arr[i].doubleValue();
+				PrClicksM1arr[i] = PrClicksM1Arr[i].doubleValue();
+				PrClicksM2arr[i] = PrClicksM2Arr[i].doubleValue();
+				PrClicksM3arr[i] = PrClicksM3Arr[i].doubleValue();
 			}
 
 			for(int i = 0; i < bidsM2Sqarr.length; i++) {
@@ -149,12 +141,12 @@ public class RegressionBidToPrClick {
 				c.assign("bid2", bidsM2arr);
 				c.assign("bid2sq", bidsM2Sqarr);
 				c.assign("bid1", bidsM1arr);
-				c.assign("cpc1", CPCM1arr);
-				c.assign("cpc2", CPCM2arr);
-				c.assign("cpc3", CPCM3arr);
+				c.assign("prClick1", PrClicksM1arr);
+				c.assign("prClick2", PrClicksM2arr);
+				c.assign("prClick3", PrClicksM3arr);
 				c.voidEval("pred = 1:16");
 
-				c.voidEval("model = lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
+				c.voidEval("model = lm(prClick3 ~ prClick1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
 				c.voidEval("coefficients = model$coefficients");
 				coeff = c.eval("coefficients(model)").asDoubles();
 			} catch (REngineException e) {
@@ -177,5 +169,6 @@ public class RegressionBidToPrClick {
 			return false;
 		}
 	}
+
 
 }
