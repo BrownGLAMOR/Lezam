@@ -37,7 +37,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
-		if(_day >= 7) {
+		if(_day >= 10) {
 			BidBundle tempBundle = _bidBundles.get(_bidBundles.size()-2);
 			HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-2);
 			QueryReport queryReport = _queryReports.getLast();
@@ -65,7 +65,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 		for(Query query : _querySpace) {
 			double bid = randDouble(.25,1.5);
 			bundle.addQuery(query, bid, new Ad());
-			if(_day >= 7) {
+			if(_day >= 10) {
 				dailyCPCPredictions.put(query, _bidToCPC.getPrediction(query, bid, _bidBundles.getLast()));
 			}
 		}

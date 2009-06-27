@@ -29,7 +29,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 5;  //THIS NEEDS TO BE 3 OR MORE!!
+	private int IDVar = 4;  //THIS NEEDS TO BE 3 OR MORE!!
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 
@@ -137,8 +137,8 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			double[] secondRecentSqBidArr = new double[secondRecentBidArr.length];
 			
 			
-			double[] mostRecentCPCArr = CPCArrList.get(CPCArrList.size()-2);
-			double[] secondRecentCPCArr = CPCArrList.get(CPCArrList.size()-3);
+			double[] mostRecentCPCArr = CPCArrList.get(CPCArrList.size()-3);
+			double[] secondRecentCPCArr = CPCArrList.get(CPCArrList.size()-4);
 			
 			double[] mostRecentCubeCPCArr = new double[mostRecentCPCArr.length];
 			double[] mostRecentSqCPCArr = new double[mostRecentCPCArr.length];
@@ -160,8 +160,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				for(int i = 0; i < IDVar; i++) {
 					c.assign("bid" + i, bidArrList.get(i));
 					c.assign("cpc" + i, CPCArrList.get(i));
-					System.out.println("bid" + i);
-					System.out.println("cpc" + i);
 				}
 				c.assign("bid" + (IDVar-1) + "cube", mostRecentCubeBidArr);
 				c.assign("bid" + (IDVar-1) + "sq",mostRecentSqBidArr);
@@ -170,13 +168,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("cpc" + (IDVar-3) + "cube", mostRecentCubeCPCArr);
 				c.assign("cpc" + (IDVar-3) + "sq",mostRecentSqCPCArr);
 				c.assign("cpc" + (IDVar-4) + "sq",secondRecentSqCPCArr);
-				
-				System.out.println("bid" + (IDVar-1) + "cube");
-				System.out.println("bid" + (IDVar-1) + "sq");
-				System.out.println("bid" + (IDVar-2) + "sq");
-				System.out.println("cpc" + (IDVar-3) + "cube");
-				System.out.println("cpc" + (IDVar-3) + "sq");
-				System.out.println("cpc" + (IDVar-4) + "sq");
 				
 				String model = "model = lm(cpc" + (IDVar-1) + " ~ ";
 				for(int i = 0; i < IDVar; i++) {
@@ -209,13 +200,16 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				}
 				
 				System.out.println(model);				
-				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-			} catch (REngineException e) {
+				for(int i = 0 ; i < coeff.length; i++)
+					System.out.println(coeff[i]);
+			}
+			catch (REngineException e) {
 				e.printStackTrace();
 				return false;
-			} catch (REXPMismatchException e) {
+			}
+			catch (REXPMismatchException e) {
 				e.printStackTrace();
 				return false;
 			}
