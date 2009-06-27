@@ -65,7 +65,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 		for(Query query : _querySpace) {
 			double bid = randDouble(.25,1.5);
 			bundle.addQuery(query, bid, new Ad());
-			if(_day >= 5) {
+			if(_day >= 7) {
 				dailyCPCPredictions.put(query, _bidToCPC.getPrediction(query, bid, _bidBundles.getLast()));
 			}
 		}

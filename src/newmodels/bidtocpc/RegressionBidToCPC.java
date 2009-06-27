@@ -1,5 +1,6 @@
 package newmodels.bidtocpc;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -21,24 +22,28 @@ import edu.umich.eecs.tac.props.QueryReport;
 
 public class RegressionBidToCPC extends AbstractBidToCPC {
 
-	protected LinkedList<Double> _bids, _CPCs;
+	protected ArrayList<Double> _bids, _CPCs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private LinkedList<QueryReport> _queryReports;
-	private LinkedList<BidBundle> _bidBundles;
+	private int IDVar = 5;  //THIS NEEDS TO BE 3 OR MORE!!
+	private ArrayList<QueryReport> _queryReports;
+	private ArrayList<BidBundle> _bidBundles;
 
 
 	public RegressionBidToCPC (Set<Query> queryspace) throws RserveException{
 		c = new RConnection();
-		_bids = new LinkedList<Double>();
-		_CPCs = new LinkedList<Double>();
-		_queryReports = new LinkedList<QueryReport>();
-		_bidBundles = new LinkedList<BidBundle>();
+		_bids = new ArrayList<Double>();
+		_CPCs = new ArrayList<Double>();
+		_queryReports = new ArrayList<QueryReport>();
+		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
+		if(IDVar < 3) {
+			throw new RuntimeException("Don't set IDVar below 3");
+		}
 	}
 
 	@Override
@@ -48,8 +53,8 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
 		double prediction = 0.00;
 		double oneDayOldBid = bidbundle.getBid(query);
-		double twoDayOldBid = _bidBundles.getLast().getBid(query);
-		double twoDayOldCPC = _queryReports.getLast().getCPC(query);
+		double twoDayOldBid = _bidBundles.get(_bidBundles.size()-1).getBid(query);
+		double twoDayOldCPC = _queryReports.get(_bidBundles.size()-1).getCPC(query);
 		double currentBidSq = currentBid * currentBid;
 		double currentBidCube = currentBidSq * currentBid;
 		double oneDayOldBidSq = oneDayOldBid * oneDayOldBid;
@@ -97,79 +102,120 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 
-		if(_bids.size() >= 3*numQueries) {
+		if(_bids.size() >= IDVar*numQueries) {
+			List<List<Double>> bigBidList = new ArrayList<List<Double>>();
+			List<List<Double>> bigCPCList = new ArrayList<List<Double>>();
 
-			List<Double> bidsM1 = _bids.subList(0, _bids.size()-2*numQueries);
-			List<Double> bidsM2 = _bids.subList(1*numQueries, _bids.size()-1*numQueries);
-			List<Double> bidsM3 = _bids.subList(2*numQueries, _bids.size());
-
-
-			List<Double> CPCM1 = _CPCs.subList(0, _CPCs.size()-2*numQueries);
-			List<Double> CPCM2 = _CPCs.subList(1*numQueries, _CPCs.size()-1*numQueries);
-			List<Double> CPCM3 = _CPCs.subList(2*numQueries, _CPCs.size());
-
-			Double[] bidsM1Arr = bidsM1.toArray(new Double[0]);
-			Double[] bidsM2Arr = bidsM2.toArray(new Double[0]);
-			Double[] bidsM3Arr = bidsM3.toArray(new Double[0]);
-
-			Double[] CPCM1Arr = CPCM1.toArray(new Double[0]);
-			Double[] CPCM2Arr = CPCM2.toArray(new Double[0]);
-			Double[] CPCM3Arr = CPCM3.toArray(new Double[0]);
-
-			double[] bidsM2Sqarr = new double[bidsM2Arr.length];
-			double[] bidsM3Sqarr = new double[bidsM3Arr.length];
-			double[] bidsM3Cubearr = new double[bidsM3Arr.length];
-
-			/*
-			 * TODO
-			 * There must be a faster way to convert Double[] to double[]
-			 */
-
-			double[] bidsM1arr = new double[bidsM1Arr.length];
-			double[] bidsM2arr = new double[bidsM2Arr.length];
-			double[] bidsM3arr = new double[bidsM3Arr.length];
-			double[] CPCM1arr = new double[CPCM1Arr.length];
-			double[] CPCM2arr = new double[CPCM2Arr.length];
-			double[] CPCM3arr = new double[CPCM3Arr.length];
-
-			for(int i = 0; i < bidsM1Arr.length; i++) {
-				bidsM1arr[i] = bidsM1Arr[i].doubleValue();
-				bidsM2arr[i] = bidsM2Arr[i].doubleValue();
-				bidsM3arr[i] = bidsM3Arr[i].doubleValue();
-
-				CPCM1arr[i] = CPCM1Arr[i].doubleValue();
-				CPCM2arr[i] = CPCM2Arr[i].doubleValue();
-				CPCM3arr[i] = CPCM3Arr[i].doubleValue();
+			for(int i = 0 ; i < IDVar; i++) {
+				List<Double> bids = _bids.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
+				List<Double> CPC = _CPCs.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
+				bigBidList.add(bids);
+				bigCPCList.add(CPC);
 			}
 
-			for(int i = 0; i < bidsM2Sqarr.length; i++) {
-				bidsM2Sqarr[i] = bidsM2arr[i] * bidsM2arr[i];
-				bidsM3Sqarr[i] = bidsM3arr[i] * bidsM3arr[i];
-				bidsM3Cubearr[i] = bidsM3arr[i] * bidsM3Sqarr[i];
+			List<double[]> bidArrList = new LinkedList<double[]>();
+			List<double[]> CPCArrList = new LinkedList<double[]>();
+			
+			for(int i = 0; i < bigBidList.size(); i++) {
+				List<Double> bidList = bigBidList.get(i);
+				List<Double> CPCList = bigCPCList.get(i);
+				double[] bidArr = new double[bidList.size()];
+				double[] CPCArr = new double[CPCList.size()];
+				for(int j = 0; j < bidList.size(); j++) {
+					bidArr[j] = bidList.get(j);
+					CPCArr[j] = CPCList.get(j);
+				}
+				bidArrList.add(bidArr);
+				CPCArrList.add(CPCArr);
+			}
+			
+			double[] mostRecentBidArr = bidArrList.get(bidArrList.size()-1);
+			double[] secondRecentBidArr = bidArrList.get(bidArrList.size()-2);
+			
+			double[] mostRecentCubeBidArr = new double[mostRecentBidArr.length];
+			double[] mostRecentSqBidArr = new double[mostRecentBidArr.length];
+			double[] secondRecentSqBidArr = new double[secondRecentBidArr.length];
+			
+			
+			double[] mostRecentCPCArr = CPCArrList.get(CPCArrList.size()-2);
+			double[] secondRecentCPCArr = CPCArrList.get(CPCArrList.size()-3);
+			
+			double[] mostRecentCubeCPCArr = new double[mostRecentCPCArr.length];
+			double[] mostRecentSqCPCArr = new double[mostRecentCPCArr.length];
+			double[] secondRecentSqCPCArr = new double[secondRecentCPCArr.length];
+			
+			
+			for(int i = 0; i < mostRecentBidArr.length; i++) {
+				mostRecentSqBidArr[i] = mostRecentBidArr[i] * mostRecentBidArr[i];
+				mostRecentCubeBidArr[i] = mostRecentBidArr[i] * mostRecentSqBidArr[i];
+				secondRecentSqBidArr[i] = secondRecentBidArr[i] * secondRecentBidArr[i];
+				
+				mostRecentSqCPCArr[i] = mostRecentCPCArr[i] * mostRecentCPCArr[i];
+				mostRecentCubeCPCArr[i] = mostRecentCPCArr[i] * mostRecentSqCPCArr[i];
+				secondRecentSqCPCArr[i] = secondRecentCPCArr[i] * secondRecentCPCArr[i];
 			}
 
 			//c.assign("i", _predCounter);
 			try {
-				c.assign("bid3", bidsM3arr);
-				c.assign("bid3sq", bidsM3Sqarr);
-				c.assign("bid3cube", bidsM3Cubearr);
-				c.assign("bid2", bidsM2arr);
-				c.assign("bid2sq", bidsM2Sqarr);
-				c.assign("bid1", bidsM1arr);
-				c.assign("cpc1", CPCM1arr);
-				c.assign("cpc2", CPCM2arr);
-				c.assign("cpc3", CPCM3arr);
-				c.voidEval("pred = 1:16");
+				for(int i = 0; i < IDVar; i++) {
+					c.assign("bid" + i, bidArrList.get(i));
+					c.assign("cpc" + i, CPCArrList.get(i));
+					System.out.println("bid" + i);
+					System.out.println("cpc" + i);
+				}
+				c.assign("bid" + (IDVar-1) + "cube", mostRecentCubeBidArr);
+				c.assign("bid" + (IDVar-1) + "sq",mostRecentSqBidArr);
+				c.assign("bid" + (IDVar-2) + "sq",secondRecentSqBidArr);
 
-				c.voidEval("model = lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
-				c.voidEval("coefficients = model$coefficients");
+				c.assign("cpc" + (IDVar-3) + "cube", mostRecentCubeCPCArr);
+				c.assign("cpc" + (IDVar-3) + "sq",mostRecentSqCPCArr);
+				c.assign("cpc" + (IDVar-4) + "sq",secondRecentSqCPCArr);
+				
+				System.out.println("bid" + (IDVar-1) + "cube");
+				System.out.println("bid" + (IDVar-1) + "sq");
+				System.out.println("bid" + (IDVar-2) + "sq");
+				System.out.println("cpc" + (IDVar-3) + "cube");
+				System.out.println("cpc" + (IDVar-3) + "sq");
+				System.out.println("cpc" + (IDVar-4) + "sq");
+				
+				String model = "model = lm(cpc" + (IDVar-1) + " ~ ";
+				for(int i = 0; i < IDVar; i++) {
+					model += "bid" + i + " + ";
+					if(i == IDVar -1) {
+						model += "bid" + (IDVar - 1) + "sq + ";
+						model += "bid" + (IDVar - 1) + "cube + ";
+					}
+					else if(i == IDVar - 2) {
+						model += "bid" + (IDVar - 2) + "sq + ";
+					}
+				}
+				
+				for(int i = 0; i < IDVar-1; i++) {
+					if(i == IDVar - 2) {
+						model = model.substring(0, model.length()-3);
+						model += ")";
+					}
+					else {
+						model += "cpc" + i + " + ";
+					}
+					
+					if(i == IDVar - 3) {
+						model += "cpc" + (IDVar - 3) + "sq + ";
+						model += "cpc" + (IDVar - 3) + "cube + ";
+					}
+					else if(i == IDVar - 4) {
+						model += "cpc" + (IDVar - 4) + "sq + ";
+					}
+				}
+				
+				System.out.println(model);				
+				
+				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
 			} catch (REngineException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return false;
 			} catch (REXPMismatchException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				return false;
 			}
