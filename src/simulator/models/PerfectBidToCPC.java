@@ -15,7 +15,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	
 	private BasicSimulator _simulator;
 
-	public PerfectBidToCPC(Query query, BasicSimulator simulator) {
+	public PerfectBidToCPC(BasicSimulator simulator) {
 		_simulator = simulator;
 	}
 

@@ -384,11 +384,12 @@ public class BasicSimulator {
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]));
+		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(unitsSold);
+		models.add(bidToCPCModel);
 		for(Query query : _querySpace) {
-			AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(query,this);
 			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
 			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(query,this);
@@ -716,7 +717,9 @@ public class BasicSimulator {
 					if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
 						squashedBidUnder = _proReserve;
 					}
-					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing);
+					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
+					cpc = ((int) ((cpc * 100) + 0.5)) / 100;
+					System.out.println(cpc);
 					agent.addCost(query, cpc);
 
 					double baselineConv;

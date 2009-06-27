@@ -105,7 +105,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		models.add(userModel);
 		models.add(queryToNumImp);
 		for(Query query: _querySpace) {
-			AbstractBidToCPC bidToCPC = new BasicBidToCPC(query);
+			AbstractBidToCPC bidToCPC = new BasicBidToCPC();
 			AbstractBidToSlotModel bidToSlot = new ReallyBadBidToSlot(query);
 			AbstractBidToPrClick bidToPrClick = new BasicBidToPrClick(query);
 			AbstractBidToPrConv bidToPrConv = new BasicBidToPrConv(query);
@@ -301,7 +301,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
 					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
-					//										double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					//double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 					if(Double.isNaN(CPC)) {
 						w = 0.0;
@@ -316,17 +316,23 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				IncItem[] iItems = getIncremental(items);
 				incItems.put(q,iItems);
 			}
-
-			double budget = _capacity/_capWindow; 
-			if(_unitsSold != null) {
-				debug("Average Budget: " + budget);
-				budget = _capacity*CAP_MULTIPLIER - _unitsSold.getWindowSold();
-				if(budget < 20) {
-					budget = 20;
-				}
-				debug("Unit Sold Model Budget "  +budget);
+			double budget = _capacity/_capWindow;
+			if(_day == 0) {
+				budget *= 2;
 			}
-
+			else if(_day == 1) {
+				//do nothing
+			}
+			else {
+				if(_unitsSold != null) {
+					debug("Average Budget: " + budget);
+					budget = _capacity*CAP_MULTIPLIER*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+					if(budget < 20) {
+						budget = 20;
+					}
+					debug("Unit Sold Model Budget "  +budget);
+				}
+			}
 			HashMap<Query,Item> solution = fillKnapsack(incItems, budget);
 
 			//set bids

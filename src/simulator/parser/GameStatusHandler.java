@@ -209,7 +209,7 @@ public class GameStatusHandler {
 				advertiserInfos.put(name, advInfo);
 			}
 			else if (content instanceof UserPopulationState) {
-				if(messageDay >= 0) {
+				if(messageDay >= 1) {
 					UserPopulationState userPopState = (UserPopulationState) content;
 					HashMap<Product, HashMap<UserState,Integer>> userDist = new HashMap<Product, HashMap<UserState,Integer>>();
 					for(Product p : retailCatalog) {
@@ -297,8 +297,8 @@ public class GameStatusHandler {
 			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
 			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
 		}
-		for(int i = 0; i < queryReports.get(advertisers[0]).size(); i++) {
-			System.out.println(queryReports.get(advertisers[0]).get(i));
+		for(int i = 0; i < usersDists.size(); i++) {
+			System.out.println(usersDists.get(i));
 		}
 		System.out.println("Num User Dists: " + usersDists.size());
 		System.out.println("Slot info: " + slotInfo);
