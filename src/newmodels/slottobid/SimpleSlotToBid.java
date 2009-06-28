@@ -15,14 +15,15 @@ public class SimpleSlotToBid extends AbstractSlotToBidModel {
 	final double alpha = .75;
 	final double beta = .5;
 	final double error = .01;
+	final double minBid = .25;
 	
 	
 	public SimpleSlotToBid(Query query, SlotInfo slotInfo) {
 		super(query);
 		promotedSlots = slotInfo.getPromotedSlots(); 
 		slots = promotedSlots + slotInfo.getRegularSlots();
-		history = new double[slots];
-		estimate = new double[slots];
+		history = new double[slots + 1];
+		estimate = new double[slots + 1];
 		for (int i = 0; i < slots; i++) {
 			history[i] = Double.NaN;
 			estimate[i] = Double.NaN;
@@ -31,17 +32,21 @@ public class SimpleSlotToBid extends AbstractSlotToBidModel {
 
 	@Override
 	public double getPrediction(double targetSlot) {
-		return estimate[(int)targetSlot];
+		if (targetSlot > slots || targetSlot < 1 ) return Double.NaN;
+		else if (Double.isNaN(estimate[(int)targetSlot])) return minBid+error;
+		else return Math.max(minBid, estimate[(int)targetSlot]);
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		// if did not get position, update lower bound if necessary
-		if (queryReport.getPosition(_query) == Double.NaN) {
-			if (bidBundle.getBid(_query) < history[slots])
-				history[slots] = alpha * bidBundle.getBid(_query) + (1 - alpha) * history[slots];
-				estimate[slots] = history[slots];
-			return true;
+		if (Double.isNaN(queryReport.getPosition(_query))) {
+			double lastBid = bidBundle.getBid(_query);
+			if (lastBid > history[slots])
+				history[slots] = alpha * lastBid + (1 - alpha) * history[slots];
+			estimate[slots] = Math.max(minBid, lastBid)*2;
+			estimate[slots - 1] = Math.max(minBid, lastBid)*3;
+			return false;
 		}
 		
 		// read in the latest sample
@@ -49,27 +54,43 @@ public class SimpleSlotToBid extends AbstractSlotToBidModel {
 		double sample = queryReport.getCPC(_query) + error;
 		
 		// update accurate history
-		if (history[position] == Double.NaN) history[position] = sample;
+		if (Double.isNaN(history[position])) history[position] = sample;
 		else history[position] = alpha * sample + (1 - alpha) * history[position];
 		estimate[position] = history[position];
 		
 		// make estimation about the position above
-		if (position > 1) {
-			double diff = bidBundle.getBid(_query) - queryReport.getCPC(_query) + error;
-			if (history[position - 1] == Double.NaN)
+		if (position >= 2) {
+			double diff;
+			diff = queryReport.getCPC(_query)*.1;
+			if (Double.isNaN(history[position - 1]))
 				estimate[position - 1] = history[position] + diff;
 			else estimate[position - 1] = beta * (history[position] + diff) + (1 - beta) * history[position - 1]; 
 		}
 		
 		//make estimation about the position below
-		if (position < 5) {
-			double diff = bidBundle.getBid(_query) - queryReport.getCPC(_query) - error;
-			if (history[position + 1] == Double.NaN)
-				estimate[position + 1] = history[position] - diff;
+		if (position <= slots - 1) {
+			double diff;
+			diff = queryReport.getCPC(_query)*.1;
+			if (Double.isNaN(history[position + 1]))
+				estimate[position + 1] = Math.max(minBid,history[position] - diff);
 			else estimate[position + 1] = beta * (history[position] - diff) + (1 - beta) * history[position + 1]; 
 		}
 		
 		return true;
+	}
+	
+	public void updateByAgent(int position, QueryReport queryReport, BidBundle bidBundle) {
+		double realPosition = queryReport.getPosition(_query);
+		if (Double.isNaN(realPosition) || (int)Math.ceil(realPosition) <= position) return;
+		else {
+			if (estimate[position] < bidBundle.getBid(_query)) {
+				estimate[position] = beta * bidBundle.getBid(_query)*1.2 + (1 - beta)*estimate[position];
+			}
+		
+			if (history[position] < bidBundle.getBid(_query)) {
+				history[position] = alpha * bidBundle.getBid(_query) + (1 - alpha)*history[position];
+			}
+		}
 	}
 
 	
