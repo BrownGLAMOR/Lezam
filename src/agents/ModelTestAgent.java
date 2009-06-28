@@ -6,10 +6,10 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import org.rosuda.REngine.Rserve.RserveException;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.RegressionBidToCPC;
-
-import org.rosuda.REngine.Rserve.RserveException;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -57,7 +57,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 			double stddev = Math.sqrt(sumVar/((_day - 15)*16 - nancounter));
 			System.out.println("Standard Deviation: " + stddev);
 		}
-		
+
 		BidBundle bundle = new BidBundle();
 		HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
 		for(Query query : _querySpace) {

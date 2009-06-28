@@ -32,6 +32,7 @@ import agents.Cheap;
 import agents.EqPftAgent;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
+import agents.ModelTestAgent;
 import agents.SimAbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
@@ -905,10 +906,10 @@ public class BasicSimulator {
 		double totAvgImp = 0.0;
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
-		int numSims = 75;
+		int numSims = 1;
 		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		int min = 18;
-		int max = 38;
+		int max = 19;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 
@@ -979,7 +980,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ModelTestAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

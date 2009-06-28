@@ -12,7 +12,6 @@ public class RTest {
 	 * @param args
 	 * @throws RserveException 
 	 * @throws REXPMismatchException 
-	 * @throws RSrvException 
 	 */
 	public static void main(String[] args) throws RserveException, REXPMismatchException {
 		RConnection c = new RConnection();
