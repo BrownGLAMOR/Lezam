@@ -1,8 +1,11 @@
 package newmodels.slottonumclicks;
 
 
+import com.sun.org.apache.bcel.internal.generic.RETURN;
+
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -24,13 +27,14 @@ public class SimpleClick extends AbstractSlotToNumClicks{
 	final double alpha = .75;
 	final double beta = .5;
 	final double error = 20;
+	final int minClicks = 20;
 	
 	public SimpleClick(Query query, AdvertiserInfo advertiserInfo, SlotInfo slotInfo) {
 		super(query);
 		promotedSlots = slotInfo.getPromotedSlots(); 
 		slots = promotedSlots + slotInfo.getRegularSlots();
-		history = new double[slots];
-		estimate = new double[slots];
+		history = new double[slots + 1];
+		estimate = new double[slots + 1];
 		for (int i = 0; i < slots; i++) {
 			history[i] = Double.NaN;
 			estimate[i] = Double.NaN;
@@ -56,8 +60,9 @@ public class SimpleClick extends AbstractSlotToNumClicks{
 	
 	@Override
 	public int getPrediction(double targetSlot) {
-		if (targetSlot > 5 || targetSlot < 1) return -1; 
-		return (int)estimate[(int)targetSlot];
+		if (targetSlot > slots || targetSlot < 1 ) return -1;
+		else if (Double.isNaN(estimate[(int)targetSlot])) return minClicks;
+		else return (int)Math.max(minClicks,estimate[(int)targetSlot]);
 	}
 
 	@Override
@@ -65,21 +70,21 @@ public class SimpleClick extends AbstractSlotToNumClicks{
 			SalesReport salesReport, BidBundle bidBundle) {
 		
 		// if did not get any clicks, no update can be made
-		if (queryReport.getClicks(_query) == Double.NaN) return true; 
+		if (Double.isNaN(queryReport.getPosition(_query))) return false; 
 		
 		// read in new sample
 		int position = (int)Math.ceil(queryReport.getPosition(_query));
 		double sample = queryReport.getClicks(_query);
-		boolean limit = Math.abs(bidBundle.getDailyLimit(_query) - queryReport.getCPC(_query) * queryReport.getClicks(_query)) < error;
+		boolean limit = queryReport.getCost(_query) + bidBundle.getBid(_query) >= bidBundle.getDailyLimit(_query);
 		
 		// update accurate history
 		if (!limit) {
-			if (history[position] == Double.NaN) history[position] = sample;
+			if (Double.isNaN(history[position])) history[position] = sample;
 			else history[position] = alpha * sample + (1 - alpha) * history[position];
 			estimate[position] = history[position];
 		}
 		else {
-			if (history[position] == Double.NaN)
+			if (Double.isNaN(history[position]))
 				history[position] = sample;
 			else if (history[position] < sample + error) 
 				history[position] = alpha * sample + (1 - alpha) * history[position];
@@ -88,20 +93,22 @@ public class SimpleClick extends AbstractSlotToNumClicks{
 		
 		
 		// estimate the position above
-		if (position > 1) {
-			
-			double newEstimate = history[position] / (1 - prClick*prConversion) / prContinue;
-			if (history[position - 1] == Double.NaN)
-				estimate[position - 1] = newEstimate;
-			else estimate[position - 1] = beta * newEstimate + (1 - beta) * history[position - 1];
+		if (position >= 2) {
+			for (int i = position - 1; i > 0; i --) {
+				double newEstimate = history[i + 1] / (1 - prClick*prConversion) / prContinue;
+				if (Double.isNaN(history[i]))
+					estimate[i] = newEstimate;
+				else estimate[i] = beta * newEstimate + (1 - beta) * history[position - 1];
+			}
 		}
 		
 		// estimate the position below
 		
-		if (position < 5) {
+		if (position <= slots - 1) {
 			
 			double newEstimate = history[position] * (1 - prClick*prConversion) * prContinue;
-			if (history[position + 1] == Double.NaN)
+			if (newEstimate < 10) newEstimate = 10;
+			if (Double.isNaN(history[position + 1]))
 				estimate[position + 1] = newEstimate;
 			else estimate[position + 1] = beta * newEstimate + (1 - beta) * history[position + 1];
 		}
