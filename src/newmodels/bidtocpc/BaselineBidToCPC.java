@@ -78,9 +78,17 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 		rcon.assign("cpc1", cpc1arr);
 		rcon.assign("cpc3", cpc3arr);
 		
+		System.out.println(bid3arr.length);
+		System.out.println(bid2arr.length);
+		System.out.println(bid1arr.length);
+		System.out.println(cpc1arr.length);
+		System.out.println(cpc3arr.length);
+		
+		
 		rcon.voidEval("model <- lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
-		rcon.eval("coefficients <- model$coefficients");
-		coeff = rcon.eval("coefficients").asDoubles();
+	
+		
+		coeff = rcon.eval("coefficients(model)").asDoubles();
 	
 		
 	    
@@ -122,7 +130,7 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
         }
                 
         // execute sql query
-        PreparedStatement stmt = _db.prepareStatement("SELECT QueryID, Bid, CPC FROM dailyqueries  WHERE GameID > 200 ORDER BY GameID, AgentID, QueryID, Day");
+        PreparedStatement stmt = _db.prepareStatement("SELECT QueryID, Bid, CPC FROM dailyqueries  WHERE GameID > 220 ORDER BY GameID, AgentID, QueryID, Day");
 	    ResultSet rset = stmt.executeQuery();  
 	    System.out.println("Data retrieval done!");
 	   
