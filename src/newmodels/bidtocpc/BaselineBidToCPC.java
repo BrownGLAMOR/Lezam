@@ -86,8 +86,6 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 		
 		
 		rcon.voidEval("model <- lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
-	
-		
 		coeff = rcon.eval("coefficients(model)").asDoubles();
 	
 		
