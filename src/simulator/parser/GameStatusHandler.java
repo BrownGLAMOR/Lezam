@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
+import org.omg.CORBA._PolicyStub;
+
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
@@ -277,7 +279,7 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/games/game160.slg";
+		String filename = "/games/game166.slg";
 		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
 		GameStatus gameStatus = gameStatusHandler.getGameStatus();
 		String[] advertisers = gameStatus.getAdvertisers();
@@ -292,21 +294,32 @@ public class GameStatusHandler {
 		PublisherInfo pubInfo = gameStatus.getPubInfo();
 		RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
 		UserClickModel userClickModel = gameStatus.getUserClickModel();
-		for(int i = 0; i < 7; i++) {
-			System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[i]).size());
-			System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[i]).size());
-			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
-			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
+//		for(int i = 0; i < 7; i++) {
+//			System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[i]).size());
+//			System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[i]).size());
+//			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
+//			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
+//		}
+//		for(int i = 0; i < usersDists.size(); i++) {
+//			System.out.println(usersDists.get(i));
+//		}
+//		System.out.println("Num User Dists: " + usersDists.size());
+//		System.out.println("Slot info: " + slotInfo);
+//		System.out.println("Reserve info: " + reserveInfo);
+//		System.out.println("Pub info: " + pubInfo);
+//		System.out.println("Retail info: " + retailCatalog);
+//		System.out.println("User Click info: " + userClickModel);
+		HashMap<Product, HashMap<UserState, Integer>> users = usersDists.get(0);
+		HashMap<UserState, Integer> totUsers = new HashMap<UserState, Integer>();
+		for(UserState state : UserState.values()) {
+			totUsers.put(state,0);
 		}
-		for(int i = 0; i < usersDists.size(); i++) {
-			System.out.println(usersDists.get(i));
+		for(Product prod : gameStatus.getRetailCatalog()) {
+			for(UserState state : UserState.values()) {
+				totUsers.put(state,users.get(prod).get(state)/9+totUsers.get(state));
+			}
 		}
-		System.out.println("Num User Dists: " + usersDists.size());
-		System.out.println("Slot info: " + slotInfo);
-		System.out.println("Reserve info: " + reserveInfo);
-		System.out.println("Pub info: " + pubInfo);
-		System.out.println("Retail info: " + retailCatalog);
-		System.out.println("User Click info: " + userClickModel);
+		System.out.println(totUsers);
 	}
 
 }

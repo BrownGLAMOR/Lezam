@@ -380,29 +380,6 @@ public class UserSteadyStateDist {
 		}
 	}
 
-
-	/*
-	 * Normalize a map to have 10k users
-	 * 
-	 * TODO
-	 * 
-	 * Make this method actually work!
-	 */
-	private void normalizeMap(HashMap<UserState, Integer> map, int numRecurs) {
-		int desiredTot = 10000;
-		int tot = 0;
-		for(UserState state : UserState.values()) {
-			tot += map.get(state);
-		}
-		if(tot == desiredTot) {
-			return;
-		}
-		for(UserState state : UserState.values()) {
-			map.put(state, (int) ((map.get(state)/((double)tot*randDouble(1.0 - numRecurs/10, 1.0 + numRecurs/10)))* desiredTot));
-		}
-		normalizeMap(map,numRecurs++);
-	}
-
 	private Set<String> generateStringList(int numDays, int numBurstDays, Set<String> strings) {
 		if(strings == null && numDays > 0) {
 			strings = new HashSet<String>();
@@ -458,22 +435,14 @@ public class UserSteadyStateDist {
 			strings.addAll(tempStrings);
 		}
 		System.out.println(strings.size());
-		int numSims = 1;
+		int numSims = 5;
 		HashMap<UserState,Double> estimateMap = new HashMap<UserState, Double>();
 		for(UserState state : UserState.values()) {
 			estimateMap.put(state, 0.0);
 		}
-		HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>> megaMap = new HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>>();
 		double totprob = 0;
-		double[] blah = new double[11];
-		for(int i = 0; i <= 10; i++) {
-			blah[i] = 0;
-		}
 		for(String string : strings) {
-			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> listOfMaps = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();
 			for(int i = 0; i < numSims; i++) {
-				int numones = sumOnes(string);
-				blah[numones] = blah[numones] + 1;
 				initializeUsers();
 				for(int j = 0; j < string.length(); j++) {
 					totalIters++;
@@ -495,30 +464,99 @@ public class UserSteadyStateDist {
 						double estimate = _users.get(product).get(state);
 						int numOnes = sumOnes(string);
 						int numZeros = 10 - numOnes;
-						BigDecimal halfProb = new BigDecimal(power(.1,numOnes));
-						BigDecimal secondhalfProb = new BigDecimal(power(.9,numZeros));
-						BigDecimal probability = halfProb.multiply(secondhalfProb);
-						//						probability /= factorial(10)/(factorial(numOnes)*factorial(numZeros)); //divide by the number of ways you can get numOnes ones and numZero zeros.\
-						totprob += probability.doubleValue();
-						BigDecimal preciseEstimate = probability.multiply(new BigDecimal(estimate));
-						preciseEstimate = preciseEstimate.divide(new BigDecimal(_products.size()), BigDecimal.ROUND_HALF_UP );
-						estimateMap.put(state,estimateMap.get(state) + preciseEstimate.doubleValue());
+						double probability = power(.1,numOnes) * power(.9, numZeros);
+						totprob += probability;
+						estimate *= probability;
+						estimate /= (_products.size()*numSims);
+						estimateMap.put(state,estimateMap.get(state) + estimate);
 					}
 				}
-				listOfMaps.add(copyUsers(_users));
 			}
-			megaMap.put(string, listOfMaps);
 		}
-		for(int i = 0; i <= 10; i++) {
-			System.out.println(i + " ones: " + blah[i]);
+		System.out.println(totprob/(UserState.values().length*_products.size()*numSims));
+		for(UserState state : UserState.values()) {
+			System.out.println(state + ": " + estimateMap.get(state));
 		}
-		System.out.println(totprob/(UserState.values().length*_products.size()));
+	}
+
+	private void virtualExpectedUsers() {
+		for(Product prod : _products) {
+			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
+			tempUsers.put(UserState.NS,8230);
+			tempUsers.put(UserState.IS,303);
+			tempUsers.put(UserState.F0,604);
+			tempUsers.put(UserState.F1,449);
+			tempUsers.put(UserState.F2,414);
+			tempUsers.put(UserState.T,0);
+			_users.put(prod, tempUsers);
+		}
+	}
+
+	public void analyzeFirstNDays(int n) {
+		int totalIters = 0;
+		Set<String> strings = new HashSet<String>();
+		double epsilon = .0005;
+		int numOnesNeeded = 0;
+		double totalProb = 0;
+		for(int i = 0; i <= n; i++) {
+			numOnesNeeded = i;
+			totalProb += power(.1,i)*power(.9,(n-i))*(factorial(n)/(factorial(i)*factorial(n-i)));
+			if(totalProb + epsilon > 1.0) {
+				break;
+			}
+		}
+		for(int i = 0; i <= numOnesNeeded; i++) {
+			Set<String> tempStrings = generateStringList(n, i, null);
+			strings.addAll(tempStrings);
+		}
+		int numSims = 5;
+		HashMap<UserState,Double> estimateMap = new HashMap<UserState, Double>();
+		for(UserState state : UserState.values()) {
+			estimateMap.put(state, 0.0);
+		}
+		double totprob = 0;
+		for(String string : strings) {
+			for(int i = 0; i < numSims; i++) {
+				virtualExpectedUsers();
+				for(int j = 0; j < string.length(); j++) {
+					totalIters++;
+					if(string.charAt(j) == '0') {
+						simulateDayWithTransactions(false);
+					}
+					else if(string.charAt(j) == '1') {
+						simulateDayWithTransactions(true);
+					}
+					else {
+						throw new RuntimeException("Malformed string");
+					}
+					if(totalIters % 1000 == 0) {
+						System.out.println(totalIters);
+					}
+				}
+				for(Product product : _products) {
+					for(UserState state : UserState.values()) {
+						double estimate = _users.get(product).get(state);
+						int numOnes = sumOnes(string);
+						int numZeros = n - numOnes;
+						double probability = power(.1,numOnes) * power(.9, numZeros);
+						totprob += probability;
+						estimate *= probability;
+						estimate /= (_products.size()*numSims);
+						estimateMap.put(state,estimateMap.get(state) + estimate);
+					}
+				}
+			}
+		}
+		System.out.println(totprob/(UserState.values().length*_products.size()*numSims));
 		for(UserState state : UserState.values()) {
 			System.out.println(state + ": " + estimateMap.get(state));
 		}
 	}
 
 	public double power(double a, int b) {
+		if (b == 0) {
+			return 1;
+		}
 		double pow = a;
 		for(int i = 1; i < b; i++) {
 			pow *= a;
@@ -526,7 +564,7 @@ public class UserSteadyStateDist {
 		return pow;
 	}
 
-	public int factorial(int x) {
+	public double factorial(int x) {
 		switch (x) {
 		case 0:
 			return 1;
@@ -550,17 +588,40 @@ public class UserSteadyStateDist {
 			return 362800;
 		case 10:
 			return 3628800;
+		case 11:
+			return 39916800;
+		case 12:
+			return 479001600;
+		case 13:
+			return 6227020800.0;
+		case 14:
+			return 87178291200.0;
+		case 15:
+			return 1307674368000.0;
+		case 16:
+			return 20922789888000.0;
+		case 17:
+			return 355687428096000.0;
+		case 18:
+			return 6402373705728000.0;
+		case 19:
+			return 121645100408832000.0;
+		case 20:
+			return 2432902008176640000.0;
 		default:
 			return -1;
 		}
 	}
 
 	public static void main(String[] args) {
+		System.out.println("5 SIMS");
 		UserSteadyStateDist steadyState = new UserSteadyStateDist();
 		double start = System.currentTimeMillis();
 
-		steadyState.analyzeVirutalization();
-
+		for(int i = 1; i <= 10; i++) {
+			System.out.println(i + " days: ");
+			steadyState.analyzeFirstNDays(i);
+		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
