@@ -455,5 +455,9 @@ public abstract class SimAbstractAgent extends Agent {
      */
     public abstract BidBundle getBidBundle(Set<AbstractModel> models);
 
+	public void setModels(Set<AbstractModel> models) {
+		_models = models;
+	}
+
 
 }

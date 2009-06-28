@@ -174,9 +174,9 @@ public class GameStatusHandler {
 					 * If a bid bundle is missing, it means the person uses the same
 					 * bundle as the last time
 					 */
-					int bundlesize =  bidbundlelist.size() -1;
-					if(messageDay - 1 > bundlesize) {
-						for(int j = 0; j < (messageDay-1-bundlesize); j++) {
+					int listsize = bidbundlelist.size();
+					if(messageDay > listsize) {
+						for(int j = 0; j < (messageDay-listsize); j++) {
 							BidBundle bundleTemp = bidbundlelist.getLast();
 							BidBundle newBundle = copyBundle(bundleTemp);
 							bidbundlelist.add(newBundle);
@@ -189,10 +189,11 @@ public class GameStatusHandler {
 						bidbundlelist.addLast(bidbundletemp);
 					}
 					/*
-					 * This means that a bundle was sent on the wrong day and should be reported
+					 * This means they sent a second bid bundle, so write over the last entry
 					 */
 					else {
-						throw new RuntimeException("Report this error to TAC AA");
+						bidbundlelist.removeLast();
+						bidbundlelist.add(bidbundletemp);
 					}
 					bidBundles.put(name, bidbundlelist);
 				}
@@ -276,7 +277,7 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/games/game161.slg";
+		String filename = "/games/game160.slg";
 		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
 		GameStatus gameStatus = gameStatusHandler.getGameStatus();
 		String[] advertisers = gameStatus.getAdvertisers();

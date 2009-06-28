@@ -302,10 +302,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				incItems.put(q,iItems);
 			}
 			double budget = _capacity/_capWindow;
-			if(_day == 0) {
-				budget *= 2;
-			}
-			else if(_day == 1) {
+			if(_day < 4) {
 				//do nothing
 			}
 			else {
@@ -434,7 +431,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	 */
 	public static Item[] getUndominated(Item[] items) {
 		Arrays.sort(items,new ItemComparatorByWeight());
-
 		//remove dominated items (higher weight, lower value)		
 		LinkedList<Item> temp = new LinkedList<Item>();
 		temp.add(items[0]);
@@ -454,23 +450,23 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 		for(int i=0; i<items.length; i++) {
 			q.add(items[i]);//has at least 2 items now
-			int l = q.size()-1;
-			Item li = q.get(l);//last item
-			Item nli = q.get(l-1);//next to last
-			if(li.w() == nli.w()) {
-				if(li.v() > nli.v()) {
-					q.remove(l-1);
-				}else{
-					q.remove(l);
-				}
-			}
-			l = q.size()-1; //reset in case an item was removed
-			//while there are at least three elements and ...
-			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
-					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
-				q.remove(l-1);
-				l--;
-			}
+//			int l = q.size()-1;
+//			Item li = q.get(l);//last item
+//			Item nli = q.get(l-1);//next to last
+//			if(li.w() == nli.w()) {
+//				if(li.v() > nli.v()) {
+//					q.remove(l-1);
+//				}else{
+//					q.remove(l);
+//				}
+//			}
+//			l = q.size()-1; //reset in case an item was removed
+//			//while there are at least three elements and ...
+//			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
+//					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
+//				q.remove(l-1);
+//				l--;
+//			}
 		}
 
 		//remove the (0,0) item
@@ -489,11 +485,18 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	 * @return
 	 */
 	public IncItem[] getIncremental(Item[] items) {
+		debug("PRE INCREMENTAL");
 		for(int i = 0; i < items.length; i++) {
 			debug("\t" + items[i]);
 		}
 
 		Item[] uItems = getUndominated(items);
+		
+		debug("UNDOMINATED");
+		for(int i = 0; i < uItems.length; i++) {
+			debug("\t" + uItems[i]);
+		}
+		
 		IncItem[] ii = new IncItem[uItems.length];
 
 		if (uItems.length != 0){ //getUndominated can return an empty array
@@ -504,7 +507,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur.numConv() - prev.numConv(), cur);
 			}
 		}
-
+		debug("INCREMENTAL");
+		for(int i = 0; i < ii.length; i++) {
+			debug("\t" + ii[i]);
+		}
 		return ii;
 	}
 

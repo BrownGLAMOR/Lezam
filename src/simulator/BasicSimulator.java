@@ -134,7 +134,8 @@ public class BasicSimulator {
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
 		agent.initBidder();
-		agent.initModels();
+		Set<AbstractModel> models = agent.initModels();
+		agent.setModels(models);
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
 			reportsListMap.put(_agents[i], reports);
@@ -836,7 +837,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkIIBids("0");
+			return new MCKPAgentMkIIBids("13");
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -983,7 +984,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ModelTestAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids("10"), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

@@ -36,6 +36,7 @@ package usermodel;
  * 
  */
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -456,11 +457,23 @@ public class UserSteadyStateDist {
 			Set<String> tempStrings = generateStringList(10, i, null);
 			strings.addAll(tempStrings);
 		}
+		System.out.println(strings.size());
 		int numSims = 1;
+		HashMap<UserState,Double> estimateMap = new HashMap<UserState, Double>();
+		for(UserState state : UserState.values()) {
+			estimateMap.put(state, 0.0);
+		}
 		HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>> megaMap = new HashMap<String,LinkedList<HashMap<Product, HashMap<UserState, Integer>>>>();
+		double totprob = 0;
+		double[] blah = new double[11];
+		for(int i = 0; i <= 10; i++) {
+			blah[i] = 0;
+		}
 		for(String string : strings) {
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> listOfMaps = new LinkedList<HashMap<Product,HashMap<UserState,Integer>>>();
 			for(int i = 0; i < numSims; i++) {
+				int numones = sumOnes(string);
+				blah[numones] = blah[numones] + 1;
 				initializeUsers();
 				for(int j = 0; j < string.length(); j++) {
 					totalIters++;
@@ -477,20 +490,77 @@ public class UserSteadyStateDist {
 						System.out.println(totalIters);
 					}
 				}
+				for(Product product : _products) {
+					for(UserState state : UserState.values()) {
+						double estimate = _users.get(product).get(state);
+						int numOnes = sumOnes(string);
+						int numZeros = 10 - numOnes;
+						BigDecimal halfProb = new BigDecimal(power(.1,numOnes));
+						BigDecimal secondhalfProb = new BigDecimal(power(.9,numZeros));
+						BigDecimal probability = halfProb.multiply(secondhalfProb);
+						//						probability /= factorial(10)/(factorial(numOnes)*factorial(numZeros)); //divide by the number of ways you can get numOnes ones and numZero zeros.\
+						totprob += probability.doubleValue();
+						BigDecimal preciseEstimate = probability.multiply(new BigDecimal(estimate));
+						preciseEstimate = preciseEstimate.divide(new BigDecimal(_products.size()), BigDecimal.ROUND_HALF_UP );
+						estimateMap.put(state,estimateMap.get(state) + preciseEstimate.doubleValue());
+					}
+				}
 				listOfMaps.add(copyUsers(_users));
 			}
 			megaMap.put(string, listOfMaps);
+		}
+		for(int i = 0; i <= 10; i++) {
+			System.out.println(i + " ones: " + blah[i]);
+		}
+		System.out.println(totprob/(UserState.values().length*_products.size()));
+		for(UserState state : UserState.values()) {
+			System.out.println(state + ": " + estimateMap.get(state));
+		}
+	}
+
+	public double power(double a, int b) {
+		double pow = a;
+		for(int i = 1; i < b; i++) {
+			pow *= a;
+		}
+		return pow;
+	}
+
+	public int factorial(int x) {
+		switch (x) {
+		case 0:
+			return 1;
+		case 1:
+			return 1;
+		case 2:
+			return 2;
+		case 3:
+			return 6;
+		case 4:
+			return 24;
+		case 5:
+			return 120;
+		case 6:
+			return 720;
+		case 7:
+			return 5040;
+		case 8:
+			return 40320;
+		case 9:
+			return 362800;
+		case 10:
+			return 3628800;
+		default:
+			return -1;
 		}
 	}
 
 	public static void main(String[] args) {
 		UserSteadyStateDist steadyState = new UserSteadyStateDist();
-		
-		
 		double start = System.currentTimeMillis();
-		
+
 		steadyState.analyzeVirutalization();
-		
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
