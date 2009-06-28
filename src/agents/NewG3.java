@@ -36,12 +36,16 @@ public class NewG3 extends SimAbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		
 		if(_day < 2) {
 			return new BidBundle();
 		}
 		for(Query query: _querySpace){
 			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
 		}
+		_unitsSoldModel.update(_salesReport);
+		updateError(_queryReport);
+		if(_day > 2)
 		updateK();
 		for(Query query: _querySpace){
 	
@@ -54,6 +58,7 @@ public class NewG3 extends SimAbstractAgent{
 			else{
 				_bidBundle.setBid(query, getQueryBid(query));
 			}
+			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		
 		return _bidBundle;
@@ -112,34 +117,39 @@ public class NewG3 extends SimAbstractAgent{
 
    protected double updateK(){
 	  double dailyLimit = _capacity/5;
-	  double error = 1e-2;
+	  double error = 1;
 	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
-	  double k = 5;
+	  k = 5;
 	  double sum = 0.0;
+	  double hi =  10;
+	  double lo = 0;
 	  boolean done = false;
-	  while(done == false && counter <= 500){
+	  while(done == false && counter <= 20){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query, k);
 		  }
 		  if(sum < dailyLimit && dailyLimit - sum > error) {
-			  k = k/2;
-			  sum = 0.0;
+			  hi =  k;
+			  k = (lo + k)/2;
+			  
 		  }
 		  else{
 			  if(sum > dailyLimit && sum - dailyLimit > error) {
-				  k = (10 + k)/2;
-				  sum = 0.0;
+				  lo = k;
+				  k = (hi + k)/2;
+				  
 			  }
 			  else{ 
 				  done = true;
-				  sum = 0.0;
+				 
 			  
 			  } 
 		  }
 		  counter ++;
+		  sum = 0.0;
 	  }
-	 
+	  if(k < 0.1) k = 0.1;
 	  return k;
    }
    
@@ -149,33 +159,59 @@ public class NewG3 extends SimAbstractAgent{
 	  //use the bid to click model to estimate #clicks
 	  double clicks = _bidToclick.get(q).getPrediction(bid);
 	  //estimated sales = clicks * conv prob 
-	  return clicks*_baselineConv.get(q);
+	  return clicks*conversion;
    }
  
+   
+   protected void updateError(QueryReport queryReport){
+	   for(Query query:_querySpace){
+		   double dist = Math.abs(queryReport.getCPC(query) - getQueryBid(query)) ;
+		   if(dist >= 0.2 && _queryReport.getPosition(query) == 1){
+			   _error.put(query, dist*0.2);
+		   }
+		   
+	   }
+   }
+   
+   
    protected double initializeK(){
 	   //will change later
 	   return 5.0;
    }
  
    protected double getQueryBid(Query q){
-	   double bid = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) - k + _error.get(q);
-	   if(bid <= 0) return 0;
-	   else return bid;
-   }
-   
-   protected void updateError(QueryReport queryReport){
-	   for(Query query:_querySpace){
-		   double dist = Math.abs(queryReport.getCPC(query) - getQueryBid(query)) ;
-		   if(dist >= 0.2){
-			   _error.put(query, dist*0.8);
+	   double bid = 0.0;
+	   if(_day >= 1 && _day <= 2){
+		   if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = 1.2;
+		   if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+			   if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+				   bid = 1.75;
+				}
+			   else bid = 1.5;
 		   }
-		   
+		   if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
+			   if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+					bid = 2.5;
+				}
+			   else bid = 1.75;
+		   }
 	   }
+	   else bid = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) - k + _error.get(q);
+	   
+	   if(bid <= 0) return 0;
+	   else{
+		   if(bid > 3) return 3;
+		   else return bid;
+	   }
+	   
    }
+
+   
+  
    
    protected double setQuerySpendLimit(Query q){
 		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		double clicks = Math.max(1,_capacity/(40*conversion));
+		double clicks = Math.max(1,_capacity/(10*conversion));
 		return getQueryBid(q)*clicks;
 	}
 
