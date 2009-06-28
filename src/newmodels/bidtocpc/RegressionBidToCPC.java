@@ -20,6 +20,12 @@ import edu.umich.eecs.tac.props.QueryReport;
  *
  */
 
+/*
+ * TODO
+ * Keep track of how many points come in every day
+ * 
+ * Allow for bids of 0
+ */
 
 public class RegressionBidToCPC extends AbstractBidToCPC {
 
@@ -30,7 +36,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 4;  //THIS NEEDS TO BE 3 OR MORE!!
+	private int IDVar = 5;  //THIS NEEDS TO BE 4 OR MORE!!
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 
@@ -42,8 +48,8 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
-		if(IDVar < 3) {
-			throw new RuntimeException("Don't set IDVar below 3");
+		if(IDVar < 4) {
+			throw new RuntimeException("Don't set IDVar below 4");
 		}
 	}
 
@@ -53,43 +59,80 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	 */
 	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
 		double prediction = 0.00;
-		double oneDayOldBid = bidbundle.getBid(query);
-		double twoDayOldBid = _bidBundles.get(_bidBundles.size()-1).getBid(query);
-		double twoDayOldCPC = _queryReports.get(_bidBundles.size()-1).getCPC(query);
-		double currentBidSq = currentBid * currentBid;
-		double currentBidCube = currentBidSq * currentBid;
-		double oneDayOldBidSq = oneDayOldBid * oneDayOldBid;
-		
-		if(Double.isNaN(twoDayOldCPC)) {
-			twoDayOldCPC = 0.0;
-		}
-		
-		prediction = coeff[0] + coeff[1]*twoDayOldCPC + coeff[2]*currentBid + coeff[3]*oneDayOldBid + coeff[4]*twoDayOldBid + coeff[5]*currentBidSq + coeff[6]*oneDayOldBidSq + coeff[7]*currentBidCube ; 
-		
-		/**
-		 * c.voidEval("for (j in 1:16){" +
-		 *
-		 *		"pred[j] = coefficients[1] + coefficients[2]*cpc3[i*16 + j] + " +
-		 * 		"coefficients[3]*bid5[j] + coefficients[4]*bid3[(i+1)*16+j] " +
-		 *		"+ coefficients[5]*bid2[(i+1)*16+j] + coefficients[6]*((bid5)^2)[j] " +
-		 *		"+ coefficients[7]*((bid3)^2)[(i+1)*16+j] + coefficients[8]*((bid5)^3)[j]" +
-		 * 	"}");
-		 * 
+		/*
+		 * oldest - > newest
 		 */
+		List<Double> bids = new ArrayList<Double>();
+		for(int i = IDVar-2; i >= 0; i --) {
+			bids.add(_bidBundles.get(_bidBundles.size()-1-i).getBid(query));
+		}
+		bids.add(currentBid);
+
+		List<Double> CPCs = new ArrayList<Double>();
+		for(int i = IDVar-3; i >= 0; i --) {
+			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
+			if(Double.isNaN(cpc)) {
+				CPCs.add(0.0);
+			}
+			else {
+				CPCs.add(cpc);
+			}
+		}
+
+		int predCounter = 0;
+		prediction += coeff[0];
+		predCounter++;
+		for(int i = 0; i < bids.size(); i++) {
+			prediction += coeff[i+predCounter] * bids.get(i);
+			if(i == bids.size() - 2) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+			}
+			else if(i == bids.size() - 1) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i) * bids.get(i);
+			}
+		}
+		predCounter += bids.size();
+		for(int i = 0; i < CPCs.size(); i++) {
+			prediction += coeff[i+predCounter] * CPCs.get(i);
+			if(i == CPCs.size() - 2) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i);
+			}
+			else if(i == CPCs.size() - 1) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i);
+				predCounter++;
+				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i) * CPCs.get(i);
+			}
+		}
+		predCounter += CPCs.size();
 		
-		return prediction;
+		/*
+		 * Our CPC can never be higher than our bid
+		 */
+		if(prediction < currentBid) {
+			return prediction;
+
+		}
+		else {
+			return currentBid;
+		}
 	}
 
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
 	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
-		
+
 		double start = System.currentTimeMillis();
-		
+
 		_queryReports.add(queryreport);
 		_bidBundles.add(bidbundle);
-		
+
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
 			double CPC = queryreport.getCPC(query);
@@ -116,7 +159,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 			List<double[]> bidArrList = new LinkedList<double[]>();
 			List<double[]> CPCArrList = new LinkedList<double[]>();
-			
+
 			for(int i = 0; i < bigBidList.size(); i++) {
 				List<Double> bidList = bigBidList.get(i);
 				List<Double> CPCList = bigCPCList.get(i);
@@ -129,28 +172,28 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				bidArrList.add(bidArr);
 				CPCArrList.add(CPCArr);
 			}
-			
+
 			double[] mostRecentBidArr = bidArrList.get(bidArrList.size()-1);
 			double[] secondRecentBidArr = bidArrList.get(bidArrList.size()-2);
-			
+
 			double[] mostRecentCubeBidArr = new double[mostRecentBidArr.length];
 			double[] mostRecentSqBidArr = new double[mostRecentBidArr.length];
 			double[] secondRecentSqBidArr = new double[secondRecentBidArr.length];
-			
-			
+
+
 			double[] mostRecentCPCArr = CPCArrList.get(CPCArrList.size()-3);
 			double[] secondRecentCPCArr = CPCArrList.get(CPCArrList.size()-4);
-			
+
 			double[] mostRecentCubeCPCArr = new double[mostRecentCPCArr.length];
 			double[] mostRecentSqCPCArr = new double[mostRecentCPCArr.length];
 			double[] secondRecentSqCPCArr = new double[secondRecentCPCArr.length];
-			
-			
+
+
 			for(int i = 0; i < mostRecentBidArr.length; i++) {
 				mostRecentSqBidArr[i] = mostRecentBidArr[i] * mostRecentBidArr[i];
 				mostRecentCubeBidArr[i] = mostRecentBidArr[i] * mostRecentSqBidArr[i];
 				secondRecentSqBidArr[i] = secondRecentBidArr[i] * secondRecentBidArr[i];
-				
+
 				mostRecentSqCPCArr[i] = mostRecentCPCArr[i] * mostRecentCPCArr[i];
 				mostRecentCubeCPCArr[i] = mostRecentCPCArr[i] * mostRecentSqCPCArr[i];
 				secondRecentSqCPCArr[i] = secondRecentCPCArr[i] * secondRecentCPCArr[i];
@@ -169,7 +212,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("cpc" + (IDVar-3) + "cube", mostRecentCubeCPCArr);
 				c.assign("cpc" + (IDVar-3) + "sq",mostRecentSqCPCArr);
 				c.assign("cpc" + (IDVar-4) + "sq",secondRecentSqCPCArr);
-				
+
 				String model = "model = lm(cpc" + (IDVar-1) + " ~ ";
 				for(int i = 0; i < IDVar; i++) {
 					model += "bid" + i + " + ";
@@ -181,7 +224,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						model += "bid" + (IDVar - 2) + "sq + ";
 					}
 				}
-				
+
 				for(int i = 0; i < IDVar-1; i++) {
 					if(i == IDVar - 2) {
 						model = model.substring(0, model.length()-3);
@@ -190,7 +233,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 					else {
 						model += "cpc" + i + " + ";
 					}
-					
+
 					if(i == IDVar - 3) {
 						model += "cpc" + (IDVar - 3) + "sq + ";
 						model += "cpc" + (IDVar - 3) + "cube + ";
@@ -199,7 +242,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						model += "cpc" + (IDVar - 4) + "sq + ";
 					}
 				}
-				
+
 				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
@@ -218,25 +261,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
-			
+
 			return true;
 		}
 		else {
 			return false;
 		}
 	}
-
-	public static void main(String[] args) throws RserveException, REXPMismatchException {
-		RConnection c = new RConnection();
-		
-		double start = System.currentTimeMillis();
-		REXP mean = c.eval("max(rnorm(100))");
-		double stop = System.currentTimeMillis();
-		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
-		
-		System.out.println(mean.asDouble());
-
-	}
-
 }

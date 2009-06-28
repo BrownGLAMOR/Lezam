@@ -153,6 +153,7 @@ public class BasicSimulator {
 				QueryReport queryReport = reports.getQueryReport();
 				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
+				agent.updateModels(salesReport, queryReport);
 			}
 			initializeDaySpecificInfo(day, advertiseridx);
 			agent.setDay(day);
@@ -412,6 +413,7 @@ public class BasicSimulator {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = getBids(agentToRun);
+				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
@@ -907,9 +909,10 @@ public class BasicSimulator {
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
 		int numSims = 1;
-		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
-		int min = 18;
-		int max = 19;
+//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
+		String baseFile = "/games/game";
+		int min = 161;
+		int max = 162;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 

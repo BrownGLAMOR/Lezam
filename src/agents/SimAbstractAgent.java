@@ -317,6 +317,10 @@ public abstract class SimAbstractAgent extends Agent {
         _salesReports.add(salesReport);
         _salesReport = salesReport;
     }
+    
+    public void handleBidBundle(BidBundle bidBundle) {
+        _bidBundles.add(bidBundle);
+    }
 
     /**
      * Processes a simulation status notification.  Each simulation day the {@link SimulationStatus simulation status }

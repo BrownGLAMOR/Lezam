@@ -35,7 +35,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
-		if(_day >= 10) {
+		if(_day >= 15) {
 			BidBundle tempBundle = _bidBundles.get(_bidBundles.size()-2);
 			HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-2);
 			QueryReport queryReport = _queryReports.getLast();
@@ -51,9 +51,6 @@ public class ModelTestAgent extends SimAbstractAgent {
 					sumVar += (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
 				}
 			}
-		}
-
-		if (_day > 15){
 			double stddev = Math.sqrt(sumVar/((_day - 15)*16 - nancounter));
 			System.out.println("Standard Deviation: " + stddev);
 		}
