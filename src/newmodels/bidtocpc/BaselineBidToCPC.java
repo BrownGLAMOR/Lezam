@@ -78,20 +78,11 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 		rcon.assign("cpc1", cpc1arr);
 		rcon.assign("cpc3", cpc3arr);
 		
-		System.out.println(bid3arr.length);
-		System.out.println(bid2arr.length);
-		System.out.println(bid1arr.length);
-		System.out.println(cpc1arr.length);
-		System.out.println(cpc3arr.length);
-		
-		
+		System.out.printf("The number of data points: %d.\n", bid3arr.length);
+				
 		rcon.voidEval("model <- lm(cpc3 ~ cpc1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
 		coeff = rcon.eval("coefficients(model)").asDoubles();
-	
-		
-	    
-	     
-	     
+  
 	     
 
 /*		rcon.voidEval("ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)");
@@ -128,7 +119,7 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
         }
                 
         // execute sql query
-        PreparedStatement stmt = _db.prepareStatement("SELECT QueryID, Bid, CPC FROM dailyqueries  WHERE GameID > 220 ORDER BY GameID, AgentID, QueryID, Day");
+        PreparedStatement stmt = _db.prepareStatement("SELECT QueryID, Bid, CPC FROM dailyqueries  WHERE GameID > 150 AND Day < 15 ORDER BY GameID, AgentID, QueryID, Day");
 	    ResultSet rset = stmt.executeQuery();  
 	    System.out.println("Data retrieval done!");
 	   
@@ -210,3 +201,19 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 	}
 
 }
+
+/*
+Some Results:
+
+GameId > 210, 15 < Day < 55
+-0.10536894890896588 0.207941616612222 1.0278237738843412 -0.07332309868233446 -0.06699522809461302 -0.23089069635624657 0.015149242535354907 0.016234063325583945 
+GameId > 220
+-0.09436575423506026 0.11673870215587208 0.9300918041228036 -0.061979813437687936 -0.00250571934624439 -0.19370810812020575 0.010303828553760412 0.012280524901173033
+GameId > 200, Day < 10 
+-0.13020396962391037 0.04060021059914824 1.0287396561939361 -0.0335857590894806 -6.849514646524597E-4 -0.2016993388323136 0.005987619567488385 0.011443897653105366 
+GameId > 150, Day < 10
+-0.12597986581615647 0.02349913375652978 1.031950397569653 -0.02611973168589479 -1.2069604428887054E-4 -0.2087012477792655 0.004666727729092785 0.01297912222938058
+GameId > 150, Day < 15
+-0.1195058513231961 0.039242143559012906 1.045235512020745 -0.03775648676403431 -5.188620375490851E-4 -0.22066649900216934 0.005906860037513644 0.0141938541634402 
+
+ */
