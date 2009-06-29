@@ -1,10 +1,6 @@
 package agents;
 
-/**
- * 
- * @author hchen
- *
- */
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
