@@ -1,65 +1,118 @@
 package newmodels.bidtoprclick;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class RegressionBidToPrClick{
-	protected LinkedList<Double> _bids, _prClicks;
+/**
+ * @author jberg
+ *
+ */
+
+
+public class RegressionBidToPrClick extends AbstractRegressionPrClick {
+
+	protected ArrayList<Double> _bids , _clickPrs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private LinkedList<QueryReport> _queryReports;
-	private LinkedList<BidBundle> _bidBundles;
+	private int IDVar = 5;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private ArrayList<QueryReport> _queryReports;
+	private ArrayList<BidBundle> _bidBundles;
+	private ArrayList<Ad> _ads;
 
 
-	public RegressionBidToPrClick (Set<Query> queryspace) throws RserveException{
+	public RegressionBidToPrClick (Set<Query> queryspace) throws RserveException {
 		c = new RConnection();
-		_bids = new LinkedList<Double>();
-		_prClicks = new LinkedList<Double>();
-		_queryReports = new LinkedList<QueryReport>();
-		_bidBundles = new LinkedList<BidBundle>();
+		_bids = new ArrayList<Double>();
+		_clickPrs = new ArrayList<Double>();
+		_ads = new ArrayList<Ad>();
+		_queryReports = new ArrayList<QueryReport>();
+		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
+		if(IDVar < 4) {
+			throw new RuntimeException("Don't set IDVar below 4");
+		}
 	}
 
-	
+	@Override
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
+	public double getPrediction(Query query, double currentBid, Ad currentAd, BidBundle bidbundle){
 		double prediction = 0.00;
-		double oneDayOldBid = bidbundle.getBid(query);
-		double twoDayOldBid = _bidBundles.getLast().getBid(query);
-		double twoDayOldPrClicks = _queryReports.getLast().getClicks(query)/(_queryReports.getLast().getImpressions(query));
-		double currentBidSq = currentBid * currentBid;
-		double currentBidCube = currentBidSq * currentBid;
-		double oneDayOldBidSq = oneDayOldBid * oneDayOldBid;
-		
-		prediction = coeff[0] + coeff[1]*twoDayOldPrClicks + coeff[2]*currentBid + coeff[3]*oneDayOldBid + coeff[4]*twoDayOldBid + coeff[5]*currentBidSq + coeff[6]*oneDayOldBidSq + coeff[7]*currentBidCube ; 
-		
-		/**
-		 * c.voidEval("for (j in 1:16){" +
-		 *
-		 *		"pred[j] = coefficients[1] + coefficients[2]*cpc3[i*16 + j] + " +
-		 * 		"coefficients[3]*bid5[j] + coefficients[4]*bid3[(i+1)*16+j] " +
-		 *		"+ coefficients[5]*bid2[(i+1)*16+j] + coefficients[6]*((bid5)^2)[j] " +
-		 *		"+ coefficients[7]*((bid3)^2)[(i+1)*16+j] + coefficients[8]*((bid5)^3)[j]" +
-		 * 	"}");
-		 * 
+		/*
+		 * oldest - > newest
 		 */
-		
+		List<Double> bids = new ArrayList<Double>();
+		for(int i = IDVar-2; i >= 0; i --) {
+			bids.add(_bidBundles.get(_bidBundles.size()-1-i).getBid(query));
+		}
+		bids.add(currentBid);
+
+		List<Double> clickPrs = new ArrayList<Double>();
+		for(int i = IDVar-3; i >= 0; i --) {
+			double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
+			double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
+			double clickPr;
+			if(imps == 0 || clicks == 0) {
+				clickPr = 0;
+			}
+			else {
+				clickPr = clicks/imps;
+			}
+			clickPrs.add(clickPr);
+		}
+
+		int predCounter = 0;
+		prediction += coeff[0];
+		predCounter++;
+		for(int i = 0; i < bids.size(); i++) {
+			prediction += coeff[i+predCounter] * bids.get(i);
+			if(i == bids.size() - 2) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+			}
+			else if(i == bids.size() - 1) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+				predCounter++;
+				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i) * bids.get(i);
+			}
+		}
+		predCounter += bids.size();
+		for(int i = 0; i < clickPrs.size(); i++) {
+			prediction += coeff[i+predCounter] * clickPrs.get(i);
+			if(i == clickPrs.size() - 2) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * clickPrs.get(i) * clickPrs.get(i);
+			}
+			else if(i == clickPrs.size() - 1) {
+				predCounter++;
+				prediction += coeff[i+predCounter] * clickPrs.get(i) * clickPrs.get(i);
+				predCounter++;
+				prediction += coeff[i+predCounter] * clickPrs.get(i) * clickPrs.get(i) * clickPrs.get(i);
+			}
+		}
+		predCounter += clickPrs.size();
+
 		return prediction;
 	}
 
@@ -67,93 +120,145 @@ public class RegressionBidToPrClick{
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
 	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
-		
+
 		double start = System.currentTimeMillis();
-		
+
 		_queryReports.add(queryreport);
 		_bidBundles.add(bidbundle);
-		
+
 		for(Query query : _querySpace) {
+			double clicks = queryreport.getClicks(query);
+			double imps = queryreport.getImpressions(query);
+			double clickPr;
+			if(imps == 0 || clicks == 0) {
+				clickPr = 0;
+			}
+			else {
+				clickPr= clicks/imps;
+			}
 			double bid = bidbundle.getBid(query);
-			double prClicks = queryreport.getClicks(query)/queryreport.getImpressions(query);
+			Ad ad = bidbundle.getAd(query);
 			_bids.add(bid);
-			_prClicks.add(prClicks);
-			
+			_clickPrs.add(clickPr);
+			_ads.add(ad);
 		}
 
-		if(_bids.size() >= 3*numQueries) {
+		if(_bids.size() >= IDVar*numQueries) {
+			List<List<Double>> bigBidList = new ArrayList<List<Double>>();
+			List<List<Double>> bigClickPrList = new ArrayList<List<Double>>();
+			List<List<Ad>> bigAdsList = new ArrayList<List<Ad>>();
 
-			List<Double> bidsM1 = _bids.subList(0, _bids.size()-2*numQueries);
-			List<Double> bidsM2 = _bids.subList(1*numQueries, _bids.size()-1*numQueries);
-			List<Double> bidsM3 = _bids.subList(2*numQueries, _bids.size());
-
-
-			List<Double> PrClicksM1 = _prClicks.subList(0, _prClicks.size()-2*numQueries);
-			List<Double> PrClicksM2 = _prClicks.subList(1*numQueries, _prClicks.size()-1*numQueries);
-			List<Double> PrClicksM3 = _prClicks.subList(2*numQueries, _prClicks.size());
-
-			Double[] bidsM1Arr = bidsM1.toArray(new Double[0]);
-			Double[] bidsM2Arr = bidsM2.toArray(new Double[0]);
-			Double[] bidsM3Arr = bidsM3.toArray(new Double[0]);
-
-			Double[] PrClicksM1Arr = PrClicksM1.toArray(new Double[0]);
-			Double[] PrClicksM2Arr = PrClicksM2.toArray(new Double[0]);
-			Double[] PrClicksM3Arr = PrClicksM3.toArray(new Double[0]);
-
-			double[] bidsM2Sqarr = new double[bidsM2Arr.length];
-			double[] bidsM3Sqarr = new double[bidsM3Arr.length];
-			double[] bidsM3Cubearr = new double[bidsM3Arr.length];
-
-			/*
-			 * TODO
-			 * There must be a faster way to convert Double[] to double[]
-			 */
-
-			double[] bidsM1arr = new double[bidsM1Arr.length];
-			double[] bidsM2arr = new double[bidsM2Arr.length];
-			double[] bidsM3arr = new double[bidsM3Arr.length];
-			double[] PrClicksM1arr = new double[PrClicksM1Arr.length];
-			double[] PrClicksM2arr = new double[PrClicksM2Arr.length];
-			double[] PrClicksM3arr = new double[PrClicksM3Arr.length];
-
-			for(int i = 0; i < bidsM1Arr.length; i++) {
-				bidsM1arr[i] = bidsM1Arr[i].doubleValue();
-				bidsM2arr[i] = bidsM2Arr[i].doubleValue();
-				bidsM3arr[i] = bidsM3Arr[i].doubleValue();
-
-				PrClicksM1arr[i] = PrClicksM1Arr[i].doubleValue();
-				PrClicksM2arr[i] = PrClicksM2Arr[i].doubleValue();
-				PrClicksM3arr[i] = PrClicksM3Arr[i].doubleValue();
+			for(int i = 0 ; i < IDVar; i++) {
+				List<Double> bids = _bids.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
+				List<Double> ClickPr = _clickPrs.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
+				List<Ad> ads = _ads.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
+				bigBidList.add(bids);
+				bigClickPrList.add(ClickPr);
+				bigAdsList.add(ads);
 			}
 
-			for(int i = 0; i < bidsM2Sqarr.length; i++) {
-				bidsM2Sqarr[i] = bidsM2arr[i] * bidsM2arr[i];
-				bidsM3Sqarr[i] = bidsM3arr[i] * bidsM3arr[i];
-				bidsM3Cubearr[i] = bidsM3arr[i] * bidsM3Sqarr[i];
+			List<double[]> bidArrList = new LinkedList<double[]>();
+			List<double[]> clickPrArrList = new LinkedList<double[]>();
+			List<Ad[]> adsArrList = new LinkedList<Ad[]>();
+
+			for(int i = 0; i < bigBidList.size(); i++) {
+				List<Double> bidList = bigBidList.get(i);
+				List<Double> clickPrList = bigClickPrList.get(i);
+				List<Ad> adList = bigAdsList.get(i);
+				double[] bidArr = new double[bidList.size()];
+				double[] clickPrArr = new double[clickPrList.size()];
+				Ad[] adArr = new Ad[adList.size()];
+				for(int j = 0; j < bidList.size(); j++) {
+					bidArr[j] = bidList.get(j);
+					clickPrArr[j] = clickPrList.get(j);
+					adArr[j] = adList.get(j);
+				}
+				bidArrList.add(bidArr);
+				clickPrArrList.add(clickPrArr);
+				adsArrList.add(adArr);
 			}
 
-			//c.assign("i", _predCounter);
+			double[] mostRecentBidArr = bidArrList.get(bidArrList.size()-1);
+			double[] secondRecentBidArr = bidArrList.get(bidArrList.size()-2);
+
+			double[] mostRecentCubeBidArr = new double[mostRecentBidArr.length];
+			double[] mostRecentSqBidArr = new double[mostRecentBidArr.length];
+			double[] secondRecentSqBidArr = new double[secondRecentBidArr.length];
+
+
+			double[] mostRecentClickPrArr = clickPrArrList.get(clickPrArrList.size()-3);
+			double[] secondRecentClickPrArr = clickPrArrList.get(clickPrArrList.size()-4);
+
+			double[] mostRecentCubeClickPrArr = new double[mostRecentClickPrArr.length];
+			double[] mostRecentSqClickPrArr = new double[mostRecentClickPrArr.length];
+			double[] secondRecentSqClickPrArr = new double[secondRecentClickPrArr.length];
+
+
+			for(int i = 0; i < mostRecentBidArr.length; i++) {
+				mostRecentSqBidArr[i] = mostRecentBidArr[i] * mostRecentBidArr[i];
+				mostRecentCubeBidArr[i] = mostRecentBidArr[i] * mostRecentSqBidArr[i];
+				secondRecentSqBidArr[i] = secondRecentBidArr[i] * secondRecentBidArr[i];
+
+				mostRecentSqClickPrArr[i] = mostRecentClickPrArr[i] * mostRecentClickPrArr[i];
+				mostRecentCubeClickPrArr[i] = mostRecentClickPrArr[i] * mostRecentSqClickPrArr[i];
+				secondRecentSqClickPrArr[i] = secondRecentClickPrArr[i] * secondRecentClickPrArr[i];
+			}
+
+
 			try {
-				c.assign("bid3", bidsM3arr);
-				c.assign("bid3sq", bidsM3Sqarr);
-				c.assign("bid3cube", bidsM3Cubearr);
-				c.assign("bid2", bidsM2arr);
-				c.assign("bid2sq", bidsM2Sqarr);
-				c.assign("bid1", bidsM1arr);
-				c.assign("prClick1", PrClicksM1arr);
-				c.assign("prClick2", PrClicksM2arr);
-				c.assign("prClick3", PrClicksM3arr);
-				c.voidEval("pred = 1:16");
+				for(int i = 0; i < IDVar; i++) {
+					c.assign("bid" + i, bidArrList.get(i));
+					c.assign("clickPr" + i, clickPrArrList.get(i));
+				}
+				c.assign("bid" + (IDVar-1) + "cube", mostRecentCubeBidArr);
+				c.assign("bid" + (IDVar-1) + "sq",mostRecentSqBidArr);
+				c.assign("bid" + (IDVar-2) + "sq",secondRecentSqBidArr);
 
-				c.voidEval("model = lm(prClick3 ~ prClick1 + bid3 + bid2 + bid1 + bid3sq + bid2sq + bid3cube)");
-				c.voidEval("coefficients = model$coefficients");
+				c.assign("clickPr" + (IDVar-3) + "cube", mostRecentCubeClickPrArr);
+				c.assign("clickPr" + (IDVar-3) + "sq",mostRecentSqClickPrArr);
+				c.assign("clickPr" + (IDVar-4) + "sq",secondRecentSqClickPrArr);
+
+				String model = "model = lm(clickPr" + (IDVar-1) + " ~ ";
+				for(int i = 0; i < IDVar; i++) {
+					model += "bid" + i + " + ";
+					if(i == IDVar -1) {
+						model += "bid" + (IDVar - 1) + "sq + ";
+						model += "bid" + (IDVar - 1) + "cube + ";
+					}
+					else if(i == IDVar - 2) {
+						model += "bid" + (IDVar - 2) + "sq + ";
+					}
+				}
+
+				for(int i = 0; i < IDVar-1; i++) {
+					if(i == IDVar - 2) {
+						model = model.substring(0, model.length()-3);
+						model += ")";
+					}
+					else {
+						model += "clickPr" + i + " + ";
+					}
+
+					if(i == IDVar - 3) {
+						model += "clickPr" + (IDVar - 3) + "sq + ";
+						model += "clickPr" + (IDVar - 3) + "cube + ";
+					}
+					else if(i == IDVar - 4) {
+						model += "clickPr" + (IDVar - 4) + "sq + ";
+					}
+				}
+
+				System.out.println(model);				
+				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-			} catch (REngineException e) {
-				// TODO Auto-generated catch block
+				for(int i = 0 ; i < coeff.length; i++)
+					System.out.println(coeff[i]);
+			}
+			catch (REngineException e) {
 				e.printStackTrace();
 				return false;
-			} catch (REXPMismatchException e) {
-				// TODO Auto-generated catch block
+			}
+			catch (REXPMismatchException e) {
 				e.printStackTrace();
 				return false;
 			}
@@ -161,13 +266,11 @@ public class RegressionBidToPrClick{
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
-			
+
 			return true;
 		}
 		else {
 			return false;
 		}
 	}
-
-
 }

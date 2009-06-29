@@ -17,7 +17,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ModelTestAgent extends SimAbstractAgent {
+public class CPCModelTestAgent extends SimAbstractAgent {
 
 	private RegressionBidToCPC _bidToCPC;
 	Random _R = new Random();					//Random number generator
@@ -25,7 +25,7 @@ public class ModelTestAgent extends SimAbstractAgent {
 	private double sumVar;
 	private int nancounter;
 
-	public ModelTestAgent() {
+	public CPCModelTestAgent() {
 		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
 		sumVar = 0.0;
 		nancounter = 0;	

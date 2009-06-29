@@ -29,10 +29,11 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.Cheap;
+import agents.ClickPrModelTestAgent;
 import agents.EqPftAgent;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
-import agents.ModelTestAgent;
+import agents.CPCModelTestAgent;
 import agents.SimAbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
@@ -984,7 +985,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids("10"), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ClickPrModelTestAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

@@ -14,6 +14,7 @@ import org.rosuda.REngine.Rserve.RserveException;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 
 /**
  * @author afoo & jberg
@@ -36,9 +37,10 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 5;  //THIS NEEDS TO BE 4 OR MORE!!
+	private int IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
+	private ArrayList<Integer> _queryLevel;
 
 
 	public RegressionBidToCPC (Set<Query> queryspace) throws RserveException{
@@ -50,6 +52,18 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_querySpace = queryspace;
 		if(IDVar < 4) {
 			throw new RuntimeException("Don't set IDVar below 4");
+		}
+		_queryLevel = new ArrayList<Integer>();
+		for(Query query : _querySpace) {
+			if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_queryLevel.add(0);
+			}
+			else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_queryLevel.add(1);
+			}
+			else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_queryLevel.add(2);
+			}
 		}
 	}
 
@@ -82,6 +96,16 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		int predCounter = 0;
 		prediction += coeff[0];
 		predCounter++;
+		int F1ind = 0;
+		int F2ind = 0;
+		if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+			F1ind = 1;
+		}
+		else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+			F2ind = 1;
+		}
+		prediction += coeff[1]*F1ind + coeff[2]*F2ind;
+		predCounter += 2;
 		for(int i = 0; i < bids.size(); i++) {
 			prediction += coeff[i+predCounter] * bids.get(i);
 			if(i == bids.size() - 2) {
@@ -110,7 +134,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 		predCounter += CPCs.size();
-		
+
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
@@ -136,7 +160,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
 			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC) || CPC == 0)) {
+			if(!(Double.isNaN(CPC) || CPC == 0 || bid == 0)) {
 				_bids.add(bid);
 				_CPCs.add(CPC);
 			}
@@ -199,8 +223,27 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				secondRecentSqCPCArr[i] = secondRecentCPCArr[i] * secondRecentCPCArr[i];
 			}
 
-			//c.assign("i", _predCounter);
+			/*
+			 * Make querytype indicators
+			 */
+			int len = mostRecentBidArr.length;
+			int[] F1Indicator = new int[len];
+			int[] F2Indicator = new int[len];
+			for(int i = 0; i < len; i++) {
+				F1Indicator[i] = 0;
+				F2Indicator[i] = 0;
+				if(_queryLevel.get(i%16) == 1) {
+					F1Indicator[i] = 1;
+				}
+				else if(_queryLevel.get(i%16) == 2) {
+					F2Indicator[i] = 1;
+				}
+			}
+
+
 			try {
+				c.assign("F1ind",F1Indicator);
+				c.assign("F2ind",F2Indicator);
 				for(int i = 0; i < IDVar; i++) {
 					c.assign("bid" + i, bidArrList.get(i));
 					c.assign("cpc" + i, CPCArrList.get(i));
@@ -213,7 +256,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("cpc" + (IDVar-3) + "sq",mostRecentSqCPCArr);
 				c.assign("cpc" + (IDVar-4) + "sq",secondRecentSqCPCArr);
 
-				String model = "model = lm(cpc" + (IDVar-1) + " ~ ";
+				String model = "model = lm(cpc" + (IDVar-1) + " ~ F1ind + F2ind + ";
 				for(int i = 0; i < IDVar; i++) {
 					model += "bid" + i + " + ";
 					if(i == IDVar -1) {

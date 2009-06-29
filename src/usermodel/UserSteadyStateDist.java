@@ -331,7 +331,8 @@ public class UserSteadyStateDist {
 	private void simulateDayWithTransactions(boolean burst) {
 		transitionUsers(burst);
 		int numAdvertisers = 8;
-		int avgCapacity = 400;
+		//TODO
+		int avgCapacity = 650;
 		int totalCapacity = numAdvertisers*avgCapacity;
 		int dailyTotCap = totalCapacity/5;
 		int perProdDailyTotCap = dailyTotCap/9;
@@ -614,7 +615,7 @@ public class UserSteadyStateDist {
 	}
 
 	public static void main(String[] args) {
-		System.out.println("5 SIMS");
+		System.out.println("5 SIMS and SYSTEM 650");
 		UserSteadyStateDist steadyState = new UserSteadyStateDist();
 		double start = System.currentTimeMillis();
 
