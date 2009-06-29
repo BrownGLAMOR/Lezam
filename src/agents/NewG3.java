@@ -1,10 +1,6 @@
 package agents;
 
-/**
- * 
- * @author hchen
- *
- */
+
 import java.util.HashMap;
 import java.util.Set;
 
