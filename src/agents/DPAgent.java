@@ -9,6 +9,7 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.SimplePrConversion;
+import newmodels.revenue.AbstractRevenueModel;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.SimpleSlotToBid;
