@@ -4,11 +4,14 @@
 package agents;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
+
+import props.Misc;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
@@ -26,9 +29,10 @@ import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
-import agents.mckpmkii.IncItem;
-import agents.mckpmkii.Item;
-import agents.mckpmkii.ItemComparatorByWeight;
+import agents.MCKPAgent.Output;
+import agents.mckp.IncItem;
+import agents.mckp.Item;
+import agents.mckp.ItemComparatorByWeight;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
@@ -188,12 +192,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
 			}
 		}
-
-
-		/*
-		 * Not really sure what these are used for, but I will leave them
-		 * for now -jberg
-		 */
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
@@ -249,26 +247,28 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
+		double numIncItemsPerSet = 0;
 		if(models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
-			HashMap<Query,IncItem[]> incItems = new HashMap<Query,IncItem[]>();
+
+			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
 			for(Query q : _querySpace) {
 				double salesPrice = _salesPrices.get(q);
 
-				/**
-				 * Uses a position click average model and a position bid linear model to 
-				 * generate the item set for each query
-				 */
-				Item[] items = new Item[bidList.size()];
+				LinkedList<Item> itemList = new LinkedList<Item>();
 
 				for(int i = 0; i < bidList.size(); i++) {
 					double bid = bidList.get(i);
 					int numClicks = _bidToNumClicks.get(q).getPrediction(bid);
 					double CPC = _bidToCPC.getPrediction(q,bid,null);
+					
+					if(Double.isNaN(CPC)) {
+						continue;
+					}
 
 					debug("\tBid: " + bid);
 					debug("\tnumClicks: " + numClicks);
@@ -284,23 +284,20 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 						convProb = _baseConvProbs.get(q);
 					}
 
-					double w = numClicks*CPC; 				//weight = numClicks * CPC 		[cost]
-					double v = numClicks*convProb*salesPrice;	//value = numClicks * convProb * USP		[revenue]
-					//double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-
-					if(Double.isNaN(CPC)) {
-						w = 0.0;
-						v = 0.0;
-					}
+					double w = numClicks*convProb;				//weight = numClciks * convProv
+					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 					int isID = _queryId.get(q);
-					items[i] = new Item(q,w,v,bid,(int) Math.floor(convProb*numClicks),isID);	
-
+					itemList.add(new Item(q,w,v,bid,isID));	
 				}
 				debug("Items for " + q);
+				Item[] items = itemList.toArray(new Item[0]);
 				IncItem[] iItems = getIncremental(items);
-				incItems.put(q,iItems);
+				numIncItemsPerSet += iItems.length;
+				allIncItems.addAll(Arrays.asList(iItems));
 			}
+			numIncItemsPerSet /= 16.0;
+			debug(numIncItemsPerSet);
 			double budget = _capacity/_capWindow;
 			if(_day < 4) {
 				//do nothing
@@ -315,23 +312,34 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					debug("Unit Sold Model Budget "  +budget);
 				}
 			}
-			HashMap<Query,Item> solution = fillKnapsack(incItems, budget);
-
+			
+			Collections.sort(allIncItems);
+//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			
+			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
+			
 			//set bids
 			for(Query q : _querySpace){
-				Item item = solution.get(q);
+				
+				Integer isID = _queryId.get(q);
 				double bid;
-				double weight;
-				if(item.v() > 0) {
-					bid = item.b();
-					weight = item.w();
+				
+				if(solution.containsKey(isID)) {
+					bid = solution.get(isID).b();
+				}
+				else bid = 0; // TODO this is a hack that was the result of the fact that the item sets were empty
+			
+				double numClicks, CPC;
+				if(bid == 0) {
+					numClicks = 0;
+					CPC = 0;
 				}
 				else {
-					bid = 0;
-					weight = 0;
+					numClicks = _bidToNumClicks.get(q).getPrediction(bid);
+					CPC = _bidToCPC.getPrediction(q,bid,null);
 				}
-
-				bidBundle.addQuery(q, bid, new Ad(), weight);
+				
+				bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
 				//bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
@@ -362,65 +370,20 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	 * @param budget
 	 * @return
 	 */
-	private HashMap<Query,Item> fillKnapsack(HashMap<Query, IncItem[]> incItems, double budget){
-		/*
-		 * This will hold the index into the 
-		 */
-		HashMap<Query,Integer> temp = new HashMap<Query, Integer>();
-		for(Query q : _querySpace) {
-			temp.put(q,-1);
-			debug("Num Inc Items " + q + ": " + incItems.get(q).length);
-			for(int i = 0; i < incItems.get(q).length; i++) {
-				debug("\t" + incItems.get(q)[i]);
-			}
-		}
-
-		while(budget > 0) {
-			/*
-			 * Move up one slot in the query with the highest efficiency
-			 */
-			double besteff = -Double.MAX_VALUE;
-			Query bestQ = null;
-			for(Query q : _querySpace) {
-				debug("Query: " + q);
-				int currIdx = temp.get(q);
-				IncItem[] incItem = incItems.get(q);
-				if(currIdx + 1 < incItem.length) {
-					double eff = incItem[currIdx + 1].eff();
-					debug("\tEff: " + eff);
-					if(eff > besteff) {
-						besteff = eff;
-						bestQ = q;
-					}
-				}
-			}
-			debug("Chose: " + bestQ);
-			if(bestQ == null) {
-				break;
-			}
-			temp.put(bestQ, temp.get(bestQ)+1);
-			/*
-			 * Subtract numConversions = Value/SalesPrice from the budget
-			 */
-			budget -= incItems.get(bestQ)[temp.get(bestQ)].v()/_salesPrices.get(bestQ);
-		}
-
-		HashMap<Query,Item> solution = new HashMap<Query, Item>();
-
-		for(Query q : _querySpace) {
-			if(temp.get(q) >= 0) {
-				Item item = incItems.get(q)[temp.get(q)].item();
-				solution.put(q,item);
-				debug("Slot for " + q + ": " + (temp.get(q)+1));
-				debug("\t Slot Weight: "+(item.v()/_salesPrices.get(q)));
+	private HashMap<Integer,Item> fillKnapsack(LinkedList<IncItem> incItems, double budget){
+		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
+		for(IncItem ii: incItems) {
+			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
+			//set replace lighter items as we want
+			if(budget >= 0) {
+//					Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
+					solution.put(ii.item().isID(), ii.item());
+					budget -= ii.w();
 			}
 			else {
-				solution.put(q, new Item(q,0,0,0,0,-1));
-				debug("Slot for " + q + ": No Slot");
-				debug("\t Slot Weight: 0");
+				break;
 			}
 		}
-
 		return solution;
 	}
 
@@ -446,27 +409,27 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 		//remove lp-dominated items
 		LinkedList<Item> q = new LinkedList<Item>();
-		q.add(new Item(new Query(),0,0,-1,-0,1));//add item with zero weight and value
+		q.add(new Item(new Query(),0,0,-1,1));//add item with zero weight and value
 
 		for(int i=0; i<items.length; i++) {
 			q.add(items[i]);//has at least 2 items now
-//			int l = q.size()-1;
-//			Item li = q.get(l);//last item
-//			Item nli = q.get(l-1);//next to last
-//			if(li.w() == nli.w()) {
-//				if(li.v() > nli.v()) {
-//					q.remove(l-1);
-//				}else{
-//					q.remove(l);
-//				}
-//			}
-//			l = q.size()-1; //reset in case an item was removed
-//			//while there are at least three elements and ...
-//			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
-//					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
-//				q.remove(l-1);
-//				l--;
-//			}
+			int l = q.size()-1;
+			Item li = q.get(l);//last item
+			Item nli = q.get(l-1);//next to last
+			if(li.w() == nli.w()) {
+				if(li.v() > nli.v()) {
+					q.remove(l-1);
+				}else{
+					q.remove(l);
+				}
+			}
+			l = q.size()-1; //reset in case an item was removed
+			//while there are at least three elements and ...
+			while(l > 1 && (q.get(l-1).v() - q.get(l-2).v())/(q.get(l-1).w() - q.get(l-2).w()) 
+					<= (q.get(l).v() - q.get(l-1).v())/(q.get(l).w() - q.get(l-1).w())) {
+				q.remove(l-1);
+				l--;
+			}
 		}
 
 		//remove the (0,0) item
@@ -500,11 +463,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		IncItem[] ii = new IncItem[uItems.length];
 
 		if (uItems.length != 0){ //getUndominated can return an empty array
-			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0].numConv(), uItems[0]);
+			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
 			for(int item=1; item<uItems.length; item++) {
 				Item prev = uItems[item-1];
 				Item cur = uItems[item];
-				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur.numConv() - prev.numConv(), cur);
+				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
 			}
 		}
 		debug("INCREMENTAL");

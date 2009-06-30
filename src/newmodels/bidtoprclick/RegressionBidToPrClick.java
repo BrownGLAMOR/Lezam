@@ -33,7 +33,7 @@ public class RegressionBidToPrClick extends AbstractRegressionPrClick {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 5;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private int IDVar = 8;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	private ArrayList<Ad> _ads;
@@ -81,9 +81,47 @@ public class RegressionBidToPrClick extends AbstractRegressionPrClick {
 			clickPrs.add(clickPr);
 		}
 
+		int queryInd1 = 0;
+		int queryInd2 = 0;
+		int queryInd3 = 0;
+		int queryInd4 = 0;
+		int queryInd5 = 0;
+		int queryInd6 = 0;
+		
+		String man = query.getManufacturer();
+		String comp = query.getComponent();
+		if("pg".equals(man)) {
+			queryInd1 = 1;
+		}
+		else if("lioneer".equals(man)) {
+			queryInd2= 1;
+		}
+		else if("flat".equals(man)) {
+			queryInd3 = 1;
+		}
+
+		if("tv".equals(comp)) {
+			queryInd4 = 1;
+		}
+		else if("dvd".equals(comp)) {
+			queryInd5 = 1;
+		}
+		else if("audio".equals(comp)) {
+			queryInd6 = 1;
+		}
+		
 		int predCounter = 0;
 		prediction += coeff[0];
 		predCounter++;
+		
+		prediction += coeff[1] * queryInd1;
+		prediction += coeff[2] * queryInd2;
+		prediction += coeff[3] * queryInd3;
+		prediction += coeff[4] * queryInd4;
+		prediction += coeff[5] * queryInd5;
+		prediction += coeff[6] * queryInd6;
+		predCounter += 6;
+		
 		for(int i = 0; i < bids.size(); i++) {
 			prediction += coeff[i+predCounter] * bids.get(i);
 			if(i == bids.size() - 2) {
@@ -204,8 +242,53 @@ public class RegressionBidToPrClick extends AbstractRegressionPrClick {
 				secondRecentSqClickPrArr[i] = secondRecentClickPrArr[i] * secondRecentClickPrArr[i];
 			}
 
+			int[] queryInd1 = new int[mostRecentBidArr.length];
+			int[] queryInd2 = new int[mostRecentBidArr.length];
+			int[] queryInd3 = new int[mostRecentBidArr.length];
+			int[] queryInd4 = new int[mostRecentBidArr.length];
+			int[] queryInd5 = new int[mostRecentBidArr.length];
+			int[] queryInd6 = new int[mostRecentBidArr.length];
+			int numIters = queryInd1.length/16;
+			for(int i = 0; i < numIters; i++) {
+				int j = 0;
+				for(Query query : _querySpace) {
+					queryInd1[i*16 + j] = 0;
+					queryInd2[i*16 + j] = 0;
+					queryInd3[i*16 + j] = 0;
+					queryInd4[i*16 + j] = 0;
+					queryInd5[i*16 + j] = 0;
+					queryInd6[i*16 + j] = 0;
+					String man = query.getManufacturer();
+					String comp = query.getComponent();
+					if("pg".equals(man)) {
+						queryInd1[i*16 + j] = 1;
+					}
+					else if("lioneer".equals(man)) {
+						queryInd2[i*16 + j] = 1;
+					}
+					else if("flat".equals(man)) {
+						queryInd3[i*16 + j] = 1;
+					}
 
+					if("tv".equals(comp)) {
+						queryInd4[i*16 + j] = 1;
+					}
+					else if("dvd".equals(comp)) {
+						queryInd5[i*16 + j] = 1;
+					}
+					else if("audio".equals(comp)) {
+						queryInd6[i*16 + j] = 1;
+					}
+					j++;
+				}
+			}
 			try {
+				c.assign("queryInd1",queryInd1);
+				c.assign("queryInd2",queryInd2);
+				c.assign("queryInd3",queryInd3);
+				c.assign("queryInd4",queryInd4);
+				c.assign("queryInd5",queryInd5);
+				c.assign("queryInd6",queryInd6);
 				for(int i = 0; i < IDVar; i++) {
 					c.assign("bid" + i, bidArrList.get(i));
 					c.assign("clickPr" + i, clickPrArrList.get(i));
@@ -218,7 +301,7 @@ public class RegressionBidToPrClick extends AbstractRegressionPrClick {
 				c.assign("clickPr" + (IDVar-3) + "sq",mostRecentSqClickPrArr);
 				c.assign("clickPr" + (IDVar-4) + "sq",secondRecentSqClickPrArr);
 
-				String model = "model = lm(clickPr" + (IDVar-1) + " ~ ";
+				String model = "model = lm(clickPr" + (IDVar-1) + " ~ queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				for(int i = 0; i < IDVar; i++) {
 					model += "bid" + i + " + ";
 					if(i == IDVar -1) {

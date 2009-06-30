@@ -332,7 +332,7 @@ public class UserSteadyStateDist {
 		transitionUsers(burst);
 		int numAdvertisers = 8;
 		//TODO
-		int avgCapacity = 650;
+		int avgCapacity = 400;
 		int totalCapacity = numAdvertisers*avgCapacity;
 		int dailyTotCap = totalCapacity/5;
 		int perProdDailyTotCap = dailyTotCap/9;
@@ -426,13 +426,22 @@ public class UserSteadyStateDist {
 
 	private void analyzeVirutalization() {
 		int totalIters = 0;
+		int numDays = 5;
 		Set<String> strings = new HashSet<String>();
-		/*
-		 * The cumulative probability of more than 4 burst days in 10 days is 0.001634937
-		 * The cumulative probability of more than 5 burst days in 10 days is 0.0001469023
-		 */
-		for(int i = 0; i < 6; i++) {
-			Set<String> tempStrings = generateStringList(10, i, null);
+		double epsilon = .0005;
+		int numOnesNeeded = 0;
+		double totalProb = 0;
+		for(int i = 0; i <= numDays; i++) {
+			numOnesNeeded = i;
+			totalProb += power(.1,i)*power(.9,(numDays-i))*(factorial(numDays)/(factorial(i)*factorial(numDays-i)));
+			if(totalProb + epsilon > 1.0) {
+				break;
+			}
+		}
+		System.out.println(numOnesNeeded);
+//		for(int i = 0; i <= numOnesNeeded; i++) {
+		for(int i = 0; i <= numDays; i++) {
+			Set<String> tempStrings = generateStringList(numDays, i, null);
 			strings.addAll(tempStrings);
 		}
 		System.out.println(strings.size());
@@ -464,7 +473,7 @@ public class UserSteadyStateDist {
 					for(UserState state : UserState.values()) {
 						double estimate = _users.get(product).get(state);
 						int numOnes = sumOnes(string);
-						int numZeros = 10 - numOnes;
+						int numZeros = numDays - numOnes;
 						double probability = power(.1,numOnes) * power(.9, numZeros);
 						totprob += probability;
 						estimate *= probability;
@@ -483,11 +492,11 @@ public class UserSteadyStateDist {
 	private void virtualExpectedUsers() {
 		for(Product prod : _products) {
 			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
-			tempUsers.put(UserState.NS,8230);
-			tempUsers.put(UserState.IS,303);
-			tempUsers.put(UserState.F0,604);
-			tempUsers.put(UserState.F1,449);
-			tempUsers.put(UserState.F2,414);
+			tempUsers.put(UserState.NS,8825);
+			tempUsers.put(UserState.IS,328);
+			tempUsers.put(UserState.F0,504);
+			tempUsers.put(UserState.F1,233);
+			tempUsers.put(UserState.F2,110);
 			tempUsers.put(UserState.T,0);
 			_users.put(prod, tempUsers);
 		}
@@ -615,14 +624,15 @@ public class UserSteadyStateDist {
 	}
 
 	public static void main(String[] args) {
-		System.out.println("5 SIMS and SYSTEM 650");
+		System.out.println("5 SIMS and SYSTEM 400");
 		UserSteadyStateDist steadyState = new UserSteadyStateDist();
 		double start = System.currentTimeMillis();
 
-		for(int i = 1; i <= 10; i++) {
+		for(int i = 1; i <= 15; i++) {
 			System.out.println(i + " days: ");
 			steadyState.analyzeFirstNDays(i);
 		}
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");

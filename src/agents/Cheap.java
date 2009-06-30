@@ -57,12 +57,12 @@ public class Cheap extends SimAbstractAgent {
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		for(Query query : _querySpace)  {
-			System.out.println(query);
-			System.out.println("\tNum Impressions: " + queryReport.getImpressions(query));
-			System.out.println("\tNum Clicks: " + queryReport.getClicks(query));
-			System.out.println("\tAverage Position: " + queryReport.getPosition(query));
-		}
+//		for(Query query : _querySpace)  {
+//			System.out.println(query);
+//			System.out.println("\tNum Impressions: " + queryReport.getImpressions(query));
+//			System.out.println("\tNum Clicks: " + queryReport.getClicks(query));
+//			System.out.println("\tAverage Position: " + queryReport.getPosition(query));
+//		}
 		//No models used
 	}
 

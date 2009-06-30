@@ -299,12 +299,11 @@ public class BasicSimulator {
 			_advEffect.put(_agents[i], advEffect);
 			Integer[] sales = new Integer[adInfo.getDistributionWindow()];
 			for(int j = 0; j < adInfo.getDistributionWindow(); j++) {
-				//				sales[j] = adInfo.getDistributionCapacity()/adInfo.getDistributionWindow();
-				sales[j] = 0;
+				sales[j] = adInfo.getDistributionCapacity()/adInfo.getDistributionWindow();
 			}
 			_salesOverWindow.put(_agents[i], sales);
 			if(i == _ourAdvIdx) {
-				debug("Our capacity" + adInfo.getDistributionCapacity());
+				System.out.println("Our capacity" + adInfo.getDistributionCapacity());
 			}
 			_capacities.put(_agents[i],adInfo.getDistributionCapacity());
 		}
@@ -838,7 +837,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkIIBids("13");
+			return new MCKPAgentMkIIBids("10");
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -911,10 +910,10 @@ public class BasicSimulator {
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
 		int numSims = 1;
-//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
-		String baseFile = "/games/game";
-		int min = 161;
-		int max = 162;
+		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
+//		String baseFile = "/games/game";
+		int min = 18;
+		int max = 19;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 
@@ -985,7 +984,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ClickPrModelTestAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids("10"), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
