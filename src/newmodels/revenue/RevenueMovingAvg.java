@@ -2,10 +2,12 @@ package newmodels.revenue;
 
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.RetailCatalog;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class RevenueMovingAvg {
+public class RevenueMovingAvg extends AbstractRevenueModel {
 	protected final double _alpha = .75;
 	protected Query _query;
 	protected double _revenue;
@@ -66,4 +68,11 @@ public class RevenueMovingAvg {
 	public double getRevenue() {
 		return _revenue;
 	}
+
+	@Override
+	public void update(SalesReport salesReport, QueryReport queryReport) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
