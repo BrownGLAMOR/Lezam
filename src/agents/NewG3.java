@@ -206,9 +206,14 @@ public class NewG3 extends SimAbstractAgent{
   
    
    protected double setQuerySpendLimit(Query q){
-		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+		/*
+	    double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
 		double clicks = Math.max(1,_capacity/(10*conversion));
 		return getQueryBid(q)*clicks;
+		*/
+	   double remainCap = _capacity - _unitsSoldModel.getWindowSold();
+		if(remainCap < 0) remainCap = 0;
+		return getQueryBid(q)*remainCap/8;
 	}
 
 }
