@@ -222,7 +222,7 @@ public class DPAgent extends SimAbstractAgent{
 		
 		distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		distributionWindow = _advertiserInfo.getDistributionWindow();
-		dailyCapacity = distributionCapacity / distributionWindow;
+		dailyCapacity = (int) (distributionCapacity*1.3 / distributionWindow);
 		
 		promotedSlots = _slotInfo.getPromotedSlots();
 		regularSlots = _slotInfo.getRegularSlots();
