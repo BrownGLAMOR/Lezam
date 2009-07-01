@@ -12,6 +12,8 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import props.Misc;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
@@ -23,6 +25,7 @@ import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
+import agents.MCKPAgent.Output;
 import agents.mckp.IncItem;
 import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;
@@ -41,7 +44,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private Random _R = new Random();
 	private double CAP_MULTIPLIER = 1.5;
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	private double LAMBDA = .995;
 	private int _numUsers = 90000;
 	private HashMap<Query, Double> _salesPrices;
@@ -58,8 +61,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .15;
-		double min = .25;
-		double max = 3;
+		double min = .15;
+		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
@@ -222,6 +225,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					overcap = Math.pow(LAMBDA,Math.max(0, overcap));
 					convProb *= overcap;
 					
+					double ISUSerDiscount = .8;
+					
+					convProb *= ISUSerDiscount;
+
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
@@ -252,7 +259,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 
 			Collections.sort(allIncItems);
-			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
 			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 
@@ -267,7 +274,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 				else bid = 0; // TODO this is a hack that was the result of the fact that the item sets were empty
 
-				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				bidBundle.addQuery(q, bid * randDouble(.9,1.1), new Ad(), Double.NaN);  //Mult by rand to avoid users learning patterns.
 			}
 		}
 		//bid bundle for first two days
@@ -277,11 +284,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			for(Query q : _querySpace){
 				double bid;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.1,.85);
+					bid = randDouble(.1,.6);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.25,1.25);
+					bid = randDouble(.25,.75);
 				else 
-					bid = randDouble(.35,1.5);
+					bid = randDouble(.35,1.0);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
@@ -302,7 +309,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			if(budget >= 0) {
-				//					Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
+				Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
 				solution.put(ii.item().isID(), ii.item());
 				budget -= ii.w();
 			}
@@ -402,7 +409,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		}
 		return ii;
 	}
-	
+
 	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;

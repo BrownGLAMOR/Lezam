@@ -189,11 +189,11 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 			String model = "model = glm(prclicks ~ queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + bids , family = quasibinomial(link = \"logit\"))";
 
-			System.out.println(model);				
+//			System.out.println(model);				
 			c.voidEval(model);
 			coeff = c.eval("coefficients(model)").asDoubles();
-			for(int i = 0 ; i < coeff.length; i++)
-				System.out.println(coeff[i]);
+//			for(int i = 0 ; i < coeff.length; i++)
+//				System.out.println(coeff[i]);
 		}
 		catch (REngineException e) {
 			e.printStackTrace();
@@ -206,7 +206,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 
 		return true;
 	}

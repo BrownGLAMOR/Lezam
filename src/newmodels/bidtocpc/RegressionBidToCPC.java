@@ -273,11 +273,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				model = model.substring(0, model.length()-3);
 				model += ")";
 
-				System.out.println(model);				
+//				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				for(int i = 0 ; i < coeff.length; i++)
-					System.out.println(coeff[i]);
+//				for(int i = 0 ; i < coeff.length; i++)
+//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
@@ -290,7 +290,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
-			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 
 			return true;
 		}
