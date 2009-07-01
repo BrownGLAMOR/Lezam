@@ -11,28 +11,17 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-import props.Misc;
-
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.BasicBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtonumclicks.AbstractBidToNumClicks;
-import newmodels.bidtonumclicks.BasicBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.bidtoprclick.BasicBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
-import newmodels.bidtoprconv.AbstractBidToPrConv;
-import newmodels.bidtoprconv.BasicBidToPrConv;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
-import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
-import agents.MCKPAgent.Output;
 import agents.mckp.IncItem;
 import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;
