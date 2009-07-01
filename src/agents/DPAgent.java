@@ -22,6 +22,7 @@ import newmodels.slottobid.AbstractSlotToBidModel;
 import newmodels.slottobid.SimpleSlotToBid;
 import newmodels.slottonumclicks.AbstractSlotToNumClicks;
 import newmodels.slottonumclicks.SimpleClick;
+import newmodels.slottonumclicks.StaticSlotToClicks;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -38,11 +39,11 @@ public class DPAgent extends SimAbstractAgent{
 	protected HashMap<Query, AbstractRevenueModel> revenueModels;
 	protected HashMap<Query, AbstractPrConversionModel> prConversionModels;
 	protected HashMap<Query, SimpleSlotToBid> slotToBidModels;
-	//protected HashMap<Query, AbstractSlotToNumClicks> slotToClicksModels;
-	private AbstractQueryToNumImp queryToNumImpModel;
+	protected HashMap<Query, AbstractSlotToNumClicks> slotToClicksModels;
 	private AbstractBidToCPC bidToCPC;
+/*	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractBidToPrClick bidToPrClick;
-	private AbstractUserModel userModel;
+	private AbstractUserModel userModel;*/
 	
 	// model, strategy related variables
 	protected HashMap<Query, Integer> targetPosition;
@@ -76,7 +77,7 @@ public class DPAgent extends SimAbstractAgent{
 		
 		// handle first two days
 		
-		if (_day <= 5) {
+		if (_day <= 1) {
 			bidBundle = new BidBundle();
 			for (Query query : _querySpace) {
 				double bid = .4*revenueModels.get(query).getRevenue()*prConversionModels.get(query).getPrediction(0);
@@ -219,7 +220,8 @@ public class DPAgent extends SimAbstractAgent{
 
 	protected void addBidToClicks(Query query, int position, HashMap<Double, Integer> bidToClicks) {
 		double bid = slotToBidModels.get(query).getPrediction(position);
-		int maxClicks = (int) (queryToNumImpModel.getPrediction(query) * bidToPrClick.getPrediction(query, bid, null, oldBidBundle));
+		//int maxClicks = (int) (queryToNumImpModel.getPrediction(query) * bidToPrClick.getPrediction(query, bid, null, oldBidBundle));
+		int maxClicks = slotToClicksModels.get(query).getPrediction(position);
 		bidToClicks.put(bid, maxClicks);
 	}
 	
@@ -280,14 +282,14 @@ public class DPAgent extends SimAbstractAgent{
 			slotToBidModels.put(query, new SimpleSlotToBid(query, _slotInfo));
 		}
 		
-/*		slotToClicksModels = new HashMap<Query, AbstractSlotToNumClicks>();
+		slotToClicksModels = new HashMap<Query, AbstractSlotToNumClicks>();
 		for (Query query : _querySpace) {
-			slotToClicksModels.put(query, new SimpleClick(query, _advertiserInfo, _slotInfo));
-		}*/
-		userModel = new BasicUserModel();
+			slotToClicksModels.put(query, new StaticSlotToClicks(query, _advertiserInfo, _slotInfo));
+		}
+/*		userModel = new BasicUserModel();
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		bidToCPC = new RegressionBidToCPC(_querySpace);
-		bidToPrClick = new RegressionBidToPrClick(_querySpace);
+		bidToPrClick = new RegressionBidToPrClick(_querySpace);*/
 		return null;
 	}
 
@@ -298,10 +300,10 @@ public class DPAgent extends SimAbstractAgent{
 		if (_day > 1) {
 			unitsSoldModel.update(_salesReport);
 			
-			userModel.updateModel(queryReport, salesReport);
+/*			userModel.updateModel(queryReport, salesReport);
 			queryToNumImpModel.updateModel(queryReport, salesReport);
 			bidToCPC.updateModel(queryReport, oldBidBundle);
-			bidToPrClick.updateModel(queryReport, oldBidBundle);
+			bidToPrClick.updateModel(queryReport, oldBidBundle);*/
 			
 			for (Query query : _querySpace) {
 				revenueModels.get(query).update(_salesReport, _queryReport);
@@ -309,7 +311,7 @@ public class DPAgent extends SimAbstractAgent{
 				slotToBidModels.get(query).updateModel(_queryReport, _salesReport, oldBidBundle);
 				if (oldTargetPosition != null && oldTargetPosition.get(query) != null)
 					slotToBidModels.get(query).updateByAgent(oldTargetPosition.get(query), _queryReport, oldBidBundle);
-				//slotToClicksModels.get(query).updateModel(_queryReport, _salesReport, oldBidBundle);
+				slotToClicksModels.get(query).updateModel(_queryReport, _salesReport, oldBidBundle);
 			
 			}
 			
@@ -339,7 +341,7 @@ public class DPAgent extends SimAbstractAgent{
 			buff.append("\t").append("TargetClicks: ").append(oldBidBundle.getDailyLimit(q)/oldBidBundle.getBid(q)).append("\n");
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
 			buff.append("\t").append("CPC:").append(_queryReport.getCPC(q)).append("\n");
-/*			if (!Double.isNaN(_queryReport.getPosition(q))) {
+			if (!Double.isNaN(_queryReport.getPosition(q))) {
 				int pos = (int) Math.ceil(_queryReport.getPosition(q));
 				buff.append("\t").append("maxClick of this position: ").append(slotToClicksModels.get(q).getPrediction(pos)).append("\n");
 				buff.append("\t").append("bid of this position: ").append(slotToBidModels.get(q).getPrediction(pos)).append("\n");
@@ -347,7 +349,7 @@ public class DPAgent extends SimAbstractAgent{
 			else {
 				buff.append("\t").append("maxClick of this Position: ").append(slotToClicksModels.get(q).getPrediction(slots)).append("\n");
 				buff.append("\t").append("bid of this position: ").append(slotToBidModels.get(q).getPrediction(slots)).append("\n");
-			}*/
+			}
 			buff.append("\t").append("Clicks: ").append(_queryReport.getClicks(q)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("****************\n");
