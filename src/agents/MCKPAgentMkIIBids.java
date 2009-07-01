@@ -25,7 +25,6 @@ import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
-import agents.MCKPAgent.Output;
 import agents.mckp.IncItem;
 import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;
@@ -259,7 +258,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 
 			Collections.sort(allIncItems);
-			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
 			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 
@@ -309,7 +308,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			if(budget >= 0) {
-				Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
+//				Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
 				solution.put(ii.item().isID(), ii.item());
 				budget -= ii.w();
 			}
