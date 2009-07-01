@@ -1,11 +1,9 @@
 package newmodels.bidtocpc;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
@@ -14,7 +12,6 @@ import org.rosuda.REngine.Rserve.RserveException;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 
 /**
  * @author afoo & jberg
@@ -37,14 +34,17 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private int IDVar = 5;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
-	private ArrayList<Integer> _queryLevel;
 
 
-	public RegressionBidToCPC (Set<Query> queryspace) throws RserveException{
-		c = new RConnection();
+	public RegressionBidToCPC (Set<Query> queryspace) {
+		try {
+			c = new RConnection();
+		} catch (RserveException e) {
+			e.printStackTrace();
+		}
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
 		_queryReports = new ArrayList<QueryReport>();
@@ -53,18 +53,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		if(IDVar < 4) {
 			throw new RuntimeException("Don't set IDVar below 4");
 		}
-		_queryLevel = new ArrayList<Integer>();
-		for(Query query : _querySpace) {
-			if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-				_queryLevel.add(0);
-			}
-			else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				_queryLevel.add(1);
-			}
-			else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-				_queryLevel.add(2);
-			}
-		}
 	}
 
 	@Override
@@ -72,40 +60,63 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
 	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
-		double prediction = 0.00;
+		double prediction = 0.0;
 		/*
 		 * oldest - > newest
 		 */
 		List<Double> bids = new ArrayList<Double>();
-		for(int i = IDVar-2; i >= 0; i --) {
-			bids.add(_bidBundles.get(_bidBundles.size()-1-i).getBid(query));
+		for(int i = 0; i < IDVar - 2; i++) {
+			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (IDVar - 3 -i)).getBid(query));
 		}
+		bids.add(bidbundle.getBid(query));
 		bids.add(currentBid);
 
 		List<Double> CPCs = new ArrayList<Double>();
 		for(int i = IDVar-3; i >= 0; i --) {
 			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
-			if(Double.isNaN(cpc)) {
-				CPCs.add(0.0);
-			}
-			else {
-				CPCs.add(cpc);
-			}
+			CPCs.add(cpc);
+		}
+
+		int queryInd1 = 0;
+		int queryInd2 = 0;
+		int queryInd3 = 0;
+		int queryInd4 = 0;
+		int queryInd5 = 0;
+		int queryInd6 = 0;
+
+		String man = query.getManufacturer();
+		String comp = query.getComponent();
+		if("pg".equals(man)) {
+			queryInd1 = 1;
+		}
+		else if("lioneer".equals(man)) {
+			queryInd2= 1;
+		}
+		else if("flat".equals(man)) {
+			queryInd3 = 1;
+		}
+
+		if("tv".equals(comp)) {
+			queryInd4 = 1;
+		}
+		else if("dvd".equals(comp)) {
+			queryInd5 = 1;
+		}
+		else if("audio".equals(comp)) {
+			queryInd6 = 1;
 		}
 
 		int predCounter = 0;
 		prediction += coeff[0];
 		predCounter++;
-		int F1ind = 0;
-		int F2ind = 0;
-		if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-			F1ind = 1;
-		}
-		else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-			F2ind = 1;
-		}
-		prediction += coeff[1]*F1ind + coeff[2]*F2ind;
-		predCounter += 2;
+
+		prediction += coeff[1] * queryInd1;
+		prediction += coeff[2] * queryInd2;
+		prediction += coeff[3] * queryInd3;
+		prediction += coeff[4] * queryInd4;
+		prediction += coeff[5] * queryInd5;
+		prediction += coeff[6] * queryInd6;
+		predCounter += 6;
 		for(int i = 0; i < bids.size(); i++) {
 			prediction += coeff[i+predCounter] * bids.get(i);
 			if(i == bids.size() - 2) {
@@ -160,7 +171,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
 			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC) || CPC == 0 || bid == 0)) {
+			if(!(Double.isNaN(CPC) || bid == 0)) {
 				_bids.add(bid);
 				_CPCs.add(CPC);
 			}
@@ -170,121 +181,97 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 
-		if(_bids.size() >= IDVar*numQueries) {
-			List<List<Double>> bigBidList = new ArrayList<List<Double>>();
-			List<List<Double>> bigCPCList = new ArrayList<List<Double>>();
+		if(_bids.size() > IDVar*numQueries) {
 
-			for(int i = 0 ; i < IDVar; i++) {
-				List<Double> bids = _bids.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
-				List<Double> CPC = _CPCs.subList(i*numQueries, _bids.size() - (IDVar-1-i)*numQueries);
-				bigBidList.add(bids);
-				bigCPCList.add(CPC);
+			double[] bids = new double[_bids.size()];
+			double[] cpcs = new double[_bids.size()];
+
+			for(int i = 0; i < _bids.size(); i++) {
+				bids[i] = _bids.get(i);
+				cpcs[i] = _CPCs.get(i);
 			}
 
-			List<double[]> bidArrList = new LinkedList<double[]>();
-			List<double[]> CPCArrList = new LinkedList<double[]>();
+			int arrLen = _bids.size() - (IDVar-1)*numQueries ;
 
-			for(int i = 0; i < bigBidList.size(); i++) {
-				List<Double> bidList = bigBidList.get(i);
-				List<Double> CPCList = bigCPCList.get(i);
-				double[] bidArr = new double[bidList.size()];
-				double[] CPCArr = new double[CPCList.size()];
-				for(int j = 0; j < bidList.size(); j++) {
-					bidArr[j] = bidList.get(j);
-					CPCArr[j] = CPCList.get(j);
-				}
-				bidArrList.add(bidArr);
-				CPCArrList.add(CPCArr);
-			}
+			int[] queryInd1 = new int[arrLen];
+			int[] queryInd2 = new int[arrLen];
+			int[] queryInd3 = new int[arrLen];
+			int[] queryInd4 = new int[arrLen];
+			int[] queryInd5 = new int[arrLen];
+			int[] queryInd6 = new int[arrLen];
+			int numIters = queryInd1.length/16;
+			for(int i = 0; i < numIters; i++) {
+				int j = 0;
+				for(Query query : _querySpace) {
+					queryInd1[i*16 + j] = 0;
+					queryInd2[i*16 + j] = 0;
+					queryInd3[i*16 + j] = 0;
+					queryInd4[i*16 + j] = 0;
+					queryInd5[i*16 + j] = 0;
+					queryInd6[i*16 + j] = 0;
+					String man = query.getManufacturer();
+					String comp = query.getComponent();
+					if("pg".equals(man)) {
+						queryInd1[i*16 + j] = 1;
+					}
+					else if("lioneer".equals(man)) {
+						queryInd2[i*16 + j] = 1;
+					}
+					else if("flat".equals(man)) {
+						queryInd3[i*16 + j] = 1;
+					}
 
-			double[] mostRecentBidArr = bidArrList.get(bidArrList.size()-1);
-			double[] secondRecentBidArr = bidArrList.get(bidArrList.size()-2);
-
-			double[] mostRecentCubeBidArr = new double[mostRecentBidArr.length];
-			double[] mostRecentSqBidArr = new double[mostRecentBidArr.length];
-			double[] secondRecentSqBidArr = new double[secondRecentBidArr.length];
-
-
-			double[] mostRecentCPCArr = CPCArrList.get(CPCArrList.size()-3);
-			double[] secondRecentCPCArr = CPCArrList.get(CPCArrList.size()-4);
-
-			double[] mostRecentCubeCPCArr = new double[mostRecentCPCArr.length];
-			double[] mostRecentSqCPCArr = new double[mostRecentCPCArr.length];
-			double[] secondRecentSqCPCArr = new double[secondRecentCPCArr.length];
-
-
-			for(int i = 0; i < mostRecentBidArr.length; i++) {
-				mostRecentSqBidArr[i] = mostRecentBidArr[i] * mostRecentBidArr[i];
-				mostRecentCubeBidArr[i] = mostRecentBidArr[i] * mostRecentSqBidArr[i];
-				secondRecentSqBidArr[i] = secondRecentBidArr[i] * secondRecentBidArr[i];
-
-				mostRecentSqCPCArr[i] = mostRecentCPCArr[i] * mostRecentCPCArr[i];
-				mostRecentCubeCPCArr[i] = mostRecentCPCArr[i] * mostRecentSqCPCArr[i];
-				secondRecentSqCPCArr[i] = secondRecentCPCArr[i] * secondRecentCPCArr[i];
-			}
-
-			/*
-			 * Make querytype indicators
-			 */
-			int len = mostRecentBidArr.length;
-			int[] F1Indicator = new int[len];
-			int[] F2Indicator = new int[len];
-			for(int i = 0; i < len; i++) {
-				F1Indicator[i] = 0;
-				F2Indicator[i] = 0;
-				if(_queryLevel.get(i%16) == 1) {
-					F1Indicator[i] = 1;
-				}
-				else if(_queryLevel.get(i%16) == 2) {
-					F2Indicator[i] = 1;
+					if("tv".equals(comp)) {
+						queryInd4[i*16 + j] = 1;
+					}
+					else if("dvd".equals(comp)) {
+						queryInd5[i*16 + j] = 1;
+					}
+					else if("audio".equals(comp)) {
+						queryInd6[i*16 + j] = 1;
+					}
+					j++;
 				}
 			}
-
 
 			try {
-				c.assign("F1ind",F1Indicator);
-				c.assign("F2ind",F2Indicator);
-				for(int i = 0; i < IDVar; i++) {
-					c.assign("bid" + i, bidArrList.get(i));
-					c.assign("cpc" + i, CPCArrList.get(i));
-				}
-				c.assign("bid" + (IDVar-1) + "cube", mostRecentCubeBidArr);
-				c.assign("bid" + (IDVar-1) + "sq",mostRecentSqBidArr);
-				c.assign("bid" + (IDVar-2) + "sq",secondRecentSqBidArr);
+				c.assign("queryInd1",queryInd1);
+				c.assign("queryInd2",queryInd2);
+				c.assign("queryInd3",queryInd3);
+				c.assign("queryInd4",queryInd4);
+				c.assign("queryInd5",queryInd5);
+				c.assign("queryInd6",queryInd6);
+				c.assign("bids", bids);
+				c.assign("cpcs", cpcs);
 
-				c.assign("cpc" + (IDVar-3) + "cube", mostRecentCubeCPCArr);
-				c.assign("cpc" + (IDVar-3) + "sq",mostRecentSqCPCArr);
-				c.assign("cpc" + (IDVar-4) + "sq",secondRecentSqCPCArr);
-
-				String model = "model = lm(cpc" + (IDVar-1) + " ~ F1ind + F2ind + ";
+				String model = "model = lm(cpcs[" + ((IDVar - 1)*numQueries+1) + ":" + _bids.size() +  "] ~ queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				for(int i = 0; i < IDVar; i++) {
-					model += "bid" + i + " + ";
+					int min = i * numQueries + 1;
+					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
+					model += "bids[" + min +":" + max + "] + ";
+					if(i >= IDVar - 2) {
+						model += "I(bids[" + min +":" + max + "]^2) + ";
+					}
 					if(i == IDVar -1) {
-						model += "bid" + (IDVar - 1) + "sq + ";
-						model += "bid" + (IDVar - 1) + "cube + ";
-					}
-					else if(i == IDVar - 2) {
-						model += "bid" + (IDVar - 2) + "sq + ";
+						model += "I(bids[" + min +":" + max + "]^3) + ";
 					}
 				}
 
-				for(int i = 0; i < IDVar-1; i++) {
-					if(i == IDVar - 2) {
-						model = model.substring(0, model.length()-3);
-						model += ")";
-					}
-					else {
-						model += "cpc" + i + " + ";
-					}
+				for(int i = 0; i < IDVar-2; i++) {
+					int min = i * numQueries + 1;
+					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
 
-					if(i == IDVar - 3) {
-						model += "cpc" + (IDVar - 3) + "sq + ";
-						model += "cpc" + (IDVar - 3) + "cube + ";
+					model += "cpcs[" + min +":" + max + "] + ";
+					if(i >= IDVar - 4) {
+						model += "I(cpcs[" + min +":" + max + "]^2) + ";
 					}
-					else if(i == IDVar - 4) {
-						model += "cpc" + (IDVar - 4) + "sq + ";
+					if(i == IDVar -3) {
+						model += "I(cpcs[" + min +":" + max + "]^3) + ";
 					}
 				}
+
+				model = model.substring(0, model.length()-3);
+				model += ")";
 
 				System.out.println(model);				
 				c.voidEval(model);

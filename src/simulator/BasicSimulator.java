@@ -388,7 +388,7 @@ public class BasicSimulator {
 		for(Query query : _querySpace) {
 			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
-			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(query,this);
+			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick();
 			AbstractBidToPrConv bidToConvPrModel = new PerfectBidToPrConv(query,this);
 			models.add(bidToCPCModel);
 			models.add(bidToNumClicks);
@@ -910,10 +910,10 @@ public class BasicSimulator {
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
 		int numSims = 1;
-		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
-//		String baseFile = "/games/game";
-		int min = 18;
-		int max = 19;
+//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
+		String baseFile = "/games/game";
+		int min = 161;
+		int max = 170;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 
@@ -984,7 +984,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids("10"), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ClickPrModelTestAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

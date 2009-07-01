@@ -78,12 +78,7 @@ public class ClickPrModelTestAgent extends SimAbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		try {
-			_bidToClickPr = new RegressionBidToPrClick(_querySpace);
-		} catch (RserveException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		_bidToClickPr = new RegressionBidToPrClick(_querySpace);
 		models.add(_bidToClickPr);
 		return models;
 	}

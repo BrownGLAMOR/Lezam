@@ -329,7 +329,6 @@ public class UserSteadyStateDist {
 	 * @param transProbs State to state transition prob matrix
 	 */
 	private void simulateDayWithTransactions(boolean burst) {
-		transitionUsers(burst);
 		int numAdvertisers = 8;
 		//TODO
 		int avgCapacity = 400;
@@ -366,6 +365,7 @@ public class UserSteadyStateDist {
 			}
 			_users.put(prod, users);
 		}
+		transitionUsers(burst);
 	}
 
 	private void printUsers() {
@@ -492,12 +492,12 @@ public class UserSteadyStateDist {
 	private void virtualExpectedUsers() {
 		for(Product prod : _products) {
 			HashMap<UserState,Integer> tempUsers = new HashMap<UserState, Integer>();
-			tempUsers.put(UserState.NS,8825);
-			tempUsers.put(UserState.IS,328);
-			tempUsers.put(UserState.F0,504);
-			tempUsers.put(UserState.F1,233);
-			tempUsers.put(UserState.F2,110);
-			tempUsers.put(UserState.T,0);
+			tempUsers.put(UserState.NS,8403);
+			tempUsers.put(UserState.IS,306);
+			tempUsers.put(UserState.F0,541);
+			tempUsers.put(UserState.F1,348);
+			tempUsers.put(UserState.F2,297);
+			tempUsers.put(UserState.T,103);
 			_users.put(prod, tempUsers);
 		}
 	}

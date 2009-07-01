@@ -45,7 +45,7 @@ public class CPCModelTestAgent extends SimAbstractAgent {
 			for(Query query : _querySpace) {
 				System.out.println("Bid: " + tempBundle.getBid(query) + "  CPC: " + queryReport.getCPC(query) + "  CPC predict: " + cpcpredictions.get(query) + "Diff: " + (queryReport.getCPC(query) - cpcpredictions.get(query)));
 
-				if (Double.isNaN(queryReport.getCPC(query)) && _day > 15){
+				if (Double.isNaN(queryReport.getCPC(query)) && _day >= 15){
 					nancounter++;
 				}else if (_day > 15){
 					sumVar += (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
@@ -75,12 +75,7 @@ public class CPCModelTestAgent extends SimAbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		try {
-			_bidToCPC = new RegressionBidToCPC(_querySpace);
-		} catch (RserveException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		_bidToCPC = new RegressionBidToCPC(_querySpace);
 		models.add(_bidToCPC);
 		return models;
 	}
