@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -38,6 +39,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
+	private Random _R = new Random();
 	private double CAP_MULTIPLIER = 1.5;
 	private boolean DEBUG = false;
 	private double LAMBDA = .995;
@@ -275,11 +277,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			for(Query q : _querySpace){
 				double bid;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = .7;
+					bid = randDouble(.1,.85);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = 1.3;
+					bid = randDouble(.25,1.25);
 				else 
-					bid = 1.7;
+					bid = randDouble(.35,1.5);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
@@ -399,6 +401,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			debug("\t" + ii[i]);
 		}
 		return ii;
+	}
+	
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
 	}
 
 	public void debug(Object str) {

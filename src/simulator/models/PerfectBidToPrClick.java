@@ -14,6 +14,10 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	private BasicSimulator _simulator;
+	
+	public PerfectBidToPrClick(BasicSimulator simulator) {
+		_simulator = simulator;
+	}
 
 	@Override
 	public double getPrediction(Query query, double currentBid, Ad currentAd, BidBundle bidbundle){

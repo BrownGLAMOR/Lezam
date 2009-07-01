@@ -386,7 +386,7 @@ public class BasicSimulator {
 		for(Query query : _querySpace) {
 			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
 			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
-			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick();
+			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
 			AbstractBidToPrConv bidToConvPrModel = new PerfectBidToPrConv(query,this);
 			models.add(bidToCPCModel);
 			models.add(bidToNumClicks);
