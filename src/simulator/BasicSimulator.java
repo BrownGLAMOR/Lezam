@@ -837,7 +837,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkIIBids("10");
+			return new MCKPAgentMkIIBids();
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -853,7 +853,7 @@ public class BasicSimulator {
 			return null;
 		}
 		else {
-			return new MCKPAgentMkIIBids("0");
+			return new MCKPAgentMkIIBids();
 		}
 	}
 
