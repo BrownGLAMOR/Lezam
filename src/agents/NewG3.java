@@ -98,6 +98,8 @@ public class NewG3 extends SimAbstractAgent{
 		    for (Query query : _querySpace) {	
 				_bidBundle.setBid(query, getQueryBid(query));
 			}
+		    
+		    initializeK();
 	}
 
 	@Override
