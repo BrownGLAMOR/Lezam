@@ -12,8 +12,6 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
-import props.Misc;
-
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
@@ -54,6 +52,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractUnitsSoldModel _unitsSold;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
+	private int _capacityInc;
 
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
@@ -265,7 +264,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			Collections.sort(allIncItems);
 //			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
-			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
+//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
+			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, budget);
 
 			//set bids
 			for(Query q : _querySpace){
@@ -310,7 +310,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			if(budget >= 0) {
-//				Misc.println("adding item over capacity " + ii, Output.OPTIMAL);
+//				System.out.println("adding item " + ii);
 				solution.put(ii.item().isID(), ii.item());
 				budget -= ii.w();
 			}
@@ -333,15 +333,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		for(IncItem ii: incItems) {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
-			
-			if(budget >= ii.w()) {
+//			if(budget >= ii.w()) {
+			if(budget >= 0) {
 				if (incremented) {
 					temp.addLast(ii);
 					budget -= ii.w();
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					System.out.println("adding item over capacity" + ii);
+					System.out.println("adding item" + ii);
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
@@ -351,7 +351,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
 							IncItem inc = temp.removeFirst();
-							System.out.println("adding item " + ii);
+							System.out.println("adding item over capacity " + ii);
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;
@@ -369,7 +369,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				*/// This can be used later if the values actually change for the sales bonus
 				double avgUSP = 11.25;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
-					double iD = Math.pow(_distCapacDiscount, i);
+					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP;
 				}

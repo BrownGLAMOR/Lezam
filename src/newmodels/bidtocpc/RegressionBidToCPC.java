@@ -118,30 +118,35 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		prediction += coeff[6] * queryInd6;
 		predCounter += 6;
 		for(int i = 0; i < bids.size(); i++) {
-			prediction += coeff[i+predCounter] * bids.get(i);
+			double bid = bids.get(i);
+			prediction += coeff[i+predCounter] * bid;
 			if(i == bids.size() - 2) {
 				predCounter++;
-				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+				prediction += coeff[i+predCounter] * bid * bid;
 			}
 			else if(i == bids.size() - 1) {
 				predCounter++;
-				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i);
+				prediction += coeff[i+predCounter] * bid * bid;
 				predCounter++;
-				prediction += coeff[i+predCounter] * bids.get(i) * bids.get(i) * bids.get(i);
+				prediction += coeff[i+predCounter] * bid * bid * bid;
 			}
 		}
 		predCounter += bids.size();
 		for(int i = 0; i < CPCs.size(); i++) {
-			prediction += coeff[i+predCounter] * CPCs.get(i);
+			double CPC = CPCs.size();
+			if(Double.isNaN(CPC)) {
+				CPC = 0;
+			}
+			prediction += coeff[i+predCounter] * CPC;
 			if(i == CPCs.size() - 2) {
 				predCounter++;
-				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i);
+				prediction += coeff[i+predCounter] * CPC * CPC;
 			}
 			else if(i == CPCs.size() - 1) {
 				predCounter++;
-				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i);
+				prediction += coeff[i+predCounter] * CPC * CPC;
 				predCounter++;
-				prediction += coeff[i+predCounter] * CPCs.get(i) * CPCs.get(i) * CPCs.get(i);
+				prediction += coeff[i+predCounter] * CPC * CPC * CPC;
 			}
 		}
 		predCounter += CPCs.size();
@@ -149,13 +154,13 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
-		if(prediction < currentBid) {
+//		if(prediction < currentBid) {
 			return prediction;
 
-		}
-		else {
-			return currentBid;
-		}
+//		}
+//		else {
+//			return currentBid;
+//		}
 	}
 
 	/*
@@ -273,11 +278,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				model = model.substring(0, model.length()-3);
 				model += ")";
 
-//				System.out.println(model);				
+				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-//				for(int i = 0 ; i < coeff.length; i++)
-//					System.out.println(coeff[i]);
+				for(int i = 0 ; i < coeff.length; i++)
+					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
