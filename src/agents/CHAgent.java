@@ -26,6 +26,7 @@ public class CHAgent extends SimAbstractAgent {
 	protected HashMap<Query, Double> _wantedSales;
 
 	protected BidBundle _bidBundle;
+	protected double _dailyCapacity;
 	protected double _topPosition;
 	protected PrintStream output;
 
@@ -48,6 +49,23 @@ public class CHAgent extends SimAbstractAgent {
 			_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
 		}
 
+		double normalizeFactor = 0;
+		for (Query query : _querySpace) {
+			normalizeFactor += _wantedSales.get(query);
+		}
+		
+		int unitsSold = 0;
+		for (Query query : _querySpace) {
+			unitsSold += _salesReport.getConversions(query);
+		}
+		
+		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
+		normalizeFactor = targetCapacity/normalizeFactor;
+		for (Query query : _querySpace) {
+			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
+		}
+		
+		
 		printInfo();
 		return _bidBundle;
 	}
@@ -86,7 +104,9 @@ public class CHAgent extends SimAbstractAgent {
 			}
 		}
 
-		double slice = _capacity / (20 * _capWindow);
+		_dailyCapacity = 1.5*_capacity/_capWindow;
+		
+		double slice = _capacity*1.5 / (20 * _capWindow);
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			if (q.getManufacturer() == _manSpecialty)
@@ -150,7 +170,6 @@ public class CHAgent extends SimAbstractAgent {
 			double currentWantedSale) {
 		double newHonest;
 		double conversion = _conversionPrModel.get(q).getPrediction(0);
-		// if we oversold, we lower our bid price to CPC
 		/*
 		 * if (conversion < _baseLineConversion.get(q)) { newHonest =
 		 * (_queryReport.getCPC(q)-1e-2)/(_revenue.get(q)*conversion);
@@ -158,9 +177,9 @@ public class CHAgent extends SimAbstractAgent {
 		 * }
 		 */
 
-		// if we sold less than what we expected, and we got bad position
-		// and also wanted sales does not tend to go over capacity, then higher
-		// our bid
+		/* if we sold less than what we expected, and we got bad position
+		 and also wanted sales does not tend to go over capacity, then higher
+		 our bid*/
 		if (_salesReport.getConversions(q) < currentWantedSale) {
 			if (!(_queryReport.getPosition(q) <= _topPosition)) {
 
@@ -171,8 +190,8 @@ public class CHAgent extends SimAbstractAgent {
 
 			}
 		} else {
-			// if we sold more than what expected, and we got good position,
-			// then lower the bid
+			/* if we sold more than what expected, and we got good position,
+			 then lower the bid*/
 			if (_salesReport.getConversions(q) >= currentWantedSale) {
 				if (_queryReport.getPosition(q) <= _topPosition) {
 					/*newHonest = (_queryReport.getCPC(q) - 0.01)
@@ -188,15 +207,15 @@ public class CHAgent extends SimAbstractAgent {
 	}
 
 	protected void adjustWantedSales(Query q, double currentWantedSale) {
-			// if we sold less than what we expected, but we got good position,
-			// then lower our expectation
+			/* if we sold less than what we expected, but we got good position,
+			 then lower our expectation*/
 			if (_salesReport.getConversions(q) < currentWantedSale) {
 				if (_queryReport.getPosition(q) <= _topPosition) {
 					_wantedSales.put(q, currentWantedSale * .8);
 				}
 			} else {
-				// if we sold more than what we expected, but we got bad
-				// position, then increase our expectation
+				/* if we sold more than what we expected, but we got bad
+				 position, then increase our expectation*/
 				if (!(_queryReport.getPosition(q) <= _topPosition)) {
 					_wantedSales.put(q, currentWantedSale * 1.25);
 				}
@@ -218,10 +237,23 @@ public class CHAgent extends SimAbstractAgent {
 				_unitsSoldModel.getEstimate()).append("\n");
 		buff.append("\t").append("Manufacturer specialty: ").append(
 				_advertiserInfo.getManufacturerSpecialty()).append("\n");
-		buff.append("****************\n");
-		
-		for (Query query : _querySpace) {
-			
+		for (Query q : _querySpace) {
+			buff.append("\t").append("Day: ").append(_day).append("\n");
+			buff.append(q).append("\n");
+			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
+			buff.append("\t").append("SpendLimit: ").append(_bidBundle.getDailyLimit(q)).append("\n");
+			if (_salesReport.getConversions(q) > 0) 
+				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
+			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
+			buff.append("\t").append("Predicted Revenue:").append(_revenue.get(q)).append("\n");
+			if (_queryReport.getClicks(q) > 0) 
+				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
+			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.get(q).getPrediction(0)).append("\n");
+			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
+			buff.append("\t").append("Desired Sales: ").append(_wantedSales.get(q)).append("\n");
+			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
+			buff.append("****************\n");
 		}
 
 		System.out.println(buff);
