@@ -39,9 +39,9 @@ public class ClickAgent extends SimAbstractAgent{
 	@Override
 	public void initBidder() {
 
-		_desiredSale = _capacity/_capWindow/_querySpace.size();
+		_desiredSale = _capacity*1.5/_capWindow/_querySpace.size();
 		
-		  _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+		 _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 			
 		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
 		for (Query query : _querySpace) {
@@ -78,40 +78,39 @@ public class ClickAgent extends SimAbstractAgent{
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// TODO Auto-generated method stub
-		
+	
 		
 	}
 	
 	protected void adjustPM(Query q){
-		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
+		double conversion = _conversionPrModel.get(q).getPrediction(0);
 		//if we does not get enough clicks (and bad position), then decrease PM (increase bids, and hence slot)
-			    if(_queryReport.getClicks(q)*conversion < _desiredSale){
+			    if(_salesReport.getConversions(q) < _desiredSale){
 			    	if(!(_queryReport.getPosition(q) < 4)){
-			    		double newHonest = (1-_PM.get(q))*1.3 + .1;
-      		               if(newHonest >= 0.9) newHonest = 0.9;
+			    		double newHonest = (1-_PM.get(q))*1.3;
+      		               if(newHonest >= 0.95) newHonest = 0.95;
       		               _PM.put(q, 1-newHonest);
 			    	}     
 			    }else{
 			    	//if we get too many clicks (and good position), increase PM(decrease bids and hence slot)
 			    	if(_queryReport.getPosition(q) < 4){
-			            double  newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
-						if(newHonest < 0.1) newHonest = 0.1;
+			            //double  newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
+						double newHonest = (1- _PM.get(q))*0.7;
+			    		if(newHonest < 0.05) newHonest = 0.05;
 						_PM.put(q,1-newHonest);
 			    	}
 			    }
 	}
 	   
 	protected double setQuerySpendLimit(Query q){
-		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		/*double remainingCap = _capacity - _unitsSoldModel.getWindowSold();
-		if(remainingCap < 0) remainingCap = 0;
-		else if (_day < 2) remainingCap = _capacity/_capWindow;*/
-		double remainingCap = _capacity/_capWindow;
-		return _lamda*remainingCap/(16*conversion);
+		double dailySalesLimit = Math.max(_desiredSale/_conversionPrModel.get(q).getPrediction(0),1);
+		return _bidBundle.getBid(q)*dailySalesLimit;
 	}
 
 	
 	protected double getQueryBid(Query q){
 	    return _revenue.get(q)*(1-_PM.get(q))*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity);	
 	}
+	
+	
 }
