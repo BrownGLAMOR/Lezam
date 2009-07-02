@@ -217,4 +217,5 @@ public class H3 extends SimAbstractAgent{
 		if(remainCap < 0) remainCap = 0;
 		return getQueryBid(q)*remainCap/8;
 	}
+}
 
