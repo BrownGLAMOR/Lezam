@@ -18,12 +18,16 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.BasicBidToCPC;
+import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import newmodels.bidtonumclicks.BasicBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.BasicBidToPrClick;
+import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoprconv.BasicBidToPrConv;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
+import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -74,11 +78,12 @@ public class ILPAgentQ extends SimAbstractAgent{
 
 	
 	private AbstractUserModel _userModel;	// the number of users in every state
-	private HashMap<Query, AbstractBidToPrClick> _bidToClickPrModels; // the click probability for a bid in a query 
-	private HashMap<Query, AbstractBidToCPC> _bidToCPCModels;
-	private HashMap<Query, AbstractBidToPrConv> _convPrModel;
-	private HashMap<Query, AbstractBidToNumClicks> _bidToNumClicks;
+	private AbstractBidToPrClick _bidToClickPrModel; // the click probability for a bid in a query 
+	private AbstractBidToCPC _bidToCPCModel;
+	private AbstractBidToPrConv _convPrModel;
 	private AbstractUnitsSoldModel _unitsSold;
+	private AbstractQueryToNumImp _queryToNumImpModel;
+	private HashMap<Query, Double> _baseConvProbs;
 
 	// ###################
 	// #### The Agent ####
@@ -142,6 +147,28 @@ public class ILPAgentQ extends SimAbstractAgent{
 
 		_possibleBids = new HashSet<Double>(setPossibleBids(0.1, 3.5, .1));
 		_possibleQuantities = new HashSet<Integer>(setPossibleQuantities(0, 10, 1));
+		
+		_baseConvProbs = new HashMap<Query, Double>();
+		for(Query q : _querySpace) {
+
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baseConvProbs.put(q, _piF0);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baseConvProbs.put(q, _piF1);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baseConvProbs.put(q, _piF2);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
+
+			String component = q.getComponent();
+			if(component == _compSpecialty) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
+			}
+		}
 	}
 	
 	@Override
@@ -293,8 +320,10 @@ public class ILPAgentQ extends SimAbstractAgent{
 
 		double conv = estimateConv(query, bid);
 		double cpc = estimateCPC(query, bid);
-		double bid2numClicks = _bidToNumClicks.get(query).getPrediction(bid);
-		result = bid2numClicks * (conv*revenue - cpc); 
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
+		double numImps = _queryToNumImpModel.getPrediction(query);
+		int numClicks = (int) (clickPr * numImps);
+		result = numClicks * (conv*revenue - cpc); 
 		if (Double.isNaN(result) || Double.isInfinite(result)) {	// if there is a problem, beep and show me where
 			beep();
 			//System.out.print("\n The is a null result: \n bid2cpc=" + estimateCPC(query, bid) + "\n clickPr=" + estimateClicks(p,us,query,slot) + "\n get_convPr=" + estimateConv(p,us,0) + "\n p_x_Pr" + estimateIn + "\n");
@@ -302,7 +331,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		
 		try {
 //			_fout.write("\nWith Query " + query.toString() + " And bid " + bid + " We found " + (imp * click) + " but we perfect model found " + _bidToNumClicks.get(query).getPrediction(bid));
-			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found a profit of " + cutDouble(result) + " (numclicks=" + cutDouble(bid2numClicks) + " conversions=" + cutDouble(conv) + " cpc=" + cutDouble(cpc) + ")");
+			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found a profit of " + cutDouble(result) + " (numclicks=" + cutDouble(numClicks) + " conversions=" + cutDouble(conv) + " cpc=" + cutDouble(cpc) + ")");
 		}
 		catch (Exception e) {
 			System.err.println ("getObjBidCoef() error with writing to file");
@@ -318,14 +347,15 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double start = System.currentTimeMillis();
 		double result = 0;
 		
-//		double bid2numClicks = imp * click;
-		double bid2numClicks = _bidToNumClicks.get(query).getPrediction(bid);
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
+		double numImps = _queryToNumImpModel.getPrediction(query);
+		int numClicks = (int) (clickPr * numImps);
 		double conv = estimateConv(query, bid);
 
-		result = bid2numClicks * conv;
+		result = numClicks * conv;
 		
 		try {
-			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found " + cutDouble(result) + " conversions (numClicks=" + cutDouble(bid2numClicks) + " conv=" + cutDouble(conv));
+			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found " + cutDouble(result) + " conversions (numClicks=" + cutDouble(numClicks) + " conv=" + cutDouble(conv));
 		}
 		catch (Exception e) {
 		}
@@ -379,23 +409,22 @@ public class ILPAgentQ extends SimAbstractAgent{
 	}
 
 	public double estimateClicks (Query query, double bid) {
-		double result = 0;
-		
 		//result = _userModel.getPrediction(p, us) / _numSearchingUsers;	// and estimate of the percent of this user in the query		
-		result = _bidToClickPrModels.get(query).getPrediction(bid);
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
 
-		return result;
+		return clickPr;
 	}
 
 	private double estimateConv(Query query, double bid) {
 		double result = 0;
 		
-		AbstractBidToPrConv convPr = _convPrModel.get(query);
 //		if (convPr.equals(null) || overQ<(Integer)(_possibleQuantities.toArray())[0] || (overQ>(Integer)(_possibleQuantities.toArray()[_possibleQuantities.size()-1]))) {
 //			beep();
 //			System.out.print("\n CONV PROBLEM--> " + overQ + "\n");
 //		}
-		result = convPr.getPrediction(bid);
+		
+		//TODO put in BraddMax conversion prob model
+		result = _baseConvProbs.get(query);
 
 		return result;
 	}
@@ -404,7 +433,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double result = 0;
 //		double start = System.currentTimeMillis();
 
-		result = _bidToCPCModels.get(query).getPrediction(bid);
+		result = _bidToCPCModel.getPrediction(query, bid, _bidBundles.getLast());
 		if (Double.isNaN(result) || Double.isInfinite(result) || Double.isInfinite(-result) || Double.valueOf(result).equals(0.0)) result = _regReserveScore+0.01; 
 		
 //		double stop = System.currentTimeMillis();
@@ -429,95 +458,64 @@ public class ILPAgentQ extends SimAbstractAgent{
 	@Override
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		_bidToClickPrModels = new HashMap<Query, AbstractBidToPrClick>(); 
-		_bidToCPCModels = new HashMap<Query, AbstractBidToCPC>();
-		_convPrModel = new HashMap<Query,AbstractBidToPrConv>();	// probability of a conversion
-		_bidToNumClicks = new HashMap<Query, AbstractBidToNumClicks>();
-		
-		AbstractUnitsSoldModel unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-		models.add(unitsSoldModel);
-		_unitsSold = unitsSoldModel;
-
 		AbstractUserModel userModel = new BasicUserModel();
+		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
+		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
+		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace);
+		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		models.add(userModel);
-		_userModel = userModel;
-
-		for(Query query: _querySpace) {
-			AbstractBidToPrClick bidToPrClick = new BasicBidToPrClick(query);
-			models.add(bidToPrClick);
-			_bidToClickPrModels.put(query,bidToPrClick);
-			
-			AbstractBidToCPC bidToCPC = new BasicBidToCPC(query);
-			models.add(bidToCPC);
-			_bidToCPCModels.put(query, bidToCPC);
-			
-			AbstractBidToPrConv convPr = new BasicBidToPrConv(query); 
-			models.add(convPr);
-			_convPrModel.put(query, convPr);
-			
-			AbstractBidToNumClicks bidToNumClicks = new BasicBidToNumClicks(query);
-			models.add(bidToNumClicks);
-			_bidToNumClicks.put(query, bidToNumClicks);
-		}
+		models.add(queryToNumImp);
+		models.add(bidToCPC);
+		models.add(bidToPrClick);
+		models.add(unitsSold);
 		return models;
 	}
 	
 	@Override
 	public void updateModels(SalesReport salesReport,
 			QueryReport queryReport) {
-
 		for(AbstractModel model:_models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
 				userModel.updateModel(queryReport, salesReport);
-
-				_numSearchingUsers = 0;
-				for (Product p : _retailCatalog) {
-					for (UserState us : searchingUserStates) {
-						_numSearchingUsers += _userModel.getPrediction(p, us); // I want to always count how many users are in a searching state. it help the impressions estimator later.
-					}
-				}
 			}
-			if(model instanceof AbstractUnitsSoldModel) {
+			else if(model instanceof AbstractQueryToNumImp) {
+				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
+				queryToNumImp.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof AbstractUnitsSoldModel) {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
 				unitsSold.update(salesReport);
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				bidToCPC.updateModel(queryReport, salesReport);
+				bidToCPC.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 			else if(model instanceof AbstractBidToPrClick) {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				bidToPrClick.updateModel(queryReport, salesReport);
+				bidToPrClick.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
 			}
-			else if(model instanceof AbstractBidToPrConv) {
-				AbstractBidToPrConv convPr = (AbstractBidToPrConv) model;
-				convPr.updateModel(queryReport, salesReport);
-			}
-			else if(model instanceof AbstractBidToNumClicks) {
-				AbstractBidToNumClicks bidToNumClicks = (AbstractBidToNumClicks) model;
-				bidToNumClicks.updateModel(queryReport, salesReport, _bidBundle);
+			else {
+				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}
 
 	protected void buildMaps(Set<AbstractModel> models) throws Exception {
-		_bidToClickPrModels = new HashMap<Query, AbstractBidToPrClick>(); 
-		_bidToCPCModels = new HashMap<Query, AbstractBidToCPC>();
-		_convPrModel = new HashMap<Query,AbstractBidToPrConv>();	// probability of a conversion
-		_bidToNumClicks = new HashMap<Query, AbstractBidToNumClicks>();
-
 		for(AbstractModel model : models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
 				_userModel = userModel;
-
 				_numSearchingUsers = 0;
 				for (Product p : _retailCatalog) {
 					for (UserState us : searchingUserStates) {
 						_numSearchingUsers += _userModel.getPrediction(p, us); // I want to always count how many users are in a searching state. it help the impressions estimator later.
 					}
 				}
+			}
+			else if(model instanceof AbstractQueryToNumImp) {
+				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
+				_queryToNumImpModel = queryToNumImp;
 			}
 			else if(model instanceof AbstractUnitsSoldModel) {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
@@ -525,23 +523,14 @@ public class ILPAgentQ extends SimAbstractAgent{
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPCModels.put(bidToCPC.getQuery(), bidToCPC);
-//				_fout.write("\n" + bidToCPC.getQuery() + "updating bid->cpc " + bidToCPC.getClass());
+				_bidToCPCModel = bidToCPC; 
 			}
 			else if(model instanceof AbstractBidToPrClick) {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				_bidToClickPrModels.put(bidToPrClick.getQuery(), bidToPrClick);
-//				_fout.write("\n" + bidToPrClick.getQuery() + "updating bid->click " + bidToPrClick.getClass());
+				_bidToClickPrModel = bidToPrClick;
 			}
-			else if(model instanceof AbstractBidToPrConv) {
-				AbstractBidToPrConv convPr = (AbstractBidToPrConv) model;
-				_convPrModel.put (convPr.getQuery(), convPr);
-//				_fout.write("\n" + convPr.getQuery() + "updating bid->conv " + convPr.getClass());
-			}
-			else if(model instanceof AbstractBidToNumClicks) {
-				AbstractBidToNumClicks bidToNumClicks = (AbstractBidToNumClicks) model;
-				_bidToNumClicks.put (bidToNumClicks.getQuery(), bidToNumClicks);
-//				_fout.write("\n" + bidToNumClicks.getQuery() + "updating bid->conv " + bidToNumClicks.getClass());
+			else {
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
