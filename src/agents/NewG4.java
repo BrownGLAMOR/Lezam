@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.SimplePrConversion;
@@ -25,9 +27,7 @@ public class NewG4 extends SimAbstractAgent{
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected HashMap<Query, BasicBidToClick> _bidToclick;
-	//estimate the difference between bid and cpc
-	protected HashMap<Query, Double> _error;
+	protected AbstractBidToCPC _bidToCPC;
 	//k is a constant that equates EPPC across queries
 	protected double k;
 	protected BidBundle _bidBundle;
@@ -40,14 +40,11 @@ public class NewG4 extends SimAbstractAgent{
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
 		}
-		for(Query query: _querySpace){
-			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
-		}
+		
 		
 		_unitsSoldModel.update(_salesReport);
-		
-		updateError(_queryReport);
-		updateK();
+		if (_bidBundles.size() > 1) 
+			_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
 		
 		for(Query query: _querySpace){
 			
@@ -92,22 +89,13 @@ public class NewG4 extends SimAbstractAgent{
 	    	}
 	    }
 
-		_bidToclick = new HashMap<Query, BasicBidToClick>();
-		for (Query query : _querySpace) {
-			_bidToclick.put(query, new BasicBidToClick(query, true));	
-		}
-	    	
-		_error = new HashMap<Query, Double>();
-		for (Query query: _querySpace){
-			_error.put(query, 0.1);
-		}
-		
+		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
+	    
 		_bidBundle = new BidBundle();
 	    for (Query query : _querySpace) {	
 			_bidBundle.setBid(query, getQueryBid(query));
 		}
 	    
-
 		try {
 			output = new PrintStream(new File("newg4.txt"));
 		} catch (FileNotFoundException e) {
@@ -126,86 +114,64 @@ public class NewG4 extends SimAbstractAgent{
 		
 	}
 
-
-   protected void updateK(){
-	  double dailyLimit = _capacity/5;
-	  double err = 1;
-	  int counter = 0;
-	  //initial guess of k is 5, and k never goes over 10
-	  k = 0.5;
+   protected double updateK(){
+	  double dailyLimit = _capacity/_capWindow;
 	  double sum = 0.0;
-	  double hi = 1;
-	  double low = 0;
-	  boolean done = false;
-	  while(done == false && counter <= 100){
-		  for (Query query: _querySpace){
-			  sum += calcUnitSold(query, k);
-		  }
-		  if(sum < dailyLimit && dailyLimit - sum > err) {
-			  hi = k;
-			  k = (low + k)/2;
-		  }
-		  else{
-			  if(sum > dailyLimit && sum - dailyLimit > err) {
-				  low = k;
-				  k = (hi + k)/2;
-			  }
-			  else{ 
-				  done = true;
-			  
-			  }
-		  }
-		  counter++;
-		  sum = 0.0;
+	  for(Query query:_querySpace){
+		  sum+= _salesReport.getConversions(query);
 	  }
-	
+	 if(sum <= 0.9*dailyLimit) k = k*1.3;
+	 if(sum >= 1.3*dailyLimit) k = k*0.7;
+	  
+	  if(k > 2)  k = 2;
+	  if(k < 0.01) k = 0.01;
+	  return k;
+   }
+      
+   protected double cpcTobid(double cpc, Query query){
+	      double bid = 0;
+	      while(_bidToCPC.getPrediction(query,bid, _bidBundles.get(_bidBundle.size() - 2)) >= 0.1){
+	    	  bid += 0.1;
+	      }     
+	      return bid;
+	      
    }
    
-   protected double calcUnitSold(Query q, double k){
-	  //double bid = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) - k + _error.get(q);
-	   double cpc = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) -k;
-	   //use the bid to click model to estimate #clicks
-	  double clicks = _bidToclick.get(q).getPrediction(cpc);
-	  //estimated sales = clicks * conv prob 
-	  return clicks*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity);
-   }
-   
-   protected double initializeK(){
+   protected void initializeK(){
 	   //will change later
-	   return 0.5;
+	    k = 0.75;
    }
-   
-   
-   /*protected void adjustK(){
-	   double sum = 0.0;
-	   double dailyLimit = _capacity/5;
-	   for(Query query: _querySpace){
-		   sum += _salesReport.getConversions(query);
-	   }
-	   if(sum > dailyLimit + 5) k = k*0.7 - 0.1;
-	   if(sum < dailyLimit - 10) k = k*1.3 + 0.1;
-   }*/
-   
-   protected void updateError(QueryReport queryReport){
-	   for(Query query:_querySpace){
-		   double dist = Math.abs(queryReport.getCPC(query) - getQueryBid(query)) ;
-		   if(dist >= 0.2){
-			   _error.put(query, dist*0.8);
-		   }
-		   
-	   }
-   }
-   
+ 
    protected double getQueryBid(Query q){
-	   double bid = _estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity) - k + _error.get(q);
+	   double bid = 0.0;
+	   if(_day >= 1 && _day <= 2){
+		   if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = 1.2;
+		   if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+			   if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+				   bid = 1.75;
+				}
+			   else bid = 1.5;
+		   }
+		   if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
+			   if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
+					bid = 2.5;
+				}
+			   else bid = 1.75;
+		   }
+	   }
+	   else bid = cpcTobid(_estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(0)-k,q);
+	   
 	   if(bid <= 0) return 0;
-	   else return bid;
+	   else{
+		   if(bid > 3) return 3;
+		   else return bid;
+	   }
+	   
    }
    
+ 
    protected double setQuerySpendLimit(Query q){
-		double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		double clicks = Math. max(1.1, Math.min(_capacity/(40*conversion), calcUnitSold(q, k)));
-		return getQueryBid(q)*clicks;
+		return 0;
 	}
    
    protected void printInfo() {
