@@ -209,15 +209,21 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double salesPrice = _salesPrices.get(q);
 
 				LinkedList<Item> itemList = new LinkedList<Item>();
-
+				System.out.println("Query: " + q);
 				for(int i = 0; i < bidList.size(); i++) {
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid, _bidBundles.getLast());
-
-
+					
+					System.out.println("\tBid: " + bid);
+					System.out.println("\tCPC: " + CPC);
+					System.out.println("\tClickPr: " + clickPr);
+					System.out.println("\tNumImps: " + numImps);
+					System.out.println("\tMumClicks: " + numClicks);
+					
+					
 					double convProb = _baseConvProbs.get(q);
 
 					double overcap = _unitsSold.getWindowSold() - _capacity; 

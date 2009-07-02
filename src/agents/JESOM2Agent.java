@@ -65,7 +65,6 @@ public class JESOM2Agent extends AbstractAgent {
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
 		_unitsSold = new UnitsSoldMovingAvg(_querySpace, distributionCapacity, distributionWindow); //new UnitsSoldModelMaxWindow(distributionWindow);
-		
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}  // constant set by game server info
