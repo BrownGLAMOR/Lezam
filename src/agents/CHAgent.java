@@ -181,7 +181,7 @@ public class CHAgent extends SimAbstractAgent {
 		 and also wanted sales does not tend to go over capacity, then higher
 		 our bid*/
 		if (_salesReport.getConversions(q) < currentWantedSale) {
-			if (!(_queryReport.getPosition(q) <= _topPosition)) {
+			if (!(_queryReport.getPosition(q) <= 4)) {
 
 				newHonest = currentHonestFactor * 1.3;
 				if (newHonest >= 0.95)
@@ -193,7 +193,7 @@ public class CHAgent extends SimAbstractAgent {
 			/* if we sold more than what expected, and we got good position,
 			 then lower the bid*/
 			if (_salesReport.getConversions(q) >= currentWantedSale) {
-				if (_queryReport.getPosition(q) <= _topPosition) {
+				if (_queryReport.getPosition(q) <= 4) {
 					/*newHonest = (_queryReport.getCPC(q) - 0.01)
 							/ (_revenue.get(q) * conversion);*/
 					newHonest = _honestFactor.get(q)*0.7;
