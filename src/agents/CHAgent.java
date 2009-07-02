@@ -176,7 +176,7 @@ public class CHAgent extends SimAbstractAgent {
 		if (_salesReport.getConversions(q) < currentWantedSale) {
 			if (!(_queryReport.getPosition(q) <= _topPosition)) {
 
-				newHonest = currentHonestFactor * 1.3 + .1;
+				newHonest = currentHonestFactor * 1.3;
 				if (newHonest >= 0.95)
 					newHonest = 0.95;
 				_honestFactor.put(q, newHonest);
@@ -187,8 +187,9 @@ public class CHAgent extends SimAbstractAgent {
 			// then lower the bid
 			if (_salesReport.getConversions(q) >= currentWantedSale) {
 				if (_queryReport.getPosition(q) <= _topPosition) {
-					newHonest = (_queryReport.getCPC(q) - 0.01)
-							/ (_revenue.get(q) * conversion);
+					/*newHonest = (_queryReport.getCPC(q) - 0.01)
+							/ (_revenue.get(q) * conversion);*/
+					newHonest = _honestFactor.get(q)*0.7;
 					if (newHonest < 0.05)
 						newHonest = 0.05;
 					_honestFactor.put(q, newHonest);
@@ -205,13 +206,13 @@ public class CHAgent extends SimAbstractAgent {
 			// then lower our expectation
 			if (_salesReport.getConversions(q) < currentWantedSale) {
 				if (_queryReport.getPosition(q) <= _topPosition) {
-					_wantedSales.put(q, currentWantedSale * .7);
+					_wantedSales.put(q, currentWantedSale * .8);
 				}
 			} else {
 				// if we sold more than what we expected, but we got bad
 				// position, then increase our expectation
 				if (!(_queryReport.getPosition(q) <= _topPosition)) {
-					_wantedSales.put(q, currentWantedSale * 1.3);
+					_wantedSales.put(q, currentWantedSale * 1.25);
 				}
 			}
 		
