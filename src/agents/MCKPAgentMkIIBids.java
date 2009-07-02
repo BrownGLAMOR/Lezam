@@ -42,7 +42,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private Random _R = new Random();
-	private double CAP_MULTIPLIER = 1.5;
 	private boolean DEBUG = true;
 	private double LAMBDA = .995;
 	private int _numUsers = 90000;
@@ -255,7 +254,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else {
 				if(_unitsSold != null) {
 					debug("Average Budget: " + budget);
-					budget = _capacity*CAP_MULTIPLIER*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+					budget = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
 					if(budget < 20) {
 						budget = 20;
 					}
@@ -282,9 +281,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				bidBundle.addQuery(q, bid * randDouble(.9,1.1), new Ad(), Double.NaN);  //Mult by rand to avoid users learning patterns.
 			}
 		}
-		//bid bundle for first two days
-		//TODO The values .7, 1.3, and 1.7 are game specific, and then agent would be more 
-		//     robust if it had a better estimate for starting defaults
 		else {
 			for(Query q : _querySpace){
 				double bid;
@@ -325,6 +321,66 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		return solution;
 	}
 
+	private HashMap<Integer,Item> fillKnapsackWithCapExt(LinkedList<IncItem> incItems, double budget){
+		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
+		LinkedList<IncItem> temp = new LinkedList<IncItem>();
+		
+		boolean incremented = false;
+		double valueLost = 0;
+		double valueGained = 0;
+		int knapSackIter = 0;
+		
+		for(IncItem ii: incItems) {
+			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
+			//set replace lighter items as we want
+			
+			if(budget >= ii.w()) {
+				if (incremented) {
+					temp.addLast(ii);
+					budget -= ii.w();
+					valueGained += ii.v(); //amount gained as a result of extending capacity
+				}
+				else {
+					System.out.println("adding item over capacity" + ii);
+					solution.put(ii.item().isID(), ii.item());
+					budget -= ii.w();
+				}
+			}
+			else{
+				if (incremented) {
+					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
+						while (!temp.isEmpty()){
+							IncItem inc = temp.removeFirst();
+							System.out.println("adding item " + ii);
+							solution.put(inc.item().isID(), inc.item());
+						}
+						valueLost = 0;
+						valueGained = 0;
+					}
+					else break;
+				}
+				double avgConvProb = .253; //the average probability of conversion;
+				/*
+				double avgUSP = 0;
+				for (Query q : _querySpace){
+					avgUSP += _rpc.get(q);
+				}
+				avgUSP /= 16;
+				*/// This can be used later if the values actually change for the sales bonus
+				double avgUSP = 11.25;
+				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
+					double iD = Math.pow(_distCapacDiscount, i);
+					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+					valueLost += (avgConvProb - worseConvProb)*avgUSP;
+				}
+				budget+=_capacityInc;
+				incremented = true;
+				knapSackIter++;
+			}
+		}
+		return solution;
+	}
+	
 	/**
 	 * Get undominated items
 	 * @param items
