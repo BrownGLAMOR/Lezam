@@ -3,10 +3,13 @@ package agents;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -19,6 +22,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class CHAgent extends SimAbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel;
+	protected AbstractBidToCPC _bidToCPCModel;
 	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
 	protected HashMap<Query, Double> _baseLineConversion;
 	protected HashMap<Query, Double> _revenue;
@@ -28,13 +32,23 @@ public class CHAgent extends SimAbstractAgent {
 	protected BidBundle _bidBundle;
 	protected double _dailyCapacity;
 	protected double _topPosition;
+	protected double _overcap;
+	
+	protected ArrayList<BidBundle> _bidBundles;
+
+	protected final double _errorOfLimit = .1;
+	
 	protected PrintStream output;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		// update models
 		_unitsSoldModel.update(_salesReport);
-
+		_overcap = _unitsSoldModel.getWindowSold() - _capacity; 
+		
+		if (_bidBundles.size() > 1) 
+			_bidToCPCModel.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+		
 		// adjust parameters
 		for (Query q : _querySpace) {
 			double currentWantedSale = _wantedSales.get(q);
@@ -65,8 +79,10 @@ public class CHAgent extends SimAbstractAgent {
 			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
 		}
 		
+		_bidBundles.add(_bidBundle);
 		
 		printInfo();
+		
 		return _bidBundle;
 	}
 
@@ -74,6 +90,7 @@ public class CHAgent extends SimAbstractAgent {
 	public void initBidder() {
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity,
 				_capWindow);
+		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
 
 		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
 		for (Query query : _querySpace) {
@@ -125,10 +142,9 @@ public class CHAgent extends SimAbstractAgent {
 		}
 
 		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {
-			_bidBundle.setBid(query, getQueryBid(query));
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
-		}
+		
+		_bidBundles = new ArrayList<BidBundle>();
+		
         /*
 		if (_numPS == 1)
 			_topPosition = 1;
@@ -158,18 +174,23 @@ public class CHAgent extends SimAbstractAgent {
 	protected double getQueryBid(Query q) {
 		return _revenue.get(q)
 				* _honestFactor.get(q)
-				* _conversionPrModel.get(q).getPrediction(0);
+				* _conversionPrModel.get(q).getPrediction(_overcap);
 	}
 
 	protected double setQuerySpendLimit(Query q) {
-		double dailySalesLimit = Math.max(_wantedSales.get(q)/_conversionPrModel.get(q).getPrediction(0),1);
-		return _bidBundle.getBid(q)*dailySalesLimit;
+		double dailySalesLimit = Math.max(_wantedSales.get(q)/_conversionPrModel.get(q).getPrediction(_overcap),1);
+		double bid = _bidBundle.getBid(q);
+		double cpc;
+		if (_day <= 5) cpc = .9*bid; 
+		else cpc = _bidToCPCModel.getPrediction(q, bid, _bidBundles.get(_bidBundle.size() - 2));
+		double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
+		return dailyLimit;
 	}
 
 	protected void adjustHonestFactor(Query q, double currentHonestFactor,
 			double currentWantedSale) {
 		double newHonest;
-		double conversion = _conversionPrModel.get(q).getPrediction(0);
+		double conversion = _conversionPrModel.get(q).getPrediction(_overcap);
 		/*
 		 * if (conversion < _baseLineConversion.get(q)) { newHonest =
 		 * (_queryReport.getCPC(q)-1e-2)/(_revenue.get(q)*conversion);
@@ -249,7 +270,7 @@ public class CHAgent extends SimAbstractAgent {
 			if (_queryReport.getClicks(q) > 0) 
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.get(q).getPrediction(0)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.get(q).getPrediction(_overcap)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_wantedSales.get(q)).append("\n");
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
