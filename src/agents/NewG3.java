@@ -140,7 +140,7 @@ public class NewG3 extends SimAbstractAgent{
    
    protected void initializeK(){
 	   //will change later
-	    k = 5.0;
+	    k = 5;
    }
  
    protected double getQueryBid(Query q){
