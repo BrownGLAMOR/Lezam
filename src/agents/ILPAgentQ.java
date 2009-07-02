@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -46,7 +47,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 	// ########################
 	// #### Game Decisions ####
 	// ########################
-
+	private Random _R = new Random();
 	final static boolean USEOVERQUANTITY = false; 	// Do you want the MIP formula to include over capacity?
 	final static int DAYSUNTILILKE = 70; 			// How many days until the Bid-Slot bucket model starts to work?
 	protected static int NUMOFUSERS = 90000;		// How many users are simulated?
@@ -173,7 +174,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {		
-		if (_day > 1) {
+		if (_day >= 6) {
 			try {
 				buildMaps(models);
 				updateBids();
@@ -182,8 +183,24 @@ public class ILPAgentQ extends SimAbstractAgent{
 				e.printStackTrace();
 			}
 		}
+		else {
+			for(Query q : _querySpace){
+				double bid;
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = randDouble(.1,.6);
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = randDouble(.25,.75);
+				else 
+					bid = randDouble(.35,1.0);
+				_bids.put(q, bid);
+			}
+		}
+		
+		
 		
 		_bidBundle = new BidBundle();
+		
+		
 		for (Query query:_querySpace) {
 			_bidBundle.addQuery(query, _bids.get(query), new Ad()); //TODO add a daily limit
 		}
@@ -338,7 +355,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		}
 
 		double stop = System.currentTimeMillis();
-		System.out.println("Day " + _day + " getObjBidCoef() took " + ((stop-start) / 1000) + " seconds");
+//		System.out.println("Day " + _day + " getObjBidCoef() took " + ((stop-start) / 1000) + " seconds");
 		return result;
 	}
 
@@ -360,7 +377,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		catch (Exception e) {
 		}
 		double stop = System.currentTimeMillis();
-		System.out.println("Day " + _day + " getQuantityBoundCoef() took " + ((stop-start) / 1000) + " seconds");
+//		System.out.println("Day " + _day + " getQuantityBoundCoef() took " + ((stop-start) / 1000) + " seconds");
 		return result;
 	}
 
@@ -599,4 +616,10 @@ public class ILPAgentQ extends SimAbstractAgent{
 		int result = (int)(d*100);
 		return (((double)result)/100);
 	}
+	
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
+	}
+	
 }

@@ -34,7 +34,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private RConnection c;
 	private double[] coeff;
 	private int numQueries = 16;
-	private int IDVar = 5;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private int IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 
