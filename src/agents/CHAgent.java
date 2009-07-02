@@ -154,7 +154,7 @@ public class CHAgent extends SimAbstractAgent {
 	protected double setQuerySpendLimit(Query q) {
 		double overcap = _unitsSoldModel.getWindowSold() - _capacity;
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/_conversionPrModel.get(q).getPrediction(overcap),1);
-		return _bidBundle.getBid(q)*dailySalesLimit*1.1;
+		return _bidBundle.getBid(q)*dailySalesLimit;
 	}
 
 	protected void adjustHonestFactor(Query q, double currentHonestFactor,
@@ -189,8 +189,8 @@ public class CHAgent extends SimAbstractAgent {
 				if (_queryReport.getPosition(q) <= _topPosition) {
 					newHonest = (_queryReport.getCPC(q) - 0.01)
 							/ (_revenue.get(q) * conversion);
-					if (newHonest < 0.1)
-						newHonest = 0.1;
+					if (newHonest < 0.05)
+						newHonest = 0.05;
 					_honestFactor.put(q, newHonest);
 				}
 			}
@@ -205,13 +205,13 @@ public class CHAgent extends SimAbstractAgent {
 			// then lower our expectation
 			if (_salesReport.getConversions(q) < currentWantedSale) {
 				if (_queryReport.getPosition(q) <= _topPosition) {
-					_wantedSales.put(q, currentWantedSale * .625);
+					_wantedSales.put(q, currentWantedSale * .7);
 				}
 			} else {
 				// if we sold more than what we expected, but we got bad
 				// position, then increase our expectation
 				if (!(_queryReport.getPosition(q) <= _topPosition)) {
-					_wantedSales.put(q, currentWantedSale * 1.6);
+					_wantedSales.put(q, currentWantedSale * 1.3);
 				}
 			}
 		
