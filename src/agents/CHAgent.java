@@ -129,12 +129,12 @@ public class CHAgent extends SimAbstractAgent {
 			_bidBundle.setBid(query, getQueryBid(query));
 			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
-
+        /*
 		if (_numPS == 1)
 			_topPosition = 1;
 		else
 			_topPosition = 2;
-
+       */
 		try {
 			output = new PrintStream(new File("ch.txt"));
 		} catch (FileNotFoundException e) {
@@ -210,13 +210,13 @@ public class CHAgent extends SimAbstractAgent {
 			/* if we sold less than what we expected, but we got good position,
 			 then lower our expectation*/
 			if (_salesReport.getConversions(q) < currentWantedSale) {
-				if (_queryReport.getPosition(q) <= _topPosition) {
+				if (_queryReport.getPosition(q) <= 4) {
 					_wantedSales.put(q, currentWantedSale * .8);
 				}
 			} else {
 				/* if we sold more than what we expected, but we got bad
 				 position, then increase our expectation*/
-				if (!(_queryReport.getPosition(q) <= _topPosition)) {
+				if (!(_queryReport.getPosition(q) <= 4)) {
 					_wantedSales.put(q, currentWantedSale * 1.25);
 				}
 			}
