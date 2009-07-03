@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -25,6 +26,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG3 extends SimAbstractAgent{
+	private Random _R = new Random();
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
@@ -35,6 +37,8 @@ public class NewG3 extends SimAbstractAgent{
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundles;
 
+	protected int _timeHorizon;
+	protected final int MAX_TIME_HORIZON = 5;
 	protected PrintStream output;
 	
 	@Override
@@ -50,7 +54,8 @@ public class NewG3 extends SimAbstractAgent{
 		}
 
 		_bidBundles.add(_bidBundle);
-
+		this.printInfo();
+		 
 		return _bidBundle;
 	}
 
@@ -80,7 +85,20 @@ public class NewG3 extends SimAbstractAgent{
 		}
 
 		_bidToCPC = new RegressionBidToCPC(_querySpace);
-
+		
+		_baselineConv = new HashMap<Query, Double>();
+        for(Query q: _querySpace){
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
+        		else _baselineConv.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
+        		else _baselineConv.put(q,0.3);
+        	}
+        }
+		
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {	
 			_bidBundle.setBid(query, getQueryBid(query));
@@ -91,7 +109,7 @@ public class NewG3 extends SimAbstractAgent{
 		initializeK();
 		
 		try {
-			output = new PrintStream(new File("logg3.txt"));
+			output = new PrintStream(new File("newg3.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -109,8 +127,12 @@ public class NewG3 extends SimAbstractAgent{
 		if (_salesReport != null && _queryReport != null) {
 
 			_unitsSoldModel.update(_salesReport);
-			_conversionPrModel.updateModel(queryReport, salesReport);
-			
+		    
+			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+
+               _conversionPrModel.setTimeHorizon(_timeHorizon);
+               _conversionPrModel.updateModel(queryReport, salesReport);
+
 			if (_bidBundles.size() > 1) 
 				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
 
@@ -125,8 +147,16 @@ public class NewG3 extends SimAbstractAgent{
 		for(Query query:_querySpace){
 			sum+= _salesReport.getConversions(query);
 		}
-		if(sum <= 0.9*dailyLimit) k = k*0.9;
-		if(sum >= 1.3*dailyLimit) k = k*1.1;
+		if(sum <= 0.9*dailyLimit) {
+			if(sum <= 0.7*dailyLimit) k = k*0.7;
+			else if(sum <= 0.8*dailyLimit) k = k*0.8;
+			else k = k*0.9;
+		}
+		if(sum >= 1.2*dailyLimit){
+			if(sum <= 1.5*dailyLimit) k = k*1.3;
+			else if(sum <= 1.4*dailyLimit) k = k*1.2;
+			else k = k*1.1;
+		}
 
 		if (k > 10)  k = 10;
 		if (k < 1) k = 1;
@@ -134,13 +164,13 @@ public class NewG3 extends SimAbstractAgent{
 	}
 
 	protected double cpcTobid(double cpc, Query query){
-		return cpc + .1;
-		/*if (_day <= 6) return cpc + .1;
+		//return cpc + .1;
+		if (_day <= 5) return cpc + .1;
 		double bid = cpc;
 		while (_bidToCPC.getPrediction(query,bid,_bidBundles.get(_bidBundles.size() - 2)) < cpc){
 			bid += 0.1;
 		}     
-		return bid;*/
+		return bid;
 	}
 
 	protected void initializeK(){
@@ -148,21 +178,15 @@ public class NewG3 extends SimAbstractAgent{
 		k = 8;
 	}
 
-	protected double getQueryBid(Query q){
+	protected double getQueryBid(Query q){		
 		double bid = 0.0;
-		if(_day <= 2){
-			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = 1.2;
+		if(_day <= 5){
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = randDouble(.1,.6);
 			if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					bid = 1.75;
-				}
-				else bid = 1.5;
+				bid = randDouble(.25,.75);
 			}
 			if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
-				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					bid = 2.5;
-				}
-				else bid = 1.75;
+				bid = randDouble(.35,1.0);
 			}
 		}
 		
@@ -176,8 +200,48 @@ public class NewG3 extends SimAbstractAgent{
 
 	}
 
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
+	}
+
+	
 	protected double setQuerySpendLimit(Query q){
 	     return 0.0;
+	}
+ 
+
+	protected void printInfo() {
+		// print debug info
+		StringBuffer buff = new StringBuffer(255);
+		buff.append("****************\n");
+		for(Query q : _querySpace){
+			buff.append("\t").append("Day: ").append(_day).append("\n");
+			buff.append(q).append("\n");
+			buff.append("\t").append("k: ").append(k).append("\n");
+			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
+			buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
+			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
+			buff.append("\t").append("Yesterday Sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
+			/*if (_salesReport.getConversions(q) > 0) 
+				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
+			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");*/
+			if (_queryReport.getClicks(q) > 0) 
+				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
+			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
+			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
+			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
+			if (_salesReport.getConversions(q) > 0)
+				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_queryReport.getClicks(q))).append("\n");
+			else buff.append("\t").append("Profit: ").append("0").append("\n");
+			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
+			buff.append("****************\n");
+		}
+		
+		System.out.println(buff);
+		output.append(buff);
+		output.flush();
+	
 	}
 
 }
