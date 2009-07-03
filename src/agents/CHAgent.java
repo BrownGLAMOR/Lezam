@@ -181,8 +181,8 @@ public class CHAgent extends SimAbstractAgent {
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/_conversionPrModel.get(q).getPrediction(_overcap),1);
 		double bid = _bidBundle.getBid(q);
 		double cpc;
-		if (_day <= 5) cpc = .9*bid; 
-		else cpc = _bidToCPCModel.getPrediction(q, bid, _bidBundles.get(_bidBundle.size() - 2));
+		if (_day <= 6) cpc = .9*bid; 
+		else cpc = _bidToCPCModel.getPrediction(q, bid, _bidBundles.get(_bidBundles.size() - 2));
 		double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
 		return dailyLimit;
 	}
