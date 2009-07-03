@@ -3,8 +3,8 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
+import oldmodels.unitssold.UnitsSoldModel;
+import oldmodels.unitssold.UnitsSoldModelMean;
 
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;
@@ -22,7 +22,7 @@ public class JESOM2Agent extends AbstractAgent {
 	protected Hashtable<Query,Double> _baseLineConversion;
 	protected DistributionCap _distributionCap;
 
-	protected AbstractUnitsSoldModel _unitsSold;
+	protected UnitsSoldModel _unitsSold;
 
 	/*
 	 * Commented by Max. All comments made by spucci are marked with "(spucci)"
@@ -64,7 +64,9 @@ public class JESOM2Agent extends AbstractAgent {
 		int distributionWindow = _advertiserInfo.getDistributionWindow();
 		double manufacturerBonus = _advertiserInfo.getManufacturerBonus();
 		String manufacturerSpecialty = _advertiserInfo.getManufacturerSpecialty();
-		_unitsSold = new UnitsSoldMovingAvg(_querySpace, distributionCapacity, distributionWindow); //new UnitsSoldModelMaxWindow(distributionWindow);
+		_unitsSold = new UnitsSoldModelMean(distributionWindow); //new UnitsSoldModelMaxWindow(distributionWindow);
+		_distributionCap = new DistributionCap(distributionCapacity, _unitsSold, 8);
+		
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ZERO)) {_baseLineConversion.put(q, 0.1);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_ONE)) {_baseLineConversion.put(q, 0.2);}  // constant set by game server info
 		for(Query q : _queryFocus.get(QueryType.FOCUS_LEVEL_TWO)) {_baseLineConversion.put(q, 0.3);}  // constant set by game server info
@@ -105,7 +107,7 @@ public class JESOM2Agent extends AbstractAgent {
 
 
 		SalesReport sr = _salesReports.remove();
-		_unitsSold.update(sr);
+		_unitsSold.updateReport(sr);
 
 		//_adjustConversionPr.apply(_bidStrategy); (spucci)
 
@@ -119,7 +121,7 @@ public class JESOM2Agent extends AbstractAgent {
 
 				int distributionCapacity = _advertiserInfo.getDistributionCapacity();
 				int distributionWindow = _advertiserInfo.getDistributionWindow();
-				int remainingCap = (int) (distributionCapacity - _unitsSold.getWindowSold());
+				int remainingCap = distributionCapacity - _unitsSold.getWindowSold();
 				int magicDivisor = 8;
 				
 				// if we are overselling, lower our bid
