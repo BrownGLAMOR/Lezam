@@ -160,7 +160,7 @@ public class EqPftAgent extends SimAbstractAgent {
 				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
 					_desiredSales.put(query, _desiredSales.get(query)*1.25);
 			}
-			else {
+			else if  (_queryReport.getClicks(query) > 0) {
 				if (_salesReport.getConversions(query) < _desiredSales.get(query))
 					_desiredSales.put(query, _desiredSales.get(query)*0.8);
 			}
@@ -186,7 +186,8 @@ public class EqPftAgent extends SimAbstractAgent {
 		int targetCapacity = (int)Math.max(2*_oversell*_dailyCapacity - unitsSold, _dailyCapacity*.5);
 		normalizeFactor = targetCapacity/normalizeFactor;
 		for (Query query : _querySpace) {
-			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
+			double sales = Math.max(_desiredSales.get(query)*normalizeFactor, _errorOfConversions);
+			_desiredSales.put(query, sales);
 		}
 		
 		for (Query query: _querySpace) {
@@ -233,7 +234,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			if (_day <= 6) cpc = .9*bid; 
 			else cpc = _bidToCPCModel.getPrediction(query, bid, _bidBundleList.get(_bidBundleList.size() - 2));
 			double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
-			_bidBundle.setDailyLimit(query, dailyLimit);
+			//_bidBundle.setDailyLimit(query, dailyLimit);
 		}
 		
 		this.printInfo();
@@ -292,7 +293,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
 			if (_salesReport.getConversions(q) > 0)
-				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_salesReport.getConversions(q))).append("\n");
+				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_queryReport.getClicks(q))).append("\n");
 			else buff.append("\t").append("Profit: ").append("0").append("\n");
 			buff.append("\t").append("Profit Margin: ").append(_profitMargins.get(q)).append("\n");
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
