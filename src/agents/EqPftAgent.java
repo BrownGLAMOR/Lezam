@@ -232,8 +232,8 @@ public class EqPftAgent extends SimAbstractAgent {
 			// set spend limit
 			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(overcap),1);
 			double cpc;
-			if (_day <= 5) cpc = .9*bid; 
-			else cpc = _bidToCPCModel.getPrediction(query, bid, _bidBundles.get(_bidBundle.size() - 2));
+			if (_day <= 6) cpc = .9*bid; 
+			else cpc = _bidToCPCModel.getPrediction(query, bid, _bidBundles.get(_bidBundles.size() - 2));
 			double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
 			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
