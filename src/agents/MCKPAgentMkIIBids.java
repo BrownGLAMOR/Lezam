@@ -15,12 +15,15 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtopos.BucketBidToPositionModel;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
+import newmodels.slottoprclick.NewAbstractPosToPrClick;
+import newmodels.slottoprclick.RegressionPosToPrClick;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -55,6 +58,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractBidToPrClick _bidToPrClick;
 	private AbstractUnitsSoldModel _unitsSold;
 	private NewAbstractConversionModel _convPrModel;
+	private BucketBidToPositionModel _bidToPosModel;
+	private NewAbstractPosToPrClick _posToPrClickModel;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
@@ -64,8 +69,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	/*
 	 * For error calculations
 	 */
-	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions;
-	private double sumCPCError, sumClickPrError;
+	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, PosPredictions, PosClickPrPredictions;
+	private double sumCPCError, sumClickPrError, sumPosError, _sumPosClickPrError;
 	private int errorDayCounter;
 
 	public MCKPAgentMkIIBids() {
@@ -80,8 +85,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		}
 		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
 		ClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
+		PosPredictions = new LinkedList<HashMap<Query,Double>>();
+		PosClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
+
 		sumCPCError = 0.0;
 		sumClickPrError = 0.0;
+		sumPosError = 0.0;
+		_sumPosClickPrError = 0.0;
 		errorDayCounter = 0;
 	}
 
@@ -100,12 +110,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
+		BucketBidToPositionModel bidToPosModel = new BucketBidToPositionModel(_querySpace,5);
+		RegressionPosToPrClick posToPrClick = new RegressionPosToPrClick(_querySpace);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
 		models.add(bidToPrClick);
 		models.add(unitsSold);
 		models.add(convPrModel);
+		models.add(bidToPosModel);
+		models.add(posToPrClick);
 		return models;
 	}
 
@@ -134,6 +148,14 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else if(model instanceof NewAbstractConversionModel) {
 				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
 				_convPrModel = convPrModel;
+			}
+			else if(model instanceof BucketBidToPositionModel) {
+				BucketBidToPositionModel bidToPosModel = (BucketBidToPositionModel) model;
+				_bidToPosModel = bidToPosModel;
+			}
+			else if(model instanceof RegressionPosToPrClick) {
+				RegressionPosToPrClick posToPrClickModel = (RegressionPosToPrClick) model;
+				_posToPrClickModel = posToPrClickModel;
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
@@ -218,6 +240,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 				convPrModel.updateModel(queryReport, salesReport);
 			}
+			else if(model instanceof BucketBidToPositionModel) {
+				BucketBidToPositionModel bidToPos = (BucketBidToPositionModel) model;
+				bidToPos.updateBidBundle(_bidBundles.get(_bidBundles.size()-2));
+				bidToPos.updateQueryReport(queryReport);
+				bidToPos.train();
+			}
+			else if(model instanceof RegressionPosToPrClick) {
+				RegressionPosToPrClick posToPrClickModel = (RegressionPosToPrClick) model;
+				posToPrClickModel.updateModel(queryReport);
+			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
@@ -235,6 +267,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 			HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyClickPrPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyPosPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyPosPrClickPredictions = new HashMap<Query, Double>();
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
@@ -243,7 +277,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double salesPrice = _salesPrices.get(q);
 
 				LinkedList<Item> itemList = new LinkedList<Item>();
-				System.out.println("Query: " + q);
+				debug("Query: " + q);
 				for(int i = 0; i < bidList.size(); i++) {
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast());
@@ -251,15 +285,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid, _bidBundles.getLast());
 
-					System.out.println("\tBid: " + bid);
-					System.out.println("\tCPC: " + CPC);
+					debug("\tBid: " + bid);
+					debug("\tCPC: " + CPC);
 					debug("\tClickPr: " + clickPr);
 					debug("\tNumImps: " + numImps);
 					debug("\tMumClicks: " + numClicks);
 
 
 					double convProb = _convPrModel.getPrediction(q);
-					System.out.println(convProb);
+					debug(convProb);
 
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
@@ -309,23 +343,41 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				bid *= randDouble(.9,1.1);  //Mult by rand to avoid users learning patterns.
 				
+				double pos = _bidToPosModel.getPosition(q, bid);
+				double posPrClick;
+				if(Double.isNaN(pos)) {
+					posPrClick = 0.0;
+				}
+				else {
+					posPrClick = _posToPrClickModel.getPrediction(q, pos);
+				}
+
 				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid, _bidBundles.getLast()));
 				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast()));
+				dailyPosPredictions.put(q,pos);
+				dailyPosPrClickPredictions.put(q,posPrClick);
+				
 
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
+			PosPredictions.add(dailyPosPredictions);
+			PosClickPrPredictions.add(dailyPosPrClickPredictions);
 			/*
 			 * Update model error
 			 */
-			if(_day > lagDays+3) {
+			if(_day > lagDays+2) {
 				errorDayCounter++;
+				debug(errorDayCounter);
+				QueryReport queryReport = _queryReports.getLast();
+				SalesReport salesReport = _salesReports.getLast();
+				
+				
 				/*
 				 * CPC Error
 				 */
 				HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-3);
-				QueryReport queryReport = _queryReports.getLast();
 				double dailyCPCerror = 0;
 				for(Query query : _querySpace) {
 					if (Double.isNaN(queryReport.getCPC(query))) {
@@ -340,45 +392,104 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 						sumCPCError += error;
 					}
 				}
-				System.out.println(errorDayCounter);
 				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
 				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
 				System.out.println("CPC  Standard Deviation: " + stddevCPC);
-				
+
 				/*
 				 * ClickPr Error
 				 */
 				HashMap<Query, Double> clickprpredictions = ClickPrPredictions.get(ClickPrPredictions.size()-3);
 				double dailyclickprerror = 0;
 				for(Query query : _querySpace) {
-					double clicks = 0;
-					double imps = 0;
+					double clicks = queryReport.getClicks(query);
+					double imps = queryReport.getImpressions(query);
 					if (clicks == 0 || imps == 0) {
-						//If CPC is NaN it means it is zero, which means our entire prediction is error!
 						double error = clickprpredictions.get(query)*clickprpredictions.get(query);
 						dailyclickprerror += error;
 						sumClickPrError += error;
 					}
 					else {
 						double error = (clicks/imps - clickprpredictions.get(query))*(clicks/imps- clickprpredictions.get(query));
-						dailyclickprerror = error;
+						dailyclickprerror += error;
 						sumClickPrError += error;
 					}
 				}
 				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
-				System.out.println("Daily ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
-				System.out.println("ClickPr Standard Deviation: " + stddevClickPr);
+				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
+				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+				
+				/*
+				 * Pos ClickPr Error
+				 */
+				HashMap<Query, Double> posclickprpredictions = PosClickPrPredictions.get(PosClickPrPredictions.size()-3);
+				double dailyposclickprerror = 0;
+				for(Query query : _querySpace) {
+					double clicks = queryReport.getClicks(query);
+					double imps = queryReport.getImpressions(query);
+					if (clicks == 0 || imps == 0) {
+						double error = posclickprpredictions.get(query)*posclickprpredictions.get(query);
+						dailyposclickprerror += error;
+						_sumPosClickPrError += error;
+					}
+					else {
+						double error = (clicks/imps - posclickprpredictions.get(query))*(clicks/imps- posclickprpredictions.get(query));
+						dailyposclickprerror += error;
+						_sumPosClickPrError += error;
+					}
+				}
+				double stddevPosClickPr = Math.sqrt(_sumPosClickPrError/(errorDayCounter*16));
+				System.out.println("Daily Pos To ClickPr Error: " + Math.sqrt(dailyposclickprerror/16));
+				System.out.println("Pos To ClickPr Standard Deviation: " + stddevPosClickPr);
+
+				/*
+				 * Pos Error
+				 */
+				HashMap<Query, Double> pospredictions = PosPredictions.get(PosPredictions.size()-3);
+				double dailyposerror = 0;
+				for(Query query : _querySpace) {
+					double pos = queryReport.getPosition(query);
+					if (Double.isNaN(pos)) {
+						if(Double.isNaN(pospredictions.get(query))) {
+							//do nothing the error is zero!
+						}
+						else {
+							double error = pospredictions.get(query)*pospredictions.get(query);
+							dailyposerror += error;
+							sumPosError += error;
+						}
+					}
+					else {
+						if(Double.isNaN(pospredictions.get(query))) {
+							/*
+							 * If we guessed that we were out of the auction, but we weren't
+							 * then calc error with base of 5.0
+							 */
+							double error = (pos - 5.0)*(pos- 5.0);
+							dailyposerror += error;
+							sumPosError += error;
+						}
+						else {
+							double error = (pos - pospredictions.get(query))*(pos- pospredictions.get(query));
+							dailyposerror += error;
+							sumPosError += error;
+						}
+					}
+				}
+				double stddevPos = Math.sqrt(sumPosError/(errorDayCounter*16));
+				System.out.println("Daily Position Error: " + Math.sqrt(dailyposerror/16));
+				System.out.println("Position Standard Deviation: " + stddevPos);
 			}
 
 		}
 		else {
 			for(Query q : _querySpace){
-				double bid;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.1,.6);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+				double bid = 0.0;
+//				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+//					bid = randDouble(.1,.6);
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
 					bid = randDouble(.25,.75);
-				else 
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) 
 					bid = randDouble(.35,1.0);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
@@ -428,11 +539,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if (incremented) {
 					temp.addLast(ii);
 					budget -= ii.w();
-					System.out.println("Temporarily adding: " + ii);
+					debug("Temporarily adding: " + ii);
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					System.out.println("adding item" + ii);
+					debug("adding item" + ii);
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
@@ -442,14 +553,14 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
 							IncItem inc = temp.poll();
-							System.out.println("adding item over capacity " + inc);
+							debug("adding item over capacity " + inc);
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;
 						valueGained = 0;
 					}
 					else {
-						System.out.println("Not worth overselling anymore");
+						debug("Not worth overselling anymore");
 						break;
 					}
 				}
@@ -466,9 +577,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP;
-					System.out.println("Adding " + ((avgConvProb - worseConvProb)*avgUSP) + " to value lost");
+					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP) + " to value lost");
 				}
-				System.out.println("Total value lost: " + valueLost);
+				debug("Total value lost: " + valueLost);
 				budget+=_capacityInc;
 				incremented = true;
 				knapSackIter++;

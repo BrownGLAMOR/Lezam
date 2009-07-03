@@ -162,7 +162,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		}
 		else {
 			predictErrors++;
-			System.out.println(predictErrors);
+//			System.out.println(predictErrors);
 			return currentBid;
 		}
 	}
@@ -282,11 +282,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				model = model.substring(0, model.length()-3);
 				model += ")";
 
-				System.out.println(model);				
+//				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				for(int i = 0 ; i < coeff.length; i++)
-					System.out.println(coeff[i]);
+//				for(int i = 0 ; i < coeff.length; i++)
+//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
