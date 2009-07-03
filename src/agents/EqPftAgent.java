@@ -38,8 +38,8 @@ public class EqPftAgent extends SimAbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected NewAbstractConversionModel _prConversionModel;
+	protected HashMap<Query, Double> _baselineConversions;
 	protected AbstractBidToCPC _bidToCPCModel;
-	//protected HashMap<Query, ProfitsMovingAvg> _profitsModels;
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
 	protected double _oversell;
@@ -56,6 +56,9 @@ public class EqPftAgent extends SimAbstractAgent {
 	
 	protected double overcap;
 	
+	protected final int MAX_TIME_HORIZON = 5;
+	protected final double MAX_OVERSELL = 2;
+	protected final double MIN_OVERSELL = 1;
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
@@ -96,14 +99,28 @@ public class EqPftAgent extends SimAbstractAgent {
 		}
 		
 		_prConversionModel = new GoodConversionPrModel(_querySpace);
+		_baselineConversions = new HashMap<Query, Double>();
+		for (Query query : _querySpace) {
+			double conv = 0;
+			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
+				conv = .1;
+			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
+				conv = .2;
+			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
+				conv = .3;
+			
+			double componentBonus = 1;
+			if (query.getComponent() != null && query.getComponent().equals(_advertiserInfo.getComponentSpecialty()))
+				componentBonus = _advertiserInfo.getComponentBonus();
+			conv = (conv*componentBonus)/(componentBonus + 1 - conv);
+			_baselineConversions.put(query, conv);
+		}
 		
 		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
 		
-		//_profitsModels = new HashMap<Query, ProfitsMovingAvg>();
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
 			double profit = _prConversionModel.getPrediction(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
-			//_profitsModels.put(query, new ProfitsMovingAvg(query, profit));
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
@@ -128,22 +145,6 @@ public class EqPftAgent extends SimAbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		
-		if(_day <= 2 || _salesReport == null || _queryReport == null) {
-			_bidBundle = new BidBundle();
-			for(Query q : _querySpace){
-				double bid;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.1,.6);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.25,.75);
-				else 
-					bid = randDouble(.35,1.0);
-				_bidBundle.setBid(q, bid);
-			}
-			_bidBundleList.add(_bidBundle);
-			return _bidBundle;
-		}
 		
 		this.setAvgProfit();
 		
@@ -170,8 +171,8 @@ public class EqPftAgent extends SimAbstractAgent {
 		
 		if (_oldAvgProfit + _errorOfProfit < _avgProfit) _oversell *= 1.1;
 		else if (_oldAvgProfit - _errorOfProfit > _avgProfit) _oversell *= 0.9;
-		_oversell = Math.min(1.5, _oversell);
-		_oversell = Math.max(1, _oversell);
+		_oversell = Math.min(MAX_OVERSELL, _oversell);
+		_oversell = Math.max(MIN_OVERSELL, _oversell);
 		
 		double normalizeFactor = 0;
 		for (Query query : _querySpace) {
@@ -225,11 +226,16 @@ public class EqPftAgent extends SimAbstractAgent {
 		
 		for (Query query : _querySpace) {
 			// set bids
-			double bid = _prConversionModel.getPrediction(query)*_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
+			double prConv;
+			if (_day <= 6 || !(_prConversionModel.getPrediction(query) > 0))
+				prConv = _baselineConversions.get(query);
+			else prConv= _prConversionModel.getPrediction(query);
+			
+			double bid = prConv *_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
 			_bidBundle.setBid(query, bid);
 			
 			// set spend limit
-			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModel.getPrediction(query),1);
+			double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
 			double cpc;
 			if (_day <= 6) cpc = .9*bid; 
 			else cpc = _bidToCPCModel.getPrediction(query, bid, _bidBundleList.get(_bidBundleList.size() - 2));
@@ -249,7 +255,6 @@ public class EqPftAgent extends SimAbstractAgent {
 		int n = 0;
 		for (Query query : _querySpace) 
 			if (_salesReport != null && _salesReport.getConversions(query) > 0) {
-				// result += _profitsModels.get(query).getProfit()*_salesReport.getConversions(query);
 				result += _salesReport.getRevenue(query) - _queryReport.getCost(query);
 				n += _queryReport.getClicks(query);
 			}
@@ -316,17 +321,17 @@ public class EqPftAgent extends SimAbstractAgent {
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		if (salesReport != null) {
 			_unitsSoldModel.update(salesReport);
+			
+			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+
+			_prConversionModel.setTimeHorizon(timeHorizon);
 			_prConversionModel.updateModel(queryReport, salesReport);
-		}
+			
 		
-		for (Query query : _querySpace) {
-			
-			if (salesReport != null && salesReport.getRevenue(query) > 0) 
-				_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
-			
-			//if (_salesReport != null && _salesReport.getConversions(query) > 0)
-			//	_profitsModels.get(query).update(_salesReport.getRevenue(query)/_queryReport.getClicks(query) - _queryReport.getCPC(query));
-			//else _profitsModels.get(query).update(_prConversionModels.get(query).getPrediction(overcap)*_revenueModels.get(query).getRevenue()*.9);
+			for (Query query : _querySpace) {
+				if (salesReport != null && salesReport.getRevenue(query) > 0) 
+					_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
+			}
 		}
 		
 		if (_bidBundleList.size() > 1) 
