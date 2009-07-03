@@ -12,7 +12,8 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.SimplePrConversion;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -25,7 +26,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG3 extends SimAbstractAgent{
 	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
+	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
@@ -33,28 +34,19 @@ public class NewG3 extends SimAbstractAgent{
 	protected double k;
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundles;
-	protected double overcap;
 
 	protected PrintStream output;
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
-		// update models
 		if (_salesReport != null && _queryReport != null) {
-
-			_unitsSoldModel.update(_salesReport);
-			overcap = _unitsSoldModel.getWindowSold() - _capacity;
-			
-			if (_bidBundles.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
-
 			updateK();
 		}
 
 		for(Query query: _querySpace){
 			_bidBundle.setBid(query, getQueryBid(query));
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 
 		_bidBundles.add(_bidBundle);
@@ -67,10 +59,7 @@ public class NewG3 extends SimAbstractAgent{
 
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 
-		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
-		for (Query query : _querySpace) {
-			_conversionPrModel.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
-		}
+		_conversionPrModel = new GoodConversionPrModel(_querySpace);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -116,6 +105,16 @@ public class NewG3 extends SimAbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
+		// update models
+		if (_salesReport != null && _queryReport != null) {
+
+			_unitsSoldModel.update(_salesReport);
+			_conversionPrModel.updateModel(queryReport, salesReport);
+			
+			if (_bidBundles.size() > 1) 
+				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+
+		}
 
 	}
 
@@ -167,7 +166,7 @@ public class NewG3 extends SimAbstractAgent{
 			}
 		}
 		
-		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.get(q).getPrediction(overcap),q);
+		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.getPrediction(q),q);
 
 		if(bid <= 0) return 0;
 		else{
@@ -178,14 +177,7 @@ public class NewG3 extends SimAbstractAgent{
 	}
 
 	protected double setQuerySpendLimit(Query q){
-		/*
-	    double conversion = _conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()- _capacity);
-		double clicks = Math.max(1,_capacity/(10*conversion));
-		return getQueryBid(q)*clicks;
-		 */
-		double remainCap = _capacity - _unitsSoldModel.getWindowSold();
-		if(remainCap < 0) remainCap = 0;
-		return getQueryBid(q)*remainCap/8;
+	     return 0.0;
 	}
 
 }
