@@ -3,8 +3,8 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
-import oldmodels.unitssold.UnitsSoldModel;
-import oldmodels.unitssold.UnitsSoldModelMean;
+import modelers.unitssold.UnitsSoldModel;
+import modelers.unitssold.UnitsSoldModelMean;
 
 import agents.rules.ConversionPr;
 import agents.rules.DistributionCap;

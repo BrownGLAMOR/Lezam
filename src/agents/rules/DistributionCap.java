@@ -1,6 +1,6 @@
 package agents.rules;
 
-import oldmodels.unitssold.UnitsSoldModel;
+import modelers.unitssold.UnitsSoldModel;
 import agents.GenericBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
