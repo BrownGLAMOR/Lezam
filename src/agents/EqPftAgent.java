@@ -155,8 +155,8 @@ public class EqPftAgent extends SimAbstractAgent {
 			
 			//double latestProfit = _profitsModels.get(query).getLatestSample();
 			double latestProfit = 0;
-			if (_salesReport.getConversions(query) > 0)
-				latestProfit = _salesReport.getRevenue(query) - _queryReport.getCost(query);
+			if (_queryReport.getClicks(query) > 0)
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
 			
 			if (latestProfit > _avgProfit) {	
 				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
@@ -194,8 +194,8 @@ public class EqPftAgent extends SimAbstractAgent {
 		for (Query query: _querySpace) {
 			//double latestProfit = _profitsModels.get(query).getLatestSample();
 			double latestProfit = 0;
-			if (_salesReport.getConversions(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_salesReport.getConversions(query);
+			if (_queryReport.getClicks(query) > 0)
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
 			
 			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query)||
 				_queryReport.getPosition(query) == Double.NaN) {
@@ -252,7 +252,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			if (_salesReport != null && _salesReport.getConversions(query) > 0) {
 				// result += _profitsModels.get(query).getProfit()*_salesReport.getConversions(query);
 				result += _salesReport.getRevenue(query) - _queryReport.getCost(query);
-				n += _salesReport.getConversions(query);
+				n += _queryReport.getClicks(query);
 			}
 		result /= n;
 		
