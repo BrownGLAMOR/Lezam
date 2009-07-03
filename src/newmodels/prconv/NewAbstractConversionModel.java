@@ -20,4 +20,10 @@ public abstract class NewAbstractConversionModel extends AbstractModel {
 
 	public abstract double getPrediction(Query query);
 
+
+	public void setTimeHorizon(double timeHorizon) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
