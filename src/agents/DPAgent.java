@@ -41,9 +41,9 @@ public class DPAgent extends SimAbstractAgent{
 	protected HashMap<Query, SimpleSlotToBid> slotToBidModels;
 	protected HashMap<Query, AbstractSlotToNumClicks> slotToClicksModels;
 	private AbstractBidToCPC bidToCPC;
-/*	private AbstractQueryToNumImp queryToNumImpModel;
+	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractBidToPrClick bidToPrClick;
-	private AbstractUserModel userModel;*/
+	private AbstractUserModel userModel;
 	
 	// model, strategy related variables
 	protected HashMap<Query, Integer> targetPosition;
