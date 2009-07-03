@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -12,7 +13,8 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.SimplePrConversion;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -24,8 +26,9 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG4 extends SimAbstractAgent{
+	private Random _R = new Random();
 	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
+	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
 	//k is a constant that equates EPPC across queries
@@ -34,17 +37,11 @@ public class NewG4 extends SimAbstractAgent{
 	// for debug
 	protected PrintStream output;
 
-
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		if(_salesReport == null || _queryReport == null) {
-			return new BidBundle();
+        if (_salesReport != null && _queryReport != null) {
+			updateK();
 		}
-
-
-		_unitsSoldModel.update(_salesReport);
-		if (_bidBundles.size() > 1) 
-			_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
 
 		for(Query query: _querySpace){
 
@@ -56,7 +53,7 @@ public class NewG4 extends SimAbstractAgent{
 			else{
 				_bidBundle.setBid(query, getQueryBid(query));
 			}
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		printInfo();
 		return _bidBundle;
@@ -66,11 +63,8 @@ public class NewG4 extends SimAbstractAgent{
 	public void initBidder() {
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 
-		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
-		for (Query query : _querySpace) {
-			_conversionPrModel.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
-		}
-
+		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
 			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
@@ -111,7 +105,16 @@ public class NewG4 extends SimAbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
+		// update models
+		if (_salesReport != null && _queryReport != null) {
 
+			_unitsSoldModel.update(_salesReport);
+			_conversionPrModel.updateModel(queryReport, salesReport);
+			
+			if (_bidBundles.size() > 1) 
+				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+
+		}
 	}
 
 	protected double updateK(){
@@ -146,21 +149,15 @@ public class NewG4 extends SimAbstractAgent{
 	protected double getQueryBid(Query q){
 		double bid = 0.0;
 		if(_day >= 1 && _day <= 2){
-			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = 1.2;
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = randDouble(.1,.6);
 			if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					bid = 1.75;
-				}
-				else bid = 1.5;
+				bid = randDouble(.25,.75);
 			}
 			if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
-				if (q.getComponent() != null && q.getComponent().equals(_advertiserInfo.getComponentSpecialty())){
-					bid = 2.5;
-				}
-				else bid = 1.75;
+				bid = randDouble(.35,1.0);
 			}
 		}
-		else bid = cpcTobid(_estimatedPrice.get(q)*_conversionPrModel.get(q).getPrediction(0)-k,q);
+		else bid = cpcTobid(_estimatedPrice.get(q)*_conversionPrModel.getPrediction(q)-k,q);
 
 		if(bid <= 0) return 0;
 		else{
@@ -174,6 +171,13 @@ public class NewG4 extends SimAbstractAgent{
 	protected double setQuerySpendLimit(Query q){
 		return 0;
 	}
+	
+
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
+	}
+
 
 	protected void printInfo() {
 		// print debug info
