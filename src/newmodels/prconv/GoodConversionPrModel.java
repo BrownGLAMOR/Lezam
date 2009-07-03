@@ -17,7 +17,7 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 	private HashMap<Query, Double> _wR;
 	private HashMap<Query, Double> _wh;
 
-	private int _timeHorizon = 1;
+	private int _timeHorizon = 5;
 
 	public GoodConversionPrModel(Set<Query> querySpace) {
 		_limits = new Limits();
