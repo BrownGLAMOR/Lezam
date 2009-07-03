@@ -23,12 +23,10 @@ public class CPCModelTestAgent extends SimAbstractAgent {
 	Random _R = new Random();					//Random number generator
 	private LinkedList<HashMap<Query, Double>> CPCPredictions;
 	private double sumVar;
-	private int nancounter;
 
 	public CPCModelTestAgent() {
 		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
 		sumVar = 0.0;
-		nancounter = 0;	
 	}
 
 
@@ -46,12 +44,12 @@ public class CPCModelTestAgent extends SimAbstractAgent {
 				System.out.println("Bid: " + tempBundle.getBid(query) + "  CPC: " + queryReport.getCPC(query) + "  CPC predict: " + cpcpredictions.get(query) + "Diff: " + (queryReport.getCPC(query) - cpcpredictions.get(query)));
 
 				if (Double.isNaN(queryReport.getCPC(query)) && _day >= 15){
-					nancounter++;
+					sumVar += cpcpredictions.get(query)*cpcpredictions.get(query);
 				}else if (_day > 15){
 					sumVar += (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
 				}
 			}
-			double stddev = Math.sqrt(sumVar/((_day - 15)*16 - nancounter));
+			double stddev = Math.sqrt(sumVar/((_day - 15)*16));
 			System.out.println("Standard Deviation: " + stddev);
 		}
 

@@ -17,6 +17,8 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -39,8 +41,10 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
+	private static final int MAX_TIME_HORIZON = 5;
+
 	private Random _R = new Random();
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 	private double LAMBDA = .995;
 	private int _numUsers = 90000;
 	private HashMap<Query, Double> _salesPrices;
@@ -50,9 +54,19 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractBidToCPC _bidToCPC;
 	private AbstractBidToPrClick _bidToPrClick;
 	private AbstractUnitsSoldModel _unitsSold;
+	private NewAbstractConversionModel _convPrModel;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
-	private int _capacityInc;
+	private int _capacityInc = 10;
+	private int lagDays = 5;
+
+
+	/*
+	 * For error calculations
+	 */
+	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions;
+	private double sumCPCError, sumClickPrError;
+	private int errorDayCounter;
 
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
@@ -64,6 +78,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
 		}
+		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
+		ClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
+		sumCPCError = 0.0;
+		sumClickPrError = 0.0;
+		errorDayCounter = 0;
 	}
 
 
@@ -80,11 +99,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
 		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
+		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
 		models.add(bidToPrClick);
 		models.add(unitsSold);
+		models.add(convPrModel);
 		return models;
 	}
 
@@ -109,6 +130,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else if(model instanceof AbstractBidToPrClick) {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				_bidToPrClick = bidToPrClick;
+			}
+			else if(model instanceof NewAbstractConversionModel) {
+				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
+				_convPrModel = convPrModel;
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
@@ -184,6 +209,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				bidToPrClick.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
 			}
+			else if(model instanceof NewAbstractConversionModel) {
+				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
+				int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+				if(model instanceof GoodConversionPrModel) {
+					GoodConversionPrModel adMaxModel = (GoodConversionPrModel) convPrModel;
+					adMaxModel.setTimeHorizon(timeHorizon);
+				}
+				convPrModel.updateModel(queryReport, salesReport);
+			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
@@ -195,10 +229,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
 		double numIncItemsPerSet = 0;
-		if(_day > 6){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
+			HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyClickPrPredictions = new HashMap<Query, Double>();
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
@@ -214,23 +250,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid, _bidBundles.getLast());
-					
+
 					System.out.println("\tBid: " + bid);
 					System.out.println("\tCPC: " + CPC);
-					System.out.println("\tClickPr: " + clickPr);
-					System.out.println("\tNumImps: " + numImps);
-					System.out.println("\tMumClicks: " + numClicks);
-					
-					
-					double convProb = _baseConvProbs.get(q);
+					debug("\tClickPr: " + clickPr);
+					debug("\tNumImps: " + numImps);
+					debug("\tMumClicks: " + numClicks);
 
-					double overcap = _unitsSold.getWindowSold() - _capacity; 
-					overcap = Math.pow(LAMBDA,Math.max(0, overcap));
-					convProb *= overcap;
-					
-					double ISUSerDiscount = .8;
-					
-					convProb *= ISUSerDiscount;
+
+					double convProb = _convPrModel.getPrediction(q);
+					System.out.println(convProb);
 
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
@@ -262,9 +291,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 
 			Collections.sort(allIncItems);
-//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
+			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
-//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
+			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, budget);
 
 			//set bids
@@ -278,8 +307,69 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 				else bid = 0; // TODO this is a hack that was the result of the fact that the item sets were empty
 
-				bidBundle.addQuery(q, bid * randDouble(.9,1.1), new Ad(), Double.NaN);  //Mult by rand to avoid users learning patterns.
+				bid *= randDouble(.9,1.1);  //Mult by rand to avoid users learning patterns.
+				
+				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid, _bidBundles.getLast()));
+				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast()));
+
+				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
+			CPCPredictions.add(dailyCPCPredictions);
+			ClickPrPredictions.add(dailyClickPrPredictions);
+			/*
+			 * Update model error
+			 */
+			if(_day > lagDays+3) {
+				errorDayCounter++;
+				/*
+				 * CPC Error
+				 */
+				HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-3);
+				QueryReport queryReport = _queryReports.getLast();
+				double dailyCPCerror = 0;
+				for(Query query : _querySpace) {
+					if (Double.isNaN(queryReport.getCPC(query))) {
+						//If CPC is NaN it means it is zero, which means our entire prediction is error!
+						double error = cpcpredictions.get(query)*cpcpredictions.get(query);
+						dailyCPCerror += error;
+						sumCPCError += error;
+					}
+					else {
+						double error = (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
+						dailyCPCerror += error;
+						sumCPCError += error;
+					}
+				}
+				System.out.println(errorDayCounter);
+				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
+				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
+				System.out.println("CPC  Standard Deviation: " + stddevCPC);
+				
+				/*
+				 * ClickPr Error
+				 */
+				HashMap<Query, Double> clickprpredictions = ClickPrPredictions.get(ClickPrPredictions.size()-3);
+				double dailyclickprerror = 0;
+				for(Query query : _querySpace) {
+					double clicks = 0;
+					double imps = 0;
+					if (clicks == 0 || imps == 0) {
+						//If CPC is NaN it means it is zero, which means our entire prediction is error!
+						double error = clickprpredictions.get(query)*clickprpredictions.get(query);
+						dailyclickprerror += error;
+						sumClickPrError += error;
+					}
+					else {
+						double error = (clicks/imps - clickprpredictions.get(query))*(clicks/imps- clickprpredictions.get(query));
+						dailyclickprerror = error;
+						sumClickPrError += error;
+					}
+				}
+				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
+				System.out.println("Daily ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
+				System.out.println("ClickPr Standard Deviation: " + stddevClickPr);
+			}
+
 		}
 		else {
 			for(Query q : _querySpace){
@@ -310,7 +400,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			if(budget >= 0) {
-//				System.out.println("adding item " + ii);
+				//				debug("adding item " + ii);
 				solution.put(ii.item().isID(), ii.item());
 				budget -= ii.w();
 			}
@@ -324,20 +414,21 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private HashMap<Integer,Item> fillKnapsackWithCapExt(LinkedList<IncItem> incItems, double budget){
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
 		LinkedList<IncItem> temp = new LinkedList<IncItem>();
-		
+
 		boolean incremented = false;
 		double valueLost = 0;
 		double valueGained = 0;
 		int knapSackIter = 0;
-		
+
 		for(IncItem ii: incItems) {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
-//			if(budget >= ii.w()) {
+			//			if(budget >= ii.w()) {
 			if(budget >= 0) {
 				if (incremented) {
 					temp.addLast(ii);
 					budget -= ii.w();
+					System.out.println("Temporarily adding: " + ii);
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
@@ -350,14 +441,17 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if (incremented) {
 					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
-							IncItem inc = temp.removeFirst();
-							System.out.println("adding item over capacity " + ii);
+							IncItem inc = temp.poll();
+							System.out.println("adding item over capacity " + inc);
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;
 						valueGained = 0;
 					}
-					else break;
+					else {
+						System.out.println("Not worth overselling anymore");
+						break;
+					}
 				}
 				double avgConvProb = .253; //the average probability of conversion;
 				/*
@@ -366,13 +460,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					avgUSP += _rpc.get(q);
 				}
 				avgUSP /= 16;
-				*/// This can be used later if the values actually change for the sales bonus
+				 */// This can be used later if the values actually change for the sales bonus
 				double avgUSP = 11.25;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP;
+					System.out.println("Adding " + ((avgConvProb - worseConvProb)*avgUSP) + " to value lost");
 				}
+				System.out.println("Total value lost: " + valueLost);
 				budget+=_capacityInc;
 				incremented = true;
 				knapSackIter++;
@@ -380,7 +476,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		}
 		return solution;
 	}
-	
+
 	/**
 	 * Get undominated items
 	 * @param items

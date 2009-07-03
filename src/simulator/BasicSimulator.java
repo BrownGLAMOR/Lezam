@@ -28,6 +28,7 @@ import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
+import agents.CPCModelTestAgent;
 import agents.Cheap;
 import agents.EqPftAgent;
 import agents.ILPAgent;
@@ -982,7 +983,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new CPCModelTestAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

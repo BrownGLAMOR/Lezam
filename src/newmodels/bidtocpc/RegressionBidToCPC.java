@@ -37,6 +37,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private int IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
+	int predictErrors = 0;
 
 
 	public RegressionBidToCPC (Set<Query> queryspace) {
@@ -53,6 +54,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		if(IDVar < 4) {
 			throw new RuntimeException("Don't set IDVar below 4");
 		}
+		
 	}
 
 	@Override
@@ -68,7 +70,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		for(int i = 0; i < IDVar - 2; i++) {
 			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (IDVar - 3 -i)).getBid(query));
 		}
-		bids.add(bidbundle.getBid(query));
+//		bids.add(bidbundle.getBid(query));
 		bids.add(currentBid);
 
 		List<Double> CPCs = new ArrayList<Double>();
@@ -120,16 +122,16 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		for(int i = 0; i < bids.size(); i++) {
 			double bid = bids.get(i);
 			prediction += coeff[i+predCounter] * bid;
-			if(i == bids.size() - 2) {
-				predCounter++;
-				prediction += coeff[i+predCounter] * bid * bid;
-			}
-			else if(i == bids.size() - 1) {
-				predCounter++;
-				prediction += coeff[i+predCounter] * bid * bid;
-				predCounter++;
-				prediction += coeff[i+predCounter] * bid * bid * bid;
-			}
+//			if(i == bids.size() - 2) {
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * bid * bid;
+//			}
+//			if(i == bids.size() - 1) {
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * bid * bid;
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * bid * bid * bid;
+//			}
 		}
 		predCounter += bids.size();
 		for(int i = 0; i < CPCs.size(); i++) {
@@ -138,29 +140,31 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				CPC = 0;
 			}
 			prediction += coeff[i+predCounter] * CPC;
-			if(i == CPCs.size() - 2) {
-				predCounter++;
-				prediction += coeff[i+predCounter] * CPC * CPC;
-			}
-			else if(i == CPCs.size() - 1) {
-				predCounter++;
-				prediction += coeff[i+predCounter] * CPC * CPC;
-				predCounter++;
-				prediction += coeff[i+predCounter] * CPC * CPC * CPC;
-			}
+//			if(i == CPCs.size() - 2) {
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * CPC * CPC;
+//			}
+//			else if(i == CPCs.size() - 1) {
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * CPC * CPC;
+//				predCounter++;
+//				prediction += coeff[i+predCounter] * CPC * CPC * CPC;
+//			}
 		}
 		predCounter += CPCs.size();
 
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
-//		if(prediction < currentBid) {
+		if(prediction < currentBid && prediction >= .05) {
 			return prediction;
 
-//		}
-//		else {
-//			return currentBid;
-//		}
+		}
+		else {
+			predictErrors++;
+			System.out.println(predictErrors);
+			return currentBid;
+		}
 	}
 
 	/*
@@ -253,13 +257,13 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				for(int i = 0; i < IDVar; i++) {
 					int min = i * numQueries + 1;
 					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
-					model += "bids[" + min +":" + max + "] + ";
-					if(i >= IDVar - 2) {
-						model += "I(bids[" + min +":" + max + "]^2) + ";
+					if(i != IDVar - 2) {
+						model += "bids[" + min +":" + max + "] + ";
 					}
-					if(i == IDVar -1) {
-						model += "I(bids[" + min +":" + max + "]^3) + ";
-					}
+//					if(i == IDVar -1) {
+//						model += "I(bids[" + min +":" + max + "]^2) + ";
+//						model += "I(bids[" + min +":" + max + "]^3) + ";
+//					}
 				}
 
 				for(int i = 0; i < IDVar-2; i++) {
@@ -267,12 +271,12 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
 
 					model += "cpcs[" + min +":" + max + "] + ";
-					if(i >= IDVar - 4) {
-						model += "I(cpcs[" + min +":" + max + "]^2) + ";
-					}
-					if(i == IDVar -3) {
-						model += "I(cpcs[" + min +":" + max + "]^3) + ";
-					}
+//					if(i >= IDVar - 4) {
+//						model += "I(cpcs[" + min +":" + max + "]^2) + ";
+//					}
+//					if(i == IDVar -3) {
+//						model += "I(cpcs[" + min +":" + max + "]^3) + ";
+//					}
 				}
 
 				model = model.substring(0, model.length()-3);
@@ -295,7 +299,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
-//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+			//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 
 			return true;
 		}
