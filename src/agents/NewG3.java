@@ -39,6 +39,7 @@ public class NewG3 extends SimAbstractAgent{
 
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final double MAX_BID_CPC_GAP = 1.5;
 	protected PrintStream output;
 	
 	@Override
@@ -62,6 +63,27 @@ public class NewG3 extends SimAbstractAgent{
 	@Override
 	public void initBidder() {
 
+		
+		
+		_bidBundle = new BidBundle();
+		for (Query query : _querySpace) {	
+			_bidBundle.setBid(query, getQueryBid(query));
+		}
+
+		_bidBundles = new ArrayList<BidBundle>();
+
+		initializeK();
+		
+		try {
+			output = new PrintStream(new File("newg3.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+
+	@Override
+	public Set<AbstractModel> initModels() {
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 
 		_conversionPrModel = new GoodConversionPrModel(_querySpace);
@@ -98,26 +120,6 @@ public class NewG3 extends SimAbstractAgent{
         		else _baselineConv.put(q,0.3);
         	}
         }
-		
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {	
-			_bidBundle.setBid(query, getQueryBid(query));
-		}
-
-		_bidBundles = new ArrayList<BidBundle>();
-
-		initializeK();
-		
-		try {
-			output = new PrintStream(new File("newg3.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
 		return null;
 	}
 
@@ -164,7 +166,7 @@ public class NewG3 extends SimAbstractAgent{
 	}
 
 	protected double cpcTobid(double cpc, Query query){
-		//return cpc + .1;
+
 		if (_day <= 5) return cpc + .1;
 		double bid = cpc;
 		while (_bidToCPC.getPrediction(query,bid,_bidBundles.get(_bidBundles.size() - 2)) < cpc){
@@ -181,13 +183,7 @@ public class NewG3 extends SimAbstractAgent{
 	protected double getQueryBid(Query q){		
 		double bid = 0.0;
 		if(_day <= 5){
-			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = randDouble(.1,.6);
-			if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				bid = randDouble(.25,.75);
-			}
-			if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
-				bid = randDouble(.35,1.0);
-			}
+			
 		}
 		
 		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.getPrediction(q),q);
@@ -200,10 +196,6 @@ public class NewG3 extends SimAbstractAgent{
 
 	}
 
-	private double randDouble(double a, double b) {
-		double rand = _R.nextDouble();
-		return rand * (b - a) + a;
-	}
 
 	
 	protected double setQuerySpendLimit(Query q){
