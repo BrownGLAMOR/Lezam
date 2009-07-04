@@ -88,7 +88,7 @@ public class CHAgent extends SimAbstractAgent {
 
 		_honestFactor = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_honestFactor.put(q, 0.5);
+			_honestFactor.put(q, .4);
 		}
 
 		_baseLineConversion = new HashMap<Query, Double>();
