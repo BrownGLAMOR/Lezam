@@ -33,7 +33,6 @@ public class CHAgent extends SimAbstractAgent {
 
 	protected BidBundle _bidBundle;
 	protected double _dailyCapacity;
-	protected double _topPosition;
 	
 	protected ArrayList<BidBundle> _bidBundles;
 
@@ -47,10 +46,7 @@ public class CHAgent extends SimAbstractAgent {
 		
 		// adjust parameters
 		for (Query q : _querySpace) {
-			double currentWantedSale = _wantedSales.get(q);
-			double currentHonestFactor = _honestFactor.get(q);
-			adjustHonestFactor(q, currentHonestFactor, currentWantedSale);
-			adjustWantedSales(q, currentWantedSale);
+			adjustWantedSales(q);
 		}
 		
 		double normalizeFactor = 0;
@@ -69,6 +65,10 @@ public class CHAgent extends SimAbstractAgent {
 			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
 		}
 
+		for (Query q : _querySpace) {
+			adjustHonestFactor(q);
+		}
+		
 		// build bid bundle
 		for (Query q : _querySpace) {
 			_bidBundle.setBid(q, getQueryBid(q));
@@ -88,7 +88,7 @@ public class CHAgent extends SimAbstractAgent {
 
 		_honestFactor = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_honestFactor.put(q, .4);
+			_honestFactor.put(q, .3);
 		}
 
 		_baseLineConversion = new HashMap<Query, Double>();
@@ -133,12 +133,7 @@ public class CHAgent extends SimAbstractAgent {
 		
 		_bidBundles = new ArrayList<BidBundle>();
 		
-        /*
-		if (_numPS == 1)
-			_topPosition = 1;
-		else
-			_topPosition = 2;
-       */
+
 		try {
 			output = new PrintStream(new File("ch.txt"));
 		} catch (FileNotFoundException e) {
@@ -195,32 +190,27 @@ public class CHAgent extends SimAbstractAgent {
 		return dailyLimit;
 	}
 
-	protected void adjustHonestFactor(Query q, double currentHonestFactor,
-			double currentWantedSale) {
+	protected void adjustHonestFactor(Query q) {
 		double newHonest;
 
 		/* if we sold less than what we expected, and we got bad position
 		 and also wanted sales does not tend to go over capacity, then higher
 		 our bid*/
-		if (_salesReport.getConversions(q) < currentWantedSale) {
+		if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
 			if (!(_queryReport.getPosition(q) <= 4)) {
 
-				newHonest = currentHonestFactor * 1.2;
-				if (newHonest >= 0.95)
-					newHonest = 0.95;
+				newHonest = Math.min(_honestFactor.get(q) * 1.1, .9);
 				_honestFactor.put(q, newHonest);
 
 			}
 		} else {
 			/* if we sold more than what expected, and we got good position,
 			 then lower the bid*/
-			if (_salesReport.getConversions(q) >= currentWantedSale) {
+			if (_salesReport.getConversions(q) >=  _wantedSales.get(q)) {
 				if (_queryReport.getPosition(q) <= 3) {
 					/*newHonest = (_queryReport.getCPC(q) - 0.01)
 							/ (_revenue.get(q) * conversion);*/
-					newHonest = _honestFactor.get(q)*0.9;
-					if (newHonest < 0.05)
-						newHonest = 0.05;
+					newHonest = Math.min(_honestFactor.get(q)*0.9, .1);
 					_honestFactor.put(q, newHonest);
 				}
 			}
@@ -228,22 +218,20 @@ public class CHAgent extends SimAbstractAgent {
 
 	}
 
-	protected void adjustWantedSales(Query q, double currentWantedSale) {
+	protected void adjustWantedSales(Query q) {
 			/* if we sold less than what we expected, but we got good position,
 			 then lower our expectation*/
-			if (_salesReport.getConversions(q) < currentWantedSale) {
+			if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
 				if (_queryReport.getPosition(q) <= 4) {
-					_wantedSales.put(q, currentWantedSale * .8);
+					_wantedSales.put(q, _wantedSales.get(q) * .8);
 				}
 			} else {
 				/* if we sold more than what we expected, but we got bad
 				 position, then increase our expectation*/
 				if (!(_queryReport.getPosition(q) <= 4)) {
-					_wantedSales.put(q, currentWantedSale * 1.25);
+					_wantedSales.put(q, _wantedSales.get(q) * 1.25);
 				}
 			}
-		
-
 	}
 
 	protected void printInfo() {
