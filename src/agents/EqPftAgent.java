@@ -42,7 +42,6 @@ public class EqPftAgent extends SimAbstractAgent {
 	protected AbstractBidToCPC _bidToCPCModel;
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
-	protected double _oversell;
 	private Random _R = new Random();
 	
 	protected HashMap<Query, Double> _desiredSales;
@@ -126,8 +125,6 @@ public class EqPftAgent extends SimAbstractAgent {
 		_avgProfit /= _querySpace.size();
 		_oldAvgProfit = _avgProfit;
 		
-		_oversell = 1.5;
-		
 		_bidBundleList = new ArrayList<BidBundle>();
 		// setup the debug info recorder
 		
@@ -167,13 +164,6 @@ public class EqPftAgent extends SimAbstractAgent {
 			}
 		}
 		
-		// adjust oversell factor, normalize desiredSales
-		
-		if (_oldAvgProfit + _errorOfProfit < _avgProfit) _oversell *= 1.1;
-		else if (_oldAvgProfit - _errorOfProfit > _avgProfit) _oversell *= 0.9;
-		_oversell = Math.min(MAX_OVERSELL, _oversell);
-		_oversell = Math.max(MIN_OVERSELL, _oversell);
-		
 		double normalizeFactor = 0;
 		for (Query query : _querySpace) {
 			normalizeFactor += _desiredSales.get(query);
@@ -184,7 +174,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			unitsSold += _salesReport.getConversions(query);
 		}
 		
-		int targetCapacity = (int)Math.max(2*_oversell*_dailyCapacity - unitsSold, _dailyCapacity*.5);
+		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
 		normalizeFactor = targetCapacity/normalizeFactor;
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
@@ -275,7 +265,6 @@ public class EqPftAgent extends SimAbstractAgent {
 		buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
 		buff.append("\t").append("Daily Capacity: ").append(_dailyCapacity).append("\n");
 		buff.append("\t").append("Yesterday Sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
-		buff.append("\t").append("Oversell Factor: ").append(_oversell).append("\n");
 		buff.append("\t").append("Manufacturer Specialty: ").append(_advertiserInfo.getManufacturerSpecialty()).append("\n");
 		buff.append("\t").append("Average Profit:").append(_avgProfit).append("\n");
 		buff.append("\t").append("Old Average Profit:").append(_oldAvgProfit).append("\n");
