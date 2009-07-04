@@ -155,8 +155,8 @@ public class SlotAgent extends SimAbstractAgent{
   }   
    
    protected void walking(Query q, double currentReinvest){
-
-	   if((_queryReport.getPosition(q) > 1) && _queryReport.getPosition(q) < 5){
+      
+	   /*if((_queryReport.getPosition(q) > 1) && _queryReport.getPosition(q) < 5){
 		      Random random = new Random();
 			  double currentBid = getQueryBid(q);
 			  double y = currentBid/currentReinvest;
@@ -172,7 +172,7 @@ public class SlotAgent extends SimAbstractAgent{
                 if(currentReinvest - rfDistance <= 0.1)	_reinvestment.put(q,0.1);	    	
                 else  _reinvestment.put(q, currentReinvest - rfDistance);
 		      }
-	       }
+	       }*/
    }
  
    
