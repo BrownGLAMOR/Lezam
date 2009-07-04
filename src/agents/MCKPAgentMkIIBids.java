@@ -76,8 +76,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .15;
-		double min = .15;
+		double increment  = .05;
+		double min = .04;
 		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
@@ -259,6 +259,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		double start = System.currentTimeMillis();
 		BidBundle bidBundle = new BidBundle();
 		double numIncItemsPerSet = 0;
 		if(_day > lagDays){
@@ -338,11 +339,18 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
+					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				}
-				else bid = 0; // TODO this is a hack that was the result of the fact that the item sets were empty
+				else { 
+					/*
+					 * We decided that we did not want to be in this query, so we will use it to explore the space
+					 */
+					//bid = 0.0;
+					bid = randDouble(.04, 2.5);
+					bidBundle.addQuery(q, bid, new Ad(), bid*5);
+				}
 
-				bid *= randDouble(.9,1.1);  //Mult by rand to avoid users learning patterns.
-				
 				double pos = _bidToPosModel.getPosition(q, bid);
 				double posPrClick;
 				if(Double.isNaN(pos)) {
@@ -356,9 +364,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast()));
 				dailyPosPredictions.put(q,pos);
 				dailyPosPrClickPredictions.put(q,posPrClick);
-				
 
-				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
@@ -372,7 +378,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				debug(errorDayCounter);
 				QueryReport queryReport = _queryReports.getLast();
 				SalesReport salesReport = _salesReports.getLast();
-				
+				System.out.println("Day: " + _day);
 				
 				/*
 				 * CPC Error
@@ -494,7 +500,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return bidBundle;
 	}
 
@@ -543,7 +551,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					debug("adding item" + ii);
+					System.out.println("adding item" + ii);
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
@@ -553,7 +561,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
 							IncItem inc = temp.poll();
-							debug("adding item over capacity " + inc);
+							System.out.println("adding item over capacity " + inc);
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;
