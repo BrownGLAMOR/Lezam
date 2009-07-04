@@ -187,8 +187,7 @@ public class EqPftAgent extends SimAbstractAgent {
 		int targetCapacity = (int)Math.max(2*_oversell*_dailyCapacity - unitsSold, _dailyCapacity*.5);
 		normalizeFactor = targetCapacity/normalizeFactor;
 		for (Query query : _querySpace) {
-			double sales = Math.max(_desiredSales.get(query)*normalizeFactor, _errorOfConversions);
-			_desiredSales.put(query, sales);
+			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
 		}
 		
 		for (Query query: _querySpace) {
@@ -200,7 +199,7 @@ public class EqPftAgent extends SimAbstractAgent {
 			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query)||
 				_queryReport.getPosition(query) == Double.NaN) {
 				double newProfitMargin;
-				if (latestProfit > _avgProfit)
+				if (latestProfit > _avgProfit && _avgProfit > 0)
 					newProfitMargin = Math.min(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query)),_profitMargins.get(query)*0.9);
 				else newProfitMargin = _profitMargins.get(query)*0.9;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
@@ -209,9 +208,9 @@ public class EqPftAgent extends SimAbstractAgent {
 			}
 			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
 				double newProfitMargin;
-				if (latestProfit < _avgProfit)
+				if (latestProfit < _avgProfit && _avgProfit > 0)
 					newProfitMargin = Math.max(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query)),_profitMargins.get(query)*1.1);
-				else newProfitMargin = _profitMargins.get(query);
+				else newProfitMargin = _profitMargins.get(query)*1.1;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.1, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
