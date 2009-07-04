@@ -164,7 +164,7 @@ public class NewG3 extends SimAbstractAgent{
 	protected double cpcTobid(double cpc, Query query){
 		if (_day <= 6) return cpc + .1;
 		double bid = cpc + .1;
-		while (_bidToCPC.getPrediction(query,bid,_bidBundleList.get(_bidBundleList.size() - 2)) < cpc){
+		while (_bidToCPC.getPrediction(query,bid) < cpc){
 			bid += 0.1;
 			if (bid - cpc >= MAX_BID_CPC_GAP) break;
 		}     

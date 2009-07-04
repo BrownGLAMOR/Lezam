@@ -337,7 +337,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 
 		double conv = estimateConv(query, bid);
 		double cpc = estimateCPC(query, bid);
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
 		double numImps = _queryToNumImpModel.getPrediction(query);
 		int numClicks = (int) (clickPr * numImps);
 		result = numClicks * (conv*revenue - cpc); 
@@ -364,7 +364,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double start = System.currentTimeMillis();
 		double result = 0;
 		
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
 		double numImps = _queryToNumImpModel.getPrediction(query);
 		int numClicks = (int) (clickPr * numImps);
 		double conv = estimateConv(query, bid);
@@ -427,7 +427,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 
 	public double estimateClicks (Query query, double bid) {
 		//result = _userModel.getPrediction(p, us) / _numSearchingUsers;	// and estimate of the percent of this user in the query		
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad(), _bidBundles.getLast());
+		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
 
 		return clickPr;
 	}
@@ -450,7 +450,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double result = 0;
 //		double start = System.currentTimeMillis();
 
-		result = _bidToCPCModel.getPrediction(query, bid, _bidBundles.getLast());
+		result = _bidToCPCModel.getPrediction(query, bid);
 		if (Double.isNaN(result) || Double.isInfinite(result) || Double.isInfinite(-result) || Double.valueOf(result).equals(0.0)) result = _regReserveScore+0.01; 
 		
 //		double stop = System.currentTimeMillis();

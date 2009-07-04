@@ -184,7 +184,7 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 	}
 	
 	@Override
-	public double getPrediction(Query query, double bid, BidBundle bidbundle) {
+	public double getPrediction(Query query, double bid) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

@@ -55,7 +55,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid, Ad currentAd, BidBundle bidbundle){
+	public double getPrediction(Query query, double currentBid, Ad currentAd){
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest

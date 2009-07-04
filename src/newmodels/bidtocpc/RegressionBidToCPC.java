@@ -33,14 +33,22 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	protected int[] _predCounter;
 	private RConnection c;
 	private double[] coeff;
-	private int numQueries = 16;
-	private int IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private int _numQueries = 16;
+	private int _IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
+	private int _numPrevDays = 15;	//How many days worth of data to include in the regression
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	int predictErrors = 0;
+	
+	public RegressionBidToCPC(Set<Query> queryspace) {
+		this(queryspace,4,60);
+	}
+	
+	public RegressionBidToCPC(Set<Query> queryspace, int IDVar) {
+		this(queryspace,IDVar,60);
+	}
 
-
-	public RegressionBidToCPC (Set<Query> queryspace) {
+	public RegressionBidToCPC(Set<Query> queryspace, int IDVar, int numPrevDays) {
 		try {
 			c = new RConnection();
 		} catch (RserveException e) {
@@ -51,30 +59,31 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
-		if(IDVar < 4) {
-			throw new RuntimeException("Don't set IDVar below 4");
+		_IDVar = IDVar;
+		_numPrevDays = numPrevDays;
+		if(_IDVar < 4 && _numPrevDays <= _IDVar) {
+			throw new RuntimeException("Don't set IDVar below 4, or numPrevDays < IDVar");
 		}
-		
 	}
 
 	@Override
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid, BidBundle bidbundle){
+	public double getPrediction(Query query, double currentBid){
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
 		 */
 		List<Double> bids = new ArrayList<Double>();
-		for(int i = 0; i < IDVar - 2; i++) {
-			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (IDVar - 3 -i)).getBid(query));
+		for(int i = 0; i < _IDVar - 2; i++) {
+			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (_IDVar - 3 -i)).getBid(query));
 		}
 //		bids.add(bidbundle.getBid(query));
 		bids.add(currentBid);
 
 		List<Double> CPCs = new ArrayList<Double>();
-		for(int i = IDVar-3; i >= 0; i --) {
+		for(int i = _IDVar-3; i >= 0; i --) {
 			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
 			CPCs.add(cpc);
 		}
@@ -176,6 +185,19 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 		_queryReports.add(queryreport);
 		_bidBundles.add(bidbundle);
+		
+		if(_bidBundles.size() != _queryReports.size()) {
+			throw new RuntimeException("Uneven number of bidbundles and query reports");
+		}
+		
+		/*
+		 * Remove the oldest points from the model
+		 */
+		while(_bidBundles.size() > _numPrevDays) {
+			_bidBundles.remove(0);
+			_queryReports.remove(0);
+		}
+			
 
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
@@ -190,7 +212,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 
-		if(_bids.size() > IDVar*numQueries) {
+		if(_bids.size() > _IDVar*_numQueries) {
 
 			double[] bids = new double[_bids.size()];
 			double[] cpcs = new double[_bids.size()];
@@ -200,7 +222,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				cpcs[i] = _CPCs.get(i);
 			}
 
-			int arrLen = _bids.size() - (IDVar-1)*numQueries ;
+			int arrLen = _bids.size() - (_IDVar-1)*_numQueries ;
 
 			int[] queryInd1 = new int[arrLen];
 			int[] queryInd2 = new int[arrLen];
@@ -253,11 +275,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("bids", bids);
 				c.assign("cpcs", cpcs);
 
-				String model = "model = lm(cpcs[" + ((IDVar - 1)*numQueries+1) + ":" + _bids.size() +  "] ~ queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
-				for(int i = 0; i < IDVar; i++) {
-					int min = i * numQueries + 1;
-					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
-					if(i != IDVar - 2) {
+				String model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
+				for(int i = 0; i < _IDVar; i++) {
+					int min = i * _numQueries + 1;
+					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
+					if(i != _IDVar - 2) {
 						model += "bids[" + min +":" + max + "] + ";
 					}
 //					if(i == IDVar -1) {
@@ -266,9 +288,9 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 //					}
 				}
 
-				for(int i = 0; i < IDVar-2; i++) {
-					int min = i * numQueries + 1;
-					int max = _bids.size() - (IDVar - 1 - i) * numQueries;
+				for(int i = 0; i < _IDVar-2; i++) {
+					int min = i * _numQueries + 1;
+					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
 
 					model += "cpcs[" + min +":" + max + "] + ";
 //					if(i >= IDVar - 4) {

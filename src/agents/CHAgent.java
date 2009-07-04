@@ -184,7 +184,7 @@ public class CHAgent extends SimAbstractAgent {
 		double bid = _bidBundle.getBid(q);
 		double cpc;
 		if (_day <= 6) cpc = .9*bid; 
-		else cpc = _bidToCPCModel.getPrediction(q, bid, _bidBundles.get(_bidBundles.size() - 2));
+		else cpc = _bidToCPCModel.getPrediction(q, bid);
 		double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
 		
 		return dailyLimit;

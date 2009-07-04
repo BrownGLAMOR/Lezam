@@ -20,6 +20,6 @@ public abstract class AbstractBidToPrClick extends AbstractModel {
 									BidBundle bidBundle);
 	
 
-	public abstract double getPrediction(Query query, double currentBid, Ad currentAd, BidBundle bidbundle);
+	public abstract double getPrediction(Query query, double currentBid, Ad currentAd);
 
 }

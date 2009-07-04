@@ -162,7 +162,7 @@ public class DPAgent extends SimAbstractAgent{
 						if (capacity > j*prConv) break;
 						double tmp = 0;
 						if (i > 0) tmp = profit[i - 1][j - capacity];
-						tmp += capacity * (revenueModels.get(query).getRevenue() - bidToCPC.getPrediction(query, bid, oldBidBundle)/prConversionModels.get(query).getPrediction(overcap));
+						tmp += capacity * (revenueModels.get(query).getRevenue() - bidToCPC.getPrediction(query, bid)/prConversionModels.get(query).getPrediction(overcap));
 
 						if (tmp >= profit[i][j]) {
 							profit[i][j] = tmp;

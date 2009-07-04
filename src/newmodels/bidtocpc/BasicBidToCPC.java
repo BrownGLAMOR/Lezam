@@ -7,7 +7,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 public class BasicBidToCPC extends AbstractBidToCPC {
 
 	@Override
-	public double getPrediction(Query query, double bid, BidBundle bidbundle) {
+	public double getPrediction(Query query, double bid) {
 		return 0;
 	}
 

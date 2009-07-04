@@ -25,15 +25,7 @@ public abstract class AbstractBidToCPC extends AbstractModel {
 	public AbstractBidToCPC() {
 	}
 	
-	/**
-	public abstract boolean updateModel(QueryReport queryReport,
-									SalesReport salesReport);
-	 * @throws REXPMismatchException 
-	 * @throws RserveException 
-	 * @throws REngineException 
-	*/
-	
-	public abstract double getPrediction(Query query, double bid, BidBundle bidbundle);
+	public abstract double getPrediction(Query query, double bid);
 
 	public abstract boolean updateModel(QueryReport queryreport, BidBundle bidbundle);
 	

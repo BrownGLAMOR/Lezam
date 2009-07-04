@@ -111,7 +111,7 @@ public class DPBAgent extends SimAbstractAgent{
 			double bid = .1;
 			double maxBid = revenueModels.get(query).getRevenue()*prConversionModels.get(query).getPrediction(overcap)*.9;
 			while (bid < maxBid) {
-				double prClicks = bidToPrClickModel.getPrediction(query, bid, null, bidBundleList.get(bidBundleList.size() - 2));
+				double prClicks = bidToPrClickModel.getPrediction(query, bid, null);
 				double imp = queryToNumImpModel.getPrediction(query);
 				bidToClicks.put(bid, (int) (prClicks*imp));
 			}
@@ -147,7 +147,7 @@ public class DPBAgent extends SimAbstractAgent{
 						double tmp = 0;
 						if (i > 0) tmp = profit[i - 1][j - capacity];
 						double rev = revenueModels.get(query).getRevenue();
-						double cpc = bidToCPCModel.getPrediction(query, bid, bidBundleList.get(bidBundleList.size() - 2));
+						double cpc = bidToCPCModel.getPrediction(query, bid);
 						tmp += capacity * (rev - cpc/prConv);
 
 						if (tmp >= profit[i][j]) {
@@ -182,7 +182,7 @@ public class DPBAgent extends SimAbstractAgent{
 			i--;
 			double bid = bids[i][capacity];
 			double clicks = sales[i][capacity]*1.0/prConversionModels.get(queries[i]).getPrediction(overcap);
-			double cpc = bidToCPCModel.getPrediction(queries[i], bid, bidBundleList.get(bidBundleList.size() - 2));
+			double cpc = bidToCPCModel.getPrediction(queries[i], bid);
 			double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
 			
 			bidBundle.setBid(queries[i], bid);

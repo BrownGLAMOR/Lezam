@@ -64,7 +64,7 @@ public class ClickPrModelTestAgent extends SimAbstractAgent {
 			double bid = randDouble(.25,1.5);
 			bundle.addQuery(query, bid, new Ad());
 			if(_day >= 10) {
-				dailyClickPrredictions.put(query, _bidToClickPr.getPrediction(query, bid, new Ad(), _bidBundles.getLast()));
+				dailyClickPrredictions.put(query, _bidToClickPr.getPrediction(query, bid, new Ad()));
 			}
 		}
 		clickPrPredictions.add(dailyClickPrredictions);

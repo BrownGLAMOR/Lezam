@@ -281,10 +281,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				debug("Query: " + q);
 				for(int i = 0; i < bidList.size(); i++) {
 					double bid = bidList.get(i);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast());
+					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid, _bidBundles.getLast());
+					double CPC = _bidToCPC.getPrediction(q, bid);
 
 					debug("\tBid: " + bid);
 					debug("\tCPC: " + CPC);
@@ -360,8 +360,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					posPrClick = _posToPrClickModel.getPrediction(q, pos);
 				}
 
-				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid, _bidBundles.getLast()));
-				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad(), _bidBundles.getLast()));
+				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid));
+				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad()));
 				dailyPosPredictions.put(q,pos);
 				dailyPosPrClickPredictions.put(q,posPrClick);
 
