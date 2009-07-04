@@ -147,15 +147,12 @@ public class NewG3 extends SimAbstractAgent{
 		for(Query query:_querySpace){
 			sum+= _salesReport.getConversions(query);
 		}
+		
 		if(sum <= 0.9*dailyLimit) {
-			if(sum <= 0.7*dailyLimit) k = k*0.7;
-			else if(sum <= 0.8*dailyLimit) k = k*0.8;
-			else k = k*0.9;
+			k *= .9;
 		}
-		if(sum >= 1.2*dailyLimit){
-			if(sum <= 1.5*dailyLimit) k = k*1.3;
-			else if(sum <= 1.4*dailyLimit) k = k*1.2;
-			else k = k*1.1;
+		if(sum >= 1.1*dailyLimit){
+			k *= 1.1;
 		}
 
 		k = Math.max(1, k);
