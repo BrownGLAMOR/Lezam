@@ -35,7 +35,7 @@ public class NewG3 extends SimAbstractAgent{
 	//k is a constant that equates EPPS across queries
 	protected double k;
 	protected BidBundle _bidBundle;
-	protected ArrayList<BidBundle> _bidBundles;
+	protected ArrayList<BidBundle> _bidBundleList;
 
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
@@ -45,7 +45,7 @@ public class NewG3 extends SimAbstractAgent{
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
-		if (_salesReport != null && _queryReport != null) {
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
 
@@ -54,25 +54,23 @@ public class NewG3 extends SimAbstractAgent{
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 
-		_bidBundles.add(_bidBundle);
+		_bidBundleList.add(_bidBundle);
 		this.printInfo();
-		 
+		
 		return _bidBundle;
 	}
 
 	@Override
 	public void initBidder() {
-
-		
-		
+	
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {	
 			_bidBundle.setBid(query, getQueryBid(query));
 		}
 
-		_bidBundles = new ArrayList<BidBundle>();
+		_bidBundleList = new ArrayList<BidBundle>();
 
-		initializeK();
+		k = 10;
 		
 		try {
 			output = new PrintStream(new File("newg3.txt"));
@@ -135,8 +133,8 @@ public class NewG3 extends SimAbstractAgent{
                _conversionPrModel.setTimeHorizon(_timeHorizon);
                _conversionPrModel.updateModel(queryReport, salesReport);
 
-			if (_bidBundles.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+			if (_bidBundleList.size() > 1) 
+				_bidToCPC.updateModel(_queryReport, _bidBundleList.get(_bidBundleList.size() - 2));
 
 		}
 
@@ -160,34 +158,30 @@ public class NewG3 extends SimAbstractAgent{
 			else k = k*1.1;
 		}
 
-		if (k > 10)  k = 10;
-		if (k < 1) k = 1;
+		k = Math.max(1, k);
+		k = Math.min(12, k);
+	
 		return k;
 	}
 
 	protected double cpcTobid(double cpc, Query query){
-
-		if (_day <= 5) return cpc + .1;
-		double bid = cpc;
-		while (_bidToCPC.getPrediction(query,bid,_bidBundles.get(_bidBundles.size() - 2)) < cpc){
+		if (_day <= 6) return cpc + .1;
+		double bid = cpc + .1;
+		while (_bidToCPC.getPrediction(query,bid,_bidBundleList.get(_bidBundleList.size() - 2)) < cpc){
 			bid += 0.1;
+			if (bid - cpc >= MAX_BID_CPC_GAP) break;
 		}     
 		return bid;
 	}
 
-	protected void initializeK(){
-		//will change later
-		k = 8;
-	}
-
 	protected double getQueryBid(Query q){		
-		double bid = 0.0;
-		if(_day <= 5){
-			
-		}
 		
-		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.getPrediction(q),q);
-
+		double prConv;
+		if(_day <= 5) prConv = _baselineConv.get(q);
+		else prConv = _conversionPrModel.getPrediction(q);
+		
+		double bid;
+		bid = cpcTobid((_estimatedPrice.get(q) - k)*prConv,q);
 		if(bid <= 0) return 0;
 		else{
 			if(bid > 2.5) return 2.5;
@@ -195,7 +189,6 @@ public class NewG3 extends SimAbstractAgent{
 		}
 
 	}
-
 
 	
 	protected double setQuerySpendLimit(Query q){
@@ -207,10 +200,11 @@ public class NewG3 extends SimAbstractAgent{
 		// print debug info
 		StringBuffer buff = new StringBuffer(255);
 		buff.append("****************\n");
+		buff.append("\t").append("Day: ").append(_day).append("\n");
+		buff.append("\t").append("k: ").append(k).append("\n");
+		buff.append("****************\n");
 		for(Query q : _querySpace){
 			buff.append("\t").append("Day: ").append(_day).append("\n");
-			buff.append(q).append("\n");
-			buff.append("\t").append("k: ").append(k).append("\n");
 			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
 			buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
 			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
