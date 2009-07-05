@@ -26,14 +26,14 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG4 extends SimAbstractAgent{
-	private Random _R = new Random();
-	protected AbstractUnitsSoldModel _unitsSoldModel;
+	protected HashMap<Query, Double> _baselineConv;
 	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
 	//k is a constant that equates EPPC across queries
 	protected double k;
 	protected BidBundle _bidBundle;
+	protected final double MAX_BID_CPC_GAP = 1.5;
 	// for debug
 	protected PrintStream output;
 
@@ -61,8 +61,6 @@ public class NewG4 extends SimAbstractAgent{
 
 	@Override
 	public void initBidder() {
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-
 		_conversionPrModel = new GoodConversionPrModel(_querySpace);
 		
 		_estimatedPrice = new HashMap<Query, Double>();
@@ -90,6 +88,19 @@ public class NewG4 extends SimAbstractAgent{
 			_bidBundle.setBid(query, getQueryBid(query));
 		}
 
+		_baselineConv = new HashMap<Query, Double>();
+        for(Query q: _querySpace){
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
+        		else _baselineConv.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
+        		else _baselineConv.put(q,0.3);
+        	}
+        }
+		
 		try {
 			output = new PrintStream(new File("newg4.txt"));
 		} catch (FileNotFoundException e) {
@@ -105,16 +116,7 @@ public class NewG4 extends SimAbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		// update models
-		if (_salesReport != null && _queryReport != null) {
-
-			_unitsSoldModel.update(_salesReport);
-			_conversionPrModel.updateModel(queryReport, salesReport);
-			
-			if (_bidBundles.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
-
-		}
+		
 	}
 
 	protected double updateK(){
@@ -123,19 +125,26 @@ public class NewG4 extends SimAbstractAgent{
 		for(Query query:_querySpace){
 			sum+= _salesReport.getConversions(query);
 		}
-		if(sum <= 0.9*dailyLimit) k = k*1.3;
-		if(sum >= 1.3*dailyLimit) k = k*0.7;
 
-		if(k > 2)  k = 2;
-		if(k < 0.1) k = 0.1;
+		if(sum <= 0.9*dailyLimit) {
+			k *= .9;
+		}
+		if(sum >= 1.1*dailyLimit){
+			k *= 1.1;
+		}
+
+		k = Math.max(.1, k);
+		k = Math.min(1.2, k);
+	
 		return k;
 	}
 
 	protected double cpcTobid(double cpc, Query query){
 		if (_day <= 6) return cpc + .1;
-		double bid = 0;
-		while(_bidToCPC.getPrediction(query,bid) < cpc){
+		double bid = cpc + .1;
+		while (_bidToCPC.getPrediction(query,bid) < cpc){
 			bid += 0.1;
+			if (bid - cpc >= MAX_BID_CPC_GAP) break;
 		}     
 		return bid;
 
@@ -143,25 +152,19 @@ public class NewG4 extends SimAbstractAgent{
 
 	protected void initializeK(){
 		//will change later
-		k = 0.75;
+		k = 0.8;
 	}
 
 	protected double getQueryBid(Query q){
-		double bid = 0.0;
-		if(_day >= 1 && _day <= 2){
-			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = randDouble(.1,.6);
-			if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				bid = randDouble(.25,.75);
-			}
-			if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
-				bid = randDouble(.35,1.0);
-			}
-		}
-		else bid = cpcTobid(_estimatedPrice.get(q)*_conversionPrModel.getPrediction(q)-k,q);
-
+		double prConv;
+		if(_day <= 5) prConv = _baselineConv.get(q);
+		else prConv = _conversionPrModel.getPrediction(q);
+		
+		double bid;
+		bid = cpcTobid(_estimatedPrice.get(q)*prConv - k,q);
 		if(bid <= 0) return 0;
 		else{
-			if(bid > 3) return 3;
+			if(bid > 2.5) return 2.5;
 			else return bid;
 		}
 
@@ -172,20 +175,12 @@ public class NewG4 extends SimAbstractAgent{
 		return 0;
 	}
 	
-
-	private double randDouble(double a, double b) {
-		double rand = _R.nextDouble();
-		return rand * (b - a) + a;
-	}
-
-
 	protected void printInfo() {
 		// print debug info
 		StringBuffer buff = new StringBuffer(255);
 		buff.append("****************\n");
 		buff.append("\t").append("Day: ").append(_day).append("\n");
 		buff.append("\t").append("K is").append(k).append("\n");
-		buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
 		buff.append("\t").append("Manufacturer specialty: ").append(_advertiserInfo.getManufacturerSpecialty()).append("\n");
 		buff.append("****************\n");
 		for(Query q : _querySpace){
