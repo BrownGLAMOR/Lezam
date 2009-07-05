@@ -27,7 +27,6 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class H3 extends SimAbstractAgent{
-	private Random _R = new Random();
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected NewAbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
@@ -43,6 +42,7 @@ public class H3 extends SimAbstractAgent{
 
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final double MAX_BID_CPC_GAP = 1.5;
 	protected PrintStream output;	
 	
 	
@@ -51,53 +51,23 @@ public class H3 extends SimAbstractAgent{
 		for(Query query: _querySpace){
 			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
 		}
-	
-		if(_day >=5){
-		    updateK();
-		   adjustK();
+
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
+			updateK();
 		}
+		
 		for(Query query: _querySpace){
 	
 			_bidBundle.setBid(query, getQueryBid(query));
 		
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
-		
+		_bidBundles.add(_bidBundle);
 		return _bidBundle;
 	}
 
 	@Override
-	public void initBidder() {
-		
-		    _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-	
-			_conversionPrModel = new GoodConversionPrModel(_querySpace);
-		    
-		    _estimatedPrice = new HashMap<Query, Double>();
-		    for(Query query:_querySpace){
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
-		    		_estimatedPrice.put(query, 10.0 + 5/3);
-		    	}
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-		    	  if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
-		    	  else{
-		    	     if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
-		    	     else _estimatedPrice.put(query, 10.0 + 5/3);
-		    	  }
-		    	}
-		    	if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-		    		if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
-		    		else _estimatedPrice.put(query, 10.0);
-		    	}
-		    }
-		    
-		    _bidToCPC = new RegressionBidToCPC(_querySpace);
-
-			_bidToclick = new HashMap<Query, BasicBidToClick>();
-			for (Query query : _querySpace) {
-				_bidToclick.put(query, new BasicBidToClick(query, false));	
-			}
-		    	
+	public void initBidder() {	
 			_bidBundle = new BidBundle();
 		    for (Query query : _querySpace) {	
 				_bidBundle.setBid(query, getQueryBid(query));
@@ -116,13 +86,56 @@ public class H3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+
+		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+
+		_estimatedPrice = new HashMap<Query, Double>();
+		
+
+		_bidToclick = new HashMap<Query, BasicBidToClick>();
+		for (Query query : _querySpace) {
+			_bidToclick.put(query, new BasicBidToClick(query, false));	
+		}
+		
+		for(Query query:_querySpace){
+			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
+				_estimatedPrice.put(query, 10.0 + 5/3);
+			}
+			if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
+				if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
+				else{
+					if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
+					else _estimatedPrice.put(query, 10.0 + 5/3);
+				}
+			}
+			if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
+				if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
+				else _estimatedPrice.put(query, 10.0);
+			}
+		}
+
+		_bidToCPC = new RegressionBidToCPC(_querySpace);
+		
+		_baselineConv = new HashMap<Query, Double>();
+        for(Query q: _querySpace){
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
+        		else _baselineConv.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
+        		else _baselineConv.put(q,0.3);
+        	}
+        }
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// update models
-		if (_salesReport != null && _queryReport != null) {
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			
 			for(Query query: _querySpace){
 				_bidToclick.get(query).updateModel(_salesReport, _queryReport);
@@ -153,9 +166,9 @@ public class H3 extends SimAbstractAgent{
 	  double error = 0.5;
 	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
-	  k = 5;
+	  k = 10;
 	  double sum = 0.0;
-	  double hi =  10;
+	  double hi =  12;
 	  double lo = 0;
 	  boolean done = false;
 	  while(done == false && counter <= 20){
@@ -183,7 +196,7 @@ public class H3 extends SimAbstractAgent{
 		  sum = 0.0;
 	  }
 	  
-	  
+	  if(k > 12) k = 12;
 	  if(k < 1) k = 1;
 	  return k;
    }
@@ -194,62 +207,38 @@ public class H3 extends SimAbstractAgent{
 	  //use the bid to click model to estimate #clicks
 	  double clicks = _bidToclick.get(q).getPrediction(cpc);
 	  //estimated sales = clicks * conv prob 
-	  return clicks*conversion;
-   }
-
-   protected void adjustK(){
-	   double dailyCapacity = _capacity/5;
-		if(newSales < 2*dailyCapacity - oldSales - 5){
-			if(newSales < 2*dailyCapacity - oldSales - 20) k = k*0.7;
-			else k = k*0.9;
-		}
-		if(newSales > 2*dailyCapacity - oldSales + 10){
-			if(newSales > 2*dailyCapacity - oldSales + 30) k = k*1.3;
-			else k = k*1.1;
-		}
+	  return Math.max(0,clicks*conversion);
    }
 
 	protected double cpcTobid(double cpc, Query query){
-		return cpc + .1;
-		/*return cpc + .1;
-		double bid = cpc;
+		if (_day <= 6) return cpc + .1;
+		double bid = cpc + .1;
 		while (_bidToCPC.getPrediction(query,bid,_bidBundles.get(_bidBundles.size() - 2)) < cpc){
 			bid += 0.1;
-		}  
-		return bid;*/
+			if (bid - cpc >= MAX_BID_CPC_GAP) break;
+		}     
+		return bid;
 	}
    
    protected void initializeK(){
 	   //will change later
-	   k = 8.0;
+	   k = 10;
    }
  
    protected double getQueryBid(Query q){
-	   double bid = 0.0;
-		if(_day <= 5){
-			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) bid = randDouble(.1,.6);
-			if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-				bid = randDouble(.25,.75);
-			}
-			if(q.getType() == QueryType.FOCUS_LEVEL_TWO){
-				bid = randDouble(.35,1.0);
-			}
-		}
+		double prConv;
+		if(_day <= 5) prConv = _baselineConv.get(q);
+		else prConv = _conversionPrModel.getPrediction(q);
 		
-		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.getPrediction(q),q);
-
+		double bid;
+		bid = cpcTobid((_estimatedPrice.get(q) - k)*prConv,q);
 		if(bid <= 0) return 0;
 		else{
 			if(bid > 2.5) return 2.5;
 			else return bid;
 		}
+
    }
-
-
-	private double randDouble(double a, double b) {
-		double rand = _R.nextDouble();
-		return rand * (b - a) + a;
-	}
   
    protected double setQuerySpendLimit(Query q){
 	   return 0;
