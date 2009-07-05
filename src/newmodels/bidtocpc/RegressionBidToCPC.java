@@ -79,7 +79,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		for(int i = 0; i < _IDVar - 2; i++) {
 			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (_IDVar - 3 -i)).getBid(query));
 		}
-//		bids.add(bidbundle.getBid(query));
 		bids.add(currentBid);
 
 		List<Double> CPCs = new ArrayList<Double>();

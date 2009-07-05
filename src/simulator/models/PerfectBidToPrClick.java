@@ -9,7 +9,6 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
@@ -20,7 +19,7 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public double getPrediction(Query query, double currentBid, Ad currentAd, BidBundle bidbundle){
+	public double getPrediction(Query query, double currentBid, Ad currentAd){
 		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, currentBid);
 		double avgPrClick = 0;
 		for(Reports report : reports) {

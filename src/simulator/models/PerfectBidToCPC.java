@@ -18,7 +18,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid, BidBundle bundle) {
+	public double getPrediction(Query query, double bid) {
 		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, bid);
 		double avgCPC = 0;
 		for(Reports report : reports) {
