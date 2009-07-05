@@ -458,6 +458,10 @@ public abstract class SimAbstractAgent extends Agent {
 	public void setModels(Set<AbstractModel> models) {
 		_models = models;
 	}
+	
+	public Set<AbstractModel> getModels() {
+		return _models;
+	}
 
 
 }

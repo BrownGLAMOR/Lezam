@@ -57,6 +57,8 @@ public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
+	private static final boolean PERFECTMODELS = false;
+
 	private static boolean CHART = false;
 
 	private boolean DEBUG = false;
@@ -195,35 +197,35 @@ public class BasicSimulator {
 				reportsListMap.put(_agents[i],reports);
 			}
 		}
-//		/*
-//		 * TESTING
-//		 */
-//		for(int i = 0; i < _agents.length; i++ ) {
-//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
-//			System.out.println("Agent: "  + _agents[i]);
-//			double totalRevenue = 0;
-//			double totalCost = 0;
-//			double totalImp = 0;
-//			double totalClick = 0;
-//			double totalConv = 0;
-//			for(Reports report : reports) {
-//				QueryReport queryReport = report.getQueryReport();
-//				SalesReport salesReport = report.getSalesReport();
-//				for(Query query : _querySpace) {
-//					totalRevenue += salesReport.getRevenue(query);
-//					totalCost += queryReport.getCost(query);
-//					totalImp += queryReport.getImpressions(query);
-//					totalClick += queryReport.getClicks(query);
-//					totalConv += salesReport.getConversions(query);
-//				}
-//			}
-//			System.out.println("\tTotal Revenue: " + totalRevenue);
-//			System.out.println("\tTotal Cost: " + totalCost);
-//			System.out.println("\tTotal Impressions: " + totalImp);
-//			System.out.println("\tTotal Clicks: " + totalClick);
-//			System.out.println("\tTotal Conversions: " + totalConv);
-//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
-//		}
+		//		/*
+		//		 * TESTING
+		//		 */
+		//		for(int i = 0; i < _agents.length; i++ ) {
+		//			LinkedList<Reports> reports = reportsListMap.get(_agents[i]);
+		//			System.out.println("Agent: "  + _agents[i]);
+		//			double totalRevenue = 0;
+		//			double totalCost = 0;
+		//			double totalImp = 0;
+		//			double totalClick = 0;
+		//			double totalConv = 0;
+		//			for(Reports report : reports) {
+		//				QueryReport queryReport = report.getQueryReport();
+		//				SalesReport salesReport = report.getSalesReport();
+		//				for(Query query : _querySpace) {
+		//					totalRevenue += salesReport.getRevenue(query);
+		//					totalCost += queryReport.getCost(query);
+		//					totalImp += queryReport.getImpressions(query);
+		//					totalClick += queryReport.getClicks(query);
+		//					totalConv += salesReport.getConversions(query);
+		//				}
+		//			}
+		//			System.out.println("\tTotal Revenue: " + totalRevenue);
+		//			System.out.println("\tTotal Cost: " + totalCost);
+		//			System.out.println("\tTotal Impressions: " + totalImp);
+		//			System.out.println("\tTotal Clicks: " + totalClick);
+		//			System.out.println("\tTotal Conversions: " + totalConv);
+		//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
+		//		}
 		return reportsListMap;
 	}
 
@@ -402,8 +404,10 @@ public class BasicSimulator {
 	 * Gets the bids from the agent using perfect models
 	 */
 	public BidBundle getBids(SimAbstractAgent agentToRun) {
-		Set<AbstractModel> models = generatePerfectModels();
-		BidBundle bundle = agentToRun.getBidBundle(models);
+		if(PERFECTMODELS) {
+			agentToRun.setModels(generatePerfectModels());
+		}
+		BidBundle bundle = agentToRun.getBidBundle(agentToRun.getModels());
 		return bundle;
 	}
 
@@ -909,7 +913,7 @@ public class BasicSimulator {
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
 		int numSims = 1;
-//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
+		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		String baseFile = "/games/game";
 		int min = 161;
 		int max = 170;
@@ -937,7 +941,7 @@ public class BasicSimulator {
 				// The F2 query class
 				_querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
-			
+
 			double[] totalRevenueList = new double[agents.length];
 			double[] totalCostList = new double[agents.length];
 			double[] totalImpList = new double[agents.length];
@@ -983,7 +987,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new CPCModelTestAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
@@ -1024,7 +1028,7 @@ public class BasicSimulator {
 				}
 			}
 		}
-		
+
 		/*
 		 * Average actual values
 		 * We divide by the number of sims times the number of advertisers
@@ -1034,7 +1038,7 @@ public class BasicSimulator {
 		totAvgImp /= ((max-min)*(_agents.length));
 		totAvgClick /= ((max-min)*(_agents.length));
 		totAvgConv /= ((max-min)*(_agents.length));
-		
+
 
 		/*
 		 * Mean Square calculation
@@ -1045,14 +1049,14 @@ public class BasicSimulator {
 		RMSImp /= ((max-min)*(_agents.length)*numSims);
 		RMSClick /= ((max-min)*(_agents.length)*numSims);
 		RMSConv /= ((max-min)*(_agents.length)*numSims);
-		
+
 		//RMS
 		RMSRevenue = Math.sqrt(RMSRevenue);
 		RMSCost = Math.sqrt(RMSCost);
 		RMSImp = Math.sqrt(RMSImp);
 		RMSClick = Math.sqrt(RMSClick);
 		RMSConv = Math.sqrt(RMSConv);
-		
+
 		double[] error = new double[5];
 		error[0] = RMSRevenue/totAvgRevenue;
 		error[1] = RMSCost/totAvgCost;
@@ -1065,63 +1069,63 @@ public class BasicSimulator {
 
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
-//		String filename = "/pro/aa/qual/logs/parsed/game167.slg";
-//		if(args.length > 0) { 
-//			filename = args[0] + ".slg";
-//		}
-//		int advId = 0;
-//		GameStatusHandler statusHandler = new GameStatusHandler(filename);
-//		GameStatus status = statusHandler.getGameStatus();
-//		
+		//		String filename = "/pro/aa/qual/logs/parsed/game167.slg";
+		//		if(args.length > 0) { 
+		//			filename = args[0] + ".slg";
+		//		}
+		//		int advId = 0;
+		//		GameStatusHandler statusHandler = new GameStatusHandler(filename);
+		//		GameStatus status = statusHandler.getGameStatus();
+		//		
 		double start = System.currentTimeMillis();
 
 		//		int numSims = 1;
-//		String agent = "MCKP";
-//
-//		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
-//		for(int i = 0; i < numSims; i++) {
-//			//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
-//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new Cheap(), advId);
-//			reportsList.add(maps.get(sim._agents[advId]));
-//		}
-//
-//		if(CHART ) {
-//
-//			String[] agents = new String[1];
-//			agents[0] = agent;
-//
-//			ChartUtils chartUtils = new ChartUtils(sim,agents);
-//
-//			HashMap<String,LinkedList<LinkedList<Reports>>> map = new HashMap<String, LinkedList<LinkedList<Reports>>>();
-//			map.put(agent, reportsList);
-//
-//			JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("dailyProfitsChart.png"), chart, 1280, 800);
-//
-//			chart = chartUtils.dailyClicksChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("dailyClicksChart.png"), chart, 1280, 800);
-//
-//			chart = chartUtils.dailyConvsChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("dailyConvsChart.png"), chart, 1280, 800);
-//
-//			chart = chartUtils.dailyImpsChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("dailyImpsChart.png"), chart, 1280, 800);
-//
-//			chart = chartUtils.dailyWindowChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("dailyWindowChart.png"), chart, 1280, 800);
-//
-//			chart = chartUtils.fullSimProfitsChart(map, agents);
-//			ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
-//		}
+		//		String agent = "MCKP";
+		//
+		//		LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
+		//		for(int i = 0; i < numSims; i++) {
+		//			//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new MCKPAgentMkIIBids(args[1]), advId);
+		//			HashMap<String, LinkedList<Reports>> maps = sim.runFullSimulation(status, new Cheap(), advId);
+		//			reportsList.add(maps.get(sim._agents[advId]));
+		//		}
+		//
+		//		if(CHART ) {
+		//
+		//			String[] agents = new String[1];
+		//			agents[0] = agent;
+		//
+		//			ChartUtils chartUtils = new ChartUtils(sim,agents);
+		//
+		//			HashMap<String,LinkedList<LinkedList<Reports>>> map = new HashMap<String, LinkedList<LinkedList<Reports>>>();
+		//			map.put(agent, reportsList);
+		//
+		//			JFreeChart chart = chartUtils.dailyProfitsChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("dailyProfitsChart.png"), chart, 1280, 800);
+		//
+		//			chart = chartUtils.dailyClicksChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("dailyClicksChart.png"), chart, 1280, 800);
+		//
+		//			chart = chartUtils.dailyConvsChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("dailyConvsChart.png"), chart, 1280, 800);
+		//
+		//			chart = chartUtils.dailyImpsChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("dailyImpsChart.png"), chart, 1280, 800);
+		//
+		//			chart = chartUtils.dailyWindowChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("dailyWindowChart.png"), chart, 1280, 800);
+		//
+		//			chart = chartUtils.fullSimProfitsChart(map, agents);
+		//			ChartUtilities.saveChartAsPNG(new File("fullSimProfitsChart.png"), chart, 1280, 800);
+		//		}
 
 		double[] percentError = sim.percentErrorOfSim();
-		
+
 		System.out.println(percentError[0]);
 		System.out.println(percentError[1]);
 		System.out.println(percentError[2]);
 		System.out.println(percentError[3]);
 		System.out.println(percentError[4]);
-		
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
