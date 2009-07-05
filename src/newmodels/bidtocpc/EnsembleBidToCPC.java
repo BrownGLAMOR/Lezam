@@ -1,7 +1,6 @@
 package newmodels.bidtocpc;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -40,7 +39,15 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	protected HashMap<Query,HashMap<String,AbstractBidToCPC>> _typeIIIUsableModels;
 	protected HashMap<Query,HashMap<String,LinkedList<Double>>> _typeIIIDailyModelError;
 	protected HashMap<BidBundle,HashMap<Query,HashMap<String,Double>>> _typeIIIPredictions;
-
+	
+	/*
+	 * This holds the ensemble used for predicting
+	 */
+	protected HashMap<Query,LinkedList<AbstractBidToCPC>> _ensemble;
+	protected HashMap<Query,LinkedList<Double>> _ensembleError;
+	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
+	
+	
 
 	public EnsembleBidToCPC(Set<Query> querySpace) {
 		_querySpace = querySpace;
@@ -84,6 +91,19 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			_typeIIIDailyModelError.put(query,typeIIIDailyModelError);
 		}
 		_typeIIIPredictions = new HashMap<BidBundle, HashMap<Query,HashMap<String,Double>>>();
+		
+		/*
+		 * Initialize Ensemble
+		 */
+		_ensemble = new HashMap<Query, LinkedList<AbstractBidToCPC>>();
+		_ensembleError = new HashMap<Query, LinkedList<Double>>();
+		for(Query query : _querySpace) {
+			LinkedList<AbstractBidToCPC> queryEnsemble = new LinkedList<AbstractBidToCPC>();
+			LinkedList<Double> queryEnsembleError = new LinkedList<Double>();
+			_ensemble.put(query, queryEnsemble);
+			_ensembleError.put(query, queryEnsembleError);
+		}
+		_ensemblePredictions = new HashMap<BidBundle, HashMap<Query,Double>>();
 	}
 
 	public void addTypeIModel(String name, AbstractBidToCPC model) {
@@ -177,8 +197,50 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			}
 			_typeIIIUsableModels.put(query, typeIIIUsableModels);
 		}
+		
+		if(ensembleUsable) {
+			createEnsemble();
+		}
 
 		return ensembleUsable;
+	}
+	
+//	/*
+//	 * Model Type I
+//	 * 	-These models predict for all queries
+//	 */
+//	protected HashMap<String,AbstractBidToCPC> _typeIModels;
+//	protected HashMap<String,AbstractBidToCPC> _typeIUsableModels;
+//	protected HashMap<String,HashMap<Query,LinkedList<Double>>> _typeIDailyModelError;
+//	protected HashMap<BidBundle,HashMap<String,HashMap<Query,Double>>> _typeIPredictions;
+//
+//	/*
+//	 * Model Type II
+//	 * 	-These models predict by query type
+//	 */
+//	protected HashMap<QueryType,HashMap<String,AbstractBidToCPC>> _typeIIModels;
+//	protected HashMap<QueryType,HashMap<String,AbstractBidToCPC>> _typeIIUsableModels;
+//	protected HashMap<QueryType,HashMap<String,HashMap<Query,LinkedList<Double>>>> _typeIIDailyModelError;
+//	protected HashMap<BidBundle,HashMap<QueryType,HashMap<String,HashMap<Query,Double>>>> _typeIIPredictions;
+//
+//	/*
+//	 * Model Type II
+//	 * 	-These models only predict for one query
+//	 */
+//	protected HashMap<Query,HashMap<String,AbstractBidToCPC>> _typeIIIModels;
+//	protected HashMap<Query,HashMap<String,AbstractBidToCPC>> _typeIIIUsableModels;
+//	protected HashMap<Query,HashMap<String,LinkedList<Double>>> _typeIIIDailyModelError;
+//	protected HashMap<BidBundle,HashMap<Query,HashMap<String,Double>>> _typeIIIPredictions;
+//	
+//	/*
+//	 * This holds the ensemble used for predicting
+//	 */
+//	protected HashMap<Query,LinkedList<AbstractBidToCPC>> _ensemble;
+//	protected HashMap<Query,LinkedList<Double>> _ensembleError;
+//	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
+
+	private void createEnsemble() {
+		
 	}
 
 	public void updatePredictions(BidBundle bundle) {
@@ -234,6 +296,21 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			typeIIIPredictions.put(query, queryPredictions);
 		}
 		_typeIIIPredictions.put(bundle, typeIIIPredictions);
+		
+		/*
+		 * Update Ensemble Predictions
+		 */
+		HashMap<Query,Double> ensemblePredictions = new HashMap<Query, Double>();
+		for(Query query : _querySpace) {
+			double prediction = 0.0;
+			LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
+			for(AbstractBidToCPC model : queryEnsemble) {
+				prediction += model.getPrediction(query, bundle.getBid(query));
+			}
+			prediction /= queryEnsemble.size();
+			ensemblePredictions.put(query, prediction);
+		}
+		_ensemblePredictions.put(bundle, ensemblePredictions);
 	}
 
 
@@ -242,13 +319,14 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Update Type I Error
 		 */
+		HashMap<String, HashMap<Query, Double>> typeIPredictions = _typeIPredictions.get(bundle);
 		for(String name : _typeIModels.keySet()) {
-			AbstractBidToCPC model = _typeIUsableModels.get(name);
 			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _typeIDailyModelError.get(name);
+			HashMap<Query, Double> predictions = typeIPredictions.get(name);
 			for(Query query : _querySpace) {
 				LinkedList<Double> queryDailyError = typeIDailyModelError.get(query);
-				if(model != null) {
-					double error = model.getPrediction(query, bundle.getBid(query)) - queryReport.getCPC(query);
+				if(predictions != null) {
+					double error = predictions.get(query) - queryReport.getCPC(query);
 					error = error*error;
 					queryDailyError.add(error);
 				}
@@ -263,17 +341,18 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Update Type II Error
 		 */
+		HashMap<QueryType, HashMap<String, HashMap<Query, Double>>> typeIIPredictions = _typeIIPredictions.get(bundle);
 		for(QueryType queryType : QueryType.values()) {
+			HashMap<String, HashMap<Query, Double>> queryTypePredictions = typeIIPredictions.get(queryType);
 			HashMap<String, HashMap<Query, LinkedList<Double>>> typeIIDailyModelError = _typeIIDailyModelError.get(queryType);
-			HashMap<String, AbstractBidToCPC> typeIIUsableModels = _typeIIUsableModels.get(queryType);
 			for(String name : _typeIIModels.get(queryType).keySet()) {
+				HashMap<Query, Double> predictions = queryTypePredictions.get(name);
 				HashMap<Query, LinkedList<Double>> dailyError = typeIIDailyModelError.get(name);
-				AbstractBidToCPC model = typeIIUsableModels.get(name);
 				for(Query query : _querySpace) {
 					LinkedList<Double> queryDailyError = dailyError.get(query);
 					if(queryType == query.getType()) {
-						if(model != null) {
-							double error = model.getPrediction(query, bundle.getBid(query)) - queryReport.getCPC(query);
+						if(predictions != null) {
+							double error = predictions.get(query) - queryReport.getCPC(query);
 							error = error*error;
 							queryDailyError.add(error);
 						}
@@ -292,13 +371,15 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Update Type III Error
 		 */
+		HashMap<Query, HashMap<String, Double>> typeIIIPredictions = _typeIIIPredictions.get(bundle);
 		for(Query query : _querySpace) {
+			HashMap<String, Double> predictions = typeIIIPredictions.get(query);
 			HashMap<String, LinkedList<Double>> typeIIIDailyModelError = _typeIIIDailyModelError.get(query);
 			for(String name : _typeIIIModels.get(query).keySet()) {
-				AbstractBidToCPC model = _typeIIIUsableModels.get(query).get(name);
+				Double prediction = predictions.get(name);
 				LinkedList<Double> queryDailyError = typeIIIDailyModelError.get(name);
-				if(model != null) {
-					double error = model.getPrediction(query, bundle.getBid(query)) - queryReport.getCPC(query);
+				if(prediction != null) {
+					double error = prediction - queryReport.getCPC(query);
 					error = error*error;
 					queryDailyError.add(error); 
 				}
@@ -310,13 +391,71 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			_typeIIIDailyModelError.put(query, typeIIIDailyModelError);
 		}
 		
+		
+		/*
+		 * Update Ensemble Error
+		 */
+		HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
+		for(Query query : _querySpace) {
+			LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
+			double error = ensemblePredictions.get(query) - queryReport.getCPC(query);
+			error = error*error;
+			queryEnsembleError.add(error);
+			_ensembleError.put(query, queryEnsembleError);
+		}
 	}
 
 	@Override
 	public double getPrediction(Query query, double bid) {
+		double prediction = 0.0;
+		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
+		for(AbstractBidToCPC model : queryEnsemble) {
+			prediction += model.getPrediction(query, bid);
+		}
+		prediction /= queryEnsemble.size();
+		return prediction;
+	}
+	
+	public class ModelErrorPair implements Comparable<ModelErrorPair> {
+		
+		private AbstractBidToCPC _model;
+		private double _error;
 
-		return 0;
+		public ModelErrorPair(AbstractBidToCPC model, double error) {
+			_model = model;
+			_error = error;
+		}
+
+		public AbstractBidToCPC getModel() {
+			return _model;
+		}
+
+		public void setModel(AbstractBidToCPC model) {
+			_model = model;
+		}
+
+		public double getError() {
+			return _error;
+		}
+
+		public void setError(double error) {
+			_error = error;
+		}
+
+		public int compareTo(ModelErrorPair modelErrorPair) {
+			double thisError = this._error;
+			double otherError = modelErrorPair.getError();
+			if(thisError < otherError) {
+				return 1;
+			}
+			if(otherError < thisError) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}
+		
 	}
 
 }
-
