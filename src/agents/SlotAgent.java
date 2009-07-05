@@ -188,7 +188,6 @@ public class SlotAgent extends SimAbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-
 		_conversionPrModel = new GoodConversionPrModel(_querySpace);
 		return null;
 	}
