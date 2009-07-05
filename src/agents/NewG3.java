@@ -26,8 +26,6 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class NewG3 extends SimAbstractAgent{
-	private Random _R = new Random();
-	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
@@ -82,7 +80,6 @@ public class NewG3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 
 		_conversionPrModel = new GoodConversionPrModel(_querySpace);
 
@@ -124,9 +121,7 @@ public class NewG3 extends SimAbstractAgent{
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// update models
-		if (_salesReport != null && _queryReport != null) {
-
-			_unitsSoldModel.update(_salesReport);
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
 		    
 			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
@@ -155,7 +150,7 @@ public class NewG3 extends SimAbstractAgent{
 			k *= 1.1;
 		}
 
-		k = Math.max(1, k);
+		k = Math.max(9, k);
 		k = Math.min(12, k);
 	
 		return k;
@@ -174,7 +169,7 @@ public class NewG3 extends SimAbstractAgent{
 	protected double getQueryBid(Query q){		
 		
 		double prConv;
-		if(_day <= 5) prConv = _baselineConv.get(q);
+		if(_day <= 6) prConv = _baselineConv.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		
 		double bid;
@@ -202,10 +197,9 @@ public class NewG3 extends SimAbstractAgent{
 		buff.append("****************\n");
 		for(Query q : _querySpace){
 			buff.append("\t").append("Day: ").append(_day).append("\n");
+			buff.append(q).append("\n");
 			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
-			buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
 			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
-			buff.append("\t").append("Yesterday Sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
 			/*if (_salesReport.getConversions(q) > 0) 
 				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
 			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");*/

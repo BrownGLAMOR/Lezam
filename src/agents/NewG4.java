@@ -4,6 +4,7 @@ package agents;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.Set;
@@ -33,36 +34,54 @@ public class NewG4 extends SimAbstractAgent{
 	//k is a constant that equates EPPC across queries
 	protected double k;
 	protected BidBundle _bidBundle;
+	protected ArrayList<BidBundle> _bidBundleList;
+	
 	protected final double MAX_BID_CPC_GAP = 1.5;
+	protected int _timeHorizon;
+	protected final int MAX_TIME_HORIZON = 5;
 	// for debug
 	protected PrintStream output;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-        if (_salesReport != null && _queryReport != null) {
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
 
 		for(Query query: _querySpace){
-
-			//if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
-			if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-			{
-				_bidBundle.setBidAndAd(query, getQueryBid(query), new Ad(new Product(query.getManufacturer(), query.getComponent())));
-			}
-			else{
-				_bidBundle.setBid(query, getQueryBid(query));
-			}
+			_bidBundle.setBid(query, getQueryBid(query));
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
+
+		_bidBundleList.add(_bidBundle);
 		printInfo();
 		return _bidBundle;
 	}
 
 	@Override
 	public void initBidder() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+
+		_bidBundle = new BidBundle();
+		for (Query query : _querySpace) {	
+			_bidBundle.setBid(query, getQueryBid(query));
+		}
+
+		_bidBundleList = new ArrayList<BidBundle>();
 		
+		k = 3;
+        
+		try {
+			output = new PrintStream(new File("newg4.txt"));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+
+	@Override
+	public Set<AbstractModel> initModels() {
+		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
 			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
@@ -81,13 +100,8 @@ public class NewG4 extends SimAbstractAgent{
 			}
 		}
 
-		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
-
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {	
-			_bidBundle.setBid(query, getQueryBid(query));
-		}
-
+		_bidToCPC = new RegressionBidToCPC(_querySpace);
+		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
         	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
@@ -100,23 +114,23 @@ public class NewG4 extends SimAbstractAgent{
         		else _baselineConv.put(q,0.3);
         	}
         }
-		
-		try {
-			output = new PrintStream(new File("newg4.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		
+		// update models
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
+		    
+			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+
+               _conversionPrModel.setTimeHorizon(_timeHorizon);
+               _conversionPrModel.updateModel(queryReport, salesReport);
+
+			if (_bidBundleList.size() > 1) 
+				_bidToCPC.updateModel(_queryReport, _bidBundleList.get(_bidBundleList.size() - 2));
+
+		}
 	}
 
 	protected double updateK(){
@@ -133,8 +147,8 @@ public class NewG4 extends SimAbstractAgent{
 			k *= 1.1;
 		}
 
-		k = Math.max(.1, k);
-		k = Math.min(1.2, k);
+		k = Math.max(2.5, k);
+		k = Math.min(4, k);
 	
 		return k;
 	}
@@ -150,14 +164,9 @@ public class NewG4 extends SimAbstractAgent{
 
 	}
 
-	protected void initializeK(){
-		//will change later
-		k = 0.8;
-	}
-
 	protected double getQueryBid(Query q){
 		double prConv;
-		if(_day <= 5) prConv = _baselineConv.get(q);
+		if(_day <= 6) prConv = _baselineConv.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		
 		double bid;
