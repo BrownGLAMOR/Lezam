@@ -4,34 +4,35 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.SimplePrConversion;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.NewAbstractConversionModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickAgent extends SimAbstractAgent{
-	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
-    protected HashMap<Query, Double> _revenue;
-    protected HashMap<Query, Double> _PM;
-    protected double _desiredSale;
-    protected final double _lamda = 0.9;
-    protected BidBundle _bidBundle;
+public class ClickAgent extends SimAbstractAgent {
+
+	protected NewAbstractConversionModel _conversionPrModel;
+	
+	protected HashMap<Query, Double> _baselineConversion;
+	protected HashMap<Query, Double> _revenue;
+	protected HashMap<Query, Double> _PM;
+	
+	protected double _desiredSale;
+	protected final double _lamda = 0.9;
+	protected BidBundle _bidBundle;
+	protected final int MAX_TIME_HORIZON = 5;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		// update models
-		_unitsSoldModel.update(_salesReport);
-		
+
 		// build bid bundle
-		for(Query q: _querySpace){ 
+		for (Query q : _querySpace) {
 			adjustPM(q);
 			_bidBundle.setBid(q, getQueryBid(q));
-			_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
+			//_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
 		}
 		return _bidBundle;
 	}
@@ -39,78 +40,102 @@ public class ClickAgent extends SimAbstractAgent{
 	@Override
 	public void initBidder() {
 
-		_desiredSale = _capacity*1.5/_capWindow/_querySpace.size();
-		
-		 _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-			
-		_conversionPrModel = new HashMap<Query, AbstractPrConversionModel>();
-		for (Query query : _querySpace) {
-			_conversionPrModel.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
-		}
-			
-		_PM = new HashMap<Query, Double>();
-			for(Query q: _querySpace){
-				_PM.put(q, 0.5);
+		_desiredSale = _capacity * 1.5 / _capWindow / _querySpace.size();
+
+		_baselineConversion = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
+				_baselineConversion.put(q, 0.1);
+			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				if (q.getComponent() == _compSpecialty)
+					_baselineConversion.put(q, 0.27);
+				else
+					_baselineConversion.put(q, 0.2);
 			}
-			
-			
-	    _revenue = new HashMap<Query, Double>();
-		for (Query query: _querySpace){
-			if (query.getManufacturer() == _manSpecialty) _revenue.put(query, 15.0);
-			else _revenue.put(query,10.0);
+			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				if (q.getComponent() == _compSpecialty)
+					_baselineConversion.put(q, 0.39);
+				else
+					_baselineConversion.put(q, 0.3);
+			}
 		}
-			
+
+		_PM = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_PM.put(q, 0.7);
+		}
+
+		_revenue = new HashMap<Query, Double>();
+		for (Query query : _querySpace) {
+			if (query.getManufacturer() == _manSpecialty)
+				_revenue.put(query, 15.0);
+			else
+				_revenue.put(query, 10.0);
+		}
+
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {
 			_bidBundle.setBid(query, getQueryBid(query));
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
-			
-		
+
 	}
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		// TODO Auto-generated method stub
+		_conversionPrModel = new GoodConversionPrModel(_querySpace);
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		// TODO Auto-generated method stub
-	
-		
-	}
-	
-	protected void adjustPM(Query q){
-		double conversion = _conversionPrModel.get(q).getPrediction(0);
-		//if we does not get enough clicks (and bad position), then decrease PM (increase bids, and hence slot)
-			    if(_salesReport.getConversions(q) < _desiredSale){
-			    	if(!(_queryReport.getPosition(q) < 4)){
-			    		double newHonest = (1-_PM.get(q))*1.3;
-      		               if(newHonest >= 0.95) newHonest = 0.95;
-      		               _PM.put(q, 1-newHonest);
-			    	}     
-			    }else{
-			    	//if we get too many clicks (and good position), increase PM(decrease bids and hence slot)
-			    	if(_queryReport.getPosition(q) < 4){
-			            //double  newHonest = (_queryReport.getCPC(q)-0.01)/(_revenue.get(q)*conversion);
-						double newHonest = (1- _PM.get(q))*0.7;
-			    		if(newHonest < 0.05) newHonest = 0.05;
-						_PM.put(q,1-newHonest);
-			    	}
-			    }
-	}
-	   
-	protected double setQuerySpendLimit(Query q){
-		double dailySalesLimit = Math.max(_desiredSale/_conversionPrModel.get(q).getPrediction(0),1);
-		return _bidBundle.getBid(q)*dailySalesLimit;
+		if (_day > 1 && salesReport != null && queryReport != null) {
+
+			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
+					MAX_TIME_HORIZON);
+			_conversionPrModel.setTimeHorizon(timeHorizon);
+			_conversionPrModel.updateModel(queryReport, salesReport);
+		}
+
 	}
 
-	
-	protected double getQueryBid(Query q){
-	    return _revenue.get(q)*(1-_PM.get(q))*_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity);	
+	protected void adjustPM(Query q) {
+		// if we does not get enough clicks (and bad position), then decrease PM
+		// (increase bids, and hence slot)
+		if (_salesReport.getConversions(q) < _desiredSale) {
+			if (!(_queryReport.getPosition(q) < 4)) {
+				double tmp = (1 - _PM.get(q)) * 1.1;
+				tmp = Math.min(.9, tmp);
+				_PM.put(q, 1 - tmp);
+			}
+		} else {
+			// if we get too many clicks (and good position), increase
+			// PM(decrease bids and hence slot)
+			if (_queryReport.getPosition(q) < 4) {
+				double tmp = (1 - _PM.get(q)) * .9;
+				tmp = Math.max(.1, tmp);
+				_PM.put(q, 1 - tmp);
+			}
+		}
 	}
-	
-	
+
+	protected double setQuerySpendLimit(Query q) {
+		double conversion;
+		if (_day <= 6)
+			conversion = _baselineConversion.get(q);
+		else
+			conversion = _conversionPrModel.getPrediction(q);
+		double dailySalesLimit = _desiredSale/conversion;
+		return _bidBundle.getBid(q) * dailySalesLimit;
+	}
+
+	protected double getQueryBid(Query q) {
+		double conversion;
+		if (_day <= 6)
+			conversion = _baselineConversion.get(q);
+		else
+			conversion = _conversionPrModel.getPrediction(q);
+		return _revenue.get(q)*(1 - _PM.get(q))*conversion;
+	}
+
 }
