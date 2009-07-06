@@ -62,6 +62,7 @@ public class H3 extends SimAbstractAgent{
 		
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
+		this.printInfo();
 		_bidBundles.add(_bidBundle);
 		return _bidBundle;
 	}
@@ -162,13 +163,13 @@ public class H3 extends SimAbstractAgent{
 	  for(Query query: _querySpace){
 		  newSales += _salesReport.getConversions(query);
 	  }
-	  double dailyLimit = (2*_capacity/5) - newSales;
+	  double dailyLimit = 1.5*_capacity/_capWindow;
 	  double error = 0.5;
 	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
 	  k = 10;
 	  double sum = 0.0;
-	  double hi =  14.5;
+	  /*double hi =  14.5;
 	  double lo = 1;
 	  boolean done = false;
 	  while(done == false && counter <= 20){
@@ -194,8 +195,15 @@ public class H3 extends SimAbstractAgent{
 		  }
 		  counter ++;
 		  sum = 0.0;
+	  }*/
+	  while(Math.abs(sum - dailyLimit) < 1){
+		  for (Query query: _querySpace){
+			  sum += calcUnitSold(query,k);
+		  }
+		  if(sum < dailyLimit) k -= 0.1;
+		  if(sum > dailyLimit) k += 0.1;
+		  sum = 0.0;
 	  }
-	  
 	  if(k > 14.5) k = 14.5;
 	  if(k < 1) k = 1;
 	  return k;
