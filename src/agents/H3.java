@@ -155,7 +155,7 @@ public class H3 extends SimAbstractAgent{
 	  }
 	  double dailyLimit = 1.5*_capacity/_capWindow;
 	  //double error = 0.5;
-	  //int counter = 0;
+	  int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
 	  k = 10;
 	  double sum = 0.0;
@@ -186,13 +186,14 @@ public class H3 extends SimAbstractAgent{
 		  counter ++;
 		  sum = 0.0;
 	  }*/
-	  while(Math.abs(sum - dailyLimit) > 1){
+	  while(Math.abs(sum - dailyLimit) > 1 && counter <= 20){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query,k);
 		  }
 		  if(sum < dailyLimit) k -= 0.1;
 		  if(sum > dailyLimit) k += 0.1;
 		  sum = 0.0;
+		  counter++;
 	  }
 	  if(k > 14.5) k = 14.5;
 	  if(k < 1) k = 1;
