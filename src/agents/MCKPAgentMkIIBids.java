@@ -62,7 +62,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
-	private int lagDays = 5;
+	private int lagDays = 4;
 
 
 	/*
@@ -108,6 +108,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace);
 		((EnsembleBidToCPC) bidToCPC).initializeEnsemble();
 		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace);
+		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
 		BucketBidToPositionModel bidToPosModel = new BucketBidToPositionModel(_querySpace,5);

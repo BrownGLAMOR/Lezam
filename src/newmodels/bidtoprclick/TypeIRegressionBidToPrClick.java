@@ -357,11 +357,11 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 				model += ", family = quasibinomial(link = \"logit\"))";
 
 
-				System.out.println(model);				
+//				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				for(int i = 0 ; i < coeff.length; i++)
-					System.out.println(coeff[i]);
+//				for(int i = 0 ; i < coeff.length; i++)
+//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();

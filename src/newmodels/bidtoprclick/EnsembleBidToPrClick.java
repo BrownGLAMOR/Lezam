@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.jfree.base.modules.DefaultModuleInfo;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
@@ -19,6 +20,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 	protected Set<Query> _querySpace;
 
+	AbstractBidToPrClick _defaultModel;
+	
 	/*
 	 * Model Type I
 	 * 	-These models predict for all queries
@@ -131,19 +134,22 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		 * Add Type I Models
 		 */
 		String basename = "typeI";
-		for(int i = 0; i < 4; i++) {
+		for(int i = 0; i < 2; i++) {
 			for(int j = 0; j < 4; j++) {
-				AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), false, false, false);
+				AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), false, false, false);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
-				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), true, false, false);
+				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), true, false, false);
 				addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
-				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), false, true, false);
+				if(i == 0 && j == 1) {
+					_defaultModel = model;
+				}
+				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), false, true, false);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
-				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), false, false, true);
+				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), false, false, true);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
-				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), true, false, true);
+				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), true, false, true);
 				addTypeIModel(basename + "_" + i + "_" + j +"_t_f_t", model);
-				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 15*(j+1), false, true, true);
+				model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 5*(j+1), false, true, true);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_t", model);
 			}
 		}
@@ -152,21 +158,21 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		 * Add Type II Models
 		 */
 		basename = "typeII";
-		for(int i = 0; i < 4; i++) {
+		for(int i = 0; i < 2; i++) {
 			for(int j = 0; j < 4; j++) {
-				AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), false);
+				AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 5*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_f", model);
-				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 15*(j+1), true);
+				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 5*(j+1), true);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_t", model);
 
-				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 15*(j+1), false);
+				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 5*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
-				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 15*(j+1), true);
+				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 5*(j+1), true);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
 
-				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 15*(j+1), false);
+				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 5*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
-				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 15*(j+1), true);
+				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 5*(j+1), true);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
 			}
 		}
@@ -175,12 +181,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		 * Ad Type III Models
 		 */
 		basename = "typeIII";
-		for(int i = 0; i < 4; i++) {
+		for(int i = 0; i < 2; i++) {
 			for(int j = 0; j < 4; j++) {
 				for(Query query : _querySpace) {
-					AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 15*(j+1), false);
+					AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 5*(j+1), false);
 					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
-					model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 15*(j+1), true);
+					model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 5*(j+1), true);
 					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
 				}
 			}
@@ -591,8 +597,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	public double getPrediction(Query query, double bid, Ad currentAd) {
 		double prediction = 0.0;
 		LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
-		if(queryEnsemble.size() == 0 || bid == 0) {
+		if(bid == 0) {
 			return bid;
+		}
+		if(queryEnsemble.size() == 0) {
+			return _defaultModel.getPrediction(query, bid, currentAd);
 		}
 		for(AbstractBidToPrClick model : queryEnsemble) {
 			prediction += model.getPrediction(query, bid, currentAd);
