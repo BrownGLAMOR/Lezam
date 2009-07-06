@@ -478,7 +478,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
-		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace);
+		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace, 4, 20, true, false, false);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		models.add(userModel);
 		models.add(queryToNumImp);
