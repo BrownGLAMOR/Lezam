@@ -186,7 +186,7 @@ public class H3 extends SimAbstractAgent{
 		  counter ++;
 		  sum = 0.0;
 	  }*/
-	  while(Math.abs(sum - dailyLimit) > 1 && counter <= 20){
+	  while(Math.abs(sum - dailyLimit) > 1 && counter <= 50){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query,k);
 		  }
