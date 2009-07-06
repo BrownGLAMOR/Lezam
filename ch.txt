@@ -1,0 +1,238 @@
+****************
+	Day: 0.0
+	Window Sold: 0.0
+	Yesterday sold: 0.0
+	Estimated sold: 0.0
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 1.0
+	Window Sold: 0.0
+	Yesterday sold: 0.0
+	Estimated sold: 0.0
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 2.0
+	Window Sold: 162.75
+	Yesterday sold: 93.0
+	Estimated sold: 69.75
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 3.0
+	Window Sold: 313.4375
+	Yesterday sold: 116.0
+	Estimated sold: 104.4375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 4.0
+	Window Sold: 429.359375
+	Yesterday sold: 111.0
+	Estimated sold: 109.359375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 5.0
+	Window Sold: 494.08984375
+	Yesterday sold: 137.0
+	Estimated sold: 130.08984375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 6.0
+	Window Sold: 439.7724609375
+	Yesterday sold: 91.0
+	Estimated sold: 100.7724609375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 7.0
+	Window Sold: 429.943115234375
+	Yesterday sold: 101.0
+	Estimated sold: 100.943115234375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 8.0
+	Window Sold: 360.73577880859375
+	Yesterday sold: 82.0
+	Estimated sold: 86.73577880859375
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 9.0
+	Window Sold: 370.93394470214844
+	Yesterday sold: 95.0
+	Estimated sold: 92.93394470214844
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 10.0
+	Window Sold: 422.4834861755371
+	Yesterday sold: 127.0
+	Estimated sold: 118.48348617553711
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 11.0
+	Window Sold: 421.3708715438843
+	Yesterday sold: 97.0
+	Estimated sold: 102.37087154388428
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 12.0
+	Window Sold: 438.59271788597107
+	Yesterday sold: 108.0
+	Estimated sold: 106.59271788597107
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 13.0
+	Window Sold: 420.64817947149277
+	Yesterday sold: 108.0
+	Estimated sold: 107.64817947149277
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 14.0
+	Window Sold: 484.4120448678732
+	Yesterday sold: 138.0
+	Estimated sold: 130.4120448678732
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 15.0
+	Window Sold: 458.8530112169683
+	Yesterday sold: 103.0
+	Estimated sold: 109.8530112169683
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 16.0
+	Window Sold: 506.4632528042421
+	Yesterday sold: 136.0
+	Estimated sold: 129.46325280424207
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 17.0
+	Window Sold: 456.8658132010605
+	Yesterday sold: 106.0
+	Estimated sold: 111.86581320106052
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 18.0
+	Window Sold: 492.21645330026513
+	Yesterday sold: 127.0
+	Estimated sold: 123.21645330026513
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 19.0
+	Window Sold: 461.5541133250663
+	Yesterday sold: 113.0
+	Estimated sold: 115.55411332506628
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 20.0
+	Window Sold: 461.38852833126657
+	Yesterday sold: 110.0
+	Estimated sold: 111.38852833126657
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 21.0
+	Window Sold: 473.09713208281664
+	Yesterday sold: 127.0
+	Estimated sold: 123.09713208281664
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 22.0
+	Window Sold: 439.27428302070416
+	Yesterday sold: 98.0
+	Estimated sold: 104.27428302070416
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 23.0
+	Window Sold: 508.31857075517604
+	Yesterday sold: 147.0
+	Estimated sold: 136.31857075517604
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 24.0
+	Window Sold: 494.329642688794
+	Yesterday sold: 123.0
+	Estimated sold: 126.32964268879401
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 25.0
+	Window Sold: 550.0824106721985
+	Yesterday sold: 142.0
+	Estimated sold: 138.0824106721985
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 26.0
+	Window Sold: 514.7706026680496
+	Yesterday sold: 123.0
+	Estimated sold: 126.77060266804963
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 27.0
+	Window Sold: 529.4426506670125
+	Yesterday sold: 133.0
+	Estimated sold: 131.4426506670124
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 28.0
+	Window Sold: 532.1106626667531
+	Yesterday sold: 139.0
+	Estimated sold: 137.11066266675311
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 29.0
+	Window Sold: 523.2776656666883
+	Yesterday sold: 124.0
+	Estimated sold: 127.27766566668828
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 30.0
+	Window Sold: 506.5694164166721
+	Yesterday sold: 121.0
+	Estimated sold: 122.56941641667207
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 31.0
+	Window Sold: 422.642354104168
+	Yesterday sold: 84.0
+	Estimated sold: 93.64235410416802
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 32.0
+	Window Sold: 441.91058852604203
+	Yesterday sold: 122.0
+	Estimated sold: 114.910588526042
+	Manufacturer specialty: lioneer
+****************
+****************
+	Day: 33.0
+	Window Sold: 439.4776471315105
+	Yesterday sold: 117.0
+	Estimated sold: 116.47764713151051
+	Manufacturer specialty: lioneer
+****************
