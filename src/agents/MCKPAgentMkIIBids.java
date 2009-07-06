@@ -15,6 +15,7 @@ import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtopos.BucketBidToPositionModel;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
@@ -106,7 +107,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace);
 		((EnsembleBidToCPC) bidToCPC).initializeEnsemble();
-		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace,2,20,false,true,false);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
 		BucketBidToPositionModel bidToPosModel = new BucketBidToPositionModel(_querySpace,5);
@@ -372,6 +373,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 			}
 			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
+			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
 			PosPredictions.add(dailyPosPredictions);
@@ -385,9 +387,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				QueryReport queryReport = _queryReports.getLast();
 				SalesReport salesReport = _salesReports.getLast();
 				System.out.println("Day: " + _day);
-				
+
 				((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
 				((EnsembleBidToCPC) _bidToCPC).createEnsemble();
+				
+				((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
+				((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
 				
 				/*
 				 * CPC Error
