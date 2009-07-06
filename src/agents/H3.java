@@ -168,8 +168,8 @@ public class H3 extends SimAbstractAgent{
 	  //initial guess of k is 5, and k never goes over 10
 	  k = 10;
 	  double sum = 0.0;
-	  double hi =  12;
-	  double lo = 0;
+	  double hi =  14.5;
+	  double lo = 1;
 	  boolean done = false;
 	  while(done == false && counter <= 20){
 		  for (Query query: _querySpace){
@@ -196,7 +196,7 @@ public class H3 extends SimAbstractAgent{
 		  sum = 0.0;
 	  }
 	  
-	  if(k > 12) k = 12;
+	  if(k > 14.5) k = 14.5;
 	  if(k < 1) k = 1;
 	  return k;
    }
@@ -221,13 +221,19 @@ public class H3 extends SimAbstractAgent{
 	}
    
    protected void initializeK(){
-	   //will change later
-	   k = 10;
+	   if (_capacity == 500) k = 12;
+	   else if (_capacity == 400) k = 11;
+	   else k = 10;
    }
  
    protected double getQueryBid(Query q){
 		double prConv;
-		if(_day <= 5) prConv = _baselineConv.get(q);
+		if(_day <= 3) {
+			prConv = _baselineConv.get(q);
+		}
+		else if(_day <= 6){
+			prConv = 0.9*_baselineConv.get(q);
+		}
 		else prConv = _conversionPrModel.getPrediction(q);
 		
 		double bid;
