@@ -1,4 +1,4 @@
-package newmodels.bidtocpc;
+package newmodels.bidtoprclick;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,6 +9,7 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -26,9 +27,9 @@ import edu.umich.eecs.tac.props.QueryType;
  * Allow for bids of 0
  */
 
-public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
+public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 
-	protected ArrayList<Double> _bids , _CPCs;
+	protected ArrayList<Double> _bids , _clickPrs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
@@ -39,15 +40,15 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 	private int _numPrevDays;	//How many days worth of data to include in the regression
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
-	private int predictErrors = 0;
 	private boolean _queryIndicators;
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 
-	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+
+	public TypeIRegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
-		_CPCs = new ArrayList<Double>();
+		_clickPrs = new ArrayList<Double>();
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
@@ -56,16 +57,13 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
 		_powers = powers;
-		if(_IDVar < 2 && _numPrevDays <= _IDVar) {
-			throw new RuntimeException("Don't set IDVar below 4, or numPrevDays < IDVar");
-		}
 	}
 
 	@Override
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid){
+	public double getPrediction(Query query, double currentBid, Ad currentAd){
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -76,10 +74,15 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		}
 		bids.add(currentBid);
 
-		List<Double> CPCs = new ArrayList<Double>();
+		List<Double> clickPrs = new ArrayList<Double>();
 		for(int i = _IDVar-3; i >= 0; i --) {
-			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
-			CPCs.add(cpc);
+			double clickPr = 0;
+			double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
+			double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
+			if(imps != 0) {
+				clickPr = clicks/imps;
+			}
+			clickPrs.add(clickPr);
 		}
 
 
@@ -157,35 +160,23 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 		predCounter += bids.size();
-		for(int i = 0; i < CPCs.size(); i++) {
-			double CPC = CPCs.get(i);
-			if(Double.isNaN(CPC)) {
-				CPC = 0;
-			}
-			prediction += coeff[i+predCounter] * CPC;
+		for(int i = 0; i < clickPrs.size(); i++) {
+			double clickPr = clickPrs.get(i);
+			prediction += coeff[i+predCounter] * clickPr;
 			if(_powers) {
-				if(i == CPCs.size() - 1) {
+				if(i == clickPrs.size() - 1) {
 					predCounter++;
-					prediction += coeff[i+predCounter] * CPC * CPC;
+					prediction += coeff[i+predCounter] * clickPr * clickPr;
 					predCounter++;
-					prediction += coeff[i+predCounter] * CPC * CPC * CPC;
+					prediction += coeff[i+predCounter] * clickPr * clickPr * clickPr;
 				}
 			}
 		}
-		predCounter += CPCs.size();
+		predCounter += clickPrs.size();
 
-		/*
-		 * Our CPC can never be higher than our bid
-		 */
-		if(prediction < currentBid && prediction >= 0.0) {
-			return prediction;
+		double clickpr = 1/(1+Math.exp(-prediction));
 
-		}
-		else {
-			predictErrors++;
-			//			System.out.println(predictErrors);
-			return currentBid;
-		}
+		return clickpr;
 	}
 
 	/*
@@ -210,33 +201,34 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 			_queryReports.remove(0);
 			for(int i = 0; i < _numQueries; i++) {
 				_bids.remove(0);
-				_CPCs.remove(0);
+				_clickPrs.remove(0);
 			}
 		}
 
-
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
-			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC) || bid == 0)) {
+			double imps = queryreport.getImpressions(query);
+			double clicks = queryreport.getClicks(query);
+			if(!(clicks == 0 || imps == 0)) {
 				_bids.add(bid);
-				_CPCs.add(CPC);
+				_clickPrs.add(clicks/imps);
 			}
 			else {
-				_bids.add(0.0);
-				_CPCs.add(0.0);
+				_bids.add(bid);
+				_clickPrs.add(0.0);
 			}
 		}
 
 		if(_bids.size() > _IDVar*_numQueries) {
 
 			double[] bids = new double[_bids.size()];
-			double[] cpcs = new double[_bids.size()];
+			double[] prclicks = new double[_bids.size()];
 
 			for(int i = 0; i < _bids.size(); i++) {
 				bids[i] = _bids.get(i);
-				cpcs[i] = _CPCs.get(i);
+				prclicks[i] = _clickPrs.get(i);
 			}
+
 
 			int arrLen = _bids.size() - (_IDVar-1)*_numQueries ;
 
@@ -324,15 +316,16 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 					c.assign("queryIndF2",queryIndF2);
 				}
 				c.assign("bids", bids);
-				c.assign("cpcs", cpcs);
+				c.assign("prclicks", prclicks);
 
-				String model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				String model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
 				if(_queryIndicators) {
 					model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				}
 				else if(_queryTypeIndicators) {
 					model += "queryIndF1 + queryIndF2 + ";
 				}
+
 				for(int i = 0; i < _IDVar; i++) {
 					int min = i * _numQueries + 1;
 					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
@@ -351,23 +344,24 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 					int min = i * _numQueries + 1;
 					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
 
-					model += "cpcs[" + min +":" + max + "] + ";
+					model += "prclicks[" + min +":" + max + "] + ";
 					if(_powers) {
 						if(i == _IDVar -3) {
-							model += "I(cpcs[" + min +":" + max + "]^2) + ";
-							model += "I(cpcs[" + min +":" + max + "]^3) + ";
+							model += "I(prclicks[" + min +":" + max + "]^2) + ";
+							model += "I(prclicks[" + min +":" + max + "]^3) + ";
 						}
 					}
 				}
 
 				model = model.substring(0, model.length()-3);
-				model += ")";
+				model += ", family = quasibinomial(link = \"logit\"))";
 
-				//				System.out.println(model);				
+
+				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				//				for(int i = 0 ; i < coeff.length; i++)
-				//					System.out.println(coeff[i]);
+				for(int i = 0 ; i < coeff.length; i++)
+					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
@@ -378,15 +372,9 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				return false;
 			}
 
-			for(int i = 0; i < coeff.length; i++) {
-				if(Double.isNaN(coeff[i])) {
-					return false;
-				}
-			}
-
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
-			//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+			//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 
 			return true;
 		}

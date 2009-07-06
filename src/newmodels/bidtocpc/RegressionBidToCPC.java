@@ -143,7 +143,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		}
 		predCounter += bids.size();
 		for(int i = 0; i < CPCs.size(); i++) {
-			double CPC = CPCs.size();
+			double CPC = CPCs.get(i);
 			if(Double.isNaN(CPC)) {
 				CPC = 0;
 			}
