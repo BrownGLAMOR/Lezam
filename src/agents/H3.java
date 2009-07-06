@@ -27,7 +27,6 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class H3 extends SimAbstractAgent{
-	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected NewAbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
@@ -48,10 +47,6 @@ public class H3 extends SimAbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		for(Query query: _querySpace){
-			_bidToclick.get(query).updateModel(_salesReport, _queryReport);
-		}
-
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
@@ -87,9 +82,7 @@ public class H3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+        _conversionPrModel = new GoodConversionPrModel(_querySpace);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		
@@ -141,9 +134,6 @@ public class H3 extends SimAbstractAgent{
 			for(Query query: _querySpace){
 				_bidToclick.get(query).updateModel(_salesReport, _queryReport);
 			}
-	
-			_unitsSoldModel.update(_salesReport);
-		    
 			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
                _conversionPrModel.setTimeHorizon(_timeHorizon);
@@ -157,15 +147,15 @@ public class H3 extends SimAbstractAgent{
 	}
 
 
-   protected double updateK(){
+   protected void updateK(){
 	  oldSales = newSales;
 	  newSales = 0.0;
 	  for(Query query: _querySpace){
 		  newSales += _salesReport.getConversions(query);
 	  }
 	  double dailyLimit = 1.5*_capacity/_capWindow;
-	  double error = 0.5;
-	  int counter = 0;
+	  //double error = 0.5;
+	  //int counter = 0;
 	  //initial guess of k is 5, and k never goes over 10
 	  k = 10;
 	  double sum = 0.0;
@@ -196,7 +186,7 @@ public class H3 extends SimAbstractAgent{
 		  counter ++;
 		  sum = 0.0;
 	  }*/
-	  while(Math.abs(sum - dailyLimit) < 1){
+	  while(Math.abs(sum - dailyLimit) > 1){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query,k);
 		  }
@@ -206,7 +196,6 @@ public class H3 extends SimAbstractAgent{
 	  }
 	  if(k > 14.5) k = 14.5;
 	  if(k < 1) k = 1;
-	  return k;
    }
    
    protected double calcUnitSold(Query q, double k){
@@ -267,9 +256,7 @@ public class H3 extends SimAbstractAgent{
 			buff.append(q).append("\n");
 			buff.append("\t").append("k: ").append(k).append("\n");
 			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
-			buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
 			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
-			buff.append("\t").append("Yesterday Sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
 			/*if (_salesReport.getConversions(q) > 0) 
 				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
 			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");*/
