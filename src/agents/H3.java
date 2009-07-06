@@ -196,7 +196,7 @@ public class H3 extends SimAbstractAgent{
 		  counter++;
 	  }
 	  if(k > 14.5) k = 14.5;
-	  if(k < 1) k = 1;
+	  if(k < 7) k = 7;
    }
    
    protected double calcUnitSold(Query q, double k){
@@ -226,11 +226,8 @@ public class H3 extends SimAbstractAgent{
  
    protected double getQueryBid(Query q){
 		double prConv;
-		if(_day <= 3) {
+		if(_day <= 6) {
 			prConv = _baselineConv.get(q);
-		}
-		else if(_day <= 6){
-			prConv = 0.9*_baselineConv.get(q);
 		}
 		else prConv = _conversionPrModel.getPrediction(q);
 		
