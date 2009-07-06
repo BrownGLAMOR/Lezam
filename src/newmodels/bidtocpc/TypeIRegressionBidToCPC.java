@@ -44,12 +44,8 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 
-	public TypeIRegressionBidToCPC(Set<Query> queryspace, int IDVar, int numPrevDays, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
-		try {
-			c = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
-		}
+	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
 		_queryReports = new ArrayList<QueryReport>();
@@ -177,7 +173,7 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 		predCounter += CPCs.size();
-		
+
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
@@ -367,11 +363,11 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				model = model.substring(0, model.length()-3);
 				model += ")";
 
-				System.out.println(model);				
+				//				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				for(int i = 0 ; i < coeff.length; i++)
-					System.out.println(coeff[i]);
+				//				for(int i = 0 ; i < coeff.length; i++)
+				//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
@@ -380,6 +376,12 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 			catch (REXPMismatchException e) {
 				e.printStackTrace();
 				return false;
+			}
+
+			for(int i = 0; i < coeff.length; i++) {
+				if(Double.isNaN(coeff[i])) {
+					return false;
+				}
 			}
 
 			double stop = System.currentTimeMillis();

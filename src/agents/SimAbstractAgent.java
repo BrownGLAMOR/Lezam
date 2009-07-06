@@ -281,6 +281,7 @@ public abstract class SimAbstractAgent extends Agent {
      * Sends a constructed {@link BidBundle} from any updated bids, ads, or spend limits.
      */
     protected void sendBidAndAds() {
+    	double start = System.currentTimeMillis();
     	if(_day == 0) {
     		_models = initModels();
     		initBidder();
@@ -295,6 +296,9 @@ public abstract class SimAbstractAgent extends Agent {
         if (publisherAddress != null) {
             sendMessage(publisherAddress, bidBundle);
         }
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
     }
 
     /**

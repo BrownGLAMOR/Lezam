@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -52,8 +55,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 3;
-	protected int ENSEMBLESIZE = 5;
+	protected int NUMPASTDAYS = 5;
+	protected int ENSEMBLESIZE = 35;
+
+	private RConnection rConnection;
 
 
 
@@ -112,6 +117,73 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			_ensembleError.put(query, queryEnsembleError);
 		}
 		_ensemblePredictions = new HashMap<BidBundle, HashMap<Query,Double>>();
+
+		try {
+			rConnection = new RConnection();
+		} catch (RserveException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void initializeEnsemble() {
+		/*
+		 * Add Type I Models
+		 */
+		String basename = "typeI";
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 4; j++) {
+				AbstractBidToCPC model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), false, false, false);
+				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
+				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), true, false, false);
+				addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
+				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), false, true, false);
+				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
+				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), false, false, true);
+				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
+				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), true, false, true);
+				addTypeIModel(basename + "_" + i + "_" + j +"_t_f_t", model);
+				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 15*(j+1), false, true, true);
+				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_t", model);
+			}
+		}
+
+		/*
+		 * Add Type II Models
+		 */
+		basename = "typeII";
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 4; j++) {
+				AbstractBidToCPC model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), false);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_f", model);
+				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 15*(j+1), true);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_t", model);
+
+				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 15*(j+1), false);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
+				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 15*(j+1), true);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
+
+				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 15*(j+1), false);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
+				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 15*(j+1), true);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
+			}
+		}
+
+		/*
+		 * Ad Type III Models
+		 */
+		basename = "typeIII";
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 4; j++) {
+				for(Query query : _querySpace) {
+					AbstractBidToCPC model = new TypeIIIRegressionBidToCPC(rConnection, _querySpace,query, 2+i, 15*(j+1), false);
+					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
+					model = new TypeIIIRegressionBidToCPC(rConnection, _querySpace,query, 2+i, 15*(j+1), true);
+					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
+				}
+			}
+		}
 	}
 
 	public void addTypeIModel(String name, AbstractBidToCPC model) {
@@ -206,14 +278,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			_typeIIIUsableModels.put(query, typeIIIUsableModels);
 		}
 
-		if(ensembleUsable) {
-			createEnsemble();
-		}
-
 		return ensembleUsable;
 	}
 
-	private void createEnsemble() {
+	public void createEnsemble() {
 
 		/*
 		 * Initialize Error Mappings
@@ -234,7 +302,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 				double error = 0;
 				LinkedList<Double> dailyModelError = typeIDailyModelError.get(query);
-				int bound = NUMPASTDAYS;
+				double bound = NUMPASTDAYS;
 				if(dailyModelError.size() < NUMPASTDAYS) {
 					bound = dailyModelError.size();
 				}
@@ -242,11 +310,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 					error += dailyModelError.get(dailyModelError.size() - 1 - i);
 				}
 				error/= bound;
-				ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
-				modelErrorPairList.add(modelErrorPair);
-				while(modelErrorPairList.size() > NUMPASTDAYS) {
-					Collections.sort(modelErrorPairList);
-					modelErrorPairList.remove(modelErrorPairList.size()-1);
+				if(!Double.isNaN(error)) {
+					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
+					modelErrorPairList.add(modelErrorPair);
+					while(modelErrorPairList.size() > ENSEMBLESIZE) {
+						Collections.sort(modelErrorPairList);
+						modelErrorPairList.remove(modelErrorPairList.size()-1);
+					}
 				}
 			}
 		}
@@ -274,11 +344,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 							error += dailyModelError.get(dailyModelError.size() - 1 - i);
 						}
 						error/= bound;
-						ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
-						modelErrorPairList.add(modelErrorPair);
-						while(modelErrorPairList.size() > NUMPASTDAYS) {
-							Collections.sort(modelErrorPairList);
-							modelErrorPairList.remove(modelErrorPairList.size()-1);
+						if(!Double.isNaN(error)) {
+							ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
+							modelErrorPairList.add(modelErrorPair);
+							while(modelErrorPairList.size() > ENSEMBLESIZE) {
+								Collections.sort(modelErrorPairList);
+								modelErrorPairList.remove(modelErrorPairList.size()-1);
+							}
 						}
 					}
 				}
@@ -305,11 +377,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 					error += dailyModelError.get(dailyModelError.size() - 1 - i);
 				}
 				error/= bound;
-				ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
-				modelErrorPairList.add(modelErrorPair);
-				while(modelErrorPairList.size() > NUMPASTDAYS) {
-					Collections.sort(modelErrorPairList);
-					modelErrorPairList.remove(modelErrorPairList.size()-1);
+				if(!Double.isNaN(error)) {
+					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
+					modelErrorPairList.add(modelErrorPair);
+					while(modelErrorPairList.size() > ENSEMBLESIZE) {
+						Collections.sort(modelErrorPairList);
+						modelErrorPairList.remove(modelErrorPairList.size()-1);
+					}
 				}
 			}
 		}
@@ -322,6 +396,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			LinkedList<AbstractBidToCPC> queryEnsemble = new LinkedList<AbstractBidToCPC>();
 			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
+//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
 				queryEnsemble.add(modelErrorPair.getModel());
 			}
 			_ensemble.put(query, queryEnsemble);
@@ -412,7 +487,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			for(Query query : _querySpace) {
 				LinkedList<Double> queryDailyError = typeIDailyModelError.get(query);
 				if(predictions != null) {
-					double error = predictions.get(query) - queryReport.getCPC(query);
+					double error = predictions.get(query);
+					if(!Double.isNaN(queryReport.getCPC(query))) {
+						error -= queryReport.getCPC(query);
+					}
 					error = error*error;
 					queryDailyError.add(error);
 				}
@@ -435,18 +513,21 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				HashMap<Query, Double> predictions = queryTypePredictions.get(name);
 				HashMap<Query, LinkedList<Double>> dailyError = typeIIDailyModelError.get(name);
 				for(Query query : _querySpace) {
-					LinkedList<Double> queryDailyError = dailyError.get(query);
 					if(queryType == query.getType()) {
+						LinkedList<Double> queryDailyError = dailyError.get(query);
 						if(predictions != null) {
-							double error = predictions.get(query) - queryReport.getCPC(query);
+							double error = predictions.get(query);
+							if(!Double.isNaN( queryReport.getCPC(query))) {
+								error -= queryReport.getCPC(query);
+							}
 							error = error*error;
 							queryDailyError.add(error);
 						}
 						else {
 							queryDailyError.add(Double.NaN);
 						}
+						dailyError.put(query, queryDailyError);
 					}
-					dailyError.put(query, queryDailyError);
 				}
 				typeIIDailyModelError.put(name, dailyError);
 			}
@@ -465,9 +546,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				Double prediction = predictions.get(name);
 				LinkedList<Double> queryDailyError = typeIIIDailyModelError.get(name);
 				if(prediction != null) {
-					double error = prediction - queryReport.getCPC(query);
+					double error = prediction;
+					if(!Double.isNaN(queryReport.getCPC(query))) {
+						error -= queryReport.getCPC(query);
+					}
 					error = error*error;
-					queryDailyError.add(error); 
+					queryDailyError.add(error);
 				}
 				else {
 					queryDailyError.add(Double.NaN);
@@ -484,7 +568,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
 		for(Query query : _querySpace) {
 			LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
-			double error = ensemblePredictions.get(query) - queryReport.getCPC(query);
+			double error = ensemblePredictions.get(query);
+			if(!Double.isNaN(queryReport.getCPC(query))) {
+				error -= queryReport.getCPC(query);
+			}
 			error = error*error;
 			queryEnsembleError.add(error);
 			_ensembleError.put(query, queryEnsembleError);
@@ -495,6 +582,9 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	public double getPrediction(Query query, double bid) {
 		double prediction = 0.0;
 		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
+		if(queryEnsemble.size() == 0 || bid == 0) {
+			return bid;
+		}
 		for(AbstractBidToCPC model : queryEnsemble) {
 			prediction += model.getPrediction(query, bid);
 		}
@@ -542,10 +632,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			double thisError = this._error;
 			double otherError = modelErrorPair.getError();
 			if(thisError < otherError) {
-				return 1;
+				return -1;
 			}
 			if(otherError < thisError) {
-				return -1;
+				return 1;
 			}
 			else {
 				return 0;

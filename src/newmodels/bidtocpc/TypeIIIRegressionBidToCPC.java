@@ -43,12 +43,8 @@ public class TypeIIIRegressionBidToCPC extends AbstractBidToCPC {
 	private int predictErrors = 0;
 	private boolean _powers;
 
-	public TypeIIIRegressionBidToCPC(Set<Query> queryspace, Query query, int IDVar, int numPrevDays, boolean powers) {
-		try {
-			c = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
-		}
+	public TypeIIIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, Query query, int IDVar, int numPrevDays, boolean powers) {
+		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
 		_queryReports = new ArrayList<QueryReport>();
@@ -225,11 +221,11 @@ public class TypeIIIRegressionBidToCPC extends AbstractBidToCPC {
 				model = model.substring(0, model.length()-3);
 				model += ")";
 
-				System.out.println(model);				
+				//				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-				for(int i = 0 ; i < coeff.length; i++)
-					System.out.println(coeff[i]);
+				//				for(int i = 0 ; i < coeff.length; i++)
+				//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
@@ -238,6 +234,12 @@ public class TypeIIIRegressionBidToCPC extends AbstractBidToCPC {
 			catch (REXPMismatchException e) {
 				e.printStackTrace();
 				return false;
+			}
+
+			for(int i = 0; i < coeff.length; i++) {
+				if(Double.isNaN(coeff[i])) {
+					return false;
+				}
 			}
 
 			double stop = System.currentTimeMillis();
