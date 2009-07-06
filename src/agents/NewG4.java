@@ -147,8 +147,8 @@ public class NewG4 extends SimAbstractAgent{
 			k *= 1.1;
 		}
 
-		k = Math.max(2.5, k);
-		k = Math.min(4, k);
+		k = Math.max(2, k);
+		k = Math.min(5, k);
 	
 		return k;
 	}

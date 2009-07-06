@@ -67,8 +67,10 @@ public class NewG3 extends SimAbstractAgent{
 		}
 
 		_bidBundleList = new ArrayList<BidBundle>();
-
-		k = 10;
+		
+		if (_capacity == 500) k = 12;
+		else if (_capacity == 400) k = 11;
+		else k = 10;
 		
 		try {
 			output = new PrintStream(new File("newg3.txt"));
@@ -148,11 +150,11 @@ public class NewG3 extends SimAbstractAgent{
 		}
 		if(sum >= 1.1*dailyLimit){
 			k *= 1.1;
-		}
-
-		k = Math.max(9, k);
-		k = Math.min(12, k);
-	
+		}	
+		
+		k = Math.max(7, k);
+		k = Math.min(14.5, k);
+		
 		return k;
 	}
 
