@@ -68,9 +68,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	/*
 	 * For error calculations
 	 */
-	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, PosPredictions, PosClickPrPredictions;
-	private double sumCPCError, sumClickPrError, sumPosError, _sumPosClickPrError;
-	private int errorDayCounter;
+	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, PosPredictions, PosClickPrPredictions, ConvPrPredictions, ImpPredictions;
+	private double sumCPCError, sumClickPrError, sumPosError, _sumPosClickPrError, sumConvPrError, sumImpError;
+	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
@@ -86,11 +86,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		ClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		PosPredictions = new LinkedList<HashMap<Query,Double>>();
 		PosClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
+		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
+		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
 
 		sumCPCError = 0.0;
 		sumClickPrError = 0.0;
 		sumPosError = 0.0;
 		_sumPosClickPrError = 0.0;
+		sumConvPrError = 0.0;
+		sumImpError = 0.0;
 		errorDayCounter = 0;
 	}
 
@@ -211,7 +215,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
-		for(AbstractModel model:_models) {
+		for(AbstractModel model: _models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
 				userModel.updateModel(queryReport, salesReport);
@@ -270,6 +274,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			HashMap<Query,Double> dailyClickPrPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyPosPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyPosPrClickPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyConvPrPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyImpPredictions = new HashMap<Query, Double>();
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
@@ -342,11 +348,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-//					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-//					double numImps = _queryToNumImpModel.getPrediction(q);
-//					int numClicks = (int) (clickPr * numImps);
-//					double CPC = _bidToCPC.getPrediction(q, bid);
-//					bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
+					//					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+					//					double numImps = _queryToNumImpModel.getPrediction(q);
+					//					int numClicks = (int) (clickPr * numImps);
+					//					double CPC = _bidToCPC.getPrediction(q, bid);
+					//					bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
 					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				}
 				else { 
@@ -372,6 +378,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad()));
 				dailyPosPredictions.put(q,pos);
 				dailyPosPrClickPredictions.put(q,posPrClick);
+				dailyConvPrPredictions.put(q, _convPrModel.getPrediction(q));
+				dailyImpPredictions.put(q,(double)_queryToNumImpModel.getPrediction(q));
 
 			}
 			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
@@ -380,6 +388,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			ClickPrPredictions.add(dailyClickPrPredictions);
 			PosPredictions.add(dailyPosPredictions);
 			PosClickPrPredictions.add(dailyPosPrClickPredictions);
+			ConvPrPredictions.add(dailyConvPrPredictions);
+			ImpPredictions.add(dailyImpPredictions);
 			/*
 			 * Update model error
 			 */
@@ -415,8 +425,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
-				//				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
-				//				System.out.println("CPC  Standard Deviation: " + stddevCPC);
+				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
+				System.out.println("CPC  Standard Deviation: " + stddevCPC);
 
 				/*
 				 * ClickPr Error
@@ -438,8 +448,58 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
-				//				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
-				//				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
+				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+
+				/*
+				 * ConvPr Error
+				 */
+				HashMap<Query, Double> convprpredictions = ConvPrPredictions.get(ConvPrPredictions.size()-3);
+				double dailyconvprerror = 0;
+				int prConvDailySkip = 0;
+				for(Query query : _querySpace) {
+					double clicks = queryReport.getClicks(query);
+					double convs = salesReport.getConversions(query);
+					if(clicks == 0 || convs == 0) {
+						prConvSkip++;
+						prConvDailySkip++;
+					}
+					else {
+						System.out.println("Predicted ConvPr: " + convprpredictions.get(query));
+						System.out.println("Actual ConvPr: " + convs/clicks);
+						double error = (convs/clicks - convprpredictions.get(query))*(convs/clicks- convprpredictions.get(query));
+						dailyconvprerror += error;
+						sumConvPrError += error;
+					}
+				}
+				double stddevConvPr = Math.sqrt(sumConvPrError/(errorDayCounter*16 - prConvSkip));
+				System.out.println("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
+				System.out.println("ConvPr To Standard Deviation: " + stddevConvPr);
+
+
+				/*
+				 * NumImps Error
+				 */
+				HashMap<Query, Double> numimpspredictions = ImpPredictions.get(ImpPredictions.size()-3);
+				double dailyimperror = 0;
+				int impDailySkip = 0;
+				for(Query query : _querySpace) {
+					double imps = queryReport.getImpressions(query);
+					if(imps == 0) {
+						impSkip++;
+						impDailySkip++;
+					}
+					else {
+//						System.out.println("Predicted Imps: " + numimpspredictions.get(query));
+//						System.out.println("Actual Imps: " + imps);
+						double error = (imps - numimpspredictions.get(query))*(imps- numimpspredictions.get(query));
+						dailyimperror += error;
+						sumImpError += error;
+					}
+				}
+				double stddevImp = Math.sqrt(sumImpError/(errorDayCounter*16 - impSkip));
+				System.out.println("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
+				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
 
 				/*
 				 * Pos ClickPr Error
@@ -501,6 +561,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double stddevPos = Math.sqrt(sumPosError/(errorDayCounter*16));
 				//				System.out.println("Daily Position Error: " + Math.sqrt(dailyposerror/16));
 				//				System.out.println("Position Standard Deviation: " + stddevPos);
+
+
+
+
 				if(_day == 59) {
 					System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
 					System.out.println("CPC  Standard Deviation: " + stddevCPC);

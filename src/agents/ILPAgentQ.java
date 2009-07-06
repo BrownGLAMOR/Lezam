@@ -146,7 +146,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 			_dailyLimit.put(query, Double.MAX_VALUE);
 		}
 
-		_possibleBids = new HashSet<Double>(setPossibleBids(0.1, 3.5, .1));
+		_possibleBids = new HashSet<Double>(setPossibleBids(0.1, 3.5, .01));
 		_possibleQuantities = new HashSet<Integer>(setPossibleQuantities(0, 10, 1));
 		
 		_baseConvProbs = new HashMap<Query, Double>();
