@@ -6,7 +6,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -21,11 +20,6 @@ import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.revenue.AbstractRevenueModel;
 import newmodels.revenue.RevenueMovingAvg;
-import newmodels.slottobid.AbstractSlotToBidModel;
-import newmodels.slottobid.SimpleSlotToBid;
-import newmodels.slottonumclicks.AbstractSlotToNumClicks;
-import newmodels.slottonumclicks.SimpleClick;
-import newmodels.slottonumclicks.StaticSlotToClicks;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -77,18 +71,18 @@ public class DPBAgent extends SimAbstractAgent{
 		
 		if (_day <= 6) {
 			bidBundle = new BidBundle();
-			for (Query query : _querySpace) {
-				for(Query q : _querySpace){
-					double bid;
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.1,.6);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.25,.75);
-					else 
-						bid = randDouble(.35,1.0);
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-				}
+			
+			for(Query query : _querySpace){
+				double bid;
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = randDouble(.1,.6);
+				else if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = randDouble(.25,.75);
+				else 
+					bid = randDouble(.35,1.0);
+					bidBundle.addQuery(query, bid, new Ad(), Double.NaN);
 			}
+			
 			return bidBundle;
 		}
 		
