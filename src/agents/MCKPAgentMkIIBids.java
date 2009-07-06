@@ -75,7 +75,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .1;
+		double increment  = .03;
 		double min = .04;
 		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -326,7 +326,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 
 			System.out.println("Budget: "+ budget);
-			
+
 			Collections.sort(allIncItems);
 			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
@@ -342,20 +342,21 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q);
-					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
-					bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
+//					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+//					double numImps = _queryToNumImpModel.getPrediction(q);
+//					int numClicks = (int) (clickPr * numImps);
+//					double CPC = _bidToCPC.getPrediction(q, bid);
+//					bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				}
 				else { 
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-//					bid = 0.0;
-//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-					bid = randDouble(.04, 2.5);
-					bidBundle.addQuery(q, bid, new Ad(), bid*5);
+					bid = 0.0;
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					//					bid = randDouble(.04, 2.5);
+					//					bidBundle.addQuery(q, bid, new Ad(), bid*5);
 				}
 
 				double pos = _bidToPosModel.getPosition(q, bid);
@@ -391,10 +392,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
 				((EnsembleBidToCPC) _bidToCPC).createEnsemble();
-				
+
 				((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
 				((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
-				
+
 				/*
 				 * CPC Error
 				 */
@@ -414,8 +415,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
-				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
-				System.out.println("CPC  Standard Deviation: " + stddevCPC);
+				//				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
+				//				System.out.println("CPC  Standard Deviation: " + stddevCPC);
 
 				/*
 				 * ClickPr Error
@@ -437,9 +438,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
-				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
-				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
-				
+				//				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
+				//				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+
 				/*
 				 * Pos ClickPr Error
 				 */
@@ -460,8 +461,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevPosClickPr = Math.sqrt(_sumPosClickPrError/(errorDayCounter*16));
-//				System.out.println("Daily Pos To ClickPr Error: " + Math.sqrt(dailyposclickprerror/16));
-//				System.out.println("Pos To ClickPr Standard Deviation: " + stddevPosClickPr);
+				//				System.out.println("Daily Pos To ClickPr Error: " + Math.sqrt(dailyposclickprerror/16));
+				//				System.out.println("Pos To ClickPr Standard Deviation: " + stddevPosClickPr);
 
 				/*
 				 * Pos Error
@@ -498,8 +499,14 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevPos = Math.sqrt(sumPosError/(errorDayCounter*16));
-//				System.out.println("Daily Position Error: " + Math.sqrt(dailyposerror/16));
-//				System.out.println("Position Standard Deviation: " + stddevPos);
+				//				System.out.println("Daily Position Error: " + Math.sqrt(dailyposerror/16));
+				//				System.out.println("Position Standard Deviation: " + stddevPos);
+				if(_day == 59) {
+					System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+					System.out.println("CPC  Standard Deviation: " + stddevCPC);
+					((EnsembleBidToPrClick) _bidToPrClick).printEnsembleMemberSummary();
+					((EnsembleBidToCPC) _bidToCPC).printEnsembleMemberSummary();
+				}
 			}
 
 		}

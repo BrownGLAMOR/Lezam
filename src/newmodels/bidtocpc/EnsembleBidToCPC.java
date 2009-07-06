@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import newmodels.bidtoprclick.EnsembleBidToPrClick.ModelErrorPair;
+
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
@@ -51,12 +53,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	protected HashMap<Query,LinkedList<AbstractBidToCPC>> _ensemble;
 	protected HashMap<Query,LinkedList<Double>> _ensembleError;
 	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
+	protected HashMap<Query,HashMap<String,Integer>> _ensembleMembers;
 
 	/*
 	 * Constants for making ensemble
 	 */
 	protected int NUMPASTDAYS = 5;
-	protected int ENSEMBLESIZE = 35;
+	protected int ENSEMBLESIZE = 5;
 
 	private RConnection rConnection;
 
@@ -120,6 +123,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		}
 		_ensemblePredictions = new HashMap<BidBundle, HashMap<Query,Double>>();
 
+		_ensembleMembers = new HashMap<Query, HashMap<String,Integer>>();
+		for(Query query : _querySpace) {
+			HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
+			_ensembleMembers.put(query, ensembleMember);
+		}
+		
 		try {
 			rConnection = new RConnection();
 		} catch (RserveException e) {
@@ -403,6 +412,14 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
 //				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
 				queryEnsemble.add(modelErrorPair.getModel());
+				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
+				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
+				if(ensembleUseCount == null) {
+					ensembleMembers.put(modelErrorPair.getName(), 1);
+				}
+				else {
+					ensembleMembers.put(modelErrorPair.getName(), ensembleUseCount+1);
+				}
 			}
 			_ensemble.put(query, queryEnsemble);
 		}
@@ -586,18 +603,49 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	@Override
 	public double getPrediction(Query query, double bid) {
 		double prediction = 0.0;
-		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
 		if(bid == 0) {
-			return bid;
+			return prediction;
 		}
+		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
 			return _defaultModel.getPrediction(query, bid);
 		}
+		int nancounter = 0;
 		for(AbstractBidToCPC model : queryEnsemble) {
-			prediction += model.getPrediction(query, bid);
+			double pred = model.getPrediction(query, bid);
+			if(Double.isNaN(pred)) {
+				nancounter++;
+			}
+			else {
+				prediction += model.getPrediction(query, bid);
+			}
 		}
-		prediction /= queryEnsemble.size();
+		if(nancounter != 0) {
+			System.out.println("\n\n\n\n\n CPCnancounter: " + nancounter + "\n\n\n\n");
+		}
+		prediction /= (queryEnsemble.size()-nancounter);
 		return prediction;
+	}
+	
+	public void printEnsembleMemberSummary() {
+		double tot = 0;
+		for(Query query : _querySpace) {
+			HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
+			double total = 0;
+			for(String name : ensembleMembers.keySet()) {
+				Integer ensembleUseCount = ensembleMembers.get(name);
+				total += ensembleUseCount;
+			}
+			total /= ENSEMBLESIZE;
+//			System.out.println("Total Members: " + ensembleMembers.size());
+			for(String name : ensembleMembers.keySet()) {
+				Integer ensembleUseCount = ensembleMembers.get(name);
+				System.out.println("Name: " + name + " Use: " + (ensembleUseCount/total));
+			}
+			tot += ensembleMembers.size();
+		}
+		tot /= 16;
+		System.out.println("Avg num members users: " + tot);
 	}
 
 	public class ModelErrorPair implements Comparable<ModelErrorPair> {

@@ -78,7 +78,7 @@ public class TypeIIIRegressionBidToPrClick extends AbstractBidToPrClick {
 				double clickPr = 0;
 				double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
 				double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
-				if(imps != 0) {
+				if(imps != 0 && clicks != 0) {
 					clickPr = clicks/imps;
 				}
 				clickPrs.add(clickPr);
@@ -231,6 +231,12 @@ public class TypeIIIRegressionBidToPrClick extends AbstractBidToPrClick {
 				return false;
 			}
 
+			for(int i = 0; i < coeff.length; i++) {
+				if(Double.isNaN(coeff[i])) {
+					return false;
+				}
+			}
+			
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");

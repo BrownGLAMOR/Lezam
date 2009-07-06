@@ -79,7 +79,7 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 			double clickPr = 0;
 			double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
 			double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
-			if(imps != 0) {
+			if(imps != 0 && clicks != 0) {
 				clickPr = clicks/imps;
 			}
 			clickPrs.add(clickPr);
@@ -356,7 +356,6 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 				model = model.substring(0, model.length()-3);
 				model += ", family = quasibinomial(link = \"logit\"))";
 
-
 //				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
@@ -370,6 +369,12 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 			catch (REXPMismatchException e) {
 				e.printStackTrace();
 				return false;
+			}
+			
+			for(int i = 0; i < coeff.length; i++) {
+				if(Double.isNaN(coeff[i])) {
+					return false;
+				}
 			}
 
 			double stop = System.currentTimeMillis();
