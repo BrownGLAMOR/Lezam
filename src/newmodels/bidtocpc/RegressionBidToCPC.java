@@ -35,17 +35,17 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private double[] coeff;
 	private int _numQueries = 16;
 	private int _IDVar = 4;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
-	private int _numPrevDays = 15;	//How many days worth of data to include in the regression
+	private int _numPrevDays = 30;	//How many days worth of data to include in the regression
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	int predictErrors = 0;
 	
 	public RegressionBidToCPC(Set<Query> queryspace) {
-		this(queryspace,4,60);
+		this(queryspace,4,30);
 	}
 	
 	public RegressionBidToCPC(Set<Query> queryspace, int IDVar) {
-		this(queryspace,IDVar,60);
+		this(queryspace,IDVar,30);
 	}
 
 	public RegressionBidToCPC(Set<Query> queryspace, int IDVar, int numPrevDays) {

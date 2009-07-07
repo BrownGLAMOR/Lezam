@@ -61,7 +61,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	 * Constants for making ensemble
 	 */
 	protected int NUMPASTDAYS = 3;
-	protected int ENSEMBLESIZE = 12;
+	protected int ENSEMBLESIZE = 10;
 
 	private RConnection rConnection;
 

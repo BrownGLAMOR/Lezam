@@ -24,6 +24,7 @@ import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.slottoprclick.NewAbstractPosToPrClick;
 import newmodels.slottoprclick.RegressionPosToPrClick;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
@@ -73,7 +74,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .03;
+		double increment  = .01;
 		double min = .04;
 		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -107,7 +108,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		((EnsembleBidToCPC) bidToCPC).initializeEnsemble();
 		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace);
 		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
-		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
+		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -161,23 +162,23 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 			String manufacturer = q.getManufacturer();
 			if(_manSpecialty.equals(manufacturer)) {
-				_salesPrices.put(q, 15.0);
+				_salesPrices.put(q, 10*(_MSB+1));
+			}
+			else if(manufacturer == null) {
+				_salesPrices.put(q, (10*(_MSB+1)) * (1/3.0) + (10)*(2/3.0));
 			}
 			else {
 				_salesPrices.put(q, 10.0);
 			}
 
 			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-				System.out.println(_piF0);
 				_baseConvProbs.put(q, _piF0);
 			}
 			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
 				_baseConvProbs.put(q, _piF1);
-				System.out.println(_piF1);
 			}
 			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
 				_baseConvProbs.put(q, _piF2);
-				System.out.println(_piF2);
 			}
 			else {
 				throw new RuntimeException("Malformed query");
@@ -186,6 +187,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			String component = q.getComponent();
 			if(_compSpecialty.equals(component)) {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
+			}
+			else if(component == null) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
 			}
 		}
 		_queryId = new Hashtable<Query,Integer>();
@@ -334,7 +338,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					 */
 					//					bid = 0.0;
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-					bid = randDouble(.04, 2.5);
+					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						bid = randDouble(.1,.3);
+					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						bid = randDouble(.25,.75);
+					else
+						bid = randDouble(.33,1.0);
+					
 					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*5);
 				}
@@ -477,9 +487,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					bid = randDouble(.1,.3);
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
 					bid = randDouble(.25,.75);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) 
+				else
 					bid = randDouble(.33,1.0);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
@@ -553,20 +563,30 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 						break;
 					}
 				}
-				double avgConvProb = .253; //the average probability of conversion;
-				/*
+
+//				double avgConvProb = 0; //the average probability of conversion;
+//				for(Query q : _querySpace) {
+//					avgConvProb += _convPrModel.getPrediction(q);
+//				}
+//				avgConvProb /= 16;
+				
+				double avgConvProb = 0; //the average probability of conversion;
+				for(Query q : _querySpace) {
+					avgConvProb += _baseConvProbs.get(q);
+				}
+				avgConvProb /= 16;
+				
 				double avgUSP = 0;
-				for (Query q : _querySpace){
-					avgUSP += _rpc.get(q);
+				for(Query q : _querySpace) {
+					avgUSP += _salesPrices.get(q);
 				}
 				avgUSP /= 16;
-				 */// This can be used later if the values actually change for the sales bonus
-				double avgUSP = 11.25;
+				
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP*5; //You also lose conversions in the future (for 5 days)
-					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP) + " to value lost");
+					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP*5) + " to value lost");
 				}
 				debug("Total value lost: " + valueLost);
 				budget+=_capacityInc;
