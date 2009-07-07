@@ -279,47 +279,45 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/games/game166.slg";
-		GameStatusHandler gameStatusHandler = new GameStatusHandler(filename);
-		GameStatus gameStatus = gameStatusHandler.getGameStatus();
-		String[] advertisers = gameStatus.getAdvertisers();
-		HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
-		HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-		HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-		HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-		HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
-		LinkedList<HashMap<Product, HashMap<UserState, Integer>>> usersDists = gameStatus.getUserDistributions();
-		SlotInfo slotInfo = gameStatus.getSlotInfo();
-		ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-		PublisherInfo pubInfo = gameStatus.getPubInfo();
-		RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
-		UserClickModel userClickModel = gameStatus.getUserClickModel();
-//		for(int i = 0; i < 7; i++) {
-//			System.out.println("Num Bank Statuses: " + bankStatuses.get(advertisers[i]).size());
-//			System.out.println("Num Bid Bundles: " + bidBundles.get(advertisers[i]).size());
-//			System.out.println("Num Query Reports: " + queryReports.get(advertisers[i]).size());
-//			System.out.println("Num Sales Reports: " + salesReports.get(advertisers[i]).size());
-//		}
-//		for(int i = 0; i < usersDists.size(); i++) {
-//			System.out.println(usersDists.get(i));
-//		}
-//		System.out.println("Num User Dists: " + usersDists.size());
-//		System.out.println("Slot info: " + slotInfo);
-//		System.out.println("Reserve info: " + reserveInfo);
-//		System.out.println("Pub info: " + pubInfo);
-//		System.out.println("Retail info: " + retailCatalog);
-//		System.out.println("User Click info: " + userClickModel);
-		HashMap<Product, HashMap<UserState, Integer>> users = usersDists.get(0);
-		HashMap<UserState, Integer> totUsers = new HashMap<UserState, Integer>();
-		for(UserState state : UserState.values()) {
-			totUsers.put(state,0);
-		}
-		for(Product prod : gameStatus.getRetailCatalog()) {
-			for(UserState state : UserState.values()) {
-				totUsers.put(state,users.get(prod).get(state)/9+totUsers.get(state));
+		String filename = "/u/jberg/Desktop/mckpgames/localhost_sim";
+		boolean firstSim = true;
+		int min = 454;
+		int max = 497;
+		HashMap<String,Double> results = new HashMap<String, Double>();
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			String[] advertisers = gameStatus.getAdvertisers();
+			if(firstSim) {
+				for(int j = 0; j < advertisers.length; j++) {
+					results.put(advertisers[j], 0.0);
+				}
+				firstSim = false;
+			}
+			HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
+			//			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			//			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			//			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			//			HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
+			//			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> usersDists = gameStatus.getUserDistributions();
+			//			SlotInfo slotInfo = gameStatus.getSlotInfo();
+			//			ReserveInfo reserveInfo = gameStatus.getReserveInfo();
+			//			PublisherInfo pubInfo = gameStatus.getPubInfo();
+			//			RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
+			//			UserClickModel userClickModel = gameStatus.getUserClickModel();
+			for(int j = 0; j < advertisers.length; j++)	{
+				LinkedList<BankStatus> bankStatus = bankStatuses.get(advertisers[j]);
+				BankStatus status = bankStatus.get(bankStatus.size()-1);
+				results.put(advertisers[j], results.get(advertisers[j]) + status.getAccountBalance());
 			}
 		}
-		System.out.println(totUsers);
+		for(String name : results.keySet()) {
+			results.put(name, results.get(name) / (1.0 * (max-min)));
+		}
+		for(String name : results.keySet()) {
+			System.out.println(name + "    " + results.get(name));
+		}
 	}
 
 }
