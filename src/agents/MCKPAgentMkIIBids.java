@@ -21,6 +21,7 @@ import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
+import newmodels.sales.SalesDistributionModel;
 import newmodels.slottoprclick.NewAbstractPosToPrClick;
 import newmodels.slottoprclick.RegressionPosToPrClick;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -58,6 +59,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractBidToPrClick _bidToPrClick;
 	private AbstractUnitsSoldModel _unitsSold;
 	private NewAbstractConversionModel _convPrModel;
+	private SalesDistributionModel _salesDist;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
@@ -110,12 +112,14 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
+		SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
 		models.add(bidToPrClick);
 		models.add(unitsSold);
 		models.add(convPrModel);
+		models.add(salesDist);
 		return models;
 	}
 
@@ -144,6 +148,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else if(model instanceof NewAbstractConversionModel) {
 				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
 				_convPrModel = convPrModel;
+			}
+			else if(model instanceof SalesDistributionModel) {
+				SalesDistributionModel salesDist = (SalesDistributionModel) model;
+				_salesDist = salesDist;
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
@@ -233,6 +241,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					adMaxModel.setTimeHorizon(timeHorizon);
 				}
 				convPrModel.updateModel(queryReport, salesReport);
+			}
+			else if(model instanceof SalesDistributionModel) {
+				SalesDistributionModel salesDist = (SalesDistributionModel) model;
+				salesDist.updateModel(salesReport);
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
@@ -569,6 +581,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 //					avgConvProb += _convPrModel.getPrediction(q);
 //				}
 //				avgConvProb /= 16;
+
+				double tot = 0;
+				for(Query query : _querySpace) {
+					System.out.println(query + ": " + _salesDist.getPrediction(query));
+					tot += _salesDist.getPrediction(query);
+				}
+				System.out.println(tot);
 				
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
