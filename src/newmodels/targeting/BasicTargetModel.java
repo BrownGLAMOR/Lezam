@@ -1,6 +1,7 @@
 package newmodels.targeting;
 
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryType;
 import newmodels.AbstractModel;
 
 
@@ -19,9 +20,6 @@ public class BasicTargetModel extends AbstractModel {
 	final double CSB = 0.5;
 	final double MSB = 0.5;
 	final double PSB = 0.5;
-	int F0numImpressions = 6030;
-	int F1numImpressions = 768;
-	int F2numImpressions = 544;
 	
 	public BasicTargetModel(String manufacturer, String component) {
 		_manufacturer = manufacturer;
@@ -112,9 +110,13 @@ public class BasicTargetModel extends AbstractModel {
 	}
 	
 	protected double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
-		double ratio = clickPr;
+		double ratio;
 		
-		// incomplete
+		if (query.getType() == QueryType.FOCUS_LEVEL_TWO){
+			ratio = higherClickPr(clickPr, toBinary(promoted));
+		} else {
+			ratio = 1.0/3.0*higherClickPr(clickPr,toBinary(promoted)) + 2.0/3.0*lowerClickPr(clickPr,toBinary(promoted));
+		}
 		
 		return ratio;
 	}
