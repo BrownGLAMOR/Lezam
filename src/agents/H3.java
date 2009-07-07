@@ -47,7 +47,7 @@ public class H3 extends SimAbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		if (_day > 1 && _salesReport != null && _queryReport != null) {
+		if (_day >= 6 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
 		
