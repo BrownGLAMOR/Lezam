@@ -148,7 +148,7 @@ public class H3 extends SimAbstractAgent{
 	  for(Query query: _querySpace){
 		  newSales += _salesReport.getConversions(query);
 	  }
-	  double dailyLimit = 1.5*_capacity/_capWindow;
+	  double dailyLimit = 1.1*_capacity/_capWindow;
 	  //double error = 0.5;
 	  int counter = 0;
 	  k = 1;
@@ -189,7 +189,7 @@ public class H3 extends SimAbstractAgent{
 			counter++;
 		}   
 	  if(k > 14.5) k = 14.5;
-	  if(k < 5) k = 5;
+	  if(k < 7) k = 7;
    }
    
    protected double calcUnitSold(Query q, double k){
