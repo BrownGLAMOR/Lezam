@@ -13,14 +13,9 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
-import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -153,7 +148,7 @@ public class H3 extends SimAbstractAgent{
 	  for(Query query: _querySpace){
 		  newSales += _salesReport.getConversions(query);
 	  }
-	  double dailyLimit = 1.5*_capacity/_capWindow;
+	  double dailyLimit = 3*_capacity/_capWindow;
 	  //double error = 0.5;
 	  int counter = 0;
 	  k = 1;
@@ -243,10 +238,12 @@ public class H3 extends SimAbstractAgent{
 		// print debug info
 		StringBuffer buff = new StringBuffer(255);
 		buff.append("****************\n");
+		buff.append("\t").append("Day: ").append(_day).append("\n");
+		buff.append("\t").append("k: ").append(k).append("\n");
+		buff.append("****************\n");
 		for(Query q : _querySpace){
 			buff.append("\t").append("Day: ").append(_day).append("\n");
 			buff.append(q).append("\n");
-			buff.append("\t").append("k: ").append(k).append("\n");
 			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
 			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
 			/*if (_salesReport.getConversions(q) > 0) 
@@ -267,8 +264,7 @@ public class H3 extends SimAbstractAgent{
 		System.out.println(buff);
 		output.append(buff);
 		output.flush();
-	
-	}
+}
 
 }
 
