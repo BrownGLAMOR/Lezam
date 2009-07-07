@@ -75,7 +75,7 @@ public class BraddMaxx extends SimAbstractAgent {
 			avgBid += (myBid / (double)_querySpace.size());
 			avgConvRate += (pr / (double)_querySpace.size());
 
-			System.out.println(myBid);
+			//System.out.println(myBid);
 			bids.setBidAndAd(q, myBid, ad);
 		}
 		//System.out.println("Limit: " + ((((double)_capacity / 4.0) * avgBid) / avgConvRate));
