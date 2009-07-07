@@ -58,8 +58,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 5;
-	protected int ENSEMBLESIZE = 5;
+	protected int NUMPASTDAYS = 3;
+	protected int ENSEMBLESIZE = 12;
 
 	private RConnection rConnection;
 
@@ -128,7 +128,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
 			_ensembleMembers.put(query, ensembleMember);
 		}
-		
+
 		try {
 			rConnection = new RConnection();
 		} catch (RserveException e) {
@@ -141,8 +141,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		 * Add Type I Models
 		 */
 		String basename = "typeI";
-		for(int i = 0; i < 2; i++) {
-			for(int j = 0; j < 2; j++) {
+		for(int i = 0; i < 3; i++) {
+			for(int j = 0; j < 6; j++) {
 				AbstractBidToCPC model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, false);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
 				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), true, false, false);
@@ -152,12 +152,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				}
 				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, true, false);
 				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
-				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
-				addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
-				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), true, false, true);
-				addTypeIModel(basename + "_" + i + "_" + j +"_t_f_t", model);
-				model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, true, true);
-				addTypeIModel(basename + "_" + i + "_" + j +"_f_t_t", model);
+				//					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
+				//					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
+				//					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), true, false, true);
+				//					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_t", model);
+				//					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, true, true);
+				//					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_t", model);
 			}
 		}
 
@@ -165,22 +165,22 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		 * Add Type II Models
 		 */
 		basename = "typeII";
-		for(int i = 0; i < 2; i++) {
-			for(int j = 0; j < 2; j++) {
+		for(int i = 0; i < 3; i++) {
+			for(int j = 0; j < 6; j++) {
 				AbstractBidToCPC model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_f", model);
-				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), true);
-				addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_t", model);
+				//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), true);
+				//					addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_t", model);
 
 				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
-				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
-				addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
+				//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
+				//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
 
 				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
 				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
-				model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
-				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
+				//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
+				//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
 			}
 		}
 
@@ -188,13 +188,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		 * Ad Type III Models
 		 */
 		basename = "typeIII";
-		for(int i = 0; i < 2; i++) {
-			for(int j = 0; j < 2; j++) {
+		for(int i = 0; i < 3; i++) {
+			for(int j = 0; j < 6; j++) {
 				for(Query query : _querySpace) {
 					AbstractBidToCPC model = new TypeIIIRegressionBidToCPC(rConnection, _querySpace,query, 2+i, 10*(j+1), false);
 					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
-					model = new TypeIIIRegressionBidToCPC(rConnection, _querySpace,query, 2+i, 10*(j+1), true);
-					addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
+					//						model = new TypeIIIRegressionBidToCPC(rConnection, _querySpace,query, 2+i, 10*(j+1), true);
+					//						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
 				}
 			}
 		}
@@ -410,7 +410,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			LinkedList<AbstractBidToCPC> queryEnsemble = new LinkedList<AbstractBidToCPC>();
 			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
-//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
+				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
 				queryEnsemble.add(modelErrorPair.getModel());
 				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
@@ -626,7 +626,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		prediction /= (queryEnsemble.size()-nancounter);
 		return prediction;
 	}
-	
+
 	public void printEnsembleMemberSummary() {
 		double tot = 0;
 		for(Query query : _querySpace) {
@@ -637,7 +637,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				total += ensembleUseCount;
 			}
 			total /= ENSEMBLESIZE;
-//			System.out.println("Total Members: " + ensembleMembers.size());
+			//			System.out.println("Total Members: " + ensembleMembers.size());
 			for(String name : ensembleMembers.keySet()) {
 				Integer ensembleUseCount = ensembleMembers.get(name);
 				System.out.println("Name: " + name + " Use: " + (ensembleUseCount/total));
