@@ -47,9 +47,19 @@ public class NewG4 extends SimAbstractAgent{
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
-
+		
 		for(Query query: _querySpace){
 			_bidBundle.setBid(query, getQueryBid(query));
+			
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+				_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 
