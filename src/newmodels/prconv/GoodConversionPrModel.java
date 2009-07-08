@@ -3,8 +3,9 @@ package newmodels.prconv;
 import java.util.HashMap;
 import java.util.Set;
 
-import newmodels.AbstractModel;
+import newmodels.targeting.BasicTargetModel;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -18,13 +19,16 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 	private HashMap<Query, Double> _wh;
 
 	private int _timeHorizon = 5;
+	private BasicTargetModel _targModel;
 
-	public GoodConversionPrModel(Set<Query> querySpace) {
+	public GoodConversionPrModel(Set<Query> querySpace, BasicTargetModel targModel) {
 		_limits = new Limits();
 		_querySpace = querySpace;
 
 		_wR = initHashMap(new HashMap<Query, Double>());
 		_wh = initHashMap(new HashMap<Query, Double>());
+
+		_targModel = targModel;
 	}
 
 	public HashMap<Query, Double> initHashMap(HashMap<Query, Double> map) {
@@ -37,10 +41,18 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	/*
+	 * Make sure that the bid bundle corresponds to the query/sales reports
+	 */
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		for(Query q : _querySpace) {
 			double clicks = queryReport.getClicks(q);
 			double conversions = salesReport.getConversions(q);
+			
+			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric()) {
+				
+			}
+			
 //			System.out.println("UpdateModel");
 //			System.out.println("\tClicks:" + clicks + "\tConversions: " + conversions);
 

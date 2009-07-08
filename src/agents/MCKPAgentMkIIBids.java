@@ -18,6 +18,7 @@ import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
@@ -63,7 +64,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractBidToCPC _bidToCPC;
 	private AbstractBidToPrClick _bidToPrClick;
 	private AbstractUnitsSoldModel _unitsSold;
-	private NewAbstractConversionModel _convPrModel;
+	private GoodConversionPrModel _convPrModel;
+	private HistoricPrConversionModel _donnieConvPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
 	private Hashtable<Query, Integer> _queryId;
@@ -75,8 +77,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	/*
 	 * For error calculations
 	 */
-	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, ConvPrPredictions, ImpPredictions;
-	private double sumCPCError, sumClickPrError, sumConvPrError, sumImpError;
+	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, ConvPrPredictions, DonnieConvPrPredictions, ImpPredictions;
+	private double sumCPCError, sumClickPrError, sumConvPrError, sumDonnieConvPrError, sumImpError;
 	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 
 	public MCKPAgentMkIIBids() {
@@ -92,6 +94,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
 		ClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
+		DonnieConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
 
 		sumCPCError = 0.0;
@@ -117,15 +120,17 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace);
 		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
-		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
-		SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		HistoricPrConversionModel convDonniePrModel = new HistoricPrConversionModel(_querySpace,basicTargModel);
+		SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
 		models.add(bidToPrClick);
 		models.add(unitsSold);
 		models.add(convPrModel);
+		models.add(convDonniePrModel);
 		models.add(salesDist);
 		models.add(basicTargModel);
 		return models;
@@ -153,9 +158,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				_bidToPrClick = bidToPrClick;
 			}
-			else if(model instanceof NewAbstractConversionModel) {
-				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
+			else if(model instanceof GoodConversionPrModel) {
+				GoodConversionPrModel convPrModel = (GoodConversionPrModel) model;
 				_convPrModel = convPrModel;
+			}
+			else if(model instanceof HistoricPrConversionModel) {
+				HistoricPrConversionModel donnieConvPrModel = (HistoricPrConversionModel) model;
+				_donnieConvPrModel = donnieConvPrModel;
 			}
 			else if(model instanceof SalesDistributionModel) {
 				SalesDistributionModel salesDist = (SalesDistributionModel) model;
@@ -252,7 +261,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					GoodConversionPrModel adMaxModel = (GoodConversionPrModel) convPrModel;
 					adMaxModel.setTimeHorizon(timeHorizon);
 				}
-				convPrModel.updateModel(queryReport, salesReport);
+				if(model instanceof HistoricPrConversionModel) {
+					HistoricPrConversionModel adMaxModel = (HistoricPrConversionModel) convPrModel;
+					adMaxModel.setTimeHorizon(timeHorizon);
+				}
+				convPrModel.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else if(model instanceof SalesDistributionModel) {
 				SalesDistributionModel salesDist = (SalesDistributionModel) model;
@@ -279,6 +292,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyClickPrPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyConvPrPredictions = new HashMap<Query, Double>();
+			HashMap<Query,Double> dailyDonnieConvPrPredictions = new HashMap<Query, Double>();
 			HashMap<Query,Double> dailyImpPredictions = new HashMap<Query, Double>();
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
@@ -429,6 +443,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid));
 				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad()));
 				dailyConvPrPredictions.put(q, _convPrModel.getPrediction(q));
+				dailyDonnieConvPrPredictions.put(q, _donnieConvPrModel.getPrediction(q));
 				dailyImpPredictions.put(q,(double)_queryToNumImpModel.getPrediction(q));
 
 			}
@@ -437,6 +452,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
 			ConvPrPredictions.add(dailyConvPrPredictions);
+			DonnieConvPrPredictions.add(dailyDonnieConvPrPredictions);
 			ImpPredictions.add(dailyImpPredictions);
 			/*
 			 * Update model error
@@ -523,6 +539,28 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double stddevConvPr = Math.sqrt(sumConvPrError/(errorDayCounter*16 - prConvSkip));
 				System.out.println("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
 				System.out.println("ConvPr To Standard Deviation: " + stddevConvPr);
+				
+				/*
+				 * ConvPr Error
+				 */
+				HashMap<Query, Double> donnieconvprpredictions = DonnieConvPrPredictions.get(ConvPrPredictions.size()-3);
+				double donniedailyconvprerror = 0;
+				int donnieprConvDailySkip = 0;
+				for(Query query : _querySpace) {
+					double clicks = queryReport.getClicks(query);
+					double convs = salesReport.getConversions(query);
+					if(clicks == 0 || convs == 0) {
+						donnieprConvDailySkip++;
+					}
+					else {
+						double error = (convs/clicks - donnieconvprpredictions.get(query))*(convs/clicks- donnieconvprpredictions.get(query));
+						donniedailyconvprerror += error;
+						sumDonnieConvPrError += error;
+					}
+				}
+				double stddevDonnieConvPr = Math.sqrt(sumDonnieConvPrError/(errorDayCounter*16 - prConvSkip));
+				System.out.println("Daily Bid To DonniConvPr Error: " + Math.sqrt(donniedailyconvprerror/(16-donnieprConvDailySkip)));
+				System.out.println("DonnieConvPr To Standard Deviation: " + stddevDonnieConvPr);
 
 
 				/*
