@@ -131,10 +131,78 @@ public class BasicTargetModel extends AbstractModel {
 		Tuple targeted = targetedUsers(query,clickPr,toBinary(promoted));
 		return targeted.manufacturerRatio()*USP*(1+MSB) + (1-targeted.manufacturerRatio())*USP;
 	}
+	
+	// ans[0] = clickPr prediction
+	// ans[1] = convPr prediction
+	public double[] getInversePredictions(Query query, double clickPr, double convPr, boolean promoted, int iterations) {
+		double[] mostRecentPredictions = new double[2];
+		
+		mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, clickPr, promoted);
+		mostRecentPredictions[1] = convPr/getConvPrPrediction(query, clickPr, convPr, promoted);
+		
+		for (int i=1; i<iterations; i++){
+			double tempClickPr = mostRecentPredictions[0];
+			mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, tempClickPr, promoted);
+			mostRecentPredictions[1] = convPr/getConvPrPrediction(query, tempClickPr, /**/mostRecentPredictions[1]/**/, promoted);
+		}
+		return mostRecentPredictions;
+	}
 
 	public static void main(String[] args) {
+		BasicTargetModel test = new BasicTargetModel("pg","tv");
+		double clickPr = .18;
+		double convPr = .22;
+		Query query = new Query(null,null);
+		boolean promoted = false;
 		
+		double[] test3 = test.getInversePredictions(query, clickPr, convPr, promoted, 10);
+		System.out.println(test3[0]*test.getClickPrPrediction(query, test3[0], promoted));
+		System.out.println(test3[1]*test.getConvPrPrediction(query, test3[0], test3[1], promoted));
+		System.out.println(test3[0]);
+		System.out.println(test3[1]);
+		/*double clicksFactor0 = test.getClickPrPrediction(q, clickPr, false);
+		double convFactor0 = test.getConvPrPrediction(q, clickPr, convPr, false);
+		
+		double predictedClicks1 = clickPr/clicksFactor0;
+		double predictedConvs1 = convPr/convFactor0;
+		
+		double clicksFactor1 = test.getClickPrPrediction(q, predictedClicks1, false);
+		double convFactor1 = test.getConvPrPrediction(q, predictedClicks1, predictedConvs1, false);
+		
+		double checkclicks1 = clicksFactor1*predictedClicks1;
+		double checkconv1 = convFactor1*predictedConvs1;
+		System.out.println(checkclicks1);
+		System.out.println(checkconv1);
+		
+		double predictedClicks2 = clickPr/clicksFactor1;
+		double predictedConvs2 = convPr/convFactor1;
+		
+		double clicksFactor2 = test.getClickPrPrediction(q, predictedClicks2, false);
+		double convFactor2 = test.getConvPrPrediction(q, predictedClicks2, predictedConvs2, false);
+		
+		double checkclicks2 = clicksFactor2*predictedClicks2;
+		double checkconv2 = convFactor2*predictedConvs2;
+		System.out.println(checkclicks2);
+		System.out.println(checkconv2);
+		
+		double predictedClicks3 = clickPr/clicksFactor2;
+		double predictedConvs3 = convPr/convFactor2;
+		
+		double clicksFactor3 = test.getClickPrPrediction(q, predictedClicks3, false);
+		double convFactor3 = test.getConvPrPrediction(q, predictedClicks3, predictedConvs3, false);
+		
+		double checkclicks3 = clicksFactor3*predictedClicks3;
+		double checkconv3 = convFactor3*predictedConvs3;
+		System.out.println(checkclicks3);
+		System.out.println(checkconv3);*/
 	}
+	
+	/*0.35243691164119806
+0.2223582380812003
+0.349882035343172
+0.22003581376818002
+0.3500056748411616
+0.22000054359014434*/
 	
 }
 
