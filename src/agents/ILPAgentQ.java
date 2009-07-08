@@ -336,7 +336,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double result = 0;
 		double revenue = getRevenue(query);
 
-		double conv = estimateConv(query, bid);
+		double conv = estimateConv(query, 0);
 		double cpc = estimateCPC(query, bid);
 		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
 		double numImps = _queryToNumImpModel.getPrediction(query);
@@ -368,7 +368,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
 		double numImps = _queryToNumImpModel.getPrediction(query);
 		int numClicks = (int) (clickPr * numImps);
-		double conv = estimateConv(query, bid);
+		double conv = estimateConv(query, 0);
 
 		result = numClicks * conv;
 		
@@ -387,14 +387,14 @@ public class ILPAgentQ extends SimAbstractAgent{
 		double start = System.currentTimeMillis();
 		double result=0;
 				
-//		for (int i=1 ; i <= quantity ; i++) {
-//			for (Query query : _querySpace) {
-//				result += estimateImpressionOutOfTotalSearchingUsers(query) * (estimateConv(query, 0) - estimateConv(query, i)) * getRevenue(query);
-//			}
-//		}
-//		result = result / _querySpace.size();
-//		result = result / _numSearchingUsers;
-//		
+		for (int i=1 ; i <= quantity ; i++) {
+			for (Query query : _querySpace) {
+				result += estimateImpressionOutOfTotalSearchingUsers(query) * (estimateConv(query, 0) - estimateConv(query, i)) * getRevenue(query);
+			}
+		}
+		result = result / _querySpace.size();
+		result = result / _numSearchingUsers;
+		
 //		try {
 //			_fout.write("\nfor over quantity of " + quantity + " we found a lost of profit of " + cutDouble(result));
 //		}
