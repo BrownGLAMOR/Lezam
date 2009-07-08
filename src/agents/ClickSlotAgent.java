@@ -15,6 +15,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -151,7 +152,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 				_capWindow);
 		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
 
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace);
 		return null;
 	}
 
