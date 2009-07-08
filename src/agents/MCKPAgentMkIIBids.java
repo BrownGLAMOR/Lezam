@@ -24,6 +24,7 @@ import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.sales.SalesDistributionModel;
 import newmodels.slottoprclick.NewAbstractPosToPrClick;
 import newmodels.slottoprclick.RegressionPosToPrClick;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
@@ -34,6 +35,7 @@ import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -46,6 +48,9 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
+
+	private static final boolean MODELCONVPR = true;
+	private static final boolean TARGET = true;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -60,6 +65,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractUnitsSoldModel _unitsSold;
 	private NewAbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
+	private BasicTargetModel _targModel;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
@@ -76,7 +82,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .01;
+		double increment  = .02;
 		double min = .04;
 		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -113,6 +119,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		NewAbstractConversionModel convPrModel = new GoodConversionPrModel(_querySpace);
 		SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
+		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
@@ -120,6 +127,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		models.add(unitsSold);
 		models.add(convPrModel);
 		models.add(salesDist);
+		models.add(basicTargModel);
 		return models;
 	}
 
@@ -152,6 +160,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else if(model instanceof SalesDistributionModel) {
 				SalesDistributionModel salesDist = (SalesDistributionModel) model;
 				_salesDist = salesDist;
+			}
+			else if(model instanceof BasicTargetModel) {
+				BasicTargetModel targModel = (BasicTargetModel) model;
+				_targModel = targModel;
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
@@ -191,7 +203,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else {
 				throw new RuntimeException("Malformed query");
 			}
-			
+
 			String component = q.getComponent();
 			if(_compSpecialty.equals(component)) {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
@@ -246,6 +258,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				SalesDistributionModel salesDist = (SalesDistributionModel) model;
 				salesDist.updateModel(salesReport);
 			}
+			else if(model instanceof BasicTargetModel) {
+				//Do nothing
+			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
@@ -270,32 +285,67 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
 			for(Query q : _querySpace) {
-				double salesPrice = _salesPrices.get(q);
-
 				LinkedList<Item> itemList = new LinkedList<Item>();
 				debug("Query: " + q);
 				for(int i = 0; i < bidList.size(); i++) {
+					double salesPrice = _salesPrices.get(q);
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
+					double convProb = _convPrModel.getPrediction(q);
+
+					if(Double.isNaN(clickPr)) {
+						System.out.println("I AM A DOUCHE!");
+						clickPr = 0.0;
+					}
+
+					if(Double.isNaN(convProb)) {
+						System.out.println("BRADDMAX IS A DOUCHE!");
+						convProb = 0.0;
+					}
 
 					debug("\tBid: " + bid);
 					debug("\tCPC: " + CPC);
 					debug("\tClickPr: " + clickPr);
+					debug("\tConv Prob: " + convProb);
 					debug("\tNumImps: " + numImps);
 					debug("\tNumClicks: " + numClicks);
-
-
-					double convProb = _convPrModel.getPrediction(q);
-					debug(convProb);
 
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 					int isID = _queryId.get(q);
-					itemList.add(new Item(q,w,v,bid,isID));	
+					itemList.add(new Item(q,w,v,bid,false,isID));
+
+					if(TARGET) {
+						if(clickPr != 0 && Double.isNaN(_targModel.getClickPrPrediction(q, clickPr, false))) {
+							throw new RuntimeException("ClickPr" + q + "  " + clickPr);
+						}
+						if(convProb != 0 && Double.isNaN(_targModel.getConvPrPrediction(q, clickPr, convProb, false))) {
+							throw new RuntimeException("ConvPr" + q + "  " + clickPr + "  " + convProb);
+						}
+						if(Double.isNaN(_targModel.getUSPPrediction(q, clickPr, false))) {
+							throw new RuntimeException("USP" + q + "  " + clickPr);
+						}
+
+						/*
+						 * add a targeted version of our bid as well
+						 */
+						if(clickPr != 0) {
+							numClicks *= _targModel.getClickPrPrediction(q, clickPr, false);
+							if(convProb != 0) {
+								convProb *= _targModel.getConvPrPrediction(q, clickPr, convProb, false);
+							}
+							salesPrice *= _targModel.getUSPPrediction(q, clickPr, false);
+						}
+
+						w = numClicks*convProb;				//weight = numClciks * convProv
+						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+
+						itemList.add(new Item(q,w,v,bid,true,isID));
+					}
 				}
 				debug("Items for " + q);
 				Item[] items = itemList.toArray(new Item[0]);
@@ -337,12 +387,27 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-					//					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					//					double numImps = _queryToNumImpModel.getPrediction(q);
-					//					int numClicks = (int) (clickPr * numImps);
-					//					double CPC = _bidToCPC.getPrediction(q, bid);
-					//					bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					//	double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+					//	double numImps = _queryToNumImpModel.getPrediction(q);
+					//	int numClicks = (int) (clickPr * numImps);
+					//	double CPC = _bidToCPC.getPrediction(q, bid);
+					//	bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
+					if(solution.get(isID).targ()) {
+						if(q.getComponent() == null && q.getManufacturer() == null) {
+							bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,_compSpecialty)), Double.NaN);
+						}
+						else if(q.getComponent() == null || q.getManufacturer() == null) {
+							if(q.getComponent() == null) {
+								bidBundle.addQuery(q, bid, new Ad(new Product(q.getManufacturer(),_compSpecialty)), Double.NaN);
+							}
+							else {
+								bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,q.getComponent())), Double.NaN);
+							}
+						}
+					}
+					else {
+						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					}
 				}
 				else { 
 					/*
@@ -356,9 +421,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 						bid = randDouble(.25,.75);
 					else
 						bid = randDouble(.33,1.0);
-					
-					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*5);
+
+					//					System.out.println("Exploring " + q + "   bid: " + bid);
+					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 
 				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid));
@@ -448,8 +513,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 						prConvDailySkip++;
 					}
 					else {
-//						System.out.println("Predicted ConvPr: " + convprpredictions.get(query));
-//						System.out.println("Actual ConvPr: " + convs/clicks);
+						//						System.out.println("Predicted ConvPr: " + convprpredictions.get(query));
+						//						System.out.println("Actual ConvPr: " + convs/clicks);
 						double error = (convs/clicks - convprpredictions.get(query))*(convs/clicks- convprpredictions.get(query));
 						dailyconvprerror += error;
 						sumConvPrError += error;
@@ -485,12 +550,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
 
 
-//				if(_day == 60) {
-//					System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
-//					System.out.println("CPC  Standard Deviation: " + stddevCPC);
-//					((EnsembleBidToPrClick) _bidToPrClick).printEnsembleMemberSummary();
-//					((EnsembleBidToCPC) _bidToCPC).printEnsembleMemberSummary();
-//				}
+				//				if(_day == 60) {
+				//					System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+				//					System.out.println("CPC  Standard Deviation: " + stddevCPC);
+				//					((EnsembleBidToPrClick) _bidToPrClick).printEnsembleMemberSummary();
+				//					((EnsembleBidToCPC) _bidToCPC).printEnsembleMemberSummary();
+				//				}
 			}
 
 		}
@@ -554,7 +619,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					valueGained += ii.v(); //amount gained as a result of extending capacity
 				}
 				else {
-					System.out.println("adding item" + ii);
+					//					System.out.println("adding item" + ii.item());
 					solution.put(ii.item().isID(), ii.item());
 					budget -= ii.w();
 				}
@@ -564,7 +629,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
 						while (!temp.isEmpty()){
 							IncItem inc = temp.poll();
-							System.out.println("adding item over capacity " + inc);
+							//							System.out.println("adding item over capacity " + inc.item());
 							solution.put(inc.item().isID(), inc.item());
 						}
 						valueLost = 0;
@@ -576,31 +641,23 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 
-//				double avgConvProb = 0; //the average probability of conversion;
-//				for(Query q : _querySpace) {
-//					avgConvProb += _convPrModel.getPrediction(q);
-//				}
-//				avgConvProb /= 16;
-
-				double tot = 0;
-				for(Query query : _querySpace) {
-					System.out.println(query + ": " + _salesDist.getPrediction(query));
-					tot += _salesDist.getPrediction(query);
-				}
-				System.out.println(tot);
-				
 				double avgConvProb = 0; //the average probability of conversion;
-				for(Query q : _querySpace) {
-					avgConvProb += _baseConvProbs.get(q);
+				if(MODELCONVPR) {
+					for(Query q : _querySpace) {
+						avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
+					}
 				}
-				avgConvProb /= 16;
-				
+				else {
+					for(Query q : _querySpace) {
+						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+					}
+				}
+
 				double avgUSP = 0;
 				for(Query q : _querySpace) {
-					avgUSP += _salesPrices.get(q);
+					avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
 				}
-				avgUSP /= 16;
-				
+
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
@@ -638,7 +695,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 		//remove lp-dominated items
 		LinkedList<Item> q = new LinkedList<Item>();
-		q.add(new Item(new Query(),0,0,-1,1));//add item with zero weight and value
+		q.add(new Item(new Query(),0,0,-1,false,1));//add item with zero weight and value
 
 		for(int i=0; i<items.length; i++) {
 			q.add(items[i]);//has at least 2 items now

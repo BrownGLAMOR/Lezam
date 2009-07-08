@@ -223,11 +223,11 @@ public class TypeIIIRegressionBidToPrClick extends AbstractBidToPrClick {
 //					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				return false;
 			}
 			catch (REXPMismatchException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				return false;
 			}
 

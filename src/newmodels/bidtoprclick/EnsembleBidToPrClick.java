@@ -60,8 +60,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 3;
-	protected int ENSEMBLESIZE = 10;
+	protected int NUMPASTDAYS = 5;
+	protected int ENSEMBLESIZE = 25;
 
 	private RConnection rConnection;
 
@@ -178,7 +178,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
 
 				model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
-				//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
+				addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
 				//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
 				//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
 			}
@@ -291,6 +291,18 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 			_typeIIIUsableModels.put(query, typeIIIUsableModels);
 		}
+
+		double totmodels = _typeIModels.size();
+		double workingmodels = _typeIUsableModels.size();
+		for(QueryType queryType : QueryType.values()) {
+			totmodels += _typeIIModels.get(queryType).size();
+			workingmodels += _typeIIUsableModels.get(queryType).size();
+		}
+		for(Query q : _querySpace) {
+			totmodels += _typeIIIModels.get(q).size();
+			workingmodels += _typeIIIUsableModels.get(q).size();
+		}
+		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels); 
 
 		return ensembleUsable;
 	}

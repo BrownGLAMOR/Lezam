@@ -58,8 +58,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 3;
-	protected int ENSEMBLESIZE = 10;
+	protected int NUMPASTDAYS = 5;
+	protected int ENSEMBLESIZE = 25;
 
 	private RConnection rConnection;
 
@@ -291,6 +291,18 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			}
 			_typeIIIUsableModels.put(query, typeIIIUsableModels);
 		}
+		
+		double totmodels = _typeIModels.size();
+		double workingmodels = _typeIUsableModels.size();
+		for(QueryType queryType : QueryType.values()) {
+			totmodels += _typeIIModels.get(queryType).size();
+			workingmodels += _typeIIUsableModels.get(queryType).size();
+		}
+		for(Query q : _querySpace) {
+			totmodels += _typeIIIModels.get(q).size();
+			workingmodels += _typeIIIUsableModels.get(q).size();
+		}
+		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels); 
 
 		return ensembleUsable;
 	}

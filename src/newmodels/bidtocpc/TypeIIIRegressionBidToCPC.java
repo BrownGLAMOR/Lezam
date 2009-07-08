@@ -228,11 +228,11 @@ public class TypeIIIRegressionBidToCPC extends AbstractBidToCPC {
 				//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				return false;
 			}
 			catch (REXPMismatchException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 				return false;
 			}
 
