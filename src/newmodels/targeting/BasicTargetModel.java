@@ -1,5 +1,8 @@
 package newmodels.targeting;
 
+import java.io.IOException;
+import java.text.ParseException;
+
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 import newmodels.AbstractModel;
@@ -127,6 +130,14 @@ public class BasicTargetModel extends AbstractModel {
 	
 	protected double getUSPPrediction(Query query, double clickPr, boolean promoted) {
 		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
+	}
+	
+	public static void main(String[] args) throws IOException, ParseException {
+		BasicTargetModel targModel = new BasicTargetModel("pg","tv");
+		Query q = new Query(null,"dvd");
+		for(int i = 0; i < 5; i++) {
+			System.out.println(targModel.getUSPPrediction(q, .1 * (i+1), false));
+		}
 	}
 
 }
