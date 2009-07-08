@@ -49,7 +49,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 
-	private static final boolean MODELCONVPR = true;
+	private static final boolean MODELCONVPR = false;
 	private static final boolean TARGET = true;
 
 	private Random _R = new Random();
@@ -338,7 +338,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 							if(convProb != 0) {
 								convProb *= _targModel.getConvPrPrediction(q, clickPr, convProb, false);
 							}
-							salesPrice *= _targModel.getUSPPrediction(q, clickPr, false);
+							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
 						}
 
 						w = numClicks*convProb;				//weight = numClciks * convProv

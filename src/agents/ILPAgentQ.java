@@ -50,9 +50,8 @@ public class ILPAgentQ extends SimAbstractAgent{
 	// ########################
 	private Random _R = new Random();
 	final static boolean USEOVERQUANTITY = false; 	// Do you want the MIP formula to include over capacity?
-	final static int DAYSUNTILILKE = 70; 			// How many days until the Bid-Slot bucket model starts to work?
-	protected static int NUMOFUSERS = 90000;		// How many users are simulated?
-	double _regReserveScore = 0.2;					// I want the bids to be at least the regular reserve score
+	protected static int NUMUSERS = 90000;		// How many users are simulated?
+	double _regReserveScore = 0.4;					// I want the bids to be at least the regular reserve score
 	
 	
 	// ###################
@@ -71,7 +70,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 	protected HashMap<Query, Double> _dailyLimit;		// daily limit per query
 	protected HashMap<Integer, Query> _queryIndexing;	// mapping queries into integers - it help with the cplex variable array
 	protected Set<UserState> searchingUserStates;
-	protected int _numSearchingUsers = 0;
+	protected int _numSearchingUsers;
 	protected HashMap<Query, HashMap<String,Double>> _previousDayData;
 	private int _wantedSales;	// how much we want to sell in a specific day
 	FileWriter _fstream;
@@ -100,6 +99,8 @@ public class ILPAgentQ extends SimAbstractAgent{
 		_previousDayData = new HashMap<Query, HashMap<String,Double>>();
 		_bidBundle = new BidBundle();
 
+		_numSearchingUsers = 0;
+		
 		searchingUserStates = new HashSet<UserState>();
 		searchingUserStates.add(UserState.F0);
 		searchingUserStates.add(UserState.F1);
@@ -510,7 +511,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
-		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace, 4, 20, true, false, false);
+		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace, 4, 30, true, false, false);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		models.add(userModel);
 		models.add(queryToNumImp);

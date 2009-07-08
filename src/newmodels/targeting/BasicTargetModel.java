@@ -110,7 +110,7 @@ public class BasicTargetModel extends AbstractModel {
 		return new Tuple(man,comp);
 	}
 	
-	protected double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
+	public double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
 		double ratio;
 		
 		if (query.getType() == QueryType.FOCUS_LEVEL_TWO){
@@ -122,11 +122,11 @@ public class BasicTargetModel extends AbstractModel {
 		return ratio;
 	}
 	
-	protected double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
+	public double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
 		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).componentRatio(),baseUsers(query, clickPr).componentRatio(),eta(convPr,1+CSB),convPr);
 	}
 	
-	protected double getUSPPrediction(Query query, double clickPr, boolean promoted) {
+	public double getUSPPrediction(Query query, double clickPr, boolean promoted) {
 		//Old version: return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
 		Tuple targeted = targetedUsers(query,clickPr,toBinary(promoted));
 		double percentManT = targeted.manufacturerRatio();
