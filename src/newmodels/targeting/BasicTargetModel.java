@@ -134,30 +134,42 @@ public class BasicTargetModel extends AbstractModel {
 	
 	// ans[0] = clickPr prediction
 	// ans[1] = convPr prediction
-	public double[] getInversePredictions(Query query, double clickPr, double convPr, boolean promoted, int iterations) {
+	public double[] getInversePredictions(Query query, double clickPr, double convPr, boolean promoted, double epsilon) {
 		double[] mostRecentPredictions = new double[2];
 		
 		mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, clickPr, promoted);
 		mostRecentPredictions[1] = convPr/getConvPrPrediction(query, clickPr, convPr, promoted);
 		
-		for (int i=1; i<iterations; i++){
+		double maxError = Math.abs(epsilon);
+		double clickPrError = maxError+1;
+		double convPrError = maxError+1;
+		
+		int iterations = 0;
+		while((clickPrError>maxError || convPrError>maxError) && iterations<=15){
 			double tempClickPr = mostRecentPredictions[0];
 			mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, tempClickPr, promoted);
-			mostRecentPredictions[1] = convPr/getConvPrPrediction(query, tempClickPr, /**/mostRecentPredictions[1]/**/, promoted);
+			mostRecentPredictions[1] = convPr/getConvPrPrediction(query, tempClickPr, mostRecentPredictions[1], promoted);
+			clickPrError = Math.abs(mostRecentPredictions[0]*getClickPrPrediction(query, mostRecentPredictions[0], promoted))-clickPr;
+			convPrError = Math.abs(mostRecentPredictions[1]*getConvPrPrediction(query, mostRecentPredictions[0], mostRecentPredictions[1], promoted))-convPr;
+			iterations++;
+			System.out.println(iterations);
 		}
 		return mostRecentPredictions;
 	}
 
 	public static void main(String[] args) {
 		BasicTargetModel test = new BasicTargetModel("pg","tv");
-		double clickPr = .18;
+		double clickPr = .27;
 		double convPr = .22;
 		Query query = new Query(null,null);
 		boolean promoted = false;
 		
-		double[] test3 = test.getInversePredictions(query, clickPr, convPr, promoted, 10);
+		double[] test3 = test.getInversePredictions(query, clickPr, convPr, promoted, 0.0);
 		System.out.println(test3[0]*test.getClickPrPrediction(query, test3[0], promoted));
 		System.out.println(test3[1]*test.getConvPrPrediction(query, test3[0], test3[1], promoted));
+		
+		System.out.println();
+		
 		System.out.println(test3[0]);
 		System.out.println(test3[1]);
 		/*double clicksFactor0 = test.getClickPrPrediction(q, clickPr, false);
