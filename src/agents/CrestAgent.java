@@ -37,7 +37,7 @@ public class CrestAgent extends SimAbstractAgent {
 	private int _day;
 	private int _capacity;
 
-	public BraddMaxx() {
+	public CrestAgent() {
 		_day = 0;
 	}
 
