@@ -1,8 +1,5 @@
 package newmodels.targeting;
 
-import java.io.IOException;
-import java.text.ParseException;
-
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 import newmodels.AbstractModel;
@@ -17,28 +14,29 @@ import newmodels.AbstractModel;
  */
 
 public class BasicTargetModel extends AbstractModel {
-
+	
 	String _manufacturer, _component;
 	final double TE = 0.5;
 	final double CSB = 0.5;
 	final double MSB = 0.5;
 	final double PSB = 0.5;
-
+	final double USP = 10;
+	
 	public BasicTargetModel(String manufacturer, String component) {
 		_manufacturer = manufacturer;
 		_component = component;
 	}
-
+	
 	private class Tuple {
 
 		double _manufacturerRatio;
 		double _componentRatio;
-
+		
 		public Tuple(double man, double comp){
 			_manufacturerRatio = man;
 			_componentRatio = comp;
 		}
-
+		
 		// get methods without the "get", for easier use
 		public double manufacturerRatio(){
 			return _manufacturerRatio;
@@ -47,7 +45,7 @@ public class BasicTargetModel extends AbstractModel {
 			return _componentRatio;
 		}
 	}
-
+	
 	private int toBinary(boolean statement){
 		if (statement){
 			return 1;
@@ -55,28 +53,28 @@ public class BasicTargetModel extends AbstractModel {
 			return 0;
 		}
 	}
-
+	
 	// for the current version, factors only includes targeting, not promoted slot bonus
 	private double eta(double clickPr,double factors){
 		return (clickPr*factors)/(clickPr*factors + 1 - clickPr);
 	}
-
+	
 	private double newUserRatio(double users, double userMultiplier, double nonuserMultiplier){
 		return (users*userMultiplier)/(users*userMultiplier + nonuserMultiplier*(1-users));
 	}
-
+	
 	private double ratio(double newUsers, double oldUsers, double prUsers, double prOthers){
 		return (prUsers*newUsers+prOthers*(1-newUsers))/(prUsers*oldUsers+prOthers*(1-oldUsers));
 	}
-
+	
 	private double higherClickPr(double clickPr, int promoted){
 		return eta(clickPr,(1+TE)*(1+promoted*PSB))/eta(clickPr,(1+promoted*PSB));
 	}
-
+	
 	private double lowerClickPr(double clickPr, int promoted){
 		return eta(clickPr,(1-TE)*(1+promoted*PSB))/eta(clickPr,(1+promoted*PSB));
 	}
-
+	
 	// ratios of all users without targeting
 	private Tuple baseUsers(Query query, double clickPr) {
 		double man;
@@ -96,48 +94,50 @@ public class BasicTargetModel extends AbstractModel {
 		}
 		return new Tuple(man,comp);
 	}
-
+	
 	private Tuple targetedUsers(Query query, double clickPr, int promoted) {
 		Tuple base = baseUsers(query, clickPr);
 		double man = base.manufacturerRatio();
 		double comp = base.componentRatio();
-
+		
 		if (query.getManufacturer() == null){
 			man = newUserRatio(man,higherClickPr(clickPr,promoted),lowerClickPr(clickPr,promoted));
 		}
 		if (query.getComponent() == null){
 			comp = newUserRatio(comp,higherClickPr(clickPr,promoted),lowerClickPr(clickPr,promoted));
 		}
-
+		
 		return new Tuple(man,comp);
 	}
-
-	public double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
+	
+	protected double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
 		double ratio;
-
+		
 		if (query.getType() == QueryType.FOCUS_LEVEL_TWO){
 			ratio = higherClickPr(clickPr, toBinary(promoted));
 		} else {
 			ratio = 1.0/3.0*higherClickPr(clickPr,toBinary(promoted)) + 2.0/3.0*lowerClickPr(clickPr,toBinary(promoted));
 		}
-
+		
 		return ratio;
 	}
-
-	public double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
+	
+	protected double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
 		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).componentRatio(),baseUsers(query, clickPr).componentRatio(),eta(convPr,1+CSB),convPr);
 	}
-
-	public double getUSPPrediction(Query query, double clickPr, boolean promoted) {
-		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
+	
+	protected double getUSPPrediction(Query query, double clickPr, boolean promoted) {
+		//Old version: return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
+		Tuple targeted = targetedUsers(query,clickPr,toBinary(promoted));
+		double percentManT = targeted.manufacturerRatio();
+		double percentBothT = percentManT*targeted.componentRatio();
+		return (percentBothT*USP*(1+MSB) + (percentManT-percentBothT)*USP*(1+MSB) + (1-percentManT)*USP);
 	}
 
-	public static void main(String[] args) throws IOException, ParseException {
-		BasicTargetModel targModel = new BasicTargetModel("pg","tv");
-		Query q = new Query(null,"tv");
-		System.out.println(targModel.getClickPrPrediction(q, 0.25, false));
-		System.out.println(targModel.getConvPrPrediction(q, 0.25, .25, false));
-		System.out.println(targModel.getUSPPrediction(q, 0.25, false));
+	public static void main(String[] args) {
+		
 	}
-
+	
 }
+
+
