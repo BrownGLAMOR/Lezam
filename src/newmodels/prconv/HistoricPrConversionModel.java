@@ -16,16 +16,21 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 	
 	private int _timeHorizon;
 	private HashMap<Query, ArrayList<double[]>> _curves;
+	
+	private HashMap<Query, double[]> _dist;
 
 	public HistoricPrConversionModel(Set<Query> querySpace) {
 		_math = new PrMath();
 		_querySpace = querySpace;
 		
 		_curves = new HashMap<Query, ArrayList<double[]>>();
+		_dist = new HashMap<Query, double[]>(); 
 		for(Query q : querySpace) {
 			ArrayList<double[]> c = new ArrayList<double[]>();
 			_curves.put(q, c);
-		}
+			_dist.put(q, null);
+		}		
+			
 		_timeHorizon = 1;
 	}
 
@@ -45,20 +50,25 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 			//System.out.println("UpdateModel");
 			//System.out.println("\tClicks:" + clicks + "\tConversions: " + conversions);			
 
-			ArrayList<double[]> curves = _curves.get(q);
-			for(int i = 0; i < Math.min(_timeHorizon - 2, curves.size() - 1); i++) {
+			/*ArrayList<double[]> curves = _curves.get(q);
+			// Update existing distributions to maintain the sliding window
+			for(int i = 0; i < Math.min(_timeHorizon - 1, curves.size() - 1); i++) {
 				double[] dist = curves.get(i+1);
 				dist = _math.prGivenObs(clicks, conversions, dist);
 				curves.set(i, dist);
 			}
 			
+			// Plus keep a new distribtuion on the end (sliding window, still)
 			double[] dist = _math.prGivenObs(clicks, conversions, null);
 			if(curves.size() < _timeHorizon)
 				curves.add(dist);
 			else
 				curves.set(_timeHorizon - 1, dist);
 			
-			//System.out.println("Updated " + q + " / " + curves.size());
+			//System.out.println("Updated " + q + " / " + curves.size()); */
+			double[] d = _dist.get(q);
+			double[] newDist = _math.prGivenObs(clicks, conversions, d);
+			_dist.put(q, newDist);
 		}
 		
 		return true;
@@ -66,7 +76,8 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 
 	@Override
 	public double getPrediction(Query query) {
-		double[] curve = _curves.get(query).get(0);
+		//double[] curve = _curves.get(query).get(0);
+		double[] curve = _dist.get(query);
 		
 		return _math.getMostLikelyProb(0.5, curve);
 	}	

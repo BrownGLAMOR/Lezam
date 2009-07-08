@@ -27,7 +27,9 @@ public class BraddMaxx extends SimAbstractAgent {
 	private HashMap<Product, Double> _profit;
 
 	private int _timeHorizon;
+	
 	private NewAbstractConversionModel _model;
+	private GoodConversionPrModel _oldModel;
 
 	private int _day;
 	private int _capacity;
@@ -67,8 +69,12 @@ public class BraddMaxx extends SimAbstractAgent {
 
 			System.out.print(ad.toString() + ", ");
 			double pr = 0.1;
-			if(_day > 1)
+			if(_day > 2) {
 				pr = convModel.getPrediction(q);
+				double oldPr = _oldModel.getPrediction(q);
+				
+				System.out.println("Old prediction: " + oldPr +"\tNew Prediction: " + pr + "\tDelta: " + (oldPr - pr));
+			}
 
 			double myBid = (_queryAvgProfit.get(q) * 0.4) * pr;
 
@@ -133,10 +139,11 @@ public class BraddMaxx extends SimAbstractAgent {
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> m = new HashSet<AbstractModel>();
 
-		//_model = new GoodConversionPrModel(_querySpace);
 		_model = new HistoricPrConversionModel(_querySpace);
-		_model.setTimeHorizon(5);
+		_model.setTimeHorizon(3);
 		m.add(_model);
+
+		_oldModel = new GoodConversionPrModel(_querySpace);
 
 		return m;
 	}
@@ -145,9 +152,12 @@ public class BraddMaxx extends SimAbstractAgent {
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		if( (salesReport != null) && (queryReport != null) ) {
 			_day++;
-			//_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-			//_model.setTimeHorizon(_timeHorizon);
+			
 			_model.updateModel(queryReport, salesReport);
+			
+			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+			_oldModel.setTimeHorizon(_timeHorizon);
+			_oldModel.updateModel(queryReport, salesReport);
 		}
 	}
 }
