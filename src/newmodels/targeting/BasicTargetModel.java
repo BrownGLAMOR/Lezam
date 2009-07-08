@@ -129,9 +129,7 @@ public class BasicTargetModel extends AbstractModel {
 	public double getUSPPrediction(Query query, double clickPr, boolean promoted) {
 		//Old version: return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
 		Tuple targeted = targetedUsers(query,clickPr,toBinary(promoted));
-		double percentManT = targeted.manufacturerRatio();
-		double percentBothT = percentManT*targeted.componentRatio();
-		return (percentBothT*USP*(1+MSB) + (percentManT-percentBothT)*USP*(1+MSB) + (1-percentManT)*USP);
+		return targeted.manufacturerRatio()*USP*(1+MSB) + (1-targeted.manufacturerRatio())*USP;
 	}
 
 	public static void main(String[] args) {
