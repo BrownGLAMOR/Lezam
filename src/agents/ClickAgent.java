@@ -5,6 +5,7 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
@@ -83,7 +84,7 @@ public class ClickAgent extends SimAbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace);
 		return null;
 	}
 
