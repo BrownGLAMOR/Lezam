@@ -18,6 +18,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
@@ -98,7 +99,7 @@ public class G3Agent extends SimAbstractAgent{
 	@Override
 	public Set<AbstractModel> initModels() {
 
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
