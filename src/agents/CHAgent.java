@@ -16,6 +16,7 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -92,7 +93,7 @@ public class CHAgent extends SimAbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 		
-		_prConversionModel = new GoodConversionPrModel(_querySpace);
+		_prConversionModel = new HistoricPrConversionModel(_querySpace);
 		_baselineConversions = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
