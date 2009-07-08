@@ -15,6 +15,7 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
@@ -69,9 +70,7 @@ public class H4 extends SimAbstractAgent{
 	@Override
 	public void initBidder() {
 		
-		    _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-	
-			_conversionPrModel = new GoodConversionPrModel(_querySpace);
+	      _conversionPrModel = new HistoricPrConversionModel(_querySpace);
 		    
 		    _estimatedPrice = new HashMap<Query, Double>();
 		    for(Query query:_querySpace){
@@ -225,14 +224,14 @@ public class H4 extends SimAbstractAgent{
    }
  
    protected double getQueryBid(Query q){
-	   double bid = 0.0;
-		if(_day <= 5){
-		
-			}
+	   double prConv;
+		if(_day <= 6) {
+			prConv = _baselineConv.get(q);
 		}
+		else prConv = _conversionPrModel.getPrediction(q);
 		
-		else bid = cpcTobid((_estimatedPrice.get(q) - k)*_conversionPrModel.getPrediction(q),q);
-
+		double bid;
+		bid = cpcTobid((_estimatedPrice.get(q) - k)*prConv,q);
 		if(bid <= 0) return 0;
 		else{
 			if(bid > 2.5) return 2.5;
