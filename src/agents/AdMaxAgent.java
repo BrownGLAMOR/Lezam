@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.targeting.BasicTargetModel;
 import agents.SimAbstractAgent;
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -123,7 +124,7 @@ public class AdMaxAgent extends SimAbstractAgent {
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> m = new HashSet<AbstractModel>();
 
-		_model = new GoodConversionPrModel(_querySpace);
+		_model = new GoodConversionPrModel(_querySpace,new BasicTargetModel(_manSpecialty,_compSpecialty));
 		m.add(_model);
 
 		return m;
@@ -135,7 +136,7 @@ public class AdMaxAgent extends SimAbstractAgent {
 			_day++;
 			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 			_model.setTimeHorizon(_timeHorizon);
-			_model.updateModel(queryReport, salesReport);
+			_model.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 }
