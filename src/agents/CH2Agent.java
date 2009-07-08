@@ -16,9 +16,12 @@ import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
@@ -182,6 +185,16 @@ public class CH2Agent extends SimAbstractAgent {
 		for (Query query : _querySpace) {
 			// set bids
 			_bidBundle.setBid(query, _prConversionModels.get(query).getPrediction(overcap)*_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query)));
+			
+			// set target ads
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+				_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			
 			// set spend limit
 			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(overcap),1);
