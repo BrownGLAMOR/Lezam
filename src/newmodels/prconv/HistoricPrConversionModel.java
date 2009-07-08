@@ -15,22 +15,15 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 	private Set<Query> _querySpace;
 	
 	private int _timeHorizon;
-	private HashMap<Query, ArrayList<double[]>> _curves;
-	
-	private HashMap<Query, double[]> _dist;
+	private HashMap<Query, Double> _wR;
+	private HashMap<Query, Double> _wh;
 
 	public HistoricPrConversionModel(Set<Query> querySpace) {
 		_math = new PrMath();
 		_querySpace = querySpace;
 		
-		_curves = new HashMap<Query, ArrayList<double[]>>();
-		_dist = new HashMap<Query, double[]>(); 
-		for(Query q : querySpace) {
-			ArrayList<double[]> c = new ArrayList<double[]>();
-			_curves.put(q, c);
-			_dist.put(q, null);
-		}		
-			
+		_wR = initHashMap(new HashMap<Query, Double>());
+		_wh = initHashMap(new HashMap<Query, Double>());			
 		_timeHorizon = 1;
 	}
 
@@ -42,33 +35,32 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 		_timeHorizon = t;
 	}
 
+	public HashMap<Query, Double> initHashMap(HashMap<Query, Double> map) {
+		for(Query q : _querySpace) {
+			map.put(q, (double)0);
+		}
+
+		return map;
+	}
+
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		for(Query q : _querySpace) {
 			int clicks = queryReport.getClicks(q);
 			int conversions = salesReport.getConversions(q);
-			//System.out.println("UpdateModel");
-			//System.out.println("\tClicks:" + clicks + "\tConversions: " + conversions);			
+			
+			double wr = (1.0 - (1.0 / _timeHorizon)) * _wR.get(q);
+			double wh = (1.0 - (1.0 / _timeHorizon)) * _wh.get(q);
+			if(Double.isNaN(wr))
+				wr = 0.0;
+			if(Double.isNaN(wh))
+				wh = 0.0;
 
-			/*ArrayList<double[]> curves = _curves.get(q);
-			// Update existing distributions to maintain the sliding window
-			for(int i = 0; i < Math.min(_timeHorizon - 1, curves.size() - 1); i++) {
-				double[] dist = curves.get(i+1);
-				dist = _math.prGivenObs(clicks, conversions, dist);
-				curves.set(i, dist);
-			}
-			
-			// Plus keep a new distribtuion on the end (sliding window, still)
-			double[] dist = _math.prGivenObs(clicks, conversions, null);
-			if(curves.size() < _timeHorizon)
-				curves.add(dist);
-			else
-				curves.set(_timeHorizon - 1, dist);
-			
-			//System.out.println("Updated " + q + " / " + curves.size()); */
-			double[] d = _dist.get(q);
-			double[] newDist = _math.prGivenObs(clicks, conversions, d);
-			_dist.put(q, newDist);
+			double r = (1.0 / _timeHorizon) * clicks;
+			double h = (1.0 / _timeHorizon) * conversions;
+
+			_wR.put(q, wr + r);
+			_wh.put(q, wh + h);			
 		}
 		
 		return true;
@@ -76,8 +68,7 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 
 	@Override
 	public double getPrediction(Query query) {
-		//double[] curve = _curves.get(query).get(0);
-		double[] curve = _dist.get(query);
+		double[] curve = _math.prGivenObs((int) Math.ceil(_wR.get(query)), (int) Math.ceil(_wh.get(query)), null);
 		
 		return _math.getMostLikelyProb(0.5, curve);
 	}	

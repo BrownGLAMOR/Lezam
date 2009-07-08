@@ -152,10 +152,11 @@ public class BraddMaxx extends SimAbstractAgent {
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		if( (salesReport != null) && (queryReport != null) ) {
 			_day++;
-			
+			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+
+			_model.setTimeHorizon(_timeHorizon);
 			_model.updateModel(queryReport, salesReport);
 			
-			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 			_oldModel.setTimeHorizon(_timeHorizon);
 			_oldModel.updateModel(queryReport, salesReport);
 		}
