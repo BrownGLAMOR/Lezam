@@ -27,6 +27,7 @@ import newmodels.bidtoprclick.BasicBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoprconv.BasicBidToPrConv;
+import newmodels.prconv.TrinaryPrConversion.GetsBonus;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -432,17 +433,48 @@ public class ILPAgentQ extends SimAbstractAgent{
 		return clickPr;
 	}
 
-	private double estimateConv(Query query, double bid) {
+	private double estimateConv(Query query, double overCap) {
+		double baseline = 0;
+		String getBonus = "MAYBE";
+		QueryType queryType = query.getType();
+		String component = query.getComponent();
+		if(queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+			baseline = _piF0;
+		}
+		else {
+			if(queryType.equals(QueryType.FOCUS_LEVEL_ONE)) {
+				baseline = _piF1;
+				if (_compSpecialty.equals(component)) {
+					getBonus = "YES";
+				} else if (component == null) getBonus = "NO";
+			} else if(queryType.equals(QueryType.FOCUS_LEVEL_TWO)) {
+				baseline = _piF2;
+				if (_compSpecialty.equals(component)) getBonus = "YES";
+			} else {
+				throw new RuntimeException("Malformed query");
+			}	
+		}
+		
 		double result = 0;
+		double capdiscount = Math.pow(_lambda,Math.max(overCap, 0));
+		double firstTerm = baseline * capdiscount;
+		double secondTerm = 1 + _CSB;
+		double nuo = (firstTerm * secondTerm) / (firstTerm * secondTerm + (1 - firstTerm));
 		
-//		if (convPr.equals(null) || overQ<(Integer)(_possibleQuantities.toArray())[0] || (overQ>(Integer)(_possibleQuantities.toArray()[_possibleQuantities.size()-1]))) {
-//			beep();
-//			System.out.print("\n CONV PROBLEM--> " + overQ + "\n");
-//		}
+		if (getBonus == "YES") result = nuo;
+		else if (getBonus == "NO") result = firstTerm;
+		else result = (nuo + 3*firstTerm)/4;
 		
-		//TODO put in BraddMax conversion prob model
-		result = _baseConvProbs.get(query);
-
+		double nISusers = 0;
+		double nFusers = 0;
+		for (Product product : _retailCatalog) {
+			for (UserState userState : setOfUserStates(query)) {
+				if (userState.equals(UserState.IS)) nISusers += _userModel.getPrediction(product, UserState.IS);
+				else nFusers += _userModel.getPrediction(product, userState);
+			}
+		}
+		result = result * (nFusers/(nFusers+nISusers));
+		
 		return result;
 	}
 
@@ -471,7 +503,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 		}
 		return 0.0;
 	}
-
+	
 	@Override
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
