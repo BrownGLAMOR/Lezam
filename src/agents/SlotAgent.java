@@ -7,6 +7,7 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -188,7 +189,7 @@ public class SlotAgent extends SimAbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace);
+		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		return null;
 	}
 
@@ -199,7 +200,7 @@ public class SlotAgent extends SimAbstractAgent {
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
 					MAX_TIME_HORIZON);
 			_conversionPrModel.setTimeHorizon(timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport);
+			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 

@@ -10,6 +10,7 @@ import java.util.Set;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.targeting.BasicTargetModel;
 import agents.SimAbstractAgent;
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -142,11 +143,11 @@ public class CrestAgent extends SimAbstractAgent {
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> m = new HashSet<AbstractModel>();
 
-		_model = new HistoricPrConversionModel(_querySpace);
+		_model = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_model.setTimeHorizon(3);
 		m.add(_model);
 
-		_oldModel = new GoodConversionPrModel(_querySpace);
+		_oldModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 
 		return m;
 	}
@@ -158,10 +159,10 @@ public class CrestAgent extends SimAbstractAgent {
 			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
 			_model.setTimeHorizon(_timeHorizon);
-			_model.updateModel(queryReport, salesReport);
+			_model.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			_oldModel.setTimeHorizon(_timeHorizon);
-			_oldModel.updateModel(queryReport, salesReport);
+			_oldModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 }

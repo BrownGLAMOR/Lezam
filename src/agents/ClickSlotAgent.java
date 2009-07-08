@@ -18,6 +18,7 @@ import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.prconv.SimplePrConversion;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -152,7 +153,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 				_capWindow);
 		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
 
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace);
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		return null;
 	}
 
@@ -163,7 +164,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 			
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 			_conversionPrModel.setTimeHorizon(timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport);
+			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			if (_bidBundles.size() > 1) 
 				_bidToCPCModel.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));

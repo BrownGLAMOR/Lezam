@@ -489,8 +489,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
-				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
-				System.out.println("CPC  Standard Deviation: " + stddevCPC);
+//				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
+//				System.out.println("CPC  Standard Deviation: " + stddevCPC);
 
 				/*
 				 * ClickPr Error
@@ -512,8 +512,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
-				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
-				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
+//				System.out.println("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
+//				System.out.println("ClickPr Bid To Standard Deviation: " + stddevClickPr);
 
 				/*
 				 * ConvPr Error
@@ -584,8 +584,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevImp = Math.sqrt(sumImpError/(errorDayCounter*16 - impSkip));
-				System.out.println("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
-				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
+//				System.out.println("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
+//				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
 
 
 				//				if(_day == 60) {

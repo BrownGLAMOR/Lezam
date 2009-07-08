@@ -19,6 +19,7 @@ import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -95,7 +96,7 @@ public class CHAgent extends SimAbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 		
-		_prConversionModel = new HistoricPrConversionModel(_querySpace);
+		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_baselineConversions = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
@@ -321,7 +322,7 @@ public class CHAgent extends SimAbstractAgent {
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
 			_prConversionModel.setTimeHorizon(timeHorizon);
-			_prConversionModel.updateModel(queryReport, salesReport);
+			_prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 		
 			for (Query query : _querySpace) {
@@ -331,7 +332,7 @@ public class CHAgent extends SimAbstractAgent {
 		}
 		
 		if (_bidBundleList.size() > 1) 
-			_bidToCPCModel.updateModel(queryReport, _bidBundleList.get(_bidBundleList.size() - 2));
+			_bidToCPCModel.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
 	}
 	
 	private double randDouble(double a, double b) {

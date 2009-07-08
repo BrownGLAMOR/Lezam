@@ -20,6 +20,7 @@ import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -99,7 +100,7 @@ public class G3Agent extends SimAbstractAgent{
 	@Override
 	public Set<AbstractModel> initModels() {
 
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace);
+		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -144,7 +145,7 @@ public class G3Agent extends SimAbstractAgent{
 			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
                _conversionPrModel.setTimeHorizon(_timeHorizon);
-               _conversionPrModel.updateModel(queryReport, salesReport);
+               _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 
 			if (_bidBundleList.size() > 1) 
 				_bidToCPC.updateModel(_queryReport, _bidBundleList.get(_bidBundleList.size() - 2));
