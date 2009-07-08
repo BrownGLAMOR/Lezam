@@ -14,6 +14,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
@@ -77,7 +78,7 @@ public class H3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-        _conversionPrModel = new GoodConversionPrModel(_querySpace);
+        _conversionPrModel = new HistoricPrConversionModel(_querySpace);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		
