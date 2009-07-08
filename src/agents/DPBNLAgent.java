@@ -74,13 +74,13 @@ public class DPBNLAgent extends SimAbstractAgent {
 
 		// for jberg's simulator, but should have no effect
 
-		this.buildMaps(models);
+		//this.buildMaps(models);
 
 		// handle first two days
 
 		if (_day <= 6) {
 			bidBundle = new BidBundle();
-			for (Query query : _querySpace) {
+
 				for (Query q : _querySpace) {
 					double bid;
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -91,7 +91,7 @@ public class DPBNLAgent extends SimAbstractAgent {
 						bid = randDouble(.35, 1.0);
 					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				}
-			}
+			
 			bidBundleList.add(bidBundle);
 			return bidBundle;
 		}
@@ -103,9 +103,7 @@ public class DPBNLAgent extends SimAbstractAgent {
 			unitsSold += _salesReport.getConversions(query);
 		}
 
-		// int targetCapacity = (int)Math.max(2*1.5*dailyCapacity - unitsSold,
-		// dailyCapacity*.5);
-		int targetCapacity = (int) (1.5 * dailyCapacity);
+		int targetCapacity = (int) (5 * dailyCapacity) + 1;
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
 
@@ -113,10 +111,9 @@ public class DPBNLAgent extends SimAbstractAgent {
 			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
 			double bid = .1;
-			double maxBid = revenues.get(query)	* prConversionModel.getPrediction(query) * .9;
-			while (bid < maxBid) {
-				double prClicks = bidToPrClickModel.getPrediction(query, bid,
-						null);
+			double maxBid = Math.min(revenues.get(query)*prConversionModel.getPrediction(query)*2, 5);
+			while (bid <= maxBid) {
+				double prClicks = bidToPrClickModel.getPrediction(query, bid,null);
 				double imp = queryToNumImpModel.getPrediction(query);
 				bidToClicks.put(bid, (int) (prClicks * imp));
 				bid += .1;
@@ -148,11 +145,11 @@ public class DPBNLAgent extends SimAbstractAgent {
 					int maxClick = item.get(query).get(bid);
 					double prConv = prConversionModel.getPrediction(query);
 
-
-						int capacity = (int)(maxClick * prConv);
+						int capacity = (int) Math.min(maxClick * prConv, targetCapacity - 1);
+						if (j - capacity < 0) break;
+						
 						double tmp = 0;
-						if (i > 0 && j - capacity > 0) tmp = profit[i - 1][j - capacity];
-						else tmp = profit[i - 1][0];
+						if (i > 0) tmp = profit[i - 1][j - capacity];
 						double rev = revenues.get(query);
 						double cpc = bidToCPCModel.getPrediction(query, bid);
 						tmp += capacity * (rev - cpc / prConv);
@@ -189,10 +186,6 @@ public class DPBNLAgent extends SimAbstractAgent {
 		while (i > 0) {
 			i--;
 			double bid = bids[i][capacity];
-			double clicks = sales[i][capacity] * 1.0
-					/ prConversionModel.getPrediction(queries[i]);
-			double cpc = bidToCPCModel.getPrediction(queries[i], bid);
-
 			bidBundle.setBid(queries[i], bid);
 
 			output.println(queries[i] + " " + bid + " " + sales[i][capacity]
@@ -228,7 +221,7 @@ public class DPBNLAgent extends SimAbstractAgent {
 		// setup the debug info recorder
 
 		try {
-			output = new PrintStream(new File("dpdebug.txt"));
+			output = new PrintStream(new File("dpbnldebug.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -276,7 +269,7 @@ public class DPBNLAgent extends SimAbstractAgent {
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// update models
 
-		if (_day > 1 && _salesReport != null) {
+		if (_day > 1 && _salesReport != null && _queryReport != null) {
 
 			userModel.updateModel(queryReport, salesReport);
 			queryToNumImpModel.updateModel(queryReport, salesReport);
