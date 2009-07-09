@@ -110,30 +110,44 @@ public class BasicTargetModel extends AbstractModel {
 		return new Tuple(man,comp);
 	}
 
+	// returns multiplier for your ClickPr (ans * oldClickPr = newClickPr)
 	public double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
 		double ratio;
 
 		if (query.getType() == QueryType.FOCUS_LEVEL_TWO){
 			ratio = higherClickPr(clickPr, toBinary(promoted));
-		} else {
+		} else if (query.getType() == QueryType.FOCUS_LEVEL_ONE){
 			ratio = 1.0/3.0*higherClickPr(clickPr,toBinary(promoted)) + 2.0/3.0*lowerClickPr(clickPr,toBinary(promoted));
+		} else {
+			ratio = 1.0/9.0*higherClickPr(clickPr,toBinary(promoted)) + 8.0/9.0*lowerClickPr(clickPr,toBinary(promoted));
 		}
 
 		return ratio;
 	}
+	public double getClickPrPrediction(Query query, double clickPr, double promoted) {
+		return promoted*getClickPrPrediction(query, clickPr, true) + (1-promoted)*getClickPrPrediction(query, clickPr, false);
+	}
 
+	// returns multiplier for your ConversionPr (ans * oldConvPr = newConvPr)
 	public double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
 		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).componentRatio(),baseUsers(query, clickPr).componentRatio(),eta(convPr,1+CSB),convPr);
 	}
+	public double getConvPrPrediction(Query query, double clickPr, double convPr, double promoted) {
+		return promoted*getConvPrPrediction(query, clickPr, convPr, true) + (1-promoted)*getConvPrPrediction(query, clickPr, convPr, false);
+	}
 
+	// returns USP
 	public double getUSPPrediction(Query query, double clickPr, boolean promoted) {
 		//Old version: return ratio(targetedUsers(query,clickPr,toBinary(promoted)).manufacturerRatio(), baseUsers(query, clickPr).manufacturerRatio(), 1+MSB, 1);
 		Tuple targeted = targetedUsers(query,clickPr,toBinary(promoted));
 		return targeted.manufacturerRatio()*USP*(1+MSB) + (1-targeted.manufacturerRatio())*USP;
 	}
+	public double getUSPPrediction(Query query, double clickPr, double promoted) {
+		return promoted*getUSPPrediction(query, clickPr, true) + (1-promoted)*getUSPPrediction(query, clickPr, false);
+	}
 
-	// ans[0] = clickPr prediction
-	// ans[1] = convPr prediction
+	// ans[0] = clickPr if you hadn't targeted, assuming you did
+	// ans[1] = convPr if you hadn't targeted, assuming you did
 	public double[] getInversePredictions(Query query, double clickPr, double convPr, boolean promoted) {
 		double[] mostRecentPredictions = new double[2];
 
@@ -156,17 +170,37 @@ public class BasicTargetModel extends AbstractModel {
 		}
 		return mostRecentPredictions;
 	}
+	public double[] getInversePredictions(Query query, double clickPr, double convPr, double promoted) {
+		double[] promotedPart = getInversePredictions(query, clickPr, convPr, true);
+		double[] unpromotedPart = getInversePredictions(query, clickPr, convPr, false);
+		double clickPrPred = promoted*promotedPart[0] + (1-promoted)*unpromotedPart[0];
+		double convPrPred = promoted*promotedPart[1] + (1-promoted)*unpromotedPart[1];
+		return new double[]{clickPrPred,convPrPred};
+	}
 
 	public static void main(String[] args) {
 		BasicTargetModel test = new BasicTargetModel("pg","tv");
 		//		double clickPr = .27;
-		double convPr = .32;
-		Query query = new Query("pg",null);
-		boolean promoted = false;
-		for(int i = 0; i< 50; i++) {
+		double clickPr = 0.22;
+		double convPr = 0.16;
+		Query query = new Query("pg","tv");
+		double promoted = 1;
+		/*for(int i = 0; i< 50; i++) {
 			System.out.println(test.getConvPrPrediction(query, .01 * (i+1), convPr, false));
 
-		}
+		}*/
+		
+		double clickPred1 = test.getInversePredictions(query, clickPr, convPr, promoted)[0];
+		double convPred1 = test.getInversePredictions(query, clickPr, convPr, promoted)[1];
+		double clickPred2 = test.getInversePredictions(query, clickPr, convPr, false)[0];
+		double convPred2 = test.getInversePredictions(query, clickPr, convPr, false)[1];
+		System.out.println(clickPr);
+		System.out.println(convPr);
+		System.out.println(clickPred1*test.getClickPrPrediction(query, clickPred1, promoted));
+		System.out.println(convPred1*test.getConvPrPrediction(query, clickPred1, convPred1, promoted));
+		System.out.println(clickPred1*test.getClickPrPrediction(query, clickPred2, promoted));
+		System.out.println(convPred1*test.getConvPrPrediction(query, clickPred2, convPred2, promoted));
+		
 		//		double[] test3 = test.getInversePredictions(query, clickPr, convPr, promoted);
 		//		System.out.println(test3[0]*test.getClickPrPrediction(query, test3[0], promoted));
 		//		System.out.println(test3[1]*test.getConvPrPrediction(query, test3[0], test3[1], promoted));
