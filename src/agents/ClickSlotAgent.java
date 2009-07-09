@@ -82,7 +82,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 		
 		_bidBundles.add(_bidBundle);
 		
-		printInfo();
+		//printInfo();
 		
 		return _bidBundle;
 	}
