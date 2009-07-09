@@ -10,19 +10,15 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.prconv.AbstractPrConversionModel;
-import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -105,7 +101,7 @@ public class G3Agent extends SimAbstractAgent{
 		
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
+		_conversionPrModel = new NoTargetHistoricPrConversionModel(_querySpace, _targetModel);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
