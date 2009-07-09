@@ -49,7 +49,7 @@ public class ILPAgentQ extends SimAbstractAgent{
 	// #### Game Decisions ####
 	// ########################
 	private Random _R = new Random();
-	final static boolean USEOVERQUANTITY = false; 	// Do you want the MIP formula to include over capacity?
+	final static boolean USEOVERQUANTITY = true; 	// Do you want the MIP formula to include over capacity?
 	protected static int NUMUSERS = 90000;		// How many users are simulated?
 	double _regReserveScore = 0.4;					// I want the bids to be at least the regular reserve score
 	
