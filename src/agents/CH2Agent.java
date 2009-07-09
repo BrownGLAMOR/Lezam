@@ -172,7 +172,7 @@ public class CH2Agent extends SimAbstractAgent {
 		for (Query query : _querySpace) {
 			normalizeFactor += _desiredSales.get(query);
 		}
-		normalizeFactor = _distributionCapacity*1.0/_distributionWindow/normalizeFactor;
+		normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
 		}
@@ -198,7 +198,7 @@ public class CH2Agent extends SimAbstractAgent {
 			
 			// set spend limit
 			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(overcap),1);
-			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*.9;
+			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.0;
 			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
 		
