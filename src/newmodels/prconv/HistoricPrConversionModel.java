@@ -52,11 +52,14 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		for(Query q : _querySpace) {
+			int imps = queryReport.getImpressions(q);
 			int clicks = queryReport.getClicks(q);
 			int conversions = salesReport.getConversions(q);
 
 			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric()) {
-
+				double[] multipliers = _targModel.getInversePredictions(q, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+				clicks *= multipliers[0];
+				conversions = (int) (clicks*multipliers[1]);
 			}
 
 			double wr = (1.0 - (1.0 / _timeHorizon)) * _wR.get(q);

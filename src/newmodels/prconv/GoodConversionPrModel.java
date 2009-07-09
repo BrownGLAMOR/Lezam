@@ -46,11 +46,14 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 	 */
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		for(Query q : _querySpace) {
-			double clicks = queryReport.getClicks(q);
-			double conversions = salesReport.getConversions(q);
-			
+			int imps = queryReport.getImpressions(q);
+			int clicks = queryReport.getClicks(q);
+			int conversions = salesReport.getConversions(q);
+
 			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric()) {
-				
+				double[] multipliers = _targModel.getInversePredictions(q, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+				clicks *= multipliers[0];
+				conversions = (int) (clicks*multipliers[1]);
 			}
 			
 //			System.out.println("UpdateModel");
