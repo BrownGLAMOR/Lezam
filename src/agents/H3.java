@@ -11,9 +11,10 @@ import java.util.Set;
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtoslot.BasicBidToClick;
+import newmodels.bidtoslot.BasicCPCToClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
@@ -26,7 +27,8 @@ public class H3 extends SimAbstractAgent{
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	private AbstractBidToCPC _bidToCPC;
-	protected HashMap<Query, BasicBidToClick> _bidToclick;
+	protected BasicTargetModel _targetModel;
+	protected HashMap<Query, BasicCPCToClick> _cpcToclick;
 	protected double oldSales = 0.0;
 	protected double newSales = 0.0;
 	//k is a constant that equates EPPS across queries
@@ -53,6 +55,7 @@ public class H3 extends SimAbstractAgent{
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		this.printInfo();
+	    _bidBundle.setCampaignDailySpendLimit(2000);
 		_bidBundles.add(_bidBundle);
 		return _bidBundle;
 	}
@@ -77,13 +80,15 @@ public class H3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+
+		_conversionPrModel = new NoTargetHistoricPrConversionModel(_querySpace, _targetModel);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 
-		_bidToclick = new HashMap<Query, BasicBidToClick>();
+		_cpcToclick = new HashMap<Query, BasicCPCToClick>();
 		for (Query query : _querySpace) {
-			_bidToclick.put(query, new BasicBidToClick(query, false));	
+			_cpcToclick.put(query, new BasicCPCToClick(query, false));	
 		}
 		
 		for(Query query:_querySpace){
@@ -125,7 +130,7 @@ public class H3 extends SimAbstractAgent{
 		// update models
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			for(Query query: _querySpace){
-				_bidToclick.get(query).updateModel(_salesReport, _queryReport);
+				_cpcToclick.get(query).updateModel(_salesReport, _queryReport);
 			}
 			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 			   _conversionPrModel.setTimeHorizon(_timeHorizon);
@@ -145,12 +150,12 @@ public class H3 extends SimAbstractAgent{
 	  for(Query query: _querySpace){
 		  newSales += _salesReport.getConversions(query);
 	  }
-	  double dailyLimit = 1.1*_capacity/_capWindow;
-	  //double error = 0.5;
+	  double dailyLimit = 1.5*_capacity/_capWindow;
+	  double error = 0.5;
 	  int counter = 0;
 	  k = 1;
 	  double sum = 0.0;
-	  /*double hi =  14.5;
+	  double hi =  14.6;
 	  double lo = 1;
 	  boolean done = false;
 	  while(done == false && counter <= 20){
@@ -176,15 +181,15 @@ public class H3 extends SimAbstractAgent{
 		  }
 		  counter ++;
 		  sum = 0.0;
-	  }*/
-	  while (sum < dailyLimit && counter <= 140){
+	  }
+	  /*while (sum < dailyLimit && counter <= 140){
 		  sum = 0.0;
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query, k);
 		  }
 		    k += 0.1;
 			counter++;
-		}   
+		}*/   
 	  if(k > 14.5) k = 14.5;
 	  if(k < 7) k = 7;
    }
@@ -193,7 +198,7 @@ public class H3 extends SimAbstractAgent{
 	  double conversion = _conversionPrModel.getPrediction(q);
 	  double cpc = (_estimatedPrice.get(q)-k)*conversion;
 	  //use the bid to click model to estimate #clicks
-	  double clicks = _bidToclick.get(q).getPrediction(cpc);
+	  double clicks = _cpcToclick.get(q).getPrediction(cpc);
 	  //estimated sales = clicks * conv prob 
 	  return Math.max(0,clicks*conversion);
    }
