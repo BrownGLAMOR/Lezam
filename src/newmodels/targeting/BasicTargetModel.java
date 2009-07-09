@@ -184,13 +184,45 @@ public class BasicTargetModel extends AbstractModel {
 		double clickPr = 0.22;
 		double convPr = 0.16;
 		Query query = new Query("pg","tv");
-		double promoted = 1;
+		double promoted = 0;
 		/*for(int i = 0; i< 50; i++) {
 			System.out.println(test.getConvPrPrediction(query, .01 * (i+1), convPr, false));
 
 		}*/
 		
-		double clickPred1 = test.getInversePredictions(query, clickPr, convPr, promoted)[0];
+		double minClick = 1;
+		double minConv = 1;
+		double maxClick = 1;
+		double maxConv = 1;
+		
+		for (promoted = 0; promoted <=1.0; promoted += 0.01){
+		for (clickPr = 0.01; clickPr<=0.6; clickPr += 0.01){
+			for (convPr = 0.01; convPr<=0.4; convPr += 0.01){
+			double clickPred = test.getInversePredictions(query, clickPr, convPr, promoted)[0];
+			double convPred = test.getInversePredictions(query, clickPr, convPr, promoted)[1];
+			double clickComp = clickPred*test.getClickPrPrediction(query, clickPred, promoted)/clickPr;
+			double convComp = convPred*test.getConvPrPrediction(query, clickPred, convPred, promoted)/convPr;
+			if (clickComp <= minClick){
+				minClick = clickComp;
+			}
+			if (clickComp >= maxClick){
+				maxClick = clickComp;
+			}
+			if (convComp <= minConv){
+				minConv = convComp;
+			}
+			if (convComp >= maxConv){
+				maxConv = convComp;
+			}
+			}
+		}
+		}
+		System.out.println("minConv: " + minConv);
+		System.out.println("maxConv: " + maxConv);
+		System.out.println("minClick: " + minClick);
+		System.out.println("maxClick: " + maxClick);
+		
+		/*double clickPred1 = test.getInversePredictions(query, clickPr, convPr, promoted)[0];
 		double convPred1 = test.getInversePredictions(query, clickPr, convPr, promoted)[1];
 		double clickPred2 = test.getInversePredictions(query, clickPr, convPr, false)[0];
 		double convPred2 = test.getInversePredictions(query, clickPr, convPr, false)[1];
@@ -199,7 +231,7 @@ public class BasicTargetModel extends AbstractModel {
 		System.out.println(clickPred1*test.getClickPrPrediction(query, clickPred1, promoted));
 		System.out.println(convPred1*test.getConvPrPrediction(query, clickPred1, convPred1, promoted));
 		System.out.println(clickPred1*test.getClickPrPrediction(query, clickPred2, promoted));
-		System.out.println(convPred1*test.getConvPrPrediction(query, clickPred2, convPred2, promoted));
+		System.out.println(convPred1*test.getConvPrPrediction(query, clickPred2, convPred2, promoted));*/
 		
 		//		double[] test3 = test.getInversePredictions(query, clickPr, convPr, promoted);
 		//		System.out.println(test3[0]*test.getClickPrPrediction(query, test3[0], promoted));
