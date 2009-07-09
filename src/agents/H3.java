@@ -156,9 +156,9 @@ public class H3 extends SimAbstractAgent{
 	  k = 1;
 	  double sum = 0.0;
 	  double hi =  14.6;
-	  double lo = 1;
+	  double lo = 7;
 	  boolean done = false;
-	  while(done == false && counter <= 20){
+	  while(done == false && counter <= 50){
 		  for (Query query: _querySpace){
 			  sum += calcUnitSold(query, k);
 		  }
