@@ -59,8 +59,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 5;
-	protected int ENSEMBLESIZE = 25;
+	protected int NUMPASTDAYS = 10;
+	protected int ENSEMBLESIZE = 5;
 
 	private RConnection rConnection;
 
@@ -649,6 +649,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	public void printEnsembleMemberSummary() {
 		double tot = 0;
 		for(Query query : _querySpace) {
+			System.out.println("Query: " + query);
 			HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 			double total = 0;
 			for(String name : ensembleMembers.keySet()) {
@@ -659,7 +660,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			//			System.out.println("Total Members: " + ensembleMembers.size());
 			for(String name : ensembleMembers.keySet()) {
 				Integer ensembleUseCount = ensembleMembers.get(name);
-				System.out.println("Name: " + name + " Use: " + (ensembleUseCount/total));
+				System.out.println("\tName: " + name + " Use: " + (ensembleUseCount/total));
 			}
 			tot += ensembleMembers.size();
 		}
