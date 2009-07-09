@@ -50,7 +50,7 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 			int clicks = queryReport.getClicks(q);
 			int conversions = salesReport.getConversions(q);
 
-			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric()) {
+			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric() && clicks != 0 && imps != 0) {
 				double[] multipliers = _targModel.getInversePredictions(q, (clicks/((double) imps)), (conversions/((double) clicks)), false);
 				clicks *= multipliers[0];
 				conversions = (int) (clicks*multipliers[1]);
