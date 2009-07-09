@@ -52,7 +52,7 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 
 			if(bundle.getAd(q) != null && !bundle.getAd(q).isGeneric() && clicks != 0 && imps != 0) {
 				double[] multipliers = _targModel.getInversePredictions(q, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-				clicks *= multipliers[0];
+				clicks = (int) (imps * multipliers[0]);
 				conversions = (int) (clicks*multipliers[1]);
 			}
 			
