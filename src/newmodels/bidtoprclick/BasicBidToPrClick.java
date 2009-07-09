@@ -1,5 +1,6 @@
 package newmodels.bidtoprclick;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -18,7 +19,7 @@ public class BasicBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		// TODO Auto-generated method stub
 		return true;
 	}

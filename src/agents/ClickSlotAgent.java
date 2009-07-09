@@ -167,7 +167,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			if (_bidBundles.size() > 1) 
-				_bidToCPCModel.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+				_bidToCPCModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
 		}
 		
 

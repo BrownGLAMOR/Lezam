@@ -14,6 +14,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * @author afoo & jberg
@@ -128,12 +129,12 @@ public class TypeIIIRegressionBidToPrClick extends AbstractBidToPrClick {
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
+	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 
 		double start = System.currentTimeMillis();
 
-		_queryReports.add(queryreport);
-		_bidBundles.add(bidbundle);
+		_queryReports.add(queryReport);
+		_bidBundles.add(bidBundle);
 
 		if(_bidBundles.size() != _queryReports.size()) {
 			throw new RuntimeException("Uneven number of bidbundles and query reports");
@@ -153,9 +154,9 @@ public class TypeIIIRegressionBidToPrClick extends AbstractBidToPrClick {
 
 		for(Query query : _querySpace) {
 			if(_query.equals(query)) {
-				double bid = bidbundle.getBid(query);
-				double imps = queryreport.getImpressions(query);
-				double clicks = queryreport.getClicks(query);
+				double bid = bidBundle.getBid(query);
+				double imps = queryReport.getImpressions(query);
+				double clicks = queryReport.getClicks(query);
 				if(!(clicks == 0 || imps == 0)) {
 					_bids.add(bid);
 					_clickPrs.add(clicks/imps);

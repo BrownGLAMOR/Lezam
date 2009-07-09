@@ -15,6 +15,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class EnsembleBidToCPC extends AbstractBidToCPC {
 
@@ -245,7 +246,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 
 	@Override
-	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
+	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 
 		boolean ensembleUsable = false;
 
@@ -255,7 +256,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_typeIUsableModels = new HashMap<String, AbstractBidToCPC>();
 		for(String name : _typeIModels.keySet()) {
 			AbstractBidToCPC model = _typeIModels.get(name);
-			boolean usable = model.updateModel(queryreport, bidbundle);
+			boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
 			if(usable) {
 				_typeIUsableModels.put(name, model);
 				ensembleUsable = true;
@@ -271,7 +272,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			HashMap<String, AbstractBidToCPC> typeIIUsableModels = new HashMap<String,AbstractBidToCPC>();
 			for(String name : typeIIModels.keySet()) {
 				AbstractBidToCPC model = typeIIModels.get(name);
-				boolean usable = model.updateModel(queryreport, bidbundle);
+				boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
 				if(usable) {
 					typeIIUsableModels.put(name, model);
 					ensembleUsable = true;
@@ -289,7 +290,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			HashMap<String, AbstractBidToCPC> typeIIIUsableModels = new HashMap<String,AbstractBidToCPC>();
 			for(String name : typeIIIModels.keySet()) {
 				AbstractBidToCPC model = typeIIIModels.get(name);
-				boolean usable = model.updateModel(queryreport, bidbundle);
+				boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
 				if(usable) {
 					typeIIIUsableModels.put(name, model);
 					ensembleUsable = true;

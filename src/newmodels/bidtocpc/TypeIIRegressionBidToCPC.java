@@ -13,6 +13,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * @author afoo & jberg
@@ -151,7 +152,7 @@ public class TypeIIRegressionBidToCPC extends AbstractBidToCPC {
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
+	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle) {
 
 		double start = System.currentTimeMillis();
 

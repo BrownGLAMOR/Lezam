@@ -539,11 +539,11 @@ public class ILPAgentQ extends SimAbstractAgent{
 			}
 			else if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				bidToCPC.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
+				bidToCPC.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 			else if(model instanceof AbstractBidToPrClick) {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				bidToPrClick.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
+				bidToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");

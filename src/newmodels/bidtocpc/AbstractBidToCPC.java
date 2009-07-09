@@ -15,6 +15,7 @@ import org.rosuda.REngine.Rserve.RserveException;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * @author jberg
@@ -22,11 +23,8 @@ import edu.umich.eecs.tac.props.QueryReport;
  */
 public abstract class AbstractBidToCPC extends AbstractModel {
 	
-	public AbstractBidToCPC() {
-	}
-	
 	public abstract double getPrediction(Query query, double bid);
 
-	public abstract boolean updateModel(QueryReport queryreport, BidBundle bidbundle);
-	
+	public abstract boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle);
+
 }

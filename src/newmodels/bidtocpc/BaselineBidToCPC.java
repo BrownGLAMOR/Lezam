@@ -15,6 +15,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class BaselineBidToCPC extends AbstractBidToCPC {
 	
@@ -190,7 +191,7 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryreport, BidBundle bidbundle) {
+	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle) {
 		// TODO Auto-generated method stub
 		return false;
 	}

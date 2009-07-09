@@ -332,7 +332,7 @@ public class CHAgent extends SimAbstractAgent {
 		}
 		
 		if (_bidBundleList.size() > 1) 
-			_bidToCPCModel.updateModel(queryReport, _bidBundles.get(_bidBundles.size()-2));
+			_bidToCPCModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 	}
 	
 	private double randDouble(double a, double b) {

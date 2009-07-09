@@ -148,7 +148,7 @@ public class G3Agent extends SimAbstractAgent{
                _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 
 			if (_bidBundleList.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, _bidBundleList.get(_bidBundleList.size() - 2));
+				_bidToCPC.updateModel(_queryReport, salesReport, _bidBundleList.get(_bidBundleList.size() - 2));
 
 		}
 
