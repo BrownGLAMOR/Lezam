@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -14,8 +13,8 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -26,7 +25,7 @@ public class H3 extends SimAbstractAgent{
 	protected NewAbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected AbstractBidToCPC _bidToCPC;
+	private AbstractBidToCPC _bidToCPC;
 	protected HashMap<Query, BasicBidToClick> _bidToclick;
 	protected double oldSales = 0.0;
 	protected double newSales = 0.0;
@@ -78,10 +77,9 @@ public class H3 extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-        _conversionPrModel = new HistoricPrConversionModel(_querySpace);
+		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 
 		_estimatedPrice = new HashMap<Query, Double>();
-		
 
 		_bidToclick = new HashMap<Query, BasicBidToClick>();
 		for (Query query : _querySpace) {
@@ -126,17 +124,15 @@ public class H3 extends SimAbstractAgent{
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// update models
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
-			
 			for(Query query: _querySpace){
 				_bidToclick.get(query).updateModel(_salesReport, _queryReport);
 			}
 			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-
-               _conversionPrModel.setTimeHorizon(_timeHorizon);
-               _conversionPrModel.updateModel(queryReport, salesReport);
+			   _conversionPrModel.setTimeHorizon(_timeHorizon);
+               _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 
 			if (_bidBundles.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, _bidBundles.get(_bidBundles.size() - 2));
+				_bidToCPC.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
 
 		}
 
