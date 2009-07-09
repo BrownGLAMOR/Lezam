@@ -53,7 +53,7 @@ public class BasicBidToClick {
 			return PSI * Math.exp(ZETA*bid);  //Log-linear version
 		}
 		else {
-			return PSI + ZETA*bid;
+			return PSI + ZETA*Math.log(bid);
 		}
 	}
 
@@ -63,7 +63,7 @@ public class BasicBidToClick {
 		double cpc = queryReport.getCPC(_query);
 		//Make sure that we actually got a position
 		if(!(Double.isNaN(pos) || Double.isNaN(cpc))) {
-			addDataPoint(_weight, cpc, click);
+			addDataPoint(_weight, Math.log(cpc), click);
 		}
 		_weight++;
 		
