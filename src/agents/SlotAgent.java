@@ -44,7 +44,7 @@ public class SlotAgent extends SimAbstractAgent {
 			// _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 
 			// print out the properties
-			StringBuffer buff = new StringBuffer("");
+/*			StringBuffer buff = new StringBuffer("");
 			buff.append("\t").append("day").append(_day).append("\n");
 			buff.append("\t").append("product: ").append(
 					query.getManufacturer()).append(", ").append(
@@ -61,7 +61,7 @@ public class SlotAgent extends SimAbstractAgent {
 					setQuerySpendLimit(query)).append("\n");
 			buff.append("\t").append("Slot: ").append(
 					_queryReport.getPosition(query)).append("\n");
-			System.out.print(buff);
+			System.out.print(buff);*/
 			// output.append(buff);
 
 		}
