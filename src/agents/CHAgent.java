@@ -163,18 +163,12 @@ public class CHAgent extends SimAbstractAgent {
 			}
 		}
 		
+		// normalize desiredSales
 		double normalizeFactor = 0;
 		for (Query query : _querySpace) {
 			normalizeFactor += _desiredSales.get(query);
 		}
-		
-		int unitsSold = 0;
-		for (Query query : _querySpace) {
-			unitsSold += _salesReport.getConversions(query);
-		}
-		
-		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
-		normalizeFactor = targetCapacity/normalizeFactor;
+		normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
 		}
@@ -233,12 +227,9 @@ public class CHAgent extends SimAbstractAgent {
 				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			
 			// set spend limit
-			double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
-			double cpc;
-			if (_day <= 6) cpc = .9*bid; 
-			else cpc = _bidToCPCModel.getPrediction(query, bid);
-			double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
-			//_bidBundle.setDailyLimit(query, dailyLimit);
+			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModel.getPrediction(query),1);
+			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
+			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
 		
 		this.printInfo();
