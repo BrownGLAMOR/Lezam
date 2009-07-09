@@ -36,6 +36,7 @@ public class G3Agent extends SimAbstractAgent{
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
+	protected BasicTargetModel _targetModel;
 	//k is a constant that equates EPPS across queries
 	protected double k;
 	protected BidBundle _bidBundle;
@@ -44,6 +45,7 @@ public class G3Agent extends SimAbstractAgent{
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double MAX_BID_CPC_GAP = 1.5;
+	protected final boolean TARGET = true;
 	protected PrintStream output;
 	
 	@Override
@@ -56,15 +58,16 @@ public class G3Agent extends SimAbstractAgent{
 		for(Query query: _querySpace){
 			_bidBundle.setBid(query, getQueryBid(query));
 			
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-				_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}
 			
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
@@ -99,8 +102,10 @@ public class G3Agent extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
+		
+		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
-		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -219,9 +224,9 @@ public class G3Agent extends SimAbstractAgent{
 			buff.append(q).append("\n");
 			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
 			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
-			/*if (_salesReport.getConversions(q) > 0) 
+			if (_salesReport.getConversions(q) > 0) 
 				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
-			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");*/
+			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
 			if (_queryReport.getClicks(q) > 0) 
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
