@@ -232,7 +232,7 @@ public class CHAgent extends SimAbstractAgent {
 			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
 		
-		this.printInfo();
+		//this.printInfo();
 		 
 		_bidBundleList.add(_bidBundle);
 		

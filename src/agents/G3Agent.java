@@ -69,7 +69,7 @@ public class G3Agent extends SimAbstractAgent{
 		}
 
 		_bidBundleList.add(_bidBundle);
-		this.printInfo();
+		//this.printInfo();
 		
 		return _bidBundle;
 	}

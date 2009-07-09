@@ -202,7 +202,7 @@ public class CH2Agent extends SimAbstractAgent {
 			_bidBundle.setDailyLimit(query, dailyLimit);
 		}
 		
-		this.printInfo();
+		//this.printInfo();
 		
 		return _bidBundle;
 	}
