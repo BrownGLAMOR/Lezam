@@ -18,19 +18,32 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class XFixedProfitAgent extends SimAbstractAgent {
 	
+	/* Budgeting: */
+	protected final boolean UseBUDGETS = true;
+	
+	
+	/* Targeting:
+	 *   does not target anything
+	*/
+	
+	
+	
 	protected BidBundle _bidBundle;
 
 	protected double X = 1.5; //X is the amount of profit an agent will try to make on each query at minimum
 	protected String _manufacturer;
 	protected String _component;
-	protected int _day;
+	//protected int _day;
 	
 	protected final double FO_BASELINE_PR_CONV = 0.1;
 	protected final double F1_BASELINE_PR_CONV = 0.2;
 	protected final double F2_BASELINE_PR_CONV = 0.3;
 	
-	protected double magic_factor = 1/.3;
+	protected double magic_factor = 1/.22; // ends up with roughly 22% conversion probability
 	protected double IS_factor = .9; // assumes roughly 10% IS users
+	protected int amount_to_oversell = 25; // sells 25 extra units every day
+	protected double budget_tightness_factor = 1.1; //a higher number will result in a higher budget
+	
 	
 	protected HashMap<Query, Double> _values;
 	
@@ -87,7 +100,7 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		_component = _advertiserInfo.getComponentSpecialty();
 		
 		//X += 0.75; // artifact of sales reports of 0
-		_day = -3;
+		//_day = -3;
 		
 		/*
 		// set values
@@ -115,8 +128,6 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 
 	public BidBundle buildBidBundle(){
 		
-		_day++;
-		
 		int sum = 0;
 		
 		for (Query query : _querySpace) {
@@ -125,7 +136,7 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 			sum += _salesReport.getConversions(query);
 		}
 		
-		int oversold = sum -_advertiserInfo.getDistributionCapacity()/5 -20;
+		int oversold = sum -_advertiserInfo.getDistributionCapacity()/5 - amount_to_oversell;
 		
 		System.out.println(sum + " / " + _advertiserInfo.getDistributionCapacity()/5 + " units sold");
 		//System.out.println("magic factor: " + magic_factor);
@@ -147,7 +158,7 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		}
 		*/
 		
-		double delta = ((double)sum/(_advertiserInfo.getDistributionCapacity()/5+20)-1)/4;
+		double delta = ((double)sum/(_advertiserInfo.getDistributionCapacity()/5+amount_to_oversell)-1)/4;
 		System.out.println("delta = " + delta);
 		if (_day>=0){
 			X += delta;
@@ -178,18 +189,18 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 		
 		
 		
-		
-		for (Query query : _querySpace) {
-			// set spend limit
-			double dailySalesLimit = Math.max(0,(_advertiserInfo.getDistributionCapacity()-oversold))/5/(16-numberOfZeroQueries);
-			double dailyLimit = _bidBundle.getBid(query)*(dailySalesLimit+1)/getPrConversion(query);
-			if (_day<58){
-				_bidBundle.setDailyLimit(query, dailyLimit);
-			} else {
-				_bidBundle.setDailyLimit(query, dailyLimit*2);
+		if (UseBUDGETS){
+			for (Query query : _querySpace) {
+				// set spend limit
+				double dailySalesLimit = Math.max(0,(_advertiserInfo.getDistributionCapacity()-oversold))/5/(16-numberOfZeroQueries);
+				double dailyLimit = _bidBundle.getBid(query)*(dailySalesLimit+1)/getPrConversion(query)*budget_tightness_factor;
+				if (_day<57){
+					_bidBundle.setDailyLimit(query, dailyLimit);
+				} else {
+					_bidBundle.setDailyLimit(query, dailyLimit*2);
+				}
 			}
 		}
-		
 		return _bidBundle;
 	}
 	
