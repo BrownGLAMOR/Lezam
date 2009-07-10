@@ -26,6 +26,7 @@ public class ClickAgent extends SimAbstractAgent {
 	protected final double _lamda = 0.9;
 	protected BidBundle _bidBundle;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final boolean BUDGET = true;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -34,7 +35,7 @@ public class ClickAgent extends SimAbstractAgent {
 		for (Query q : _querySpace) {
 			adjustPM(q);
 			_bidBundle.setBid(q, getQueryBid(q));
-			//_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
+			if (BUDGET) _bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
 		}
 		return _bidBundle;
 	}

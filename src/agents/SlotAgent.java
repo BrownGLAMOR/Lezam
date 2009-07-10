@@ -21,7 +21,9 @@ public class SlotAgent extends SimAbstractAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, Double> _baselineConversion;
+	
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final boolean BUDGET = true;
 
 	protected PrintStream output;
 
@@ -41,7 +43,7 @@ public class SlotAgent extends SimAbstractAgent {
 			
 			_bidBundle.setBid(query, getQueryBid(query));
 
-			// _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			if (BUDGET)  _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 
 			// print out the properties
 /*			StringBuffer buff = new StringBuffer("");
@@ -128,7 +130,7 @@ public class SlotAgent extends SimAbstractAgent {
 
 			_bidBundle.setBid(query, getQueryBid(query));
 
-			// _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 
 	}
@@ -182,9 +184,9 @@ public class SlotAgent extends SimAbstractAgent {
 
 	protected double setQuerySpendLimit(Query q) {
 
-		double remainCap = _capacity / _capWindow;
+		double remainCap = 1.5 * _capacity / _capWindow;
 		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
-				/ _querySpace.size() * .9;
+				/ _querySpace.size();
 	}
 
 	@Override

@@ -43,6 +43,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 
 	protected final double _errorOfLimit = .1;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;
 
@@ -77,7 +78,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 		// build bid bundle
 		for (Query q : _querySpace) {
 			_bidBundle.setBid(q, getQueryBid(q));
-			//_bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
+			if (BUDGET) _bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
 		}
 		
 		_bidBundles.add(_bidBundle);
@@ -187,10 +188,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 		
 		double bid = _bidBundle.getBid(q);
-		double cpc;
-		if (_day <= 6) cpc = .9*bid; 
-		else cpc = _bidToCPCModel.getPrediction(q, bid);
-		double dailyLimit = cpc*(dailySalesLimit - 1) + bid + _errorOfLimit;
+		double dailyLimit = bid*dailySalesLimit;
 		
 		return dailyLimit;
 	}
