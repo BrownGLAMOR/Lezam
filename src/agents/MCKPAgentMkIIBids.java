@@ -115,9 +115,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 5, 8, null);
 		((EnsembleBidToCPC) bidToCPC).initializeEnsemble();
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 5, 25, null);
 		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
