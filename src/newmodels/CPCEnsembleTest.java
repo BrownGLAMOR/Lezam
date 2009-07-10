@@ -27,9 +27,10 @@ public class CPCEnsembleTest {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException, ParseException {
-		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
-		int min = 454;
-		int max = 499;
+//		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordan/Desktop/JavaWorkSpaces/aa-server-0.9.6.1/logs/sims/localhost_sim";
+		int min = 40;
+		int max = 52;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 

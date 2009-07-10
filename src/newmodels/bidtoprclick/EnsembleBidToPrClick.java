@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import newmodels.targeting.BasicTargetModel;
+
 import org.jfree.base.modules.DefaultModuleInfo;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
@@ -66,13 +68,15 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 	private RConnection rConnection;
 
+	private BasicTargetModel _targModel;
 
-
-	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
+	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
 		_querySpace = querySpace;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
 
+		_targModel = targModel;
+		
 		/*
 		 * Initialize Type I Models
 		 */
@@ -152,14 +156,14 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
 				if(j < 2 || j > 4) {
-					AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, false, false);
+					AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
-					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), true, false, false);
+					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, true, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
 					if(i == 0 && j == 1) {
 						_defaultModel = model;
 					}
-					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, true, false);
+					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, true, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
 					//					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
 					//					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
@@ -199,7 +203,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			for(int j = 0; j < 6; j++) {
 				if(j < 2 || j > 4) {
 					for(Query query : _querySpace) {
-						AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), false);
+						AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), _targModel, false);
 						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
 						//						model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), true);
 						//						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
@@ -518,7 +522,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	}
 
 
-	public void updateError(QueryReport queryReport, BidBundle bundle) {
+	public void updateError(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 
 		/*
 		 * Update Type I Error
@@ -533,7 +537,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					double error = predictions.get(query);
 					int imps = queryReport.getImpressions(query);
 					int clicks = queryReport.getClicks(query);
+					double conversions = salesReport.getConversions(query);
 					if(!(imps == 0 || clicks == 0)) {
+						if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
+							double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+//							clicks = (int) (imps * multipliers[0]);
+						}
 						error -= clicks/imps;
 					}
 					error = error*error;
@@ -564,7 +573,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 							double error = predictions.get(query);
 							int imps = queryReport.getImpressions(query);
 							int clicks = queryReport.getClicks(query);
+							double conversions = salesReport.getConversions(query);
 							if(!(imps == 0 || clicks == 0)) {
+								if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
+									double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+//									clicks = (int) (imps * multipliers[0]);
+								}
 								error -= clicks/imps;
 							}
 							error = error*error;
@@ -596,7 +610,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					double error = prediction;
 					int imps = queryReport.getImpressions(query);
 					int clicks = queryReport.getClicks(query);
+					double conversions = salesReport.getConversions(query);
 					if(!(imps == 0 || clicks == 0)) {
+						if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
+							double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+							clicks = (int) (imps * multipliers[0]);
+						}
 						error -= clicks/imps;
 					}
 					error = error*error;
@@ -632,11 +651,14 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	@Override
 	public double getPrediction(Query query, double bid, Ad currentAd) {
 		double prediction = 0.0;
-		if(bid == 0) {
+		if(bid == 0 || Double.isNaN(bid)) {
 			return prediction;
 		}
 		LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
+			if(Double.isNaN(_defaultModel.getPrediction(query, bid, currentAd))) {
+				return bid;
+			}
 			return _defaultModel.getPrediction(query, bid, currentAd);
 		}
 		int nancounter = 0;
@@ -653,6 +675,9 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			//			System.out.println("\n\n\n\n\n CLICKPRnancounter: " + nancounter + "\n\n\n\n");
 		}
 		prediction /= (queryEnsemble.size()-nancounter);
+		if(Double.isNaN(prediction) || prediction > bid || prediction < 0) {
+			return bid;
+		}
 		return prediction;
 	}
 

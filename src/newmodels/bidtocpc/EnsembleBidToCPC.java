@@ -350,6 +350,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 						Collections.sort(modelErrorPairList);
 						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
+					modelErrorMap.put(query, modelErrorPairList);
 				}
 			}
 		}
@@ -384,6 +385,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 								Collections.sort(modelErrorPairList);
 								modelErrorPairList.remove(modelErrorPairList.size()-1);
 							}
+							modelErrorMap.put(query, modelErrorPairList);
 						}
 					}
 				}
@@ -417,6 +419,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 						Collections.sort(modelErrorPairList);
 						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
+					modelErrorMap.put(query, modelErrorPairList);
 				}
 			}
 		}
@@ -626,11 +629,14 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	@Override
 	public double getPrediction(Query query, double bid) {
 		double prediction = 0.0;
-		if(bid == 0) {
+		if(bid == 0 || Double.isNaN(bid)) {
 			return prediction;
 		}
 		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
+			if(Double.isNaN(_defaultModel.getPrediction(query, bid))) {
+				return bid;
+			}
 			return _defaultModel.getPrediction(query, bid);
 		}
 		int nancounter = 0;
@@ -640,13 +646,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				nancounter++;
 			}
 			else {
-				prediction += model.getPrediction(query, bid);
+				prediction += pred;
 			}
 		}
-		if(nancounter != 0) {
-			System.out.println("\n\n\n\n\n CPCnancounter: " + nancounter + "\n\n\n\n");
-		}
 		prediction /= (queryEnsemble.size()-nancounter);
+		if(Double.isNaN(prediction) || prediction > bid || prediction < 0) {
+			return bid;
+		}
 		return prediction;
 	}
 	

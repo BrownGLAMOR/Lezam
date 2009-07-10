@@ -8,6 +8,7 @@ import java.util.LinkedList;
 
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
+import newmodels.targeting.BasicTargetModel;
 
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -29,9 +30,10 @@ public class ClikckPrEnsembleTest {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException, ParseException {
-		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
-		int min = 454;
-		int max = 499;
+//		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordan/Desktop/JavaWorkSpaces/aa-server-0.9.6.1/logs/sims/localhost_sim";
+		int min = 40;
+		int max = 54;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -52,6 +54,8 @@ public class ClikckPrEnsembleTest {
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
+			
+			BasicTargetModel targModel = new BasicTargetModel(status.getAdvertiserInfos().get("mckpmkii").getManufacturerSpecialty(),status.getAdvertiserInfos().get("mckpmkii").getComponentSpecialty());
 
 			_querySpace = new LinkedHashSet<Query>();
 			_querySpace.add(new Query(null, null));
@@ -69,7 +73,7 @@ public class ClikckPrEnsembleTest {
 			/*
 			 * Initialize Ensemble
 			 */
-			EnsembleBidToPrClick bidToClickPR = new EnsembleBidToPrClick(_querySpace,numPastDays,ensembleSize,ensembleMembers);
+			EnsembleBidToPrClick bidToClickPR = new EnsembleBidToPrClick(_querySpace,numPastDays,ensembleSize,targModel, ensembleMembers);
 			bidToClickPR.initializeEnsemble();
 
 			HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
@@ -88,7 +92,7 @@ public class ClikckPrEnsembleTest {
 				if(i >= 5) {
 					bidToClickPR.updatePredictions(ourBidBundles.get(i+2));
 					if(i >= 7) {
-						bidToClickPR.updateError(queryReport, bidBundle);
+						bidToClickPR.updateError(queryReport,salesReport, bidBundle);
 						bidToClickPR.createEnsemble();
 
 						/*

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.targeting.BasicTargetModel;
+
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
@@ -46,9 +48,10 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	private boolean _powers;
+	private BasicTargetModel _targModel;
 
 
-	public TypeIIRegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, QueryType queryType, int IDVar, int numPrevDays, boolean powers) {
+	public TypeIIRegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, QueryType queryType, int IDVar, int numPrevDays,  BasicTargetModel targModel, boolean powers) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_clickPrs = new ArrayList<Double>();
@@ -71,6 +74,7 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_powers = powers;
+		_targModel = targModel;
 	}
 
 	@Override
@@ -136,13 +140,13 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 
 			double bound;
 			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-				bound = .35;
+				bound = .4;
 			}
 			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				bound = .45;
+				bound = .5;
 			}
 			else {
-				bound = .55;
+				bound = .6;
 			}
 
 			if(clickpr > bound) {
@@ -186,7 +190,12 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 				double bid = bidBundle.getBid(query);
 				double imps = queryReport.getImpressions(query);
 				double clicks = queryReport.getClicks(query);
+				double conversions = salesReport.getConversions(query);
 				if(!(clicks == 0 || imps == 0)) {
+					if(bidBundle.getAd(query) != null && !bidBundle.getAd(query).isGeneric()) {
+						double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+						clicks = (int) (imps * multipliers[0]);
+					}
 					_bids.add(bid);
 					_clickPrs.add(clicks/imps);
 				}
