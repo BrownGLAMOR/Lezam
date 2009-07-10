@@ -33,8 +33,9 @@ public class G3Agent extends SimAbstractAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
 	protected BasicTargetModel _targetModel;
-	//k is a constant that equates EPPS across queries
-	protected double k;
+	protected HashMap<Query, Double> _prClick;
+	
+	protected double k; //k is a constant that equates EPPS across queries
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundleList;
 
@@ -42,7 +43,7 @@ public class G3Agent extends SimAbstractAgent{
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	
-	protected final boolean TARGET = false;
+	protected final boolean TARGET = true;
 	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;
@@ -68,13 +69,12 @@ public class G3Agent extends SimAbstractAgent{
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 			
-			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		
 		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(2000);
 
 		_bidBundleList.add(_bidBundle);
-		//this.printInfo();
+		this.printInfo();
 		
 		return _bidBundle;
 	}
@@ -94,7 +94,7 @@ public class G3Agent extends SimAbstractAgent{
 		else k = 10;
 		
 		try {
-			output = new PrintStream(new File("newg3.txt"));
+			output = new PrintStream(new File("g3.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -140,20 +140,30 @@ public class G3Agent extends SimAbstractAgent{
         		else _baselineConv.put(q,0.3);
         	}
         }
+        
+        _prClick = new HashMap<Query, Double>();
+        for (Query query: _querySpace) {
+        	_prClick.put(query, .01);
+        }
+        
 		return null;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		// update models
-		if (_day > 1 && _salesReport != null && _queryReport != null) {
+		if (_day > 1 && salesReport != null && queryReport != null) {
 		    
-			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
-               _conversionPrModel.setTimeHorizon(_timeHorizon);
-               _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-
-			if (_bidBundleList.size() > 1) 
+            _conversionPrModel.setTimeHorizon(_timeHorizon);
+            _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+            
+            for (Query query: _querySpace) {
+            	if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
+            }
+            
+            if (_bidBundleList.size() > 1) 
 				_bidToCPC.updateModel(_queryReport, salesReport, _bidBundleList.get(_bidBundleList.size() - 2));
 
 		}
@@ -197,8 +207,17 @@ public class G3Agent extends SimAbstractAgent{
 		if(_day <= 6) prConv = _baselineConv.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		
-		double bid;
-		bid = cpcTobid((_estimatedPrice.get(q) - k)*prConv,q);
+		double rev = _estimatedPrice.get(q);
+		
+		if (TARGET) {
+			double clickPr = _prClick.get(q);
+			if (clickPr <=0 || clickPr >= 1) clickPr = .5;
+			prConv = _targetModel.getConvPrPrediction(q, clickPr, prConv, 0);
+			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
+		}
+		
+		double bid = cpcTobid((rev - k)*prConv,q);
+		
 		if(bid <= 0) return 0;
 		else{
 			if(bid > 2.5) return 2.5;
@@ -206,15 +225,12 @@ public class G3Agent extends SimAbstractAgent{
 		}
 
 	}
-
-	
-	protected double setQuerySpendLimit(Query q){
-	     return 0.0;
-	}
  
 
 	protected void printInfo() {
 		// print debug info
+		if (_salesReport == null) return;
+		
 		StringBuffer buff = new StringBuffer(255);
 		buff.append("****************\n");
 		buff.append("\t").append("Day: ").append(_day).append("\n");
@@ -236,6 +252,7 @@ public class G3Agent extends SimAbstractAgent{
 			if (_salesReport.getConversions(q) > 0)
 				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_queryReport.getClicks(q))).append("\n");
 			else buff.append("\t").append("Profit: ").append("0").append("\n");
+			buff.append("\t").append("Click Pr: ").append(_prClick.get(q)).append("\n");
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
 			buff.append("****************\n");
 		}
