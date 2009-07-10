@@ -67,6 +67,8 @@ public class G3Agent extends SimAbstractAgent{
 			
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
+		
+		_bidBundle.setCampaignDailySpendLimit(2000);
 
 		_bidBundleList.add(_bidBundle);
 		//this.printInfo();
