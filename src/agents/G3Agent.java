@@ -106,7 +106,7 @@ public class G3Agent extends SimAbstractAgent{
 		
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
-		_conversionPrModel = new NoTargetHistoricPrConversionModel(_querySpace, _targetModel);
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
 
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
