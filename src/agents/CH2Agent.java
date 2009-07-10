@@ -211,7 +211,7 @@ public class CH2Agent extends SimAbstractAgent {
 			// set spend limit
 			if (BUDGET) {
 				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
-				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.0;
+				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
 				_bidBundle.setDailyLimit(query, dailyLimit);
 			}
 			
