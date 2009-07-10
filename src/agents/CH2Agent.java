@@ -11,9 +11,12 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractPrConversionModel;
+import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -27,117 +30,115 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class CH2Agent extends SimAbstractAgent {
 	protected BidBundle _bidBundle;
-
-	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-	protected HashMap<Query, AbstractPrConversionModel> _prConversionModels;
+	protected NewAbstractConversionModel _prConversionModel;
+	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query, ProfitsMovingAvg> _profitsModels;
+	protected BasicTargetModel _targetModel;
 	protected double _avgProfit;
-
+	
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
-
+	
 	protected int _distributionCapacity;
 	protected int _distributionWindow;
-
-	protected double overcap;
-
+	
+	protected int _timeHorizon;
+	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
+	protected final boolean BUDGET = true;
 
+	
 	// for debug
 	protected PrintStream output;
-
+	
 	@Override
 	public void initBidder() {
-
+		
 		// set constants
-
+		
 		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		_distributionWindow = _advertiserInfo.getDistributionWindow();
-
+		
 		// initialize strategy related variables
-
+		
 		double initProfitMargin = .5;
 		_profitMargins = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_profitMargins.put(query, initProfitMargin);
 		}
-
+		
 		_desiredSales = new HashMap<Query, Double>();
-
+		
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, 1.0*_distributionCapacity/_querySpace.size());
 		}
-
+		
 		// initialize models
-
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
-
+		
 		_revenueModels = new HashMap<Query, RevenueMovingAvg>(); 
 		for (Query query : _querySpace) {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
+		
+		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
-		_prConversionModels = new HashMap<Query, AbstractPrConversionModel>();
-		for (Query query : _querySpace) {
-			_prConversionModels.put(query, new SimplePrConversion(query, _advertiserInfo, _unitsSoldModel));	
-		}
-
+		_prConversionModel = new NoTargetHistoricPrConversionModel(_querySpace, _targetModel);
+		_baselineConv = new HashMap<Query, Double>();
+        for(Query q: _querySpace){
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
+        		else _baselineConv.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
+        		else _baselineConv.put(q,0.3);
+        	}
+        }
+		
+		
 		_profitsModels = new HashMap<Query, ProfitsMovingAvg>();
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			//double profit = _prConversionModels.get(query).getPrediction()*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			double profit = _revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			_profitsModels.put(query, new ProfitsMovingAvg(query, profit));
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
-
+		
 		// setup the debug info recorder
-
+		
 		try {
 			output = new PrintStream(new File("log2.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
-
+		
 		// initialize the bid bundle
-
+		
 		_bidBundle = new BidBundle();
 	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-
+		
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
 		}
+		
 
-		// update models
-		if (_salesReport != null) _unitsSoldModel.update(_salesReport);
-		overcap = _unitsSoldModel.getWindowSold() - _distributionCapacity; 
-
-		for (Query query : _querySpace) {
-			//_prConversionModels.get(query).setPrediction(_unitsSoldModel.getWindowSold() - _distributionCapacity);
-
-			if (_salesReport != null && _salesReport.getRevenue(query) > 0) 
-				_revenueModels.get(query).update(_salesReport.getRevenue(query)/_salesReport.getConversions(query));
-
-			if (_salesReport != null && _salesReport.getConversions(query) > 0)
-				_profitsModels.get(query).update(_salesReport.getRevenue(query)/_salesReport.getConversions(query) - _queryReport.getCPC(query)/_salesReport.getConversions(query)*_queryReport.getClicks(query));
-			else _profitsModels.get(query).update(_revenueModels.get(query).getRevenue()*.9);
-		}
-
+		
 		this.setAvgProfit();
-
+		
 		// try to equate profit
-
+		
 		for (Query query: _querySpace) {
-
+			
 			double latestProfit = _profitsModels.get(query).getLatestSample();
 			double avgProfit = this.getAvgProfit();
-
+			
 			if (latestProfit > avgProfit) {	
 				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query)<=1.1) 
 					_desiredSales.put(query, _desiredSales.get(query)*1.25);
@@ -146,9 +147,9 @@ public class CH2Agent extends SimAbstractAgent {
 				if (_salesReport.getConversions(query) < _desiredSales.get(query))
 					_desiredSales.put(query, _desiredSales.get(query)*0.8);
 			}
-
+			
 			if (_salesReport.getConversions(query) < _desiredSales.get(query)||
-					_queryReport.getPosition(query) == Double.NaN) {
+				_queryReport.getPosition(query) == Double.NaN) {
 				double newProfitMargin;
 				if (latestProfit > avgProfit)
 					newProfitMargin = Math.min(avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*0.9);
@@ -166,9 +167,9 @@ public class CH2Agent extends SimAbstractAgent {
 				newProfitMargin = Math.max(0.01, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
 			}
-
+			
 		}
-
+		
 		// normalize desiredSales
 		double normalizeFactor = 0;
 		for (Query query : _querySpace) {
@@ -178,18 +179,25 @@ public class CH2Agent extends SimAbstractAgent {
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
 		}
-
+		
 		return buildBidBundle();
 	}
-
+	
 	protected BidBundle buildBidBundle()  {
-
+		
 		for (Query query : _querySpace) {
 			// set bids
-			_bidBundle.setBid(query, _prConversionModels.get(query).getPrediction(overcap)*_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query)));
-
+			double prConv;
+			if(_day <= 6) prConv = _baselineConv.get(query);
+			else prConv = _prConversionModel.getPrediction(query);
+			
+			double rev = _revenueModels.get(query).getRevenue();
+			double bid = prConv*rev*(1 - _profitMargins.get(query));
+			
+			_bidBundle.setBid(query, bid);
+			
+			// set target ads
 			if (TARGET) {
-				// set target ads
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
@@ -199,18 +207,21 @@ public class CH2Agent extends SimAbstractAgent {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
-
+			
 			// set spend limit
-			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModels.get(query).getPrediction(overcap),1);
-			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.0;
-			_bidBundle.setDailyLimit(query, dailyLimit);
+			if (BUDGET) {
+				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
+				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.0;
+				_bidBundle.setDailyLimit(query, dailyLimit);
+			}
+			
 		}
-
+		
 		//this.printInfo();
-
+		
 		return _bidBundle;
 	}
-
+	
 	protected void setAvgProfit() {
 		double result = 0;
 		int n = 0;
@@ -225,20 +236,16 @@ public class CH2Agent extends SimAbstractAgent {
 		else result /= 1.0*_distributionCapacity/_distributionWindow;
 		_avgProfit = .125*result+.875*_avgProfit;
 	}
-
+	
 	protected double getAvgProfit() {
 		return _avgProfit;
 	}
-
+	
 	protected void printInfo() {
 		// print debug info
 		StringBuffer buff = new StringBuffer(255);
 		buff.append("****************\n");
 		buff.append("\t").append("Day: ").append(_day).append("\n");
-		buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
-		buff.append("\t").append("Distribution Cap: ").append(_distributionCapacity).append("\n");
-		buff.append("\t").append("Yesterday sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
-		buff.append("\t").append("Estimated sold: ").append(_unitsSoldModel.getEstimate()).append("\n");
 		buff.append("\t").append("Target: ").append(1.0*_distributionCapacity/_distributionWindow).append("\n");
 		buff.append("\t").append("Manufacturer specialty: ").append(_advertiserInfo.getManufacturerSpecialty()).append("\n");
 		buff.append("****************\n");
@@ -254,8 +261,6 @@ public class CH2Agent extends SimAbstractAgent {
 			if (_queryReport.getClicks(q) > 0) 
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction(overcap)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
 			buff.append("\t").append("Profit: ").append(_profitsModels.get(q).getProfit()).append("\n");
@@ -264,11 +269,11 @@ public class CH2Agent extends SimAbstractAgent {
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
 			buff.append("****************\n");
 		}
-
+		
 		//System.out.println(buff);
 		output.append(buff);
 		output.flush();
-
+	
 	}
 
 	@Override
@@ -279,8 +284,24 @@ public class CH2Agent extends SimAbstractAgent {
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		// TODO Auto-generated method stub
-
+		// update models
+		
+		if (_day > 1 && salesReport != null && queryReport != null) {
+		
+			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+	
+	        _prConversionModel.setTimeHorizon(_timeHorizon);
+	        _prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			
+			for (Query query : _querySpace) {
+				_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
+				
+				if (salesReport != null && salesReport.getConversions(query) > 0)
+					_profitsModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query) - _queryReport.getCPC(query)/_salesReport.getConversions(query)*_queryReport.getClicks(query));
+				else _profitsModels.get(query).update(_revenueModels.get(query).getRevenue()*.9);
+			}
+		}
+		
 	}
 
 
