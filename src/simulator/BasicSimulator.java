@@ -30,7 +30,7 @@ import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.CPCModelTestAgent;
 import agents.Cheap;
-import agents.EqPftAgent;
+import agents.CrestAgent;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
 import agents.SimAbstractAgent;
@@ -834,7 +834,7 @@ public class BasicSimulator {
 	}
 
 	public String[] getUsableAgents() {
-		String[] agentStrings = { "MCKP", "Cheap" , "EqProfit", "ILP", "newSSB"};
+		String[] agentStrings = { "MCKP", "Cheap" , "Crest", "ILP", "newSSB"};
 		return agentStrings;
 	}
 
@@ -845,8 +845,8 @@ public class BasicSimulator {
 		else if(string.equals("Cheap")) {
 			return new Cheap();
 		}
-		else if(string.equals("EqProfit")) {
-			return new EqPftAgent();
+		else if(string.equals("Crest")) {
+			return new CrestAgent();
 		}
 		else if(string.equals("ILP")) {
 			return new ILPAgent();
@@ -914,9 +914,10 @@ public class BasicSimulator {
 		double totAvgConv = 0.0;
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
-		String baseFile = "/games/game";
-		int min = 165;
-		int max = 170;
+//		String baseFile = "/games/game";
+		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
+		int min = 454;
+		int max = 470;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 

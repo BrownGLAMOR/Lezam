@@ -8,6 +8,7 @@ import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectBidToCPC extends AbstractBidToCPC {
 	
@@ -29,7 +30,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, BidBundle bundle) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
 	}
 

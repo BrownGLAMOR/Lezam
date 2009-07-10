@@ -9,6 +9,7 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
@@ -32,7 +33,7 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, BidBundle bundle) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
 	}
 

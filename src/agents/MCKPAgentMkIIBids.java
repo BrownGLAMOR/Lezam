@@ -51,7 +51,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 
 	private static final boolean MODELCONVPR = false;
-	private static final boolean TARGET = true;
+	private static final boolean TARGET = false;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -489,8 +489,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
-//				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
-//				System.out.println("CPC  Standard Deviation: " + stddevCPC);
+				System.out.println("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
+				System.out.println("CPC  Standard Deviation: " + stddevCPC);
 
 				/*
 				 * ClickPr Error
@@ -537,8 +537,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevConvPr = Math.sqrt(sumConvPrError/(errorDayCounter*16 - prConvSkip));
-				System.out.println("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
-				System.out.println("ConvPr To Standard Deviation: " + stddevConvPr);
+//				System.out.println("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
+//				System.out.println("ConvPr To Standard Deviation: " + stddevConvPr);
 				
 				/*
 				 * ConvPr Error
@@ -559,8 +559,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevDonnieConvPr = Math.sqrt(sumDonnieConvPrError/(errorDayCounter*16 - prConvSkip));
-				System.out.println("Daily Bid To DonniConvPr Error: " + Math.sqrt(donniedailyconvprerror/(16-donnieprConvDailySkip)));
-				System.out.println("DonnieConvPr To Standard Deviation: " + stddevDonnieConvPr);
+//				System.out.println("Daily Bid To DonniConvPr Error: " + Math.sqrt(donniedailyconvprerror/(16-donnieprConvDailySkip)));
+//				System.out.println("DonnieConvPr To Standard Deviation: " + stddevDonnieConvPr);
 
 
 				/*

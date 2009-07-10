@@ -68,8 +68,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 
 
-	public EnsembleBidToPrClick(Set<Query> querySpace) {
+	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
 		_querySpace = querySpace;
+		NUMPASTDAYS = numPastDays;
+		ENSEMBLESIZE = ensembleSize;
 
 		/*
 		 * Initialize Type I Models
@@ -124,10 +126,15 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 		_ensemblePredictions = new HashMap<BidBundle, HashMap<Query,Double>>();
 
-		_ensembleMembers = new HashMap<Query, HashMap<String,Integer>>();
-		for(Query query : _querySpace) {
-			HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
-			_ensembleMembers.put(query, ensembleMember);
+		if(ensembleMembers == null) {
+			_ensembleMembers = new HashMap<Query, HashMap<String,Integer>>();
+			for(Query query : _querySpace) {
+				HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
+				_ensembleMembers.put(query, ensembleMember);
+			}
+		}
+		else {
+			_ensembleMembers = ensembleMembers;
 		}
 
 		try {
@@ -144,7 +151,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		String basename = "typeI";
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
-				if(j != 2 && j!= 3) {
+				if(j < 2 || j > 4) {
 					AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
 					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), true, false, false);
@@ -170,13 +177,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		basename = "typeII";
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
-				if(j != 2 && j!= 3) {
-					AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), false);
-					addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_f", model);
-					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ZERO, 2+i, 10*(j+1), true);
-					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ZERO,basename + "_" + i + "_" + j +"_F0_t", model);
-
-					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
+				if(j < 2 || j > 4) {
+					AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
 					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
 					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
 					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
@@ -195,7 +197,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		basename = "typeIII";
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
-				if(j != 2 && j!= 3) {
+				if(j < 2 || j > 4) {
 					for(Query query : _querySpace) {
 						AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), false);
 						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
@@ -309,7 +311,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			totmodels += _typeIIIModels.get(q).size();
 			workingmodels += _typeIIIUsableModels.get(q).size();
 		}
-		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels); 
+		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels); 
 
 		return ensembleUsable;
 	}
@@ -654,9 +656,14 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		return prediction;
 	}
 
-	public void printEnsembleMemberSummary() {
+	public HashMap<Query, HashMap<String, Integer>> getEnsembleMembers() {
+		return _ensembleMembers;
+	}
+
+	public void printEnsembleMemberSummary(int numGames) {
 		double tot = 0;
 		for(Query query : _querySpace) {
+			System.out.println(query);
 			HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 			double total = 0;
 			for(String name : ensembleMembers.keySet()) {
@@ -664,9 +671,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				total += ensembleUseCount;
 			}
 			total /= ENSEMBLESIZE;
-			//			System.out.println("Total Members: " + ensembleMembers.size());
 			for(String name : ensembleMembers.keySet()) {
-				Integer ensembleUseCount = ensembleMembers.get(name);
+				Integer ensembleUseCount = (int) (ensembleMembers.get(name) / ((double)numGames));
 				System.out.println("Name: " + name + " Use: " + (ensembleUseCount/total));
 			}
 			tot += ensembleMembers.size();
