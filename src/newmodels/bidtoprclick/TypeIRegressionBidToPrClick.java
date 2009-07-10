@@ -174,9 +174,22 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 		predCounter += clickPrs.size();
-
 		double clickpr = 1/(1+Math.exp(-prediction));
 
+		double bound;
+		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			bound = .35;
+		}
+		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+			bound = .45;
+		}
+		else {
+			bound = .55;
+		}
+
+		if(clickpr > bound) {
+			return bound;
+		}
 		return clickpr;
 	}
 

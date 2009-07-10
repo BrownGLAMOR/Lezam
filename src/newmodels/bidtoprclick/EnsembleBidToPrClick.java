@@ -171,25 +171,25 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 
-		/*
-		 * Add Type II Models
-		 */
-		basename = "typeII";
-		for(int i = 0; i < 3; i++) {
-			for(int j = 0; j < 6; j++) {
-				if(j < 2 || j > 4) {
-					AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
-					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
-					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
-					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
-
-					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
-					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
-					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
-					//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
-				}
-			}
-		}
+//		/*
+//		 * Add Type II Models
+//		 */
+//		basename = "typeII";
+//		for(int i = 0; i < 3; i++) {
+//			for(int j = 0; j < 6; j++) {
+//				if(j < 2 || j > 4) {
+//					AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
+//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
+//					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
+//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
+//
+//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
+//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
+//					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
+//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
+//				}
+//			}
+//		}
 
 		/*
 		 * Ad Type III Models

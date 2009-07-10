@@ -58,7 +58,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	 * Constants for making ensemble
 	 */
 	protected int NUMPASTDAYS = 5;
-	protected int ENSEMBLESIZE = 10;
+	protected int ENSEMBLESIZE = 8;
 	private RConnection rConnection;
 
 	private AbstractBidToCPC _defaultModel;
@@ -143,58 +143,6 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 	public void initializeEnsemble() {
 		
-		
-//		(Query (null,null))
-//		Name: typeI_1_0_t_f_f Use: 0.0035555555555555557
-//		Name: typeI_2_0_f_f_f Use: 0.0035555555555555557
-//		Name: typeI_1_0_f_t_f Use: 0.0035555555555555557
-//		Name: typeI_2_1_f_f_f Use: 0.0035555555555555557
-//		Name: typeI_1_5_f_t_f Use: 0.004888888888888889
-//		Name: typeI_1_1_f_f_f Use: 0.0035555555555555557
-//		Name: typeI_2_0_t_f_f Use: 0.0035555555555555557
-//		Name: typeI_0_1_f_t_f Use: 0.0035555555555555557
-//		Name: typeI_0_5_t_f_f Use: 0.0044444444444444444
-//		Name: typeI_2_5_t_f_f Use: 0.0044444444444444444
-//		Name: typeI_2_1_t_f_f Use: 0.0040
-//		Name: typeI_2_5_f_f_f Use: 0.004888888888888889
-//		Name: typeI_1_1_f_t_f Use: 0.003111111111111111
-//		Name: typeI_1_0_f_f_f Use: 0.003111111111111111
-//		Name: typeI_2_0_f_t_f Use: 0.0040
-//		Name: typeI_0_0_f_f_f Use: 0.0035555555555555557
-//		Name: typeI_0_1_f_f_f Use: 0.0040
-//		Name: typeI_0_0_f_t_f Use: 0.003111111111111111
-//		Name: typeI_1_5_t_f_f Use: 0.0044444444444444444
-//		Name: typeI_1_5_f_f_f Use: 0.0044444444444444444
-//		Name: typeI_0_5_f_f_f Use: 0.0040
-//		Name: typeI_0_5_f_t_f Use: 0.0040
-//		Name: typeI_2_5_f_t_f Use: 0.005333333333333333
-//		Name: typeI_0_0_t_f_f Use: 0.0040
-//		Name: typeI_2_1_f_t_f Use: 0.0035555555555555557
-//		Name: typeI_1_1_t_f_f Use: 0.0040
-//		Name: typeI_0_1_t_f_f Use: 0.0040
-
-//		Name: typeII_0_1_F0_f Use: 0.0044444444444444444
-//		Name: typeII_0_5_F0_f Use: 0.0035555555555555557
-//		Name: typeII_1_1_F0_f Use: 0.0040
-//		Name: typeII_2_5_F0_f Use: 0.0040
-//		Name: typeII_1_5_F0_f Use: 0.0044444444444444444
-//		Name: typeII_2_1_F0_f Use: 0.0035555555555555557
-//		Name: typeII_0_0_F0_f Use: 0.0044444444444444444
-//		Name: typeII_1_0_F0_f Use: 0.0035555555555555557
-//		Name: typeII_2_0_F0_f Use: 0.0013333333333333333
-		
-		
-//		Name: typeIII_2_0_null_null_f Use: 0.0013333333333333333
-//		Name: typeIII_0_0_null_null_f Use: 0.0035555555555555557
-//		Name: typeIII_0_1_null_null_f Use: 0.0035555555555555557
-//		Name: typeIII_0_5_null_null_f Use: 0.003111111111111111
-//		Name: typeIII_2_1_null_null_f Use: 0.003111111111111111
-//		Name: typeIII_1_1_null_null_f Use: 0.0035555555555555557
-//		Name: typeIII_1_5_null_null_f Use: 0.0035555555555555557
-//		Name: typeIII_1_0_null_null_f Use: 0.003111111111111111
-//		Name: typeIII_2_5_null_null_f Use: 0.0035555555555555557
-		
-		
 		/*
 		 * Add Type I Models
 		 */
@@ -221,25 +169,25 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			}
 		}
 
-		/*
-		 * Add Type II Models
-		 */
-		basename = "typeII";
-		for(int i = 0; i < 3; i++) {
-			for(int j = 0; j < 6; j++) {
-				if(j < 2 || j > 4) {
-					AbstractBidToCPC model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
-					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
-					//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
-					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
-
-					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
-					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
-					//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
-					//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
-				}
-			}
-		}
+//		/*
+//		 * Add Type II Models
+//		 */
+//		basename = "typeII";
+//		for(int i = 0; i < 3; i++) {
+//			for(int j = 0; j < 6; j++) {
+//				if(j < 2 || j > 4) {
+//					AbstractBidToCPC model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
+//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
+//					//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
+//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
+//
+//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
+//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
+//					//					model = new TypeIIRegressionBidToCPC(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
+//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
+//				}
+//			}
+//		}
 
 		/*
 		 * Ad Type III Models
