@@ -41,7 +41,7 @@ public class XFixedProfitAgent extends SimAbstractAgent {
 	
 	protected double magic_factor = 1/.22; // ends up with roughly 22% conversion probability
 	protected double IS_factor = .9; // assumes roughly 10% IS users
-	protected int amount_to_oversell = 25; // sells 25 extra units every day
+	protected int amount_to_oversell = 40; // sells 25 extra units every day
 	protected double budget_tightness_factor = 1.1; //a higher number will result in a higher budget
 	
 	
