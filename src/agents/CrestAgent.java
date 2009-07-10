@@ -93,7 +93,7 @@ public class CrestAgent extends SimAbstractAgent {
 			avgConvRate += (pr / (double)_querySpace.size());
 
 			double budget =
-				((double)_advertiserInfo.getDistributionCapacity() * BUDGET_CAPACITY * avgBid) / avgConvRate;
+				((double)_capacity * BUDGET_CAPACITY * avgBid) / avgConvRate;
 			
 			//System.out.println(myBid);
 			bids.setBidAndAd(q, myBid, ad);
