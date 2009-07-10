@@ -22,6 +22,11 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class CrestAgent extends SimAbstractAgent {
+	private static final boolean SET_TARGET = true;
+	private static final boolean SET_BUDGET = true;
+	
+	private static final double BUDGET_CAPACITY = 1.5;
+	
 	private static final int MAX_TIME_HORIZON = 5;
 
 	private Set<Product> _productSpace;
@@ -65,10 +70,12 @@ public class CrestAgent extends SimAbstractAgent {
 		for(Query q : _querySpace) {
 			System.out.print("\t" + q.toString() + ": ");
 			Ad ad = null;
-			if(q.getType() == QueryType.FOCUS_LEVEL_TWO)
-				//				ad = new Ad(new Product(q.getManufacturer(), q.getComponent()));
-				ad = new Ad(null);
-			else
+			if(q.getManufacturer() == null) {
+				if(SET_TARGET)
+					ad = new Ad(new Product(_manSpecialty, _compSpecialty));
+				else
+					ad = new Ad(null);
+			} else
 				ad = new Ad(null);
 
 			System.out.print(ad.toString() + ", ");
@@ -85,8 +92,13 @@ public class CrestAgent extends SimAbstractAgent {
 			avgBid += (myBid / (double)_querySpace.size());
 			avgConvRate += (pr / (double)_querySpace.size());
 
+			double budget =
+				((double)_advertiserInfo.getDistributionCapacity() * BUDGET_CAPACITY * avgBid) / avgConvRate;
+			
 			//System.out.println(myBid);
 			bids.setBidAndAd(q, myBid, ad);
+			if(SET_BUDGET)
+				bids.setCampaignDailySpendLimit(budget);
 		}
 		//System.out.println("Limit: " + ((((double)_capacity / 4.0) * avgBid) / avgConvRate));
 		//bids.setCampaignDailySpendLimit((((double)_capacity / 4.0) * avgBid) / avgConvRate);
