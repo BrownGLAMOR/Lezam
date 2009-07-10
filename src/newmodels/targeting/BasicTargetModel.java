@@ -46,6 +46,7 @@ public class BasicTargetModel extends AbstractModel {
 		}
 	}
 
+	// returns 0 if false, 1 if true
 	private int toBinary(boolean statement){
 		if (statement){
 			return 1;
@@ -111,7 +112,7 @@ public class BasicTargetModel extends AbstractModel {
 	}
 
 	// returns multiplier for your ClickPr (ans * oldClickPr = newClickPr)
-	public double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
+	public double getClickPrPredictionMultiplier(Query query, double clickPr, boolean promoted) {
 		double ratio;
 
 		if (query.getType() == QueryType.FOCUS_LEVEL_TWO){
@@ -124,16 +125,32 @@ public class BasicTargetModel extends AbstractModel {
 
 		return ratio;
 	}
+	public double getClickPrPredictionMultiplier(Query query, double clickPr, double promoted) {
+		return promoted*getClickPrPredictionMultiplier(query, clickPr, true) + (1-promoted)*getClickPrPredictionMultiplier(query, clickPr, false);
+	}
+	
+	// returns the actual predicted clickPr, using the multiplier method
+	public double getClickPrPrediction(Query query, double clickPr, boolean promoted) {
+		return clickPr*getClickPrPredictionMultiplier(query, clickPr, promoted);
+	}
 	public double getClickPrPrediction(Query query, double clickPr, double promoted) {
-		return promoted*getClickPrPrediction(query, clickPr, true) + (1-promoted)*getClickPrPrediction(query, clickPr, false);
+		return clickPr*getClickPrPredictionMultiplier(query, clickPr, promoted);
 	}
 
 	// returns multiplier for your ConversionPr (ans * oldConvPr = newConvPr)
-	public double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
+	public double getConvPrPredictionMultiplier(Query query, double clickPr, double convPr, boolean promoted) {
 		return ratio(targetedUsers(query,clickPr,toBinary(promoted)).componentRatio(),baseUsers(query, clickPr).componentRatio(),eta(convPr,1+CSB),convPr);
 	}
+	public double getConvPrPredictionMultiplier(Query query, double clickPr, double convPr, double promoted) {
+		return promoted*getConvPrPredictionMultiplier(query, clickPr, convPr, true) + (1-promoted)*getConvPrPredictionMultiplier(query, clickPr, convPr, false);
+	}
+	
+	// returns the actual predicted convPr, using the multiplier method
+	public double getConvPrPrediction(Query query, double clickPr, double convPr, boolean promoted) {
+		return convPr*getConvPrPredictionMultiplier(query, clickPr, convPr, promoted);
+	}
 	public double getConvPrPrediction(Query query, double clickPr, double convPr, double promoted) {
-		return promoted*getConvPrPrediction(query, clickPr, convPr, true) + (1-promoted)*getConvPrPrediction(query, clickPr, convPr, false);
+		return convPr*getConvPrPredictionMultiplier(query, clickPr, convPr, promoted);
 	}
 
 	// returns USP
@@ -151,8 +168,8 @@ public class BasicTargetModel extends AbstractModel {
 	public double[] getInversePredictions(Query query, double clickPr, double convPr, boolean promoted) {
 		double[] mostRecentPredictions = new double[2];
 
-		mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, clickPr, promoted);
-		mostRecentPredictions[1] = convPr/getConvPrPrediction(query, clickPr, convPr, promoted);
+		mostRecentPredictions[0] = clickPr/getClickPrPredictionMultiplier(query, clickPr, promoted);
+		mostRecentPredictions[1] = convPr/getConvPrPredictionMultiplier(query, clickPr, convPr, promoted);
 
 		double maxError = Math.abs(0.00001);
 		double clickPrError = maxError+1;
@@ -161,10 +178,10 @@ public class BasicTargetModel extends AbstractModel {
 		int iterations = 0;
 		while((clickPrError>maxError || convPrError>maxError) && iterations<=15){
 			double tempClickPr = mostRecentPredictions[0];
-			mostRecentPredictions[0] = clickPr/getClickPrPrediction(query, tempClickPr, promoted);
-			mostRecentPredictions[1] = convPr/getConvPrPrediction(query, tempClickPr, mostRecentPredictions[1], promoted);
-			clickPrError = Math.abs(mostRecentPredictions[0]*getClickPrPrediction(query, mostRecentPredictions[0], promoted))-clickPr;
-			convPrError = Math.abs(mostRecentPredictions[1]*getConvPrPrediction(query, mostRecentPredictions[0], mostRecentPredictions[1], promoted))-convPr;
+			mostRecentPredictions[0] = clickPr/getClickPrPredictionMultiplier(query, tempClickPr, promoted);
+			mostRecentPredictions[1] = convPr/getConvPrPredictionMultiplier(query, tempClickPr, mostRecentPredictions[1], promoted);
+			clickPrError = Math.abs(mostRecentPredictions[0]*getClickPrPredictionMultiplier(query, mostRecentPredictions[0], promoted))-clickPr;
+			convPrError = Math.abs(mostRecentPredictions[1]*getConvPrPredictionMultiplier(query, mostRecentPredictions[0], mostRecentPredictions[1], promoted))-convPr;
 			iterations++;
 			//			System.out.println(iterations);
 		}
@@ -200,8 +217,8 @@ public class BasicTargetModel extends AbstractModel {
 			for (convPr = 0.01; convPr<=0.4; convPr += 0.01){
 			double clickPred = test.getInversePredictions(query, clickPr, convPr, promoted)[0];
 			double convPred = test.getInversePredictions(query, clickPr, convPr, promoted)[1];
-			double clickComp = clickPred*test.getClickPrPrediction(query, clickPred, promoted)/clickPr;
-			double convComp = convPred*test.getConvPrPrediction(query, clickPred, convPred, promoted)/convPr;
+			double clickComp = clickPred*test.getClickPrPredictionMultiplier(query, clickPred, promoted)/clickPr;
+			double convComp = convPred*test.getConvPrPredictionMultiplier(query, clickPred, convPred, promoted)/convPr;
 			if (clickComp <= minClick){
 				minClick = clickComp;
 			}
