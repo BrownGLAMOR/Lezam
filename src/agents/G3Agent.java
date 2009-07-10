@@ -41,7 +41,10 @@ public class G3Agent extends SimAbstractAgent{
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double MAX_BID_CPC_GAP = 1.5;
+	
 	protected final boolean TARGET = false;
+	protected final boolean BUDGET = true;
+	
 	protected PrintStream output;
 	
 	@Override
@@ -68,7 +71,7 @@ public class G3Agent extends SimAbstractAgent{
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		
-		_bidBundle.setCampaignDailySpendLimit(2000);
+		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(2000);
 
 		_bidBundleList.add(_bidBundle);
 		//this.printInfo();
