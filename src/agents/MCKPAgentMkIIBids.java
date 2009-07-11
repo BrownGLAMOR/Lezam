@@ -59,7 +59,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.25;
+	private double boostCoeff = 1.3333;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -104,8 +104,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		DonnieConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
-		lastBoost = 30;
-
+		
 		sumCPCError = 0.0;
 		sumClickPrError = 0.0;
 		sumConvPrError = 0.0;
@@ -235,6 +234,20 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		for(Query q : _querySpace){
 			i++;
 			_queryId.put(q, i);
+		}
+		
+		lastBoost = 5;
+		if(_capacity == 300) {
+			boostCoeff = 1.25;
+		}
+		else if(_capacity == 400) {
+			boostCoeff = 1.25;
+		}
+		else if(_capacity == 500) {
+			boostCoeff = 1.25;
+		}
+		else {
+			boostCoeff = 1.25;
 		}
 	}
 
@@ -379,7 +392,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 			
 			if(BOOST) {
-				if(lastBoost > 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
+				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
 					System.out.println("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
 					lastBoost = -1;
 					budget *= boostCoeff;
