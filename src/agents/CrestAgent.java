@@ -23,9 +23,9 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class CrestAgent extends SimAbstractAgent {
 	private static final boolean SET_TARGET = true;
-	private static final boolean SET_BUDGET = true;
+	private static final boolean SET_BUDGET = false;
 	
-	private static final double BUDGET_CAPACITY = 1.5;
+	private static final double BUDGET_CAPACITY = 1.5 * 0.2;
 	
 	private static final int MAX_TIME_HORIZON = 5;
 
