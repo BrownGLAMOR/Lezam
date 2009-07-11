@@ -39,7 +39,7 @@ public class CHAgent extends SimAbstractAgent {
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected NewAbstractConversionModel _prConversionModel;
 	protected HashMap<Query, Double> _baselineConversions;
-	protected AbstractBidToCPC _bidToCPCModel;
+
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
 	private Random _R = new Random();
@@ -113,7 +113,7 @@ public class CHAgent extends SimAbstractAgent {
 			_baselineConversions.put(query, conv);
 		}
 		
-		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
+
 		
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
@@ -325,8 +325,6 @@ public class CHAgent extends SimAbstractAgent {
 			}
 		}
 		
-		if (_bidBundleList.size() > 1) 
-			_bidToCPCModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 	}
 	
 	private double randDouble(double a, double b) {
