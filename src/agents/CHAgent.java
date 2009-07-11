@@ -18,6 +18,7 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -52,14 +53,12 @@ public class CHAgent extends SimAbstractAgent {
 	
 	protected ArrayList<BidBundle> _bidBundleList;
 	
-	protected double overcap;
-	
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final double MAX_OVERSELL = 2;
-	protected final double MIN_OVERSELL = 1;
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
+	protected final boolean BUDGET = true;
+	protected final boolean TARGET = true;
 	
 	// for debug
 	protected PrintStream output;
@@ -96,7 +95,7 @@ public class CHAgent extends SimAbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 		
-		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_prConversionModel = new NoTargetHistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_baselineConversions = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
@@ -217,19 +216,23 @@ public class CHAgent extends SimAbstractAgent {
 			_bidBundle.setBid(query, bid);
 			
 			// set target ads
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-				_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}
 			
 			// set spend limit
-			double dailySalesLimit = Math.max(_desiredSales.get(query)/_prConversionModel.getPrediction(query),1);
-			double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
-			_bidBundle.setDailyLimit(query, dailyLimit);
+			if (BUDGET) {
+				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
+				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
+				_bidBundle.setDailyLimit(query, dailyLimit);
+			}
 		}
 		
 		//this.printInfo();
