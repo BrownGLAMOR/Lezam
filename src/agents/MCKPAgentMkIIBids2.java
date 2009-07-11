@@ -238,16 +238,16 @@ public class MCKPAgentMkIIBids2 extends SimAbstractAgent {
 		
 		lastBoost = 5;
 		if(_capacity == 300) {
-			boostCoeff = 1.25;
+			boostCoeff = 1.2;
 		}
 		else if(_capacity == 400) {
-			boostCoeff = 1.25;
+			boostCoeff = 1.2;
 		}
 		else if(_capacity == 500) {
-			boostCoeff = 1.25;
+			boostCoeff = 1.2;
 		}
 		else {
-			boostCoeff = 1.25;
+			boostCoeff = 1.2;
 		}
 	}
 
