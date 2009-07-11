@@ -74,7 +74,7 @@ public class G3Agent extends SimAbstractAgent{
 		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(2000);
 
 		_bidBundleList.add(_bidBundle);
-		this.printInfo();
+		//this.printInfo();
 		
 		return _bidBundle;
 	}
