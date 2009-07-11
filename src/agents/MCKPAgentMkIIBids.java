@@ -50,8 +50,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 
-	private static final boolean MODELCONVPR = false;
 	private static final boolean TARGET = true;
+	private static final boolean BUDGET = true;
+	private static final boolean SAFETYBUDGET = true;
+	private static final boolean BOOST = true;
+
+	private double _safetyBudget = 800;
+
+	//Days since Last Boost
+	private double lastBoost;
+	private double boostCoeff = 1.25;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -96,6 +104,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		DonnieConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
+		lastBoost = 30;
 
 		sumCPCError = 0.0;
 		sumClickPrError = 0.0;
@@ -311,12 +320,10 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					double convProb = _convPrModel.getPrediction(q);
 
 					if(Double.isNaN(clickPr)) {
-						System.out.println("I AM A DOUCHE!");
 						clickPr = 0.0;
 					}
 
 					if(Double.isNaN(convProb)) {
-						System.out.println("BRADDMAX IS A DOUCHE!");
 						convProb = 0.0;
 					}
 
@@ -334,23 +341,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					itemList.add(new Item(q,w,v,bid,false,isID));
 
 					if(TARGET) {
-						if(clickPr != 0 && Double.isNaN(_targModel.getClickPrPrediction(q, clickPr, false))) {
-							throw new RuntimeException("ClickPr" + q + "  " + clickPr);
-						}
-						if(convProb != 0 && Double.isNaN(_targModel.getConvPrPrediction(q, clickPr, convProb, false))) {
-							throw new RuntimeException("ConvPr" + q + "  " + clickPr + "  " + convProb);
-						}
-						if(Double.isNaN(_targModel.getUSPPrediction(q, clickPr, false))) {
-							throw new RuntimeException("USP" + q + "  " + clickPr);
-						}
-
 						/*
 						 * add a targeted version of our bid as well
 						 */
 						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPrediction(q, clickPr, false);
+							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
 							if(convProb != 0) {
-								convProb *= _targModel.getConvPrPrediction(q, clickPr, convProb, false);
+								convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
 							}
 							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
 						}
@@ -374,14 +371,20 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				//do nothing
 			}
 			else {
-				if(_unitsSold != null) {
-					debug("Average Budget: " + budget);
-					budget = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
-					if(budget < 20) {
-						budget = 20;
-					}
-					debug("Unit Sold Model Budget "  +budget);
+				budget = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+				if(budget < 20) {
+					budget = 20;
 				}
+				debug("Unit Sold Model Budget "  +budget);
+			}
+			
+			if(BOOST) {
+				if(lastBoost > 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
+					System.out.println("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
+					lastBoost = -1;
+					budget *= boostCoeff;
+				}
+				lastBoost++;
 			}
 
 			System.out.println("Budget: "+ budget);
@@ -401,29 +404,39 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-					//	double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					//	double numImps = _queryToNumImpModel.getPrediction(q);
-					//	int numClicks = (int) (clickPr * numImps);
-					//	double CPC = _bidToCPC.getPrediction(q, bid);
-					//	bidBundle.addQuery(q, bid, new Ad(), numClicks*CPC);
+					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+					double numImps = _queryToNumImpModel.getPrediction(q);
+					int numClicks = (int) (clickPr * numImps);
+					double CPC = _bidToCPC.getPrediction(q, bid);
+					double convProb = _convPrModel.getPrediction(q);
+
 					if(solution.get(isID).targ()) {
+
+						if(clickPr != 0) {
+							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+						}
+
 						if(q.getComponent() == null && q.getManufacturer() == null) {
-							bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,_compSpecialty)), Double.NaN);
+							bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,_compSpecialty)));
 						}
 						else if(q.getComponent() == null || q.getManufacturer() == null) {
 							if(q.getComponent() == null) {
-								bidBundle.addQuery(q, bid, new Ad(new Product(q.getManufacturer(),_compSpecialty)), Double.NaN);
+								bidBundle.addQuery(q, bid, new Ad(new Product(q.getManufacturer(),_compSpecialty)));
 							}
 							else {
-								bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,q.getComponent())), Double.NaN);
+								bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,q.getComponent())));
 							}
 						}
 					}
 					else {
-						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+						bidBundle.addQuery(q, bid, new Ad());
+					}
+
+					if(BUDGET) {
+						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
 				}
-				else { 
+				else {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
@@ -539,7 +552,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				double stddevConvPr = Math.sqrt(sumConvPrError/(errorDayCounter*16 - prConvSkip));
 				System.out.println("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
 				System.out.println("ConvPr To Standard Deviation: " + stddevConvPr);
-				
+
 				/*
 				 * ConvPr Error
 				 */
@@ -584,8 +597,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 				double stddevImp = Math.sqrt(sumImpError/(errorDayCounter*16 - impSkip));
-//				System.out.println("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
-//				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
+				//				System.out.println("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
+				//				System.out.println("Num Imps To Standard Deviation: " + stddevImp);
 
 
 				//				if(_day == 60) {
@@ -608,6 +621,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					bid = randDouble(.33,1.0);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
+		}
+		if(SAFETYBUDGET) {
+			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
 		return bidBundle;
 	}
@@ -680,15 +696,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 
 				double avgConvProb = 0; //the average probability of conversion;
-				if(MODELCONVPR) {
-					for(Query q : _querySpace) {
-						avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
-					}
-				}
-				else {
-					for(Query q : _querySpace) {
-						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
-					}
+				for(Query q : _querySpace) {
+					avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
 				}
 
 				double avgUSP = 0;
@@ -699,6 +708,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+					int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
 					valueLost += (avgConvProb - worseConvProb)*avgUSP*5; //You also lose conversions in the future (for 5 days)
 					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP*5) + " to value lost");
 				}

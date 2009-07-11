@@ -541,7 +541,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					if(!(imps == 0 || clicks == 0)) {
 						if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
 							double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-//							clicks = (int) (imps * multipliers[0]);
+							clicks = (int) (imps * multipliers[0]);
 						}
 						error -= clicks/imps;
 					}
@@ -577,7 +577,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 							if(!(imps == 0 || clicks == 0)) {
 								if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
 									double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-//									clicks = (int) (imps * multipliers[0]);
+									clicks = (int) (imps * multipliers[0]);
 								}
 								error -= clicks/imps;
 							}

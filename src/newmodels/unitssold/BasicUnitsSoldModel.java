@@ -46,6 +46,20 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 		total = (total + _capacity/((double) _window)) / 4.0 + total;
 		return total;
 	}
+	
+	public double getThreeDaysSold() {
+		double total = 0;
+		for (int i = 0; i < _window - 2; i++) {
+			int index = _sold.size() - i - 1;
+			if (index >= 0) {
+				total += _sold.get(index);	
+			}
+			else {
+				total += _capacity/((double) _window);
+			}
+		}
+		return total;
+	}
 
 	@Override
 	public void update(SalesReport salesReport) {

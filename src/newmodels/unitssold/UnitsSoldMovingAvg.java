@@ -16,10 +16,12 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	protected final double alpha = .75;
 	protected double estimate;
 	protected double latestSample;
+	private int _distributionCapacity;
 	
 	public UnitsSoldMovingAvg(Set<Query> querySpace, int distributionCapacity, int distributionWindow) {
 		_querySpace = querySpace;
 		_distributionWindow = distributionWindow;
+		_distributionCapacity = distributionCapacity;
 		_sold = new ArrayList<Integer>();
 		estimate = 1.0*distributionCapacity/distributionWindow;
 	}
@@ -54,5 +56,21 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 	
 	public double getLatestSample() {
 		return latestSample;
+	}
+
+
+	@Override
+	public double getThreeDaysSold() {
+		double total = 0;
+		for (int i = 0; i < _distributionWindow - 2; i++) {
+			int index = _sold.size() - i - 1;
+			if (index >= 0) {
+				total += _sold.get(index);	
+			}
+			else {
+				total += _distributionCapacity/((double) _distributionWindow);
+			}
+		}
+		return total;
 	}
 }
