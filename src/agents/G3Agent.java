@@ -43,7 +43,7 @@ public class G3Agent extends SimAbstractAgent{
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	
-	protected final boolean TARGET = true;
+	protected final boolean TARGET = false;
 	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;

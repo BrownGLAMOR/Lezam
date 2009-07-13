@@ -49,7 +49,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
-	private static final boolean TARGET = false;
+	private static final boolean TARGET = true;
 	private static final boolean BUDGET = true;
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
