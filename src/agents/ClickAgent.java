@@ -26,7 +26,7 @@ public class ClickAgent extends SimAbstractAgent {
 	protected final double _lamda = 0.9;
 	protected BidBundle _bidBundle;
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {

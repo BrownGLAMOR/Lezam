@@ -43,7 +43,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 
 	protected final double _errorOfLimit = .1;
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 	
 	protected PrintStream output;
 

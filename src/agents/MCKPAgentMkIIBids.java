@@ -43,14 +43,13 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 /**
- * @author jberg
+ * @author jberg, spucci, vnarodit
  *
  */
 public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
-	//test!
-	private static final boolean TARGET = true;
+	private static final boolean TARGET = false;
 	private static final boolean BUDGET = true;
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
@@ -64,9 +63,9 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private Random _R = new Random();
 	private boolean DEBUG = false;
 	private double LAMBDA = .995;
-	private int _numUsers = 90000;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
+	private HashMap<Query, Double> _baseClickProbs;
 	private AbstractUserModel _userModel;
 	private AbstractQueryToNumImp _queryToNumImpModel;
 	private AbstractBidToCPC _bidToCPC;
@@ -104,7 +103,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		DonnieConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
 		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
-		
+
 		sumCPCError = 0.0;
 		sumClickPrError = 0.0;
 		sumConvPrError = 0.0;
@@ -192,6 +191,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public void initBidder() {
 
 		_baseConvProbs = new HashMap<Query, Double>();
+		_baseClickProbs = new HashMap<Query, Double>();
 
 		// set revenue prices
 		_salesPrices = new HashMap<Query,Double>();
@@ -220,6 +220,25 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else {
 				throw new RuntimeException("Malformed query");
 			}
+			
+			/*
+			 * These are the MAX e_q^a (they are randomly generated), which is our clickPr for being in slot 1!
+			 * 
+			 * Taken from the spec
+			 */
+			
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baseClickProbs.put(q, .3);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baseClickProbs.put(q, .4);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baseClickProbs.put(q, .5);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
 
 			String component = q.getComponent();
 			if(_compSpecialty.equals(component)) {
@@ -229,26 +248,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
 			}
 		}
+
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
 			i++;
 			_queryId.put(q, i);
 		}
-		
+
 		lastBoost = 5;
-		if(_capacity == 300) {
-			boostCoeff = 1.2;
-		}
-		else if(_capacity == 400) {
-			boostCoeff = 1.2;
-		}
-		else if(_capacity == 500) {
-			boostCoeff = 1.2;
-		}
-		else {
-			boostCoeff = 1.2;
-		}
+		boostCoeff = 1.2;
 	}
 
 
@@ -390,7 +399,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				}
 				debug("Unit Sold Model Budget "  +budget);
 			}
-			
+
 			if(BOOST) {
 				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
 					System.out.println("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
@@ -417,11 +426,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
+					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
 
 					if(solution.get(isID).targ()) {
 
@@ -455,14 +464,15 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					 */
 					//					bid = 0.0;
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.1,.3);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.25,.75);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else
-						bid = randDouble(.33,1.0);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 
-					//					System.out.println("Exploring " + q + "   bid: " + bid);
+					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 
@@ -627,11 +637,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			for(Query q : _querySpace){
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.1,.3);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.25,.75);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else
-					bid = randDouble(.33,1.0);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
