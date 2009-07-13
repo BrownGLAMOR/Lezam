@@ -58,7 +58,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.3333;
+	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -220,13 +220,13 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			else {
 				throw new RuntimeException("Malformed query");
 			}
-			
+
 			/*
 			 * These are the MAX e_q^a (they are randomly generated), which is our clickPr for being in slot 1!
 			 * 
 			 * Taken from the spec
 			 */
-			
+
 			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 				_baseClickProbs.put(q, .3);
 			}
@@ -356,28 +356,27 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					debug("\tNumImps: " + numImps);
 					debug("\tNumClicks: " + numClicks);
 
+					int isID = _queryId.get(q);
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-
-					int isID = _queryId.get(q);
 					itemList.add(new Item(q,w,v,bid,false,isID));
-
+					
 					if(TARGET) {
-						/*
-						 * add a targeted version of our bid as well
-						 */
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-							if(convProb != 0) {
-								convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
-							}
-							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
-						}
+					/*
+					* add a targeted version of our bid as well
+					*/
+					if(clickPr != 0) {
+					numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+					if(convProb != 0) {
+					convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
+					}
+					salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
+					}
 
-						w = numClicks*convProb;				//weight = numClciks * convProv
-						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					w = numClicks*convProb;				//weight = numClciks * convProv
+					v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
-						itemList.add(new Item(q,w,v,bid,true,isID));
+					itemList.add(new Item(q,w,v,bid,true,isID));
 					}
 				}
 				debug("Items for " + q);
@@ -438,17 +437,16 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
 						}
 
-						if(q.getComponent() == null && q.getManufacturer() == null) {
-							bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,_compSpecialty)));
-						}
-						else if(q.getComponent() == null || q.getManufacturer() == null) {
-							if(q.getComponent() == null) {
-								bidBundle.addQuery(q, bid, new Ad(new Product(q.getManufacturer(),_compSpecialty)));
-							}
-							else {
-								bidBundle.addQuery(q, bid, new Ad(new Product(_manSpecialty,q.getComponent())));
-							}
-						}
+						bidBundle.setBid(q, bid);
+
+						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, _compSpecialty)));
+						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getComponent() == null)
+							bidBundle.setAd(q, new Ad(new Product(q.getManufacturer(), _compSpecialty)));
+						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getManufacturer() == null)
+							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
+						if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO) && q.getManufacturer().equals(_manSpecialty)) 
+							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
 					}
 					else {
 						bidBundle.addQuery(q, bid, new Ad());
@@ -464,7 +462,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					 */
 					//					bid = 0.0;
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-					
+
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
