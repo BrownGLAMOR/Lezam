@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import se.sics.tasim.aw.Agent;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
@@ -28,6 +30,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class G3Agent extends SimAbstractAgent{
+
 	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
@@ -43,10 +46,14 @@ public class G3Agent extends SimAbstractAgent{
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	
-	protected final boolean TARGET = false;
+	protected final boolean TARGET = true;
 	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;
+	
+	public G3Agent(MegaAgent superAgent) {
+		super(superAgent);
+	}
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {

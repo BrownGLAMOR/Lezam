@@ -9,6 +9,8 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import se.sics.tasim.aw.Agent;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
@@ -50,7 +52,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = true;
-	private static final boolean BUDGET = true;
+	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
@@ -88,7 +90,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private double sumCPCError, sumClickPrError, sumConvPrError, sumDonnieConvPrError, sumImpError;
 	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 
-	public MCKPAgentMkIIBids() {
+	public MCKPAgentMkIIBids(MegaAgent superAgent) {
+		super(superAgent);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .02;
