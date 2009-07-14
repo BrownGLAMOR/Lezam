@@ -1,6 +1,7 @@
 package agents;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -13,6 +14,7 @@ public class MegaAgent extends Agent {
 
 	SimAbstractAgent agent;
 	ArrayList<Message> _messagesOnHold;
+	private Random _R = new Random();
 
 	public MegaAgent() {
 		agent = null;
@@ -26,16 +28,23 @@ public class MegaAgent extends Agent {
 			Transportable content = message.getContent();
 			if (content instanceof AdvertiserInfo) {
 				AdvertiserInfo advertiserInfo = (AdvertiserInfo) content;
-				int _capacity = advertiserInfo.getDistributionCapacity();
-				if(_capacity == 300) {
-					System.out.println("RUNNING MCKP");
-					agent = new MCKPAgentMkIIBids(this);
+				int capacity = advertiserInfo.getDistributionCapacity();
+				if(capacity == 300) {
+					double rand = _R.nextDouble();
+					if(rand >= .5) {
+						System.out.println("RUNNING MCKP");
+						agent = new MCKPAgentMkIIBids(this);
+					}
+					else {
+						System.out.println("RUNNING G3");
+						agent = new G3Agent(this);
+					}
 				}
-				else if(_capacity == 400) {
+				else if(capacity == 400) {
 					System.out.println("RUNNING G3");
 					agent = new G3Agent(this);
 				}
-				else if(_capacity == 500) {
+				else if(capacity == 500) {
 					System.out.println("RUNNING MCKP");
 					agent = new MCKPAgentMkIIBids(this);
 				}
