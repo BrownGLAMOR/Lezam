@@ -9,8 +9,6 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
-import se.sics.tasim.aw.Agent;
-
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
@@ -90,8 +88,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private double sumCPCError, sumClickPrError, sumConvPrError, sumDonnieConvPrError, sumImpError;
 	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 
-	public MCKPAgentMkIIBids(MegaAgent superAgent) {
-		super(superAgent);
+	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .02;
@@ -456,7 +453,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 
 					if(BUDGET) {
-						bidBundle.setDailyLimit(q, numClicks*CPC*1.5);
+						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
 				}
 				else {
@@ -467,11 +464,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q));
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q));
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q));
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 
 					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
@@ -638,11 +635,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			for(Query q : _querySpace){
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
