@@ -45,8 +45,11 @@ public class CH2Agent extends SimAbstractAgent {
 	
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final double _errorOfConversions = 2;
+	protected final double _errorOfProfit = .1;
+	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 
 	
 	// for debug
@@ -62,7 +65,7 @@ public class CH2Agent extends SimAbstractAgent {
 		
 		// initialize strategy related variables
 		
-		double initProfitMargin = .5;
+		double initProfitMargin = .75;
 		_profitMargins = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_profitMargins.put(query, initProfitMargin);
@@ -136,38 +139,19 @@ public class CH2Agent extends SimAbstractAgent {
 		
 		for (Query query: _querySpace) {
 			
-			double latestProfit = _profitsModels.get(query).getLatestSample();
-			double avgProfit = this.getAvgProfit();
+			//double latestProfit = _profitsModels.get(query).getLatestSample();
+			double latestProfit = 0;
+			if (_queryReport.getClicks(query) > 0)
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
 			
-			if (latestProfit > avgProfit) {	
-				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query)<=1.1) 
+			if (latestProfit > _avgProfit) {	
+				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
 					_desiredSales.put(query, _desiredSales.get(query)*1.25);
 			}
-			else {
+			else if  (_queryReport.getClicks(query) > 0) {
 				if (_salesReport.getConversions(query) < _desiredSales.get(query))
 					_desiredSales.put(query, _desiredSales.get(query)*0.8);
 			}
-			
-			if (_salesReport.getConversions(query) < _desiredSales.get(query)||
-				_queryReport.getPosition(query) == Double.NaN) {
-				double newProfitMargin;
-				if (latestProfit > avgProfit)
-					newProfitMargin = Math.min(avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*0.9);
-				else newProfitMargin = _profitMargins.get(query)*0.9;
-				newProfitMargin = Math.min(0.9, newProfitMargin);
-				newProfitMargin = Math.max(0.01, newProfitMargin);
-				_profitMargins.put(query, newProfitMargin);
-			}
-			else if (_salesReport.getConversions(query) > _desiredSales.get(query)) {
-				double newProfitMargin;
-				if (latestProfit < avgProfit)
-					newProfitMargin = Math.max(avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*1.1);
-				else newProfitMargin = _profitMargins.get(query)*1.1;
-				newProfitMargin = Math.min(0.9, newProfitMargin);
-				newProfitMargin = Math.max(0.01, newProfitMargin);
-				_profitMargins.put(query, newProfitMargin);
-			}
-			
 		}
 		
 		// normalize desiredSales
@@ -178,6 +162,34 @@ public class CH2Agent extends SimAbstractAgent {
 		normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
+		}
+		
+		for (Query query: _querySpace) {
+			//double latestProfit = _profitsModels.get(query).getLatestSample();
+			double latestProfit = 0;
+			if (_queryReport.getClicks(query) > 0)
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
+			
+			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query)||
+				_queryReport.getPosition(query) == Double.NaN) {
+				double newProfitMargin;
+				if (latestProfit > _avgProfit && _avgProfit > 0)
+					newProfitMargin = Math.min(_avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*0.9);
+				else newProfitMargin = _profitMargins.get(query)*0.9;
+				newProfitMargin = Math.min(0.9, newProfitMargin);
+				newProfitMargin = Math.max(0.1, newProfitMargin);
+				_profitMargins.put(query, newProfitMargin);
+			}
+			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
+				double newProfitMargin;
+				if (latestProfit < _avgProfit && _avgProfit > 0)
+					newProfitMargin = Math.max(_avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*1.1);
+				else newProfitMargin = _profitMargins.get(query)*1.1;
+				newProfitMargin = Math.min(0.9, newProfitMargin);
+				newProfitMargin = Math.max(0.1, newProfitMargin);
+				_profitMargins.put(query, newProfitMargin);
+			}
+			
 		}
 		
 		return buildBidBundle();
@@ -227,14 +239,12 @@ public class CH2Agent extends SimAbstractAgent {
 		int n = 0;
 		for (Query query : _querySpace) 
 			if (_salesReport != null && _salesReport.getConversions(query) > 0) {
-				result += _profitsModels.get(query).getProfit()*_salesReport.getConversions(query);
-				n += _salesReport.getConversions(query);
+				result += _salesReport.getRevenue(query) - _queryReport.getCost(query);
+				n += _queryReport.getClicks(query);
 			}
-		if  (n > 1.0*_distributionCapacity/_distributionWindow) {
-			result /= n;
-		}
-		else result /= 1.0*_distributionCapacity/_distributionWindow;
-		_avgProfit = .125*result+.875*_avgProfit;
+		result /= n;
+		
+		_avgProfit = result;
 	}
 	
 	protected double getAvgProfit() {
