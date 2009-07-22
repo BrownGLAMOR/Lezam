@@ -43,7 +43,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 
 	protected final double _errorOfLimit = .1;
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final boolean BUDGET = false;
+	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;
 
@@ -225,7 +225,7 @@ public class ClickSlotAgent extends SimAbstractAgent {
 			/* if we sold less than what we expected, but we got good position,
 			 then lower our expectation*/
 			if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
-				if (_queryReport.getPosition(q) <= 4) {
+				if (_queryReport.getPosition(q) <= 3) {
 					_wantedSales.put(q, _wantedSales.get(q) * .8);
 				}
 			} else {
