@@ -6,6 +6,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
 import ilog.concert.IloLinearNumExpr;
+import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.IntParam;
@@ -14,7 +15,7 @@ public class AvgPosToPos {
 
 
 	public static void main(String[] args) {
-		try { 
+		try {
 			IloCplex cplex = new IloCplex();
 			cplex.setParam(IntParam.SolnPoolIntensity, 4);
 			cplex.setParam(IntParam.SolnPoolReplace, 2);
@@ -22,21 +23,22 @@ public class AvgPosToPos {
 
 			int numImps = 50;
 			double avgPos = 3.27;
+			int numClicks = 5;
 			Query q = new Query(null,null);
 			int[]    lb = {0, 0, 0, 0, 0};
 			int[]    ub = {numImps, numImps, numImps, numImps, numImps};
-			IloNumVar[] x  = cplex.intVarArray(5, lb, ub);
-
-			//			cplex.addMaximize(cplex.sum(x[0], x[1], x[2], x[3], x[4]));
+			IloIntVar[] x  = cplex.intVarArray(5, lb, ub);
 
 			double[] clickPr = new double[5];
 			clickPr = getClickPr(q);
-			cplex.addMinimize(cplex.sum(cplex.prod(clickPr[0],x[0]),
+
+			cplex.addMinimize(cplex.abs(cplex.diff(cplex.sum(cplex.prod(clickPr[0],x[0]),
 					cplex.prod(clickPr[1],x[1]),
 					cplex.prod(clickPr[2],x[2]),
 					cplex.prod(clickPr[3],x[3]),
-					cplex.prod(clickPr[4],x[4])));
-
+					cplex.prod(clickPr[4],x[4])), numClicks)));
+			
+			
 			cplex.addEq(cplex.sum(cplex.prod( 1.0, x[0]),
 					cplex.prod( 2.0, x[1]),
 					cplex.prod( 3.0, x[2]),
