@@ -30,6 +30,7 @@ public class SimAgent {
 	private HashMap<Query, Integer> _regImps;
 	private HashMap<Query, Integer> _promImps;
 	private HashMap<Query, Double> _posSum;
+	private HashMap<Query, double[]> _perQPosSum;
 	private int _totUnitsSold;
 	private int _totClicks;
 	private double _totCost;
@@ -71,6 +72,7 @@ public class SimAgent {
 		_regImps = new HashMap<Query, Integer>();
 		_promImps = new HashMap<Query, Integer>();
 		_posSum = new HashMap<Query, Double>();
+		_perQPosSum = new HashMap<Query, double[]>();
 		_totUnitsSold = 0;
 		_totClicks = 0;
 		_totCost = 0.0;
@@ -84,6 +86,11 @@ public class SimAgent {
 			_regImps.put(query,0);
 			_promImps.put(query,0);
 			_posSum.put(query, 0.0);
+			double[] perQPosSum = new double[5];
+			for(int i = 0; i < 5; i++) {
+				perQPosSum[i] = 0;
+			}
+			_perQPosSum.put(query, perQPosSum);
 		}
 		_prevConvs = 0;
 		for(int i = 0; i < _salesOverWindow.length-1; i++) {
@@ -178,6 +185,9 @@ public class SimAgent {
 		_regImps.put(query,_regImps.get(query) + regImps);
 		_promImps.put(query, _promImps.get(query) + promImps);
 		_posSum.put(query, _posSum.get(query) + pos);
+		double[] perQPosSum = _perQPosSum.get(query);
+		perQPosSum[pos-1] = perQPosSum[pos-1] + 1;
+		_perQPosSum.put(query,perQPosSum);
 	}
 	
 	public int getOverCap() {
@@ -215,6 +225,10 @@ public class SimAgent {
 	
 	public double getPosSum(Query query) {
 		return _posSum.get(query);
+	}
+	
+	public double[] getPerQPosSum(Query query) {
+		return _perQPosSum.get(query);
 	}
 	
 	public QueryReport buildQueryReport() {

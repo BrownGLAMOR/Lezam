@@ -1,6 +1,8 @@
 package simulator;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -127,6 +129,8 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> singleQueryReports;
 
+	private long lastSeed;
+
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
@@ -158,6 +162,7 @@ public class BasicSimulator {
 				agent.handleSalesReport(salesReport);
 				agent.updateModels(salesReport, queryReport);
 			}
+			lastSeed = getNewSeed();
 			initializeDaySpecificInfo(day, advertiseridx);
 			agent.setDay(day);
 			/*
@@ -227,6 +232,22 @@ public class BasicSimulator {
 		//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
 		//		}
 		return reportsListMap;
+	}
+
+	private long getNewSeed() {
+		SecureRandom sr = null;
+		try {
+			sr = SecureRandom.getInstance("SHA1PRNG");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		int seedByteCount = 10;
+		byte[] seedArr= sr.generateSeed(seedByteCount);
+		long seed = 0;
+		for(int i = 0; i < seedArr.length; i++) {
+			seed += seedArr[i];
+		}
+		return Math.abs(seed);
 	}
 
 	/**
@@ -453,9 +474,9 @@ public class BasicSimulator {
 						adTypes.put(query, simAd);
 					}
 					else{
-						bids.put(query,0.0);
-						budgets.put(query,0.0);
-						adTypes.put(query,new Ad());
+						bids.put(query,_bids.get(_agents[i]).get(query));
+						budgets.put(query,_budgets.get(_agents[i]).get(query));
+						adTypes.put(query,_adType.get(_agents[i]).get(query));
 					}
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_testId ,_squashing,_querySpace);
@@ -485,7 +506,8 @@ public class BasicSimulator {
 	public Reports runQuerySimulation(double simBid, Ad simAd, Query simQuery) {
 		ArrayList<SimAgent> agents = buildSingleQueryAgents(simBid,simAd,simQuery);
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
-		Collections.shuffle(users);
+		Random randGen = new Random(lastSeed);
+		Collections.shuffle(users,randGen);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
@@ -641,7 +663,8 @@ public class BasicSimulator {
 	public HashMap<String, Reports> runSimulation(SimAbstractAgent agentToRun) {
 		ArrayList<SimAgent> agents = buildAgents(agentToRun);
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
-		Collections.shuffle(users);
+		Random randGen = new Random(lastSeed);
+		Collections.shuffle(users,randGen);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
@@ -914,7 +937,7 @@ public class BasicSimulator {
 		double totAvgConv = 0.0;
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
-//		String baseFile = "/games/game";
+		//		String baseFile = "/games/game";
 		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 470;
