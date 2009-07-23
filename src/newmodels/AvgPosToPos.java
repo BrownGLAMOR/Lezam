@@ -1,15 +1,12 @@
 package newmodels;
 
 
-import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryType;
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
-import ilog.concert.IloLinearNumExpr;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.IntParam;
+import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryType;
 
 public class AvgPosToPos {
 
