@@ -54,8 +54,8 @@ public class H3 extends SimAbstractAgent{
 		
 			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
-		//this.printInfo();
-	    _bidBundle.setCampaignDailySpendLimit(2000);
+		this.printInfo();
+	    _bidBundle.setCampaignDailySpendLimit(1200);
 		_bidBundles.add(_bidBundle);
 		return _bidBundle;
 	}
