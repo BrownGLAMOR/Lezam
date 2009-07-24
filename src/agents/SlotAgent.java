@@ -8,7 +8,9 @@ import newmodels.AbstractModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -23,7 +25,8 @@ public class SlotAgent extends SimAbstractAgent {
 	protected HashMap<Query, Double> _baselineConversion;
 	
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final boolean BUDGET = true;
+	protected final boolean TARGET = true;
+	protected final boolean BUDGET = false;
 
 	protected PrintStream output;
 
@@ -37,34 +40,22 @@ public class SlotAgent extends SimAbstractAgent {
 				handleNoImpression(query, current);
 				// handle the case when the agent got the promoted slots
 				handlePromotedSlots(query);
-				// walk otherwise
-				// walking(query, current);
 			}
 			
 			_bidBundle.setBid(query, getQueryBid(query));
+			
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}
 
 			if (BUDGET)  _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
-
-			// print out the properties
-/*			StringBuffer buff = new StringBuffer("");
-			buff.append("\t").append("day").append(_day).append("\n");
-			buff.append("\t").append("product: ").append(
-					query.getManufacturer()).append(", ").append(
-					query.getComponent());
-			buff.append("\t").append("bid: ").append(getQueryBid(query))
-					.append("\n");
-			buff.append("\t").append("Conversion: ").append(
-					_salesReport.getConversions(query)).append("\n");
-			buff.append("\t").append("ReinvestFactor: ").append(
-					_reinvestment.get(query)).append("\n");
-			buff.append("\t").append("ConversionRevenue: ").append(
-					_revenue.get(query)).append("\n");
-			buff.append("\t").append("Spend Limit: ").append(
-					setQuerySpendLimit(query)).append("\n");
-			buff.append("\t").append("Slot: ").append(
-					_queryReport.getPosition(query)).append("\n");
-			System.out.print(buff);*/
-			// output.append(buff);
 
 		}
 		// output.flush();
