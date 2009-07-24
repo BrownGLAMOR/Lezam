@@ -10,15 +10,11 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.prconv.NoTargetHistoricPrConversionModel;
-import newmodels.prconv.SimplePrConversion;
 import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -139,10 +135,9 @@ public class CH2Agent extends SimAbstractAgent {
 		
 		for (Query query: _querySpace) {
 			
-			//double latestProfit = _profitsModels.get(query).getLatestSample();
 			double latestProfit = 0;
 			if (_queryReport.getClicks(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_salesReport.getConversions(query);
 			
 			if (latestProfit > _avgProfit) {	
 				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
@@ -165,10 +160,9 @@ public class CH2Agent extends SimAbstractAgent {
 		}
 		
 		for (Query query: _querySpace) {
-			//double latestProfit = _profitsModels.get(query).getLatestSample();
 			double latestProfit = 0;
 			if (_queryReport.getClicks(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_salesReport.getConversions(query);
 			
 			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query)||
 				_queryReport.getPosition(query) == Double.NaN) {
@@ -196,6 +190,7 @@ public class CH2Agent extends SimAbstractAgent {
 	}
 	
 	protected BidBundle buildBidBundle()  {
+		System.out.printf("*******************************\n\n");
 		
 		for (Query query : _querySpace) {
 			// set bids
@@ -229,7 +224,7 @@ public class CH2Agent extends SimAbstractAgent {
 			
 		}
 		
-		//this.printInfo();
+		this.printInfo();
 		
 		return _bidBundle;
 	}
@@ -240,7 +235,7 @@ public class CH2Agent extends SimAbstractAgent {
 		for (Query query : _querySpace) 
 			if (_salesReport != null && _salesReport.getConversions(query) > 0) {
 				result += _salesReport.getRevenue(query) - _queryReport.getCost(query);
-				n += _queryReport.getClicks(query);
+				n += _salesReport.getConversions(query);
 			}
 		result /= n;
 		
@@ -280,7 +275,7 @@ public class CH2Agent extends SimAbstractAgent {
 			buff.append("****************\n");
 		}
 		
-		//System.out.println(buff);
+		System.out.println(buff);
 		output.append(buff);
 		output.flush();
 	

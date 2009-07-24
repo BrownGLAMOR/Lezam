@@ -23,6 +23,7 @@ import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.revenue.AbstractRevenueModel;
 import newmodels.revenue.RevenueMovingAvg;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -75,7 +76,6 @@ public class DPBAgent extends SimAbstractAgent {
 
 		if (_day <= 6) {
 			bidBundle = new BidBundle();
-<<<<<<< .mine
 
 				for (Query q : _querySpace) {
 					double bid;
@@ -87,9 +87,8 @@ public class DPBAgent extends SimAbstractAgent {
 						bid = randDouble(.35, 1.0);
 					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				}
-=======
 			
-			for(Query query : _querySpace){
+			for(Query query : _querySpace) {
 				double bid;
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					bid = randDouble(.1,.6);
@@ -98,8 +97,7 @@ public class DPBAgent extends SimAbstractAgent {
 				else 
 					bid = randDouble(.35,1.0);
 					bidBundle.addQuery(query, bid, new Ad(), Double.NaN);
->>>>>>> .r633
-
+			}
 			bidBundleList.add(bidBundle);
 			
 			return bidBundle;
@@ -175,7 +173,7 @@ public class DPBAgent extends SimAbstractAgent {
 			}
 			i++;
 		}
-
+		
 		// build bid bundle
 
 		double maxProfit = 0;
@@ -185,7 +183,7 @@ public class DPBAgent extends SimAbstractAgent {
 				maxProfit = profit[_querySpace.size() - 1][j];
 				capacity = j;
 			}
-
+		
 		bidBundle = new BidBundle();
 
 		output.printf("********************\n");
@@ -193,12 +191,11 @@ public class DPBAgent extends SimAbstractAgent {
 		output.printf("Capacity is : %d.\n", capacity);
 		output.printf("Target Capacity : %d. \n", targetCapacity);
 		output.printf("********************\n");
-
+		
 		while (i > 0) {
 			i--;
 			double bid = bids[i][capacity];
-			double clicks = sales[i][capacity] * 1.0
-					/ prConversionModel.getPrediction(queries[i]);
+			double clicks = sales[i][capacity] * 1.0/ prConversionModel.getPrediction(queries[i]);
 			double cpc = bidToCPCModel.getPrediction(queries[i], bid);
 			// double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
 			double dailyLimit = Math.max(bid * clicks, bid);
@@ -211,7 +208,7 @@ public class DPBAgent extends SimAbstractAgent {
 
 			capacity -= sales[i][capacity];
 		}
-
+		
 		System.out.printf("********************\n");
 		this.printInfo();
 
@@ -279,7 +276,7 @@ public class DPBAgent extends SimAbstractAgent {
 			}
 		}
 		
-		prConversionModel = new GoodConversionPrModel(_querySpace);
+		prConversionModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty, _compSpecialty));
 
 		return models;
 	}
@@ -293,16 +290,17 @@ public class DPBAgent extends SimAbstractAgent {
 			userModel.updateModel(queryReport, salesReport);
 			queryToNumImpModel.updateModel(queryReport, salesReport);
 			if (bidBundleList.size() > 1) {
-				bidToCPCModel.updateModel(queryReport, bidBundleList
+				bidToCPCModel.updateModel(queryReport, salesReport, bidBundleList
 						.get(bidBundleList.size() - 2));
-				bidToPrClickModel.updateModel(queryReport, bidBundleList
+				bidToPrClickModel.updateModel(queryReport, salesReport, bidBundleList
 						.get(bidBundleList.size() - 2));
 			}
 
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
 					MAX_TIME_HORIZON);
 			prConversionModel.setTimeHorizon(timeHorizon);
-			prConversionModel.updateModel(queryReport, salesReport);
+			prConversionModel.updateModel(queryReport, salesReport, bidBundleList
+					.get(bidBundleList.size() - 2));
 
 		}
 	}

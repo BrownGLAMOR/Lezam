@@ -310,7 +310,7 @@ public class CHAgent extends SimAbstractAgent {
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		if (salesReport != null) {
+		if (_day > 1 && salesReport != null && queryReport != null) {
 			_unitsSoldModel.update(salesReport);
 			
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
@@ -327,9 +327,5 @@ public class CHAgent extends SimAbstractAgent {
 		
 	}
 	
-	private double randDouble(double a, double b) {
-		double rand = _R.nextDouble();
-		return rand * (b - a) + a;
-	}
 
 }
