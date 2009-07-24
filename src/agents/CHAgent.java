@@ -58,7 +58,7 @@ public class CHAgent extends SimAbstractAgent {
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
 	protected final boolean BUDGET = true;
-	protected final boolean TARGET = true;
+	protected final boolean TARGET = false;
 	
 	// for debug
 	protected PrintStream output;
@@ -320,7 +320,7 @@ public class CHAgent extends SimAbstractAgent {
 			
 		
 			for (Query query : _querySpace) {
-				if (salesReport != null && salesReport.getRevenue(query) > 0) 
+				if (salesReport.getRevenue(query) > 0) 
 					_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
 			}
 		}

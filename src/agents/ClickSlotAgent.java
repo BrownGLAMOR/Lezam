@@ -21,7 +21,9 @@ import newmodels.prconv.SimplePrConversion;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -43,7 +45,8 @@ public class ClickSlotAgent extends SimAbstractAgent {
 
 	protected final double _errorOfLimit = .1;
 	protected final int MAX_TIME_HORIZON = 5;
-	protected final boolean BUDGET = true;
+	protected final boolean TARGET = true;
+	protected final boolean BUDGET = false;
 	
 	protected PrintStream output;
 
@@ -76,9 +79,22 @@ public class ClickSlotAgent extends SimAbstractAgent {
 		}
 		
 		// build bid bundle
-		for (Query q : _querySpace) {
-			_bidBundle.setBid(q, getQueryBid(q));
-			if (BUDGET) _bidBundle.setDailyLimit(q, setQuerySpendLimit(q));
+		for (Query query : _querySpace) {
+			_bidBundle.setBid(query, getQueryBid(query));
+			
+			// set target ads
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}
+			
+			if (BUDGET) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		
 		_bidBundles.add(_bidBundle);
