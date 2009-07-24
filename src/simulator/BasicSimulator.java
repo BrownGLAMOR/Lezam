@@ -59,7 +59,7 @@ public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
-	private static final boolean PERFECTMODELS = false;
+	private static final boolean PERFECTMODELS = true;
 
 	private static boolean CHART = false;
 
@@ -401,7 +401,7 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
-		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]));
+		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -513,130 +513,119 @@ public class BasicSimulator {
 			Query query = user.generateQuery();
 			if(query == null) {
 				//This means the user is IS or T
-				//Second part is because we are only simulating one query
 				continue;
 			}
-			if(query.equals(simQuery)){
-				ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
-				for(int j = 0; j < agents.size(); j++) {
-					SimAgent agent = agents.get(j);
-					double bid = agent.getBid(query);
-					double budget = agent.getBudget(query);
-					double cost = agent.getCost(query);
-					if(budget > cost + bid || Double.isNaN(budget)) {
-						double totBudget = agent.getTotBudget();
-						double totCost = agent.getTotCost();
-						if(totBudget > totCost + bid || Double.isNaN(totBudget)) {
-							double squashedBid = agent.getSquashedBid(query);
-							if(squashedBid >= _regReserve) {
-								AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
-								pairList.add(pair);
-							}
+			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
+			for(int j = 0; j < agents.size(); j++) {
+				SimAgent agent = agents.get(j);
+				double bid = agent.getBid(query);
+				double budget = agent.getBudget(query);
+				double cost = agent.getCost(query);
+				if(budget > cost + bid || Double.isNaN(budget)) {
+					double totBudget = agent.getTotBudget();
+					double totCost = agent.getTotCost();
+					if(totBudget > totCost + bid || Double.isNaN(totBudget)) {
+						double squashedBid = agent.getSquashedBid(query);
+						if(squashedBid >= _regReserve) {
+							AgentBidPair pair = new AgentBidPair(agents.get(j),squashedBid);
+							pairList.add(pair);
 						}
 					}
 				}
-				/*
-				 * This sorts the list by squashed bid
-				 */
-				Collections.sort(pairList);
-				/*
-				 * Adds impressions
-				 */
-				for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
-					AgentBidPair pair = pairList.get(j-1);
-					double squashedBid = pair.getSquashedBid();
-					if(j <= _numPromSlots && squashedBid >= _proReserve) {
-						pair.getAgent().addImpressions(query, 0, 1, j);
+			}
+			/*
+			 * This sorts the list by squashed bid
+			 */
+			Collections.sort(pairList);
+			/*
+			 * Adds impressions
+			 */
+			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+				AgentBidPair pair = pairList.get(j-1);
+				double squashedBid = pair.getSquashedBid();
+				if(j <= _numPromSlots && squashedBid >= _proReserve) {
+					pair.getAgent().addImpressions(query, 0, 1, j);
+				}
+				else {
+					pair.getAgent().addImpressions(query, 1, 0, j);
+				}
+
+			}
+			/*
+			 * Actually generates clicks and what not
+			 */
+			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+				AgentBidPair pair = pairList.get(j-1);
+				SimAgent agent = pair.getAgent();
+				double squashedBid = pair.getSquashedBid();
+				double contProb = _contProb.get(query);
+				Ad ad = agent.getAd(query);
+				double advEffect = agent.getAdvEffect(query);
+				double fTarg = 1;
+				if(ad != null && !ad.isGeneric()) {
+					if(ad.getProduct() == new Product(query.getManufacturer(),query.getComponent())) {
+						fTarg = 1 + _targEffect;
 					}
 					else {
-						pair.getAgent().addImpressions(query, 1, 0, j);
+						fTarg = 1/(1+_targEffect);
 					}
-
 				}
-				/*
-				 * Actually generates clicks and what not
-				 */
-				for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
-					AgentBidPair pair = pairList.get(j-1);
-					SimAgent agent = pair.getAgent();
-					double squashedBid = pair.getSquashedBid();
-					double contProb = _contProb.get(query);
-					Ad ad = agent.getAd(query);
-					double advEffect = agent.getAdvEffect(query);
-					double fTarg = 1;
-					if(ad != null && !ad.isGeneric()) {
-						if(ad.getProduct() == new Product(query.getManufacturer(),query.getComponent())) {
-							fTarg = 1 + _targEffect;
-						}
-						else {
-							fTarg = 1/(1+_targEffect);
-						}
+
+				double fProm = 1;
+				if(j <= _numPromSlots && squashedBid >= _proReserve) {
+					fProm = 1 + _promSlotBonus;
+				}
+				double clickPr = eta(advEffect,fTarg*fProm);
+				double rand = _R.nextDouble();
+				if(clickPr >= rand) {
+					AgentBidPair underPair = pairList.get(j);
+					SimAgent agentUnder = underPair.getAgent();
+					double bidUnder = agentUnder.getBid(query);
+					double advEffUnder = agentUnder.getAdvEffect(query);
+					double squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
+					if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
+						squashedBidUnder = _proReserve;
+					}
+					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
+					cpc = ((int) ((cpc * 100) + 0.5)) / 100.0;
+					agent.addCost(query, cpc);
+
+					double baselineConv;
+
+					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+						baselineConv = .1;
+					}
+					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+						baselineConv = .2;
+					}
+					else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+						baselineConv = .3;
+					}
+					else {
+						throw new RuntimeException("Malformed Query");
 					}
 
-					double fProm = 1;
-					if(j <= _numPromSlots && squashedBid >= _proReserve) {
-						fProm = 1 + _promSlotBonus;
+					double overCap = agent.getOverCap();
+					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
+
+					String queryComp = query.getComponent();
+					String compSpecialty = agent.getCompSpecialty();
+
+					if(compSpecialty.equals(queryComp)) {
+						convPr = eta(convPr,1+_CSB);
 					}
-					double clickPr = eta(advEffect,fTarg*fProm);
-					double rand = _R.nextDouble();
-					if(clickPr >= rand) {
-						AgentBidPair underPair = pairList.get(j);
-						SimAgent agentUnder = underPair.getAgent();
-						double bidUnder = agentUnder.getBid(query);
-						double advEffUnder = agentUnder.getAdvEffect(query);
-						double squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
-						if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
-							squashedBidUnder = _proReserve;
-						}
-						double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
-						cpc = ((int) ((cpc * 100) + 0.5)) / 100.0;
-						agent.addCost(query, cpc);
-						double baselineConv;
 
-						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-							baselineConv = .1;
-						}
-						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-							baselineConv = .2;
-						}
-						else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-							baselineConv = .3;
-						}
-						else {
-							throw new RuntimeException("Malformed Query");
-						}
+					rand = _R.nextDouble();
 
-						double overCap = agent.getOverCap();
-						double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
-
-						String queryComp = query.getComponent();
-						String compSpecialty = agent.getCompSpecialty();
-
-						if(compSpecialty.equals(queryComp)) {
-							convPr = eta(convPr,1+_CSB);
+					if(convPr >= rand) {
+						String queryMan = query.getManufacturer();
+						String manSpecialty = agent.getManSpecialty();
+						double revenue = 10;
+						if(manSpecialty.equals(queryMan)) {
+							revenue = (1+_MSB)*10;
 						}
-
-						rand = _R.nextDouble();
-
-						if(convPr >= rand) {
-							String queryMan = query.getManufacturer();
-							String manSpecialty = agent.getManSpecialty();
-							double revenue = 10;
-							if(manSpecialty.equals(queryMan)) {
-								revenue = (1+_MSB)*10;
-							}
-							agent.addRevenue(query, revenue);
-							break;
-						}
-						else {
-							rand = _R.nextDouble();
-							if(contProb >= rand) {
-								continue;
-							}
-							else {
-								break;
-							}
-						}
+						agent.addRevenue(query, revenue);
+						break;
 					}
 					else {
 						rand = _R.nextDouble();
@@ -646,6 +635,15 @@ public class BasicSimulator {
 						else {
 							break;
 						}
+					}
+				}
+				else {
+					rand = _R.nextDouble();
+					if(contProb >= rand) {
+						continue;
+					}
+					else {
+						break;
 					}
 				}
 			}
@@ -938,7 +936,7 @@ public class BasicSimulator {
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
