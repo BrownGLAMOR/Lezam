@@ -14,15 +14,12 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
-import simulator.models.PerfectBidToNumClicks;
 import simulator.models.PerfectBidToPosition;
 import simulator.models.PerfectBidToPrClick;
 import simulator.models.PerfectBidToPrConv;
@@ -32,9 +29,8 @@ import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
-import agents.CPCModelTestAgent;
+import agents.AdMaxAgent;
 import agents.Cheap;
-import agents.CrestAgent;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
 import agents.SimAbstractAgent;
@@ -903,7 +899,7 @@ public class BasicSimulator {
 			return new Cheap();
 		}
 		else if(string.equals("Crest")) {
-			return new CrestAgent();
+			return new AdMaxAgent();
 		}
 		else if(string.equals("ILP")) {
 			return new ILPAgent();
