@@ -432,7 +432,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
-					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
+//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
