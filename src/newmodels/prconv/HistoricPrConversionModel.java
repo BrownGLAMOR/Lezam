@@ -80,7 +80,7 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 	}
 
 	@Override
-	public double getPrediction(Query query) {
+	public double getPrediction(Query query, double bid) {
 		double[] curve = _math.prGivenObs((int) Math.ceil(_wR.get(query)), (int) Math.ceil(_wh.get(query)), null);
 
 		return _math.getMostLikelyProb(0.5, curve);

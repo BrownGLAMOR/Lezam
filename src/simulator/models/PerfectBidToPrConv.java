@@ -3,28 +3,30 @@ package simulator.models;
 import java.util.LinkedList;
 
 import newmodels.bidtoprconv.AbstractBidToPrConv;
+import newmodels.prconv.NewAbstractConversionModel;
 import simulator.BasicSimulator;
 import simulator.Reports;
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPrConv extends AbstractBidToPrConv {
+public class PerfectBidToPrConv extends NewAbstractConversionModel {
 
 	private BasicSimulator _simulator;
 
-	public PerfectBidToPrConv(Query q, BasicSimulator simulator) {
-		super(q);
+	public PerfectBidToPrConv(BasicSimulator simulator) {
 		_simulator = simulator;
 	}
 
+
 	@Override
-	public double getPrediction(double bid) {
-		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+	public double getPrediction(Query query, double bid) {
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, bid);
 		double avgPrConv = 0;
 		for(Reports report : reports) {
-			if(report.getQueryReport().getClicks(_query) != 0) {
-				avgPrConv += report.getSalesReport().getConversions(_query)/((double)report.getQueryReport().getClicks(_query));
+			if(report.getQueryReport().getClicks(query) != 0) {
+				avgPrConv += report.getSalesReport().getConversions(query)/((double)report.getQueryReport().getClicks(query));
 			}
 		}
 		avgPrConv = avgPrConv/((double) reports.size());
@@ -32,7 +34,7 @@ public class PerfectBidToPrConv extends AbstractBidToPrConv {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
 	}
 

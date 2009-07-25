@@ -18,17 +18,16 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 
 	private BasicSimulator _simulator;
 
-	public PerfectBidToPosition(Query query, BasicSimulator simulator) {
-		super(query);
+	public PerfectBidToPosition(BasicSimulator simulator) {
 		_simulator = simulator;
 	}
 
 	@Override
-	public double getPrediction(double bid) {
-		LinkedList<Reports> reports = _simulator.getSingleQueryReport(_query, bid);
+	public double getPrediction(Query query, double bid) {
+		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, bid);
 		double avgPos = 0;
 		for(Reports report : reports) {
-			avgPos += report.getQueryReport().getPosition(_query);
+			avgPos += report.getQueryReport().getPosition(query);
 		}
 		avgPos = avgPos/((double) reports.size());
 		return avgPos;

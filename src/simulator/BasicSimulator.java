@@ -18,6 +18,8 @@ import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
+import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToNumClicks;
@@ -57,13 +59,13 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 5; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
 	private static boolean CHART = false;
 
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 
 	Random _R = new Random();					//Random number generator
 
@@ -127,7 +129,7 @@ public class BasicSimulator {
 
 	private String _testId = "testId";
 
-	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> singleQueryReports;
+	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
 	private long lastSeed;
 
@@ -160,7 +162,9 @@ public class BasicSimulator {
 				QueryReport queryReport = reports.getQueryReport();
 				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
-				agent.updateModels(salesReport, queryReport);
+				if(!PERFECTMODELS) {
+					agent.updateModels(salesReport, queryReport);
+				}
 			}
 			lastSeed = getNewSeed();
 			initializeDaySpecificInfo(day, advertiseridx);
@@ -168,9 +172,9 @@ public class BasicSimulator {
 			/*
 			 * Make the maps used in the perfect models
 			 */
-			singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
+			_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 			for(Query query : _querySpace) {
-				singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
+				_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 			}
 
 			HashMap<String, Reports> maps = runSimulation(agent);
@@ -377,21 +381,54 @@ public class BasicSimulator {
 	}
 
 	public LinkedList<Reports> getSingleQueryReport(Query query, double bid) {
-		LinkedList<Reports> reports = singleQueryReports.get(query).get(bid);
+		LinkedList<Reports> reports = _singleQueryReports.get(query).get(bid);
 		if(reports == null) {
-			HashMap<Double, LinkedList<Reports>> reportsMap = singleQueryReports.get(query);
+			HashMap<Double, LinkedList<Reports>> reportsMap = _singleQueryReports.get(query);
+			Double lastBid = null;
+			if(reportsMap.size() > 0) {
+				ArrayList<Double> reportsKeyList = new ArrayList<Double>(reportsMap.keySet());
+				Collections.sort(reportsKeyList);
+				lastBid = reportsKeyList.get(reportsKeyList.size()-1);
+			}
+			if(lastBid != null) {
+				LinkedList<Reports> lastReports = _singleQueryReports.get(query).get(lastBid);
+				Reports lastReport = lastReports.getFirst();
+				if(doubleEquals(lastReport.getQueryReport().getPosition(query),1.0)) {
+					reportsMap.put(bid, lastReports);
+					_singleQueryReports.put(query, reportsMap);
+					return lastReports;
+				}
+			}
 			LinkedList<Reports> tempReportsList = new LinkedList<Reports>();
 			for(int i = 0; i < NUM_PERF_ITERS; i++) {
 				Reports tempReports = runQuerySimulation(bid, new Ad(), query);
+				if(lastBid != null) {
+					LinkedList<Reports> lastReports = _singleQueryReports.get(query).get(lastBid);
+					Reports lastReport = lastReports.getFirst();
+					if(doubleEquals(lastReport.getQueryReport().getPosition(query), tempReports.getQueryReport().getPosition(query))) {
+						reportsMap.put(bid, lastReports);
+						_singleQueryReports.put(query, reportsMap);
+						return lastReports;
+					}
+				}
 				tempReportsList.add(tempReports);
 			}
 			reportsMap.put(bid, tempReportsList);
-			singleQueryReports.put(query, reportsMap);
+			_singleQueryReports.put(query, reportsMap);
 			return tempReportsList;
 		}
 		else {
 			return reports;
 		}
+	}
+
+	private boolean doubleEquals(double position, double d) {
+		double epsilon = .05;
+		double diff = Math.abs(position - d);
+		if(diff <= epsilon) {
+			return true;
+		}
+		return false;
 	}
 
 	/*
@@ -403,21 +440,18 @@ public class BasicSimulator {
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
+		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
+		NewAbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
+		AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(this);
+		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(unitsSold);
 		models.add(bidToCPCModel);
-		for(Query query : _querySpace) {
-			AbstractBidToNumClicks bidToNumClicks = new PerfectBidToNumClicks(query,this);
-			AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(query,this);
-			AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
-			AbstractBidToPrConv bidToConvPrModel = new PerfectBidToPrConv(query,this);
-			models.add(bidToCPCModel);
-			models.add(bidToNumClicks);
-			models.add(bidToSlotModel);
-			models.add(bidToClickPrModel);
-			models.add(bidToConvPrModel);
-		}
+		models.add(bidToClickPrModel);
+		models.add(bidToConvPrModel);
+		models.add(bidToSlotModel);
+		models.add(basicTargModel);
 		return models;
 	}
 
@@ -508,6 +542,7 @@ public class BasicSimulator {
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
 		Random randGen = new Random(lastSeed);
 		Collections.shuffle(users,randGen);
+		_R = new Random(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
@@ -663,6 +698,7 @@ public class BasicSimulator {
 		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
 		Random randGen = new Random(lastSeed);
 		Collections.shuffle(users,randGen);
+		_R = new Random(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
@@ -762,7 +798,7 @@ public class BasicSimulator {
 
 					double overCap = agent.getOverCap();
 					if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
-						debug(agent.getAdvId() + " is overcap by " + overCap);
+//						debug(agent.getAdvId() + " is overcap by " + overCap);
 					}
 					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
 
