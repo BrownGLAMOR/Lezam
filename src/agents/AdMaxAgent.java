@@ -59,7 +59,7 @@ public class AdMaxAgent extends SimAbstractAgent {
 			System.out.print(ad.toString() + ", ");
 			double pr = 0.1;
 			if(_day > 2)
-				pr = convModel.getPrediction(q);
+				pr = convModel.getPrediction(q,0);
 
 			double myBid = (_queryAvgProfit.get(q) * 0.4) * pr;
 
