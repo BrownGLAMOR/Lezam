@@ -131,7 +131,7 @@ public class SlotAgent extends SimAbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
+			conversion = _conversionPrModel.getPrediction(q,0);
 		return conversion * _reinvestment.get(q) * _revenue.get(q);
 	}
 
@@ -147,7 +147,7 @@ public class SlotAgent extends SimAbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
+			conversion = _conversionPrModel.getPrediction(q,0);
 		
 		if (_queryReport.getPosition(q) <= 3) {
 			double newReinvest = Math.max(0.1, _reinvestment.get(q) * .9);
@@ -176,7 +176,7 @@ public class SlotAgent extends SimAbstractAgent {
 	protected double setQuerySpendLimit(Query q) {
 
 		double remainCap = 1.5 * _capacity / _capWindow;
-		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
+		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q,0)
 				/ _querySpace.size();
 	}
 

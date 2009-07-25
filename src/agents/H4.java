@@ -188,7 +188,7 @@ public class H4 extends SimAbstractAgent{
    }
    
    protected double calcUnitSold(Query q, double k){
-	  double conversion = _conversionPrModel.getPrediction(q);
+	  double conversion = _conversionPrModel.getPrediction(q,0);
 	  double cpc = (_estimatedPrice.get(q)-k)*conversion;
 	  //use the bid to click model to estimate #clicks
 	  double clicks = _bidToclick.get(q).getPrediction(cpc);
@@ -228,7 +228,7 @@ public class H4 extends SimAbstractAgent{
 		if(_day <= 6) {
 			prConv = _baselineConv.get(q);
 		}
-		else prConv = _conversionPrModel.getPrediction(q);
+		else prConv = _conversionPrModel.getPrediction(q,0);
 		
 		double bid;
 		bid = cpcTobid((_estimatedPrice.get(q) - k)*prConv,q);
