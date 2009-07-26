@@ -87,10 +87,10 @@ public class AvgPosToPos extends AbstractModel {
 
 			int lastNumSols = 0;
 			while(_cplex.getSolnPoolNsolns() < _numSols) {
+				_cplex.populate();
 				if(lastNumSols == _cplex.getSolnPoolNsolns()) {
 					break;
 				}
-				_cplex.populate();
 				lastNumSols = _cplex.getSolnPoolNsolns();
 			}
 			
@@ -169,7 +169,7 @@ public class AvgPosToPos extends AbstractModel {
 	
 	public static void main(String[] args) {
 		AvgPosToPos avgPosModel = new AvgPosToPos(40);
-		double[] sols = avgPosModel.getPrediction(new Query(null,null), 100, 150, 1.8, 75, 1);
+		double[] sols = avgPosModel.getPrediction(new Query("tv",null), 25, 100, 1.9, 25, 2);
 		for(int i = 0; i < sols.length; i++) {
 			System.out.println("Slot " + (i+1) + ": " + sols[i]);
 		}
