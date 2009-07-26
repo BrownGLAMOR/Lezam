@@ -8,74 +8,97 @@ import ilog.cplex.IloCplex.IntParam;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class AvgPosToPos {
+public class AvgPosToPos extends AbstractModel {
 
+	private IloCplex _cplex;
+	private int _numSols;
 
-	public static void main(String[] args) {
+	public AvgPosToPos(int numSols) {
 		try {
 			IloCplex cplex = new IloCplex();
 			cplex.setParam(IntParam.SolnPoolIntensity, 4);
 			cplex.setParam(IntParam.SolnPoolReplace, 2);
 			cplex.setParam(IntParam.SolnPoolCapacity, 1000000);
-
-			int numImps = 50;
-			double avgPos = 3.27;
-			int numClicks = 5;
-			Query q = new Query(null,null);
-			int[]    lb = {0, 0, 0, 0, 0};
-			int[]    ub = {numImps, numImps, numImps, numImps, numImps};
-			IloIntVar[] x  = cplex.intVarArray(5, lb, ub);
-
-			double[] clickPr = new double[5];
-			clickPr = getClickPr(q);
-
-			cplex.addMinimize(cplex.abs(cplex.diff(cplex.sum(cplex.prod(clickPr[0],x[0]),
-					cplex.prod(clickPr[1],x[1]),
-					cplex.prod(clickPr[2],x[2]),
-					cplex.prod(clickPr[3],x[3]),
-					cplex.prod(clickPr[4],x[4])), numClicks)));
-			
-			
-			cplex.addEq(cplex.sum(cplex.prod( 1.0, x[0]),
-					cplex.prod( 2.0, x[1]),
-					cplex.prod( 3.0, x[2]),
-					cplex.prod( 4.0, x[3]),
-					cplex.prod( 5.0, x[4])), Math.ceil(numImps * avgPos));
-
-			cplex.addEq(cplex.sum(x[0],	x[1], x[2], x[3], x[4]), numImps);
-
-			cplex.setOut(null);
-			boolean flag = true;
-			int lastVal = 0;
-			while(flag) {
-				cplex.populate();
-				System.out.println(cplex.getSolnPoolNsolns());
-				if(lastVal == cplex.getSolnPoolNsolns()) {
-					flag = false;
-				}
-				lastVal = cplex.getSolnPoolNsolns();
-			}
-
-			//				if (cplex.populate()) {
-			//					for(int k = 0; k < cplex.getSolnPoolNsolns(); k++) {
-			//						cplex.output().println("Solution status = " + cplex.getStatus());
-			//						cplex.output().println("Solution value  = " + cplex.getObjValue());
-			//
-			//						double[] val = cplex.getValues(x,k);
-			//						int ncols = cplex.getNcols();
-			//						for (int j = 0; j < ncols; ++j)
-			//							cplex.output().println("Column: " + j + " Value = " + val[j]);
-			//						cplex.delSolnPoolSoln(0);
-			//					}
-			//				}
-			cplex.end();
-		}
-		catch (IloException e) {
-			System.err.println("Concert exception '" + e + "' caught");
+			_cplex = cplex;
+			_numSols = numSols;
+		} catch (IloException e) {
+			e.printStackTrace();
 		}
 	}
 
-	public static double[] getClickPr(Query q) {
+	/**
+	 * 
+	 * @param query The query we are analyzing
+	 * @param numImps The number of impressions we observed
+	 * @param avgPos The average position we observed
+	 * @param numClicks The number of clicks we observed
+	 * @param numPromSlots The number of promoted slots
+	 * @return
+	 */
+	public double[] getPrediction(Query query, int numImps, double avgPos, int numClicks, int numPromSlots) {
+		try {
+			double start = System.currentTimeMillis();
+			_cplex.clearModel();
+
+			int[] lb = {0, 0, 0, 0, 0};
+			int[] ub = {numImps, numImps, numImps, numImps, numImps};
+			IloIntVar[] x;
+			x = _cplex.intVarArray(5, lb, ub);
+
+			double[] clickPr = new double[5];
+			clickPr = getClickPr(query,numPromSlots);
+
+			_cplex.addMinimize(_cplex.abs(_cplex.diff(_cplex.sum(_cplex.prod(clickPr[0],x[0]),
+					_cplex.prod(clickPr[1],x[1]),
+					_cplex.prod(clickPr[2],x[2]),
+					_cplex.prod(clickPr[3],x[3]),
+					_cplex.prod(clickPr[4],x[4])), numClicks)));
+
+
+			_cplex.addEq(_cplex.sum(_cplex.prod( 1.0, x[0]),
+					_cplex.prod( 2.0, x[1]),
+					_cplex.prod( 3.0, x[2]),
+					_cplex.prod( 4.0, x[3]),
+					_cplex.prod( 5.0, x[4])), Math.ceil(numImps * avgPos));
+
+			_cplex.addEq(_cplex.sum(x[0],	x[1], x[2], x[3], x[4]), numImps);
+
+			while(_cplex.getSolnPoolNsolns() < _numSols) {
+				_cplex.populate();
+			}
+			
+			double[] solution = new double[5];
+			
+			for(int i = 0; i < 5; i++) {
+				solution[i] = 0;
+			}
+
+			for(int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
+//				_cplex.output().println("Solution value  = " + _cplex.getObjValue(i));
+				double[] val = _cplex.getValues(x,i);
+				for (int j = 0; j < 5; ++j) {
+//					_cplex.output().println("Column: " + j + " Value = " + val[j]);
+					solution[j] = solution[j] + val[j];
+				}
+			}
+			
+			for(int i = 0; i < 5; i++) {
+				solution[i] = solution[i] / 5.0;
+			}
+
+			_cplex.end();
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			System.out.println("This took " + (elapsed / 1000) + " seconds");
+			return solution;
+		}
+		catch (IloException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public double[] getClickPr(Query q, int numPromSlots) {
 		double prConv, prClick, prCont;
 
 		if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
@@ -104,5 +127,9 @@ public class AvgPosToPos {
 		}
 
 		return clickPrs;
+	}
+	
+	public double eta(double p, double x) {
+		return (p*x)/(p*x + (1-p));
 	}
 }
