@@ -1,6 +1,5 @@
 package newmodels;
 
-
 /**
  * @author jberg
  */
