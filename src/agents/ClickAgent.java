@@ -118,23 +118,19 @@ public class ClickAgent extends SimAbstractAgent {
 	}
 
 	protected void adjustPM(Query q) {
+		double tmp;
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
 		if (_salesReport.getConversions(q) < _desiredSale) {
-			if (!(_queryReport.getPosition(q) < 4)) {
-				double tmp = (1 - _PM.get(q)) * 1.1;
-				tmp = Math.min(.9, tmp);
-				_PM.put(q, 1 - tmp);
-			}
+			tmp = (1 - _PM.get(q)) * 1.1;
+			tmp = Math.min(.9, tmp);
 		} else {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
-			if (_queryReport.getPosition(q) < 4) {
-				double tmp = (1 - _PM.get(q)) * .9;
-				tmp = Math.max(.1, tmp);
-				_PM.put(q, 1 - tmp);
-			}
+			tmp = (1 - _PM.get(q)) * .9;
+			tmp = Math.max(.1, tmp);
 		}
+		_PM.put(q, 1 - tmp);
 	}
 
 	protected double setQuerySpendLimit(Query q) {
