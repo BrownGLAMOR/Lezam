@@ -31,6 +31,7 @@ import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.AdMaxAgent;
 import agents.Cheap;
+import agents.EquateProfitC;
 import agents.ILPAgent;
 import agents.MCKPAgentMkIIBids;
 import agents.SimAbstractAgent;
@@ -57,7 +58,7 @@ public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 5; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
-	private static final boolean PERFECTMODELS = true;
+	private static final boolean PERFECTMODELS = false;
 
 	private static boolean CHART = false;
 
@@ -137,8 +138,9 @@ public class BasicSimulator {
 		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		agent.initBidder();
+		//TODO switch init models and bidder later
 		Set<AbstractModel> models = agent.initModels();
+		agent.initBidder();
 		agent.setModels(models);
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
@@ -794,7 +796,7 @@ public class BasicSimulator {
 
 					double overCap = agent.getOverCap();
 					if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
-//						debug(agent.getAdvId() + " is overcap by " + overCap);
+						//						debug(agent.getAdvId() + " is overcap by " + overCap);
 					}
 					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
 
@@ -968,7 +970,8 @@ public class BasicSimulator {
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
@@ -1041,7 +1044,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitC(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

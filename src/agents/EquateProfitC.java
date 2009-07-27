@@ -70,7 +70,7 @@ public class EquateProfitC extends SimAbstractAgent{
 		}
 
 		_bidBundleList.add(_bidBundle);
-		printInfo();
+//		printInfo();
 		return _bidBundle;
 	}
 
@@ -183,7 +183,7 @@ public class EquateProfitC extends SimAbstractAgent{
 	protected double getQueryBid(Query q){
 		double prConv;
 		if(_day <= 6) prConv = _baselineConv.get(q);
-		else prConv = _conversionPrModel.getPrediction(q);
+		else prConv = _conversionPrModel.getPrediction(q,0.0);
 		
 		double bid;
 		bid = cpcTobid(_estimatedPrice.get(q)*prConv - k,q);
