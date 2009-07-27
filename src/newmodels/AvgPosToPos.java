@@ -53,7 +53,6 @@ public class AvgPosToPos extends AbstractModel {
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks, int numPromSlots) {
 		try {
 			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos)) && !(regImps > 0 && promImps > 0)) {
-				System.out.println("\n\n\n YO \n\n");
 				double[] ans = new double[5];
 				for(int i = 0; i < 5; i++) {
 					if((i+1) == avgPos) {

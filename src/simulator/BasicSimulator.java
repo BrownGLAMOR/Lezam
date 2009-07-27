@@ -871,8 +871,9 @@ public class BasicSimulator {
 						debug("\t\t Prom Impressions: " + agent.getNumPromImps(query));
 						debug("\t\t Reg Impressions: " + agent.getNumRegImps(query));
 						debug("\t\t Avg Pos per Imp: " + (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))));
+						double[] perQPos = agent.getPerQPosSum(query);
 						for(int j = 0; j < 5; j++) {
-							debug("\t\t Imps in Slot " + (j+1) + ": " + (agent.getPerQPosSum(query)[j]));
+							debug("\t\t Imps in Slot " + (j+1) + ": " + (perQPos[j]));
 						}
 						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
 							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
