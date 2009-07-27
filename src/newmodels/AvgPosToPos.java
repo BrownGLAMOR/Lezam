@@ -13,6 +13,7 @@ import edu.umich.eecs.tac.props.QueryType;
 
 public class AvgPosToPos extends AbstractModel {
 
+	private static final boolean forceToPos = true;
 	private IloCplex _cplex;
 	private int _numSols;
 	private double _promBonus= .5;
@@ -20,6 +21,7 @@ public class AvgPosToPos extends AbstractModel {
 	public AvgPosToPos(int numSols) {
 		try {
 			IloCplex cplex = new IloCplex();
+			cplex.setOut(null);
 			cplex.setParam(IntParam.SolnPoolIntensity, 4);
 			cplex.setParam(IntParam.SolnPoolReplace, 2);
 			cplex.setParam(IntParam.SolnPoolCapacity, 1000000);
@@ -28,6 +30,15 @@ public class AvgPosToPos extends AbstractModel {
 		} catch (IloException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private boolean doubleEquals(double position, double d) {
+		double epsilon = .01;
+		double diff = Math.abs(position - d);
+		if(diff <= epsilon) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -41,7 +52,21 @@ public class AvgPosToPos extends AbstractModel {
 	 */
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks, int numPromSlots) {
 		try {
+			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos)) && !(regImps > 0 && promImps > 0)) {
+				System.out.println("\n\n\n YO \n\n");
+				double[] ans = new double[5];
+				for(int i = 0; i < 5; i++) {
+					if((i+1) == avgPos) {
+						ans[i] = regImps+promImps;
+					}
+					else {
+						ans[i] = 0;
+					}
+				}
+				return ans;
+			}
 			double start = System.currentTimeMillis();
+
 			_cplex.clearModel();
 
 			int numImps = regImps + promImps;
@@ -92,7 +117,7 @@ public class AvgPosToPos extends AbstractModel {
 				}
 				lastNumSols = _cplex.getSolnPoolNsolns();
 			}
-			
+
 			System.out.println(_cplex.getSolnPoolNsolns());
 
 			double[] solution = new double[5];
@@ -114,7 +139,6 @@ public class AvgPosToPos extends AbstractModel {
 				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
 			}
 
-			_cplex.end();
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			System.out.println("This took " + (elapsed / 1000) + " seconds");
@@ -165,7 +189,7 @@ public class AvgPosToPos extends AbstractModel {
 	public double eta(double p, double x) {
 		return (p*x)/(p*x + (1-p));
 	}
-	
+
 	public static void main(String[] args) {
 		AvgPosToPos avgPosModel = new AvgPosToPos(40);
 		double[] sols = avgPosModel.getPrediction(new Query("tv",null), 25, 100, 1.9, 25, 2);

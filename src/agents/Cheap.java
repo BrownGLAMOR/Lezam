@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -10,6 +11,8 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class Cheap extends SimAbstractAgent {
+	
+	private Random _R = new Random();
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -36,8 +39,8 @@ public class Cheap extends SimAbstractAgent {
 				}
 			}
 			queryBudget = dailyCap * queryBid;
-			bidBundle.addQuery(q, queryBid*.5, null);
-			bidBundle.setDailyLimit(q, queryBudget);
+			bidBundle.addQuery(q, queryBid*.5*randDouble(.25,1.25), null);
+//			bidBundle.setDailyLimit(q, queryBudget);
 		}
 
 		return bidBundle;
@@ -64,6 +67,11 @@ public class Cheap extends SimAbstractAgent {
 //			System.out.println("\tAverage Position: " + queryReport.getPosition(query));
 //		}
 		//No models used
+	}
+	
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
 	}
 
 }

@@ -13,6 +13,7 @@ import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.AvgPosToPos;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
@@ -138,9 +139,8 @@ public class BasicSimulator {
 		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		//TODO switch init models and bidder later
-		Set<AbstractModel> models = agent.initModels();
 		agent.initBidder();
+		Set<AbstractModel> models = agent.initModels();
 		agent.setModels(models);
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
@@ -841,28 +841,46 @@ public class BasicSimulator {
 			}
 		}
 		if(DEBUG) {
+			//			AvgPosToPos avgPosModel20 = new AvgPosToPos(20);
+			//			AvgPosToPos avgPosModel40 = new AvgPosToPos(40);
+			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
+			//			AvgPosToPos avgPosModel160 = new AvgPosToPos(160);
+			//			AvgPosToPos avgPosModel320 = new AvgPosToPos(320);
+			//			AvgPosToPos avgPosModel640 = new AvgPosToPos(640);
+			//			AvgPosToPos avgPosModelall = new AvgPosToPos(1000000);
 			for(int i = 0; i < agents.size(); i++) {
 				SimAgent agent = agents.get(i);
 				if(i == _ourAdvIdx) {
 					debug("****US****");
-				}
-				debug("Adv Id: " + agent.getAdvId());
-				debug("\tTotal Cost: " + agent.getTotCost());
-				debug("\tTotal Budget: " + agent.getTotBudget());
-				debug("\tTotal revenue: " + agent.getTotRevenue());
-				debug("\tTotal Units Sold: " + agent.getTotUnitsSold());
-				for(Query query : _querySpace) {
-					debug("\t Query: " + query);
-					debug("\t\t Bid: " + agent.getBid(query));
-					debug("\t\t CPC: " + agent.getCPC(query));
-					debug("\t\t Cost: " + agent.getCost(query));
-					debug("\t\t Budget: " + agent.getBudget(query));
-					debug("\t\t Revenue: " + agent.getRevenue(query));
-					debug("\t\t Units Sold: " + agent.getUnitsSold(query));
-					debug("\t\t Num Clicks: " + agent.getNumClicks(query));
-					debug("\t\t Prom Impressions: " + agent.getNumPromImps(query));
-					debug("\t\t Reg Impressions: " + agent.getNumRegImps(query));
-					debug("\t\t Avg Pos per Imp: " + (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))));
+					//				}
+					debug("Adv Id: " + agent.getAdvId());
+					debug("\tTotal Cost: " + agent.getTotCost());
+					debug("\tTotal Budget: " + agent.getTotBudget());
+					debug("\tTotal revenue: " + agent.getTotRevenue());
+					debug("\tTotal Units Sold: " + agent.getTotUnitsSold());
+					for(Query query : _querySpace) {
+						debug("\t Query: " + query);
+						debug("\t\t Bid: " + agent.getBid(query));
+						debug("\t\t CPC: " + agent.getCPC(query));
+						debug("\t\t Cost: " + agent.getCost(query));
+						debug("\t\t Budget: " + agent.getBudget(query));
+						debug("\t\t Revenue: " + agent.getRevenue(query));
+						debug("\t\t Units Sold: " + agent.getUnitsSold(query));
+						debug("\t\t Num Clicks: " + agent.getNumClicks(query));
+						debug("\t\t Num Prom Slots: " + _numPromSlots);
+						debug("\t\t Prom Impressions: " + agent.getNumPromImps(query));
+						debug("\t\t Reg Impressions: " + agent.getNumRegImps(query));
+						debug("\t\t Avg Pos per Imp: " + (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))));
+						for(int j = 0; j < 5; j++) {
+							debug("\t\t Imps in Slot " + (j+1) + ": " + (agent.getPerQPosSum(query)[j]));
+						}
+						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
+							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
+							for(int j = 0; j < 5; j++) {
+								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
+							}
+						}
+					}
 				}
 			}
 		}
@@ -1044,7 +1062,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitC(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
