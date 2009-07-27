@@ -15,6 +15,6 @@
 	<classpathentry kind="lib" path="lib/aa-agent-0.9.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/aa-common-0.9.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/tasim-0.8.0.4.2.jar"/>
-	<classpathentry kind="lib" path="/pro/aa/usr/jberg/Clients/lib/aa-logging-0.9.6.2.jar"/>
+	<classpathentry kind="lib" path="lib/aa-logging-0.9.6.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
