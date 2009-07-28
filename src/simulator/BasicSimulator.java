@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 5; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 50; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -136,6 +136,7 @@ public class BasicSimulator {
 	private ArrayList<SimUser> _pregenUsers;
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
+		System.out.println("Num Iterations: " + NUM_PERF_ITERS);
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
@@ -468,13 +469,25 @@ public class BasicSimulator {
 				BidBundle bundle = null;
 				if(PERFECTMODELS) {
 					_baseSolBundle = null;
-					int numIters = 2;
+					int numIters = 100;
 					for(int j = 0; j < numIters; j++) {
 						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 						for(Query query : _querySpace) {
 							_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 						}
 						bundle = getBids(agentToRun);
+						if(_baseSolBundle != null) {
+							double MSE = 0;
+							double avg = 0;
+							for(Query query : _querySpace) {
+								double E = bundle.getBid(query) - _baseSolBundle.getBid(query);
+								MSE += (E*E/16.0);
+								avg += _baseSolBundle.getBid(query);
+							}
+							double RMSE = Math.sqrt(MSE);
+							System.out.println("RMSE: " + RMSE);
+							System.out.println("Percent Error: " + (RMSE/avg));
+						}
 						_baseSolBundle = bundle;
 					}
 				}
