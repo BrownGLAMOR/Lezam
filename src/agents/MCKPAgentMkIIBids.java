@@ -93,7 +93,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	public MCKPAgentMkIIBids() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .05;
+		double increment  = .1;
 		double min = .04;
 		double max = 2;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -308,8 +308,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		BidBundle bidBundle = new BidBundle();
 		double numIncItemsPerSet = 0;
 
+		System.out.println(_day);
 		if(_day > 1) {
-			System.out.println(_day);
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
 				_salesDist = salesDist;
@@ -318,7 +318,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -701,12 +701,22 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
-					avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+					if(_day < 2) {
+						avgConvProb += _baseConvProbs.get(q) / 16.0;
+					}
+					else {
+						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+					}
 				}
 
 				double avgUSP = 0;
 				for(Query q : _querySpace) {
-					avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+					if(_day < 2) {
+						avgUSP += _salesPrices.get(q) / 16.0;
+					}
+					else {
+						avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+					}
 				}
 
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){

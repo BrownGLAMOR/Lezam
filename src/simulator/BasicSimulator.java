@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 3; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 2; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -129,9 +129,13 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed;
+	private long lastSeed = 5423;
 
 	private BidBundle _baseSolBundle;
+
+	private ArrayList<UserClickConvTuple> _pregenUsers;
+
+	private ArrayList<SimUser> _pregenUsersList;
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
@@ -177,6 +181,9 @@ public class BasicSimulator {
 				_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 			}
 
+			_baseSolBundle = null;
+			_pregenUsers = null;
+			_pregenUsersList = null;
 			HashMap<String, Reports> maps = runSimulation(agent);
 
 			/*
@@ -239,18 +246,8 @@ public class BasicSimulator {
 	}
 
 	private long getNewSeed() {
-		SecureRandom sr = null;
-		try {
-			sr = SecureRandom.getInstance("SHA1PRNG");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		int seedByteCount = 10;
-		byte[] seedArr= sr.generateSeed(seedByteCount);
-		long seed = 0;
-		for(int i = 0; i < seedArr.length; i++) {
-			seed += seedArr[i];
-		}
+		Random rand = new Random(lastSeed);
+		long seed = rand.nextLong();
 		return Math.abs(seed);
 	}
 
@@ -474,7 +471,7 @@ public class BasicSimulator {
 				BidBundle bundle = null;
 				if(PERFECTMODELS) {
 					_baseSolBundle = null;
-					int numIters = 5;
+					int numIters = 2;
 					for(int j = 0; j < numIters; j++) {
 						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 						for(Query query : _querySpace) {
@@ -561,15 +558,37 @@ public class BasicSimulator {
 
 	public Reports runQuerySimulation(double simBid, Ad simAd, Query simQuery) {
 		ArrayList<SimAgent> agents = buildSingleQueryAgents(simBid,simAd,simQuery);
-		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
-		Random randGen = new Random(lastSeed);
-		Collections.shuffle(users,randGen);
-		_R = new Random(lastSeed);
+		ArrayList<SimUser> users;
+		boolean firstPass;
+		if(_pregenUsers == null) {
+			users = buildSearchingUserBase(_usersMap);
+			Random randGen = new Random(lastSeed);
+			Collections.shuffle(users,randGen);
+			_pregenUsersList = users;
+			_pregenUsers = new ArrayList<UserClickConvTuple>();
+			firstPass = true;
+		}
+		else {
+			users = _pregenUsersList;
+			firstPass = false;
+		}
+		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
+			UserClickConvTuple userTuple;
+			double[] clicks = new double[5];
+			int convs = 0;
+			for(int j = 0; j < 5; j++) {
+				clicks[j] = 0;
+			}
+
 			Query query = user.generateQuery();
 			if(query == null) {
 				//This means the user is IS or T
+				if(firstPass) {
+					userTuple = new UserClickConvTuple(user, clicks, convs);
+					_pregenUsers.add(userTuple);
+				}
 				continue;
 			}
 			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
@@ -635,6 +654,7 @@ public class BasicSimulator {
 				double clickPr = eta(advEffect,fTarg*fProm);
 				double rand = _R.nextDouble();
 				if(clickPr >= rand) {
+					clicks[j-1] = 1;
 					AgentBidPair underPair = pairList.get(j);
 					SimAgent agentUnder = underPair.getAgent();
 					double bidUnder = agentUnder.getBid(query);
@@ -675,6 +695,7 @@ public class BasicSimulator {
 					rand = _R.nextDouble();
 
 					if(convPr >= rand) {
+						convs = i;
 						String queryMan = query.getManufacturer();
 						String manSpecialty = agent.getManSpecialty();
 						double revenue = 10;
@@ -682,14 +703,26 @@ public class BasicSimulator {
 							revenue = (1+_MSB)*10;
 						}
 						agent.addRevenue(query, revenue);
+						if(firstPass) {
+							userTuple = new UserClickConvTuple(user, clicks, convs);
+							_pregenUsers.add(userTuple);
+						}
 						break;
 					}
 					else {
 						rand = _R.nextDouble();
 						if(contProb >= rand) {
+							if(firstPass) {
+								userTuple = new UserClickConvTuple(user, clicks, convs);
+								_pregenUsers.add(userTuple);
+							}
 							continue;
 						}
 						else {
+							if(firstPass) {
+								userTuple = new UserClickConvTuple(user, clicks, convs);
+								_pregenUsers.add(userTuple);
+							}
 							break;
 						}
 					}
@@ -697,9 +730,17 @@ public class BasicSimulator {
 				else {
 					rand = _R.nextDouble();
 					if(contProb >= rand) {
+						if(firstPass) {
+							userTuple = new UserClickConvTuple(user, clicks, convs);
+							_pregenUsers.add(userTuple);
+						}
 						continue;
 					}
 					else {
+						if(firstPass) {
+							userTuple = new UserClickConvTuple(user, clicks, convs);
+							_pregenUsers.add(userTuple);
+						}
 						break;
 					}
 				}
@@ -712,15 +753,31 @@ public class BasicSimulator {
 		return reports;
 	}
 
+	private ArrayList<SimUser> userArrListCopyTuple(ArrayList<UserClickConvTuple> pregenUsers) {
+		ArrayList<SimUser> usersCopy = new ArrayList<SimUser>();
+		for(int i = 0; i < pregenUsers.size(); i++) {
+			usersCopy.add(new SimUser(pregenUsers.get(i).getUsers().getProduct(),pregenUsers.get(i).getUsers().getUserState()));
+		}
+		return usersCopy;
+	}
+
+	private ArrayList<SimUser> userArrListCopy(ArrayList<SimUser> users) {
+		ArrayList<SimUser> usersCopy = new ArrayList<SimUser>();
+		for(int i = 0; i < users.size(); i++) {
+			usersCopy.add(new SimUser(users.get(i).getProduct(),users.get(i).getUserState()));
+		}
+		return usersCopy;
+	}
+
 	/*
 	 * Runs the simulation and generates reports
 	 */
 	public HashMap<String, Reports> runSimulation(SimAbstractAgent agentToRun) {
 		ArrayList<SimAgent> agents = buildAgents(agentToRun);
-		ArrayList<SimUser> users = buildSearchingUserBase(_usersMap);
+		ArrayList<SimUser> users= buildSearchingUserBase(_usersMap);
 		Random randGen = new Random(lastSeed);
 		Collections.shuffle(users,randGen);
-		_R = new Random(lastSeed);
+		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.generateQuery();
