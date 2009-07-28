@@ -43,6 +43,7 @@ public class DPBAgent extends SimAbstractAgent {
 	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractBidToPrClick bidToPrClickModel;
 	private AbstractUserModel userModel;
+	protected HashMap<Query, Double> _baselineConv;
 
 	// model, strategy related variables
 	protected BidBundle bidBundle = null;
@@ -112,21 +113,23 @@ public class DPBAgent extends SimAbstractAgent {
 
 		// int targetCapacity = (int)Math.max(2*1.5*dailyCapacity - unitsSold,
 		// dailyCapacity*.5);
-		int targetCapacity = (int) (2 * dailyCapacity);
+		int targetCapacity = (int) (1.5*dailyCapacity);
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
 
 		for (Query query : _querySpace) {
 			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
-			double bid = .1;
-			double maxBid = Math.min(revenues.get(query)* prConversionModel.getPrediction(query, 0.0) * 2, 5);
+			double minBid = Math.max(.1, _bidBundles.getLast().getBid(query) - .5);
+			double maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, 2.5);
+			
+			double bid = minBid;
 			while (bid <= maxBid) {
 				double prClicks = bidToPrClickModel.getPrediction(query, bid,
 						null);
 				double imp = queryToNumImpModel.getPrediction(query);
 				bidToClicks.put(bid, (int) (prClicks * imp));
-				bid += .1;
+				bid += .05;
 			}
 
 			item.put(query, bidToClicks);
@@ -194,12 +197,27 @@ public class DPBAgent extends SimAbstractAgent {
 		
 		while (i > 0) {
 			i--;
-			double bid = bids[i][capacity];
-			double clicks = sales[i][capacity] * 1.0/ prConversionModel.getPrediction(queries[i], 0.0);
-			double cpc = bidToCPCModel.getPrediction(queries[i], bid);
-			// double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
-			double dailyLimit = Math.max(bid * clicks, bid);
-
+			double bid = Double.NaN;
+			double dailyLimit = Double.NaN;
+			if (sales[i][capacity] > 0) {
+				bid = bids[i][capacity];
+				double prConv = prConversionModel.getPrediction(queries[i], 0.0);
+				if (Double.isNaN(prConv) || prConv == 0) prConv = _baselineConv.get(queries[i]);
+				double clicks = sales[i][capacity] * 1.0/ prConv;
+				//double cpc = bidToCPCModel.getPrediction(queries[i], bid);
+				// double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
+				dailyLimit = bid * clicks;
+			}
+			else {
+				if (queries[i].getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = randDouble(.1, .6);
+				else if (queries[i].getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = randDouble(.25, .75);
+				else
+					bid = randDouble(.35, 1.0);
+				dailyLimit = bid + .05;
+			}
+			
 			bidBundle.setBid(queries[i], bid);
 			bidBundle.setDailyLimit(queries[i], dailyLimit);
 
@@ -230,6 +248,19 @@ public class DPBAgent extends SimAbstractAgent {
 		slots = promotedSlots + regularSlots;
 
 		// initialize strategy related variables
+		
+		_baselineConv = new HashMap<Query, Double>();
+        for(Query q: _querySpace){
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
+        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
+        		else _baselineConv.put(q, 0.2);
+        	}
+        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
+        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
+        		else _baselineConv.put(q,0.3);
+        	}
+        }
 
 		bidBundle = null;
 
@@ -255,7 +286,7 @@ public class DPBAgent extends SimAbstractAgent {
 		models.add(queryToNumImpModel);
 		bidToCPCModel = new RegressionBidToCPC(_querySpace);
 		models.add(bidToCPCModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 32, null, null);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 10, null, null);
 		((EnsembleBidToPrClick)bidToPrClickModel).initializeEnsemble();
 		models.add(bidToPrClickModel);
 
@@ -343,7 +374,6 @@ public class DPBAgent extends SimAbstractAgent {
 		buff.append("\t").append("Slots: ").append(slots).append("\n");
 		buff.append("****************\n");
 		for (Query q : _querySpace) {
-			buff.append("\t").append("Day: ").append(_day).append("\n");
 			buff.append(q).append("\n");
 			buff.append("\t").append("Bid: ").append(bidBundleList.get(bidBundleList.size() - 2).getBid(q))
 					.append("\n");
@@ -359,9 +389,17 @@ public class DPBAgent extends SimAbstractAgent {
 					_salesReport.getConversions(q)).append("\n");
 			if (_salesReport.getConversions(q) > 0) {
 				buff.append("\t").append("Conversions Pr: ").append(
-					_salesReport.getConversions(q)/_queryReport.getClicks(q)).append("\n");}
-			else buff.append("\t").append("Conversions Pr: ").append("No clicks").append("\n");
-			buff.append("\t").append("Conversions: ").append(prConversionModel.getPrediction(q, 0.0)).append("\n");
+					_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");}
+			else buff.append("\t").append("Conversions Pr: ").append("No click").append("\n");
+			buff.append("\t").append("Predicted Conversion Pr: ").append(prConversionModel.getPrediction(q, 0.0)).append("\n");
+			if (_salesReport.getConversions(q) > 0) {
+				buff.append("\t").append("PPS: ").append(
+					(_salesReport.getRevenue(q)-_queryReport.getCost(q))/_salesReport.getConversions(q)).append("\n");}
+			else buff.append("\t").append("PPS: ").append("No conversion").append("\n");
+			if (_queryReport.getClicks(q) > 0) {
+				buff.append("\t").append("PPC: ").append(
+					(_salesReport.getRevenue(q)-_queryReport.getCost(q))/_queryReport.getClicks(q)).append("\n");}
+			else buff.append("\t").append("PPC: ").append("No click").append("\n");
 			buff.append("****************\n");
 		}
 
