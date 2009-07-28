@@ -63,7 +63,7 @@ public class BasicSimulator {
 
 	private static boolean CHART = false;
 
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 
 	Random _R = new Random();					//Random number generator
 
@@ -843,7 +843,7 @@ public class BasicSimulator {
 		if(DEBUG) {
 			//			AvgPosToPos avgPosModel20 = new AvgPosToPos(20);
 			//			AvgPosToPos avgPosModel40 = new AvgPosToPos(40);
-			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
+			//			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
 			//			AvgPosToPos avgPosModel160 = new AvgPosToPos(160);
 			//			AvgPosToPos avgPosModel320 = new AvgPosToPos(320);
 			//			AvgPosToPos avgPosModel640 = new AvgPosToPos(640);
@@ -875,12 +875,12 @@ public class BasicSimulator {
 						for(int j = 0; j < 5; j++) {
 							debug("\t\t Imps in Slot " + (j+1) + ": " + (perQPos[j]));
 						}
-						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
-							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
-							for(int j = 0; j < 5; j++) {
-								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
-							}
-						}
+						//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
+						//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
+						//							for(int j = 0; j < 5; j++) {
+						//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
+						//							}
+						//						}
 					}
 				}
 			}
@@ -989,8 +989,8 @@ public class BasicSimulator {
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
@@ -1063,7 +1063,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
