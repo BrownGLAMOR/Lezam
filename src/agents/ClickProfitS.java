@@ -193,7 +193,7 @@ public class ClickProfitS extends SimAbstractAgent {
 			// set bids
 			double prConv;
 			if(_day <= 6) prConv = _baselineConv.get(query);
-			else prConv = _prConversionModel.getPrediction(query);
+			else prConv = _prConversionModel.getPrediction(query, 0.0);
 			
 			double rev = _revenueModels.get(query).getRevenue();
 			double bid = prConv*rev*(1 - _profitMargins.get(query));

@@ -82,8 +82,8 @@ public class ConstantPM extends SimAbstractAgent {
 			System.out.print(ad.toString() + ", ");
 			double pr = 0.1;
 			if(_day > 2) {
-				pr = convModel.getPrediction(q);
-				double oldPr = _oldModel.getPrediction(q);
+				pr = convModel.getPrediction(q, 0.0);
+				double oldPr = _oldModel.getPrediction(q, 0.0);
 				
 				System.out.println("Old prediction: " + oldPr +"\tNew Prediction: " + pr + "\tDelta: " + (oldPr - pr));
 			}

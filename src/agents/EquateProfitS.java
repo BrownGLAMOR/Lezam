@@ -206,7 +206,7 @@ public class EquateProfitS extends SimAbstractAgent{
 		
 		double prConv;
 		if(_day <= 6) prConv = _baselineConv.get(q);
-		else prConv = _conversionPrModel.getPrediction(q);
+		else prConv = _conversionPrModel.getPrediction(q, 0.0);
 		
 		double rev = _estimatedPrice.get(q);
 		

@@ -120,7 +120,7 @@ public class DPBAgent extends SimAbstractAgent {
 			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
 			double bid = .1;
-			double maxBid = Math.min(revenues.get(query)* prConversionModel.getPrediction(query) * 2, 5);
+			double maxBid = Math.min(revenues.get(query)* prConversionModel.getPrediction(query, 0.0) * 2, 5);
 			while (bid <= maxBid) {
 				double prClicks = bidToPrClickModel.getPrediction(query, bid,
 						null);
@@ -153,7 +153,7 @@ public class DPBAgent extends SimAbstractAgent {
 				for (double bid : item.get(query).keySet()) {
 
 					int maxClick = item.get(query).get(bid);
-					double prConv = prConversionModel.getPrediction(query);
+					double prConv = prConversionModel.getPrediction(query, 0.0);
 
 					for (int capacity = 0; capacity / prConv <= maxClick; capacity++) {
 						if (j - capacity < 0) break; 
@@ -195,7 +195,7 @@ public class DPBAgent extends SimAbstractAgent {
 		while (i > 0) {
 			i--;
 			double bid = bids[i][capacity];
-			double clicks = sales[i][capacity] * 1.0/ prConversionModel.getPrediction(queries[i]);
+			double clicks = sales[i][capacity] * 1.0/ prConversionModel.getPrediction(queries[i], 0.0);
 			double cpc = bidToCPCModel.getPrediction(queries[i], bid);
 			// double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
 			double dailyLimit = Math.max(bid * clicks, bid);
@@ -361,7 +361,7 @@ public class DPBAgent extends SimAbstractAgent {
 				buff.append("\t").append("Conversions Pr: ").append(
 					_salesReport.getConversions(q)/_queryReport.getClicks(q)).append("\n");}
 			else buff.append("\t").append("Conversions Pr: ").append("No clicks").append("\n");
-			buff.append("\t").append("Conversions: ").append(prConversionModel.getPrediction(q)).append("\n");
+			buff.append("\t").append("Conversions: ").append(prConversionModel.getPrediction(q, 0.0)).append("\n");
 			buff.append("****************\n");
 		}
 

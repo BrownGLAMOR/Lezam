@@ -138,7 +138,7 @@ public class ClickAgent extends SimAbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
+			conversion = _conversionPrModel.getPrediction(q, 0.0);
 		double dailySalesLimit = _desiredSale/conversion;
 		return _bidBundle.getBid(q) * dailySalesLimit;
 	}
@@ -148,7 +148,7 @@ public class ClickAgent extends SimAbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
+			conversion = _conversionPrModel.getPrediction(q, 0.0);
 		return _revenue.get(q)*(1 - _PM.get(q))*conversion;
 	}
 

@@ -117,7 +117,7 @@ public class ClickProfitC extends SimAbstractAgent {
 		
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			double profit = _prConversionModel.getPrediction(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
+			double profit = _prConversionModel.getPrediction(query, 0.0)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
@@ -182,7 +182,7 @@ public class ClickProfitC extends SimAbstractAgent {
 				_queryReport.getPosition(query) == Double.NaN) {
 				double newProfitMargin;
 				if (latestProfit > _avgProfit && _avgProfit > 0)
-					newProfitMargin = Math.min(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query)),_profitMargins.get(query)*0.9);
+					newProfitMargin = Math.min(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query, 0.0)),_profitMargins.get(query)*0.9);
 				else newProfitMargin = _profitMargins.get(query)*0.9;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.1, newProfitMargin);
@@ -191,7 +191,7 @@ public class ClickProfitC extends SimAbstractAgent {
 			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
 				double newProfitMargin;
 				if (latestProfit < _avgProfit && _avgProfit > 0)
-					newProfitMargin = Math.max(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query)),_profitMargins.get(query)*1.1);
+					newProfitMargin = Math.max(_avgProfit/(_revenueModels.get(query).getRevenue()*_prConversionModel.getPrediction(query, 0.0)),_profitMargins.get(query)*1.1);
 				else newProfitMargin = _profitMargins.get(query)*1.1;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.1, newProfitMargin);
@@ -208,9 +208,9 @@ public class ClickProfitC extends SimAbstractAgent {
 		for (Query query : _querySpace) {
 			// set bids
 			double prConv;
-			if (_day <= 6 || !(_prConversionModel.getPrediction(query) > 0))
+			if (_day <= 6 || !(_prConversionModel.getPrediction(query, 0.0) > 0))
 				prConv = _baselineConversions.get(query);
-			else prConv= _prConversionModel.getPrediction(query);
+			else prConv= _prConversionModel.getPrediction(query, 0.0);
 			
 			double bid = prConv *_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
 			_bidBundle.setBid(query, bid);
@@ -285,7 +285,7 @@ public class ClickProfitC extends SimAbstractAgent {
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
 			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModel.getPrediction(q)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModel.getPrediction(q, 0.0)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
 			if (_salesReport.getConversions(q) > 0)
