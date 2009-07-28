@@ -255,7 +255,7 @@ public class DPBAgent extends SimAbstractAgent {
 		models.add(queryToNumImpModel);
 		bidToCPCModel = new RegressionBidToCPC(_querySpace);
 		models.add(bidToCPCModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 32, null, null);
 		((EnsembleBidToPrClick)bidToPrClickModel).initializeEnsemble();
 		models.add(bidToPrClickModel);
 
