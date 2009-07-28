@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 2; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -469,8 +469,11 @@ public class BasicSimulator {
 				BidBundle bundle = null;
 				if(PERFECTMODELS) {
 					_baseSolBundle = null;
-					int numIters = 100;
-					for(int j = 0; j < numIters; j++) {
+					double epsilon = .0001;
+					boolean loopFlag = true;
+					int loopCounter = 0;
+					while(loopFlag) {
+						loopCounter++;
 						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 						for(Query query : _querySpace) {
 							_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
@@ -488,9 +491,13 @@ public class BasicSimulator {
 							double RMSE = Math.sqrt(MSE);
 							System.out.println("RMSE: " + RMSE);
 							System.out.println("Percent Error: " + (RMSE/avg));
+							if((RMSE/avg) < epsilon) {
+								loopFlag = false;
+							}
 						}
 						_baseSolBundle = bundle;
 					}
+					System.out.println(loopCounter);
 				}
 				else {
 					bundle = getBids(agentToRun);
@@ -555,11 +562,12 @@ public class BasicSimulator {
 
 	public ArrayList<SimUser> buildSearchingUserBase(HashMap<Product, HashMap<UserState, Integer>> usersMap) {
 		ArrayList<SimUser> usersList = new ArrayList<SimUser>();
+		_R.setSeed(lastSeed);
 		for(Product prod : _retailCatalog) {
 			for(UserState state : UserState.values()) {
 				int users = usersMap.get(prod).get(state);
 				for(int i = 0; i < users; i++) {
-					SimUser user = new SimUser(prod,state);
+					SimUser user = new SimUser(prod,state,_R.nextLong());
 					usersList.add(user);
 				}
 			}
@@ -570,6 +578,7 @@ public class BasicSimulator {
 	public Reports runQuerySimulation(double simBid, Ad simAd, Query simQuery) {
 		ArrayList<SimAgent> agents = buildSingleQueryAgents(simBid,simAd,simQuery);
 		ArrayList<SimUser> users;
+		_R.setSeed(lastSeed);
 		if(_pregenUsers != null) {
 			users = _pregenUsers;
 		}
@@ -579,7 +588,6 @@ public class BasicSimulator {
 			Collections.shuffle(users,randGen);
 			_pregenUsers  = users;
 		}
-		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.getUserQuery();
@@ -1045,7 +1053,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 0;
+			int advId = 7;
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
