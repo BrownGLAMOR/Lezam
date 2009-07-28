@@ -57,9 +57,9 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 5; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
-	private static final boolean PERFECTMODELS = false;
+	private static final boolean PERFECTMODELS = true;
 
 	private static boolean CHART = false;
 
@@ -130,6 +130,8 @@ public class BasicSimulator {
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
 	private long lastSeed;
+
+	private BidBundle _baseSolBundle;
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
@@ -460,8 +462,8 @@ public class BasicSimulator {
 		if(PERFECTMODELS) {
 			agentToRun.setModels(generatePerfectModels());
 		}
-		BidBundle bundle = agentToRun.getBidBundle(agentToRun.getModels());
-		return bundle;
+		BidBundle bidBundle = agentToRun.getBidBundle(agentToRun.getModels());
+		return bidBundle;
 	}
 
 	public ArrayList<SimAgent> buildAgents(SimAbstractAgent agentToRun) {
@@ -469,7 +471,22 @@ public class BasicSimulator {
 		for(int i = 0; i < _agents.length; i++) {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
-				BidBundle bundle = getBids(agentToRun);
+				BidBundle bundle = null;
+				if(PERFECTMODELS) {
+					_baseSolBundle = null;
+					int numIters = 5;
+					for(int j = 0; j < numIters; j++) {
+						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
+						for(Query query : _querySpace) {
+							_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
+						}
+						bundle = getBids(agentToRun);
+						_baseSolBundle = bundle;
+					}
+				}
+				else {
+					bundle = getBids(agentToRun);
+				}
 				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
@@ -506,9 +523,16 @@ public class BasicSimulator {
 						adTypes.put(query, simAd);
 					}
 					else{
-						bids.put(query,_bids.get(_agents[i]).get(query));
-						budgets.put(query,_budgets.get(_agents[i]).get(query));
-						adTypes.put(query,_adType.get(_agents[i]).get(query));
+						if(_baseSolBundle != null) {
+							bids.put(query,_baseSolBundle.getBid(query));
+							budgets.put(query,_baseSolBundle.getDailyLimit(query));
+							adTypes.put(query,_baseSolBundle.getAd(query));
+						}
+						else {
+							bids.put(query,_bids.get(_agents[i]).get(query));
+							budgets.put(query,_budgets.get(_agents[i]).get(query));
+							adTypes.put(query,_adType.get(_agents[i]).get(query));
+						}
 					}
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_testId ,_squashing,_querySpace);
