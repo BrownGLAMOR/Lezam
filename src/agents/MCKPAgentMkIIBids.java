@@ -110,7 +110,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 		sumConvPrError = 0.0;
 		sumImpError = 0.0;
 		errorDayCounter = 0;
-		
+
 		salesDistFlag = false;
 	}
 
@@ -345,7 +345,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
 					}
-					
+
 					if(Double.isNaN(clickPr)) {
 						clickPr = 0.0;
 					}
@@ -363,7 +363,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					debug("\tNumClicks: " + numClicks);
 					debug("\tClickPr: " + clickPr);
 					debug("\tConv Prob: " + convProb + "\n\n");
-					
+
 					int isID = _queryId.get(q);
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
@@ -432,7 +432,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
-//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
+					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
@@ -468,18 +468,18 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					//					bid = 0.0;
-					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-
-					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					bid = 0.0;
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					System.out.println("Bidding " + bid + "   for query: " + q);
+					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//
+					//					System.out.println("Exploring " + q + "   bid: " + bid);
+					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 
 				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid));
@@ -488,8 +488,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				dailyImpPredictions.put(q,(double)_queryToNumImpModel.getPrediction(q));
 
 			}
-//			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
-//			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
+			//			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
+			//			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
 			ConvPrPredictions.add(dailyConvPrPredictions);
@@ -504,11 +504,11 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				SalesReport salesReport = _salesReports.getLast();
 				debug("Day: " + _day);
 
-//				((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
-//				((EnsembleBidToCPC) _bidToCPC).createEnsemble();
-//
-//				((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-//				((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
+				//				((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
+				//				((EnsembleBidToCPC) _bidToCPC).createEnsemble();
+				//
+				//				((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+				//				((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
 
 				/*
 				 * CPC Error
@@ -741,8 +741,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				temp.add(items[i]);
 			}
 		}
-		
-		 
+
+
 		LinkedList<Item> betterTemp = new LinkedList<Item>();
 		betterTemp.addAll(temp);
 		for(int i = 0; i < temp.size(); i++) {
@@ -772,7 +772,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				betterTemp.add(newItem);
 			}
 		}
-		
+
 		//items now contain only undominated items
 		items = betterTemp.toArray(new Item[0]);
 		Arrays.sort(items,new ItemComparatorByWeight());
