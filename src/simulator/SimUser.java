@@ -9,13 +9,19 @@ import edu.umich.eecs.tac.props.Query;
 public class SimUser {
 
 	Random _R = new Random();
-	
+
 	private Product _prod;
 	private UserState _state;
+	private static final boolean forceQuery = true;
+	private Query _query;
 
 	public SimUser(Product prod, UserState state) {
 		_prod = prod;
 		_state = state;
+		_query = null;
+		if(forceQuery) {
+			_query = generateQuery();
+		}
 	}
 
 	public Product getProduct() {
@@ -25,7 +31,16 @@ public class SimUser {
 	public UserState getUserState() {
 		return _state;
 	}
-	
+
+	public Query getUserQuery() {
+		if(forceQuery) {
+			return _query;
+		}
+		else {
+			return generateQuery();
+		}
+	}
+
 	public Query generateQuery() {
 		if(_state == UserState.NS || _state == UserState.T) {
 			return null;
@@ -67,5 +82,4 @@ public class SimUser {
 			throw new RuntimeException("Malformed Query");
 		}
 	}
-	
 }

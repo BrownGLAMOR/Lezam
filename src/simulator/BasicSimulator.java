@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 200; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -582,7 +582,7 @@ public class BasicSimulator {
 		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
-			Query query = user.generateQuery();
+			Query query = user.getUserQuery();
 			if(query == null) {
 				//This means the user is IS or T
 				continue;
@@ -649,7 +649,6 @@ public class BasicSimulator {
 				}
 				double clickPr = eta(advEffect,fTarg*fProm);
 				double rand = _R.nextDouble();
-				System.out.println("ClickPr Rand: " + rand);
 				if(clickPr >= rand) {
 					AgentBidPair underPair = pairList.get(j);
 					SimAgent agentUnder = underPair.getAgent();
@@ -689,7 +688,6 @@ public class BasicSimulator {
 					}
 
 					rand = _R.nextDouble();
-					System.out.println("Conv Rand: " + rand);
 					if(convPr >= rand) {
 						String queryMan = query.getManufacturer();
 						String manSpecialty = agent.getManSpecialty();
@@ -702,7 +700,6 @@ public class BasicSimulator {
 					}
 					else {
 						rand = _R.nextDouble();
-						System.out.println("ContPr Rand: " + rand);
 						if(contProb >= rand) {
 							continue;
 						}
@@ -713,7 +710,6 @@ public class BasicSimulator {
 				}
 				else {
 					rand = _R.nextDouble();
-					System.out.println("ContPr Rand: " + rand);
 					if(contProb >= rand) {
 						continue;
 					}
@@ -748,7 +744,7 @@ public class BasicSimulator {
 		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
-			Query query = user.generateQuery();
+			Query query = user.getUserQuery();
 			if(query == null) {
 				//This means the user is IS or T
 				continue;

@@ -62,7 +62,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
