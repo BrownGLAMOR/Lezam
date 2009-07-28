@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 20; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 5; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -129,7 +129,7 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed;
+	private long lastSeed = 51232;
 
 	private BidBundle _baseSolBundle;
 
@@ -243,18 +243,8 @@ public class BasicSimulator {
 	}
 
 	private long getNewSeed() {
-		SecureRandom sr = null;
-		try {
-			sr = SecureRandom.getInstance("SHA1PRNG");
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		}
-		int seedByteCount = 10;
-		byte[] seedArr= sr.generateSeed(seedByteCount);
-		long seed = 0;
-		for(int i = 0; i < seedArr.length; i++) {
-			seed += seedArr[i];
-		}
+		Random rand = new Random(lastSeed);
+		long seed = rand.nextLong();
 		return Math.abs(seed);
 	}
 
@@ -567,13 +557,13 @@ public class BasicSimulator {
 		ArrayList<SimAgent> agents = buildSingleQueryAgents(simBid,simAd,simQuery);
 		ArrayList<SimUser> users;
 		if(_pregenUsers != null) {
-			users = userArrListCopy(_pregenUsers);
+			users = _pregenUsers;
 		}
 		else {
 			users = buildSearchingUserBase(_usersMap);
 			Random randGen = new Random(lastSeed);
 			Collections.shuffle(users,randGen);
-			_pregenUsers  = userArrListCopy(users);
+			_pregenUsers  = users;
 		}
 		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
@@ -723,14 +713,6 @@ public class BasicSimulator {
 		return reports;
 	}
 
-	private ArrayList<SimUser> userArrListCopy(ArrayList<SimUser> users) {
-		ArrayList<SimUser> usersCopy = new ArrayList<SimUser>();
-		for(int i = 0; i < users.size(); i++) {
-			usersCopy.add(new SimUser(users.get(i).getProduct(),users.get(i).getUserState()));
-		}
-		return usersCopy;
-	}
-
 	/*
 	 * Runs the simulation and generates reports
 	 */
@@ -738,13 +720,13 @@ public class BasicSimulator {
 		ArrayList<SimAgent> agents = buildAgents(agentToRun);
 		ArrayList<SimUser> users;
 		if(_pregenUsers != null) {
-			users = userArrListCopy(_pregenUsers);
+			users = _pregenUsers;
 		}
 		else {
 			users = buildSearchingUserBase(_usersMap);
 			Random randGen = new Random(lastSeed);
 			Collections.shuffle(users,randGen);
-			_pregenUsers  = userArrListCopy(users);
+			_pregenUsers  = users;
 		}
 		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
