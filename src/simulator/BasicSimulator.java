@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 50; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 250; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -484,6 +484,7 @@ public class BasicSimulator {
 								MSE += (E*E/16.0);
 								avg += _baseSolBundle.getBid(query);
 							}
+							avg /= 16.0;
 							double RMSE = Math.sqrt(MSE);
 							System.out.println("RMSE: " + RMSE);
 							System.out.println("Percent Error: " + (RMSE/avg));
