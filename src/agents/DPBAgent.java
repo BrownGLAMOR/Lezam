@@ -17,6 +17,7 @@ import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.NewAbstractConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
@@ -30,6 +31,7 @@ import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
+import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -43,7 +45,7 @@ public class DPBAgent extends SimAbstractAgent {
 	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractBidToPrClick bidToPrClickModel;
 	private AbstractUserModel userModel;
-	protected HashMap<Query, Double> _baselineConv;
+	protected BasicTargetModel targetModel;
 
 	// model, strategy related variables
 	protected BidBundle bidBundle = null;
@@ -60,8 +62,13 @@ public class DPBAgent extends SimAbstractAgent {
 	protected int slots;
 	
 	protected HashMap<Query, Double> revenues;
+	protected HashMap<Query, Double> _baselineConv;
 
 	protected final int MAX_TIME_HORIZON = 5;
+	
+	// control variables
+	protected final boolean TARGET = false;
+	// this algorithm must not do without budget
 
 	// for debug
 	protected PrintStream output;
@@ -73,21 +80,10 @@ public class DPBAgent extends SimAbstractAgent {
 
 		this.buildMaps(models);
 
-		// handle first two days
+		// handle first few days
 
 		if (_day <= 6) {
 			bidBundle = new BidBundle();
-
-				for (Query q : _querySpace) {
-					double bid;
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.1, .6);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.25, .75);
-					else
-						bid = randDouble(.35, 1.0);
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-				}
 			
 			for(Query query : _querySpace) {
 				double bid;
@@ -97,8 +93,21 @@ public class DPBAgent extends SimAbstractAgent {
 					bid = randDouble(.25,.75);
 				else 
 					bid = randDouble(.35,1.0);
-					bidBundle.addQuery(query, bid, new Ad(), Double.NaN);
+				
+				bidBundle.setBid(query, bid);
+				
+				if (TARGET) {
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+						bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+						bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+						bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				}	
 			}
+			
 			bidBundleList.add(bidBundle);
 			
 			return bidBundle;
@@ -113,7 +122,7 @@ public class DPBAgent extends SimAbstractAgent {
 
 		// int targetCapacity = (int)Math.max(2*1.5*dailyCapacity - unitsSold,
 		// dailyCapacity*.5);
-		int targetCapacity = (int) (1.5*dailyCapacity);
+		int targetCapacity = (int) (2*dailyCapacity);
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
 
@@ -127,8 +136,13 @@ public class DPBAgent extends SimAbstractAgent {
 			while (bid <= maxBid) {
 				double prClicks = bidToPrClickModel.getPrediction(query, bid,
 						null);
+				if (TARGET) prClicks = targetModel.getClickPrPrediction(query, prClicks, false);
 				double imp = queryToNumImpModel.getPrediction(query);
-				bidToClicks.put(bid, (int) (prClicks * imp));
+				
+				// this is because the model is inaccurate
+				double maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
+				
+				bidToClicks.put(bid, (int) (maxClicks));
 				bid += .05;
 			}
 
@@ -164,6 +178,14 @@ public class DPBAgent extends SimAbstractAgent {
 						if (i > 0) tmp = profit[i - 1][j - capacity];
 						double rev = revenues.get(query);
 						double cpc = bidToCPCModel.getPrediction(query, bid);
+						
+						if (TARGET) {
+							double clickPr = bidToPrClickModel.getPrediction(query, bid, null);
+							if (clickPr <=0 || clickPr >= 1) clickPr = .5;
+							prConv = targetModel.getConvPrPrediction(query, clickPr, prConv, 0);
+							rev = targetModel.getUSPPrediction(query, clickPr, 0);
+						}
+						
 						tmp += capacity * (rev - cpc / prConv);
 
 						if (tmp >= profit[i][j]) {
@@ -215,7 +237,7 @@ public class DPBAgent extends SimAbstractAgent {
 					bid = randDouble(.25, .75);
 				else
 					bid = randDouble(.35, 1.0);
-				dailyLimit = bid + .05;
+				dailyLimit = bid * 2;
 			}
 			
 			bidBundle.setBid(queries[i], bid);
@@ -226,6 +248,27 @@ public class DPBAgent extends SimAbstractAgent {
 
 			capacity -= sales[i][capacity];
 		}
+		
+		if (TARGET)
+			for (Query query : _querySpace) {
+
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bidBundle.setAd(query, new Ad(new Product(_manSpecialty,
+							_compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)
+						&& query.getComponent() == null)
+					bidBundle.setAd(query, new Ad(new Product(query
+							.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)
+						&& query.getManufacturer() == null)
+					bidBundle.setAd(query, new Ad(new Product(_manSpecialty,
+							query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO)
+						&& query.getManufacturer().equals(_manSpecialty))
+					bidBundle.setAd(query, new Ad(new Product(_manSpecialty,
+							query.getComponent())));
+
+			}
 		
 		System.out.printf("********************\n");
 		this.printInfo();
@@ -280,13 +323,17 @@ public class DPBAgent extends SimAbstractAgent {
 		// initialize models
 		Set<AbstractModel> models = new HashSet<AbstractModel>();
 
+		targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+
+		prConversionModel = new HistoricPrConversionModel(_querySpace, targetModel);
+		models.add(prConversionModel);
 		userModel = new BasicUserModel();
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
 		bidToCPCModel = new RegressionBidToCPC(_querySpace);
 		models.add(bidToCPCModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 10, null, null);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 10, targetModel, null);
 		((EnsembleBidToPrClick)bidToPrClickModel).initializeEnsemble();
 		models.add(bidToPrClickModel);
 
@@ -306,8 +353,6 @@ public class DPBAgent extends SimAbstractAgent {
 				else revenues.put(query, 10.0);
 			}
 		}
-		
-		prConversionModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty, _compSpecialty));
 
 		return models;
 	}
@@ -356,6 +401,7 @@ public class DPBAgent extends SimAbstractAgent {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				this.bidToPrClickModel = bidToPrClick;
 			} else {
+				//TODO conversion pr model????
 				// throw new
 				// RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
@@ -392,6 +438,10 @@ public class DPBAgent extends SimAbstractAgent {
 					_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");}
 			else buff.append("\t").append("Conversions Pr: ").append("No click").append("\n");
 			buff.append("\t").append("Predicted Conversion Pr: ").append(prConversionModel.getPrediction(q, 0.0)).append("\n");
+			if (_queryReport.getImpressions(q) > 0) {
+				buff.append("\t").append("Click Pr: ").append(
+					_queryReport.getClicks(q)*1.0/_queryReport.getImpressions(q)).append("\n");}
+			else buff.append("\t").append("Conversions Pr: ").append("No impression").append("\n");
 			if (_salesReport.getConversions(q) > 0) {
 				buff.append("\t").append("PPS: ").append(
 					(_salesReport.getRevenue(q)-_queryReport.getCost(q))/_salesReport.getConversions(q)).append("\n");}

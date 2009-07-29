@@ -45,7 +45,7 @@ public class EquateProfitS extends SimAbstractAgent{
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
+	protected final boolean BUDGET = true;
 	
 	protected PrintStream output;
 	

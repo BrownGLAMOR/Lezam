@@ -37,6 +37,9 @@ public class EquateProfitC extends SimAbstractAgent{
 	protected NewAbstractConversionModel _conversionPrModel;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
+	protected BasicTargetModel _targetModel;
+	protected HashMap<Query, Double> _prClick;
+	
 	//k is a constant that equates EPPC across queries
 	protected double k;
 	protected BidBundle _bidBundle;
@@ -45,6 +48,9 @@ public class EquateProfitC extends SimAbstractAgent{
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	protected int _timeHorizon;
 	protected final int MAX_TIME_HORIZON = 5;
+	protected final boolean TARGET = true;
+	protected final boolean BUDGET = true;
+	
 	// for debug
 	protected PrintStream output;
 
@@ -57,18 +63,21 @@ public class EquateProfitC extends SimAbstractAgent{
 		for(Query query: _querySpace){
 			_bidBundle.setBid(query, getQueryBid(query));
 			
-			/*if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-				_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));*/
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}		
 			
-			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
-
+		
+		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(1200);
+		
 		_bidBundleList.add(_bidBundle);
 //		printInfo();
 		return _bidBundle;
@@ -96,8 +105,10 @@ public class EquateProfitC extends SimAbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
+		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
 			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
@@ -130,6 +141,11 @@ public class EquateProfitC extends SimAbstractAgent{
         		else _baselineConv.put(q,0.3);
         	}
         }
+        
+        _prClick = new HashMap<Query, Double>();
+        for (Query query: _querySpace) {
+        	_prClick.put(query, .01);
+        }
 		return null;
 	}
 
@@ -138,11 +154,15 @@ public class EquateProfitC extends SimAbstractAgent{
 		// update models
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 		    
-			   _timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
-               _conversionPrModel.setTimeHorizon(_timeHorizon);
-               _conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			_conversionPrModel.setTimeHorizon(_timeHorizon);
+			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 
+			for (Query query: _querySpace) {
+				if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
+			}
+               
 			if (_bidBundleList.size() > 1) 
 				_bidToCPC.updateModel(_queryReport, salesReport, _bidBundleList.get(_bidBundleList.size() - 2));
 
@@ -183,10 +203,19 @@ public class EquateProfitC extends SimAbstractAgent{
 	protected double getQueryBid(Query q){
 		double prConv;
 		if(_day <= 6) prConv = _baselineConv.get(q);
-		else prConv = _conversionPrModel.getPrediction(q,0.0);
+		else prConv = _conversionPrModel.getPrediction(q, 0.0);
 		
-		double bid;
-		bid = cpcTobid(_estimatedPrice.get(q)*prConv - k,q);
+		double rev = _estimatedPrice.get(q);
+		
+		if (TARGET) {
+			double clickPr = _prClick.get(q);
+			if (clickPr <=0 || clickPr >= 1) clickPr = .5;
+			prConv = _targetModel.getConvPrPrediction(q, clickPr, prConv, 0);
+			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
+		}
+		
+		double bid = cpcTobid(rev*prConv - k,q);
+		
 		if(bid <= 0) return 0;
 		else{
 			if(bid > 2.5) return 2.5;
