@@ -228,7 +228,7 @@ public class ClickProfitC extends SimAbstractAgent {
 			}
 			
 			// set spend limit
-			if (BUDGET) {
+			if (BUDGET || _day < 20) {
 				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,2);
 				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
 				_bidBundle.setDailyLimit(query, dailyLimit);
