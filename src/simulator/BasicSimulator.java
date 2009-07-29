@@ -480,36 +480,29 @@ public class BasicSimulator {
 							_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 						}
 						bundle = getBids(agentToRun);
+						double[] bidVector = new double[16];
+						int count = 0;
+						for(Query query : _querySpace) {
+							bidVector[count] = bundle.getBid(query);
+							count++;
+						}
+						bidVectors.add(bidVector);
 						if(_baseSolBundle != null) {
-							double MSE = 0;
-							double avg = 0;
-							double[] bidVector = new double[16];
-							int counter = 0;
-							for(Query query : _querySpace) {
-								double E = bundle.getBid(query) - _baseSolBundle.getBid(query);
-								MSE += (E*E/16.0);
-								avg += _baseSolBundle.getBid(query);
-								bidVector[counter] = bundle.getBid(query);
-								counter++;
-							}
-							
-							bidVectors.add(bidVector);
-							
-							avg /= 16.0;
-							double RMSE = Math.sqrt(MSE);
-							debug("RMSE: " + RMSE);
-							debug("Percent Error: " + (RMSE/avg));
-							
-							if((RMSE/avg) < epsilon) {
+							if(bidMapEqual(bundle, _baseSolBundle)) {
 								loopFlag = false;
 							}
 							
 							//Search for cycles
 							if(((loopCounter + 1) % 10 == 0) && cycleDetect(bidVectors)) {
+								System.out.println("\n\n CYCLE \n\n");
 								loopFlag = false;
 							}
 						}
 						_baseSolBundle = bundle;
+					}
+					System.out.println("Bids:");
+					for(Query query : _querySpace) {
+						System.out.println("\t" + bundle.getBid(query));
 					}
 					System.out.println(loopCounter);
 				}
@@ -541,9 +534,13 @@ public class BasicSimulator {
 		int len = bidVectors.size();
 		int tortoise= 1;
 		int hare = 2;
-		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
+		while(hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
 			tortoise += 1;
 			hare += 2;
+		}
+		
+		if(hare > len) {
+			return false;
 		}
 		
 		System.out.println("Tortoise: " + tortoise);
@@ -551,7 +548,7 @@ public class BasicSimulator {
 		
 		int mu = 0;
 		hare = tortoise;
-		tortoise = 0;
+		tortoise = 0; 
 		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
 			tortoise += 1;
 			hare += 1;
@@ -567,7 +564,7 @@ public class BasicSimulator {
 			lam += 1;
 		}
 		System.out.println("Lam: " + lam);
-		return false;
+		return true;
 	}
 
 	private boolean bidVectorequal(double[] vector1, double[] vector2) {
@@ -577,6 +574,19 @@ public class BasicSimulator {
 		double epsilon = .005;
 		for(int i = 0; i < vector1.length; i++) {
 			if(vector1[i] - vector2[i] > epsilon) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	private boolean bidMapEqual(BidBundle bundle, BidBundle baseSolBundle) {
+		if(bundle.size() != baseSolBundle.size()) {
+			throw new RuntimeException("Vectors unequal length");
+		}
+		double epsilon = .005;
+		for(Query query : _querySpace) {
+			if(bundle.getBid(query) - baseSolBundle.getBid(query) > epsilon) {
 				return false;
 			}
 		}
@@ -1100,11 +1110,12 @@ public class BasicSimulator {
 		double totAvgImp = 0.0;
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
-		int numSims = 1;
+		int numSims = 2;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "C:/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
@@ -1114,7 +1125,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 7;
+			int advId = 1;
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();

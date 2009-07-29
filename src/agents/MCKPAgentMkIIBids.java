@@ -434,7 +434,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					bid = solution.get(isID).b();
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 //					System.out.println("Bidding " + bid + "   for query: " + q);
-					System.out.println(bid);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
@@ -472,7 +471,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					bid = 0.0;
 					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 //					System.out.println("Bidding " + bid + "   for query: " + q);
-					System.out.println(bid);
 					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
