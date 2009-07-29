@@ -56,10 +56,6 @@ public class DPBAgent extends SimAbstractAgent {
 	protected int distributionCapacity;
 	protected int distributionWindow;
 	protected int dailyCapacity;
-
-	protected int promotedSlots;
-	protected int regularSlots;
-	protected int slots;
 	
 	protected HashMap<Query, Double> revenues;
 	protected HashMap<Query, Double> _baselineConv;
@@ -68,6 +64,8 @@ public class DPBAgent extends SimAbstractAgent {
 	
 	// control variables
 	protected final boolean TARGET = false;
+	// adjustment for inaccuracy of model, set it to false if tested under perfect models
+	protected final boolean ADJUSTMENT = true; 
 	// this algorithm must not do without budget
 
 	// for debug
@@ -120,8 +118,6 @@ public class DPBAgent extends SimAbstractAgent {
 			unitsSold += _salesReport.getConversions(query);
 		}
 
-		// int targetCapacity = (int)Math.max(2*1.5*dailyCapacity - unitsSold,
-		// dailyCapacity*.5);
 		int targetCapacity = (int) (2*dailyCapacity);
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
@@ -129,8 +125,13 @@ public class DPBAgent extends SimAbstractAgent {
 		for (Query query : _querySpace) {
 			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
-			double minBid = Math.max(.1, _bidBundles.getLast().getBid(query) - .5);
-			double maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, 2.5);
+			double minBid = .1;
+			double maxBid = 2.5;
+			
+			if (ADJUSTMENT) {
+				minBid = Math.max(.1, _bidBundles.getLast().getBid(query) - .5);
+				maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, 2.5);
+			}
 			
 			double bid = minBid;
 			while (bid <= maxBid) {
@@ -139,8 +140,9 @@ public class DPBAgent extends SimAbstractAgent {
 				if (TARGET) prClicks = targetModel.getClickPrPrediction(query, prClicks, false);
 				double imp = queryToNumImpModel.getPrediction(query);
 				
-				// this is because the model is inaccurate
-				double maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
+				double maxClicks = prClicks * imp;
+				
+				if (ADJUSTMENT) Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
 				
 				bidToClicks.put(bid, (int) (maxClicks));
 				bid += .05;
@@ -149,7 +151,7 @@ public class DPBAgent extends SimAbstractAgent {
 			item.put(query, bidToClicks);
 		}
 
-		// mckp
+		// dp algorithm
 
 		System.out.println("targetCapacity : " + targetCapacity);
 		double[][] profit = new double[_querySpace.size()][];
@@ -181,7 +183,7 @@ public class DPBAgent extends SimAbstractAgent {
 						
 						if (TARGET) {
 							double clickPr = bidToPrClickModel.getPrediction(query, bid, null);
-							if (clickPr <=0 || clickPr >= 1) clickPr = .5;
+							if (clickPr <=0 || clickPr >= 1) clickPr = .2;
 							prConv = targetModel.getConvPrPrediction(query, clickPr, prConv, 0);
 							rev = targetModel.getUSPPrediction(query, clickPr, 0);
 						}
@@ -226,8 +228,9 @@ public class DPBAgent extends SimAbstractAgent {
 				double prConv = prConversionModel.getPrediction(queries[i], 0.0);
 				if (Double.isNaN(prConv) || prConv == 0) prConv = _baselineConv.get(queries[i]);
 				double clicks = sales[i][capacity] * 1.0/ prConv;
-				//double cpc = bidToCPCModel.getPrediction(queries[i], bid);
-				// double dailyLimit = Math.max(cpc * (clicks - 1) + bid, bid);
+				
+				// here we still prefer to set a generous bound
+				// empirically, using cpc is too tight
 				dailyLimit = bid * clicks;
 			}
 			else {
@@ -284,11 +287,7 @@ public class DPBAgent extends SimAbstractAgent {
 
 		distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		distributionWindow = _advertiserInfo.getDistributionWindow();
-		dailyCapacity = (int) (distributionCapacity / distributionWindow);
-
-		promotedSlots = _slotInfo.getPromotedSlots();
-		regularSlots = _slotInfo.getRegularSlots();
-		slots = promotedSlots + regularSlots;
+		dailyCapacity = (int) (distributionCapacity*1.0 / distributionWindow);
 
 		// initialize strategy related variables
 		
@@ -417,7 +416,6 @@ public class DPBAgent extends SimAbstractAgent {
 				distributionCapacity).append("\n");
 		buff.append("\t").append("Manufacturer specialty: ").append(
 				_advertiserInfo.getManufacturerSpecialty()).append("\n");
-		buff.append("\t").append("Slots: ").append(slots).append("\n");
 		buff.append("****************\n");
 		for (Query q : _querySpace) {
 			buff.append(q).append("\n");

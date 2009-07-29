@@ -45,7 +45,7 @@ public class ClickProfitS extends SimAbstractAgent {
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
+	protected final boolean BUDGET = true;
 
 	
 	// for debug
@@ -214,7 +214,7 @@ public class ClickProfitS extends SimAbstractAgent {
 			
 			// set spend limit
 			if (BUDGET) {
-				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,1);
+				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,2);
 				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
 				_bidBundle.setDailyLimit(query, dailyLimit);
 			}
