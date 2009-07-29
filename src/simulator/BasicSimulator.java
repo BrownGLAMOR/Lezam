@@ -57,7 +57,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 2; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
+	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
 	private static final boolean PERFECTMODELS = true;
 
@@ -472,6 +472,7 @@ public class BasicSimulator {
 					double epsilon = .0001;
 					boolean loopFlag = true;
 					int loopCounter = 0;
+					ArrayList<double[]> bidVectors = new ArrayList<double[]>();
 					while(loopFlag) {
 						loopCounter++;
 						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
@@ -482,16 +483,29 @@ public class BasicSimulator {
 						if(_baseSolBundle != null) {
 							double MSE = 0;
 							double avg = 0;
+							double[] bidVector = new double[16];
+							int counter = 0;
 							for(Query query : _querySpace) {
 								double E = bundle.getBid(query) - _baseSolBundle.getBid(query);
 								MSE += (E*E/16.0);
 								avg += _baseSolBundle.getBid(query);
+								bidVector[counter] = bundle.getBid(query);
+								counter++;
 							}
+							
+							bidVectors.add(bidVector);
+							
 							avg /= 16.0;
 							double RMSE = Math.sqrt(MSE);
-							System.out.println("RMSE: " + RMSE);
-							System.out.println("Percent Error: " + (RMSE/avg));
+							debug("RMSE: " + RMSE);
+							debug("Percent Error: " + (RMSE/avg));
+							
 							if((RMSE/avg) < epsilon) {
+								loopFlag = false;
+							}
+							
+							//Search for cycles
+							if(((loopCounter + 1) % 10 == 0) && cycleDetect(bidVectors)) {
 								loopFlag = false;
 							}
 						}
@@ -520,6 +534,53 @@ public class BasicSimulator {
 			agents.add(agent);
 		}
 		return agents;
+	}
+
+	//Floyd's cycle-finding algorithm
+	private boolean cycleDetect(ArrayList<double[]> bidVectors) {
+		int len = bidVectors.size();
+		int tortoise= 1;
+		int hare = 2;
+		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
+			tortoise += 1;
+			hare += 2;
+		}
+		
+		System.out.println("Tortoise: " + tortoise);
+		System.out.println("Hare: " + hare);
+		
+		int mu = 0;
+		hare = tortoise;
+		tortoise = 0;
+		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
+			tortoise += 1;
+			hare += 1;
+			mu += 1;
+		}
+
+		System.out.println("Mu: " + mu);
+		
+		int lam = 1;
+		hare = tortoise + 1;
+		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
+			hare += 1;
+			lam += 1;
+		}
+		System.out.println("Lam: " + lam);
+		return false;
+	}
+
+	private boolean bidVectorequal(double[] vector1, double[] vector2) {
+		if(vector1.length != vector2.length) {
+			throw new RuntimeException("Vectors unequal length");
+		}
+		double epsilon = .005;
+		for(int i = 0; i < vector1.length; i++) {
+			if(vector1[i] - vector2[i] > epsilon) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public ArrayList<SimAgent> buildSingleQueryAgents(double simBid, Ad simAd, Query simQuery) {
