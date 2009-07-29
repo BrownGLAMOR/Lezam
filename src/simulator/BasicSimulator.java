@@ -129,7 +129,7 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed = 51232;
+	private long lastSeed = 876451;
 
 	private BidBundle _baseSolBundle;
 
@@ -1058,12 +1058,6 @@ public class BasicSimulator {
 		}
 	}
 
-	//Returns a random double rand such that a <= r < b
-	private double randDouble(double a, double b) {
-		double rand = _R.nextDouble();
-		return rand * (b - a) + a;
-	}
-
 	private double eta(double p, double x) {
 		return (p*x) / (p*x + (1-p));
 	}
@@ -1113,9 +1107,10 @@ public class BasicSimulator {
 		int numSims = 2;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
-		String baseFile = "C:/mckpgames/localhost_sim";
+//		String baseFile = "C:/mckpgames/localhost_sim";
+		
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
@@ -1125,7 +1120,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 1;
+			int advId = 4;
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
