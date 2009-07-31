@@ -45,7 +45,7 @@ public class ClickProfitS extends SimAbstractAgent {
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 
 	
 	// for debug
@@ -158,25 +158,16 @@ public class ClickProfitS extends SimAbstractAgent {
 		}
 		
 		for (Query query: _querySpace) {
-			double latestProfit = 0;
-			if (_queryReport.getClicks(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_salesReport.getConversions(query);
-			
-			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query)||
-				_queryReport.getPosition(query) == Double.NaN) {
-				double newProfitMargin;
-				if (latestProfit > _avgProfit && _avgProfit > 0)
-					newProfitMargin = Math.min(_avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*0.9);
-				else newProfitMargin = _profitMargins.get(query)*0.9;
+		
+			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query) &&
+					!(_queryReport.getPosition(query) <= 1.5)) {
+				double newProfitMargin = _profitMargins.get(query)*0.9;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.1, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
 			}
 			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
-				double newProfitMargin;
-				if (latestProfit < _avgProfit && _avgProfit > 0)
-					newProfitMargin = Math.max(_avgProfit/(_revenueModels.get(query).getRevenue()),_profitMargins.get(query)*1.1);
-				else newProfitMargin = _profitMargins.get(query)*1.1;
+				double newProfitMargin = _profitMargins.get(query)*1.1;
 				newProfitMargin = Math.min(0.9, newProfitMargin);
 				newProfitMargin = Math.max(0.1, newProfitMargin);
 				_profitMargins.put(query, newProfitMargin);
@@ -213,7 +204,8 @@ public class ClickProfitS extends SimAbstractAgent {
 			}
 			
 			// set spend limit
-			if (BUDGET || _day < 20) {
+			// must set spend limit in the first few days 
+			if (BUDGET || _day < 10) {
 				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,2);
 				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
 				_bidBundle.setDailyLimit(query, dailyLimit);

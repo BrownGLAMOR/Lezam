@@ -50,7 +50,7 @@ public class ClickAgent extends SimAbstractAgent {
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 			
-			if (BUDGET) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		return _bidBundle;
 	}
