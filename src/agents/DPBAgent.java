@@ -151,7 +151,7 @@ public class DPBAgent extends SimAbstractAgent {
 				
 				double maxClicks = prClicks * imp;
 				
-				if (ADJUSTMENT) Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
+				if (ADJUSTMENT) maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
 				
 				bidToClicks.put(bid, (int) (maxClicks));
 				bid += .05;
