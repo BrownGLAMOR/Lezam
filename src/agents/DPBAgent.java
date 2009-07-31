@@ -113,7 +113,7 @@ public class DPBAgent extends SimAbstractAgent {
 			return bidBundle;
 		}
 		
-		if(_day + 2 > lagDays) {
+		if(_day > lagDays + 2) {
 			QueryReport queryReport = _queryReports.getLast();
 			SalesReport salesReport = _salesReports.getLast();
 			((EnsembleBidToPrClick) bidToPrClickModel).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
