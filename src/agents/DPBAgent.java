@@ -68,6 +68,8 @@ public class DPBAgent extends SimAbstractAgent {
 	protected final boolean ADJUSTMENT = true; 
 	// this algorithm must not do without budget
 
+	private int lagDays = 5;
+	
 	// for debug
 	protected PrintStream output;
 
@@ -80,7 +82,7 @@ public class DPBAgent extends SimAbstractAgent {
 
 		// handle first few days
 
-		if (_day <= 6) {
+		if (_day <= lagDays) {
 			bidBundle = new BidBundle();
 			
 			for(Query query : _querySpace) {
@@ -109,6 +111,13 @@ public class DPBAgent extends SimAbstractAgent {
 			bidBundleList.add(bidBundle);
 			
 			return bidBundle;
+		}
+		
+		if(_day + 2 > lagDays) {
+			QueryReport queryReport = _queryReports.getLast();
+			SalesReport salesReport = _salesReports.getLast();
+			((EnsembleBidToPrClick) bidToPrClickModel).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			((EnsembleBidToPrClick) bidToPrClickModel).createEnsemble();
 		}
 
 		// find relevant variables
@@ -277,6 +286,7 @@ public class DPBAgent extends SimAbstractAgent {
 		this.printInfo();
 
 		bidBundleList.add(bidBundle);
+		((EnsembleBidToPrClick) bidToPrClickModel).updatePredictions(bidBundle);
 		return bidBundle;
 	}
 
