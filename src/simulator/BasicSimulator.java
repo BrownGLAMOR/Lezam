@@ -33,6 +33,7 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.AdMaxAgent;
+import agents.BidPosModelTestAgent;
 import agents.Cheap;
 import agents.EquateProfitC;
 import agents.ILPAgent;
@@ -65,7 +66,7 @@ public class BasicSimulator {
 
 	private static boolean CHART = false;
 
-	private boolean DEBUG = true;
+	private boolean DEBUG = false;
 
 	Random _R = new Random();					//Random number generator
 
@@ -1273,7 +1274,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new BidPosModelTestAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

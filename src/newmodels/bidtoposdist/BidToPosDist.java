@@ -55,21 +55,27 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		for(int i = 0; i < predictions.length; i++) {
 			predictions[i] = 0.0;
 		}
-		REXP surface = _surfaces.get(query);
-		try {
-			_rConnection.assign("surface", surface);
-			for(int i = 0; i < predictions.length; i++) {
-				double prediction = _rConnection.eval("predict.trls(surface," + bid + "," + (i+1) + ")").asDouble();
-				predictions[i] = prediction;
+		if(_surfaces.get(query) != null) {
+			REXP surface = _surfaces.get(query);
+			try {
+				_rConnection.assign("surface", surface);
+				for(int i = 0; i < predictions.length; i++) {
+					double prediction = _rConnection.eval("predict.trls(surface," + bid + "," + (i+1) + ")").asDouble();
+					predictions[i] = prediction;
+				}
+				predictions = normalizeArr(predictions);
+				return predictions;
+			} catch (RserveException e) {
+				System.out.println(_rConnection.getLastError());
+				e.printStackTrace();
+				return null;
+			} catch (REXPMismatchException e) {
+				e.printStackTrace();
+				return null;
 			}
-			predictions = normalizeArr(predictions);
-			return predictions;
-		} catch (RserveException e) {
-			e.printStackTrace();
-			return null;
-		} catch (REXPMismatchException e) {
-			e.printStackTrace();
-			return null;
+		}
+		else {
+			return new double[]{0.0,0.0,0.0,0.0,0.0};
 		}
 	}
 
@@ -125,20 +131,22 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 				double[] bids = new double[len];
 				double[] pos = new double[len];
 				double[] posDist = new double[len];
+				System.out.println("len: " + len);
 				for(int i = 0; i < bidsArr.size(); i++) {
 					double bid = bidsArr.get(i);
 					double[] pDists = pDistsArr.get(i);
-					for(int j = 0; j < bidsArr.size(); j++) {
-						bids[i*bidsArr.size() + j] = bid;
-						pos[i*bidsArr.size() + j] = j+1;
-						posDist[i*bidsArr.size() + j] = pDists[j];
+					for(int j = 0; j < pDists.length; j++) {
+						int index = pDists.length*i + j;
+						bids[index] = bid;
+						pos[index] = j+1;
+						posDist[index] = pDists[j];
 					}
 				}
 				try {
 					_rConnection.assign("bids", bids);
 					_rConnection.assign("pos", pos);
 					_rConnection.assign("posDist", posDist);
-					REXP surface = _rConnection.eval("surf.ls(3,bids,pos,posDists");
+					REXP surface = _rConnection.eval("surf.ls(3,bids,pos,posDist" + ")");
 					_surfaces.put(query, surface);
 
 				} catch (REngineException e) {
