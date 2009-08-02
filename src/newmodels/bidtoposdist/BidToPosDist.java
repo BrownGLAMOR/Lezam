@@ -17,7 +17,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class BidToPositionSpatialReg extends AbstractBidToPosDistModel {
+public class BidToPosDist extends AbstractBidToPosDistModel {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
@@ -27,7 +27,7 @@ public class BidToPositionSpatialReg extends AbstractBidToPosDistModel {
 	private ArrayList<BidBundle> _bidBundles;
 	private HashMap<Query, REXP> _surfaces;
 
-	public BidToPositionSpatialReg(RConnection rConnection, Set<Query> querySpace) {
+	public BidToPosDist(RConnection rConnection, Set<Query> querySpace) {
 		_rConnection = rConnection;
 		try {
 			_rConnection.voidEval("library(spatial)");
