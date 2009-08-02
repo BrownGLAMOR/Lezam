@@ -1,8 +1,10 @@
-package newmodels.bidtoslot;
+package newmodels.bidtoposdist;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+
+import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
@@ -15,7 +17,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class BidToPositionSpatialReg extends AbstractBidToSlotModel {
+public class BidToPositionSpatialReg extends AbstractBidToPosDistModel {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
