@@ -58,9 +58,9 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		if(_surfaces.get(query) != null) {
 			REXP surface = _surfaces.get(query);
 			try {
-				_rConnection.assign("surface", surface);
+				_rConnection.assign("querysurface", surface);
 				for(int i = 0; i < predictions.length; i++) {
-					double prediction = _rConnection.eval("predict.trls(surface," + bid + "," + (i+1) + ")").asDouble();
+					double prediction = _rConnection.eval("predict.trls(querysurface," + bid + "," + (i+1) + ")").asDouble();
 					predictions[i] = prediction;
 				}
 				predictions = normalizeArr(predictions);
