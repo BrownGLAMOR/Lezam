@@ -18,9 +18,8 @@ import edu.umich.eecs.tac.props.SalesReport;
 public abstract class AbstractBidToSlotModel extends AbstractModel {
 	
 	
-	public abstract double[] getPrediction(Query query, double bid);
+	public abstract double getPrediction(Query query, double bid);
 
 	public abstract boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport, BidBundle bidBundle,
-			HashMap<Query, double[]> posDist);
+			SalesReport salesReport);
 }

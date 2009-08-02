@@ -501,6 +501,13 @@ public class BasicSimulator {
 						_baseSolBundle = bundle;
 						HashMap<String, Reports> reports = runSimulation(_baseSolBundle);
 						Reports ourReports = reports.get(_agents[_ourAdvIdx]);
+						QueryReport queryReport = ourReports.getQueryReport();
+						SalesReport salesReport = ourReports.getSalesReport();
+						double profit = 0.0;
+						for(Query query : _querySpace) {
+							profit += salesReport.getRevenue(query) - queryReport.getCost(query);
+						}
+						System.out.println("Profit: " + profit);
 					}
 					System.out.println("Bids:");
 					for(Query query : _querySpace) {
