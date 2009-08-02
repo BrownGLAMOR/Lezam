@@ -1005,6 +1005,7 @@ public class BasicSimulator {
 						//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
 						//							}
 						//						}
+						
 					}
 				}
 			}
@@ -1029,6 +1030,35 @@ public class BasicSimulator {
 			reportsMap.put(agent.getAdvId(),reports);
 		}
 		return reportsMap;
+	}
+	
+	/*
+	 * Kullback Leibler Divergence Test
+	 */
+	public double KLDivergence(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("KL Divergence requires arrays of equal length");
+		}
+		
+		double divergence = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			divergence += P[i] * (Math.log(P[i])-Math.log(Q[i]));
+		}
+		
+		return divergence;
+	}
+	
+	/*
+	 * When P and Q are discrete, we can get the likelihood of Q from
+	 * the KL divergence.  We want to minimize the KL divergence, which will
+	 * in turn maximize the likelihood
+	 */
+	public double KLLikelihood(double[] P, double[] Q) {
+		double likelihood = 0.0;
+		double divergence = KLDivergence(P, Q);
+		likelihood = Math.exp(-1*divergence*P.length);
+		return likelihood;
 	}
 
 	public String[] getUsableAgents() {
