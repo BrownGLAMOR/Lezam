@@ -55,27 +55,21 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		for(int i = 0; i < predictions.length; i++) {
 			predictions[i] = 0.0;
 		}
-		if(_surfaces.get(query) != null) {
-			REXP surface = _surfaces.get(query);
-			try {
-				_rConnection.assign("querysurface", surface);
-				for(int i = 0; i < predictions.length; i++) {
-					double prediction = _rConnection.eval("predict.trls(querysurface," + bid + "," + (i+1) + ")").asDouble();
-					predictions[i] = prediction;
-				}
-				predictions = normalizeArr(predictions);
-				return predictions;
-			} catch (RserveException e) {
-				System.out.println(_rConnection.getLastError());
-				e.printStackTrace();
-				return null;
-			} catch (REXPMismatchException e) {
-				e.printStackTrace();
-				return null;
+		try {
+			for(int i = 0; i < predictions.length; i++) {
+				double prediction = _rConnection.eval("predict.trls(surf" + query.getComponent() + query.getManufacturer() + "," + bid + "," + (i+1) + ")").asDouble();
+				System.out.println("Pred: " + prediction);
+				predictions[i] = prediction;
 			}
-		}
-		else {
-			return new double[]{0.0,0.0,0.0,0.0,0.0};
+			predictions = normalizeArr(predictions);
+			return predictions;
+		} catch (RserveException e) {
+			System.out.println(_rConnection.getLastError());
+			e.printStackTrace();
+			return null;
+		} catch (REXPMismatchException e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 
@@ -145,8 +139,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					_rConnection.assign("bids", bids);
 					_rConnection.assign("pos", pos);
 					_rConnection.assign("posDist", posDist);
-					REXP surface = _rConnection.eval("surf.ls(3,bids,pos,posDist" + ")");
-					_surfaces.put(query, surface);
+					_rConnection.eval("surf" + query.getComponent() + query.getManufacturer() +  " = "  + "surf.ls(3,bids,pos,posDist" + ")");
 
 				} catch (REngineException e) {
 					e.printStackTrace();
