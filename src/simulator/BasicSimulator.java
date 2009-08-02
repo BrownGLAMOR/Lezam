@@ -12,6 +12,8 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import javax.management.RuntimeErrorException;
+
 import newmodels.AbstractModel;
 import newmodels.AvgPosToPos;
 import newmodels.bidtocpc.AbstractBidToCPC;
@@ -469,11 +471,9 @@ public class BasicSimulator {
 				BidBundle bundle = null;
 				if(PERFECTMODELS) {
 					_baseSolBundle = null;
-					double epsilon = .0001;
-					boolean loopFlag = true;
 					int loopCounter = 0;
 					ArrayList<double[]> bidVectors = new ArrayList<double[]>();
-					while(loopFlag) {
+					while(true) {
 						loopCounter++;
 						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
 						for(Query query : _querySpace) {
@@ -489,16 +489,18 @@ public class BasicSimulator {
 						bidVectors.add(bidVector);
 						if(_baseSolBundle != null) {
 							if(bidMapEqual(bundle, _baseSolBundle)) {
-								loopFlag = false;
+								break;
 							}
 							
 							//Search for cycles
 							if(((loopCounter + 1) % 10 == 0) && cycleDetect(bidVectors)) {
 								System.out.println("\n\n CYCLE \n\n");
-								loopFlag = false;
+								break;
 							}
 						}
 						_baseSolBundle = bundle;
+						HashMap<String, Reports> reports = runSimulation(_baseSolBundle);
+						Reports ourReports = reports.get(_agents[_ourAdvIdx]);
 					}
 					System.out.println("Bids:");
 					for(Query query : _querySpace) {
@@ -510,6 +512,32 @@ public class BasicSimulator {
 					bundle = getBids(agentToRun);
 				}
 				agentToRun.handleBidBundle(bundle);
+				double totBudget = bundle.getCampaignDailySpendLimit();
+				HashMap<Query,Double> bids = new HashMap<Query, Double>();
+				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
+				for(Query query : _querySpace) {
+					bids.put(query, bundle.getBid(query));
+					budgets.put(query,bundle.getDailyLimit(query));
+					adTypes.put(query, bundle.getAd(query));
+				}
+				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+			}
+			else {
+				agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+			}
+			agents.add(agent);
+		}
+		return agents;
+	}
+	
+	public ArrayList<SimAgent> buildAgents(BidBundle agentToRun) {
+		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
+		for(int i = 0; i < _agents.length; i++) {
+			SimAgent agent;
+			if(i == _ourAdvIdx) {
+				BidBundle bundle = agentToRun;
+//				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
@@ -808,8 +836,17 @@ public class BasicSimulator {
 	/*
 	 * Runs the simulation and generates reports
 	 */
-	public HashMap<String, Reports> runSimulation(SimAbstractAgent agentToRun) {
-		ArrayList<SimAgent> agents = buildAgents(agentToRun);
+	public HashMap<String, Reports> runSimulation(Object agentToRun) {
+		ArrayList<SimAgent> agents;
+		if(agentToRun instanceof SimAbstractAgent) {
+			agents = buildAgents((SimAbstractAgent) agentToRun);
+		}
+		else if(agentToRun instanceof BidBundle) {
+			agents = buildAgents((BidBundle) agentToRun);
+		}
+		else {
+			throw new RuntimeException("Build agents can only take type SimAbstractAgent or BidBundle");			
+		}
 		ArrayList<SimUser> users;
 		if(_pregenUsers != null) {
 			users = _pregenUsers;
