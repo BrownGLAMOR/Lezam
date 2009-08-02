@@ -61,11 +61,11 @@ public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
 
-	private static final boolean PERFECTMODELS = true;
+	private static final boolean PERFECTMODELS = false;
 
 	private static boolean CHART = false;
 
-	private boolean DEBUG = false;
+	private boolean DEBUG = true;
 
 	Random _R = new Random();					//Random number generator
 
@@ -491,7 +491,7 @@ public class BasicSimulator {
 							if(bidMapEqual(bundle, _baseSolBundle)) {
 								break;
 							}
-							
+
 							//Search for cycles
 							if(((loopCounter + 1) % 10 == 0) && cycleDetect(bidVectors)) {
 								System.out.println("\n\n CYCLE \n\n");
@@ -537,14 +537,14 @@ public class BasicSimulator {
 		}
 		return agents;
 	}
-	
+
 	public ArrayList<SimAgent> buildAgents(BidBundle agentToRun) {
 		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
 		for(int i = 0; i < _agents.length; i++) {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = agentToRun;
-//				agentToRun.handleBidBundle(bundle);
+				//				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
@@ -573,14 +573,14 @@ public class BasicSimulator {
 			tortoise += 1;
 			hare += 2;
 		}
-		
+
 		if(hare > len) {
 			return false;
 		}
-		
+
 		System.out.println("Tortoise: " + tortoise);
 		System.out.println("Hare: " + hare);
-		
+
 		int mu = 0;
 		hare = tortoise;
 		tortoise = 0; 
@@ -591,7 +591,7 @@ public class BasicSimulator {
 		}
 
 		System.out.println("Mu: " + mu);
-		
+
 		int lam = 1;
 		hare = tortoise + 1;
 		while(tortoise < len && hare < len && !bidVectorequal(bidVectors.get(tortoise),bidVectors.get(hare))) {
@@ -614,7 +614,7 @@ public class BasicSimulator {
 		}
 		return true;
 	}
-	
+
 	private boolean bidMapEqual(BidBundle bundle, BidBundle baseSolBundle) {
 		if(bundle.size() != baseSolBundle.size()) {
 			throw new RuntimeException("Vectors unequal length");
@@ -1009,13 +1009,13 @@ public class BasicSimulator {
 			}
 		}
 		if(DEBUG) {
-			//			AvgPosToPos avgPosModel20 = new AvgPosToPos(20);
-			//			AvgPosToPos avgPosModel40 = new AvgPosToPos(40);
-			//			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
-			//			AvgPosToPos avgPosModel160 = new AvgPosToPos(160);
-			//			AvgPosToPos avgPosModel320 = new AvgPosToPos(320);
-			//			AvgPosToPos avgPosModel640 = new AvgPosToPos(640);
-			//			AvgPosToPos avgPosModelall = new AvgPosToPos(1000000);
+			AvgPosToPos avgPosModel20 = new AvgPosToPos(20);
+			AvgPosToPos avgPosModel40 = new AvgPosToPos(40);
+			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
+			AvgPosToPos avgPosModel160 = new AvgPosToPos(160);
+			AvgPosToPos avgPosModel320 = new AvgPosToPos(320);
+			AvgPosToPos avgPosModel640 = new AvgPosToPos(640);
+			AvgPosToPos avgPosModelall = new AvgPosToPos(1000000);
 			for(int i = 0; i < agents.size(); i++) {
 				SimAgent agent = agents.get(i);
 				if(i == _ourAdvIdx) {
@@ -1043,13 +1043,13 @@ public class BasicSimulator {
 						for(int j = 0; j < 5; j++) {
 							debug("\t\t Imps in Slot " + (j+1) + ": " + (perQPos[j]));
 						}
-						//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
-						//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
-						//							for(int j = 0; j < 5; j++) {
-						//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
-						//							}
-						//						}
-						
+//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
+//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
+//							for(int j = 0; j < 5; j++) {
+//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
+//							}
+//							System.out.println("Likelihood: " + KLLikelihood(normalizeArr(perQPos),normalizeArr(expPos)));
+//						}
 					}
 				}
 			}
@@ -1075,7 +1075,7 @@ public class BasicSimulator {
 		}
 		return reportsMap;
 	}
-	
+
 	/*
 	 * Kullback Leibler Divergence Test
 	 */
@@ -1083,26 +1083,42 @@ public class BasicSimulator {
 		if(P.length != Q.length) {
 			throw new RuntimeException("KL Divergence requires arrays of equal length");
 		}
-		
+
 		double divergence = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			divergence += P[i] * (Math.log(P[i])-Math.log(Q[i]));
 		}
-		
+
 		return divergence;
 	}
-	
+
 	/*
 	 * When P and Q are discrete, we can get the likelihood of Q from
 	 * the KL divergence.  We want to minimize the KL divergence, which will
 	 * in turn maximize the likelihood
 	 */
 	public double KLLikelihood(double[] P, double[] Q) {
-		double likelihood = 0.0;
 		double divergence = KLDivergence(P, Q);
-		likelihood = Math.exp(-1*divergence*P.length);
+		double likelihood = Math.exp(-1*divergence*P.length);
 		return likelihood;
+	}
+	
+	private double[] normalizeArr(double[] predictions) {
+		double total = 0.0;
+		for(int i = 0 ; i < predictions.length; i++) {
+			total += predictions[i];
+		}
+		if(total == 1.0) {
+			return predictions;
+		}
+		else {
+			double[] newpredictions = new double[predictions.length];
+			for(int i = 0 ; i < predictions.length; i++) {
+				newpredictions[i] = predictions[i]/total;
+			}
+			return newpredictions;
+		}
 	}
 
 	public String[] getUsableAgents() {
@@ -1181,10 +1197,10 @@ public class BasicSimulator {
 		int numSims = 2;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		//		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
-//		String baseFile = "C:/mckpgames/localhost_sim";
-		
+		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "C:/mckpgames/localhost_sim";
+
 		int min = 454;
 		int max = 470;
 		String[] filenames = new String[max-min];
@@ -1257,7 +1273,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPAgentMkIIBids(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
