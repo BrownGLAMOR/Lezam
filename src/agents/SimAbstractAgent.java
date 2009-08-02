@@ -3,8 +3,11 @@
  */
 package agents;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Properties;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -29,10 +32,7 @@ import edu.umich.eecs.tac.props.SlotInfo;
  * @author jberg
  *
  */
-public abstract class SimAbstractAgent extends Agent {
-
-	
-	
+public abstract class SimAbstractAgent extends Agent {	
     /**
      * Basic simulation information. {@link StartInfo} contains
      * <ul>
@@ -227,7 +227,17 @@ public abstract class SimAbstractAgent extends Agent {
 	 */
 	protected double _targEffect;
 
-
+	/**
+	 * The port that we should connect to Rserve on (assuming this agent uses Rserve)
+	 */
+	protected int _rServePort;
+	
+	/**
+	 * In theory, this should be the same as the agent config file, but I haven't figure out how to get that since we don't have access
+	 * to the main() method
+	 */
+	private static final String CONFIG_FILENAME = "config/agentR.conf"; 
+	
 	/**
 	 * 
 	 */
@@ -238,6 +248,18 @@ public abstract class SimAbstractAgent extends Agent {
 		_querySpace = new LinkedHashSet<Query>();
 		
 		_day = 0;
+		
+		try {
+			FileInputStream fis = new FileInputStream(CONFIG_FILENAME);
+			Properties props = new Properties();
+			props.load(fis);
+			_rServePort = Integer.parseInt(props.getProperty("rport", "6311"));
+			fis.close();
+		} catch (Exception e) {
+			_rServePort = 6311;  // Default port, in case the config file isn't there or isn't valid
+		}
+		
+		System.out.println("Will attempt to connect to R on port " + _rServePort + " if R is needed.");
 	}
 	
 	public void sendSimMessage(Message message) {
