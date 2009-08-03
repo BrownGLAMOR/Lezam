@@ -104,7 +104,7 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 				for(int i = 0; i < 5; i++) {
 					posDist[i] = 0;
 				}
-			} 
+			}
 			else {
 				posDist = _avgPosToPosDist.getPrediction(query, regImps, promImps, avgPos, numClicks, _numPS);
 			}

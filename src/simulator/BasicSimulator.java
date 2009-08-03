@@ -1110,7 +1110,7 @@ public class BasicSimulator {
 		for(int i = 0 ; i < predictions.length; i++) {
 			total += predictions[i];
 		}
-		if(total == 1.0) {
+		if(total == 1.0 || total == 0.0) {
 			return predictions;
 		}
 		else {
@@ -1199,7 +1199,7 @@ public class BasicSimulator {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		String baseFile = "/u/jberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/pro/aa/usr/jberg/mckpgames/localhost_sim";
 		//		String baseFile = "C:/mckpgames/localhost_sim";
 
 		int min = 454;

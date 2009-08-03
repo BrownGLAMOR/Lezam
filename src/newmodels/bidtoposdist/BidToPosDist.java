@@ -23,6 +23,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	private Set<Query> _querySpace;
 	private HashMap<Query, ArrayList<Double>> _bids;
 	private HashMap<Query, ArrayList<double[]>> _posDists;
+	private HashMap<Query,Integer> _queryToInt;
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	private HashMap<Query, REXP> _surfaces;
@@ -40,12 +41,16 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		_posDists = new HashMap<Query,ArrayList<double[]>>();
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
+		_queryToInt = new HashMap<Query, Integer>();
+		int i = 0;
 		for(Query query : _querySpace) {
 			ArrayList<Double> bids = new ArrayList<Double>();
 			ArrayList<double[]> posDists = new ArrayList<double[]>();
 			_bids.put(query, bids);
 			_posDists.put(query, posDists);
 			_surfaces.put(query, null);
+			_queryToInt.put(query, i);
+			i++;
 		}
 	}
 
@@ -57,11 +62,10 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		}
 		try {
 			for(int i = 0; i < predictions.length; i++) {
-				double prediction = _rConnection.eval("predict.trls(surf" + query.getComponent() + query.getManufacturer() + "," + bid + "," + (i+1) + ")").asDouble();
-				System.out.println("Pred: " + prediction);
+				double prediction = _rConnection.eval("predict.trls(surf" + _queryToInt.get(query) + "," + bid + "," + (i+1) + ")").asDouble();
+//				System.out.println("Pred: " + prediction);
 				predictions[i] = prediction;
 			}
-			predictions = normalizeArr(predictions);
 			return predictions;
 		} catch (RserveException e) {
 			System.out.println(_rConnection.getLastError());
@@ -78,7 +82,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		for(int i = 0 ; i < predictions.length; i++) {
 			total += predictions[i];
 		}
-		if(total == 1.0) {
+		if(total == 1.0 || total == 0.0) {
 			return predictions;
 		}
 		else {
@@ -139,9 +143,9 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					_rConnection.assign("bids", bids);
 					_rConnection.assign("pos", pos);
 					_rConnection.assign("posDist", posDist);
-					_rConnection.eval("surf" + query.getComponent() + query.getManufacturer() +  " = "  + "surf.ls(3,bids,pos,posDist" + ")");
-
+					_rConnection.eval("surf" + _queryToInt.get(query) +  " = "  + "surf.ls(3,bids,pos,posDist" + ")");
 				} catch (REngineException e) {
+					System.out.println(_rConnection.getLastError());
 					e.printStackTrace();
 				}
 			}
@@ -151,4 +155,6 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			return false;
 		}
 	}
+	
+	
 }

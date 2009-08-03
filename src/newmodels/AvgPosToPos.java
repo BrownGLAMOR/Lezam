@@ -117,7 +117,7 @@ public class AvgPosToPos extends AbstractModel {
 				lastNumSols = _cplex.getSolnPoolNsolns();
 			}
 
-			System.out.println(_cplex.getSolnPoolNsolns());
+//			System.out.println(_cplex.getSolnPoolNsolns());
 
 			double[] solution = new double[5];
 
@@ -140,7 +140,7 @@ public class AvgPosToPos extends AbstractModel {
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
-			System.out.println("This took " + (elapsed / 1000) + " seconds");
+//			System.out.println("This took " + (elapsed / 1000) + " seconds");
 			return solution;
 		}
 		catch (IloException e) {
