@@ -719,12 +719,12 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					}
 				}
 
+				int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-					int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
-					valueLost += (avgConvProb - worseConvProb)*avgUSP*5; //You also lose conversions in the future (for 5 days)
-					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP*5) + " to value lost");
+					valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP*valueLostWindow) + " to value lost");
 				}
 				debug("Total value lost: " + valueLost);
 				budget+=_capacityInc;
