@@ -28,10 +28,12 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 	Random _R = new Random();					//Random number generator
 	private ArrayList<HashMap<Query, Double>> avgPosPredictions;
 	private double sumVar;
+	private double avg;
 
 	public BidPosModelTestAgent() {
 		avgPosPredictions = new ArrayList<HashMap<Query,Double>>();
 		sumVar = 0.0;
+		avg = 0.0;
 	}
 
 
@@ -51,10 +53,19 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 			HashMap<Query, Double> pospredictions = avgPosPredictions.get(avgPosPredictions.size()-2);
 			QueryReport queryReport = _queryReports.getLast();
 			for(Query query : _querySpace) {
-				sumVar += (pospredictions.get(query) - queryReport.getPosition(query))*(pospredictions.get(query) - queryReport.getPosition(query));
+				if(!Double.isNaN(queryReport.getPosition(query))) {
+					sumVar += (pospredictions.get(query) - queryReport.getPosition(query))*(pospredictions.get(query) - queryReport.getPosition(query));
+					avg += queryReport.getPosition(query);
+				}
+				else {
+					System.out.println(pospredictions.get(query));
+					sumVar += (pospredictions.get(query) - 5)*(pospredictions.get(query) - 5);
+					avg += 5;
+				}
 			}
 			double stddev = Math.sqrt(sumVar/((_day - 12)*16));
 			System.out.println("Standard Deviation: " + stddev);
+			System.out.println("Percent Error: " + (stddev/(avg/((_day - 12)*16))));
 		}
 		
 		avgPosPredictions.add(dailyPosPredictions);
