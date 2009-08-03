@@ -91,7 +91,12 @@ public class AvgPosToPos extends AbstractModel {
 					_cplex.prod( 4.0, x[3]),
 					_cplex.prod( 5.0, x[4])), Math.ceil(numImps * avgPos));
 
-			if(numPromSlots == 0) {
+			/*
+			 * There is a problem when we don't get the promoted reserve price and we expect promoted impressions
+			 * but don't get any.  This should fix most problems but isn't good enough..  We should actually solve
+			 * it and if we get 0 solutions relax the constraints......
+			 */
+			if(numPromSlots == 0 || (numPromSlots > 0 && avgPos < 2 && promImps == 0)) {
 				_cplex.addEq(_cplex.sum(x[0], x[1], x[2], x[3], x[4]), numImps);
 			}
 			else if(numPromSlots == 1) {

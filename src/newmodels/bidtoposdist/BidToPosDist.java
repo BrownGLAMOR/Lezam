@@ -63,7 +63,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		try {
 			for(int i = 0; i < predictions.length; i++) {
 				double prediction = _rConnection.eval("predict.trls(surf" + _queryToInt.get(query) + "," + bid + "," + (i+1) + ")").asDouble();
-//				System.out.println("Pred: " + prediction);
+				//				System.out.println("Pred: " + prediction);
 				predictions[i] = prediction;
 			}
 			return predictions;
@@ -155,6 +155,6 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			return false;
 		}
 	}
-	
-	
+
+
 }
