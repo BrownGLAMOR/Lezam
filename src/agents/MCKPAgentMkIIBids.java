@@ -317,6 +317,17 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			}
 			_salesDist.updateModel(_salesReport);
 		}
+		
+		if(_day > lagDays + 2) {
+			QueryReport queryReport = _queryReports.getLast();
+			SalesReport salesReport = _salesReports.getLast();
+			((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
+			((EnsembleBidToCPC) _bidToCPC).createEnsemble();
+
+			((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
+
+		}
 
 		if(_day > lagDays || models != null){
 			buildMaps(models);
@@ -433,7 +444,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				if(solution.containsKey(isID)) {
 					bid = solution.get(isID).b();
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-//					System.out.println("Bidding " + bid + "   for query: " + q);
+					//					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
@@ -470,7 +481,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 					 */
 					bid = 0.0;
 					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-//					System.out.println("Bidding " + bid + "   for query: " + q);
+					//					System.out.println("Bidding " + bid + "   for query: " + q);
 					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
@@ -488,8 +499,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				dailyImpPredictions.put(q,(double)_queryToNumImpModel.getPrediction(q));
 
 			}
-			//			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
-			//			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
+			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
+			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
 			CPCPredictions.add(dailyCPCPredictions);
 			ClickPrPredictions.add(dailyClickPrPredictions);
 			ConvPrPredictions.add(dailyConvPrPredictions);
@@ -503,12 +514,6 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				QueryReport queryReport = _queryReports.getLast();
 				SalesReport salesReport = _salesReports.getLast();
 				debug("Day: " + _day);
-
-				//				((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
-				//				((EnsembleBidToCPC) _bidToCPC).createEnsemble();
-				//
-				//				((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-				//				((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
 
 				/*
 				 * CPC Error
