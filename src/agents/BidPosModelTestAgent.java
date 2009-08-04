@@ -58,7 +58,6 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 					avg += queryReport.getPosition(query);
 				}
 				else {
-					System.out.println(pospredictions.get(query));
 					sumVar += (pospredictions.get(query) - 5)*(pospredictions.get(query) - 5);
 					avg += 5;
 				}
