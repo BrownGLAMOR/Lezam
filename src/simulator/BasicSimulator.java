@@ -132,7 +132,7 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed = 876452;
+	private long lastSeed = 876451;
 
 	private BidBundle _baseSolBundle;
 
