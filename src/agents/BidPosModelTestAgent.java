@@ -45,7 +45,7 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 			double bid = randDouble(.25,1.5);
 			bundle.addQuery(query, bid, new Ad());
 			if(_day >= 10) {
-				dailyPosPredictions.put(query, getAvg(_bidToPosDist.getPrediction(query, bid)));
+				dailyPosPredictions.put(query, getAvg(normWithoutNegative(_bidToPosDist.getPrediction(query, bid))));
 			}
 		}
 		if(_day >= 12) {
@@ -67,10 +67,33 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 			System.out.println("Standard Deviation: " + stddev);
 			System.out.println("Percent Error: " + (stddev/(avg/((_day - 12)*16))));
 		}
-		
+
 		avgPosPredictions.add(dailyPosPredictions);
 		return bundle;
 	}
+
+	private double[] normWithoutNegative(double[] predictions) {
+		double total = 0.0;
+		for(int i = 0 ; i < predictions.length; i++) {
+			if(predictions[i] < 0) {
+				predictions[i] = 0;
+			}
+			else {
+				total += predictions[i];
+			}
+		}
+		if(total == 1.0 || total == 0.0) {
+			return predictions;
+		}
+		else {
+			double[] newpredictions = new double[predictions.length];
+			for(int i = 0 ; i < predictions.length; i++) {
+				newpredictions[i] = predictions[i]/total;
+			}
+			return newpredictions;
+		}
+	}
+
 
 	private Double getAvg(double[] prediction) {
 		double avg = 0.0;
@@ -129,7 +152,7 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
+
 	private double[] normalizeArr(double[] predictions) {
 		double total = 0.0;
 		for(int i = 0 ; i < predictions.length; i++) {
