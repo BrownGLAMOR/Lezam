@@ -102,6 +102,9 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 			avg += prediction[i] * (i+1);
 			total += prediction[i];
 		}
+		if(total == 0.0) {
+			return 5.0;
+		}
 		return avg/total;
 	}
 
