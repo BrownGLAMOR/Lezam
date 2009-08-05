@@ -1078,6 +1078,12 @@ public class BasicSimulator {
 	}
 
 	/*
+	 * Bin-by-bin comparisons
+	 * 
+	 * ref: http://www.cs.cmu.edu/~efros/courses/AP06/Papers/rubner-jcviu-00.pdf
+	 */
+	
+	/*
 	 * Kullback Leibler Divergence Test
 	 */
 	public double KLDivergence(double[] P, double[] Q) {
@@ -1103,6 +1109,69 @@ public class BasicSimulator {
 		double divergence = KLDivergence(P, Q);
 		double likelihood = Math.exp(-1*divergence*P.length);
 		return likelihood;
+	}
+	
+	/*
+	 * The Minkowski Distance uses the L_p norm, so we define a p
+	 * 
+	 * Probably want to use 2.....
+	 */
+	public double minkowskiDistance(double[] P, double[] Q, int p) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("Minkowski Distance requires arrays of equal length");
+		}
+		
+		double distance = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			distance += Math.pow(Math.abs(P[i] - Q[i]),p);
+		}
+		
+		distance = Math.pow(distance,1.0/p);
+		
+		return distance;
+	}
+	
+	/*
+	 * When the areas are equal 
+	 */
+	public double histogramIntersection(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("Histogram Intersection requires arrays of equal length");
+		}
+
+		double distance = 1.0;
+		
+		double temp1 = 0.0;
+		double temp2 = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			temp1 += Math.min(P[i], Q[i]);
+			temp2 += Q[i];
+		}
+		
+		distance -= temp1/temp2;
+		
+		return distance;
+	}
+	
+	public double jeffreyDivergence(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("Jeffrey Divergence requires arrays of equal length");
+		}
+		
+		double divergence = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			if(P[i] == 0 && Q[i] == 0) {
+				continue;
+			}
+			double m = (P[i] + Q[i])/2.0;
+			divergence += P[i] * Math.log(P[i] / m) + Q[i] * Math.log(Q[i] / m);
+		}
+		
+		return divergence;
+		
 	}
 	
 	private double[] normalizeArr(double[] predictions) {
