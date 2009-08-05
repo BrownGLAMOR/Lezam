@@ -1171,8 +1171,52 @@ public class BasicSimulator {
 		}
 		
 		return divergence;
-		
 	}
+	
+	/*
+	 * This is equivalent to the Earth Mover's Distance in 1 dimensional
+	 * histograms with equal area, and with equal bin sizes.
+	 */
+	public double matchDistance(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("Match Distance requires arrays of equal length");
+		}
+		
+		double distance = 0.0;
+		double pCum = 0.0;
+		double qCum = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			pCum += P[i];
+			qCum += Q[i];
+			distance += Math.abs(pCum-qCum);
+		}
+		
+		return distance;
+	}
+	
+	/*
+	 * Kolmogorov-Smirnov
+	 */
+	public double KSdistance(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("KS Distance requires arrays of equal length");
+		}
+		
+		double distance = 0.0;
+		double pCum = 0.0;
+		double qCum = 0.0;
+		
+		for(int i = 0; i < P.length; i++) {
+			pCum += P[i];
+			qCum += Q[i];
+			distance = Math.max(distance,Math.abs(pCum-qCum));
+		}
+		
+		return distance;
+	}
+	
+	
 	
 	private double[] normalizeArr(double[] predictions) {
 		double total = 0.0;
