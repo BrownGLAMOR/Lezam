@@ -2,6 +2,7 @@ package simulator.models;
 
 import java.util.LinkedList;
 
+import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import simulator.BasicSimulator;
 import simulator.Reports;
@@ -32,6 +33,11 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectBidToCPC(_simulator);
 	}
 
 }

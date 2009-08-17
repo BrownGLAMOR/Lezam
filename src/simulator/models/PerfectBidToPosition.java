@@ -7,6 +7,7 @@ package simulator.models;
 
 import java.util.LinkedList;
 
+import newmodels.AbstractModel;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import simulator.BasicSimulator;
 import simulator.Reports;
@@ -36,6 +37,11 @@ public class PerfectBidToPosition extends AbstractBidToSlotModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectBidToPosition(_simulator);
 	}
 
 

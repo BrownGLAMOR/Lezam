@@ -7,6 +7,7 @@ package simulator.models;
 
 import java.util.HashMap;
 
+import newmodels.AbstractModel;
 import newmodels.usermodel.AbstractUserModel;
 import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
@@ -17,9 +18,11 @@ public class PerfectUserModel extends AbstractUserModel {
 	
 
 	private HashMap<Product, HashMap<UserState, Integer>> _users;
+	private int _numUsers;
 
 	public PerfectUserModel(int numUsers, HashMap<Product, HashMap<UserState, Integer>> users) {
 		_users = users;
+		_numUsers = numUsers;
 	}
 
 	@Override
@@ -35,6 +38,11 @@ public class PerfectUserModel extends AbstractUserModel {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing needs to be updated
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectUserModel(_numUsers, _users);
 	}
 	
 }

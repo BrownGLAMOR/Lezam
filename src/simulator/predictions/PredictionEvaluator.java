@@ -25,8 +25,7 @@ public class PredictionEvaluator {
 	private static LinkedHashSet<Query> _querySpace;
 
 	public ArrayList<String> getGameStrings() {
-		//		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
-		String baseFile = "/Users/jordan/Desktop/JavaWorkSpaces/aa-server-0.9.6.1/logs/sims/localhost_sim";
+		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
 		int min = 40;
 		int max = 54;
 		ArrayList<String> filenames = new ArrayList<String>();
@@ -47,9 +46,6 @@ public class PredictionEvaluator {
 		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
-		HashMap<String,HashMap<String,Double>> fullRangeTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> fullRangeTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Integer>> fullRangeTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
 		ArrayList<String> filenames = getGameStrings();
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
@@ -66,9 +62,6 @@ public class PredictionEvaluator {
 			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
-			HashMap<String,Double> fullRangeTotErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> fullRangeTotActualMap = new HashMap<String, Double>();
-			HashMap<String,Integer> fullRangeTotErrorCounterMap = new HashMap<String, Integer>();
 
 			//Make the query space
 			_querySpace = new LinkedHashSet<Query>();
@@ -85,7 +78,7 @@ public class PredictionEvaluator {
 			}
 
 			for(int agent = 0; agent < agents.length; agent++) {
-				
+
 				AbstractBidToPrClick model = (AbstractBidToPrClick) baseModel.getCopy();
 
 				double totError = 0;
@@ -94,9 +87,6 @@ public class PredictionEvaluator {
 				double ourTotError = 0;
 				double ourTotActual = 0;
 				int ourTotErrorCounter = 0;
-				double fullRangeTotError = 0;
-				double fullRangeTotActual = 0;
-				int fullRangeTotErrorCounter = 0;
 
 				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
 				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
@@ -144,6 +134,8 @@ public class PredictionEvaluator {
 											ourTotError += error;
 											ourTotErrorCounter++;
 										}
+
+
 									}
 								}
 							}
@@ -156,21 +148,15 @@ public class PredictionEvaluator {
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
 				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
-				fullRangeTotErrorMap.put(agents[agent],fullRangeTotError);
-				fullRangeTotActualMap.put(agents[agent],fullRangeTotActual);
-				fullRangeTotErrorCounterMap.put(agents[agent],fullRangeTotErrorCounter);
-				
+
 			}
-			
+
 			totErrorMegaMap.put(filename,totErrorMap);
 			totActualMegaMap.put(filename,totActualMap);
 			totErrorCounterMegaMap.put(filename,totErrorCounterMap);
 			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
-			fullRangeTotErrorMegaMap.put(filename,fullRangeTotErrorMap);
-			fullRangeTotActualMegaMap.put(filename,fullRangeTotActualMap);
-			fullRangeTotErrorCounterMegaMap.put(filename,fullRangeTotErrorCounterMap);
 		}
 	}
 }

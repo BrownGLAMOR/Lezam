@@ -2,6 +2,7 @@ package simulator.models;
 
 import java.util.LinkedList;
 
+import newmodels.AbstractModel;
 import newmodels.bidtonumclicks.AbstractBidToNumClicks;
 import simulator.BasicSimulator;
 import simulator.Reports;
@@ -34,6 +35,11 @@ public class PerfectBidToNumClicks extends AbstractBidToNumClicks {
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectBidToNumClicks(_query, _simulator);
 	}
 
 }

@@ -1,5 +1,6 @@
 package simulator.models;
 
+import newmodels.AbstractModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import edu.umich.eecs.tac.props.SalesReport;
 
@@ -56,6 +57,11 @@ public class PerfectUnitsSoldModel extends AbstractUnitsSoldModel {
 			}
 		}
 		return total;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectUnitsSoldModel(_salesOverWindow, _capacity, _window);
 	}
 
 }

@@ -2,6 +2,7 @@ package simulator.models;
 
 import java.util.LinkedList;
 
+import newmodels.AbstractModel;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
 import newmodels.prconv.NewAbstractConversionModel;
 import simulator.BasicSimulator;
@@ -36,6 +37,12 @@ public class PerfectBidToPrConv extends NewAbstractConversionModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		return true;
+	}
+
+
+	@Override
+	public AbstractModel getCopy() {
+		return new PerfectBidToPrConv(_simulator);
 	}
 
 }
