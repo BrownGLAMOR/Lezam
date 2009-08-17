@@ -15,9 +15,9 @@ public class AvgPosToPos extends AbstractModel {
 
 	private static final boolean forceToPos = true;
 	private IloCplex _cplex;
-	private int _numSols;
+	private int _numSols = 50;
 	private double _promBonus= .5;
-
+	
 	public AvgPosToPos(int numSols) {
 		try {
 			IloCplex cplex = new IloCplex();
@@ -200,5 +200,10 @@ public class AvgPosToPos extends AbstractModel {
 		for(int i = 0; i < sols.length; i++) {
 			System.out.println("Slot " + (i+1) + ": " + sols[i]);
 		}
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new AvgPosToPos(_numSols);
 	}
 }

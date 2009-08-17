@@ -219,5 +219,10 @@ public class HistoricPrConversionModel extends NewAbstractConversionModel {
 
 		}
 	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new HistoricPrConversionModel(_querySpace, _targModel);
+	}
 }
 

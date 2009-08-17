@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.SalesReport;
 
@@ -72,5 +74,11 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
 			}
 		}
 		return total;
+	}
+
+
+	@Override
+	public AbstractModel getCopy() {
+		return new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
 	}
 }

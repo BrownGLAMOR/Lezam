@@ -9,6 +9,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import newmodels.AbstractModel;
+
 import org.rosuda.REngine.Rserve.RConnection;
 
 
@@ -199,6 +201,18 @@ public class BaselineBidToCPC extends AbstractBidToCPC {
 	public static void main(String[] args) throws Exception {
 		BaselineBidToCPC model = new BaselineBidToCPC();
 
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		// TODO Auto-generated method stub
+		try {
+			return new BaselineBidToCPC();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 }

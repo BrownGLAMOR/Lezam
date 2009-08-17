@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
@@ -386,5 +388,10 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		else {
 			return false;
 		}
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new RegressionBidToPrClick(_querySpace, _IDVar, _numPrevDays, _queryIndicators, _queryTypeIndicators, _powers);
 	}
 }

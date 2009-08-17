@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.SalesReport;
 
@@ -68,6 +70,11 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 			conversions += salesReport.getConversions(q);
 		}
 		_sold.add(conversions);
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new BasicUnitsSoldModel(_querySpace, _capacity, _window);
 	}
 
 }

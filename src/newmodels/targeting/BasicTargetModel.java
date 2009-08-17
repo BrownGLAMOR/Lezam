@@ -295,6 +295,11 @@ public class BasicTargetModel extends AbstractModel {
 		System.out.println(checkconv3);*/
 	}
 
+	@Override
+	public AbstractModel getCopy() {
+		return new BasicTargetModel(_manufacturer, _component);
+	}
+
 	/*0.35243691164119806
 0.2223582380812003
 0.349882035343172

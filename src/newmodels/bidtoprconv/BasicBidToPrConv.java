@@ -1,5 +1,6 @@
 package newmodels.bidtoprconv;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -21,6 +22,11 @@ public class BasicBidToPrConv extends AbstractBidToPrConv {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new BasicBidToPrConv(_query);
 	}
 
 

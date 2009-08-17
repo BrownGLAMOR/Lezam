@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import newmodels.AbstractModel;
 import newmodels.usermodel.AbstractUserModel;
 import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
@@ -88,6 +89,11 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		//Nothing to do
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new BasicQueryToNumImp(_userModel);
 	}
 
 }

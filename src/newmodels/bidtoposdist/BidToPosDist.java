@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import newmodels.AbstractModel;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 import org.rosuda.REngine.REXP;
@@ -154,6 +155,11 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		else {
 			return false;
 		}
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new BidToPosDist(_rConnection, _querySpace);
 	}
 
 

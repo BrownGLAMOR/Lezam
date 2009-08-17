@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
@@ -734,6 +736,11 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		public String toString() {
 			return "Name: " + _name + "   Error: " + _error;
 		}
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new EnsembleBidToCPC(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, null);
 	}
 
 }

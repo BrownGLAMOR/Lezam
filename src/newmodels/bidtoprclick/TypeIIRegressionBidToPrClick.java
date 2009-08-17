@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.AbstractModel;
 import newmodels.targeting.BasicTargetModel;
 
 import org.rosuda.REngine.REXPMismatchException;
@@ -285,5 +286,10 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 		else {
 			return false;
 		}
+	}
+	
+	@Override
+	public AbstractModel getCopy() {
+		return new TypeIIRegressionBidToPrClick(c, _querySpace, _queryType, _IDVar, _numPrevDays, _targModel, _powers);
 	}
 }

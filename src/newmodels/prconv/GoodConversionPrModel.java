@@ -3,6 +3,7 @@ package newmodels.prconv;
 import java.util.HashMap;
 import java.util.Set;
 
+import newmodels.AbstractModel;
 import newmodels.targeting.BasicTargetModel;
 
 import edu.umich.eecs.tac.props.BidBundle;
@@ -393,5 +394,10 @@ public class GoodConversionPrModel extends NewAbstractConversionModel {
 
 		private static final double DBL_EPS = 1e-16;
 		// private static final double TOL = 1E-7;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new GoodConversionPrModel(_querySpace, _targModel);
 	}
 }

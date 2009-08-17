@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.targeting.BasicTargetModel;
 
 import org.jfree.base.modules.DefaultModuleInfo;
@@ -757,4 +759,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 	}
 
+	@Override
+	public AbstractModel getCopy() {
+		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, null);
+	}
+
+	
 }

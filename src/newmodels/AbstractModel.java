@@ -17,5 +17,6 @@ package newmodels;
  */
 public abstract class AbstractModel {
 	
-
+	public abstract AbstractModel getCopy();
+	
 }

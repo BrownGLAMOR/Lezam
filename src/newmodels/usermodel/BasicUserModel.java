@@ -7,6 +7,8 @@ package newmodels.usermodel;
 
 import java.util.Random;
 
+import newmodels.AbstractModel;
+
 import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -59,6 +61,11 @@ public class BasicUserModel extends AbstractUserModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
 		return true;
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return new BasicUserModel();
 	}
 	
 }

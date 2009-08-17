@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import newmodels.AbstractModel;
+
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
@@ -252,5 +254,10 @@ public class TypeIIIRegressionBidToCPC extends AbstractBidToCPC {
 		else {
 			return false;
 		}
+	}
+	
+	@Override
+	public AbstractModel getCopy() {
+		return new TypeIIIRegressionBidToCPC(c, _querySpace, _query, _IDVar, _numPrevDays, _powers);
 	}
 }
