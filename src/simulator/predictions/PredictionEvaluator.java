@@ -6,8 +6,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.bidtoprclick.RegressionBidToPrClick;
 
 
 import simulator.parser.GameStatus;
@@ -21,13 +23,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PredictionEvaluator {
 
-
-	private static LinkedHashSet<Query> _querySpace;
-
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordan/Desktop/mckpgames/localhost_sim";
-		int min = 40;
-		int max = 54;
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		int min = 454;
+		int max = 455;
+//		int max = 497;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -36,13 +36,10 @@ public class PredictionEvaluator {
 		return filenames;
 	}
 
-	public void clickPrPredictionChallenge(AbstractBidToPrClick baseModel, double increment, double min, double max) throws IOException, ParseException {
+	public void clickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
-		HashMap<String,HashMap<String,Double>> totErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> totActualMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Integer>> totErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
 		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
@@ -56,34 +53,28 @@ public class PredictionEvaluator {
 			/*
 			 * One map for each advertiser
 			 */
-			HashMap<String,Double> totErrorMap = new HashMap<String,Double>();
-			HashMap<String,Double> totActualMap = new HashMap<String, Double>();
-			HashMap<String,Integer> totErrorCounterMap = new HashMap<String, Integer>();
 			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
 
 			//Make the query space
-			_querySpace = new LinkedHashSet<Query>();
-			_querySpace.add(new Query(null, null));
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
 			for(Product product : status.getRetailCatalog()) {
 				// The F1 query classes
 				// F1 Manufacturer only
-				_querySpace.add(new Query(product.getManufacturer(), null));
+				querySpace.add(new Query(product.getManufacturer(), null));
 				// F1 Component only
-				_querySpace.add(new Query(null, product.getComponent()));
+				querySpace.add(new Query(null, product.getComponent()));
 
 				// The F2 query class
-				_querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 
 			for(int agent = 0; agent < agents.length; agent++) {
 
 				AbstractBidToPrClick model = (AbstractBidToPrClick) baseModel.getCopy();
 
-				double totError = 0;
-				double totActual = 0;
-				int totErrorCounter = 0;
 				double ourTotError = 0;
 				double ourTotActual = 0;
 				int ourTotErrorCounter = 0;
@@ -108,55 +99,91 @@ public class PredictionEvaluator {
 							 */
 							for(int j = 0; j < agents.length; j++) {
 								String agentName = agents[j];
-								LinkedList<SalesReport> salesReports = allSalesReports.get(agentName);
-								LinkedList<QueryReport> queryReports = allQueryReports.get(agentName);
-								LinkedList<BidBundle> bidBundles = allBidBundles.get(agentName);
-								SalesReport otherSalesReport = salesReports.get(i+2);
-								QueryReport otherQueryReport = queryReports.get(i+2);
-								BidBundle otherBidBundle = bidBundles.get(i+2);
-								for(Query q : _querySpace) {
-									double bid = otherBidBundle.getBid(q);
-									if(bid != 0) {
-										double error = model.getPrediction(q, otherBidBundle.getBid(q), new Ad());
-										double clicks = otherQueryReport.getClicks(q);
-										double imps = otherQueryReport.getImpressions(q);
-										double clickPr = 0;
-										if(!(clicks == 0 || imps == 0)) {
-											clickPr = clicks/imps;
-										}
-										totActual += clickPr;
-										error -= clickPr;
-										error = error*error;
-										totError += error;
-										totErrorCounter++;
-										if(agentName.equals(agents[agent])) {
+								if(agentName.equals(agents[agent])) {
+									LinkedList<SalesReport> salesReports = allSalesReports.get(agentName);
+									LinkedList<QueryReport> queryReports = allQueryReports.get(agentName);
+									LinkedList<BidBundle> bidBundles = allBidBundles.get(agentName);
+									SalesReport otherSalesReport = salesReports.get(i+2);
+									QueryReport otherQueryReport = queryReports.get(i+2);
+									BidBundle otherBidBundle = bidBundles.get(i+2);
+									for(Query q : querySpace) {
+										double bid = otherBidBundle.getBid(q);
+										if(bid != 0) {
+											double error = model.getPrediction(q, otherBidBundle.getBid(q), new Ad());
+											double clicks = otherQueryReport.getClicks(q);
+											double imps = otherQueryReport.getImpressions(q);
+											double clickPr = 0;
+											if(!(clicks == 0 || imps == 0)) {
+												clickPr = clicks/imps;
+											}
+											error -= clickPr;
+											error = error*error;
 											ourTotActual += clickPr;
 											ourTotError += error;
 											ourTotErrorCounter++;
 										}
-
-
 									}
 								}
 							}
 						}
 					}
 				}
-				totErrorMap.put(agents[agent],totError);
-				totActualMap.put(agents[agent],totActual);
-				totErrorCounterMap.put(agents[agent],totErrorCounter);
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
 				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
 
 			}
 
-			totErrorMegaMap.put(filename,totErrorMap);
-			totActualMegaMap.put(filename,totActualMap);
-			totErrorCounterMegaMap.put(filename,totErrorCounterMap);
 			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		for(String file : filenames) {
+			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				System.out.println("\t\t RMSE: " + RMSE);
+				double stdDev = RMSE/(totActual/totErrorCounter);
+				System.out.println("\t\t Std Dev: " + stdDev);
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		PredictionEvaluator evaluator = new PredictionEvaluator();
+		Set<Query> _querySpace = new LinkedHashSet<Query>();
+		_querySpace.add(new Query(null, null));
+		_querySpace.add(new Query("flat", null));
+		_querySpace.add(new Query("flat", "tv"));
+		_querySpace.add(new Query("flat", "dvd"));
+		_querySpace.add(new Query("flat", "audio"));
+		_querySpace.add(new Query("pg", null));
+		_querySpace.add(new Query("pg", "tv"));
+		_querySpace.add(new Query("pg", "dvd"));
+		_querySpace.add(new Query("pg", "audio"));
+		_querySpace.add(new Query("lioneer", null));
+		_querySpace.add(new Query("lioneer", "tv"));
+		_querySpace.add(new Query("lioneer", "dvd"));
+		_querySpace.add(new Query("lioneer", "audio"));
+		_querySpace.add(new Query(null, "tv"));
+		_querySpace.add(new Query(null, "dvd"));
+		_querySpace.add(new Query(null, "audio"));
+		RegressionBidToPrClick model = new RegressionBidToPrClick(_querySpace,3,15,false,false,false);
+		try {
+			evaluator.clickPrPredictionChallenge(model);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
 	}
 }
