@@ -20,4 +20,6 @@ public abstract class AbstractBidToPrClick extends AbstractModel {
 
 	public abstract double getPrediction(Query query, double currentBid, Ad currentAd);
 
+	public abstract void setSpecialty(String manufacturer, String component);
+	
 }

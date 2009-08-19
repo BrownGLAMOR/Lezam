@@ -8,13 +8,19 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.bidtoprclick.TypeIRegressionBidToPrClick;
+import newmodels.targeting.BasicTargetModel;
 
 
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
@@ -26,7 +32,7 @@ public class PredictionEvaluator {
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
-		int max = 455;
+		int max = 460;
 //		int max = 497;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
@@ -72,8 +78,10 @@ public class PredictionEvaluator {
 			}
 
 			for(int agent = 0; agent < agents.length; agent++) {
-
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
 				AbstractBidToPrClick model = (AbstractBidToPrClick) baseModel.getCopy();
+				model.setSpecialty(advInfo.getManufacturerSpecialty(),advInfo.getComponentSpecialty());
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -138,6 +146,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
+		double avgRMSE = 0.0;
+		int RMSECounter = 0;
 		for(String file : filenames) {
 			System.out.println("File: " + file);
 			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
@@ -151,11 +161,12 @@ public class PredictionEvaluator {
 				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
+				avgRMSE += RMSE;
 				System.out.println("\t\t RMSE: " + RMSE);
-				double stdDev = RMSE/(totActual/totErrorCounter);
-				System.out.println("\t\t Std Dev: " + stdDev);
+				RMSECounter++;
 			}
 		}
+		System.out.println("Average RMSE: " + (avgRMSE/RMSECounter));
 	}
 	
 	public static void main(String[] args) {
@@ -177,9 +188,12 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "tv"));
 		_querySpace.add(new Query(null, "dvd"));
 		_querySpace.add(new Query(null, "audio"));
-		RegressionBidToPrClick model = new RegressionBidToPrClick(_querySpace,3,15,false,false,false);
+		TypeIRegressionBidToPrClick model;
 		try {
+			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,3,20,new BasicTargetModel("flat", "tv"),false,false,false);
 			evaluator.clickPrPredictionChallenge(model);
+		} catch (RserveException e1) {
+			e1.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {

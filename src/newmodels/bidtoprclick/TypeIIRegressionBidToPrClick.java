@@ -292,4 +292,9 @@ public class TypeIIRegressionBidToPrClick extends AbstractBidToPrClick {
 	public AbstractModel getCopy() {
 		return new TypeIIRegressionBidToPrClick(c, _querySpace, _queryType, _IDVar, _numPrevDays, _targModel, _powers);
 	}
+	
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		_targModel = new BasicTargetModel(manufacturer,component);
+	}
 }

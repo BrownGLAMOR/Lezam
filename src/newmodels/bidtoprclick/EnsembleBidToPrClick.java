@@ -763,6 +763,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	public AbstractModel getCopy() {
 		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, null);
 	}
+	
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		_targModel = new BasicTargetModel(manufacturer,component);
+	}
 
 	
 }

@@ -394,4 +394,9 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	public AbstractModel getCopy() {
 		return new RegressionBidToPrClick(_querySpace, _IDVar, _numPrevDays, _queryIndicators, _queryTypeIndicators, _powers);
 	}
+
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		//This method is only necessary if the model consider targetting
+	}
 }
