@@ -39,7 +39,7 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 	protected int[] _predCounter;
 	private RConnection c;
 	private double[] coeff;
-	private int _numQueries = 16;
+	private int _numQueries;
 	private int _IDVar;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private int _numPrevDays;	//How many days worth of data to include in the regression
 	private ArrayList<QueryReport> _queryReports;
@@ -48,21 +48,35 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 	private BasicTargetModel _targModel;
+	private boolean _weighted;
+	private double m = 0.85;
+	private boolean _robust;
 
 
-	public TypeIRegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+	public TypeIRegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_clickPrs = new ArrayList<Double>();
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
+		_numQueries = _querySpace.size();
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
+		_weighted = weighted;
+		_robust = robust;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
 		_powers = powers;
 		_targModel = targModel;
+		
+		if(_robust) {
+			try {
+				c.voidEval("library(robust)");
+			} catch (RserveException e) {
+				throw new RuntimeException("Could not load the R robust library");
+			}
+		}
 	}
 
 	@Override
@@ -70,6 +84,10 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
 	public double getPrediction(Query query, double currentBid, Ad currentAd){
+		if(coeff == null) {
+			return 0.0;
+		}
+		
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -247,10 +265,21 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 
 			double[] bids = new double[_bids.size()];
 			double[] prclicks = new double[_bids.size()];
+			double[] weights = new double[_bids.size()];
+
+			double numDaysData = _bids.size()/_numQueries;
 
 			for(int i = 0; i < _bids.size(); i++) {
 				bids[i] = _bids.get(i);
 				prclicks[i] = _clickPrs.get(i);
+				if(_weighted) {
+					/*
+					 * For our WLS we weight the points by $m^{t-t_i}$ where 
+					 * $0 < m < 1$ and $t - t_i$ is the difference between the
+					 * day we are predicting and the day we observed the data
+					 */
+					weights[i] = Math.pow(m,numDaysData + 2 - (i/16));
+				}
 			}
 
 
@@ -342,7 +371,15 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 				c.assign("bids", bids);
 				c.assign("prclicks", prclicks);
 
-				String model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				String model;
+
+				if(_robust) {
+					model = "model = glmRob(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				}
+				else {
+					model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				}
+
 				if(_queryIndicators) {
 					model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				}
@@ -378,13 +415,26 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 				}
 
 				model = model.substring(0, model.length()-3);
-				model += ", family = quasibinomial(link = \"logit\"))";
+				
+				if(_robust) {
+					model += ", family = binomial(link = \"logit\")";
+				}
+				else {
+					model += ", family = quasibinomial(link = \"logit\")";
+				}
+
+				if(_weighted == true) {
+					c.assign("regweights", weights);
+					model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "]";
+				}
+
+				model += ")";
 
 //				System.out.println(model);				
 				c.voidEval(model);
 				coeff = c.eval("coefficients(model)").asDoubles();
-//				for(int i = 0 ; i < coeff.length; i++)
-//					System.out.println(coeff[i]);
+				//				for(int i = 0 ; i < coeff.length; i++)
+				//					System.out.println(coeff[i]);
 			}
 			catch (REngineException e) {
 				e.printStackTrace();
@@ -394,7 +444,7 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 				e.printStackTrace();
 				return false;
 			}
-			
+
 			for(int i = 0; i < coeff.length; i++) {
 				if(Double.isNaN(coeff[i])) {
 					return false;
@@ -411,15 +461,15 @@ public class TypeIRegressionBidToPrClick extends AbstractBidToPrClick {
 			return false;
 		}
 	}
-	
+
 	@Override
 	public AbstractModel getCopy() {
-		return new TypeIRegressionBidToPrClick(c, _querySpace, _IDVar, _numPrevDays, _targModel, _queryIndicators, _queryTypeIndicators, _powers);
+		return new TypeIRegressionBidToPrClick(c, _querySpace, _IDVar, _numPrevDays, _targModel, _weighted,_robust, _queryIndicators, _queryTypeIndicators, _powers);
 	}
 
 	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer,component);
 	}
-	
+
 }

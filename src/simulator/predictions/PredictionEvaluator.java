@@ -32,7 +32,7 @@ public class PredictionEvaluator {
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
-		int max = 460;
+		int max = 455;
 //		int max = 497;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
@@ -190,7 +190,7 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "audio"));
 		TypeIRegressionBidToPrClick model;
 		try {
-			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,3,20,new BasicTargetModel("flat", "tv"),false,false,false);
+			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			evaluator.clickPrPredictionChallenge(model);
 		} catch (RserveException e1) {
 			e1.printStackTrace();
