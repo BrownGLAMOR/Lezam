@@ -27,4 +27,5 @@ public abstract class AbstractBidToCPC extends AbstractModel {
 
 	public abstract boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle);
 
+	public abstract String toString();
 }

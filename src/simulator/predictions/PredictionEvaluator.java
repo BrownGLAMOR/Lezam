@@ -12,6 +12,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.TypeIRegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
@@ -35,7 +36,7 @@ public class PredictionEvaluator {
 		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 455;
-		//		int max = 497;
+		//		int max = 496;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -271,24 +272,26 @@ public class PredictionEvaluator {
 		}
 		double avgRMSE = 0.0;
 		int RMSECounter = 0;
+		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
-			System.out.println("File: " + file);
+			//			System.out.println("File: " + file);
 			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
 			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
 			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
 			for(String agent : totErrorCounterMap.keySet()) {
-				System.out.println("\t Agent: " + agent);
+				//				System.out.println("\t Agent: " + agent);
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				System.out.println("\t\t Predictions: " + totErrorCounter);
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
 				avgRMSE += RMSE;
-				System.out.println("\t\t RMSE: " + RMSE);
+				//				System.out.println("\t\t RMSE: " + RMSE);
 				RMSECounter++;
 			}
 		}
+		System.out.println("Data Points: " + RMSECounter);
 		System.out.println("Average RMSE: " + (avgRMSE/RMSECounter));
 	}
 
@@ -313,18 +316,25 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "audio"));
 		AbstractBidToCPC model;
 		try {
+			double start = System.currentTimeMillis();
 			//			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			//			evaluator.clickPrPredictionChallenge(model);
 
+			model = new TypeIRegressionBidToCPC(new RConnection(),_querySpace,3,30,false,false,false,false,false,false,true);
 
-			model = new TypeIRegressionBidToCPC(new RConnection(),_querySpace,4,30,false,false,false,false,false,false);
+			//			model = new ConstantBidToCPC(0.1);
 			evaluator.CPCPredictionChallenge(model);
 
-		} catch (RserveException e1) {
-			e1.printStackTrace();
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			System.out.println("This took " + (elapsed / 1000) + " seconds");
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {
+			e.printStackTrace();
+		} catch (RserveException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

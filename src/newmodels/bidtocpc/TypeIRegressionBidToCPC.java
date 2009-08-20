@@ -50,8 +50,12 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 	private double m = .85;
 	private boolean _robust;
 	private boolean _loglinear;
+	/*
+	 * When we don't get a position, we get NaN as our CPC
+	 */
+	private boolean _ignoreNaN;
 
-	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
@@ -65,6 +69,7 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
+		_ignoreNaN = ignoreNaN;
 		_powers = powers;
 		if(_IDVar < 2 && _numPrevDays <= _IDVar) {
 			throw new RuntimeException("Don't set IDVar below 4, or numPrevDays < IDVar");
@@ -191,12 +196,15 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		}
 		predCounter += CPCs.size();
 
+		if(_loglinear) {
+			prediction = Math.exp(prediction);
+		}
+
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
 		if(prediction < currentBid && prediction >= 0.0) {
 			return prediction;
-
 		}
 		else {
 			predictErrors++;
@@ -235,13 +243,34 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		for(Query query : _querySpace) {
 			double bid = bidbundle.getBid(query);
 			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC) || bid == 0)) {
+			if(!(Double.isNaN(CPC))) {
 				_bids.add(bid);
-				_CPCs.add(CPC);
+				if(_loglinear) {
+					_CPCs.add(Math.log(CPC));
+				}
+				else {
+					_CPCs.add(CPC);
+				}
 			}
 			else {
-				_bids.add(0.0);
-				_CPCs.add(0.0);
+				if(_ignoreNaN) {
+					_bids.add(0.0);
+					if(_loglinear) {
+						_CPCs.add(Math.log(0.01));
+					}
+					else {
+						_CPCs.add(0.0);
+					}
+				}
+				else {
+					_bids.add(bid);
+					if(_loglinear) {
+						_CPCs.add(Math.log(0.01));
+					}
+					else {
+						_CPCs.add(0.01);
+					}
+				}
 			}
 		}
 
@@ -355,7 +384,7 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("cpcs", cpcs);
 
 				String model;
-				
+
 
 				if(_robust) {
 					model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
@@ -363,8 +392,8 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				else {
 					model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
 				}
-				
-				
+
+
 				if(_queryIndicators) {
 					model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				}
@@ -400,10 +429,6 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 
 				model = model.substring(0, model.length()-3);
 
-				if(_loglinear) {
-					model += ", family = poisson(link = \"log\")";
-				}
-				
 				if(_weighted == true) {
 					c.assign("regweights", weights);
 					model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "]";
@@ -445,6 +470,11 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new TypeIRegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers);
+		return new TypeIRegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+	}
+
+	@Override
+	public String toString() {
+		return "TypeIRegressionBidToCPC(IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 	}
 }
