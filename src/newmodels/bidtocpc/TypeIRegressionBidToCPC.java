@@ -46,8 +46,12 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 	private boolean _queryIndicators;
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
+	private boolean _weighted;
+	private double m = .85;
+	private boolean _robust;
+	private boolean _loglinear;
 
-	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
@@ -56,11 +60,21 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 		_querySpace = queryspace;
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
+		_weighted = weighted;
+		_robust = robust;
+		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
 		_powers = powers;
 		if(_IDVar < 2 && _numPrevDays <= _IDVar) {
 			throw new RuntimeException("Don't set IDVar below 4, or numPrevDays < IDVar");
+		}
+		if(_robust) {
+			try {
+				c.voidEval("library(MASS)");
+			} catch (RserveException e) {
+				throw new RuntimeException("Could not load the R MASS library");
+			}
 		}
 	}
 
@@ -235,10 +249,21 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 
 			double[] bids = new double[_bids.size()];
 			double[] cpcs = new double[_bids.size()];
+			double[] weights = new double[_bids.size()];
+
+			double numDaysData = _bids.size()/_numQueries;
 
 			for(int i = 0; i < _bids.size(); i++) {
 				bids[i] = _bids.get(i);
 				cpcs[i] = _CPCs.get(i);
+				if(_weighted) {
+					/*
+					 * For our WLS we weight the points by $m^{t-t_i}$ where 
+					 * $0 < m < 1$ and $t - t_i$ is the difference between the
+					 * day we are predicting and the day we observed the data
+					 */
+					weights[i] = Math.pow(m ,numDaysData + 2 - (i/16));
+				}
 			}
 
 			int arrLen = _bids.size() - (_IDVar-1)*_numQueries ;
@@ -329,7 +354,17 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				c.assign("bids", bids);
 				c.assign("cpcs", cpcs);
 
-				String model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				String model;
+				
+
+				if(_robust) {
+					model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				}
+				else {
+					model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
+				}
+				
+				
 				if(_queryIndicators) {
 					model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
 				}
@@ -364,6 +399,16 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 				}
 
 				model = model.substring(0, model.length()-3);
+
+				if(_loglinear) {
+					model += ", family = poisson(link = \"log\")";
+				}
+				
+				if(_weighted == true) {
+					c.assign("regweights", weights);
+					model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "]";
+				}
+
 				model += ")";
 
 				//				System.out.println(model);				
@@ -397,9 +442,9 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 			return false;
 		}
 	}
-	
+
 	@Override
 	public AbstractModel getCopy() {
-		return new TypeIRegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _queryIndicators, _queryTypeIndicators, _powers);
+		return new TypeIRegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers);
 	}
 }
