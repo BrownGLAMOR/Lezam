@@ -14,9 +14,12 @@ import java.util.Set;
 
 import javax.management.RuntimeErrorException;
 
+import org.rosuda.REngine.Rserve.RConnection;
+
 import newmodels.AbstractModel;
 import newmodels.AvgPosToPos;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.TypeIRegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.NewAbstractConversionModel;
@@ -185,6 +188,106 @@ public class BasicSimulator {
 
 			_baseSolBundle = null;
 			_pregenUsers = null;
+
+
+			/*
+			 * CODE FOR FINDING OPTIMAL BUNDLE
+			 */
+			double start = System.currentTimeMillis();
+			if(_day == 55) {
+				LinkedList<Integer> baseList = new LinkedList<Integer>();
+				baseList.add(0);
+				LinkedList<LinkedList<Integer>> bidVecList = new LinkedList<LinkedList<Integer>>();
+				bidVecList.add(baseList);
+				LinkedList<LinkedList<Integer>> bestVecs = new LinkedList<LinkedList<Integer>>();
+				double bestProf = 0;
+				int numBids = 6;
+				while(true) {
+					if(bidVecList.isEmpty()) {
+						break;
+					}
+					LinkedList<Integer> currVec = bidVecList.get(0);
+					bidVecList.remove(0);
+
+					//Evaluate vector here
+					//					HashMap<String, Reports> maps = runSimulation(agent);
+					double prof = 10;
+
+					boolean overCap;
+					if(_R.nextDouble() < .01) {
+						overCap = true;
+					}
+					else {
+						overCap = false;
+					}
+
+					if(prof >= bestProf) {
+						if(prof == bestProf) {
+							bestVecs.add(currVec);
+						}
+						else {
+							bestVecs = new LinkedList<LinkedList<Integer>>();
+							bestVecs.add(currVec);
+							bestProf = prof;
+						}
+					}
+
+					if(overCap) {
+						int i = 0;
+						while(true) {
+							if(bidVecList.isEmpty()) {
+								break;
+							}
+							LinkedList<Integer> vec = bidVecList.get(0);
+							if(vec.size() >= currVec.size()) {
+								boolean remove = true;
+								for(int j = 0; j < currVec.size()-1; j++) {
+									if(!(currVec.get(j) == vec.get(j))) {
+										remove = false;
+										break;
+									}
+								}
+								if(!(currVec.get(currVec.size()-1) <= vec.get(currVec.size()-1))) {
+									remove = false;
+								}
+								if(remove) {
+									bidVecList.remove(0);
+									i++;
+								}
+								else {
+									break;
+								}
+							}
+							else {
+								break;
+							}
+						}
+						System.out.println("Pruned " + i + " branches, " + currVec.size() + " levels deep");
+						continue;
+					}
+
+					if(currVec.size() == 16) {
+						continue;
+					}
+					else {
+						for(int i = 0; i < numBids; i++) {
+							LinkedList<Integer> tempVec = (LinkedList<Integer>) currVec.clone();
+							tempVec.add(5-i);
+							bidVecList.addFirst(tempVec);
+						}
+					}
+				}
+
+
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			}
+
+			/*
+			 * END OF CODE FOR FINDING OPTIMAL BUNDLE
+			 */
+
 			HashMap<String, Reports> maps = runSimulation(agent);
 
 			/*
@@ -1044,13 +1147,13 @@ public class BasicSimulator {
 						for(int j = 0; j < 5; j++) {
 							debug("\t\t Imps in Slot " + (j+1) + ": " + (perQPos[j]));
 						}
-//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
-//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
-//							for(int j = 0; j < 5; j++) {
-//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
-//							}
-//							System.out.println("Likelihood: " + KLLikelihood(normalizeArr(perQPos),normalizeArr(expPos)));
-//						}
+						//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
+						//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
+						//							for(int j = 0; j < 5; j++) {
+						//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
+						//							}
+						//							System.out.println("Likelihood: " + KLLikelihood(normalizeArr(perQPos),normalizeArr(expPos)));
+						//						}
 					}
 				}
 			}
@@ -1082,7 +1185,7 @@ public class BasicSimulator {
 	 * 
 	 * ref: http://www.cs.cmu.edu/~efros/courses/AP06/Papers/rubner-jcviu-00.pdf
 	 */
-	
+
 	/*
 	 * Kullback Leibler Divergence Test
 	 */
@@ -1110,7 +1213,7 @@ public class BasicSimulator {
 		double likelihood = Math.exp(-1*divergence*P.length);
 		return likelihood;
 	}
-	
+
 	/*
 	 * The Minkowski Distance uses the L_p norm, so we define a p
 	 * 
@@ -1120,18 +1223,18 @@ public class BasicSimulator {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Minkowski Distance requires arrays of equal length");
 		}
-		
+
 		double distance = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			distance += Math.pow(Math.abs(P[i] - Q[i]),p);
 		}
-		
+
 		distance = Math.pow(distance,1.0/p);
-		
+
 		return distance;
 	}
-	
+
 	/*
 	 * When the areas are equal 
 	 */
@@ -1141,27 +1244,27 @@ public class BasicSimulator {
 		}
 
 		double distance = 1.0;
-		
+
 		double temp1 = 0.0;
 		double temp2 = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			temp1 += Math.min(P[i], Q[i]);
 			temp2 += Q[i];
 		}
-		
+
 		distance -= temp1/temp2;
-		
+
 		return distance;
 	}
-	
+
 	public double jeffreyDivergence(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Jeffrey Divergence requires arrays of equal length");
 		}
-		
+
 		double divergence = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			if(P[i] == 0 && Q[i] == 0) {
 				continue;
@@ -1169,10 +1272,10 @@ public class BasicSimulator {
 			double m = (P[i] + Q[i])/2.0;
 			divergence += P[i] * Math.log(P[i] / m) + Q[i] * Math.log(Q[i] / m);
 		}
-		
+
 		return divergence;
 	}
-	
+
 	/*
 	 * This is equivalent to the Earth Mover's Distance in 1 dimensional
 	 * histograms with equal area, and with equal bin sizes.
@@ -1181,20 +1284,20 @@ public class BasicSimulator {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Match Distance requires arrays of equal length");
 		}
-		
+
 		double distance = 0.0;
 		double pCum = 0.0;
 		double qCum = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			pCum += P[i];
 			qCum += Q[i];
 			distance += Math.abs(pCum-qCum);
 		}
-		
+
 		return distance;
 	}
-	
+
 	/*
 	 * Kolmogorov-Smirnov
 	 */
@@ -1202,22 +1305,22 @@ public class BasicSimulator {
 		if(P.length != Q.length) {
 			throw new RuntimeException("KS Distance requires arrays of equal length");
 		}
-		
+
 		double distance = 0.0;
 		double pCum = 0.0;
 		double qCum = 0.0;
-		
+
 		for(int i = 0; i < P.length; i++) {
 			pCum += P[i];
 			qCum += Q[i];
 			distance = Math.max(distance,Math.abs(pCum-qCum));
 		}
-		
+
 		return distance;
 	}
-	
-	
-	
+
+
+
 	private double[] normalizeArr(double[] predictions) {
 		double total = 0.0;
 		for(int i = 0 ; i < predictions.length; i++) {
@@ -1308,15 +1411,15 @@ public class BasicSimulator {
 		double totAvgImp = 0.0;
 		double totAvgClick = 0.0;
 		double totAvgConv = 0.0;
-		int numSims = 2;
+		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		String baseFile = "/pro/aa/usr/jberg/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/pro/aa/usr/jberg/mckpgames/localhost_sim";
 		//		String baseFile = "C:/mckpgames/localhost_sim";
 
 		int min = 454;
-		int max = 470;
+		int max = 455;
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
 		for(int i = min; i < max; i++) { 
@@ -1387,7 +1490,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new BidPosModelTestAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
