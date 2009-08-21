@@ -200,8 +200,9 @@ public class BasicSimulator {
 				LinkedList<LinkedList<Integer>> bidVecList = new LinkedList<LinkedList<Integer>>();
 				bidVecList.add(baseList);
 				LinkedList<LinkedList<Integer>> bestVecs = new LinkedList<LinkedList<Integer>>();
-				double bestProf = 0;
+				double bestProf = 11;
 				int numBids = 6;
+				HashMap<Query,double[]> bids = getPotentialOptimalBids();
 				while(true) {
 					if(bidVecList.isEmpty()) {
 						break;
@@ -210,11 +211,31 @@ public class BasicSimulator {
 					bidVecList.remove(0);
 
 					//Evaluate vector here
-					//					HashMap<String, Reports> maps = runSimulation(agent);
-					double prof = 10;
+					BidBundle bundle = new BidBundle();
+					int numQuery = 0;
+					for(Query query : _querySpace) {
+						double[] bidArr = bids.get(query);
+						if(numQuery < currVec.size()) {
+							bundle.addQuery(query, bidArr[currVec.get(numQuery)], new Ad());
+						}
+						else {
+							bundle.addQuery(query, bidArr[0], new Ad());
+						}
+						numQuery++;
+					}
+					HashMap<String, Reports> maps = runSimulation(bundle);
+					Reports reports = maps.get(_agents[_ourAdvIdx]);
+					QueryReport queryReport = reports.getQueryReport();
+					SalesReport salesReport = reports.getSalesReport();
+					double prof = 0.0;
+					int conversions = 0;
+					for(Query query : _querySpace) {
+						prof += salesReport.getRevenue(query) - queryReport.getCost(query);
+						conversions += salesReport.getConversions(query);
+					}
 
 					boolean overCap;
-					if(_R.nextDouble() < .01) {
+					if(conversions > 30) {
 						overCap = true;
 					}
 					else {
@@ -347,6 +368,30 @@ public class BasicSimulator {
 		//			System.out.println("\tTotal Profit: " + (totalRevenue-totalCost));
 		//		}
 		return reportsListMap;
+	}
+
+	private HashMap<Query, double[]> getPotentialOptimalBids() {
+		HashMap<Query,double[]> bids = new HashMap<Query, double[]>();
+		for(Query query : _querySpace) {
+			double[] bidArr = new double[6];
+			bidArr[0] = 0.0;
+			ArrayList<Double> squashedBids = new ArrayList<Double>();
+			for(int i = 0; i < _agents.length; i++) {
+				String agent = _agents[i];
+				if(i != _ourAdvIdx) {
+					HashMap<Query, Double> bidMaps = _bids.get(agent);
+					double bid = bidMaps.get(query);
+					double squashedBid = bid * Math.pow(_advEffect.get(agent).get(query), _squashing);
+					squashedBids.add(squashedBid);
+				}
+			}
+			/*
+			 * TODO
+			 * Sort squashed bids
+			 * Set vector with what we should bid to get slot: 6,5,4,3,2,1
+			 */
+		}
+		return null;
 	}
 
 	private long getNewSeed() {
