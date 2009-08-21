@@ -203,13 +203,22 @@ public class BasicSimulator {
 				double bestProf = 11;
 				int numBids = 6;
 				HashMap<Query,double[]> bids = getPotentialOptimalBids();
+				int counter = 0;
 				while(true) {
 					if(bidVecList.isEmpty()) {
 						break;
 					}
+					counter++;
+
 					LinkedList<Integer> currVec = bidVecList.get(0);
 					bidVecList.remove(0);
 
+					if(counter % 1000 == 0) {
+						double stop = System.currentTimeMillis();
+						double elapsed = stop - start;
+						System.out.println("This took " + (elapsed / 1000) + " seconds");
+						System.out.println(currVec);
+					}
 					//Evaluate vector here
 					BidBundle bundle = new BidBundle();
 					int numQuery = 0;
@@ -233,6 +242,9 @@ public class BasicSimulator {
 						prof += salesReport.getRevenue(query) - queryReport.getCost(query);
 						conversions += salesReport.getConversions(query);
 					}
+
+//					System.out.println("Profit: " + prof);
+//					System.out.println("Conversions: " + conversions);
 
 					boolean overCap;
 					if(conversions > 30) {
@@ -385,13 +397,22 @@ public class BasicSimulator {
 					squashedBids.add(squashedBid);
 				}
 			}
-			/*
-			 * TODO
-			 * Sort squashed bids
-			 * Set vector with what we should bid to get slot: 6,5,4,3,2,1
-			 */
+			Collections.sort(squashedBids);
+			double ourAdvEff = Math.pow(_advEffect.get(_agents[_ourAdvIdx]).get(query),_squashing);
+			for(int i = 0; i < 5; i++) {
+				double squashedBid = squashedBids.get(i);
+				double bid;
+				if(squashedBid >= _regReserve) {
+					bid = squashedBid/ourAdvEff + .01;
+				}
+				else {
+					bid = _regReserve/ourAdvEff + .01;
+				}
+				bidArr[i+1] = bid;
+			}
+			bids.put(query, bidArr);
 		}
-		return null;
+		return bids;
 	}
 
 	private long getNewSeed() {
@@ -1459,7 +1480,8 @@ public class BasicSimulator {
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/home/jberg/mckpgames/localhost_sim";
+//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/pro/aa/usr/jberg/mckpgames/localhost_sim";
 		//		String baseFile = "C:/mckpgames/localhost_sim";
 
