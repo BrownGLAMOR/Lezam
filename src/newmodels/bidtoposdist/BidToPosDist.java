@@ -58,19 +58,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			int posDist = i+1;
 			double prediction = 0.0;
 			if(_degree == 1) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * bid + coeff[3] * bid * posDist;
+				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * bid;
 			}
 			else if(_degree == 2) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * bid + coeff[4] * bid * posDist + coeff[5] * bid * posDist * posDist + coeff[6] * bid * bid + coeff[7] * bid * bid * posDist + coeff[8] * bid * bid * posDist * posDist;
+				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * bid + coeff[4] * bid * posDist + coeff[5] * bid * bid;
 			}
 			else if(_degree == 3) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * bid + coeff[5] * bid * posDist + coeff[6] * bid * posDist * posDist + coeff[7] * bid * posDist * posDist * posDist + coeff[8] * bid * bid + coeff[9] * bid * bid * posDist + coeff[10] * bid * bid * posDist * posDist + coeff[11] * bid * bid * posDist * posDist * posDist + coeff[12] * bid * bid * bid + coeff[13] * bid * bid * bid * posDist + coeff[14] * bid * bid * bid * posDist * posDist + coeff[15] * bid * bid * bid * posDist * posDist * posDist;
+				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * bid + coeff[5] * bid * posDist + coeff[6] * bid * posDist * posDist + coeff[7] * bid * bid + coeff[8] * bid * bid * posDist + coeff[9] * bid * bid * bid;
 			}
 			else if(_degree == 4) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * bid + coeff[6] * bid * posDist + coeff[7] * bid * posDist * posDist + coeff[8] * bid * posDist * posDist * posDist + coeff[9] * bid * posDist * posDist * posDist * posDist + coeff[10] * bid * bid + coeff[11] * bid * bid * posDist + coeff[12] * bid * bid * posDist * posDist + coeff[13] * bid * bid * posDist * posDist * posDist + coeff[14] * bid * bid * posDist * posDist * posDist * posDist + coeff[15] * bid * bid * bid + coeff[16] * bid * bid * bid * posDist + coeff[17] * bid * bid * bid * posDist * posDist + coeff[18] * bid * bid * bid * posDist * posDist * posDist + coeff[19] * bid * bid * bid * posDist * posDist * posDist * posDist + coeff[20] * bid * bid * bid * bid + coeff[21] * bid * bid * bid * bid * posDist + coeff[22] * bid * bid * bid * bid * posDist * posDist + coeff[23] * bid * bid * bid * bid * posDist * posDist * posDist + coeff[24] * bid * bid * bid * bid * posDist * posDist * posDist * posDist;
+				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * bid + coeff[6] * bid * posDist + coeff[7] * bid * posDist * posDist + coeff[8] * bid * posDist * posDist * posDist + coeff[9] * bid * bid + coeff[10] * bid * bid * posDist + coeff[11] * bid * bid * posDist * posDist + coeff[12] * bid * bid * bid + coeff[13] * bid * bid * bid * posDist + coeff[14] * bid * bid * bid * bid;
 			}
 			else if(_degree == 5) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * posDist * posDist * posDist * posDist * posDist + coeff[6] * bid + coeff[7] * bid * posDist + coeff[8] * bid * posDist * posDist + coeff[9] * bid * posDist * posDist * posDist + coeff[10] * bid * posDist * posDist * posDist * posDist + coeff[11] * bid * posDist * posDist * posDist * posDist * posDist + coeff[12] * bid * bid + coeff[13] * bid * bid * posDist + coeff[14] * bid * bid * posDist * posDist + coeff[15] * bid * bid * posDist * posDist * posDist + coeff[16] * bid * bid * posDist * posDist * posDist * posDist + coeff[17] * bid * bid * posDist * posDist * posDist * posDist * posDist + coeff[18] * bid * bid * bid + coeff[19] * bid * bid * bid * posDist + coeff[20] * bid * bid * bid * posDist * posDist + coeff[21] * bid * bid * bid * posDist * posDist * posDist + coeff[22] * bid * bid * bid * posDist * posDist * posDist * posDist + coeff[23] * bid * bid * bid * posDist * posDist * posDist * posDist * posDist + coeff[24] * bid * bid * bid * bid + coeff[25] * bid * bid * bid * bid * posDist + coeff[26] * bid * bid * bid * bid * posDist * posDist + coeff[27] * bid * bid * bid * bid * posDist * posDist * posDist + coeff[28] * bid * bid * bid * bid * posDist * posDist * posDist * posDist + coeff[29] * bid * bid * bid * bid * posDist * posDist * posDist * posDist * posDist + coeff[30] * bid * bid * bid * bid * bid + coeff[31] * bid * bid * bid * bid * bid * posDist + coeff[32] * bid * bid * bid * bid * bid * posDist * posDist + coeff[33] * bid * bid * bid * bid * bid * posDist * posDist * posDist + coeff[34] * bid * bid * bid * bid * bid * posDist * posDist * posDist * posDist + coeff[35] * bid * bid * bid * bid * bid * posDist * posDist * posDist * posDist * posDist;
+				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * posDist * posDist * posDist * posDist * posDist + coeff[6] * bid + coeff[7] * bid * posDist + coeff[8] * bid * posDist * posDist + coeff[9] * bid * posDist * posDist * posDist + coeff[10] * bid * posDist * posDist * posDist * posDist + coeff[11] * bid * bid + coeff[12] * bid * bid * posDist + coeff[13] * bid * bid * posDist * posDist + coeff[14] * bid * bid * posDist * posDist * posDist + coeff[15] * bid * bid * bid + coeff[16] * bid * bid * bid * posDist + coeff[17] * bid * bid * bid * posDist * posDist + coeff[18] * bid * bid * bid * bid + coeff[19] * bid * bid * bid * bid * posDist + coeff[20] * bid * bid * bid * bid * bid;
 			}
 			//				System.out.println("Pred: " + prediction);
 			predictions[i] = prediction;
@@ -149,19 +149,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					_rConnection.assign("posDist", posDist);
 					String model = "lm(";
 					if(_degree == 1) {
-						model += "pos ~ posDist + bid + bid * posDist";
+						model += "pos ~ posDist + bid";
 					}
 					else if(_degree == 2) {
-						model += "pos ~ posDist + posDist^2 + bid + bid * posDist + bid * posDist^2 + bid^2 + bid^2 * posDist + bid^2 * posDist^2";
+						model += "pos ~ posDist + posDist^2 + bid + bid * posDist + bid^2";
 					}
 					else if(_degree == 3) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^3 * posDist^3";
+						model += "pos ~ posDist + posDist^2 + posDist^3 + bid + bid * posDist + bid * posDist^2 + bid^2 + bid^2 * posDist + bid^3";
 					}
 					else if(_degree == 4) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^2 * posDist^4 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^3 * posDist^3 + bid^3 * posDist^4 + bid^4 + bid^4 * posDist + bid^4 * posDist^2 + bid^4 * posDist^3 + bid^4 * posDist^4";
+						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^3 + bid^3 * posDist + bid^4";
 					}
 					else if(_degree == 5) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + posDist^5 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid * posDist^5 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^2 * posDist^4 + bid^2 * posDist^5 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^3 * posDist^3 + bid^3 * posDist^4 + bid^3 * posDist^5 + bid^4 + bid^4 * posDist + bid^4 * posDist^2 + bid^4 * posDist^3 + bid^4 * posDist^4 + bid^4 * posDist^5 + bid^5 + bid^5 * posDist + bid^5 * posDist^2 + bid^5 * posDist^3 + bid^5 * posDist^4 + bid^5 * posDist^5";
+						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + posDist^5 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^4 + bid^4 * posDist + bid^5";
 					}
 					
 					model += ")";
@@ -201,20 +201,22 @@ degree = 5
 model = 'pos ~ '
 for x in range(0,degree+1):
 	for y in range(0,degree+1):
-		if(x > 0):
-			if(x == 1):
-				model += "bid"
-			if(x > 1):
-				model += "bid^" + str(x)
+		cdeg = x + y
+		if(cdeg < degree + 1):
+			if(x > 0):
+				if(x == 1):
+					model += "bid"
+				if(x > 1):
+					model += "bid^" + str(x)
+				if(y > 0):
+					model += " * "
 			if(y > 0):
-				model += " * "
-		if(y > 0):
-			if(y == 1):
-				model += "posDist"
-			if(y > 1):
-				model += "posDist^" + str(y)
-		if(x > 0 or y > 0):
-			model += " + "
+				if(y == 1):
+					model += "posDist"
+				if(y > 1):
+					model += "posDist^" + str(y)
+			if(x > 0 or y > 0):
+				model += " + "
 
 model = model[:-3]
 model
@@ -229,30 +231,32 @@ model = 'prediction = '
 coeff = 0;
 for x in range(0,degree+1):
 	for y in range(0,degree+1):
-		if(x == 0 and y == 0):
-			model += "coeff[" + str(coeff) + "] + "
-			coeff += 1
-		if(x > 0):
-			model += "coeff[" + str(coeff) + "] * "
-			coeff += 1
-			if(x == 1):
-				model += "bid"
-			if(x > 1):
-				model += "bid * " * x
-				model = model[:-3]
-			if(y > 0):
-				model += " * "
-		if(y > 0):
-			if(x == 0):
+		cdeg = x + y
+		if(cdeg < degree + 1):
+			if(x == 0 and y == 0):
+				model += "coeff[" + str(coeff) + "] + "
+				coeff += 1
+			if(x > 0):
 				model += "coeff[" + str(coeff) + "] * "
 				coeff += 1
-			if(y == 1):
-				model += "posDist"
-			if(y > 1):
-				model += "posDist * " * y
-				model = model[:-3]
-		if(x > 0 or y > 0):
-			model += " + "
+				if(x == 1):
+					model += "bid"
+				if(x > 1):
+					model += "bid * " * x
+					model = model[:-3]
+				if(y > 0):
+					model += " * "
+			if(y > 0):
+				if(x == 0):
+					model += "coeff[" + str(coeff) + "] * "
+					coeff += 1
+				if(y == 1):
+					model += "posDist"
+				if(y > 1):
+					model += "posDist * " * y
+					model = model[:-3]
+			if(x > 0 or y > 0):
+				model += " + "
 
 model = model[:-3] + ";"
 model
