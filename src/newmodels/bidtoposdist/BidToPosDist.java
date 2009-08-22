@@ -28,8 +28,11 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	private int _degree;
+	private boolean _weighted;
+	private double m = .85;
+	private int _numPrevDays;
 
-	public BidToPosDist(RConnection rConnection, Set<Query> querySpace, int degree) {
+	public BidToPosDist(RConnection rConnection, Set<Query> querySpace, int degree, int numPrevDays, boolean weighted) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
 		_bids = new HashMap<Query,ArrayList<Double>>();
@@ -44,7 +47,9 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			_posDists.put(query, posDists);
 			_coefficients.put(query, null);
 		}
+		_numPrevDays = numPrevDays;
 		_degree = degree;
+		_weighted = weighted;
 	}
 
 	@Override
@@ -101,8 +106,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	 * 
 	 * posDists must be normalized first!
 	 */
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport,
-			BidBundle bidBundle, HashMap<Query,double[]> posDists) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
 
 		_queryReports.add(queryReport);
 		_bidBundles.add(bidBundle);
@@ -110,6 +114,21 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		if(_bidBundles.size() != _queryReports.size()) {
 			throw new RuntimeException("Uneven number of bidbundles and query reports");
 		}
+		
+		while(_bidBundles.size() > _numPrevDays) {
+			_bidBundles.remove(0);
+			_queryReports.remove(0);
+			for(Query query : _querySpace) {
+				ArrayList<Double> bids = _bids.get(query);
+				ArrayList<double[]> posDist = _posDists.get(query);
+				bids.remove(0);
+				posDist.remove(0);
+				_bids.put(query, bids);
+				_posDists.put(query, posDist);
+			}
+		}
+
+		HashMap<Query,double[]> weightVecs = new HashMap<Query, double[]>();
 
 		for(Query query : _querySpace) {
 			double bid = bidBundle.getBid(query);
@@ -123,6 +142,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 
 			_bids.put(query, bids);
 			_posDists.put(query, pDists);
+
+			if(_weighted) {
+				double[] weights = new double[_bids.size()];
+				/*
+				 * For our WLS we weight the points by $m^{t-t_i}$ where 
+				 * $0 < m < 1$ and $t - t_i$ is the difference between the
+				 * day we are predicting and the day we observed the data
+				 */
+				for(int i = 0; i < _bids.size(); i++) {
+					weights[i] = Math.pow(m,_bids.size() + 2 - i);
+				}
+				weightVecs.put(query, weights);
+			}
 		}
 
 		if(_bids.get(new Query(null,null)).size() > 3) {
@@ -164,6 +196,12 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + posDist^5 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^4 + bid^4 * posDist + bid^5";
 					}
 					
+					if(_weighted) {
+						double[] weights = weightVecs.get(query);
+						_rConnection.assign("regWeights", weights);
+						model += ", weights = regweights";
+					}
+
 					model += ")";
 					_rConnection.voidEval(model);
 					double[] coeff = _rConnection.eval("coefficients(model)").asDoubles();
@@ -185,7 +223,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BidToPosDist(_rConnection, _querySpace, _degree);
+		return new BidToPosDist(_rConnection, _querySpace, _degree,_numPrevDays,_weighted);
 	}
 }
 
@@ -260,4 +298,4 @@ for x in range(0,degree+1):
 
 model = model[:-3] + ";"
 model
-*/
+ */
