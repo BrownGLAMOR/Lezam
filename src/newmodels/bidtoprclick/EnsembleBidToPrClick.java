@@ -158,14 +158,14 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
 				if(j < 2 || j > 4) {
-					AbstractBidToPrClick model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, false, false);
+					AbstractBidToPrClick model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
-					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, true, false, false);
+					model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, true, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
 					if(i == 0 && j == 1) {
 						_defaultModel = model;
 					}
-					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, true, false);
+					model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, true, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
 					//					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
 					//					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
