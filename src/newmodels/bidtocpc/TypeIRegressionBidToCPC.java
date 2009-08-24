@@ -22,13 +22,6 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 
-/*
- * TODO
- * Keep track of how many points come in every day
- * 
- * Allow for bids of 0
- */
-
 public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 
 	protected ArrayList<Double> _bids , _CPCs;
