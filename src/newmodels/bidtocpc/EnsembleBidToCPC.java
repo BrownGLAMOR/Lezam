@@ -152,14 +152,14 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		for(int i = 0; i < 3; i++) {
 			for(int j = 0; j < 6; j++) {
 				if(j < 2 || j > 4) {
-					AbstractBidToCPC model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, false);
+					AbstractBidToCPC model = new RegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
-					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), true, false, false);
+					model = new RegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), true, false, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
 					if(i == 1 && j == 1) {
 						_defaultModel = model;
 					}
-					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, true, false);
+					model = new RegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, true, false);
 					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
 					//					model = new TypeIRegressionBidToCPC(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
 					//					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);

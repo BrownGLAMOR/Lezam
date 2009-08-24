@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 
-public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
+public class RegressionBidToCPC extends AbstractBidToCPC {
 
 	protected ArrayList<Double> _bids , _CPCs;
 	protected Set<Query> _querySpace;
@@ -48,7 +48,7 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 	 */
 	private boolean _ignoreNaN;
 
-	public TypeIRegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
+	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		c = rConnection;
 		_bids = new ArrayList<Double>();
 		_CPCs = new ArrayList<Double>();
@@ -463,7 +463,7 @@ public class TypeIRegressionBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new TypeIRegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+		return new RegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
