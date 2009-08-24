@@ -33,7 +33,8 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class PredictionEvaluator {
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		String baseFile = "/home/jberg/mckpgames/localhost_sim";
 		int min = 454;
 		int max = 455;
 		//		int max = 496;
@@ -120,7 +121,7 @@ public class PredictionEvaluator {
 									for(Query q : querySpace) {
 										double bid = otherBidBundle.getBid(q);
 										if(bid != 0) {
-											double error = model.getPrediction(q, otherBidBundle.getBid(q), new Ad());
+											double error = model.getPrediction(q, otherBidBundle.getBid(q), otherBidBundle.getAd(q));
 											double clicks = otherQueryReport.getClicks(q);
 											double imps = otherQueryReport.getImpressions(q);
 											double clickPr = 0;
@@ -314,16 +315,17 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "tv"));
 		_querySpace.add(new Query(null, "dvd"));
 		_querySpace.add(new Query(null, "audio"));
-		AbstractBidToCPC model;
+
+		AbstractBidToPrClick model;
+		//		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
-			//			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			//			evaluator.clickPrPredictionChallenge(model);
+			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,false, 2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
+			evaluator.clickPrPredictionChallenge(model);
 
-			model = new TypeIRegressionBidToCPC(new RConnection(),_querySpace,3,30,false,false,false,false,false,false,true);
-
+//			model = new TypeIRegressionBidToCPC(new RConnection(),_querySpace,3,30,false,false,false,false,false,false,true);
 			//			model = new ConstantBidToCPC(0.1);
-			evaluator.CPCPredictionChallenge(model);
+//			evaluator.CPCPredictionChallenge(model);
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;

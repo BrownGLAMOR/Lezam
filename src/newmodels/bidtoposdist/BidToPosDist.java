@@ -80,7 +80,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			else if(_degree == 5) {
 				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * posDist * posDist * posDist * posDist * posDist + coeff[6] * bid + coeff[7] * bid * posDist + coeff[8] * bid * posDist * posDist + coeff[9] * bid * posDist * posDist * posDist + coeff[10] * bid * posDist * posDist * posDist * posDist + coeff[11] * bid * bid + coeff[12] * bid * bid * posDist + coeff[13] * bid * bid * posDist * posDist + coeff[14] * bid * bid * posDist * posDist * posDist + coeff[15] * bid * bid * bid + coeff[16] * bid * bid * bid * posDist + coeff[17] * bid * bid * bid * posDist * posDist + coeff[18] * bid * bid * bid * bid + coeff[19] * bid * bid * bid * bid * posDist + coeff[20] * bid * bid * bid * bid * bid;
 			}
-			//				System.out.println("Pred: " + prediction);
+			//				System.out.println("Query: " + query + ", Pred: " + prediction);
 			predictions[i] = prediction;
 		}
 		return predictions;
