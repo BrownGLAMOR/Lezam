@@ -13,10 +13,10 @@ import org.rosuda.REngine.Rserve.RserveException;
 
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
-import newmodels.bidtocpc.TypeIRegressionBidToCPC;
+import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
-import newmodels.bidtoprclick.TypeIRegressionBidToPrClick;
+import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.targeting.BasicTargetModel;
 
 
@@ -33,10 +33,10 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class PredictionEvaluator {
 
 	public ArrayList<String> getGameStrings() {
-//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		String baseFile = "/home/jberg/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
 		int min = 454;
-		int max = 455;
+		int max = 460;
 		//		int max = 496;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
@@ -316,16 +316,16 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "dvd"));
 		_querySpace.add(new Query(null, "audio"));
 
-		AbstractBidToPrClick model;
-		//		AbstractBidToCPC model;
+		//		AbstractBidToPrClick model;
+		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
-			model = new TypeIRegressionBidToPrClick(new RConnection(),_querySpace,false, 2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			evaluator.clickPrPredictionChallenge(model);
+			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false, 2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
+			//			evaluator.clickPrPredictionChallenge(model);
 
-//			model = new TypeIRegressionBidToCPC(new RConnection(),_querySpace,3,30,false,false,false,false,false,false,true);
+			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,true);
 			//			model = new ConstantBidToCPC(0.1);
-//			evaluator.CPCPredictionChallenge(model);
+			evaluator.CPCPredictionChallenge(model);
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;

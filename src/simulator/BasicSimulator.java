@@ -19,7 +19,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 import newmodels.AbstractModel;
 import newmodels.AvgPosToPos;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.TypeIRegressionBidToCPC;
+import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.NewAbstractConversionModel;
@@ -243,8 +243,8 @@ public class BasicSimulator {
 						conversions += salesReport.getConversions(query);
 					}
 
-//					System.out.println("Profit: " + prof);
-//					System.out.println("Conversions: " + conversions);
+					//					System.out.println("Profit: " + prof);
+					//					System.out.println("Conversions: " + conversions);
 
 					boolean overCap;
 					if(conversions > 30) {
@@ -1480,8 +1480,8 @@ public class BasicSimulator {
 		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
-		String baseFile = "/home/jberg/mckpgames/localhost_sim";
-//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/pro/aa/usr/jberg/mckpgames/localhost_sim";
 		//		String baseFile = "C:/mckpgames/localhost_sim";
 

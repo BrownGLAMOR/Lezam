@@ -1,6 +1,7 @@
 package newmodels.bidtocpc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -24,15 +25,16 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class RegressionBidToCPC extends AbstractBidToCPC {
 
-	protected ArrayList<Double> _bids , _CPCs;
+	protected HashMap<Query, ArrayList<Double>> _bids;
+	protected HashMap<Query,ArrayList<Double>> _CPCs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
 	private RConnection c;
-	private double[] coeff;
 	private int _numQueries = 16;
-	private int _IDVar;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
-	private int _numPrevDays;	//How many days worth of data to include in the regression
+	private int _IDVar;
+	private boolean _perQuery;
+	private int _numPrevDays;
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
 	private int predictErrors = 0;
@@ -47,14 +49,17 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	 * When we don't get a position, we get NaN as our CPC
 	 */
 	private boolean _ignoreNaN;
+	private HashMap<Query, double[]> _coefficients;
 
-	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
+	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		c = rConnection;
-		_bids = new ArrayList<Double>();
-		_CPCs = new ArrayList<Double>();
+		_bids = new HashMap<Query,ArrayList<Double>>();
+		_CPCs = new HashMap<Query,ArrayList<Double>>();
+		_coefficients = new HashMap<Query, double[]>();
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
+		_perQuery = perQuery;
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
@@ -64,9 +69,15 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_queryTypeIndicators = queryTypeIndicators;
 		_ignoreNaN = ignoreNaN;
 		_powers = powers;
-		if(_IDVar < 2 && _numPrevDays <= _IDVar) {
-			throw new RuntimeException("Don't set IDVar below 4, or numPrevDays < IDVar");
+
+		for(Query query : _querySpace) {
+			ArrayList<Double> bids = new ArrayList<Double>();
+			ArrayList<Double> CPCs = new ArrayList<Double>();
+			_bids.put(query, bids);
+			_CPCs.put(query, CPCs);
+			_coefficients.put(query, null);
 		}
+
 		if(_robust) {
 			try {
 				c.voidEval("library(MASS)");
@@ -81,6 +92,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
 	public double getPrediction(Query query, double currentBid){
+		double[] coeff = _coefficients.get(query);
+		if(coeff == null) {
+			return 0.0;
+		}
+		
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -226,235 +242,360 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		while(_bidBundles.size() > _numPrevDays) {
 			_bidBundles.remove(0);
 			_queryReports.remove(0);
-			for(int i = 0; i < _numQueries; i++) {
-				_bids.remove(0);
-				_CPCs.remove(0);
+			for(Query query : _querySpace) {
+				ArrayList<Double> bids = _bids.get(query);
+				ArrayList<Double> CPCs = _CPCs.get(query);
+				bids.remove(0);
+				CPCs.remove(0);
+				_bids.put(query,bids);
+				_CPCs.put(query,CPCs);
 			}
 		}
 
 
 		for(Query query : _querySpace) {
+			ArrayList<Double> bids = _bids.get(query);
+			ArrayList<Double> CPCs = _CPCs.get(query);
 			double bid = bidbundle.getBid(query);
 			double CPC = queryreport.getCPC(query);
 			if(!(Double.isNaN(CPC))) {
-				_bids.add(bid);
+				bids.add(bid);
 				if(_loglinear) {
-					_CPCs.add(Math.log(CPC));
+					CPCs.add(Math.log(CPC));
 				}
 				else {
-					_CPCs.add(CPC);
+					CPCs.add(CPC);
 				}
 			}
 			else {
 				if(_ignoreNaN) {
-					_bids.add(0.0);
+					bids.add(0.0);
 					if(_loglinear) {
-						_CPCs.add(Math.log(0.01));
+						CPCs.add(Math.log(0.01));
 					}
 					else {
-						_CPCs.add(0.0);
+						CPCs.add(0.0);
 					}
 				}
 				else {
-					_bids.add(bid);
+					bids.add(bid);
 					if(_loglinear) {
-						_CPCs.add(Math.log(0.01));
+						CPCs.add(Math.log(0.01));
 					}
 					else {
-						_CPCs.add(0.01);
+						CPCs.add(0.01);
 					}
 				}
 			}
+			_bids.put(query,bids);
+			_CPCs.put(query,CPCs);
 		}
 
-		if(_bids.size() > _IDVar*_numQueries) {
+		if(_bidBundles.size() > _IDVar + 1) {
+			if(_perQuery) {
+				for(Query query: _querySpace) {
+					ArrayList<Double> bidsArr = _bids.get(query);
+					ArrayList<Double> CPCArr = _CPCs.get(query);
 
-			double[] bids = new double[_bids.size()];
-			double[] cpcs = new double[_bids.size()];
-			double[] weights = new double[_bids.size()];
+					int len = bidsArr.size();
 
-			double numDaysData = _bids.size()/_numQueries;
+					double[] bids = new double[len];
+					double[] cpcs = new double[len];
+					double[] weights = new double[len];
 
-			for(int i = 0; i < _bids.size(); i++) {
-				bids[i] = _bids.get(i);
-				cpcs[i] = _CPCs.get(i);
-				if(_weighted) {
-					/*
-					 * For our WLS we weight the points by $m^{t-t_i}$ where 
-					 * $0 < m < 1$ and $t - t_i$ is the difference between the
-					 * day we are predicting and the day we observed the data
-					 */
-					weights[i] = Math.pow(m ,numDaysData + 2 - (i/16));
-				}
-			}
-
-			int arrLen = _bids.size() - (_IDVar-1)*_numQueries ;
-
-			int[] queryInd1 = new int[arrLen];
-			int[] queryInd2 = new int[arrLen];
-			int[] queryInd3 = new int[arrLen];
-			int[] queryInd4 = new int[arrLen];
-			int[] queryInd5 = new int[arrLen];
-			int[] queryInd6 = new int[arrLen];
-
-			int[] queryIndF1 = new int[arrLen];
-			int[] queryIndF2 = new int[arrLen];
-
-			if(_queryIndicators) {
-				int numIters = queryInd1.length/16;
-				for(int i = 0; i < numIters; i++) {
-					int j = 0;
-					for(Query query : _querySpace) {
-						queryInd1[i*16 + j] = 0;
-						queryInd2[i*16 + j] = 0;
-						queryInd3[i*16 + j] = 0;
-						queryInd4[i*16 + j] = 0;
-						queryInd5[i*16 + j] = 0;
-						queryInd6[i*16 + j] = 0;
-						String man = query.getManufacturer();
-						String comp = query.getComponent();
-						if("pg".equals(man)) {
-							queryInd1[i*16 + j] = 1;
+					for(int i = 0; i < len; i++) {
+						bids[i] = bidsArr.get(i);
+						cpcs[i] = CPCArr.get(i);
+						if(_weighted) {
+							/*
+							 * For our WLS we weight the points by $m^{t-t_i}$ where 
+							 * $0 < m < 1$ and $t - t_i$ is the difference between the
+							 * day we are predicting and the day we observed the data
+							 */
+							weights[i] = Math.pow(m, _bidBundles.size()  + 2 - i);
 						}
-						else if("lioneer".equals(man)) {
-							queryInd2[i*16 + j] = 1;
-						}
-						else if("flat".equals(man)) {
-							queryInd3[i*16 + j] = 1;
-						}
-
-						if("tv".equals(comp)) {
-							queryInd4[i*16 + j] = 1;
-						}
-						else if("dvd".equals(comp)) {
-							queryInd5[i*16 + j] = 1;
-						}
-						else if("audio".equals(comp)) {
-							queryInd6[i*16 + j] = 1;
-						}
-						j++;
 					}
-				}
-			}
-			else if(_queryTypeIndicators) {
-				int numIters = queryIndF1.length/16;
-				for(int i = 0; i < numIters; i++) {
-					int j = 0;
-					for(Query query : _querySpace) {
-						queryIndF1[i*16 + j] = 0;
-						queryIndF2[i*16 + j] = 0;
-						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-							//do nothing
-						}
-						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-							queryIndF1[i*16 + j] = 1;
-						}
-						else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-							queryIndF2[i*16 + j] = 1;
+
+					try {
+						c.assign("bids", bids);
+						c.assign("cpcs", cpcs);
+
+						String model;
+
+
+						if(_robust) {
+							model = "model = rlm(cpcs[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
 						}
 						else {
-							throw new RuntimeException("Malformed Query");
+							model = "model = lm(cpcs[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
 						}
-						j++;
+
+						for(int i = 0; i < _IDVar; i++) {
+							int min = i + 1;
+							int max = _bidBundles.size() - (_IDVar - 1 - i);
+							if(i != _IDVar - 2) {
+								model += "bids[" + min +":" + max + "] + ";
+							}
+							if(_powers) {
+								if(i == _IDVar - 1) {
+									model += "I(bids[" + min +":" + max + "]^2) + ";
+									model += "I(bids[" + min +":" + max + "]^3) + ";
+								}
+							}
+						}
+
+						for(int i = 0; i < _IDVar-2; i++) {
+							int min = i + 1;
+							int max = _bidBundles.size() - (_IDVar - 1 - i);
+							model += "cpcs[" + min +":" + max + "] + ";
+							if(_powers) {
+								if(i == _IDVar -3) {
+									model += "I(cpcs[" + min +":" + max + "]^2) + ";
+									model += "I(cpcs[" + min +":" + max + "]^3) + ";
+								}
+							}
+						}
+
+						model = model.substring(0, model.length()-3);
+
+						if(_weighted == true) {
+							c.assign("regweights", weights);
+							model += ", weights = regweights[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "]";
+						}
+
+						model += ")";
+
+						//				System.out.println(model);				
+						c.voidEval(model);
+						double[] coeff = c.eval("coefficients(model)").asDoubles();
+						//				for(int i = 0 ; i < coeff.length; i++)
+						//					System.out.println(coeff[i]);
+						_coefficients.put(query, coeff);
+						for(int i = 0; i < coeff.length; i++) {
+							if(Double.isNaN(coeff[i])) {
+								_coefficients.put(query, null);
+							}
+						}
+					}
+					catch (REngineException e) {
+						e.printStackTrace();
+						_coefficients.put(query, null);
+					}
+					catch (REXPMismatchException e) {
+						e.printStackTrace();
+						_coefficients.put(query, null);
+					}
+
+					double stop = System.currentTimeMillis();
+					double elapsed = stop - start;
+					//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+
+				}
+				return true;
+			}
+			else {
+				int len = _querySpace.size() * _bidBundles.size();
+				double[] bids = new double[len];
+				double[] cpcs = new double[len];
+				double[] weights = new double[len];
+
+				int idx = 0;
+				for(int i = 0; i < _bidBundles.size(); i++) {
+					for(Query query : _querySpace) {
+						ArrayList<Double> bidVec = _bids.get(query);
+						ArrayList<Double> CPCVec = _CPCs.get(query);
+						bids[idx] = bidVec.get(i);
+						cpcs[idx] = CPCVec.get(i);
+						if(_weighted) {
+							/*
+							 * For our WLS we weight the points by $m^{t-t_i}$ where 
+							 * $0 < m < 1$ and $t - t_i$ is the difference between the
+							 * day we are predicting and the day we observed the data
+							 */
+							weights[idx] = Math.pow(m, _bidBundles.size()  + 2 - i);
+						}
+						idx++;
 					}
 				}
-			}
 
-			try {
+				int arrLen = (_bidBundles.size() - (_IDVar-1))*_querySpace.size();
+
+				int[] queryInd1 = new int[arrLen];
+				int[] queryInd2 = new int[arrLen];
+				int[] queryInd3 = new int[arrLen];
+				int[] queryInd4 = new int[arrLen];
+				int[] queryInd5 = new int[arrLen];
+				int[] queryInd6 = new int[arrLen];
+
+				int[] queryIndF1 = new int[arrLen];
+				int[] queryIndF2 = new int[arrLen];
+
 				if(_queryIndicators) {
-					c.assign("queryInd1",queryInd1);
-					c.assign("queryInd2",queryInd2);
-					c.assign("queryInd3",queryInd3);
-					c.assign("queryInd4",queryInd4);
-					c.assign("queryInd5",queryInd5);
-					c.assign("queryInd6",queryInd6);
+					int numIters = queryInd1.length/16;
+					for(int i = 0; i < numIters; i++) {
+						int j = 0;
+						for(Query query : _querySpace) {
+							queryInd1[i*16 + j] = 0;
+							queryInd2[i*16 + j] = 0;
+							queryInd3[i*16 + j] = 0;
+							queryInd4[i*16 + j] = 0;
+							queryInd5[i*16 + j] = 0;
+							queryInd6[i*16 + j] = 0;
+							String man = query.getManufacturer();
+							String comp = query.getComponent();
+							if("pg".equals(man)) {
+								queryInd1[i*16 + j] = 1;
+							}
+							else if("lioneer".equals(man)) {
+								queryInd2[i*16 + j] = 1;
+							}
+							else if("flat".equals(man)) {
+								queryInd3[i*16 + j] = 1;
+							}
+
+							if("tv".equals(comp)) {
+								queryInd4[i*16 + j] = 1;
+							}
+							else if("dvd".equals(comp)) {
+								queryInd5[i*16 + j] = 1;
+							}
+							else if("audio".equals(comp)) {
+								queryInd6[i*16 + j] = 1;
+							}
+							j++;
+						}
+					}
 				}
 				else if(_queryTypeIndicators) {
-					c.assign("queryIndF1",queryIndF1);
-					c.assign("queryIndF2",queryIndF2);
-				}
-				c.assign("bids", bids);
-				c.assign("cpcs", cpcs);
-
-				String model;
-
-
-				if(_robust) {
-					model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
-				}
-				else {
-					model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "] ~ ";
-				}
-
-
-				if(_queryIndicators) {
-					model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
-				}
-				else if(_queryTypeIndicators) {
-					model += "queryIndF1 + queryIndF2 + ";
-				}
-				for(int i = 0; i < _IDVar; i++) {
-					int min = i * _numQueries + 1;
-					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
-					if(i != _IDVar - 2) {
-						model += "bids[" + min +":" + max + "] + ";
-					}
-					if(_powers) {
-						if(i == _IDVar - 1) {
-							model += "I(bids[" + min +":" + max + "]^2) + ";
-							model += "I(bids[" + min +":" + max + "]^3) + ";
+					int numIters = queryIndF1.length/16;
+					for(int i = 0; i < numIters; i++) {
+						int j = 0;
+						for(Query query : _querySpace) {
+							queryIndF1[i*16 + j] = 0;
+							queryIndF2[i*16 + j] = 0;
+							if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+								//do nothing
+							}
+							else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+								queryIndF1[i*16 + j] = 1;
+							}
+							else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+								queryIndF2[i*16 + j] = 1;
+							}
+							else {
+								throw new RuntimeException("Malformed Query");
+							}
+							j++;
 						}
 					}
 				}
 
-				for(int i = 0; i < _IDVar-2; i++) {
-					int min = i * _numQueries + 1;
-					int max = _bids.size() - (_IDVar - 1 - i) * _numQueries;
+				try {
+					if(_queryIndicators) {
+						c.assign("queryInd1",queryInd1);
+						c.assign("queryInd2",queryInd2);
+						c.assign("queryInd3",queryInd3);
+						c.assign("queryInd4",queryInd4);
+						c.assign("queryInd5",queryInd5);
+						c.assign("queryInd6",queryInd6);
+					}
+					else if(_queryTypeIndicators) {
+						c.assign("queryIndF1",queryIndF1);
+						c.assign("queryIndF2",queryIndF2);
+					}
+					c.assign("bids", bids);
+					c.assign("cpcs", cpcs);
 
-					model += "cpcs[" + min +":" + max + "] + ";
-					if(_powers) {
-						if(i == _IDVar -3) {
-							model += "I(cpcs[" + min +":" + max + "]^2) + ";
-							model += "I(cpcs[" + min +":" + max + "]^3) + ";
+					String model;
+
+
+					if(_robust) {
+						model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
+					}
+					else {
+						model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
+					}
+
+					if(_queryIndicators) {
+						model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
+					}
+					else if(_queryTypeIndicators) {
+						model += "queryIndF1 + queryIndF2 + ";
+					}
+
+					for(int i = 0; i < _IDVar; i++) {
+						int min = i * _numQueries + 1;
+						int max = (_bidBundles.size() - (_IDVar - 1 - i)) * _querySpace.size();
+						if(i != _IDVar - 2) {
+							model += "bids[" + min +":" + max + "] + ";
+						}
+						if(_powers) {
+							if(i == _IDVar - 1) {
+								model += "I(bids[" + min +":" + max + "]^2) + ";
+								model += "I(bids[" + min +":" + max + "]^3) + ";
+							}
+						}
+					}
+
+					for(int i = 0; i < _IDVar-2; i++) {
+						int min = i * _numQueries + 1;
+						int max = (_bidBundles.size() - (_IDVar - 1 - i)) * _querySpace.size();
+						model += "cpcs[" + min +":" + max + "] + ";
+						if(_powers) {
+							if(i == _IDVar -3) {
+								model += "I(cpcs[" + min +":" + max + "]^2) + ";
+								model += "I(cpcs[" + min +":" + max + "]^3) + ";
+							}
+						}
+					}
+
+					model = model.substring(0, model.length()-3);
+
+					if(_weighted == true) {
+						c.assign("regweights", weights);
+						model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "]";
+					}
+
+					model += ")";
+
+					//				System.out.println(model);				
+					c.voidEval(model);
+					double[] coeff = c.eval("coefficients(model)").asDoubles();
+					//				for(int i = 0 ; i < coeff.length; i++)
+					//					System.out.println(coeff[i]);
+					for(Query query : _querySpace) {
+						_coefficients.put(query, coeff);
+					}
+					for(int i = 0; i < coeff.length; i++) {
+						if(Double.isNaN(coeff[i])) {
+							for(Query query : _querySpace) {
+								_coefficients.put(query, null);
+							}
+							return false;
 						}
 					}
 				}
-
-				model = model.substring(0, model.length()-3);
-
-				if(_weighted == true) {
-					c.assign("regweights", weights);
-					model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + _bids.size() +  "]";
-				}
-
-				model += ")";
-
-				//				System.out.println(model);				
-				c.voidEval(model);
-				coeff = c.eval("coefficients(model)").asDoubles();
-				//				for(int i = 0 ; i < coeff.length; i++)
-				//					System.out.println(coeff[i]);
-			}
-			catch (REngineException e) {
-				e.printStackTrace();
-				return false;
-			}
-			catch (REXPMismatchException e) {
-				e.printStackTrace();
-				return false;
-			}
-
-			for(int i = 0; i < coeff.length; i++) {
-				if(Double.isNaN(coeff[i])) {
+				catch (REngineException e) {
+					e.printStackTrace();
+					for(Query query : _querySpace) {
+						_coefficients.put(query, null);
+					}
 					return false;
 				}
+				catch (REXPMismatchException e) {
+					e.printStackTrace();
+					for(Query query : _querySpace) {
+						_coefficients.put(query, null);
+					}
+					return false;
+				}
+
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+
+				return true;
 			}
-
-			double stop = System.currentTimeMillis();
-			double elapsed = stop - start;
-			//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
-
-			return true;
 		}
 		else {
 			return false;
@@ -463,11 +604,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionBidToCPC(c, _querySpace, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+		return new RegressionBidToCPC(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
 	public String toString() {
-		return "TypeIRegressionBidToCPC(IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+		return "TypeIRegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 	}
 }

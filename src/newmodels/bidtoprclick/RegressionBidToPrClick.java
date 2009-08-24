@@ -96,7 +96,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		}
 		
 		double prediction = 0.0;
-		/*arg0
+		/*
 		 * oldest - > newest
 		 */
 		List<Double> bids = new ArrayList<Double>();
@@ -571,6 +571,9 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 					double[] coeff = c.eval("coefficients(model)").asDoubles();
 					//				for(int i = 0 ; i < coeff.length; i++)
 					//					System.out.println(coeff[i]);
+					for(Query query : _querySpace) {
+						_coefficients.put(query, coeff);
+					}
 					for(int i = 0; i < coeff.length; i++) {
 						if(Double.isNaN(coeff[i])) {
 							for(Query query : _querySpace) {
@@ -579,11 +582,6 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 							return false;
 						}
 					}
-					
-					for(Query query : _querySpace) {
-						_coefficients.put(query, coeff);
-					}
-					
 				}
 				catch (REngineException e) {
 					e.printStackTrace();
