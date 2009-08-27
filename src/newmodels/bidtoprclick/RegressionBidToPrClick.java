@@ -27,7 +27,8 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
-	protected HashMap<Query,ArrayList<Double>> _bids ;
+	private int DEBUG = 0;
+	protected HashMap<Query,ArrayList<Double>> _bids;
 	HashMap<Query,ArrayList<Double>> _clickPrs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
@@ -94,7 +95,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		if(coeff == null) {
 			return 0.0;
 		}
-		
+
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -204,7 +205,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 		predCounter += clickPrs.size();
-		
+
 		double clickpr = 1/(1+Math.exp(-prediction));
 
 		if(currentAd != null && !currentAd.isGeneric()) {
@@ -366,7 +367,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 						model += ")";
 
-//						System.out.println(model);				
+						//						System.out.println(model);				
 						c.voidEval(model);
 						double[] coeff = c.eval("coefficients(model)").asDoubles();
 						//				for(int i = 0 ; i < coeff.length; i++)
@@ -379,11 +380,15 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 						}
 					}
 					catch (REngineException e) {
-						e.printStackTrace();
+						if(DEBUG > 1) {
+							e.printStackTrace();
+						}
 						_coefficients.put(query, null);
 					}
 					catch (REXPMismatchException e) {
-						e.printStackTrace();
+						if(DEBUG > 1) {
+							e.printStackTrace();
+						}
 						_coefficients.put(query, null);
 					}
 
@@ -391,7 +396,13 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 					double elapsed = stop - start;
 					//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 				}
-				return true;
+				boolean nonNullQuery = false;
+				for(Query query : _querySpace) {
+					if(_coefficients.get(query) != null) {
+						nonNullQuery = true;
+					}
+				}
+				return nonNullQuery;
 			}
 			else {
 				int len = _querySpace.size() * _bidBundles.size();
@@ -566,7 +577,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 					model += ")";
 
-//					System.out.println(model);				
+					//					System.out.println(model);				
 					c.voidEval(model);
 					double[] coeff = c.eval("coefficients(model)").asDoubles();
 					//				for(int i = 0 ; i < coeff.length; i++)
@@ -584,14 +595,18 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 					}
 				}
 				catch (REngineException e) {
-					e.printStackTrace();
+					if(DEBUG > 1) {
+						e.printStackTrace();
+					}
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
 					return false;
 				}
 				catch (REXPMismatchException e) {
-					e.printStackTrace();
+					if(DEBUG > 1) {
+						e.printStackTrace();
+					}
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
@@ -618,5 +633,15 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer,component);
+	}
+
+	@Override
+	public void updatePredictions(BidBundle otherBidBundle) {
+		//Not used in this class
+	}
+	
+	@Override
+	public String toString() {
+		return "RegressionBidToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
 	}
 }

@@ -15,6 +15,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.targeting.BasicTargetModel;
@@ -36,8 +37,8 @@ public class PredictionEvaluator {
 		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
 		int min = 454;
-		int max = 460;
-		//		int max = 496;
+		//		int max = 455;
+		int max = 496;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -105,39 +106,30 @@ public class PredictionEvaluator {
 
 					model.updateModel(queryReport, salesReport, bidBundle);
 					if(i >= 5) {
-						if(i >= 7) {
-							/*
-							 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
-							 */
-							for(int j = 0; j < agents.length; j++) {
-								String agentName = agents[j];
-								if(agentName.equals(agents[agent])) {
-									LinkedList<SalesReport> salesReports = allSalesReports.get(agentName);
-									LinkedList<QueryReport> queryReports = allQueryReports.get(agentName);
-									LinkedList<BidBundle> bidBundles = allBidBundles.get(agentName);
-									SalesReport otherSalesReport = salesReports.get(i+2);
-									QueryReport otherQueryReport = queryReports.get(i+2);
-									BidBundle otherBidBundle = bidBundles.get(i+2);
-									for(Query q : querySpace) {
-										double bid = otherBidBundle.getBid(q);
-										if(bid != 0) {
-											double error = model.getPrediction(q, otherBidBundle.getBid(q), otherBidBundle.getAd(q));
-											double clicks = otherQueryReport.getClicks(q);
-											double imps = otherQueryReport.getImpressions(q);
-											double clickPr = 0;
-											if(!(clicks == 0 || imps == 0)) {
-												clickPr = clicks/imps;
-											}
-											error -= clickPr;
-											error = error*error;
-											ourTotActual += clickPr;
-											ourTotError += error;
-											ourTotErrorCounter++;
-										}
-									}
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double bid = otherBidBundle.getBid(q);
+							if(bid != 0) {
+								double error = model.getPrediction(q, otherBidBundle.getBid(q), otherBidBundle.getAd(q));
+								double clicks = otherQueryReport.getClicks(q);
+								double imps = otherQueryReport.getImpressions(q);
+								double clickPr = 0;
+								if(!(clicks == 0 || imps == 0)) {
+									clickPr = clicks/imps;
 								}
+								error -= clickPr;
+								error = error*error;
+								ourTotActual += clickPr;
+								ourTotError += error;
+								ourTotErrorCounter++;
 							}
 						}
+						model.updatePredictions(otherBidBundle);
 					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
@@ -152,24 +144,28 @@ public class PredictionEvaluator {
 		}
 		double avgRMSE = 0.0;
 		int RMSECounter = 0;
+		int dataPointCounter = 0;
+		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
-			System.out.println("File: " + file);
+			//			System.out.println("File: " + file);
 			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
 			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
 			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
 			for(String agent : totErrorCounterMap.keySet()) {
-				System.out.println("\t Agent: " + agent);
+				//				System.out.println("\t Agent: " + agent);
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				System.out.println("\t\t Predictions: " + totErrorCounter);
+				dataPointCounter += totErrorCounter;
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
 				avgRMSE += RMSE;
-				System.out.println("\t\t RMSE: " + RMSE);
+				//				System.out.println("\t\t RMSE: " + RMSE);
 				RMSECounter++;
 			}
 		}
+		//		System.out.println("Data Points: " + dataPointCounter);
 		System.out.println("Average RMSE: " + (avgRMSE/RMSECounter));
 	}
 
@@ -273,6 +269,7 @@ public class PredictionEvaluator {
 		}
 		double avgRMSE = 0.0;
 		int RMSECounter = 0;
+		int dataPointCounter = 0;
 		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -284,6 +281,7 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
+				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
@@ -292,8 +290,20 @@ public class PredictionEvaluator {
 				RMSECounter++;
 			}
 		}
-		System.out.println("Data Points: " + RMSECounter);
+		System.out.println("Data Points: " + dataPointCounter);
 		System.out.println("Average RMSE: " + (avgRMSE/RMSECounter));
+	}
+
+	public static boolean intToBin(int x) {
+		if(x == 0) {
+			return false;
+		}
+		else if(x == 1) {
+			return true;
+		}
+		else {
+			throw new RuntimeException("intToBin can only be called with 0 or 1");
+		}
 	}
 
 	public static void main(String[] args) {
@@ -316,16 +326,37 @@ public class PredictionEvaluator {
 		_querySpace.add(new Query(null, "dvd"));
 		_querySpace.add(new Query(null, "audio"));
 
-		//		AbstractBidToPrClick model;
-		AbstractBidToCPC model;
+		AbstractBidToPrClick model;
+		//		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
+			//			model = new EnsembleBidToPrClick(_querySpace, 20, 20, new BasicTargetModel("flat", "tv"), null);
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false, 2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			//			evaluator.clickPrPredictionChallenge(model);
+			for(int perQuery = 0; perQuery < 2; perQuery++) {
+				for(int IDVar = 2; IDVar < 5; IDVar++) {
+					for(int numPrevDays = 10; numPrevDays <= 60; numPrevDays += 10) {
+						for(int weighted = 0; weighted < 2; weighted++) {
+							for(int robust = 0; robust < 2; robust++) {
+								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+										for(int powers = 0; powers < 2; powers++) {
+											if(!(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+													&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+												model = new RegressionBidToPrClick(new RConnection(), _querySpace, intToBin(perQuery), IDVar, numPrevDays, new BasicTargetModel(null, null), intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+												evaluator.clickPrPredictionChallenge(model);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 
-			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,true);
+			//			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,false);
 			//			model = new ConstantBidToCPC(0.1);
-			evaluator.CPCPredictionChallenge(model);
+			//			evaluator.CPCPredictionChallenge(model);
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;

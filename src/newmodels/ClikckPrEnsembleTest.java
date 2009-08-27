@@ -92,7 +92,7 @@ public class ClikckPrEnsembleTest {
 				if(i >= 5) {
 					bidToClickPR.updatePredictions(ourBidBundles.get(i+2));
 					if(i >= 7) {
-						bidToClickPR.updateError(queryReport,salesReport, bidBundle);
+						bidToClickPR.updateEnsemble(queryReport,salesReport, bidBundle);
 						bidToClickPR.createEnsemble();
 
 						/*

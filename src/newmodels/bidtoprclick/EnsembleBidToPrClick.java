@@ -24,35 +24,19 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 	protected Set<Query> _querySpace;
+	private ArrayList<BidBundle> _bidBundles;
 
 	AbstractBidToPrClick _defaultModel;
 
 	/*
-	 * Model Type I
-	 * 	-These models predict for all queries
+	 * Models
+	 * 
 	 */
-	protected HashMap<String,AbstractBidToPrClick> _typeIModels;
-	protected HashMap<String,AbstractBidToPrClick> _typeIUsableModels;
-	protected HashMap<String,HashMap<Query,LinkedList<Double>>> _typeIDailyModelError;
-	protected HashMap<BidBundle,HashMap<String,HashMap<Query,Double>>> _typeIPredictions;
-
-	/*
-	 * Model Type II
-	 * 	-These models predict by query type
-	 */
-	protected HashMap<QueryType,HashMap<String,AbstractBidToPrClick>> _typeIIModels;
-	protected HashMap<QueryType,HashMap<String,AbstractBidToPrClick>> _typeIIUsableModels;
-	protected HashMap<QueryType,HashMap<String,HashMap<Query,LinkedList<Double>>>> _typeIIDailyModelError;
-	protected HashMap<BidBundle,HashMap<QueryType,HashMap<String,HashMap<Query,Double>>>> _typeIIPredictions;
-
-	/*
-	 * Model Type II
-	 * 	-These models only predict for one query
-	 */
-	protected HashMap<Query,HashMap<String,AbstractBidToPrClick>> _typeIIIModels;
-	protected HashMap<Query,HashMap<String,AbstractBidToPrClick>> _typeIIIUsableModels;
-	protected HashMap<Query,HashMap<String,LinkedList<Double>>> _typeIIIDailyModelError;
-	protected HashMap<BidBundle,HashMap<Query,HashMap<String,Double>>> _typeIIIPredictions;
+	protected HashMap<String,AbstractBidToPrClick> _models;
+	protected HashMap<String,AbstractBidToPrClick> _usableModels;
+	protected HashMap<String,HashMap<Query,LinkedList<Double>>> _dailyModelError;
+	protected HashMap<String,HashMap<Query,LinkedList<Integer>>> _bordaCount;
+	protected HashMap<BidBundle,HashMap<String,HashMap<Query,Double>>> _modelPredictions;
 
 	/*
 	 * This holds the ensemble used for predicting
@@ -61,6 +45,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	protected HashMap<Query,LinkedList<Double>> _ensembleError;
 	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
 	protected HashMap<Query,HashMap<String,Integer>> _ensembleMembers;
+	protected HashMap<Query,HashMap<String,Double>> _ensembleWeights;
 
 	/*
 	 * Constants for making ensemble
@@ -73,51 +58,22 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	private BasicTargetModel _targModel;
 
 	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
+		_bidBundles = new ArrayList<BidBundle>();
+
 		_querySpace = querySpace;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
 
 		_targModel = targModel;
-		
-		/*
-		 * Initialize Type I Models
-		 */
-		_typeIModels = new HashMap<String, AbstractBidToPrClick>();
-		_typeIUsableModels = new HashMap<String,AbstractBidToPrClick>();
-		_typeIDailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
-		_typeIPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
 
 		/*
-		 * Initialize Type II Models
+		 * Initialize Models
 		 */
-		_typeIIModels = new HashMap<QueryType, HashMap<String,AbstractBidToPrClick>>();
-		_typeIIUsableModels = new HashMap<QueryType, HashMap<String,AbstractBidToPrClick>>();
-		_typeIIDailyModelError = new HashMap<QueryType, HashMap<String,HashMap<Query,LinkedList<Double>>>>();
-		for(QueryType queryType : QueryType.values()) {
-			HashMap<String, AbstractBidToPrClick> typeIIModels = new HashMap<String, AbstractBidToPrClick>();
-			HashMap<String, AbstractBidToPrClick> typeIIUsableModels = new HashMap<String,AbstractBidToPrClick>();
-			HashMap<String, HashMap<Query, LinkedList<Double>>> typeIIDailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
-			_typeIIModels.put(queryType, typeIIModels);
-			_typeIIUsableModels.put(queryType,typeIIUsableModels);
-			_typeIIDailyModelError.put(queryType,typeIIDailyModelError);
-		}
-		_typeIIPredictions = new HashMap<BidBundle, HashMap<QueryType,HashMap<String,HashMap<Query,Double>>>>();
-
-		/*
-		 * Initialize Type III Models
-		 */
-		_typeIIIModels = new HashMap<Query, HashMap<String,AbstractBidToPrClick>>();
-		_typeIIIUsableModels = new HashMap<Query, HashMap<String,AbstractBidToPrClick>>();
-		_typeIIIDailyModelError = new HashMap<Query, HashMap<String,LinkedList<Double>>>();
-		for(Query query : _querySpace) {
-			HashMap<String, AbstractBidToPrClick> typeIIIModels = new HashMap<String, AbstractBidToPrClick>();
-			HashMap<String, AbstractBidToPrClick> typeIIIUsableModels = new HashMap<String,AbstractBidToPrClick>();
-			HashMap<String, LinkedList<Double>> typeIIIDailyModelError = new HashMap<String, LinkedList<Double>>();
-			_typeIIIModels.put(query, typeIIIModels);
-			_typeIIIUsableModels.put(query,typeIIIUsableModels);
-			_typeIIIDailyModelError.put(query,typeIIIDailyModelError);
-		}
-		_typeIIIPredictions = new HashMap<BidBundle, HashMap<Query,HashMap<String,Double>>>();
+		_models = new HashMap<String, AbstractBidToPrClick>();
+		_usableModels = new HashMap<String,AbstractBidToPrClick>();
+		_dailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
+		_bordaCount = new HashMap<String, HashMap<Query,LinkedList<Integer>>>();
+		_modelPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
 
 		/*
 		 * Initialize Ensemble
@@ -143,187 +99,205 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			_ensembleMembers = ensembleMembers;
 		}
 
+		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
+		for(Query query : _querySpace) {
+			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
+			_ensembleWeights.put(query, ensembleWeights);
+		}
+
 		try {
 			rConnection = new RConnection();
 		} catch (RserveException e) {
 			e.printStackTrace();
 		}
+
+		initializeEnsemble();
+
 	}
 
 	public void initializeEnsemble() {
 		/*
-		 * Add Type I Models
+		 * Add Models
 		 */
-		String basename = "typeI";
-		for(int i = 0; i < 3; i++) {
-			for(int j = 0; j < 6; j++) {
-				if(j < 2 || j > 4) {
-					AbstractBidToPrClick model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, false, false);
-					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_f", model);
-					model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, true, false, false);
-					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_f", model);
-					if(i == 0 && j == 1) {
-						_defaultModel = model;
-					}
-					model = new RegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), _targModel, false, true, false);
-					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_f", model);
-					//					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, false, true);
-					//					addTypeIModel(basename + "_" + i + "_" + j +"_f_f_t", model);
-					//					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), true, false, true);
-					//					addTypeIModel(basename + "_" + i + "_" + j +"_t_f_t", model);
-					//					model = new TypeIRegressionBidToPrClick(rConnection,_querySpace, 2+i, 10*(j+1), false, true, true);
-					//					addTypeIModel(basename + "_" + i + "_" + j +"_f_t_t", model);
-				}
-			}
-		}
-
-//		/*
-//		 * Add Type II Models
-//		 */
-//		basename = "typeII";
-//		for(int i = 0; i < 3; i++) {
-//			for(int j = 0; j < 6; j++) {
-//				if(j < 2 || j > 4) {
-//					AbstractBidToPrClick model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), false);
-//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_f", model);
-//					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_ONE, 2+i, 10*(j+1), true);
-//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_ONE,basename + "_" + i + "_" + j +"_F1_t", model);
-//
-//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), false);
-//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_f", model);
-//					//					model = new TypeIIRegressionBidToPrClick(rConnection, _querySpace,QueryType.FOCUS_LEVEL_TWO, 2+i, 10*(j+1), true);
-//					//					addTypeIIModel(QueryType.FOCUS_LEVEL_TWO,basename + "_" + i + "_" + j +"_F2_t", model);
-//				}
-//			}
-//		}
-
-		/*
-		 * Ad Type III Models
-		 */
-		basename = "typeIII";
-		for(int i = 0; i < 3; i++) {
-			for(int j = 0; j < 6; j++) {
-				if(j < 2 || j > 4) {
-					for(Query query : _querySpace) {
-						AbstractBidToPrClick model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), _targModel, false);
-						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_f", model);
-						//						model = new TypeIIIRegressionBidToPrClick(rConnection, _querySpace,query, 2+i, 10*(j+1), true);
-						//						addTypeIIIModel(query,basename + "_" + i + "_" + j +"_" + query.getManufacturer() + "_" + query.getComponent() + "_t", model);
+		for(int perQuery = 0; perQuery < 2; perQuery++) {
+			for(int IDVar = 2; IDVar < 5; IDVar++) {
+				for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+					for(int weighted = 0; weighted < 2; weighted++) {
+						for(int robust = 0; robust < 2; robust++) {
+							for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+								for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+									for(int powers = 0; powers < 2; powers++) {
+										if(!(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+												&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+											AbstractBidToPrClick model = new RegressionBidToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+											addModel(model.toString(),model);
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
-	public void addTypeIModel(String name, AbstractBidToPrClick model) {
-		_typeIModels.put(name,model);
+	public boolean intToBin(int x) {
+		if(x == 0) {
+			return false;
+		}
+		else if(x == 1) {
+			return true;
+		}
+		else {
+			throw new RuntimeException("intToBin can only be called with 0 or 1");
+		}
+	}
+
+	public void addModel(String name, AbstractBidToPrClick model) {
+		_models.put(name,model);
 		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
+		HashMap<Query, LinkedList<Integer>> bordaCount = new HashMap<Query, LinkedList<Integer>>();
 		for(Query query : _querySpace) {
 			LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
 			dailyModelError.put(query,dailyModelErrorList);
+
+			LinkedList<Integer> bordaCountList = new LinkedList<Integer>();
+			bordaCount.put(query, bordaCountList);
 		}
-		_typeIDailyModelError.put(name,dailyModelError);
-	}
-
-
-	public void addTypeIIModel(QueryType queryType,String name, AbstractBidToPrClick model) {
-		HashMap<String, AbstractBidToPrClick> typeIIModels = _typeIIModels.get(queryType);
-		typeIIModels.put(name, model);
-		_typeIIModels.put(queryType,typeIIModels);
-
-		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
-		for(Query query : _querySpace) {
-			LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
-			dailyModelError.put(query,dailyModelErrorList);
-		}
-		HashMap<String, HashMap<Query, LinkedList<Double>>> typeIIDailyModelError = _typeIIDailyModelError.get(queryType);
-		typeIIDailyModelError.put(name,dailyModelError);
-		_typeIIDailyModelError.put(queryType, typeIIDailyModelError);
-	}
-
-	public void addTypeIIIModel(Query query, String name, AbstractBidToPrClick model) {
-		HashMap<String, AbstractBidToPrClick> typeIIIModels = _typeIIIModels.get(query);
-		typeIIIModels.put(name, model);
-		_typeIIIModels.put(query,typeIIIModels);
-
-		HashMap<String, LinkedList<Double>> typeIIIDailyModelError = _typeIIIDailyModelError.get(query);
-		LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
-		typeIIIDailyModelError.put(name, dailyModelErrorList);
-		_typeIIIDailyModelError.put(query, typeIIIDailyModelError);
+		_dailyModelError.put(name,dailyModelError);
+		_bordaCount.put(name,bordaCount);
 	}
 
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
-
+		_bidBundles.add(bidBundle);
 		boolean ensembleUsable = false;
 
 		/*
-		 * Update Type I Models
+		 * Update Models
 		 */
-		_typeIUsableModels = new HashMap<String, AbstractBidToPrClick>();
-		for(String name : _typeIModels.keySet()) {
-			AbstractBidToPrClick model = _typeIModels.get(name);
+		_usableModels = new HashMap<String, AbstractBidToPrClick>();
+		for(String name : _models.keySet()) {
+			AbstractBidToPrClick model = _models.get(name);
 			boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
 			if(usable) {
-				_typeIUsableModels.put(name, model);
+				_usableModels.put(name, model);
 				ensembleUsable = true;
 			}
 		}
 
-		/*
-		 * Update Type II Models
-		 */
-		_typeIIUsableModels = new HashMap<QueryType, HashMap<String,AbstractBidToPrClick>>();
-		for(QueryType queryType : QueryType.values()) {
-			HashMap<String, AbstractBidToPrClick> typeIIModels = _typeIIModels.get(queryType);
-			HashMap<String, AbstractBidToPrClick> typeIIUsableModels = new HashMap<String,AbstractBidToPrClick>();
-			for(String name : typeIIModels.keySet()) {
-				AbstractBidToPrClick model = typeIIModels.get(name);
-				boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
-				if(usable) {
-					typeIIUsableModels.put(name, model);
-					ensembleUsable = true;
-				}
-			}
-			_typeIIUsableModels.put(queryType, typeIIUsableModels);
-		}
+		double totmodels = _models.size();
+		double workingmodels = _usableModels.size();
+		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
-		/*
-		 * Update Type III Models
-		 */
-		_typeIIIUsableModels = new HashMap<Query, HashMap<String,AbstractBidToPrClick>>();
-		for(Query query : _querySpace) {
-			HashMap<String, AbstractBidToPrClick> typeIIIModels = _typeIIIModels.get(query);
-			HashMap<String, AbstractBidToPrClick> typeIIIUsableModels = new HashMap<String,AbstractBidToPrClick>();
-			for(String name : typeIIIModels.keySet()) {
-				AbstractBidToPrClick model = typeIIIModels.get(name);
-				boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
-				if(usable) {
-					typeIIIUsableModels.put(name, model);
-					ensembleUsable = true;
-				}
-			}
-			_typeIIIUsableModels.put(query, typeIIIUsableModels);
-		}
-
-		double totmodels = _typeIModels.size();
-		double workingmodels = _typeIUsableModels.size();
-		for(QueryType queryType : QueryType.values()) {
-			totmodels += _typeIIModels.get(queryType).size();
-			workingmodels += _typeIIUsableModels.get(queryType).size();
-		}
-		for(Query q : _querySpace) {
-			totmodels += _typeIIIModels.get(q).size();
-			workingmodels += _typeIIIUsableModels.get(q).size();
-		}
-		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels); 
+		updateEnsemble(queryReport, salesReport, bidBundle);
 
 		return ensembleUsable;
 	}
 
-	public void createEnsemble() {
+	@Override
+	public void updatePredictions(BidBundle bundle) {
 
+		/*
+		 * Update Predictions
+		 */
+		HashMap<String,HashMap<Query,Double>> modelPredictions = new HashMap<String, HashMap<Query,Double>>();
+		for(String name : _usableModels.keySet()) {
+			AbstractBidToPrClick model = _usableModels.get(name);
+			HashMap<Query,Double> predictions = new HashMap<Query, Double>();
+			for(Query query : _querySpace) {
+				predictions.put(query, model.getPrediction(query, bundle.getBid(query) ,bundle.getAd(query)));
+			}
+			modelPredictions.put(name, predictions);
+		}
+		_modelPredictions.put(bundle, modelPredictions);
+
+
+		/*
+		 * Update Ensemble Predictions
+		 */
+		HashMap<Query,Double> ensemblePredictions = new HashMap<Query, Double>();
+		for(Query query : _querySpace) {
+			double prediction = getPrediction(query, bundle.getBid(query), bundle.getAd(query));
+			ensemblePredictions.put(query, prediction);
+		}
+		_ensemblePredictions.put(bundle, ensemblePredictions);
+	}
+
+
+	public void updateEnsemble(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
+		boolean ensembleReady = updateError(queryReport, salesReport, bundle);
+		if(ensembleReady) {
+			_ensemble = meanPredictionCombiner();
+		}
+		else {
+			_ensemble = null;
+		}
+	}
+
+	private boolean updateError(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
+		/*
+		 * Update Error
+		 */
+		HashMap<String, HashMap<Query, Double>> modelPredictions = _modelPredictions.get(bundle);
+		if(modelPredictions == null) {
+			System.out.println("No Predictions Yet");
+			return false;
+		}
+		else {
+			for(String name : _models.keySet()) {
+				HashMap<Query, LinkedList<Double>> dailyModelError = _dailyModelError.get(name);
+				HashMap<Query, Double> predictions = modelPredictions.get(name);
+				for(Query query : _querySpace) {
+					LinkedList<Double> queryDailyError = dailyModelError.get(query);
+					if(predictions != null) {
+						double error = predictions.get(query);
+						int imps = queryReport.getImpressions(query);
+						int clicks = queryReport.getClicks(query);
+						double conversions = salesReport.getConversions(query);
+						if(!(imps == 0 || clicks == 0)) {
+							//							if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
+							//								double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
+							//								clicks = (int) (imps * multipliers[0]);
+							//							}
+							error -= clicks/imps;
+						}
+						error = error*error;
+						queryDailyError.add(error);
+					}
+					else {
+						queryDailyError.add(Double.NaN);
+					}
+					dailyModelError.put(query, queryDailyError);
+				}
+				_dailyModelError.put(name, dailyModelError);
+			}
+
+			/*
+			 * Update Ensemble Error
+			 */
+			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
+			for(Query query : _querySpace) {
+				LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
+				double error = ensemblePredictions.get(query);
+				System.out.println(query + " prediction: " + error);
+				int imps = queryReport.getImpressions(query);
+				int clicks = queryReport.getClicks(query);
+				if(!(imps == 0 || clicks == 0)) {
+					error -= clicks/imps;
+				}
+				error = error*error;
+				queryEnsembleError.add(error);
+				System.out.println(query + " error: " + error);
+				_ensembleError.put(query, queryEnsembleError);
+			}
+			return true;
+		}
+	}
+
+	public HashMap<Query, LinkedList<AbstractBidToPrClick>> meanPredictionCombiner() {
 		/*
 		 * Initialize Error Mappings
 		 */
@@ -334,11 +308,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 
 		/*
-		 * Add Type I Models
+		 * Add Models
 		 */
-		for(String name : _typeIUsableModels.keySet()) {
-			AbstractBidToPrClick model = _typeIUsableModels.get(name);
-			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _typeIDailyModelError.get(name);
+		for(String name : _usableModels.keySet()) {
+			AbstractBidToPrClick model = _usableModels.get(name);
+			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _dailyModelError.get(name);
 			for(Query query : _querySpace) {
 				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 				double error = 0;
@@ -359,86 +333,23 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
 				}
-			}
-		}
-
-		/*
-		 * Add Type II Models
-		 */
-
-		for(QueryType queryType : QueryType.values()) {
-			HashMap<String, HashMap<Query, LinkedList<Double>>> queryTypeDailyError = _typeIIDailyModelError.get(queryType);
-			HashMap<String, AbstractBidToPrClick> typeIIUsableModels = _typeIIUsableModels.get(queryType);
-			for(String name : typeIIUsableModels.keySet()) {
-				AbstractBidToPrClick model = typeIIUsableModels.get(name);
-				HashMap<Query, LinkedList<Double>> typeIIDailyModelError = queryTypeDailyError.get(name);
-				for(Query query : _querySpace) {
-					if(query.getType() == queryType) {
-						ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
-						double error = 0;
-						LinkedList<Double> dailyModelError = typeIIDailyModelError.get(query);
-						int bound = NUMPASTDAYS;
-						if(dailyModelError.size() < NUMPASTDAYS) {
-							bound = dailyModelError.size();
-						}
-						for(int i = 0; i < bound; i++) {
-							error += dailyModelError.get(dailyModelError.size() - 1 - i);
-						}
-						error/= bound;
-						if(!Double.isNaN(error)) {
-							ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
-							modelErrorPairList.add(modelErrorPair);
-							while(modelErrorPairList.size() > ENSEMBLESIZE) {
-								Collections.sort(modelErrorPairList);
-								modelErrorPairList.remove(modelErrorPairList.size()-1);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		/*
-		 * Add Type III Models
-		 */
-
-		for(Query query : _querySpace) {
-			HashMap<String, LinkedList<Double>> typeIIIDailyModelError = _typeIIIDailyModelError.get(query);
-			HashMap<String, AbstractBidToPrClick> typeIIIUsableModels = _typeIIIUsableModels.get(query);
-			for(String name : typeIIIUsableModels.keySet()) {
-				AbstractBidToPrClick model = typeIIIUsableModels.get(name);
-				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
-				double error = 0;
-				LinkedList<Double> dailyModelError = typeIIIDailyModelError.get(name);
-				int bound = NUMPASTDAYS;
-				if(dailyModelError.size() < NUMPASTDAYS) {
-					bound = dailyModelError.size();
-				}
-				for(int i = 0; i < bound; i++) {
-					error += dailyModelError.get(dailyModelError.size() - 1 - i);
-				}
-				error/= bound;
-				if(!Double.isNaN(error)) {
-					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
-					modelErrorPairList.add(modelErrorPair);
-					while(modelErrorPairList.size() > ENSEMBLESIZE) {
-						Collections.sort(modelErrorPairList);
-						modelErrorPairList.remove(modelErrorPairList.size()-1);
-					}
-				}
+				modelErrorMap.put(query, modelErrorPairList);
 			}
 		}
 
 		/*
 		 * Initialize Ensemble
 		 */
-		_ensemble = new HashMap<Query, LinkedList<AbstractBidToPrClick>>();
+		HashMap<Query, LinkedList<AbstractBidToPrClick>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPrClick>>();
+		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
 		for(Query query: _querySpace) {
 			LinkedList<AbstractBidToPrClick> queryEnsemble = new LinkedList<AbstractBidToPrClick>();
 			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
+			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
 				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
 				queryEnsemble.add(modelErrorPair.getModel());
+				ensembleWeights.put(modelErrorPair.getName(), 1.0);
 				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
 				if(ensembleUseCount == null) {
@@ -448,237 +359,121 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					ensembleMembers.put(modelErrorPair.getName(), ensembleUseCount+1);
 				}
 			}
-			_ensemble.put(query, queryEnsemble);
+			ensemble.put(query, queryEnsemble);
+			_ensembleWeights.put(query, ensembleWeights);
 		}
-
+		return ensemble;
 	}
 
-	public void updatePredictions(BidBundle bundle) {
-
+	public HashMap<Query, LinkedList<AbstractBidToPrClick>> bordaCountCombiner() {
 		/*
-		 * Update Type I Predictions
+		 * Initialize Error Mappings
 		 */
-		HashMap<String,HashMap<Query,Double>> typeIPredictions = new HashMap<String, HashMap<Query,Double>>();
-		for(String name : _typeIUsableModels.keySet()) {
-			AbstractBidToPrClick model = _typeIUsableModels.get(name);
-			HashMap<Query,Double> predictions = new HashMap<Query, Double>();
-			for(Query query : _querySpace) {
-				predictions.put(query, model.getPrediction(query, bundle.getBid(query), new Ad()));
-			}
-			typeIPredictions.put(name, predictions);
+		HashMap<Query,ArrayList<ModelErrorPair>> modelErrorMap = new HashMap<Query, ArrayList<ModelErrorPair>>();
+		for(Query query : _querySpace) {
+			ArrayList<ModelErrorPair> modelErrorPairList = new ArrayList<ModelErrorPair>();
+			modelErrorMap.put(query, modelErrorPairList);
 		}
-		_typeIPredictions.put(bundle, typeIPredictions);
-
 
 		/*
-		 * Update Type II Predictions
+		 * Add Models
 		 */
-		HashMap<QueryType,HashMap<String,HashMap<Query,Double>>> typeIIPredictions = new HashMap<QueryType,HashMap<String,HashMap<Query,Double>>>();
-		for(QueryType queryType : QueryType.values()) {
-			HashMap<String, HashMap<Query, Double>> queryTypePredictions = new HashMap<String,HashMap<Query,Double>>();
-			HashMap<String, AbstractBidToPrClick> typeIIUsableModels = _typeIIUsableModels.get(queryType);
-			for(String name : typeIIUsableModels.keySet()) {
-				AbstractBidToPrClick model = typeIIUsableModels.get(name);
-				HashMap<Query,Double> predictions = new HashMap<Query, Double>();
-				for(Query query : _querySpace) {
-					if(queryType == query.getType()) {
-						predictions.put(query, model.getPrediction(query, bundle.getBid(query), new Ad()));
+		for(String name : _usableModels.keySet()) {
+			AbstractBidToPrClick model = _usableModels.get(name);
+			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _dailyModelError.get(name);
+			for(Query query : _querySpace) {
+				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
+				double error = 0.0;
+				LinkedList<Double> dailyModelError = typeIDailyModelError.get(query);
+				error += dailyModelError.get(dailyModelError.size() - 1);
+				if(!Double.isNaN(error)) {
+					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
+					modelErrorPairList.add(modelErrorPair);
+					while(modelErrorPairList.size() > ENSEMBLESIZE) {
+						Collections.sort(modelErrorPairList);
+						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
 				}
-				queryTypePredictions.put(name, predictions);
+				modelErrorMap.put(query, modelErrorPairList);
 			}
-			typeIIPredictions.put(queryType, queryTypePredictions);
 		}
-		_typeIIPredictions.put(bundle, typeIIPredictions);
 
-
-		/*
-		 * Update Type III Predictions
-		 */
-		HashMap<Query, HashMap<String, Double>> typeIIIPredictions = new HashMap<Query,HashMap<String,Double>>();
 		for(Query query : _querySpace) {
-			HashMap<String, AbstractBidToPrClick> typeIIIUsableModels = _typeIIIUsableModels.get(query);
-			HashMap<String, Double> queryPredictions = new HashMap<String, Double>();
-			for(String name : typeIIIUsableModels.keySet()) {
-				AbstractBidToPrClick model = typeIIIUsableModels.get(name);
-				queryPredictions.put(name, model.getPrediction(query, bundle.getBid(query), new Ad()));
+			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
+			for(int i = 0; i < modelErrorPairList.size(); i++) {
+				ModelErrorPair mep = modelErrorPairList.get(i);
+				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(mep.getName());
+				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
+				bordaCountList.add(ENSEMBLESIZE-i);
+				bordaCountMap.put(query, bordaCountList);
+				_bordaCount.put(mep.getName(), bordaCountMap);
 			}
-			typeIIIPredictions.put(query, queryPredictions);
 		}
-		_typeIIIPredictions.put(bundle, typeIIIPredictions);
 
 		/*
-		 * Update Ensemble Predictions
+		 * Initialize Ensemble
 		 */
-		HashMap<Query,Double> ensemblePredictions = new HashMap<Query, Double>();
-		for(Query query : _querySpace) {
-			double prediction = 0.0;
-			LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
-			for(AbstractBidToPrClick model : queryEnsemble) {
-				prediction += model.getPrediction(query, bundle.getBid(query), new Ad());
-			}
-			prediction /= queryEnsemble.size();
-			ensemblePredictions.put(query, prediction);
-		}
-		_ensemblePredictions.put(bundle, ensemblePredictions);
-	}
-
-
-	public void updateError(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
-
-		/*
-		 * Update Type I Error
-		 */
-		HashMap<String, HashMap<Query, Double>> typeIPredictions = _typeIPredictions.get(bundle);
-		for(String name : _typeIModels.keySet()) {
-			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _typeIDailyModelError.get(name);
-			HashMap<Query, Double> predictions = typeIPredictions.get(name);
-			for(Query query : _querySpace) {
-				LinkedList<Double> queryDailyError = typeIDailyModelError.get(query);
-				if(predictions != null) {
-					double error = predictions.get(query);
-					int imps = queryReport.getImpressions(query);
-					int clicks = queryReport.getClicks(query);
-					double conversions = salesReport.getConversions(query);
-					if(!(imps == 0 || clicks == 0)) {
-						if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
-							double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-							clicks = (int) (imps * multipliers[0]);
-						}
-						error -= clicks/imps;
-					}
-					error = error*error;
-					queryDailyError.add(error);
+		HashMap<Query, LinkedList<AbstractBidToPrClick>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPrClick>>();
+		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
+		for(Query query: _querySpace) {
+			LinkedList<AbstractBidToPrClick> queryEnsemble = new LinkedList<AbstractBidToPrClick>();
+			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
+			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
+			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
+				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
+				queryEnsemble.add(modelErrorPair.getModel());
+				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(modelErrorPair.getName());
+				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
+				int bound = NUMPASTDAYS;
+				if(bound > bordaCountList.size()) {
+					bound = bordaCountList.size();
+				}
+				double weight = 0;
+				for(int i = 0; i < bound; i++) {
+					weight += bordaCountList.get(bordaCountList.size()-1-i);
+				}
+				ensembleWeights.put(modelErrorPair.getName(), weight);
+				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
+				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
+				if(ensembleUseCount == null) {
+					ensembleMembers.put(modelErrorPair.getName(), 1);
 				}
 				else {
-					queryDailyError.add(Double.NaN);
+					ensembleMembers.put(modelErrorPair.getName(), ensembleUseCount+1);
 				}
-				typeIDailyModelError.put(query, queryDailyError);
 			}
-			_typeIDailyModelError.put(name, typeIDailyModelError);
+			ensemble.put(query, queryEnsemble);
+			_ensembleWeights.put(query, ensembleWeights);
 		}
-
-		/*
-		 * Update Type II Error
-		 */
-		HashMap<QueryType, HashMap<String, HashMap<Query, Double>>> typeIIPredictions = _typeIIPredictions.get(bundle);
-		for(QueryType queryType : QueryType.values()) {
-			HashMap<String, HashMap<Query, Double>> queryTypePredictions = typeIIPredictions.get(queryType);
-			HashMap<String, HashMap<Query, LinkedList<Double>>> typeIIDailyModelError = _typeIIDailyModelError.get(queryType);
-			for(String name : _typeIIModels.get(queryType).keySet()) {
-				HashMap<Query, Double> predictions = queryTypePredictions.get(name);
-				HashMap<Query, LinkedList<Double>> dailyError = typeIIDailyModelError.get(name);
-				for(Query query : _querySpace) {
-					if(queryType == query.getType()) {
-						LinkedList<Double> queryDailyError = dailyError.get(query);
-						if(predictions != null) {
-							double error = predictions.get(query);
-							int imps = queryReport.getImpressions(query);
-							int clicks = queryReport.getClicks(query);
-							double conversions = salesReport.getConversions(query);
-							if(!(imps == 0 || clicks == 0)) {
-								if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
-									double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-									clicks = (int) (imps * multipliers[0]);
-								}
-								error -= clicks/imps;
-							}
-							error = error*error;
-							queryDailyError.add(error);
-						}
-						else {
-							queryDailyError.add(Double.NaN);
-						}
-						dailyError.put(query, queryDailyError);
-					}
-				}
-				typeIIDailyModelError.put(name, dailyError);
-			}
-			_typeIIDailyModelError.put(queryType, typeIIDailyModelError);
-		}
-
-
-		/*
-		 * Update Type III Error
-		 */
-		HashMap<Query, HashMap<String, Double>> typeIIIPredictions = _typeIIIPredictions.get(bundle);
-		for(Query query : _querySpace) {
-			HashMap<String, Double> predictions = typeIIIPredictions.get(query);
-			HashMap<String, LinkedList<Double>> typeIIIDailyModelError = _typeIIIDailyModelError.get(query);
-			for(String name : _typeIIIModels.get(query).keySet()) {
-				Double prediction = predictions.get(name);
-				LinkedList<Double> queryDailyError = typeIIIDailyModelError.get(name);
-				if(prediction != null) {
-					double error = prediction;
-					int imps = queryReport.getImpressions(query);
-					int clicks = queryReport.getClicks(query);
-					double conversions = salesReport.getConversions(query);
-					if(!(imps == 0 || clicks == 0)) {
-						if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
-							double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-							clicks = (int) (imps * multipliers[0]);
-						}
-						error -= clicks/imps;
-					}
-					error = error*error;
-					queryDailyError.add(error);
-				}
-				else {
-					queryDailyError.add(Double.NaN);
-				}
-				typeIIIDailyModelError.put(name, queryDailyError);
-			}
-			_typeIIIDailyModelError.put(query, typeIIIDailyModelError);
-		}
-
-
-		/*
-		 * Update Ensemble Error
-		 */
-		HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
-		for(Query query : _querySpace) {
-			LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
-			double error = ensemblePredictions.get(query);
-			int imps = queryReport.getImpressions(query);
-			int clicks = queryReport.getClicks(query);
-			if(!(imps == 0 || clicks == 0)) {
-				error -= clicks/imps;
-			}
-			error = error*error;
-			queryEnsembleError.add(error);
-			_ensembleError.put(query, queryEnsembleError);
-		}
+		return ensemble;
 	}
 
 	@Override
 	public double getPrediction(Query query, double bid, Ad currentAd) {
 		double prediction = 0.0;
-		if(bid == 0 || Double.isNaN(bid)) {
+		if(bid == 0 || Double.isNaN(bid) || _ensemble == null) {
 			return prediction;
 		}
 		LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
 			if(Double.isNaN(_defaultModel.getPrediction(query, bid, currentAd))) {
-				return bid;
+				return 0;
 			}
 			return _defaultModel.getPrediction(query, bid, currentAd);
 		}
-		int nancounter = 0;
+		double totWeight = 0.0;
+		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
 		for(AbstractBidToPrClick model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid, currentAd);
-			if(Double.isNaN(pred)) {
-				nancounter++;
-			}
-			else {
-				prediction += model.getPrediction(query, bid, currentAd);
+			if(!Double.isNaN(pred)) {
+				double weight = ensembleWeights.get(model.toString());
+				prediction += pred*weight;
+				totWeight += weight;
 			}
 		}
-		if(nancounter != 0) {
-			//			System.out.println("\n\n\n\n\n CLICKPRnancounter: " + nancounter + "\n\n\n\n");
-		}
-		prediction /= (queryEnsemble.size()-nancounter);
+		prediction /= totWeight;
 		if(Double.isNaN(prediction) || prediction > bid || prediction < 0) {
-			return bid;
+			return 0;
 		}
 		return prediction;
 	}
@@ -763,11 +558,16 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	public AbstractModel getCopy() {
 		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, null);
 	}
-	
+
 	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer,component);
 	}
 
-	
+	@Override
+	public String toString() {
+		return "Ensemble";
+	}
+
+
 }

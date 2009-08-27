@@ -324,7 +324,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 			((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
 			((EnsembleBidToCPC) _bidToCPC).createEnsemble();
 
-			((EnsembleBidToPrClick) _bidToPrClick).updateError(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			((EnsembleBidToPrClick) _bidToPrClick).updateEnsemble(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
 
 		}
