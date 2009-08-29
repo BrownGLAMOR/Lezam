@@ -37,8 +37,8 @@ public class PredictionEvaluator {
 		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
 		int min = 454;
-		//		int max = 455;
-		int max = 496;
+		int max = 455;
+		//		int max = 496;
 		ArrayList<String> filenames = new ArrayList<String>();
 		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -99,6 +99,8 @@ public class PredictionEvaluator {
 				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
 				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				System.out.println(agents[agent]);
 				for(int i = 0; i < 57; i++) {
 					SalesReport salesReport = ourSalesReports.get(i);
 					QueryReport queryReport = ourQueryReports.get(i);
@@ -306,7 +308,7 @@ public class PredictionEvaluator {
 		}
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws RserveException {
 		PredictionEvaluator evaluator = new PredictionEvaluator();
 		Set<Query> _querySpace = new LinkedHashSet<Query>();
 		_querySpace.add(new Query(null, null));
@@ -330,29 +332,32 @@ public class PredictionEvaluator {
 		//		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
-			//			model = new EnsembleBidToPrClick(_querySpace, 20, 20, new BasicTargetModel("flat", "tv"), null);
-			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false, 2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			for(int perQuery = 0; perQuery < 2; perQuery++) {
-				for(int IDVar = 2; IDVar < 5; IDVar++) {
-					for(int numPrevDays = 10; numPrevDays <= 60; numPrevDays += 10) {
-						for(int weighted = 0; weighted < 2; weighted++) {
-							for(int robust = 0; robust < 2; robust++) {
-								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-										for(int powers = 0; powers < 2; powers++) {
-											if(!(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-													&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
-												model = new RegressionBidToPrClick(new RConnection(), _querySpace, intToBin(perQuery), IDVar, numPrevDays, new BasicTargetModel(null, null), intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
-												evaluator.clickPrPredictionChallenge(model);
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+			model = new EnsembleBidToPrClick(_querySpace, 3, 30, new BasicTargetModel("flat", "tv"), true, null);
+			System.out.println(model);
+			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,true,2,20,new BasicTargetModel("flat", "tv"),false,false,false,false,false);
+			evaluator.clickPrPredictionChallenge(model);
+
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 6; IDVar++) {
+			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(int robust = 0; robust < 2; robust++) {
+			//								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//										for(int powers = 0; powers < 2; powers++) {
+			//											if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//													&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+			//												model = new RegressionBidToPrClick(new RConnection(), _querySpace, intToBin(perQuery), IDVar, numPrevDays, new BasicTargetModel(null, null), intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+			//												evaluator.clickPrPredictionChallenge(model);
+			//											}
+			//										}
+			//									}
+			//								}
+			//							}
+			//						}
+			//					}
+			//				}
+			//			}
 
 			//			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,false);
 			//			model = new ConstantBidToCPC(0.1);
@@ -365,9 +370,6 @@ public class PredictionEvaluator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (ParseException e) {
-			e.printStackTrace();
-		} catch (RserveException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

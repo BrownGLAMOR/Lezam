@@ -43,6 +43,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	 */
 	protected HashMap<Query,LinkedList<AbstractBidToPrClick>> _ensemble;
 	protected HashMap<Query,LinkedList<Double>> _ensembleError;
+	protected LinkedList<Double> _RMSE;
 	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
 	protected HashMap<Query,HashMap<String,Integer>> _ensembleMembers;
 	protected HashMap<Query,HashMap<String,Double>> _ensembleWeights;
@@ -52,12 +53,13 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	 */
 	protected int NUMPASTDAYS = 5;
 	protected int ENSEMBLESIZE = 25;
+	private boolean _borda = true;
 
 	private RConnection rConnection;
 
 	private BasicTargetModel _targModel;
 
-	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
+	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
 		_bidBundles = new ArrayList<BidBundle>();
 
 		_querySpace = querySpace;
@@ -65,6 +67,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		ENSEMBLESIZE = ensembleSize;
 
 		_targModel = targModel;
+		
+		_borda = borda;
+
+		_RMSE = new LinkedList<Double>();
 
 		/*
 		 * Initialize Models
@@ -120,14 +126,14 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		 * Add Models
 		 */
 		for(int perQuery = 0; perQuery < 2; perQuery++) {
-			for(int IDVar = 2; IDVar < 5; IDVar++) {
+			for(int IDVar = 1; IDVar < 6; IDVar++) {
 				for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
 					for(int weighted = 0; weighted < 2; weighted++) {
 						for(int robust = 0; robust < 2; robust++) {
 							for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
 								for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
 									for(int powers = 0; powers < 2; powers++) {
-										if(!(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+										if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
 												&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
 											AbstractBidToPrClick model = new RegressionBidToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
 											addModel(model.toString(),model);
@@ -190,7 +196,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		//		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -230,7 +236,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	public void updateEnsemble(QueryReport queryReport, SalesReport salesReport, BidBundle bundle) {
 		boolean ensembleReady = updateError(queryReport, salesReport, bundle);
 		if(ensembleReady) {
-			_ensemble = meanPredictionCombiner();
+			if(_borda) {
+				_ensemble = bordaCountCombiner();
+			}
+			else {
+				_ensemble = meanPredictionCombiner();
+			}
 		}
 		else {
 			_ensemble = null;
@@ -243,7 +254,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		 */
 		HashMap<String, HashMap<Query, Double>> modelPredictions = _modelPredictions.get(bundle);
 		if(modelPredictions == null) {
-			System.out.println("No Predictions Yet");
+			//			System.out.println("No Predictions Yet");
 			return false;
 		}
 		else {
@@ -279,20 +290,31 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			 * Update Ensemble Error
 			 */
 			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
+			double MSE = 0.0;
 			for(Query query : _querySpace) {
 				LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
 				double error = ensemblePredictions.get(query);
-				System.out.println(query + " prediction: " + error);
+				//				System.out.println(query + " prediction: " + error);
 				int imps = queryReport.getImpressions(query);
 				int clicks = queryReport.getClicks(query);
 				if(!(imps == 0 || clicks == 0)) {
 					error -= clicks/imps;
 				}
 				error = error*error;
+				MSE += error;
 				queryEnsembleError.add(error);
-				System.out.println(query + " error: " + error);
+				//				System.out.println(query + " error: " + error);
 				_ensembleError.put(query, queryEnsembleError);
 			}
+			MSE /= _querySpace.size();
+			double RMSE = Math.sqrt(MSE);
+			_RMSE.add(RMSE);
+			double totRMSE = 0.0;
+			for(int i = 0; i < _RMSE.size(); i++) {
+				totRMSE += _RMSE.get(i);
+			}
+			double avgRMSE = totRMSE/_RMSE.size();
+			System.out.println(RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -328,8 +350,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				if(!Double.isNaN(error)) {
 					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
 					modelErrorPairList.add(modelErrorPair);
+					Collections.sort(modelErrorPairList);
 					while(modelErrorPairList.size() > ENSEMBLESIZE) {
-						Collections.sort(modelErrorPairList);
 						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
 				}
@@ -348,7 +370,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
 				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
-				queryEnsemble.add(modelErrorPair.getModel());
+				queryEnsemble.add((AbstractBidToPrClick) modelErrorPair.getModel());
 				ensembleWeights.put(modelErrorPair.getName(), 1.0);
 				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
@@ -361,6 +383,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 			ensemble.put(query, queryEnsemble);
 			_ensembleWeights.put(query, ensembleWeights);
+
+			//			System.out.println(query);
+			//			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
+			//				System.out.println("\t" + modelErrorPair);
+			//			}
 		}
 		return ensemble;
 	}
@@ -376,7 +403,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 
 		/*
-		 * Add Models
+		 * Sort Model Errors
 		 */
 		for(String name : _usableModels.keySet()) {
 			AbstractBidToPrClick model = _usableModels.get(name);
@@ -389,8 +416,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				if(!Double.isNaN(error)) {
 					ModelErrorPair modelErrorPair = new ModelErrorPair(name,model,error);
 					modelErrorPairList.add(modelErrorPair);
+					Collections.sort(modelErrorPairList);
 					while(modelErrorPairList.size() > ENSEMBLESIZE) {
-						Collections.sort(modelErrorPairList);
 						modelErrorPairList.remove(modelErrorPairList.size()-1);
 					}
 				}
@@ -398,6 +425,12 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 
+
+		/*
+		 * Update the Borda Count
+		 */
+
+		int len = 0;
 		for(Query query : _querySpace) {
 			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 			for(int i = 0; i < modelErrorPairList.size(); i++) {
@@ -405,43 +438,72 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(mep.getName());
 				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
 				bordaCountList.add(ENSEMBLESIZE-i);
+				if(len < bordaCountList.size()) {
+					len = bordaCountList.size();
+				}
 				bordaCountMap.put(query, bordaCountList);
 				_bordaCount.put(mep.getName(), bordaCountMap);
 			}
 		}
 
 		/*
-		 * Initialize Ensemble
+		 * For those models that weren't in the top ENSEMBLESIZE have a borda count of 0
+		 */
+		for(String modelName : _bordaCount.keySet()) {
+			HashMap<Query, LinkedList<Integer>> bordaCount = _bordaCount.get(modelName);
+			for(Query query : _querySpace) {
+				LinkedList<Integer> bordaList = bordaCount.get(query);
+				if(bordaList.size() == len-1) {
+					bordaList.add(0);
+					bordaCount.put(query, bordaList);
+				}
+				else if(bordaList.size() != len) {
+					throw new RuntimeException("Error in Borda Count");
+				}
+			}
+			_bordaCount.put(modelName, bordaCount);
+		}
+
+		/*
+		 * Initialize Ensemble and Weights
 		 */
 		HashMap<Query, LinkedList<AbstractBidToPrClick>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPrClick>>();
 		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
 		for(Query query: _querySpace) {
 			LinkedList<AbstractBidToPrClick> queryEnsemble = new LinkedList<AbstractBidToPrClick>();
-			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
-			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
-				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
-				queryEnsemble.add(modelErrorPair.getModel());
-				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(modelErrorPair.getName());
-				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
+
+			ArrayList<ModelBordaPair> modelBordaList = new ArrayList<ModelBordaPair>();
+			for(String modelName : _bordaCount.keySet()) {
+				HashMap<Query, LinkedList<Integer>> bordaCount = _bordaCount.get(modelName);
+				LinkedList<Integer> bordaCountList = bordaCount.get(query);
 				int bound = NUMPASTDAYS;
 				if(bound > bordaCountList.size()) {
 					bound = bordaCountList.size();
 				}
+
 				double weight = 0;
 				for(int i = 0; i < bound; i++) {
 					weight += bordaCountList.get(bordaCountList.size()-1-i);
 				}
-				ensembleWeights.put(modelErrorPair.getName(), weight);
-				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
-				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
-				if(ensembleUseCount == null) {
-					ensembleMembers.put(modelErrorPair.getName(), 1);
-				}
-				else {
-					ensembleMembers.put(modelErrorPair.getName(), ensembleUseCount+1);
-				}
+				modelBordaList.add(new ModelBordaPair(modelName, _models.get(modelName),weight));
 			}
+			Collections.sort(modelBordaList);
+
+			//			System.out.println(query);
+			//			for(ModelBordaPair modelBordaPair : modelBordaList) {
+			//				System.out.println("\t" + modelBordaPair);
+			//			}
+
+			int i = 0;
+			for(ModelBordaPair modelBordaPair : modelBordaList) {
+				if(i < ENSEMBLESIZE) {
+					queryEnsemble.add((AbstractBidToPrClick) modelBordaPair.getModel());
+					ensembleWeights.put(modelBordaPair.getName(), modelBordaPair.getCount());
+				}
+				i++;
+			}
+
 			ensemble.put(query, queryEnsemble);
 			_ensembleWeights.put(query, ensembleWeights);
 		}
@@ -465,6 +527,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
 		for(AbstractBidToPrClick model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid, currentAd);
+//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
 			if(!Double.isNaN(pred)) {
 				double weight = ensembleWeights.get(model.toString());
 				prediction += pred*weight;
@@ -472,9 +535,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 		prediction /= totWeight;
-		if(Double.isNaN(prediction) || prediction > bid || prediction < 0) {
+		if(Double.isNaN(prediction) || prediction < 0) {
 			return 0;
 		}
+//		System.out.println("Overall Prediction: " + prediction);
 		return prediction;
 	}
 
@@ -506,10 +570,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	public class ModelErrorPair implements Comparable<ModelErrorPair> {
 
 		private String _name;
-		private AbstractBidToPrClick _model;
+		private AbstractModel _model;
 		private double _error;
 
-		public ModelErrorPair(String name, AbstractBidToPrClick model, double error) {
+		public ModelErrorPair(String name, AbstractModel model, double error) {
 			_name = name;
 			_model = model;
 			_error = error;
@@ -523,11 +587,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			_name = name;
 		}
 
-		public AbstractBidToPrClick getModel() {
+		public AbstractModel getModel() {
 			return _model;
 		}
 
-		public void setModel(AbstractBidToPrClick model) {
+		public void setModel(AbstractModel model) {
 			_model = model;
 		}
 
@@ -552,11 +616,71 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				return 0;
 			}
 		}
+
+		public String toString() {
+			return _name + ": " + _error;
+		}
+	}
+
+
+	public class ModelBordaPair implements Comparable<ModelBordaPair> {
+
+		private String _name;
+		private AbstractModel _model;
+		private double _bordaCount;
+
+		public ModelBordaPair(String name, AbstractModel model, double bordaCount) {
+			_name = name;
+			_model = model;
+			_bordaCount = bordaCount;
+		}
+
+		public String getName() {
+			return _name;
+		}
+
+		public void setName(String name) {
+			_name = name;
+		}
+
+		public AbstractModel getModel() {
+			return _model;
+		}
+
+		public void setModel(AbstractModel  model) {
+			_model = model;
+		}
+
+		public double getCount() {
+			return _bordaCount;
+		}
+
+		public void setError(double error) {
+			_bordaCount = error;
+		}
+
+		public int compareTo(ModelBordaPair modelBordaPair) {
+			double thisBorda = this._bordaCount;
+			double otherBorda = modelBordaPair.getCount();
+			if(thisBorda < otherBorda) {
+				return 1;
+			}
+			if(otherBorda < thisBorda) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}
+
+		public String toString() {
+			return _name + ": " + _bordaCount;
+		}
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, null);
+		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, null);
 	}
 
 	@Override
@@ -566,7 +690,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public String toString() {
-		return "Ensemble";
+		return "EnsembleBidToPrClick(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ")";
 	}
 
 

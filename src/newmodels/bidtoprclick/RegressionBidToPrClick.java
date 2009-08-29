@@ -577,7 +577,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 					model += ")";
 
-					//					System.out.println(model);				
+//					System.out.println(model);				
 					c.voidEval(model);
 					double[] coeff = c.eval("coefficients(model)").asDoubles();
 					//				for(int i = 0 ; i < coeff.length; i++)
@@ -639,7 +639,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	public void updatePredictions(BidBundle otherBidBundle) {
 		//Not used in this class
 	}
-	
+
 	@Override
 	public String toString() {
 		return "RegressionBidToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
