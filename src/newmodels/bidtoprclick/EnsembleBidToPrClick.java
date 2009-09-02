@@ -265,8 +265,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					LinkedList<Double> queryDailyError = dailyModelError.get(query);
 					if(predictions != null) {
 						double error = predictions.get(query);
-						int imps = queryReport.getImpressions(query);
-						int clicks = queryReport.getClicks(query);
+						double imps = queryReport.getImpressions(query);
+						double clicks = queryReport.getClicks(query);
 						double conversions = salesReport.getConversions(query);
 						if(!(imps == 0 || clicks == 0)) {
 							//							if(bundle.getAd(query) != null && !bundle.getAd(query).isGeneric()) {
@@ -295,8 +295,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
 				double error = ensemblePredictions.get(query);
 				//				System.out.println(query + " prediction: " + error);
-				int imps = queryReport.getImpressions(query);
-				int clicks = queryReport.getClicks(query);
+				double imps = queryReport.getImpressions(query);
+				double clicks = queryReport.getClicks(query);
 				if(!(imps == 0 || clicks == 0)) {
 					error -= clicks/imps;
 				}
@@ -532,6 +532,9 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				double weight = ensembleWeights.get(model.toString());
 				prediction += pred*weight;
 				totWeight += weight;
+			}
+			else {
+				System.out.println("DINKLEBERRIES");
 			}
 		}
 		prediction /= totWeight;
