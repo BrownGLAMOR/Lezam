@@ -226,8 +226,9 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		if(clickpr > bound) {
 			return bound;
 		}
-		if(clickpr < 0) {
-			return 0;
+		
+		if(clickpr < 0 || Double.isNaN(clickpr)) {
+			return 0.0;
 		}
 
 		return clickpr;

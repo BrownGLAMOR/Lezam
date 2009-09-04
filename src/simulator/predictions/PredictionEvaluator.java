@@ -33,14 +33,18 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PredictionEvaluator {
 
-	private boolean _ignoreNan = true;
+	private boolean _ignoreNan = false;
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
+		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
-		int min = 454;
-		int max = 455;
+		//		int min = 454;
+		//		int max = 455;
 		//		int max = 496;
+
+		String baseFile = "/Users/jordanberg/Desktop/games/game-";
+		int min = 1;
+		int max = 9;
 		ArrayList<String> filenames = new ArrayList<String>();
 		//		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -175,7 +179,6 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		//		System.out.println("Average RMSE: " + (avgRMSE/RMSECounter));
 		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
 	}
 
@@ -340,17 +343,17 @@ public class PredictionEvaluator {
 		//		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
-			//			model = new EnsembleBidToPrClick(_querySpace, 10, 15, new BasicTargetModel("flat", "tv"), true, true, null);
+			//			model = new EnsembleBidToPrClick(_querySpace, 5, 30, new BasicTargetModel("flat", "tv"), false, true);
 			//			System.out.println(model);
 			System.out.println(evaluator._ignoreNan);
-			//									model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
+			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			//			evaluator.clickPrPredictionChallenge(model);
 
 			for(int perQuery = 0; perQuery < 2; perQuery++) {
 				for(int IDVar = 1; IDVar < 6; IDVar++) {
-					for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
+					for(int numPrevDays = 10; numPrevDays <= 60; numPrevDays += 10) {
 						for(int weighted = 0; weighted < 2; weighted++) {
-							for(int robust = 0; robust < 2; robust++) {
+							for(int robust = 0; robust < 1; robust++) {
 								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
 									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
 										for(int powers = 0; powers < 2; powers++) {

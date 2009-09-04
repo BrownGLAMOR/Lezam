@@ -7,10 +7,8 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.targeting.BasicTargetModel;
 
-import org.jfree.base.modules.DefaultModuleInfo;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
@@ -18,7 +16,6 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class EnsembleBidToPrClick extends AbstractBidToPrClick {
@@ -60,7 +57,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 	private BasicTargetModel _targModel;
 
-	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN, HashMap<Query,HashMap<String,Integer>> ensembleMembers) {
+	public EnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
 		_bidBundles = new ArrayList<BidBundle>();
 
 		_querySpace = querySpace;
@@ -96,15 +93,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 		_ensemblePredictions = new HashMap<BidBundle, HashMap<Query,Double>>();
 
-		if(ensembleMembers == null) {
-			_ensembleMembers = new HashMap<Query, HashMap<String,Integer>>();
-			for(Query query : _querySpace) {
-				HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
-				_ensembleMembers.put(query, ensembleMember);
-			}
-		}
-		else {
-			_ensembleMembers = ensembleMembers;
+		_ensembleMembers = new HashMap<Query, HashMap<String,Integer>>();
+		for(Query query : _querySpace) {
+			HashMap<String,Integer> ensembleMember = new HashMap<String, Integer>();
+			_ensembleMembers.put(query, ensembleMember);
 		}
 
 		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
@@ -120,7 +112,6 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 
 		initializeEnsemble();
-
 	}
 
 	public void initializeEnsemble() {
@@ -131,7 +122,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			for(int IDVar = 1; IDVar < 6; IDVar++) {
 				for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
 					for(int weighted = 0; weighted < 2; weighted++) {
-						for(int robust = 0; robust < 2; robust++) {
+						//Robust regressions don't work well
+						for(int robust = 0; robust < 1; robust++) {
 							for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
 								for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
 									for(int powers = 0; powers < 2; powers++) {
@@ -149,35 +141,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 			}
 		}
 	}
-
-	public boolean intToBin(int x) {
-		if(x == 0) {
-			return false;
-		}
-		else if(x == 1) {
-			return true;
-		}
-		else {
-			throw new RuntimeException("intToBin can only be called with 0 or 1");
-		}
-	}
-
-	public void addModel(String name, AbstractBidToPrClick model) {
-		_models.put(name,model);
-		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
-		HashMap<Query, LinkedList<Integer>> bordaCount = new HashMap<Query, LinkedList<Integer>>();
-		for(Query query : _querySpace) {
-			LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
-			dailyModelError.put(query,dailyModelErrorList);
-
-			LinkedList<Integer> bordaCountList = new LinkedList<Integer>();
-			bordaCount.put(query, bordaCountList);
-		}
-		_dailyModelError.put(name,dailyModelError);
-		_bordaCount.put(name,bordaCount);
-	}
-
-
+	
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		_bidBundles.add(bidBundle);
@@ -205,7 +169,6 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		return ensembleUsable;
 	}
 
-	@Override
 	public void updatePredictions(BidBundle bundle) {
 
 		/*
@@ -352,9 +315,75 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println(RMSE + ", " + avgRMSE);
+			//			System.out.println(RMSE + ", " + avgRMSE);
 			return true;
 		}
+	}
+	
+	@Override
+	public double getPrediction(Query query, double bid, Ad currentAd) {
+		double prediction = 0.0;
+		if(bid == 0 || Double.isNaN(bid) || _ensemble == null) {
+			return prediction;
+		}
+		LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
+		if(queryEnsemble.size() == 0) {
+			return 0;
+		}
+		double totWeight = 0.0;
+		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
+		for(AbstractBidToPrClick model : queryEnsemble) {
+			double pred = model.getPrediction(query, bid, currentAd);
+			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
+			if(!Double.isNaN(pred)) {
+				double weight = ensembleWeights.get(model.toString());
+				prediction += pred*weight;
+				totWeight += weight;
+			}
+		}
+		prediction /= totWeight;
+		if(Double.isNaN(prediction) || prediction < 0) {
+			return 0;
+		}
+		//		System.out.println("Overall Prediction: " + prediction);
+		return prediction;
+	}
+	
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		_targModel = new BasicTargetModel(manufacturer,component);
+	}
+
+	@Override
+	public String toString() {
+		return "EnsembleBidToPrClick(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
+	}
+
+	public boolean intToBin(int x) {
+		if(x == 0) {
+			return false;
+		}
+		else if(x == 1) {
+			return true;
+		}
+		else {
+			throw new RuntimeException("intToBin can only be called with 0 or 1");
+		}
+	}
+
+	public void addModel(String name, AbstractBidToPrClick model) {
+		_models.put(name,model);
+		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
+		HashMap<Query, LinkedList<Integer>> bordaCount = new HashMap<Query, LinkedList<Integer>>();
+		for(Query query : _querySpace) {
+			LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
+			dailyModelError.put(query,dailyModelErrorList);
+
+			LinkedList<Integer> bordaCountList = new LinkedList<Integer>();
+			bordaCount.put(query, bordaCountList);
+		}
+		_dailyModelError.put(name,dailyModelError);
+		_bordaCount.put(name,bordaCount);
 	}
 
 	public HashMap<Query, LinkedList<AbstractBidToPrClick>> meanPredictionCombiner() {
@@ -554,58 +583,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		return ensemble;
 	}
 
-	@Override
-	public double getPrediction(Query query, double bid, Ad currentAd) {
-		double prediction = 0.0;
-		if(bid == 0 || Double.isNaN(bid) || _ensemble == null) {
-			return prediction;
-		}
-		LinkedList<AbstractBidToPrClick> queryEnsemble = _ensemble.get(query);
-		if(queryEnsemble.size() == 0) {
-			return 0;
-		}
-		double totWeight = 0.0;
-		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
-		for(AbstractBidToPrClick model : queryEnsemble) {
-			double pred = model.getPrediction(query, bid, currentAd);
-			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
-			if(!Double.isNaN(pred)) {
-				double weight = ensembleWeights.get(model.toString());
-				prediction += pred*weight;
-				totWeight += weight;
-			}
-		}
-		prediction /= totWeight;
-		if(Double.isNaN(prediction) || prediction < 0) {
-			return 0;
-		}
-		//		System.out.println("Overall Prediction: " + prediction);
-		return prediction;
-	}
-
 	public HashMap<Query, HashMap<String, Integer>> getEnsembleMembers() {
 		return _ensembleMembers;
-	}
-
-	public void printEnsembleMemberSummary(int numGames) {
-		double tot = 0;
-		for(Query query : _querySpace) {
-			System.out.println(query);
-			HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
-			double total = 0;
-			for(String name : ensembleMembers.keySet()) {
-				Integer ensembleUseCount = ensembleMembers.get(name);
-				total += ensembleUseCount;
-			}
-			total /= ENSEMBLESIZE;
-			for(String name : ensembleMembers.keySet()) {
-				Integer ensembleUseCount = (int) (ensembleMembers.get(name) / ((double)numGames));
-				System.out.println("Name: " + name + " Use: " + (ensembleUseCount/total));
-			}
-			tot += ensembleMembers.size();
-		}
-		tot /= 16;
-		System.out.println("Avg num members users: " + tot);
 	}
 
 	public class ModelErrorPair implements Comparable<ModelErrorPair> {
@@ -719,20 +698,8 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		}
 	}
 
-	@Override
 	public AbstractModel getCopy() {
-		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN, null);
+		return new EnsembleBidToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN);
 	}
-
-	@Override
-	public void setSpecialty(String manufacturer, String component) {
-		_targModel = new BasicTargetModel(manufacturer,component);
-	}
-
-	@Override
-	public String toString() {
-		return "EnsembleBidToPrClick(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
-	}
-
 
 }

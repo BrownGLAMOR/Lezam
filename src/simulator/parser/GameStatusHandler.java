@@ -188,6 +188,16 @@ public class GameStatusHandler {
 					 * This ensures we don't get too many
 					 */
 					if(messageDay == bidbundlelist.size()) {
+						/*
+						 * Check for NaN's and Negative bids which
+						 * are replaced by our bid from last round
+						 */
+						for(Query query : bidbundletemp.keys()) {
+							double bid = bidbundletemp.getBid(query);
+							if(Double.isNaN(bid) || bid <  0) {
+								bidbundletemp.addQuery(query, bidbundlelist.get(bidbundlelist.size()-1).getBid(query), bidbundletemp.getAd(query), bidbundletemp.getDailyLimit(query));
+							}
+						}
 						bidbundlelist.addLast(bidbundletemp);
 					}
 					/*
@@ -195,6 +205,16 @@ public class GameStatusHandler {
 					 */
 					else {
 						bidbundlelist.removeLast();
+						/*
+						 * Check for NaN's and Negative bids which
+						 * are replaced by our bid from last round
+						 */
+						for(Query query : bidbundletemp.keys()) {
+							double bid = bidbundletemp.getBid(query);
+							if(Double.isNaN(bid) || bid <  0) {
+								bidbundletemp.addQuery(query, bidbundlelist.get(bidbundlelist.size()-1).getBid(query), bidbundletemp.getAd(query), bidbundletemp.getDailyLimit(query));
+							}
+						}
 						bidbundlelist.add(bidbundletemp);
 					}
 					bidBundles.put(name, bidbundlelist);
