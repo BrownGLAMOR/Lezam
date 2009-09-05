@@ -17,7 +17,8 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
-import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postoprclick.AbstractPosToPrClick;
+import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.targeting.BasicTargetModel;
 
 
@@ -44,7 +45,8 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/games/game-";
 		int min = 1;
-		int max = 9;
+		int max = 2;
+//		int max = 9;
 		ArrayList<String> filenames = new ArrayList<String>();
 		//		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
@@ -53,7 +55,136 @@ public class PredictionEvaluator {
 		return filenames;
 	}
 
-	public void clickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
+	public void posToClickPrPredictionChallenge(AbstractPosToPrClick baseModel) throws IOException, ParseException {
+		/*
+		 * All these maps they are like this: <fileName<agentName,error>>
+		 */
+		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		ArrayList<String> filenames = getGameStrings();
+		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
+			String filename = filenames.get(fileIdx);
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			/*
+			 * One map for each advertiser
+			 */
+			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
+			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
+
+			//Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+
+			for(int agent = 0; agent < agents.length; agent++) {
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
+				AbstractPosToPrClick model = (AbstractPosToPrClick) baseModel.getCopy();
+				model.setSpecialty(advInfo.getManufacturerSpecialty(),advInfo.getComponentSpecialty());
+
+				double ourTotError = 0;
+				double ourTotActual = 0;
+				int ourTotErrorCounter = 0;
+
+				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
+				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
+				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+
+				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
+				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				//				System.out.println(agents[agent]);
+				for(int i = 0; i < 57; i++) {
+					SalesReport salesReport = ourSalesReports.get(i);
+					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
+
+					model.updateModel(queryReport, salesReport, bidBundle);
+					if(i >= 5) {
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double bid = otherBidBundle.getBid(q);
+							if(bid != 0) {
+								double error = model.getPrediction(q, otherQueryReport.getPosition(q), otherBidBundle.getAd(q));
+								double clicks = otherQueryReport.getClicks(q);
+								double imps = otherQueryReport.getImpressions(q);
+								double clickPr = 0;
+								if(!(clicks == 0 || imps == 0)) {
+									clickPr = clicks/imps;
+								}
+								else {
+									if(_ignoreNan ) {
+										continue;
+									}
+								}
+								error -= clickPr;
+								error = error*error;
+								ourTotActual += clickPr;
+								ourTotError += error;
+								ourTotErrorCounter++;
+							}
+						}
+						model.updatePredictions(otherQueryReport);
+					}
+				}
+				ourTotErrorMap.put(agents[agent],ourTotError);
+				ourTotActualMap.put(agents[agent],ourTotActual);
+				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+
+			}
+
+			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
+			ourTotActualMegaMap.put(filename,ourTotActualMap);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		double avgRMSE = 0.0;
+		int RMSECounter = 0;
+		int dataPointCounter = 0;
+		//		System.out.println("Model: " + baseModel);
+		for(String file : filenames) {
+			//			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				//				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				dataPointCounter += totErrorCounter;
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				avgRMSE += RMSE;
+				//				System.out.println("\t\t RMSE: " + RMSE);
+				RMSECounter++;
+			}
+		}
+		//		System.out.println("Data Points: " + dataPointCounter);
+		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+	}
+	
+	public void bidToClickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -344,8 +475,8 @@ public class PredictionEvaluator {
 		try {
 			double start = System.currentTimeMillis();
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
-			evaluator.clickPrPredictionChallenge(model);
+//			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
+//			evaluator.clickPrPredictionChallenge(model);
 
 			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
 			//				for(int IDVar = 1; IDVar < 6; IDVar++) {
@@ -372,7 +503,43 @@ public class PredictionEvaluator {
 			//			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,false);
 			//			model = new ConstantBidToCPC(0.1);
 			//			evaluator.CPCPredictionChallenge(model);
+			
+			ArrayList<RegressionPosToPrClick> modelList = new ArrayList<RegressionPosToPrClick>();
+			RConnection rConnection = new RConnection();
+			BasicTargetModel _targModel = new BasicTargetModel(null, null);
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 25, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 20, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 30, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 35, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 40, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 60, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 55, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 45, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 50, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 45, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 40, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 35, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 30, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 5, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 25, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 50, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 30, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 25, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 20, _targModel, true, false, false, false, false));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 45, _targModel, false, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, true, false, true, false, true));
+			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, true, false, true, false, true));
 
+			for(RegressionPosToPrClick tempModel : modelList) {
+				evaluator.posToClickPrPredictionChallenge(tempModel);
+			}
+			
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			System.out.println("This took " + (elapsed / 1000) + " seconds");

@@ -92,7 +92,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	 */
 	public double getPrediction(Query query, double currentPos, Ad currentAd){
 		double[] coeff = _coefficients.get(query);
-		if(coeff == null) {
+		if(coeff == null || Double.isNaN(currentPos)) {
 			return 0.0;
 		}
 

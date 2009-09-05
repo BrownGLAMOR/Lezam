@@ -48,7 +48,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	private boolean _robust;
 	private HashMap<Query, double[]> _coefficients;
 	private boolean _perQuery;
-	private boolean _targetModification = true;
+	private boolean _targetModification = false;
 
 	public RegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
