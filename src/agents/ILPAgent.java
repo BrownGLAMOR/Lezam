@@ -24,10 +24,10 @@ import newmodels.bidtoprconv.TrinaryPrConversion;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.bidtoslot.WrapperIlkeBid2Slot;
+import newmodels.postoprclick.AbstractPosToPrClick;
+import newmodels.postoprclick.DetBasicSlotToPrClick;
 import newmodels.slottocpc.AbstractSlotToCPCModel;
 import newmodels.slottocpc.LinearSlotToCPC;
-import newmodels.slottoprclick.AbstractSlotToPrClick;
-import newmodels.slottoprclick.DetBasicSlotToPrClick;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
 import simulator.models.PerfectBidToCPC;
@@ -84,7 +84,7 @@ public class ILPAgent extends SimAbstractAgent{
 	/// Models extra used
 	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels_simple;	// I've made two models for bidding, one is simple
 	private HashMap<Query, AbstractBidToSlotModel> _bidToSlotModels_ilke;	// and the second takes some days until it is good enough
-	private HashMap<Query, AbstractSlotToPrClick> _slotToClickPrModels;
+	private HashMap<Query, AbstractPosToPrClick> _slotToClickPrModels;
 	private HashMap<Query, AbstractSlotToCPCModel> _slotToCPCModels;	// a simple CPC model, but later the agent is using the better slot2bid
 	
 	
@@ -541,7 +541,7 @@ public class ILPAgent extends SimAbstractAgent{
 		_bidToSlotModels_simple = new HashMap<Query, AbstractBidToSlotModel>();
 		_bidToSlotModels_ilke = new HashMap<Query, AbstractBidToSlotModel>();
 		_bidToCPCModels = new HashMap<Query, AbstractBidToCPC>();
-		_slotToClickPrModels = new HashMap<Query, AbstractSlotToPrClick>();
+		_slotToClickPrModels = new HashMap<Query, AbstractPosToPrClick>();
 		_convPrModel = new HashMap<Product,HashMap<UserState, AbstractBidToPrConv>>();
 		_slotToCPCModels = new HashMap<Query, AbstractSlotToCPCModel>();
 		_bidToClickPrModels = new HashMap<Query, AbstractBidToPrClick>();
@@ -570,7 +570,7 @@ public class ILPAgent extends SimAbstractAgent{
 			models.add(bidToPrClick);
 			_bidToClickPrModels.put(query,bidToPrClick);
 
-			AbstractSlotToPrClick slotToPrClick = new DetBasicSlotToPrClick(query);
+			AbstractPosToPrClick slotToPrClick = new DetBasicSlotToPrClick(query);
 			models.add(slotToPrClick);
 			_slotToClickPrModels.put(query,slotToPrClick);
 			
@@ -622,8 +622,8 @@ public class ILPAgent extends SimAbstractAgent{
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				bidToPrClick.updateModel(queryReport, salesReport);
 			}
-			else if(model instanceof AbstractSlotToPrClick) {
-				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
+			else if(model instanceof AbstractPosToPrClick) {
+				AbstractPosToPrClick slotToPrClick = (AbstractPosToPrClick) model;
 				slotToPrClick.updateModel(queryReport, salesReport);
 			}
 			else if(model instanceof AbstractSlotToCPCModel) {
@@ -643,7 +643,7 @@ public class ILPAgent extends SimAbstractAgent{
 //		_convPrModel = new HashMap<Product, HashMap<UserState,AbstractPrConversionModel>>();	// probability of a conversion
 		_bidToSlotModels_simple = new HashMap<Query, AbstractBidToSlotModel>();	// I've made two models for bidding, one is simple
 		_bidToSlotModels_ilke = new HashMap<Query, AbstractBidToSlotModel>();	// and the second takes some days until it is good enough
-		_slotToClickPrModels = new HashMap<Query, AbstractSlotToPrClick>();
+		_slotToClickPrModels = new HashMap<Query, AbstractPosToPrClick>();
 //		_slotToCPCModels = new HashMap<Query, AbstractSlotToCPCModel>();
 		
 //		for (Query q : _querySpace) {
@@ -685,8 +685,8 @@ public class ILPAgent extends SimAbstractAgent{
 				_bidToClickPrModels.put(bidToPrClick.getQuery(), bidToPrClick);
 				_fout.write("\n" + bidToPrClick.getQuery() + "updating bid->click " + bidToPrClick.getClass());
 		}
-			else if(model instanceof AbstractSlotToPrClick) {
-				AbstractSlotToPrClick slotToPrClick = (AbstractSlotToPrClick) model;
+			else if(model instanceof AbstractPosToPrClick) {
+				AbstractPosToPrClick slotToPrClick = (AbstractPosToPrClick) model;
 				_slotToClickPrModels.put(slotToPrClick.getQuery(), slotToPrClick);
 				_fout.write("\n" + slotToPrClick.getQuery() + "updating slot->click " + slotToPrClick.getClass());
 			}

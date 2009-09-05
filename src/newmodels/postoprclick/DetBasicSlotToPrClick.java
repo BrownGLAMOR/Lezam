@@ -1,4 +1,15 @@
-package newmodels.slottoprclick;
+package newmodels.postoprclick;
+
+/*
+ * TODO
+ * 
+ * Build this into basic deterministic slot to pr click model
+ * 
+ * allow setting our adv effect and cont prob per query all independently!
+ * 
+ * build in defaults
+ */
+
 
 import java.util.Random;
 
@@ -6,7 +17,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class DetBasicSlotToPrClick extends AbstractSlotToPrClick{
+public class DetBasicSlotToPrClick extends AbstractPosToPrClick{
 
 	private Query _query;
 	private int F0 = 0;

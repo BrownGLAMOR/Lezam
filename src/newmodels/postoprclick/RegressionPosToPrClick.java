@@ -1,4 +1,4 @@
-package newmodels.bidtoprclick;
+package newmodels.postoprclick;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,14 +21,14 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 /**
- * @author jberg
+ * @author afoo & jberg
  *
  */
 
-public class RegressionBidToPrClick extends AbstractBidToPrClick {
+public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 	private int DEBUG = 0;
-	protected HashMap<Query,ArrayList<Double>> _bids;
+	protected HashMap<Query,ArrayList<Double>> _pos;
 	HashMap<Query,ArrayList<Double>> _clickPrs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
@@ -38,7 +38,6 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	private int _IDVar;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
 	private int _numPrevDays;	//How many days worth of data to include in the regression
 	private ArrayList<QueryReport> _queryReports;
-	private ArrayList<BidBundle> _bidBundles;
 	private boolean _queryIndicators;
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
@@ -48,15 +47,16 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	private boolean _robust;
 	private HashMap<Query, double[]> _coefficients;
 	private boolean _perQuery;
+	private double _outOfAuctionPos = 6.0;
 	private boolean _targetModification = true;
 
-	public RegressionBidToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+
+	public RegressionPosToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
-		_bids = new HashMap<Query,ArrayList<Double>>();
+		_pos = new HashMap<Query,ArrayList<Double>>();
 		_clickPrs = new HashMap<Query,ArrayList<Double>>();
 		_coefficients = new HashMap<Query, double[]>();
 		_queryReports = new ArrayList<QueryReport>();
-		_bidBundles = new ArrayList<BidBundle>();
 		_querySpace = queryspace;
 		_numQueries = _querySpace.size();
 		_perQuery = perQuery;
@@ -70,9 +70,9 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		_targModel = targModel;
 
 		for(Query query : _querySpace) {
-			ArrayList<Double> bids = new ArrayList<Double>();
+			ArrayList<Double> pos = new ArrayList<Double>();
 			ArrayList<Double> clickPrs = new ArrayList<Double>();
-			_bids.put(query, bids);
+			_pos.put(query, pos);
 			_clickPrs.put(query, clickPrs);
 			_coefficients.put(query, null);
 		}
@@ -90,7 +90,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentBid, Ad currentAd){
+	public double getPrediction(Query query, double currentPos, Ad currentAd){
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
 			return 0.0;
@@ -100,15 +100,19 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		/*
 		 * oldest - > newest
 		 */
-		List<Double> bids = new ArrayList<Double>();
+		List<Double> pos = new ArrayList<Double>();
 		for(int i = 0; i < _IDVar - 2; i++) {
-			bids.add(_bidBundles.get(_bidBundles.size() - 1 - (_IDVar - 3 -i)).getBid(query));
+			double tempPos = _queryReports.get(_queryReports.size() - 1 - (_IDVar - 3 -i)).getPosition(query);
+			if(Double.isNaN(tempPos)) {
+				tempPos = _outOfAuctionPos ;
+			}
+			pos.add(tempPos);
 		}
-		bids.add(currentBid);
+		pos.add(currentPos);
 
 		List<Double> clickPrs = new ArrayList<Double>();
 		for(int i = _IDVar-3; i >= 0; i --) {
-			double clickPr = 0;
+			double clickPr = 0.0;
 			double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
 			double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
 			if(imps != 0 && clicks != 0) {
@@ -179,19 +183,19 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 			predCounter += 2;
 		}
 
-		for(int i = 0; i < bids.size(); i++) {
-			double bid = bids.get(i);
-			prediction += coeff[i+predCounter] * bid;
+		for(int i = 0; i < pos.size(); i++) {
+			double tempPos = pos.get(i);
+			prediction += coeff[i+predCounter] * tempPos;
 			if(_powers) {
-				if(i == bids.size() - 1) {
+				if(i == pos.size() - 1) {
 					predCounter++;
-					prediction += coeff[i+predCounter] * bid * bid;
+					prediction += coeff[i+predCounter] * tempPos * tempPos;
 					predCounter++;
-					prediction += coeff[i+predCounter] * bid * bid * bid;
+					prediction += coeff[i+predCounter] * tempPos * tempPos * tempPos;
 				}
 			}
 		}
-		predCounter += bids.size();
+		predCounter += pos.size();
 		for(int i = 0; i < clickPrs.size(); i++) {
 			double clickPr = clickPrs.get(i);
 			prediction += coeff[i+predCounter] * clickPr;
@@ -240,34 +244,30 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 
 		double start = System.currentTimeMillis();
-
 		_queryReports.add(queryReport);
-		_bidBundles.add(bidBundle);
-
-		if(_bidBundles.size() != _queryReports.size()) {
-			throw new RuntimeException("Uneven number of bidbundles and query reports");
-		}
 
 		/*
 		 * Remove the oldest points from the model
 		 */
-		while(_bidBundles.size() > _numPrevDays) {
-			_bidBundles.remove(0);
+		while(_queryReports.size() > _numPrevDays) {
 			_queryReports.remove(0);
 			for(Query query : _querySpace) {
-				ArrayList<Double> bids = _bids.get(query);
+				ArrayList<Double> pos = _pos.get(query);
 				ArrayList<Double> clickPrs = _clickPrs.get(query);
-				bids.remove(0);
+				pos.remove(0);
 				clickPrs.remove(0);
-				_bids.put(query,bids);
+				_pos.put(query,pos);
 				_clickPrs.put(query,clickPrs);
 			}
 		}
 
 		for(Query query : _querySpace) {
-			ArrayList<Double> bids = _bids.get(query);
+			ArrayList<Double> pos = _pos.get(query);
 			ArrayList<Double> clickPrs = _clickPrs.get(query);
-			double bid = bidBundle.getBid(query);
+			double tempPos = queryReport.getPosition(query);
+			if(Double.isNaN(tempPos)) {
+				tempPos = _outOfAuctionPos;
+			}
 			double imps = queryReport.getImpressions(query);
 			double clicks = queryReport.getClicks(query);
 			double conversions = salesReport.getConversions(query);
@@ -276,31 +276,31 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 					double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
 					clicks = (int) (imps * multipliers[0]);
 				}
-				bids.add(bid);
+				pos.add(tempPos);
 				clickPrs.add(clicks/imps);
 			}
 			else {
-				bids.add(bid);
+				pos.add(tempPos);
 				clickPrs.add(0.0);
 			}
-			_bids.put(query,bids);
+			_pos.put(query,pos);
 			_clickPrs.put(query,clickPrs);
 		}
 
-		if(_bidBundles.size() > _IDVar+1) {
+		if(_queryReports.size() > _IDVar+1) {
 			if(_perQuery) {
 				for(Query query : _querySpace) {
-					ArrayList<Double> bidsArr = _bids.get(query);
+					ArrayList<Double> posArr = _pos.get(query);
 					ArrayList<Double> clickPrArr = _clickPrs.get(query);
 
-					int len = bidsArr.size();
+					int len = posArr.size();
 
-					double[] bids = new double[len];
+					double[] pos = new double[len];
 					double[] prclicks = new double[len];
 					double[] weights = new double[len];
 
 					for(int i = 0; i < len; i++) {
-						bids[i] = bidsArr.get(i);
+						pos[i] = posArr.get(i);
 						prclicks[i] = clickPrArr.get(i);
 						if(_weighted) {
 							/*
@@ -308,41 +308,41 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[i] = Math.pow(m,_bidBundles.size() + 2 - i);
+							weights[i] = Math.pow(m,_queryReports.size() + 2 - i);
 						}
 					}
 
 
 					try {
-						c.assign("bids", bids);
+						c.assign("pos", pos);
 						c.assign("prclicks", prclicks);
 
 						String model;
 
 						if(_robust) {
-							model = "model = glmRob(prclicks[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
+							model = "model = glmRob(prclicks[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
 						}
 						else {
-							model = "model = glm(prclicks[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
+							model = "model = glm(prclicks[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
 						}
 
 						for(int i = 0; i < _IDVar; i++) {
 							int min = i + 1;
-							int max = _bidBundles.size() - (_IDVar - 1 - i);
+							int max = _queryReports.size() - (_IDVar - 1 - i);
 							if(i != _IDVar - 2) {
-								model += "bids[" + min +":" + max + "] + ";
+								model += "pos[" + min +":" + max + "] + ";
 							}
 							if(_powers) {
 								if(i == _IDVar - 1) {
-									model += "I(bids[" + min +":" + max + "]^2) + ";
-									model += "I(bids[" + min +":" + max + "]^3) + ";
+									model += "I(pos[" + min +":" + max + "]^2) + ";
+									model += "I(pos[" + min +":" + max + "]^3) + ";
 								}
 							}
 						}
 
 						for(int i = 0; i < _IDVar-2; i++) {
 							int min = i + 1;
-							int max = _bidBundles.size() - (_IDVar - 1 - i);
+							int max = _queryReports.size() - (_IDVar - 1 - i);
 							model += "prclicks[" + min +":" + max + "] + ";
 							if(_powers) {
 								if(i == _IDVar -3) {
@@ -363,7 +363,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 						if(_weighted == true) {
 							c.assign("regweights", weights);
-							model += ", weights = regweights[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "]";
+							model += ", weights = regweights[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "]";
 						}
 
 						model += ")";
@@ -406,17 +406,17 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 				return nonNullQuery;
 			}
 			else {
-				int len = _querySpace.size() * _bidBundles.size();
-				double[] bids = new double[len];
+				int len = _querySpace.size() * _queryReports.size();
+				double[] pos = new double[len];
 				double[] prclicks = new double[len];
 				double[] weights = new double[len];
 
 				int idx = 0;
-				for(int i = 0; i < _bidBundles.size(); i++) {
+				for(int i = 0; i < _queryReports.size(); i++) {
 					for(Query query : _querySpace) {
-						ArrayList<Double> bidVec = _bids.get(query);
+						ArrayList<Double> posVec = _pos.get(query);
 						ArrayList<Double> clickPrVec = _clickPrs.get(query);
-						bids[idx] = bidVec.get(i);
+						pos[idx] = posVec.get(i);
 						prclicks[idx] = clickPrVec.get(i);
 						if(_weighted) {
 							/*
@@ -424,14 +424,14 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[idx] = Math.pow(m,_bidBundles.size() + 2 - i);
+							weights[idx] = Math.pow(m,_queryReports.size() + 2 - i);
 						}
 						idx++;
 					}
 				}
 
 
-				int arrLen = (_bidBundles.size() - (_IDVar-1))*_querySpace.size();
+				int arrLen = (_queryReports.size() - (_IDVar-1))*_querySpace.size();
 
 				int[] queryInd1 = new int[arrLen];
 				int[] queryInd2 = new int[arrLen];
@@ -516,16 +516,16 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 						c.assign("queryIndF1",queryIndF1);
 						c.assign("queryIndF2",queryIndF2);
 					}
-					c.assign("bids", bids);
+					c.assign("pos", pos);
 					c.assign("prclicks", prclicks);
 
 					String model;
 
 					if(_robust) {
-						model = "model = glmRob(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
+						model = "model = glmRob(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
 					}
 					else {
-						model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
+						model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
 					}
 
 					if(_queryIndicators) {
@@ -537,21 +537,21 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 					for(int i = 0; i < _IDVar; i++) {
 						int min = i * _numQueries + 1;
-						int max = (_bidBundles.size() - (_IDVar - 1 - i)) * _querySpace.size();
+						int max = (_queryReports.size() - (_IDVar - 1 - i)) * _querySpace.size();
 						if(i != _IDVar - 2) {
-							model += "bids[" + min +":" + max + "] + ";
+							model += "pos[" + min +":" + max + "] + ";
 						}
 						if(_powers) {
 							if(i == _IDVar - 1) {
-								model += "I(bids[" + min +":" + max + "]^2) + ";
-								model += "I(bids[" + min +":" + max + "]^3) + ";
+								model += "I(pos[" + min +":" + max + "]^2) + ";
+								model += "I(pos[" + min +":" + max + "]^3) + ";
 							}
 						}
 					}
 
 					for(int i = 0; i < _IDVar-2; i++) {
 						int min = i * _numQueries + 1;
-						int max = (_bidBundles.size() - (_IDVar - 1 - i)) * _querySpace.size();
+						int max = (_queryReports.size() - (_IDVar - 1 - i)) * _querySpace.size();
 
 						model += "prclicks[" + min +":" + max + "] + ";
 						if(_powers) {
@@ -573,7 +573,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 					if(_weighted == true) {
 						c.assign("regweights", weights);
-						model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "]";
+						model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "]";
 					}
 
 					model += ")";
@@ -628,7 +628,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionBidToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted,_robust, _queryIndicators, _queryTypeIndicators, _powers);
+		return new RegressionPosToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted,_robust, _queryIndicators, _queryTypeIndicators, _powers);
 	}
 
 	@Override
@@ -637,12 +637,12 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public void updatePredictions(BidBundle otherBidBundle) {
-		//Not used in this class
+	public String toString() {
+		return "RegressionPosToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
 	}
 
 	@Override
-	public String toString() {
-		return "RegressionBidToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
+	public void updatePredictions(QueryReport otherQueryReport) {
+		//Not used in this class
 	}
 }

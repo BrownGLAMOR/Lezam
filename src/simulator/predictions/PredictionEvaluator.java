@@ -343,33 +343,31 @@ public class PredictionEvaluator {
 		//		AbstractBidToCPC model;
 		try {
 			double start = System.currentTimeMillis();
-			//			model = new EnsembleBidToPrClick(_querySpace, 5, 30, new BasicTargetModel("flat", "tv"), false, true);
-			//			System.out.println(model);
-			System.out.println(evaluator._ignoreNan);
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
-			//			evaluator.clickPrPredictionChallenge(model);
+			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
+			evaluator.clickPrPredictionChallenge(model);
 
-			for(int perQuery = 0; perQuery < 2; perQuery++) {
-				for(int IDVar = 1; IDVar < 6; IDVar++) {
-					for(int numPrevDays = 10; numPrevDays <= 60; numPrevDays += 10) {
-						for(int weighted = 0; weighted < 2; weighted++) {
-							for(int robust = 0; robust < 1; robust++) {
-								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-										for(int powers = 0; powers < 2; powers++) {
-											if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-													&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
-												model = new RegressionBidToPrClick(new RConnection(), _querySpace, intToBin(perQuery), IDVar, numPrevDays, new BasicTargetModel(null, null), intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
-												evaluator.clickPrPredictionChallenge(model);
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 6; IDVar++) {
+			//					for(int numPrevDays = 10; numPrevDays <= 60; numPrevDays += 10) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(int robust = 0; robust < 1; robust++) {
+			//								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//										for(int powers = 0; powers < 2; powers++) {
+			//											if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//													&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+			//												model = new RegressionBidToPrClick(new RConnection(), _querySpace, intToBin(perQuery), IDVar, numPrevDays, new BasicTargetModel(null, null), intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+			//												evaluator.clickPrPredictionChallenge(model);
+			//											}
+			//										}
+			//									}
+			//								}
+			//							}
+			//						}
+			//					}
+			//				}
+			//			}
 
 			//			model = new RegressionBidToCPC(new RConnection(),_querySpace,true,2,30,false,false,false,false,false,false,false);
 			//			model = new ConstantBidToCPC(0.1);
