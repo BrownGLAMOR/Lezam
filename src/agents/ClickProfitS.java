@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
@@ -28,7 +28,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ClickProfitS extends SimAbstractAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-	protected NewAbstractConversionModel _prConversionModel;
+	protected AbstractConversionModel _prConversionModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected BasicTargetModel _targetModel;
 	protected double _avgProfit;

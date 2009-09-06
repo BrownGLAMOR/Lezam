@@ -22,7 +22,7 @@ import newmodels.postoprclick.NewAbstractPosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.sales.SalesDistributionModel;
@@ -72,7 +72,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private AbstractBidToCPC _bidToCPC;
 	private AbstractBidToPrClick _bidToPrClick;
 	private AbstractUnitsSoldModel _unitsSold;
-	private NewAbstractConversionModel _convPrModel;
+	private AbstractConversionModel _convPrModel;
 	private AbstractBidToSlotModel _bidToSlotModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
@@ -164,8 +164,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				_bidToPrClick = bidToPrClick;
 			}
-			else if(model instanceof NewAbstractConversionModel) {
-				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 				_convPrModel = convPrModel;
 			}
 			else if(model instanceof BasicTargetModel) {
@@ -280,8 +280,8 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				bidToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
-			else if(model instanceof NewAbstractConversionModel) {
-				NewAbstractConversionModel convPrModel = (NewAbstractConversionModel) model;
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 				int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 				if(model instanceof GoodConversionPrModel) {
 					GoodConversionPrModel adMaxModel = (GoodConversionPrModel) convPrModel;

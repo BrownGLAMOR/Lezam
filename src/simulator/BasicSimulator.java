@@ -22,7 +22,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoslot.AbstractBidToSlotModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
@@ -608,7 +608,7 @@ public class BasicSimulator {
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
-		NewAbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
+		AbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
 		AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(this);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
 		models.add(userModel);

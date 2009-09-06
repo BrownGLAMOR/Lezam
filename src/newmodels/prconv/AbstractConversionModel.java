@@ -13,18 +13,12 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class NewAbstractConversionModel extends AbstractModel {
+public abstract class AbstractConversionModel extends AbstractModel {
 
 	
 	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle);
 	
 
 	public abstract double getPrediction(Query query, double bid);
-
-
-	public void setTimeHorizon(int timeHorizon) {
-		// TODO Auto-generated method stub
-		
-	}
 
 }

@@ -20,7 +20,7 @@ import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
@@ -34,7 +34,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquateProfitC extends SimAbstractAgent{
 	protected HashMap<Query, Double> _baselineConv;
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;
 	protected BasicTargetModel _targetModel;

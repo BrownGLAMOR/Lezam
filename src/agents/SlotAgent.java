@@ -6,7 +6,7 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -18,7 +18,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class SlotAgent extends SimAbstractAgent {
 
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _reinvestment;
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;

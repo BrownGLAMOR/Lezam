@@ -17,7 +17,7 @@ import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
@@ -42,7 +42,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class DPBNLAgent extends SimAbstractAgent {
 
 	// models
-	protected NewAbstractConversionModel prConversionModel;
+	protected AbstractConversionModel prConversionModel;
 	private AbstractBidToCPC bidToCPCModel;
 	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractBidToPrClick bidToPrClickModel;

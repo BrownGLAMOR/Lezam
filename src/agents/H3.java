@@ -13,7 +13,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoslot.BasicCPCToClick;
 import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -23,7 +23,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class H3 extends SimAbstractAgent{
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	private AbstractBidToCPC _bidToCPC;

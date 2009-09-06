@@ -16,7 +16,7 @@ import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -28,7 +28,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class G3Agent2 extends SimAbstractAgent{
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;

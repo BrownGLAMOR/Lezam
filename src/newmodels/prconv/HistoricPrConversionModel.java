@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.AbstractModel;
 import newmodels.targeting.BasicTargetModel;
 
-public class HistoricPrConversionModel extends NewAbstractConversionModel {
+public class HistoricPrConversionModel extends AbstractConversionModel {
 
 	private PrMath _math;
 	private Set<Query> _querySpace;

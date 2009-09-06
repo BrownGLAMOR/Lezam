@@ -17,7 +17,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
@@ -37,7 +37,7 @@ public class ClickProfitC extends SimAbstractAgent {
 	
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-	protected NewAbstractConversionModel _prConversionModel;
+	protected AbstractConversionModel _prConversionModel;
 	protected HashMap<Query, Double> _baselineConversions;
 
 	protected double _avgProfit;

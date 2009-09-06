@@ -4,7 +4,7 @@ import java.util.LinkedList;
 
 import newmodels.AbstractModel;
 import newmodels.bidtoprconv.AbstractBidToPrConv;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -12,7 +12,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPrConv extends NewAbstractConversionModel {
+public class PerfectBidToPrConv extends AbstractConversionModel {
 
 	private BasicSimulator _simulator;
 

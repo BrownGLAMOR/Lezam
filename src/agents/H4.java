@@ -16,7 +16,7 @@ import newmodels.bidtoslot.BasicBidToClick;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
@@ -30,7 +30,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class H4 extends SimAbstractAgent{
 	private Random _R = new Random();
 	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected AbstractBidToCPC _bidToCPC;

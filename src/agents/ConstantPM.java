@@ -10,7 +10,7 @@ import java.util.Set;
 
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import agents.SimAbstractAgent;
 import newmodels.AbstractModel;
@@ -38,7 +38,7 @@ public class ConstantPM extends SimAbstractAgent {
 
 	private int _timeHorizon;
 	
-	private NewAbstractConversionModel _model;
+	private AbstractConversionModel _model;
 	private GoodConversionPrModel _oldModel;
 
 	private int _day;

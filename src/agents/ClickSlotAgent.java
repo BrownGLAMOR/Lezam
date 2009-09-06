@@ -16,7 +16,7 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.NewAbstractConversionModel;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.SimplePrConversion;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -32,7 +32,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ClickSlotAgent extends SimAbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected AbstractBidToCPC _bidToCPCModel;
-	protected NewAbstractConversionModel _conversionPrModel;
+	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baseLineConversion;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _honestFactor;

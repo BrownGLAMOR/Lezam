@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class GoodConversionPrModel extends NewAbstractConversionModel {
+public class GoodConversionPrModel extends AbstractConversionModel {
 
 	private Limits _limits;
 	private Set<Query> _querySpace;
