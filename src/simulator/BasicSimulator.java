@@ -17,7 +17,7 @@ import javax.management.RuntimeErrorException;
 import org.rosuda.REngine.Rserve.RConnection;
 
 import newmodels.AbstractModel;
-import newmodels.AvgPosToPos;
+import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
@@ -1179,13 +1179,13 @@ public class BasicSimulator {
 			}
 		}
 		if(DEBUG) {
-			AvgPosToPos avgPosModel20 = new AvgPosToPos(20);
-			AvgPosToPos avgPosModel40 = new AvgPosToPos(40);
-			AvgPosToPos avgPosModel80 = new AvgPosToPos(80);
-			AvgPosToPos avgPosModel160 = new AvgPosToPos(160);
-			AvgPosToPos avgPosModel320 = new AvgPosToPos(320);
-			AvgPosToPos avgPosModel640 = new AvgPosToPos(640);
-			AvgPosToPos avgPosModelall = new AvgPosToPos(1000000);
+			AvgPosToPosDist avgPosModel20 = new AvgPosToPosDist(20);
+			AvgPosToPosDist avgPosModel40 = new AvgPosToPosDist(40);
+			AvgPosToPosDist avgPosModel80 = new AvgPosToPosDist(80);
+			AvgPosToPosDist avgPosModel160 = new AvgPosToPosDist(160);
+			AvgPosToPosDist avgPosModel320 = new AvgPosToPosDist(320);
+			AvgPosToPosDist avgPosModel640 = new AvgPosToPosDist(640);
+			AvgPosToPosDist avgPosModelall = new AvgPosToPosDist(1000000);
 			for(int i = 0; i < agents.size(); i++) {
 				SimAgent agent = agents.get(i);
 				if(i == _ourAdvIdx) {

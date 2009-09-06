@@ -25,7 +25,7 @@ import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.bidtoslot.ReallyBadBidToSlot;
 import newmodels.bidtoslot.WrapperIlkeBid2Slot;
 import newmodels.postoprclick.AbstractPosToPrClick;
-import newmodels.postoprclick.DetBasicSlotToPrClick;
+import newmodels.postoprclick.BasicPosToPrClick;
 import newmodels.slottocpc.AbstractSlotToCPCModel;
 import newmodels.slottocpc.LinearSlotToCPC;
 import newmodels.usermodel.AbstractUserModel;
@@ -570,7 +570,7 @@ public class ILPAgent extends SimAbstractAgent{
 			models.add(bidToPrClick);
 			_bidToClickPrModels.put(query,bidToPrClick);
 
-			AbstractPosToPrClick slotToPrClick = new DetBasicSlotToPrClick(query);
+			AbstractPosToPrClick slotToPrClick = new BasicPosToPrClick(query);
 			models.add(slotToPrClick);
 			_slotToClickPrModels.put(query,slotToPrClick);
 			

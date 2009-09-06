@@ -11,7 +11,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
 import newmodels.AbstractModel;
-import newmodels.AvgPosToPos;
+import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoposdist.BidToPosDist;
 
@@ -23,7 +23,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class BidPosModelTestAgent extends SimAbstractAgent {
 
-	private AvgPosToPos _avgPosToPosDist;
+	private AvgPosToPosDist _avgPosToPosDist;
 	private BidToPosDist _bidToPosDist;
 	Random _R = new Random();					//Random number generator
 	private ArrayList<HashMap<Query, Double>> avgPosPredictions;
@@ -115,7 +115,7 @@ public class BidPosModelTestAgent extends SimAbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_avgPosToPosDist = new AvgPosToPos(80);
+		_avgPosToPosDist = new AvgPosToPosDist(80);
 		try {
 			_bidToPosDist = new BidToPosDist(new RConnection(), _querySpace);
 		} catch (RserveException e) {

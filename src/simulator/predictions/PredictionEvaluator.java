@@ -18,6 +18,7 @@ import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.postoprclick.AbstractPosToPrClick;
+import newmodels.postoprclick.BasicPosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.targeting.BasicTargetModel;
 
@@ -504,39 +505,42 @@ public class PredictionEvaluator {
 			//			model = new ConstantBidToCPC(0.1);
 			//			evaluator.CPCPredictionChallenge(model);
 			
-			ArrayList<RegressionPosToPrClick> modelList = new ArrayList<RegressionPosToPrClick>();
+			ArrayList<AbstractPosToPrClick> modelList = new ArrayList<AbstractPosToPrClick>();
 			RConnection rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 25, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 20, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 30, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 35, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 40, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 60, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 55, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 45, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 50, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 45, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 40, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 35, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 30, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 5, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 25, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 50, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 30, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 25, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 20, _targModel, true, false, false, false, false));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 45, _targModel, false, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, true, false, true, false, true));
-			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, true, false, true, false, true));
+			modelList.add(new BasicPosToPrClick(0));
+			modelList.add(new BasicPosToPrClick(1));
+			modelList.add(new BasicPosToPrClick(2));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 25, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 20, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 30, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 35, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 40, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 10, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 60, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 55, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 45, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 50, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 45, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 40, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 35, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 30, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 5, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 25, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 15, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 50, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 30, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 25, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, true, 1, 20, _targModel, true, false, false, false, false));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 45, _targModel, false, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 35, _targModel, true, false, true, false, true));
+//			modelList.add(new RegressionPosToPrClick(rConnection, _querySpace, false, 3, 40, _targModel, true, false, true, false, true));
 
-			for(RegressionPosToPrClick tempModel : modelList) {
+			for(AbstractPosToPrClick tempModel : modelList) {
 				evaluator.posToClickPrPredictionChallenge(tempModel);
 			}
 			
