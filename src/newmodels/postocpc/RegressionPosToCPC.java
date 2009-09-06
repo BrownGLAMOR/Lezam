@@ -1,4 +1,4 @@
-package newmodels.postoprclick;
+package newmodels.postocpc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,14 +6,12 @@ import java.util.List;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.targeting.BasicTargetModel;
 
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -25,63 +23,65 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 
-public class RegressionPosToPrClick extends AbstractPosToPrClick {
+public class RegressionPosToCPC extends AbstractPosToCPC {
 
-	private int DEBUG = 0;
-	protected HashMap<Query,ArrayList<Double>> _pos;
-	HashMap<Query,ArrayList<Double>> _clickPrs;
+	protected HashMap<Query, ArrayList<Double>> _pos;
+	protected HashMap<Query,ArrayList<Double>> _CPCs;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
 	private RConnection c;
-	private int _numQueries;
-	private int _IDVar;  //THIS NEEDS TO BE MORE THAN 4, LESS THAN 10
-	private int _numPrevDays;	//How many days worth of data to include in the regression
+	private int _numQueries = 16;
+	private int _IDVar;
+	private boolean _perQuery;
+	private int _numPrevDays;
 	private ArrayList<QueryReport> _queryReports;
+	private int predictErrors = 0;
 	private boolean _queryIndicators;
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
-	private BasicTargetModel _targModel;
 	private boolean _weighted;
-	private double m = 0.85;
+	private double m = .85;
 	private boolean _robust;
+	private boolean _loglinear;
+	/*
+	 * When we don't get a position, we get NaN as our CPC
+	 */
+	private boolean _ignoreNaN;
 	private HashMap<Query, double[]> _coefficients;
-	private boolean _perQuery;
-	private double _outOfAuctionPos = 6.0;
-	private boolean _targetModification = true;
+	private double _outOfAuction = 6.0;
 
-
-	public RegressionPosToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+	public RegressionPosToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		c = rConnection;
 		_pos = new HashMap<Query,ArrayList<Double>>();
-		_clickPrs = new HashMap<Query,ArrayList<Double>>();
+		_CPCs = new HashMap<Query,ArrayList<Double>>();
 		_coefficients = new HashMap<Query, double[]>();
 		_queryReports = new ArrayList<QueryReport>();
 		_querySpace = queryspace;
-		_numQueries = _querySpace.size();
 		_perQuery = perQuery;
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
 		_robust = robust;
+		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
+		_ignoreNaN = ignoreNaN;
 		_powers = powers;
-		_targModel = targModel;
 
 		for(Query query : _querySpace) {
 			ArrayList<Double> pos = new ArrayList<Double>();
-			ArrayList<Double> clickPrs = new ArrayList<Double>();
+			ArrayList<Double> CPCs = new ArrayList<Double>();
 			_pos.put(query, pos);
-			_clickPrs.put(query, clickPrs);
+			_CPCs.put(query, CPCs);
 			_coefficients.put(query, null);
 		}
 
 		if(_robust) {
 			try {
-				c.voidEval("library(robust)");
+				c.voidEval("library(MASS)");
 			} catch (RserveException e) {
-				throw new RuntimeException("Could not load the R robust library");
+				throw new RuntimeException("Could not load the R MASS library");
 			}
 		}
 	}
@@ -90,35 +90,30 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	/*
 	 * The bid bundle is from the day before, the bid is for tomorrow
 	 */
-	public double getPrediction(Query query, double currentPos, Ad currentAd){
+	public double getPrediction(Query query, double currentPos){
 		double[] coeff = _coefficients.get(query);
-		if(coeff == null || Double.isNaN(currentPos)) {
+		if(coeff == null || currentPos == _outOfAuction ) {
 			return 0.0;
+		}
+
+		if(currentPos > _outOfAuction || currentPos < 1.0) {
+			throw new RuntimeException("Position cannot be less than 1.0 or more than " + _outOfAuction);
 		}
 
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
 		 */
-		List<Double> pos = new ArrayList<Double>();
+		List<Double> posList = new ArrayList<Double>();
 		for(int i = 0; i < _IDVar - 2; i++) {
-			double tempPos = _queryReports.get(_queryReports.size() - 1 - (_IDVar - 3 -i)).getPosition(query);
-			if(Double.isNaN(tempPos)) {
-				tempPos = _outOfAuctionPos ;
-			}
-			pos.add(tempPos);
+			posList.add(_queryReports.get(_queryReports.size() - 1 - (_IDVar - 3 -i)).getPosition(query));
 		}
-		pos.add(currentPos);
+		posList.add(currentPos);
 
-		List<Double> clickPrs = new ArrayList<Double>();
+		List<Double> CPCs = new ArrayList<Double>();
 		for(int i = _IDVar-3; i >= 0; i --) {
-			double clickPr = 0.0;
-			double imps = _queryReports.get(_queryReports.size()-1-i).getImpressions(query);
-			double clicks = _queryReports.get(_queryReports.size()-1-i).getClicks(query);
-			if(imps != 0 && clicks != 0) {
-				clickPr = clicks/imps;
-			}
-			clickPrs.add(clickPr);
+			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
+			CPCs.add(cpc);
 		}
 
 
@@ -183,68 +178,56 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 			predCounter += 2;
 		}
 
-		for(int i = 0; i < pos.size(); i++) {
-			double tempPos = pos.get(i);
-			prediction += coeff[i+predCounter] * tempPos;
+		for(int i = 0; i < posList.size(); i++) {
+			double bid = posList.get(i);
+			prediction += coeff[i+predCounter] * bid;
 			if(_powers) {
-				if(i == pos.size() - 1) {
+				if(i == posList.size() - 1) {
 					predCounter++;
-					prediction += coeff[i+predCounter] * tempPos * tempPos;
+					prediction += coeff[i+predCounter] * bid * bid;
 					predCounter++;
-					prediction += coeff[i+predCounter] * tempPos * tempPos * tempPos;
+					prediction += coeff[i+predCounter] * bid * bid * bid;
 				}
 			}
 		}
-		predCounter += pos.size();
-		for(int i = 0; i < clickPrs.size(); i++) {
-			double clickPr = clickPrs.get(i);
-			prediction += coeff[i+predCounter] * clickPr;
+		predCounter += posList.size();
+		for(int i = 0; i < CPCs.size(); i++) {
+			double CPC = CPCs.get(i);
+			if(Double.isNaN(CPC)) {
+				CPC = 0;
+			}
+			prediction += coeff[i+predCounter] * CPC;
 			if(_powers) {
-				if(i == clickPrs.size() - 1) {
+				if(i == CPCs.size() - 1) {
 					predCounter++;
-					prediction += coeff[i+predCounter] * clickPr * clickPr;
+					prediction += coeff[i+predCounter] * CPC * CPC;
 					predCounter++;
-					prediction += coeff[i+predCounter] * clickPr * clickPr * clickPr;
+					prediction += coeff[i+predCounter] * CPC * CPC * CPC;
 				}
 			}
 		}
-		predCounter += clickPrs.size();
+		predCounter += CPCs.size();
 
-		double clickpr = 1/(1+Math.exp(-prediction));
-
-		if(_targetModification && currentAd != null && !currentAd.isGeneric()) {
-			clickpr = _targModel.getClickPrPrediction(query,clickpr,false);
+		if(_loglinear) {
+			prediction = Math.exp(prediction);
 		}
 
-		if(clickpr < 0 || Double.isNaN(clickpr)) {
-			return 0.0;
-		}
-
-		double bound;
-		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-			bound = .4;
-		}
-		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-			bound = .5;
+		if(prediction >= 0.0) {
+			return prediction;
 		}
 		else {
-			bound = .6;
+			return 0.0;
 		}
-
-		if(clickpr > bound) {
-			return bound;
-		}
-		
-		return clickpr;
 	}
 
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
+	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle) {
 
 		double start = System.currentTimeMillis();
-		_queryReports.add(queryReport);
+
+		_queryReports.add(queryreport);
 
 		/*
 		 * Remove the oldest points from the model
@@ -253,77 +236,79 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 			_queryReports.remove(0);
 			for(Query query : _querySpace) {
 				ArrayList<Double> pos = _pos.get(query);
-				ArrayList<Double> clickPrs = _clickPrs.get(query);
+				ArrayList<Double> CPCs = _CPCs.get(query);
 				pos.remove(0);
-				clickPrs.remove(0);
+				CPCs.remove(0);
 				_pos.put(query,pos);
-				_clickPrs.put(query,clickPrs);
+				_CPCs.put(query,CPCs);
 			}
 		}
+
 
 		for(Query query : _querySpace) {
 			ArrayList<Double> pos = _pos.get(query);
-			ArrayList<Double> clickPrs = _clickPrs.get(query);
-			double tempPos = queryReport.getPosition(query);
-			if(Double.isNaN(tempPos)) {
-				tempPos = _outOfAuctionPos;
-			}
-			double imps = queryReport.getImpressions(query);
-			double clicks = queryReport.getClicks(query);
-			double conversions = salesReport.getConversions(query);
-			if(!(clicks == 0 || imps == 0)) {
-				if(_targetModification && bidBundle.getAd(query) != null && !bidBundle.getAd(query).isGeneric()) {
-					double[] multipliers = _targModel.getInversePredictions(query, (clicks/((double) imps)), (conversions/((double) clicks)), false);
-					clicks = (int) (imps * multipliers[0]);
-				}
+			ArrayList<Double> CPCs = _CPCs.get(query);
+			double tempPos = queryreport.getPosition(query);
+			double CPC = queryreport.getCPC(query);
+			if(!(Double.isNaN(CPC) || Double.isNaN(tempPos))) {
 				pos.add(tempPos);
-				clickPrs.add(clicks/imps);
+				if(_loglinear) {
+					CPCs.add(Math.log(CPC));
+				}
+				else {
+					CPCs.add(CPC);
+				}
 			}
 			else {
-				pos.add(tempPos);
-				clickPrs.add(0.0);
+				pos.add(_outOfAuction);
+				if(_loglinear) {
+					CPCs.add(Math.log(0.01));
+				}
+				else {
+					CPCs.add(0.0);
+				}
 			}
 			_pos.put(query,pos);
-			_clickPrs.put(query,clickPrs);
+			_CPCs.put(query,CPCs);
 		}
 
-		if(_queryReports.size() > _IDVar+1) {
+		if(_queryReports.size() > _IDVar + 1) {
 			if(_perQuery) {
-				for(Query query : _querySpace) {
+				for(Query query: _querySpace) {
 					ArrayList<Double> posArr = _pos.get(query);
-					ArrayList<Double> clickPrArr = _clickPrs.get(query);
+					ArrayList<Double> CPCArr = _CPCs.get(query);
 
 					int len = posArr.size();
 
 					double[] pos = new double[len];
-					double[] prclicks = new double[len];
+					double[] cpcs = new double[len];
 					double[] weights = new double[len];
 
 					for(int i = 0; i < len; i++) {
 						pos[i] = posArr.get(i);
-						prclicks[i] = clickPrArr.get(i);
+						cpcs[i] = CPCArr.get(i);
 						if(_weighted) {
 							/*
 							 * For our WLS we weight the points by $m^{t-t_i}$ where 
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[i] = Math.pow(m,_queryReports.size() + 2 - i);
+							weights[i] = Math.pow(m, _queryReports.size()  + 2 - i);
 						}
 					}
 
-
 					try {
 						c.assign("pos", pos);
-						c.assign("prclicks", prclicks);
+						c.assign("cpcs", cpcs);
 
 						String model;
 
+
 						if(_robust) {
-							model = "model = glmRob(prclicks[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
+							model = "model = rlm(cpcs[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
 						}
 						else {
-							model = "model = glm(prclicks[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
+							model = "model = lm(cpcs[" + ((_IDVar - 1)+1) + ":" + _queryReports.size() +  "] ~ ";
 						}
 
 						for(int i = 0; i < _IDVar; i++) {
@@ -343,23 +328,16 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 						for(int i = 0; i < _IDVar-2; i++) {
 							int min = i + 1;
 							int max = _queryReports.size() - (_IDVar - 1 - i);
-							model += "prclicks[" + min +":" + max + "] + ";
+							model += "cpcs[" + min +":" + max + "] + ";
 							if(_powers) {
 								if(i == _IDVar -3) {
-									model += "I(prclicks[" + min +":" + max + "]^2) + ";
-									model += "I(prclicks[" + min +":" + max + "]^3) + ";
+									model += "I(cpcs[" + min +":" + max + "]^2) + ";
+									model += "I(cpcs[" + min +":" + max + "]^3) + ";
 								}
 							}
 						}
 
 						model = model.substring(0, model.length()-3);
-
-						if(_robust) {
-							model += ", family = binomial(link = \"logit\")";
-						}
-						else {
-							model += ", family = quasibinomial(link = \"logit\")";
-						}
 
 						if(_weighted == true) {
 							c.assign("regweights", weights);
@@ -368,7 +346,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 						model += ")";
 
-						//						System.out.println(model);				
+						//				System.out.println(model);				
 						c.voidEval(model);
 						double[] coeff = c.eval("coefficients(model)").asDoubles();
 						//				for(int i = 0 ; i < coeff.length; i++)
@@ -381,55 +359,45 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 						}
 					}
 					catch (REngineException e) {
-						if(DEBUG > 1) {
-							e.printStackTrace();
-						}
+						e.printStackTrace();
 						_coefficients.put(query, null);
 					}
 					catch (REXPMismatchException e) {
-						if(DEBUG > 1) {
-							e.printStackTrace();
-						}
+						e.printStackTrace();
 						_coefficients.put(query, null);
 					}
 
 					double stop = System.currentTimeMillis();
 					double elapsed = stop - start;
-					//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+					//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+
 				}
-				boolean nonNullQuery = false;
-				for(Query query : _querySpace) {
-					if(_coefficients.get(query) != null) {
-						nonNullQuery = true;
-					}
-				}
-				return nonNullQuery;
+				return true;
 			}
 			else {
 				int len = _querySpace.size() * _queryReports.size();
 				double[] pos = new double[len];
-				double[] prclicks = new double[len];
+				double[] cpcs = new double[len];
 				double[] weights = new double[len];
 
 				int idx = 0;
 				for(int i = 0; i < _queryReports.size(); i++) {
 					for(Query query : _querySpace) {
 						ArrayList<Double> posVec = _pos.get(query);
-						ArrayList<Double> clickPrVec = _clickPrs.get(query);
+						ArrayList<Double> CPCVec = _CPCs.get(query);
 						pos[idx] = posVec.get(i);
-						prclicks[idx] = clickPrVec.get(i);
+						cpcs[idx] = CPCVec.get(i);
 						if(_weighted) {
 							/*
 							 * For our WLS we weight the points by $m^{t-t_i}$ where 
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[idx] = Math.pow(m,_queryReports.size() + 2 - i);
+							weights[idx] = Math.pow(m, _queryReports.size()  + 2 - i);
 						}
 						idx++;
 					}
 				}
-
 
 				int arrLen = (_queryReports.size() - (_IDVar-1))*_querySpace.size();
 
@@ -517,15 +485,16 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 						c.assign("queryIndF2",queryIndF2);
 					}
 					c.assign("pos", pos);
-					c.assign("prclicks", prclicks);
+					c.assign("cpcs", cpcs);
 
 					String model;
 
+
 					if(_robust) {
-						model = "model = glmRob(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
+						model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
 					}
 					else {
-						model = "model = glm(prclicks[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
+						model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_queryReports.size() * _querySpace.size()) +  "] ~ ";
 					}
 
 					if(_queryIndicators) {
@@ -552,24 +521,16 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 					for(int i = 0; i < _IDVar-2; i++) {
 						int min = i * _numQueries + 1;
 						int max = (_queryReports.size() - (_IDVar - 1 - i)) * _querySpace.size();
-
-						model += "prclicks[" + min +":" + max + "] + ";
+						model += "cpcs[" + min +":" + max + "] + ";
 						if(_powers) {
 							if(i == _IDVar -3) {
-								model += "I(prclicks[" + min +":" + max + "]^2) + ";
-								model += "I(prclicks[" + min +":" + max + "]^3) + ";
+								model += "I(cpcs[" + min +":" + max + "]^2) + ";
+								model += "I(cpcs[" + min +":" + max + "]^3) + ";
 							}
 						}
 					}
 
 					model = model.substring(0, model.length()-3);
-
-					if(_robust) {
-						model += ", family = binomial(link = \"logit\")";
-					}
-					else {
-						model += ", family = quasibinomial(link = \"logit\")";
-					}
 
 					if(_weighted == true) {
 						c.assign("regweights", weights);
@@ -578,7 +539,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 					model += ")";
 
-//					System.out.println(model);				
+					//				System.out.println(model);				
 					c.voidEval(model);
 					double[] coeff = c.eval("coefficients(model)").asDoubles();
 					//				for(int i = 0 ; i < coeff.length; i++)
@@ -596,18 +557,14 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 					}
 				}
 				catch (REngineException e) {
-					if(DEBUG > 1) {
-						e.printStackTrace();
-					}
+					e.printStackTrace();
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
 					return false;
 				}
 				catch (REXPMismatchException e) {
-					if(DEBUG > 1) {
-						e.printStackTrace();
-					}
+					e.printStackTrace();
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
@@ -616,7 +573,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 				double stop = System.currentTimeMillis();
 				double elapsed = stop - start;
-				//		System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
+				//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
 
 				return true;
 			}
@@ -628,21 +585,11 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionPosToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted,_robust, _queryIndicators, _queryTypeIndicators, _powers);
-	}
-
-	@Override
-	public void setSpecialty(String manufacturer, String component) {
-		_targModel = new BasicTargetModel(manufacturer,component);
+		return new RegressionPosToCPC(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
 	public String toString() {
-		return "RegressionPosToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
-	}
-
-	@Override
-	public void updatePredictions(QueryReport otherQueryReport) {
-		//Not used in this class
+		return "RegressionPosToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 	}
 }
