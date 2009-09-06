@@ -36,4 +36,9 @@ public class SalesDistributionModel extends AbstractModel {
 		return true;
 	}
 
+	@Override
+	public AbstractModel getCopy() {
+		return null;
+	}
+	
 }

@@ -1,5 +1,6 @@
 package newmodels.revenue;
 
+import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -73,6 +74,11 @@ public class RevenueMovingAvg extends AbstractRevenueModel {
 	public void update(SalesReport salesReport, QueryReport queryReport) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public AbstractModel getCopy() {
+		return null;
 	}
 
 }

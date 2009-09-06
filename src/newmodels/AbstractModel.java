@@ -1,12 +1,4 @@
-/**
- * 
- */
 package newmodels;
-
-/**
- * @author jberg
- *
- */
 
 
 /**
