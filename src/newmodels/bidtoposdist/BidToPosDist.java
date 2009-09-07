@@ -176,14 +176,15 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					double[] bids = new double[len];
 					double[] pos = new double[len];
 					double[] posDist = new double[len];
+					int idx = 0;
 					for(int i = 0; i < bidsArr.size(); i++) {
 						double bid = bidsArr.get(i);
 						double[] pDists = pDistsArr.get(i);
 						for(int j = 0; j < pDists.length; j++) {
-							int index = pDists.length*i + j;
-							bids[index] = bid;
-							pos[index] = j+1;
-							posDist[index] = pDists[j];
+							bids[idx] = bid;
+							pos[idx] = j+1;
+							posDist[idx] = pDists[j];
+							idx++;
 						}
 					}
 					try {
