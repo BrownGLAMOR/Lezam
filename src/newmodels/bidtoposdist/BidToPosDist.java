@@ -219,10 +219,10 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						_coefficients.put(query, coeff);
 					} catch (REngineException e) {
 						_coefficients.put(query, null);
-						e.printStackTrace();
+//						e.printStackTrace();
 					} catch (REXPMismatchException e) {
 						_coefficients.put(query, null);
-						e.printStackTrace();
+//						e.printStackTrace();
 					}
 				}
 				return true;
@@ -284,13 +284,13 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
-					e.printStackTrace();
+//					e.printStackTrace();
 					return false;
 				} catch (REXPMismatchException e) {
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
-					e.printStackTrace();
+//					e.printStackTrace();
 					return false;
 				}
 			}

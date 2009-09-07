@@ -40,7 +40,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			_cplex = cplex;
 			_numSols = numSols;
 		} catch (IloException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		_clickPrModel = model;
 		_numPromSlots = numPromSlots;
@@ -178,7 +178,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			return solution;
 		}
 		catch (IloException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return null;
 		}
 	}
