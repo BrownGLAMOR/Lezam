@@ -651,6 +651,9 @@ public class PredictionEvaluator {
 									avgPos += posDist[j] * (j+1);
 									posTot += posDist[j];
 								}
+								if(posTot == 0) {
+									throw new RuntimeException("Postot == 0");
+								}
 								avgPos /= posTot;
 								double pos = otherQueryReport.getPosition(q);
 								if(Double.isNaN(pos)) {
