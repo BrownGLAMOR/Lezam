@@ -66,6 +66,12 @@ public class AvgPosToPosDist extends AbstractModel {
 	 */
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks) {
 		try {
+			
+			if(Double.isNaN(avgPos)) {
+				double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+				return ans;
+			}
+			
 			/*
 			 * If the average position returned is an integer, it is likely that a person was in that position
 			 * the entire time.  If the forceToPos flag is on then we want to return an array with impressions
