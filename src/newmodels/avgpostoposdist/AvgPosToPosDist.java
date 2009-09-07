@@ -66,7 +66,12 @@ public class AvgPosToPosDist extends AbstractModel {
 	 */
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks) {
 		try {
-			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos)) && !(regImps > 0 && promImps > 0)) {
+			/*
+			 * If the average position returned is an integer, it is likely that a person was in that position
+			 * the entire time.  If the forceToPos flag is on then we want to return an array with impressions
+			 * only in the position specified
+			 */
+			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos))) {
 				double[] ans = new double[5];
 				for(int i = 0; i < 5; i++) {
 					if((i+1) == avgPos) {
@@ -109,10 +114,9 @@ public class AvgPosToPosDist extends AbstractModel {
 
 			/*
 			 * There is a problem when we don't get the promoted reserve price and we expect promoted impressions
-			 * but don't get any.  This should fix most problems but isn't good enough..  We should actually solve
-			 * it and if we get 0 solutions relax the constraints......
+			 * but don't get any.  This should fix most problems but is a hack
 			 */
-			if(_numPromSlots == 0 || (_numPromSlots > 0 && avgPos < 2 && promImps == 0)) {
+			if(_numPromSlots == 0 || (_numPromSlots == 1.0 && avgPos < 2.0 && promImps == 0) || (_numPromSlots == 2.0 && avgPos < 3.0 && promImps == 0)) {
 				_cplex.addEq(_cplex.sum(x[0], x[1], x[2], x[3], x[4]), numImps);
 			}
 			else if(_numPromSlots == 1) {
