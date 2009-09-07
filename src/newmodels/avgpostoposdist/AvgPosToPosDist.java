@@ -177,14 +177,12 @@ public class AvgPosToPosDist extends AbstractModel {
 			 * If there we no solutions then the solution array is all zeroes,
 			 * we return a 1.0 in the 6th index for this (i.e. out of auction)
 			 */
-			boolean nullSolFlag = true;
+			double totImps = 0.0;
 			for(int i = 0; i < solution.length; i++) {
-				if(solution[i] != 0.0) {
-					nullSolFlag = false;
-				}
+				totImps += solution[i];
 			}
 
-			if(nullSolFlag) {
+			if(totImps == 0.0) {
 				double[] ans = new double[6];
 				for(int i = 0; i < 6; i++) {
 					ans[i] = 0.0;
