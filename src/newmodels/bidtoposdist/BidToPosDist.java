@@ -343,6 +343,12 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	public AbstractModel getCopy() {
 		return new BidToPosDist(_rConnection, _querySpace, _perQuery, _degree,_numPrevDays,_weighted, _m);
 	}
+	
+	@Override
+	public String toString() {
+		return "";
+	}
+	
 }
 
 

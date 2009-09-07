@@ -651,6 +651,11 @@ public class PredictionEvaluator {
 									avgPos += posDist[j] * (j+1);
 									posTot += posDist[j];
 								}
+								
+								if(posTot == 0.0 && posDist[posDist.length-1] == 1.0) {
+									continue;
+								}
+								
 								if(posTot == 0 || Double.isNaN(posTot)) {
 									avgPos = _outOfAuction;
 								}
@@ -821,24 +826,17 @@ public class PredictionEvaluator {
 			ArrayList<AbstractBidToPosDistModel> modelList = new ArrayList<AbstractBidToPosDistModel>();
 			RConnection rConnection = new RConnection();
 			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 1, 40, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 40, false, .75));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 40, false, .65));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 40, false, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 40, false, .85));
 			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 1, 40, true, .85));
 			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 40, true, .85));
 			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 40, true, .85));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 20, true, .25));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 20, true, .15));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .85));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .75));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .65));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .55));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .45));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .35));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .25));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, true, .15));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 20, false, 1.0));
-//			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 20, false, 1.0));
-
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 1, 40, false, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 40, false, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 3, 40, false, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 1, 40, true, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 40, true, .85));
+			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 3, 40, true, .85));
 			for(AbstractBidToPosDistModel tempModel : modelList) {
 				evaluator.bidToPosDistPredictionChallenge(tempModel);
 			}
