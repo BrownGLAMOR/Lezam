@@ -83,6 +83,23 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			//				System.out.println("Query: " + query + ", Pred: " + prediction);
 			predictions[i] = prediction;
 		}
+		double totPosDist = 0.0;
+		for(int i = 0; i < predictions.length; i++) {
+			if(predictions[i] < 0) {
+				predictions[i] = 0.0;
+			}
+			totPosDist += predictions[i];
+		}
+
+		if(totPosDist == 0 || Double.isNaN(totPosDist)) {
+			double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+			return ans;
+		}
+
+		for(int i = 0; i < predictions.length; i++) {
+			predictions[i] = predictions[i]/totPosDist;
+		}
+
 		return predictions;
 	}
 
@@ -148,14 +165,14 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			_posDists.put(query, pDists);
 
 			if(_weighted && _perQuery) {
-				double[] weights = new double[_bids.size()*posLen];
+				double[] weights = new double[_bidBundles.size()*posLen];
 				/*
 				 * For our WLS we weight the points by $m^{t-t_i}$ where 
 				 * $0 < m < 1$ and $t - t_i$ is the difference between the
 				 * day we are predicting and the day we observed the data
 				 */
-				for(int i = 0; i < _bids.size()*posLen; i++) {
-					weights[i] = Math.pow(_m,_bids.size() + 2 - (i/posLen));
+				for(int i = 0; i < _bidBundles.size()*posLen; i++) {
+					weights[i] = Math.pow(_m,_bidBundles.size() + 2 - (i/posLen));
 				}
 				weightVecs.put(query, weights);
 			}
@@ -218,12 +235,17 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						_rConnection.voidEval(model);
 						double[] coeff = _rConnection.eval("coefficients(model)").asDoubles();
 						_coefficients.put(query, coeff);
+						for(int i = 0; i < coeff.length; i++) {
+							if(Double.isNaN(coeff[i])) {
+								_coefficients.put(query, null);
+							}
+						}
 					} catch (REngineException e) {
 						_coefficients.put(query, null);
-//						e.printStackTrace();
+						//						e.printStackTrace();
 					} catch (REXPMismatchException e) {
 						_coefficients.put(query, null);
-//						e.printStackTrace();
+						//						e.printStackTrace();
 					}
 				}
 				return true;
@@ -277,6 +299,16 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					model += ")";
 					_rConnection.voidEval(model);
 					double[] coeff = _rConnection.eval("coefficients(model)").asDoubles();
+
+					for(int i = 0; i < coeff.length; i++) {
+						if(Double.isNaN(coeff[i])) {
+							for(Query query : _querySpace) {
+								_coefficients.put(query, null);
+							}
+							return false;
+						}
+					}
+
 					for(Query query : _querySpace) {
 						_coefficients.put(query, coeff);
 					}
@@ -285,13 +317,13 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
-//					e.printStackTrace();
+					//					e.printStackTrace();
 					return false;
 				} catch (REXPMismatchException e) {
 					for(Query query : _querySpace) {
 						_coefficients.put(query, null);
 					}
-//					e.printStackTrace();
+					//					e.printStackTrace();
 					return false;
 				}
 			}
