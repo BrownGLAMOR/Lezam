@@ -191,7 +191,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						}
 					}
 					try {
-						_rConnection.assign("bids", bids);
+						_rConnection.assign("bid", bids);
 						_rConnection.assign("pos", pos);
 						_rConnection.assign("posDist", posDist);
 						String model = "lm(";
@@ -252,7 +252,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					}
 				}
 				try {
-					_rConnection.assign("bids", bids);
+					_rConnection.assign("bid", bids);
 					_rConnection.assign("pos", pos);
 					_rConnection.assign("posDist", posDist);
 					String model = "lm(";
