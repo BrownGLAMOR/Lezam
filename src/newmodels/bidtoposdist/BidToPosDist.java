@@ -199,16 +199,16 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 							model += "posDist ~ pos + bid";
 						}
 						else if(_degree == 2) {
-							model += "posDist ~ pos + pos^2 + bid + bid * pos + bid^2";
+							model += "posDist ~ pos + I(pos^2) + bid + I(bid * pos) + I(bid^2)";
 						}
 						else if(_degree == 3) {
-							model += "posDist ~ pos + pos^2 + pos^3 + bid + bid * pos + bid * pos^2 + bid^2 + bid^2 * pos + bid^3";
+							model += "posDist ~ pos + I(pos^2) + I(pos^3) + bid + I(bid * pos) + I(bid * pos^2) + I(bid^2) + I(bid^2 * pos) + I(bid^3)";
 						}
 						else if(_degree == 4) {
-							model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^3 + bid^3 * pos + bid^4";
+							model += "posDist ~ pos + I(pos^2) + I(pos^3) + I(pos^4) + bid + I(bid * pos) + I(bid * pos^2) + I(bid * pos^3) + I(bid^2) + I(bid^2 * pos) + I(bid^2 * pos^2) + I(bid^3) + I(bid^3 * pos) + I(bid^4)";
 						}
 						else if(_degree == 5) {
-							model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + pos^5 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid * pos^4 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^2 * pos^3 + bid^3 + bid^3 * pos + bid^3 * pos^2 + bid^4 + bid^4 * pos + bid^5";
+							model += "posDist ~ pos + I(pos^2) + I(pos^3) + I(pos^4) + I(pos^5) + bid + I(bid * pos) + I(bid * pos^2) + I(bid * pos^3) + I(bid * pos^4) + I(bid^2) + I(bid^2 * pos) + I(bid^2 * pos^2) + I(bid^2 * pos^3) + I(bid^3) + I(bid^3 * pos) + I(bid^3 * pos^2) + I(bid^4) + I(bid^4 * pos) + I(bid^5)";
 						}
 
 						if(_weighted) {
@@ -260,16 +260,16 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						model += "posDist ~ pos + bid";
 					}
 					else if(_degree == 2) {
-						model += "posDist ~ pos + pos^2 + bid + bid * pos + bid^2";
+						model += "posDist ~ pos + I(pos^2) + bid + I(bid * pos) + I(bid^2)";
 					}
 					else if(_degree == 3) {
-						model += "posDist ~ pos + pos^2 + pos^3 + bid + bid * pos + bid * pos^2 + bid^2 + bid^2 * pos + bid^3";
+						model += "posDist ~ pos + I(pos^2) + I(pos^3) + bid + I(bid * pos) + I(bid * pos^2) + I(bid^2) + I(bid^2 * pos) + I(bid^3)";
 					}
 					else if(_degree == 4) {
-						model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^3 + bid^3 * pos + bid^4";
+						model += "posDist ~ pos + I(pos^2) + I(pos^3) + I(pos^4) + bid + I(bid * pos) + I(bid * pos^2) + I(bid * pos^3) + I(bid^2) + I(bid^2 * pos) + I(bid^2 * pos^2) + I(bid^3) + I(bid^3 * pos) + I(bid^4)";
 					}
 					else if(_degree == 5) {
-						model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + pos^5 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid * pos^4 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^2 * pos^3 + bid^3 + bid^3 * pos + bid^3 * pos^2 + bid^4 + bid^4 * pos + bid^5";
+						model += "posDist ~ pos + I(pos^2) + I(pos^3) + I(pos^4) + I(pos^5) + bid + I(bid * pos) + I(bid * pos^2) + I(bid * pos^3) + I(bid * pos^4) + I(bid^2) + I(bid^2 * pos) + I(bid^2 * pos^2) + I(bid^2 * pos^3) + I(bid^3) + I(bid^3 * pos) + I(bid^3 * pos^2) + I(bid^4) + I(bid^4 * pos) + I(bid^5)";
 					}
 
 					if(_weighted) {
