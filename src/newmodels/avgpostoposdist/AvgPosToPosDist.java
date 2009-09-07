@@ -68,7 +68,13 @@ public class AvgPosToPosDist extends AbstractModel {
 		try {
 			
 			if(Double.isNaN(avgPos)) {
-				double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+				double[] ans = new double[6];
+				for(int i = 0; i < 6; i++) {
+					ans[i] = 0.0;
+					if(i == 5) {
+						ans[i] = 1.0;
+					}
+				}
 				return ans;
 			}
 			

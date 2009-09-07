@@ -63,22 +63,22 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		}
 		double predictions[] = new double[6];
 		for(int i = 0; i < predictions.length; i++) {
-			int posDist = i+1;
+			int pos = i+1;
 			double prediction = 0.0;
 			if(_degree == 1) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * bid;
+				prediction = coeff[0] + coeff[1] * pos + coeff[2] * bid;
 			}
 			else if(_degree == 2) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * bid + coeff[4] * bid * posDist + coeff[5] * bid * bid;
+				prediction = coeff[0] + coeff[1] * pos + coeff[2] * pos * pos + coeff[3] * bid + coeff[4] * bid * pos + coeff[5] * bid * bid;
 			}
 			else if(_degree == 3) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * bid + coeff[5] * bid * posDist + coeff[6] * bid * posDist * posDist + coeff[7] * bid * bid + coeff[8] * bid * bid * posDist + coeff[9] * bid * bid * bid;
+				prediction = coeff[0] + coeff[1] * pos + coeff[2] * pos * pos + coeff[3] * pos * pos * pos + coeff[4] * bid + coeff[5] * bid * pos + coeff[6] * bid * pos * pos + coeff[7] * bid * bid + coeff[8] * bid * bid * pos + coeff[9] * bid * bid * bid;
 			}
 			else if(_degree == 4) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * bid + coeff[6] * bid * posDist + coeff[7] * bid * posDist * posDist + coeff[8] * bid * posDist * posDist * posDist + coeff[9] * bid * bid + coeff[10] * bid * bid * posDist + coeff[11] * bid * bid * posDist * posDist + coeff[12] * bid * bid * bid + coeff[13] * bid * bid * bid * posDist + coeff[14] * bid * bid * bid * bid;
+				prediction = coeff[0] + coeff[1] * pos + coeff[2] * pos * pos + coeff[3] * pos * pos * pos + coeff[4] * pos * pos * pos * pos + coeff[5] * bid + coeff[6] * bid * pos + coeff[7] * bid * pos * pos + coeff[8] * bid * pos * pos * pos + coeff[9] * bid * bid + coeff[10] * bid * bid * pos + coeff[11] * bid * bid * pos * pos + coeff[12] * bid * bid * bid + coeff[13] * bid * bid * bid * pos + coeff[14] * bid * bid * bid * bid;
 			}
 			else if(_degree == 5) {
-				prediction = coeff[0] + coeff[1] * posDist + coeff[2] * posDist * posDist + coeff[3] * posDist * posDist * posDist + coeff[4] * posDist * posDist * posDist * posDist + coeff[5] * posDist * posDist * posDist * posDist * posDist + coeff[6] * bid + coeff[7] * bid * posDist + coeff[8] * bid * posDist * posDist + coeff[9] * bid * posDist * posDist * posDist + coeff[10] * bid * posDist * posDist * posDist * posDist + coeff[11] * bid * bid + coeff[12] * bid * bid * posDist + coeff[13] * bid * bid * posDist * posDist + coeff[14] * bid * bid * posDist * posDist * posDist + coeff[15] * bid * bid * bid + coeff[16] * bid * bid * bid * posDist + coeff[17] * bid * bid * bid * posDist * posDist + coeff[18] * bid * bid * bid * bid + coeff[19] * bid * bid * bid * bid * posDist + coeff[20] * bid * bid * bid * bid * bid;
+				prediction = coeff[0] + coeff[1] * pos + coeff[2] * pos * pos + coeff[3] * pos * pos * pos + coeff[4] * pos * pos * pos * pos + coeff[5] * pos * pos * pos * pos * pos + coeff[6] * bid + coeff[7] * bid * pos + coeff[8] * bid * pos * pos + coeff[9] * bid * pos * pos * pos + coeff[10] * bid * pos * pos * pos * pos + coeff[11] * bid * bid + coeff[12] * bid * bid * pos + coeff[13] * bid * bid * pos * pos + coeff[14] * bid * bid * pos * pos * pos + coeff[15] * bid * bid * bid + coeff[16] * bid * bid * bid * pos + coeff[17] * bid * bid * bid * pos * pos + coeff[18] * bid * bid * bid * bid + coeff[19] * bid * bid * bid * bid * pos + coeff[20] * bid * bid * bid * bid * bid;
 			}
 			//				System.out.println("Query: " + query + ", Pred: " + prediction);
 			predictions[i] = prediction;
@@ -192,19 +192,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						_rConnection.assign("posDist", posDist);
 						String model = "lm(";
 						if(_degree == 1) {
-							model += "pos ~ posDist + bid";
+							model += "posDist ~ pos + bid";
 						}
 						else if(_degree == 2) {
-							model += "pos ~ posDist + posDist^2 + bid + bid * posDist + bid^2";
+							model += "posDist ~ pos + pos^2 + bid + bid * pos + bid^2";
 						}
 						else if(_degree == 3) {
-							model += "pos ~ posDist + posDist^2 + posDist^3 + bid + bid * posDist + bid * posDist^2 + bid^2 + bid^2 * posDist + bid^3";
+							model += "posDist ~ pos + pos^2 + pos^3 + bid + bid * pos + bid * pos^2 + bid^2 + bid^2 * pos + bid^3";
 						}
 						else if(_degree == 4) {
-							model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^3 + bid^3 * posDist + bid^4";
+							model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^3 + bid^3 * pos + bid^4";
 						}
 						else if(_degree == 5) {
-							model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + posDist^5 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^4 + bid^4 * posDist + bid^5";
+							model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + pos^5 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid * pos^4 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^2 * pos^3 + bid^3 + bid^3 * pos + bid^3 * pos^2 + bid^4 + bid^4 * pos + bid^5";
 						}
 
 						if(_weighted) {
@@ -253,19 +253,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					_rConnection.assign("posDist", posDist);
 					String model = "lm(";
 					if(_degree == 1) {
-						model += "pos ~ posDist + bid";
+						model += "posDist ~ pos + bid";
 					}
 					else if(_degree == 2) {
-						model += "pos ~ posDist + posDist^2 + bid + bid * posDist + bid^2";
+						model += "posDist ~ pos + pos^2 + bid + bid * pos + bid^2";
 					}
 					else if(_degree == 3) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + bid + bid * posDist + bid * posDist^2 + bid^2 + bid^2 * posDist + bid^3";
+						model += "posDist ~ pos + pos^2 + pos^3 + bid + bid * pos + bid * pos^2 + bid^2 + bid^2 * pos + bid^3";
 					}
 					else if(_degree == 4) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^3 + bid^3 * posDist + bid^4";
+						model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^3 + bid^3 * pos + bid^4";
 					}
 					else if(_degree == 5) {
-						model += "pos ~ posDist + posDist^2 + posDist^3 + posDist^4 + posDist^5 + bid + bid * posDist + bid * posDist^2 + bid * posDist^3 + bid * posDist^4 + bid^2 + bid^2 * posDist + bid^2 * posDist^2 + bid^2 * posDist^3 + bid^3 + bid^3 * posDist + bid^3 * posDist^2 + bid^4 + bid^4 * posDist + bid^5";
+						model += "posDist ~ pos + pos^2 + pos^3 + pos^4 + pos^5 + bid + bid * pos + bid * pos^2 + bid * pos^3 + bid * pos^4 + bid^2 + bid^2 * pos + bid^2 * pos^2 + bid^2 * pos^3 + bid^3 + bid^3 * pos + bid^3 * pos^2 + bid^4 + bid^4 * pos + bid^5";
 					}
 
 					if(_weighted) {
