@@ -629,7 +629,7 @@ public class PredictionEvaluator {
 
 					HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
 					for(Query query : querySpace) {
-						double[] posDist = avgPosToDistModel.getPrediction(query, queryReport.getImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
+						double[] posDist = avgPosToDistModel.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
 						posDists.put(query, posDist);
 					}
 

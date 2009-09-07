@@ -40,7 +40,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			_cplex = cplex;
 			_numSols = numSols;
 		} catch (IloException e) {
-//			e.printStackTrace();
+			//			e.printStackTrace();
 		}
 		_clickPrModel = model;
 		_numPromSlots = numPromSlots;
@@ -66,7 +66,6 @@ public class AvgPosToPosDist extends AbstractModel {
 	 */
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks) {
 		try {
-			
 			if(Double.isNaN(avgPos)) {
 				double[] ans = new double[6];
 				for(int i = 0; i < 6; i++) {
@@ -77,7 +76,7 @@ public class AvgPosToPosDist extends AbstractModel {
 				}
 				return ans;
 			}
-			
+
 			/*
 			 * If the average position returned is an integer, it is likely that a person was in that position
 			 * the entire time.  If the forceToPos flag is on then we want to return an array with impressions
@@ -101,6 +100,17 @@ public class AvgPosToPosDist extends AbstractModel {
 			_cplex.clearModel();
 
 			int numImps = regImps + promImps;
+
+			if(numImps == 0) {
+				double[] ans = new double[6];
+				for(int i = 0; i < 6; i++) {
+					ans[i] = 0.0;
+					if(i == 5) {
+						ans[i] = 1.0;
+					}
+				}
+				return ans;
+			}
 
 			int[] lb = {0, 0, 0, 0, 0};
 			int[] ub = {numImps, numImps, numImps, numImps, numImps};
@@ -175,8 +185,30 @@ public class AvgPosToPosDist extends AbstractModel {
 			for(int i = 0; i < 5; i++) {
 				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
 			}
-			
+
 			solution[5] = 0.0;
+
+			/*
+			 * If there we no solutions then the solution array is all zeroes,
+			 * we return a 1.0 in the 6th index for this (i.e. out of auction)
+			 */
+			boolean nullSolFlag = true;
+			for(int i = 0; i < solution.length; i++) {
+				if(solution[i] != 0.0) {
+					nullSolFlag = false;
+				}
+			}
+
+			if(nullSolFlag) {
+				double[] ans = new double[6];
+				for(int i = 0; i < 6; i++) {
+					ans[i] = 0.0;
+					if(i == 5) {
+						ans[i] = 1.0;
+					}
+				}
+				return ans;	
+			}
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
@@ -184,11 +216,11 @@ public class AvgPosToPosDist extends AbstractModel {
 			return solution;
 		}
 		catch (IloException e) {
-//			e.printStackTrace();
+			//			e.printStackTrace();
 			return null;
 		}
 	}
-	
+
 	@Override
 	public AbstractModel getCopy() {
 		return new AvgPosToPosDist(_numSols,_numPromSlots,_clickPrModel);

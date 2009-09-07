@@ -1,5 +1,7 @@
 package newmodels.postoprclick;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
 
 import newmodels.AbstractModel;
@@ -27,11 +29,11 @@ public class BasicPosToPrClick extends AbstractPosToPrClick {
 	@Override
 	public double getPrediction(Query q, double position, Ad ad) {
 		double prConv, prClick, prCont;
-		
+
 		if(Double.isNaN(position) || position == _outOfAuction ) {
 			return 0.0;
 		}
-		
+
 		if(position < 1.0 || position > _outOfAuction) {
 			throw new RuntimeException("Position cannot be less than 1.0 or more than " + _outOfAuction);
 		}
@@ -71,7 +73,7 @@ public class BasicPosToPrClick extends AbstractPosToPrClick {
 		}
 
 		clickPrs[5] = 0.0;
-		
+
 		double clickPr = 0.0;
 		int posfloor = (int) Math.floor(position);
 		int posceil = (int) Math.ceil(position);
@@ -116,5 +118,19 @@ public class BasicPosToPrClick extends AbstractPosToPrClick {
 		return new BasicPosToPrClick(_numPromSlots);
 	}
 
+	public static void main(String[] args) {
+		BasicPosToPrClick model = new BasicPosToPrClick(2);
+		ArrayList<Query> miniQuerySet = new ArrayList<Query>();
+		miniQuerySet.add(new Query("flat","tv"));
+		miniQuerySet.add(new Query(null,"tv"));
+		miniQuerySet.add(new Query("flat",null));
+		miniQuerySet.add(new Query(null,null));
+		for(Query query : miniQuerySet) {
+			System.out.println(query);
+			for(int i = 0; i < 6; i++) {
+				System.out.println("\tSlot " + (i+1) + ": " + model.getPrediction(query, i+1, new Ad()));
+			}
+		}
+	}
 
 }
