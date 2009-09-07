@@ -29,6 +29,7 @@ public class AvgPosToPosDist extends AbstractModel {
 	 */
 	private AbstractPosToPrClick _clickPrModel;
 	private int _numPromSlots;
+	private double _outOfAuction = 6.0;
 
 	public AvgPosToPosDist(int numSols, int numPromSlots, AbstractPosToPrClick model) {
 		try {
@@ -66,7 +67,7 @@ public class AvgPosToPosDist extends AbstractModel {
 	 */
 	public double[] getPrediction(Query query, int regImps, int promImps, double avgPos, int numClicks) {
 		try {
-			if(Double.isNaN(avgPos)) {
+			if(avgPos == _outOfAuction  || Double.isNaN(avgPos) || (promImps + regImps == 0)) {
 				double[] ans = new double[6];
 				for(int i = 0; i < 6; i++) {
 					ans[i] = 0.0;
@@ -101,17 +102,6 @@ public class AvgPosToPosDist extends AbstractModel {
 
 			int numImps = regImps + promImps;
 
-			if(numImps == 0) {
-				double[] ans = new double[6];
-				for(int i = 0; i < 6; i++) {
-					ans[i] = 0.0;
-					if(i == 5) {
-						ans[i] = 1.0;
-					}
-				}
-				return ans;
-			}
-
 			int[] lb = {0, 0, 0, 0, 0};
 			int[] ub = {numImps, numImps, numImps, numImps, numImps};
 			IloIntVar[] x;
@@ -129,7 +119,7 @@ public class AvgPosToPosDist extends AbstractModel {
 					_cplex.prod(clickPr[4],x[4])), numClicks)));
 
 
-			_cplex.addEq(_cplex.sum(_cplex.prod( 1.0, x[0]),
+			_cplex.addEq(_cplex.sum(_cplex.prod(1.0, x[0]),
 					_cplex.prod( 2.0, x[1]),
 					_cplex.prod( 3.0, x[2]),
 					_cplex.prod( 4.0, x[3]),
@@ -169,25 +159,20 @@ public class AvgPosToPosDist extends AbstractModel {
 
 			double[] solution = new double[6];
 
-			for(int i = 0; i < 5; i++) {
+			for(int i = 0; i < solution.length; i++) {
 				solution[i] = 0;
 			}
 
 			for(int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
 				//				_cplex.output().println("Solution value  = " + _cplex.getObjValue(i));
 				double[] val = _cplex.getValues(x,i);
-				for (int j = 0; j < 5; ++j) {
+				for (int j = 0; j < val.length; ++j) {
 					//					_cplex.output().println("Column: " + j + " Value = " + val[j]);
 					solution[j] = solution[j] + val[j];
 				}
 			}
 
-			for(int i = 0; i < 5; i++) {
-				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
-			}
-
-			solution[5] = 0.0;
-
+			
 			/*
 			 * If there we no solutions then the solution array is all zeroes,
 			 * we return a 1.0 in the 6th index for this (i.e. out of auction)
@@ -208,6 +193,10 @@ public class AvgPosToPosDist extends AbstractModel {
 					}
 				}
 				return ans;	
+			}
+			
+			for(int i = 0; i < 5; i++) {
+				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
 			}
 
 			double stop = System.currentTimeMillis();
