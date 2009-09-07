@@ -103,12 +103,6 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			for(int i = 0; i < posDist.length; i++) {
 				posDist[i] = posDist[i]/posTotal;
 			}
-			
-			String pDist = "[";
-			for(int i = 0; i < posDist.length; i++) {
-				pDist += posDist[i] + ",";
-			}
-			System.out.println(pDist + "]");
 			posDists.put(query, posDist);
 		}
 
@@ -173,7 +167,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			}
 		}
 
-		if(_bids.get(new Query(null,null)).size() > 3) {
+		if(_bidBundles.size() > 6) {
 			if(_perQuery) {
 				for(Query query : _querySpace) {
 					ArrayList<Double> bidsArr = _bids.get(query);
