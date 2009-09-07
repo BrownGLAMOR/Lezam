@@ -103,9 +103,6 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			for(int i = 0; i < posDist.length; i++) {
 				posDist[i] = posDist[i]/posTotal;
 			}
-			if(posDist[5] == 1.0) {
-				posDist = new double[6];
-			}
 			posDists.put(query, posDist);
 		}
 
