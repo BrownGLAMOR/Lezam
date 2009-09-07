@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
