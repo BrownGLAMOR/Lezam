@@ -103,6 +103,9 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 			for(int i = 0; i < posDist.length; i++) {
 				posDist[i] = posDist[i]/posTotal;
 			}
+			if(posDist[5] == 1.0) {
+				posDist = new double[6];
+			}
 			posDists.put(query, posDist);
 		}
 
@@ -186,10 +189,6 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 							posDist[idx] = pDists[j];
 							idx++;
 						}
-					}
-					System.out.println(query + "   SOLS!!!!");
-					for(int i = 0; i < len; i++) {
-						System.out.println(bids[i] + ", " + pos[i] + ", " + posDist[i]);
 					}
 					try {
 						_rConnection.assign("bids", bids);
