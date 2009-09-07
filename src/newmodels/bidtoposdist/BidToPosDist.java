@@ -194,7 +194,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						_rConnection.assign("bid", bids);
 						_rConnection.assign("pos", pos);
 						_rConnection.assign("posDist", posDist);
-						String model = "lm(";
+						String model = "model = lm(";
 						if(_degree == 1) {
 							model += "posDist ~ pos + bid";
 						}
@@ -214,7 +214,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						if(_weighted) {
 							double[] weights = weightVecs.get(query);
 							_rConnection.assign("regWeights", weights);
-							model += ", weights = regweights";
+							model += ", weights = regWeights";
 						}
 
 						model += ")";
@@ -255,7 +255,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 					_rConnection.assign("bid", bids);
 					_rConnection.assign("pos", pos);
 					_rConnection.assign("posDist", posDist);
-					String model = "lm(";
+					String model = "model = lm(";
 					if(_degree == 1) {
 						model += "posDist ~ pos + bid";
 					}
@@ -274,7 +274,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 
 					if(_weighted) {
 						_rConnection.assign("regWeights", weightVec);
-						model += ", weights = regweights";
+						model += ", weights = regWeights";
 					}
 
 					model += ")";
