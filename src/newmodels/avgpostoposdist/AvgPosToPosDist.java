@@ -166,7 +166,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			for(int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
 				//				_cplex.output().println("Solution value  = " + _cplex.getObjValue(i));
 				double[] val = _cplex.getValues(x,i);
-				for (int j = 0; j < val.length; ++j) {
+				for (int j = 0; j < 5; ++j) {
 					//					_cplex.output().println("Column: " + j + " Value = " + val[j]);
 					solution[j] = solution[j] + val[j];
 				}
@@ -194,7 +194,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			}
 			
 			for(int i = 0; i < 5; i++) {
-				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
+				solution[i] = solution[i] / (_cplex.getSolnPoolNsolns()*1.0);
 			}
 
 			double stop = System.currentTimeMillis();
