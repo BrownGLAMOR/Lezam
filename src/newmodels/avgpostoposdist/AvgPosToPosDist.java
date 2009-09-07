@@ -71,10 +71,8 @@ public class AvgPosToPosDist extends AbstractModel {
 				double[] ans = new double[6];
 				for(int i = 0; i < 6; i++) {
 					ans[i] = 0.0;
-					if(i == 5) {
-						ans[i] = 1.0;
-					}
 				}
+				ans[5] = 1.0;
 				return ans;
 			}
 
@@ -85,15 +83,10 @@ public class AvgPosToPosDist extends AbstractModel {
 			 */
 			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos))) {
 				double[] ans = new double[6];
-				for(int i = 0; i < 5; i++) {
-					if((i+1) == avgPos) {
-						ans[i] = regImps+promImps;
-					}
-					else {
-						ans[i] = 0;
-					}
+				for(int i = 0; i < ans.length; i++) {
+					ans[i] = 0.0;
 				}
-				ans[5] = 0.0;
+				ans[(int)avgPos-1] = regImps + promImps;
 				return ans;
 			}
 			double start = System.currentTimeMillis();
@@ -160,7 +153,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			double[] solution = new double[6];
 
 			for(int i = 0; i < solution.length; i++) {
-				solution[i] = 0;
+				solution[i] = 0.0;
 			}
 
 			for(int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
@@ -172,7 +165,7 @@ public class AvgPosToPosDist extends AbstractModel {
 				}
 			}
 
-			
+
 			/*
 			 * If there we no solutions then the solution array is all zeroes,
 			 * we return a 1.0 in the 6th index for this (i.e. out of auction)
@@ -186,13 +179,11 @@ public class AvgPosToPosDist extends AbstractModel {
 				double[] ans = new double[6];
 				for(int i = 0; i < 6; i++) {
 					ans[i] = 0.0;
-					if(i == 5) {
-						ans[i] = 1.0;
-					}
 				}
+				ans[5] = 1.0;
 				return ans;	
 			}
-			
+
 			for(int i = 0; i < 5; i++) {
 				solution[i] = solution[i] / (_cplex.getSolnPoolNsolns()*1.0);
 			}
