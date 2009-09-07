@@ -187,6 +187,10 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 							idx++;
 						}
 					}
+					System.out.println(query + "   SOLS!!!!");
+					for(int i = 0; i < len; i++) {
+						System.out.println(bids[i] + ", " + pos[i] + ", " + posDist[i]);
+					}
 					try {
 						_rConnection.assign("bids", bids);
 						_rConnection.assign("pos", pos);

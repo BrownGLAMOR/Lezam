@@ -43,14 +43,14 @@ public class PredictionEvaluator {
 
 	public ArrayList<String> getGameStrings() {
 		//		String baseFile = "/Users/jordanberg/Desktop/mckpgames/localhost_sim";
-		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
-		//		int min = 454;
-		//		int max = 455;
+				String baseFile = "/home/jberg/mckpgames/localhost_sim";
+				int min = 454;
+				int max = 455;
 		//		int max = 496;
 
-		String baseFile = "/Users/jordanberg/Desktop/games/game-";
-		int min = 1;
-		int max = 2;
+//		String baseFile = "/Users/jordanberg/Desktop/games/game-";
+//		int min = 1;
+//		int max = 2;
 		//		int max = 9;
 		ArrayList<String> filenames = new ArrayList<String>();
 		//		System.out.println("Min: " + min + "  Max: " + max);
