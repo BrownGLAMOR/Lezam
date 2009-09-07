@@ -58,7 +58,8 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	public double[] getPrediction(Query query, double bid) {
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
-			return null;
+			double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+			return ans;
 		}
 		double predictions[] = new double[6];
 		for(int i = 0; i < predictions.length; i++) {
