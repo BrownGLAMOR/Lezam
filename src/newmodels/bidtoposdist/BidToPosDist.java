@@ -223,7 +223,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 						ArrayList<double[]> pDistsArr = _posDists.get(query);
 						double bid = bidsArr.get(i);
 						double[] pDists = pDistsArr.get(i);
-						for(int j = 0; j < posLen; j++) {
+						for(int j = 0; j < pDists.length; j++) {
 							bids[idx] = bid;
 							pos[idx] = j+1;
 							posDist[idx] = pDists[j];
