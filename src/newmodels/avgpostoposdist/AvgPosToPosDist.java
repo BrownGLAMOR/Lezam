@@ -78,7 +78,7 @@ public class AvgPosToPosDist extends AbstractModel {
 			 * only in the position specified
 			 */
 			if(forceToPos && doubleEquals(avgPos,Math.floor(avgPos))) {
-				double[] ans = new double[5];
+				double[] ans = new double[6];
 				for(int i = 0; i < 5; i++) {
 					if((i+1) == avgPos) {
 						ans[i] = regImps+promImps;
@@ -87,6 +87,7 @@ public class AvgPosToPosDist extends AbstractModel {
 						ans[i] = 0;
 					}
 				}
+				ans[5] = 0.0;
 				return ans;
 			}
 			double start = System.currentTimeMillis();
@@ -150,7 +151,7 @@ public class AvgPosToPosDist extends AbstractModel {
 
 			//			System.out.println(_cplex.getSolnPoolNsolns());
 
-			double[] solution = new double[5];
+			double[] solution = new double[6];
 
 			for(int i = 0; i < 5; i++) {
 				solution[i] = 0;
@@ -168,6 +169,8 @@ public class AvgPosToPosDist extends AbstractModel {
 			for(int i = 0; i < 5; i++) {
 				solution[i] = solution[i] / ((double)_cplex.getSolnPoolNsolns());
 			}
+			
+			solution[5] = 0.0;
 
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;

@@ -92,6 +92,19 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	 * posDists must be normalized first!
 	 */
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
+		//First normalize the arrs
+		for(Query query : _querySpace) {
+			double[] posDist = posDists.get(query);
+			double posTotal = 0.0;
+			for(int i = 0; i < posDist.length; i++) {
+				posTotal += posDist[i];
+			}
+			for(int i = 0; i < posDist.length; i++) {
+				posDist[i] = posDist[i]/posTotal;
+			}
+			posDists.put(query, posDist);
+		}
+
 
 		_queryReports.add(queryReport);
 		_bidBundles.add(bidBundle);
@@ -121,6 +134,8 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 		for(Query query : _querySpace) {
 			double bid = bidBundle.getBid(query);
 			double[] posDist = posDists.get(query);
+
+
 
 			ArrayList<Double> bids = _bids.get(query);
 			ArrayList<double[]> pDists = _posDists.get(query);
