@@ -346,7 +346,7 @@ public class BidToPosDist extends AbstractBidToPosDistModel {
 	
 	@Override
 	public String toString() {
-		return "";
+		return "BidToPosDist( perQuery: " + _perQuery + ", degree: " + _degree + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", m: " + _m;
 	}
 	
 }
