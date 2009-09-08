@@ -17,6 +17,7 @@ import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtopos.AbstractBidToPosModel;
 import newmodels.bidtopos.BidToPos;
+import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
@@ -809,26 +810,26 @@ public class PredictionEvaluator {
 			ArrayList<AbstractBidToPosModel> modelList = new ArrayList<AbstractBidToPosModel>();
 			RConnection rConnection = new RConnection();
 
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, false, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, true, .85));
-			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, false, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, true, .85));
+//			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, true, .85));
 			
-			
+			modelList.add(new EnsembleBidToPos(_querySpace, 10,5,false,true));
 			
 //			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 1, 40, false, .85));
 //			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 2, 40, false, .85));

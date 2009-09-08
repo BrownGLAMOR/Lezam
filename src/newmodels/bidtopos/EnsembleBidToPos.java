@@ -57,18 +57,15 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 
 	private RConnection rConnection;
 
-	private BasicTargetModel _targModel;
 
 	private double _outOfAuction = 6.0;
 
-	public EnsembleBidToPos(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
+	public EnsembleBidToPos(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
 		_bidBundles = new ArrayList<BidBundle>();
 
 		_querySpace = querySpace;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
-
-		_targModel = targModel;
 
 		_borda = borda;
 		_ignoreNaN = ignoreNaN;
@@ -122,7 +119,24 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Add Models
 		 */
-		
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 10, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 15, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 20, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 25, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 30, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 35, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 40, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 45, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 50, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 10, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 15, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 20, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 25, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 30, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 35, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 40, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 45, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 3, 50, true, .85));
 	}
 
 	@Override
@@ -343,6 +357,10 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		else {
 			throw new RuntimeException("intToBin can only be called with 0 or 1");
 		}
+	}
+	
+	public void addModel(AbstractBidToPosModel model) {
+		addModel(model.toString(),model);
 	}
 
 	public void addModel(String name, AbstractBidToPosModel model) {
@@ -673,7 +691,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	}
 
 	public AbstractModel getCopy() {
-		return new EnsembleBidToPos(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN);
+		return new EnsembleBidToPos(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
-
+	
 }
