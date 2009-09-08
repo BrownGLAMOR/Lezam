@@ -15,8 +15,8 @@ import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtoposdist.AbstractBidToPosDistModel;
-import newmodels.bidtoposdist.BidToPosDist;
+import newmodels.bidtopos.AbstractBidToPosModel;
+import newmodels.bidtopos.BidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
@@ -565,7 +565,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
 	}
 
-	public void bidToPosDistPredictionChallenge(AbstractBidToPosDistModel baseModel) throws IOException, ParseException {
+	public void bidToPosDistPredictionChallenge(AbstractBidToPosModel baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -607,7 +607,7 @@ public class PredictionEvaluator {
 			for(int agent = 0; agent < agents.length; agent++) {
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
-				AbstractBidToPosDistModel model = (AbstractBidToPosDistModel) baseModel.getCopy();
+				AbstractBidToPosModel model = (AbstractBidToPosModel) baseModel.getCopy();
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -644,20 +644,7 @@ public class PredictionEvaluator {
 						for(Query q : querySpace) {
 							double bid = otherBidBundle.getBid(q);
 							if(bid != 0) {
-								double[] posDist = model.getPrediction(q, otherBidBundle.getBid(q));
-								double avgPos = 0.0;
-								double posTot = 0.0;
-								for(int j = 0; j < posDist.length-1; j++) {
-									avgPos += posDist[j] * (j+1);
-									posTot += posDist[j];
-								}
-								
-								if(posTot == 0 || Double.isNaN(posTot)) {
-									avgPos = _outOfAuction;
-								}
-								else {
-									avgPos /= posTot;
-								}
+								double avgPos = model.getPrediction(q, otherBidBundle.getBid(q));
 								double pos = otherQueryReport.getPosition(q);
 								if(Double.isNaN(pos)) {
 									if(_ignoreNan ) {
@@ -819,27 +806,27 @@ public class PredictionEvaluator {
 			//				evaluator.posToClickPrPredictionChallenge(tempModel);
 			//			}
 
-			ArrayList<AbstractBidToPosDistModel> modelList = new ArrayList<AbstractBidToPosDistModel>();
+			ArrayList<AbstractBidToPosModel> modelList = new ArrayList<AbstractBidToPosModel>();
 			RConnection rConnection = new RConnection();
 
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 10, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 15, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 20, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 25, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 30, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 35, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 40, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 45, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 50, false, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 10, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 15, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 20, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 25, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 30, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 35, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 40, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 45, true, .85));
-			modelList.add(new BidToPosDist(rConnection, _querySpace, true, 3, 50, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, false, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 10, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 15, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 20, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 25, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 30, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 35, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 40, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 45, true, .85));
+			modelList.add(new BidToPos(rConnection, _querySpace, true, 3, 50, true, .85));
 			
 			
 			
@@ -855,7 +842,7 @@ public class PredictionEvaluator {
 //			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 1, 40, true, .85));
 //			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 2, 40, true, .85));
 //			modelList.add(new BidToPosDist(rConnection, _querySpace, false, 3, 40, true, .85));
-			for(AbstractBidToPosDistModel tempModel : modelList) {
+			for(AbstractBidToPosModel tempModel : modelList) {
 				evaluator.bidToPosDistPredictionChallenge(tempModel);
 			}
 
