@@ -28,6 +28,7 @@ public class BidToPosInverter extends AbstractModel {
 		_min = min;
 		_max = max;
 
+		
 		_coefficients = new HashMap<Query, double[]>();
 		for(Query query : _querySpace) {
 			_coefficients.put(query, null);
