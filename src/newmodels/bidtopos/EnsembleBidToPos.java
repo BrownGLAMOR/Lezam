@@ -50,8 +50,8 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	/*
 	 * Constants for making ensemble
 	 */
-	protected int NUMPASTDAYS = 5;
-	protected int ENSEMBLESIZE = 25;
+	protected int NUMPASTDAYS;
+	protected int ENSEMBLESIZE;
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
@@ -352,7 +352,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 
 	@Override
 	public String toString() {
-		return "EnsembleBidToCPC(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
+		return "EnsembleBidToPos(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
 	}
 
 	public boolean intToBin(int x) {
