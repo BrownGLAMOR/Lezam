@@ -58,29 +58,33 @@ public class BidToPos extends AbstractBidToPosModel {
 	@Override
 	public double getPrediction(Query query, double bid) {
 		double[] posDist = getDistPrediction(query,bid);
+		if(posDist == null) {
+			return Double.NaN;
+		}
+		
 		double avgPos = 0.0;
 		double posTot = 0.0;
+		
 		for(int j = 0; j < posDist.length; j++) {
 			avgPos += posDist[j] * (j+1);
 			posTot += posDist[j];
 		}
-		
-		if(posTot == 0 || Double.isNaN(posTot)) {
-			avgPos = _outOfAuction;
+
+		if(posTot == 0.0 || Double.isNaN(posTot)) {
+			avgPos = Double.NaN;
 		}
 		else {
 			avgPos /= posTot;
 		}
-		
+
 		return avgPos;
 	}
-	
-	
+
+
 	public double[] getDistPrediction(Query query, double bid) {
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
-			double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
-			return ans;
+			return null;
 		}
 		double predictions[] = new double[6];
 		for(int i = 0; i < predictions.length; i++) {
@@ -113,8 +117,7 @@ public class BidToPos extends AbstractBidToPosModel {
 		}
 
 		if(totPosDist == 0 || Double.isNaN(totPosDist)) {
-			double[] ans = {0.0, 0.0, 0.0, 0.0, 0.0, 1.0};
-			return ans;
+			return null;
 		}
 
 		for(int i = 0; i < predictions.length; i++) {
@@ -364,12 +367,12 @@ public class BidToPos extends AbstractBidToPosModel {
 	public AbstractModel getCopy() {
 		return new BidToPos(_rConnection, _querySpace, _perQuery, _degree,_numPrevDays,_weighted, _m);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "BidToPosDist( perQuery: " + _perQuery + ", degree: " + _degree + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", m: " + _m;
 	}
-	
+
 }
 
 

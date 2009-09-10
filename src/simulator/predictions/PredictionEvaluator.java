@@ -646,6 +646,9 @@ public class PredictionEvaluator {
 							double bid = otherBidBundle.getBid(q);
 							if(bid != 0) {
 								double avgPos = model.getPrediction(q, otherBidBundle.getBid(q));
+								if(Double.isNaN(avgPos)) {
+									avgPos = _outOfAuction;
+								}
 								double pos = otherQueryReport.getPosition(q);
 								if(Double.isNaN(pos)) {
 									if(_ignoreNan ) {

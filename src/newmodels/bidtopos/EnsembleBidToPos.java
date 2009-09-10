@@ -262,9 +262,14 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 							pos = _outOfAuction;
 						}
 						if(!(_ignoreNaN && pos == _outOfAuction)) {
-							error -= pos;
-							error = error*error;
-							queryDailyError.add(error);
+							if(Double.isNaN(error)) {
+								queryDailyError.add(Double.NaN);
+							}
+							else {
+								error -= pos;
+								error = error*error;
+								queryDailyError.add(error);
+							}
 						}
 					}
 					else {
@@ -285,12 +290,15 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			for(Query query : _querySpace) {
 				LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
 				double error = ensemblePredictions.get(query);
-				//				System.out.println(query + " prediction: " + error);
-				double CPC = queryReport.getCPC(query);
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
+				if(Double.isNaN(error)) {
+					error = _outOfAuction;
 				}
-				error -= CPC;
+				//				System.out.println(query + " prediction: " + error);
+				double pos = queryReport.getPosition(query);
+				if(Double.isNaN(pos)) {
+					pos = _outOfAuction;
+				}
+				error -= pos;
 				error = error*error;
 				MSE += error;
 				queryEnsembleError.add(error);
@@ -312,12 +320,9 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 
 	@Override
 	public double getPrediction(Query query, double bid) {
-		double prediction = 0.0;
-		if(bid == 0 || Double.isNaN(bid)) {
+		double prediction = _outOfAuction;
+		if(bid == 0 || Double.isNaN(bid) || _ensemble == null) {
 			return prediction;
-		}
-		if(_ensemble == null) {
-			return bid;
 		}
 		LinkedList<AbstractBidToPosModel> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
@@ -335,8 +340,11 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			}
 		}
 		prediction /= totWeight;
-		if(Double.isNaN(prediction) || prediction < 0) {
-			return bid;
+		if(prediction < 1.0) {
+			return 1.0;
+		}
+		else if(prediction > _outOfAuction) {
+			return _outOfAuction;
 		}
 		//		System.out.println("Overall Prediction: " + prediction);
 		return prediction;
@@ -358,7 +366,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			throw new RuntimeException("intToBin can only be called with 0 or 1");
 		}
 	}
-	
+
 	public void addModel(AbstractBidToPosModel model) {
 		addModel(model.toString(),model);
 	}
@@ -693,5 +701,5 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	public AbstractModel getCopy() {
 		return new EnsembleBidToPos(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
-	
+
 }
