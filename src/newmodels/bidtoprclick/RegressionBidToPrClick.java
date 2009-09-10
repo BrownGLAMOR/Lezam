@@ -93,7 +93,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	public double getPrediction(Query query, double currentBid, Ad currentAd){
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
-			return 0.0;
+			return Double.NaN;
 		}
 
 		double prediction = 0.0;
@@ -208,6 +208,10 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 
 		double clickpr = 1/(1+Math.exp(-prediction));
 
+		if(Double.isNaN(clickpr)) {
+			return Double.NaN;
+		}
+		
 		if(_targetModification && currentAd != null && !currentAd.isGeneric()) {
 			clickpr = _targModel.getClickPrPrediction(query,clickpr,false);
 		}
@@ -227,7 +231,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 			return bound;
 		}
 		
-		if(clickpr < 0 || Double.isNaN(clickpr)) {
+		if(clickpr < 0) {
 			return 0.0;
 		}
 

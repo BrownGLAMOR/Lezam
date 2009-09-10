@@ -94,9 +94,9 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	public double getPrediction(Query query, double currentBid){
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
-			return 0.0;
+			return Double.NaN;
 		}
-		
+
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -209,17 +209,22 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			prediction = Math.exp(prediction);
 		}
 
+		if(Double.isNaN(prediction)) {
+			return Double.NaN;
+		}
+
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
-		if(prediction < currentBid && prediction >= 0.0) {
-			return prediction;
-		}
-		else {
-			predictErrors++;
-			//			System.out.println(predictErrors);
+		if(prediction > currentBid) {
 			return currentBid;
 		}
+
+		if(prediction < 0.0) {
+			return 0.0;
+		}
+
+		return currentBid;
 	}
 
 	/*

@@ -92,11 +92,16 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	 */
 	public double getPrediction(Query query, double currentPos, Ad currentAd){
 		double[] coeff = _coefficients.get(query);
-		if(coeff == null || Double.isNaN(currentPos)) {
-			return 0.0;
+		if(coeff == null) {
+			return Double.NaN;
 		}
 
+		if(currentPos == _outOfAuctionPos) {
+			return 0.0;
+		}
+		
 		double prediction = 0.0;
+		
 		/*
 		 * oldest - > newest
 		 */
@@ -211,12 +216,16 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 		predCounter += clickPrs.size();
 
 		double clickpr = 1/(1+Math.exp(-prediction));
+		
+		if(Double.isNaN(clickpr)) {
+			return Double.NaN;
+		}
 
 		if(_targetModification && currentAd != null && !currentAd.isGeneric()) {
 			clickpr = _targModel.getClickPrPrediction(query,clickpr,false);
 		}
 
-		if(clickpr < 0 || Double.isNaN(clickpr)) {
+		if(clickpr < 0) {
 			return 0.0;
 		}
 

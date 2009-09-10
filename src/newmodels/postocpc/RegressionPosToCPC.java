@@ -92,7 +92,11 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 	 */
 	public double getPrediction(Query query, double currentPos){
 		double[] coeff = _coefficients.get(query);
-		if(coeff == null || currentPos == _outOfAuction ) {
+		if(coeff == null) {
+			return Double.NaN;
+		}
+
+		if(currentPos == _outOfAuction) {
 			return 0.0;
 		}
 
@@ -212,12 +216,15 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 			prediction = Math.exp(prediction);
 		}
 
-		if(prediction >= 0.0) {
-			return prediction;
+		if(Double.isNaN(prediction)) {
+			return Double.NaN;
 		}
-		else {
+
+		if(prediction < 0.0) {
 			return 0.0;
 		}
+
+		return prediction;
 	}
 
 	/*
