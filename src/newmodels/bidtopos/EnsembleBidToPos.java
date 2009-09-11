@@ -137,6 +137,24 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		addModel(new BidToPos(rConnection, _querySpace, true, 3, 40, true, .85));
 		addModel(new BidToPos(rConnection, _querySpace, true, 3, 45, true, .85));
 		addModel(new BidToPos(rConnection, _querySpace, true, 3, 50, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 10, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 15, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 20, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 25, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 30, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 35, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 40, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 45, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 50, false, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 10, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 15, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 20, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 25, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 30, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 35, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 40, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 45, true, .85));
+		addModel(new BidToPos(rConnection, _querySpace, true, 2, 50, true, .85));
 	}
 
 	@Override
@@ -326,13 +344,13 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		}
 		LinkedList<AbstractBidToPosModel> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
-			return 0;
+			return prediction;
 		}
 		double totWeight = 0.0;
 		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
 		for(AbstractBidToPosModel model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid);
-			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
+			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
 			if(!Double.isNaN(pred)) {
 				double weight = ensembleWeights.get(model.toString());
 				prediction += pred*weight;
@@ -340,13 +358,14 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			}
 		}
 		prediction /= totWeight;
+
 		if(prediction < 1.0) {
 			return 1.0;
 		}
 		else if(prediction > _outOfAuction) {
 			return _outOfAuction;
 		}
-		//		System.out.println("Overall Prediction: " + prediction);
+		System.out.println("Overall Prediction: " + prediction);
 		return prediction;
 	}
 
