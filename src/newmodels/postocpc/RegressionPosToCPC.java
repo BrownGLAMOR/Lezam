@@ -599,4 +599,9 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 	public String toString() {
 		return "RegressionPosToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 	}
+
+	@Override
+	public void updatePredictions(QueryReport otherQueryReport) {
+		//Not used in this class
+	}
 }

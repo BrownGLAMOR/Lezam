@@ -21,6 +21,7 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.postoprclick.BasicPosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
@@ -403,6 +404,7 @@ public class PredictionEvaluator {
 								ourTotErrorCounter++;
 							}
 						}
+						model.updatePredictions(otherBidBundle);
 					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
@@ -442,7 +444,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
 	}
 
-	public void posToCPCPredictionChallenge(AbstractBidToCPC baseModel) throws IOException, ParseException {
+	public void posToCPCPredictionChallenge(AbstractPosToCPC baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -480,7 +482,7 @@ public class PredictionEvaluator {
 			for(int agent = 0; agent < agents.length; agent++) {
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
-				AbstractBidToCPC model = (AbstractBidToCPC) baseModel.getCopy();
+				AbstractPosToCPC model = (AbstractPosToCPC) baseModel.getCopy();
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -527,6 +529,7 @@ public class PredictionEvaluator {
 							ourTotError += error;
 							ourTotErrorCounter++;
 						}
+						model.updatePredictions(otherQueryReport);
 					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);

@@ -616,4 +616,8 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	public String toString() {
 		return "TypeIRegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 	}
+
+	@Override
+	public void updatePredictions(BidBundle bundle) {
+	}
 }
