@@ -20,7 +20,7 @@ public abstract class AbstractBidToPosModel extends AbstractModel {
 	
 	public abstract double getPrediction(Query query, double bid);
 
-	public abstract boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport, BidBundle bidBundle,
-			HashMap<Query, double[]> posDist);
+	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query, double[]> posDist);
+
+	public abstract void updatePredictions(BidBundle otherBidBundle);
 }

@@ -177,13 +177,16 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		//		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		if(DEBUG > 0) {
+			System.out.println("Percent Usable [BidPos]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		}
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
 		return ensembleUsable;
 	}
 
+	@Override
 	public void updatePredictions(BidBundle bundle) {
 
 		/*
@@ -194,7 +197,8 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			AbstractBidToPosModel model = _usableModels.get(name);
 			HashMap<Query,Double> predictions = new HashMap<Query, Double>();
 			for(Query query : _querySpace) {
-				predictions.put(query, model.getPrediction(query, bundle.getBid(query)));
+				double prediction = model.getPrediction(query, bundle.getBid(query));
+				predictions.put(query, prediction);
 			}
 			modelPredictions.put(name, predictions);
 		}
@@ -347,10 +351,11 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			return prediction;
 		}
 		double totWeight = 0.0;
+		prediction = 0.0;
 		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
 		for(AbstractBidToPosModel model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid);
-			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
+			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
 			if(!Double.isNaN(pred)) {
 				double weight = ensembleWeights.get(model.toString());
 				prediction += pred*weight;
@@ -365,7 +370,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		else if(prediction > _outOfAuction) {
 			return _outOfAuction;
 		}
-		System.out.println("Overall Prediction: " + prediction);
+		//		System.out.println("Overall Prediction: " + prediction);
 		return prediction;
 	}
 

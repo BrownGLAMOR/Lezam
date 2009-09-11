@@ -373,6 +373,11 @@ public class BidToPos extends AbstractBidToPosModel {
 		return "BidToPosDist( perQuery: " + _perQuery + ", degree: " + _degree + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", m: " + _m;
 	}
 
+	@Override
+	public void updatePredictions(BidBundle otherBidBundle) {
+		//Not necessary for this class
+	}
+
 }
 
 
