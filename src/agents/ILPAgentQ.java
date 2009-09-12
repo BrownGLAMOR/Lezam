@@ -43,7 +43,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ILPAgentQ extends SimAbstractAgent{
+public class ILPAgentQ extends AbstractAgent{
 	
 	// ########################
 	// #### Game Decisions ####

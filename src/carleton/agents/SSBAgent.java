@@ -1,4 +1,4 @@
-package agents;
+package carleton.agents;
 
 /*
  * Commented by Max. All comments made by cjc are marked with "// (cjc)"
@@ -29,6 +29,8 @@ package agents;
 import java.util.Hashtable;
 import java.util.Set;
 
+import carleton.strategies.SSBBidStrategy;
+
 import modelers.conversionprob.ConversionPrModel;
 import modelers.conversionprob.ConversionPrModelNoIS;
 import modelers.unitssold.UnitsSoldModel;
@@ -49,7 +51,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class SSBAgent extends AbstractAgent {
+public class SSBAgent extends CarletonAbstractAgent {
 	protected SSBBidStrategy _bidStrategy;
 	
 	protected DistributionCap _distributionCap;

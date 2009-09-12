@@ -32,7 +32,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class DPAgent extends SimAbstractAgent{
+public class DPAgent extends AbstractAgent{
 	
 	// models
 	protected AbstractUnitsSoldModel unitsSoldModel; 

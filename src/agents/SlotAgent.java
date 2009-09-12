@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class SlotAgent extends SimAbstractAgent {
+public class SlotAgent extends AbstractAgent {
 
 	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _reinvestment;

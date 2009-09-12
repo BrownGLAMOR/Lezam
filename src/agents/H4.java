@@ -27,7 +27,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class H4 extends SimAbstractAgent{
+public class H4 extends AbstractAgent{
 	private Random _R = new Random();
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected AbstractConversionModel _conversionPrModel;

@@ -1,7 +1,7 @@
 package agents.rules;
 
-import agents.GenericBidStrategy;
-import agents.SSBBidStrategy;
+import carleton.strategies.GenericBidStrategy;
+import carleton.strategies.SSBBidStrategy;
 import edu.umich.eecs.tac.props.Query;
 
 public class ConversionPr extends StrategyTransformation{	

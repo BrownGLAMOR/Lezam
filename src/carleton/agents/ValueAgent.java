@@ -1,7 +1,8 @@
-package agents;
+package carleton.agents;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -12,7 +13,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class ValueAgent extends AbstractAgent {
+public class ValueAgent extends CarletonAbstractAgent {
 
     public static final boolean DEBUG = true;
     public static final double AVERAGE_FX_PERCENT = .75;

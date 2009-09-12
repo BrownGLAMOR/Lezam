@@ -29,7 +29,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickSlotAgent extends SimAbstractAgent {
+public class ClickSlotAgent extends AbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected AbstractBidToCPC _bidToCPCModel;
 	protected AbstractConversionModel _conversionPrModel;

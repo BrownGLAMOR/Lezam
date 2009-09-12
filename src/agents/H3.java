@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class H3 extends SimAbstractAgent{
+public class H3 extends AbstractAgent{
 	protected AbstractConversionModel _conversionPrModel;
     protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;

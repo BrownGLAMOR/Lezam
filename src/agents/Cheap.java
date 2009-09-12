@@ -10,7 +10,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class Cheap extends SimAbstractAgent {
+public class Cheap extends AbstractAgent {
 	
 	private Random _R = new Random();
 

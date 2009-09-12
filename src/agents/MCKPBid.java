@@ -47,7 +47,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPBid extends SimAbstractAgent {
+public class MCKPBid extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;

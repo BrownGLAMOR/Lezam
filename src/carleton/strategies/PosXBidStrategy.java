@@ -1,10 +1,11 @@
-package agents;
+package carleton.strategies;
 
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
 
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;

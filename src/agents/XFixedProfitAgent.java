@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 
-public class XFixedProfitAgent extends SimAbstractAgent {
+public class XFixedProfitAgent extends AbstractAgent {
 	
 	/* Budgeting: */
 	protected final boolean UseBUDGETS = false;

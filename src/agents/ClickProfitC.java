@@ -32,7 +32,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class ClickProfitC extends SimAbstractAgent {
+public class ClickProfitC extends AbstractAgent {
 	protected BidBundle _bidBundle;
 	
 	protected AbstractUnitsSoldModel _unitsSoldModel; 

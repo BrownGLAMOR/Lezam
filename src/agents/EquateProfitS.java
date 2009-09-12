@@ -28,7 +28,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EquateProfitS extends SimAbstractAgent{
+public class EquateProfitS extends AbstractAgent{
 	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _baselineConv;
 	protected HashMap<Query,Double> _estimatedPrice;

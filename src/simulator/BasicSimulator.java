@@ -41,7 +41,7 @@ import agents.Cheap;
 import agents.EquateProfitC;
 import agents.ILPAgent;
 import agents.MCKPBid;
-import agents.SimAbstractAgent;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -141,7 +141,7 @@ public class BasicSimulator {
 
 	private ArrayList<SimUser> _pregenUsers;
 
-	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, SimAbstractAgent agent, int advertiseridx) {
+	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
 		System.out.println("Num Iterations: " + NUM_PERF_ITERS);
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
@@ -625,7 +625,7 @@ public class BasicSimulator {
 	/*
 	 * Gets the bids from the agent using perfect models
 	 */
-	public BidBundle getBids(SimAbstractAgent agentToRun) {
+	public BidBundle getBids(AbstractAgent agentToRun) {
 		if(PERFECTMODELS) {
 			agentToRun.setModels(generatePerfectModels());
 		}
@@ -633,7 +633,7 @@ public class BasicSimulator {
 		return bidBundle;
 	}
 
-	public ArrayList<SimAgent> buildAgents(SimAbstractAgent agentToRun) {
+	public ArrayList<SimAgent> buildAgents(AbstractAgent agentToRun) {
 		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
 		for(int i = 0; i < _agents.length; i++) {
 			SimAgent agent;
@@ -1015,8 +1015,8 @@ public class BasicSimulator {
 	 */
 	public HashMap<String, Reports> runSimulation(Object agentToRun) {
 		ArrayList<SimAgent> agents;
-		if(agentToRun instanceof SimAbstractAgent) {
-			agents = buildAgents((SimAbstractAgent) agentToRun);
+		if(agentToRun instanceof AbstractAgent) {
+			agents = buildAgents((AbstractAgent) agentToRun);
 		}
 		else if(agentToRun instanceof BidBundle) {
 			agents = buildAgents((BidBundle) agentToRun);
@@ -1409,7 +1409,7 @@ public class BasicSimulator {
 		return agentStrings;
 	}
 
-	public SimAbstractAgent stringToAgent(String string) {
+	public AbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
 			return new MCKPBid();
 		}

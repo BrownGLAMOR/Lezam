@@ -1,7 +1,9 @@
-package agents;
+package carleton.agents;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import carleton.strategies.PosXBidStrategy;
 
 import agents.rules.DistributionCap;
 import agents.rules.NoImpressions;
@@ -12,7 +14,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PosXAgent extends AbstractAgent{
+public class PosXAgent extends CarletonAbstractAgent{
 
 	protected PosXBidStrategy _bidStrategy;
 	protected DistributionCap _distributionCap;

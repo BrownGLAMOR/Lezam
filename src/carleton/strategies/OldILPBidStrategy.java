@@ -1,4 +1,4 @@
-package agents.old;
+package carleton.strategies;
 
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import agents.GenericBidStrategy;
+import carleton.agents.OldILPmodelsCalc;
+
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 

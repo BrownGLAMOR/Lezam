@@ -1,4 +1,4 @@
-package agents;
+package carleton.strategies;
 
 import java.util.Hashtable;
 import java.util.Set;

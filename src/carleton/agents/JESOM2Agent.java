@@ -1,7 +1,9 @@
-package agents;
+package carleton.agents;
 
 import java.util.Hashtable;
 import java.util.Set;
+
+import carleton.strategies.JESOM2BidStrategy;
 
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMean;
@@ -17,7 +19,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class JESOM2Agent extends AbstractAgent {
+public class JESOM2Agent extends CarletonAbstractAgent {
 	protected JESOM2BidStrategy _bidStrategy;
 	protected Hashtable<Query,Double> _baseLineConversion;
 	protected DistributionCap _distributionCap;

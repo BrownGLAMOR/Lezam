@@ -1,6 +1,7 @@
-package agents;
+package carleton.strategies;
 
 import java.util.Set;
+
 
 import edu.umich.eecs.tac.props.Query;
 

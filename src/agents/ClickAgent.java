@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickAgent extends SimAbstractAgent {
+public class ClickAgent extends AbstractAgent {
 
 	protected AbstractConversionModel _conversionPrModel;
 	

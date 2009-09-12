@@ -2,7 +2,8 @@ package agents.rules;
 
 import java.util.Set;
 
-import agents.GenericBidStrategy;
+import carleton.strategies.GenericBidStrategy;
+
 import edu.umich.eecs.tac.props.Query;
 
 public abstract class StrategyTransformation {

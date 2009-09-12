@@ -20,7 +20,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class NewJESOM2 extends SimAbstractAgent{
+public class NewJESOM2 extends AbstractAgent{
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected HashMap<Query, AbstractPrConversionModel> _conversionPrModel;
 	protected HashMap<Query, Double> _baseLineConversion;

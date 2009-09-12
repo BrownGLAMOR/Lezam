@@ -12,7 +12,7 @@ import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
-import agents.SimAbstractAgent;
+import agents.AbstractAgent;
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ConstantPM extends SimAbstractAgent {
+public class ConstantPM extends AbstractAgent {
 	private static final boolean SET_TARGET = true;
 	private static final boolean SET_BUDGET = false;
 	

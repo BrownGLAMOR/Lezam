@@ -1,13 +1,14 @@
-package agents.old;
+package carleton.agents;
 
 import java.util.Vector;
 
+import carleton.strategies.OldILPBidStrategy;
+
 import se.sics.tasim.props.SimulationStatus;
-import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 
-public class OldILPAgent extends AbstractAgent{
+public class OldILPAgent extends CarletonAbstractAgent{
 
 	protected OldILPBidStrategy _bidStrategy;
 	protected double _day;

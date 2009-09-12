@@ -39,7 +39,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class DPBNLAgent extends SimAbstractAgent {
+public class DPBNLAgent extends AbstractAgent {
 
 	// models
 	protected AbstractConversionModel prConversionModel;

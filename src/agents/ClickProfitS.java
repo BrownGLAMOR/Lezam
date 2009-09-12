@@ -25,7 +25,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class ClickProfitS extends SimAbstractAgent {
+public class ClickProfitS extends AbstractAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected AbstractConversionModel _prConversionModel;
