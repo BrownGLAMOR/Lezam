@@ -47,7 +47,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPAgentMkIIBids extends SimAbstractAgent {
+public class MCKPBid extends SimAbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
@@ -90,7 +90,7 @@ public class MCKPAgentMkIIBids extends SimAbstractAgent {
 	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 	private boolean salesDistFlag;
 
-	public MCKPAgentMkIIBids() {
+	public MCKPBid() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .1;

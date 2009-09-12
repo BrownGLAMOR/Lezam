@@ -40,7 +40,7 @@ import agents.BidPosModelTestAgent;
 import agents.Cheap;
 import agents.EquateProfitC;
 import agents.ILPAgent;
-import agents.MCKPAgentMkIIBids;
+import agents.MCKPBid;
 import agents.SimAbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
@@ -1411,7 +1411,7 @@ public class BasicSimulator {
 
 	public SimAbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPAgentMkIIBids();
+			return new MCKPBid();
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -1427,7 +1427,7 @@ public class BasicSimulator {
 			return null;
 		}
 		else {
-			return new MCKPAgentMkIIBids();
+			return new MCKPBid();
 		}
 	}
 
