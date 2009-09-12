@@ -37,7 +37,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class DPBAgent extends AbstractAgent {
+public class DPBidAgent extends AbstractAgent {
 
 	// models
 	protected AbstractConversionModel prConversionModel;
