@@ -57,16 +57,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 	private RConnection rConnection;
 
-	private BasicTargetModel _targModel;
-
-	public EnsembleBidToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
+	public EnsembleBidToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
 		_bidBundles = new ArrayList<BidBundle>();
 
 		_querySpace = querySpace;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
-
-		_targModel = targModel;
 
 		_borda = borda;
 		_ignoreNaN = ignoreNaN;
@@ -696,7 +692,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	}
 
 	public AbstractModel getCopy() {
-		return new EnsembleBidToCPC(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN);
+		return new EnsembleBidToCPC(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
 
 }

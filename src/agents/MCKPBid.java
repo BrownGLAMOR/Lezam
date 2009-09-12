@@ -76,14 +76,6 @@ public class MCKPBid extends AbstractAgent {
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
 	private int lagDays = 4;
-
-
-	/*
-	 * For error calculations
-	 */
-	private LinkedList<HashMap<Query, Double>> CPCPredictions, ClickPrPredictions, ConvPrPredictions, ImpPredictions;
-	private double sumCPCError, sumClickPrError, sumConvPrError, sumImpError;
-	private int errorDayCounter, prConvSkip = 0, impSkip = 0;
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
@@ -96,16 +88,6 @@ public class MCKPBid extends AbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
 		}
-		CPCPredictions = new LinkedList<HashMap<Query,Double>>();
-		ClickPrPredictions = new LinkedList<HashMap<Query,Double>>();
-		ConvPrPredictions = new LinkedList<HashMap<Query,Double>>();
-		ImpPredictions = new LinkedList<HashMap<Query,Double>>();
-
-		sumCPCError = 0.0;
-		sumClickPrError = 0.0;
-		sumConvPrError = 0.0;
-		sumImpError = 0.0;
-		errorDayCounter = 0;
 
 		salesDistFlag = false;
 	}
@@ -123,10 +105,8 @@ public class MCKPBid extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 5, 8, null);
-		((EnsembleBidToCPC) bidToCPC).initializeEnsemble();
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 5, 32, basicTargModel, null);
-		((EnsembleBidToPrClick) bidToPrClick).initializeEnsemble();
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -168,12 +148,8 @@ public class MCKPBid extends AbstractAgent {
 				BasicTargetModel targModel = (BasicTargetModel) model;
 				_targModel = targModel;
 			}
-			else if(model instanceof AbstractBidToSlotModel) {
-				AbstractBidToSlotModel bidToSlotModel = (AbstractBidToSlotModel) model;
-				_bidToSlotModel = bidToSlotModel;
-			}
 			else {
-				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
@@ -302,9 +278,13 @@ public class MCKPBid extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
-		double numIncItemsPerSet = 0;
-
+		
+		if(SAFETYBUDGET) {
+			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
+		}
+		
 		System.out.println("Day: " + _day);
+		
 		if(_day > 1) {
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
@@ -313,26 +293,16 @@ public class MCKPBid extends AbstractAgent {
 			}
 			_salesDist.updateModel(_salesReport);
 		}
-		
+
 		if(_day > lagDays + 2) {
 			QueryReport queryReport = _queryReports.getLast();
 			SalesReport salesReport = _salesReports.getLast();
-			((EnsembleBidToCPC) _bidToCPC).updateError(queryReport, _bidBundles.get(_bidBundles.size()-2));
-			((EnsembleBidToCPC) _bidToCPC).createEnsemble();
-
-			((EnsembleBidToPrClick) _bidToPrClick).updateEnsemble(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			((EnsembleBidToPrClick) _bidToPrClick).createEnsemble();
-
 		}
 
 		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			HashMap<Query,Double> dailyCPCPredictions = new HashMap<Query, Double>();
-			HashMap<Query,Double> dailyClickPrPredictions = new HashMap<Query, Double>();
-			HashMap<Query,Double> dailyConvPrPredictions = new HashMap<Query, Double>();
-			HashMap<Query,Double> dailyImpPredictions = new HashMap<Query, Double>();
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
@@ -363,9 +333,6 @@ public class MCKPBid extends AbstractAgent {
 
 					debug("\tBid: " + bid);
 					debug("\tCPC: " + CPC);
-					if(_bidToSlotModel != null) {
-						debug("\tAvg Pos: " + _bidToSlotModel.getPrediction(q, bid));
-					}
 					debug("\tNumImps: " + numImps);
 					debug("\tNumClicks: " + numClicks);
 					debug("\tClickPr: " + clickPr);
@@ -397,11 +364,8 @@ public class MCKPBid extends AbstractAgent {
 				debug("Items for " + q);
 				Item[] items = itemList.toArray(new Item[0]);
 				IncItem[] iItems = getIncremental(items);
-				numIncItemsPerSet += iItems.length;
 				allIncItems.addAll(Arrays.asList(iItems));
 			}
-			numIncItemsPerSet /= 16.0;
-			debug(numIncItemsPerSet);
 			double budget = _capacity/_capWindow;
 			if(_day < 4) {
 				//do nothing
@@ -488,132 +452,9 @@ public class MCKPBid extends AbstractAgent {
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
-
-				dailyCPCPredictions.put(q, _bidToCPC.getPrediction(q, bid));
-				dailyClickPrPredictions.put(q, _bidToPrClick.getPrediction(q, bid, new Ad()));
-				dailyConvPrPredictions.put(q, _convPrModel.getPrediction(q,0));
-				dailyImpPredictions.put(q,(double)_queryToNumImpModel.getPrediction(q));
-
 			}
-			((EnsembleBidToCPC) _bidToCPC).updatePredictions(bidBundle);
-			((EnsembleBidToPrClick) _bidToPrClick).updatePredictions(bidBundle);
-			CPCPredictions.add(dailyCPCPredictions);
-			ClickPrPredictions.add(dailyClickPrPredictions);
-			ConvPrPredictions.add(dailyConvPrPredictions);
-			ImpPredictions.add(dailyImpPredictions);
-			/*
-			 * Update model error
-			 */
-			if(_day > lagDays+2) {
-				errorDayCounter++;
-				debug(errorDayCounter);
-				QueryReport queryReport = _queryReports.getLast();
-				SalesReport salesReport = _salesReports.getLast();
-				debug("Day: " + _day);
-
-				/*
-				 * CPC Error
-				 */
-				HashMap<Query, Double> cpcpredictions = CPCPredictions.get(CPCPredictions.size()-3);
-				double dailyCPCerror = 0;
-				for(Query query : _querySpace) {
-					if (Double.isNaN(queryReport.getCPC(query))) {
-						//If CPC is NaN it means it is zero, which means our entire prediction is error!
-						double error = cpcpredictions.get(query)*cpcpredictions.get(query);
-						dailyCPCerror += error;
-						sumCPCError += error;
-					}
-					else {
-						double error = (queryReport.getCPC(query) - cpcpredictions.get(query))*(queryReport.getCPC(query) - cpcpredictions.get(query));
-						dailyCPCerror += error;
-						sumCPCError += error;
-					}
-				}
-				double stddevCPC = Math.sqrt(sumCPCError/(errorDayCounter*16));
-				debug("Daily CPC Error: " + Math.sqrt(dailyCPCerror/16));
-				debug("CPC  Standard Deviation: " + stddevCPC);
-
-				/*
-				 * ClickPr Error
-				 */
-				HashMap<Query, Double> clickprpredictions = ClickPrPredictions.get(ClickPrPredictions.size()-3);
-				double dailyclickprerror = 0;
-				for(Query query : _querySpace) {
-					double clicks = queryReport.getClicks(query);
-					double imps = queryReport.getImpressions(query);
-					if (clicks == 0 || imps == 0) {
-						double error = clickprpredictions.get(query)*clickprpredictions.get(query);
-						dailyclickprerror += error;
-						sumClickPrError += error;
-					}
-					else {
-						double error = (clicks/imps - clickprpredictions.get(query))*(clicks/imps- clickprpredictions.get(query));
-						dailyclickprerror += error;
-						sumClickPrError += error;
-					}
-				}
-				double stddevClickPr = Math.sqrt(sumClickPrError/(errorDayCounter*16));
-				debug("Daily Bid To ClickPr Error: " + Math.sqrt(dailyclickprerror/16));
-				debug("ClickPr Bid To Standard Deviation: " + stddevClickPr);
-
-				/*
-				 * ConvPr Error
-				 */
-				HashMap<Query, Double> convprpredictions = ConvPrPredictions.get(ConvPrPredictions.size()-3);
-				double dailyconvprerror = 0;
-				int prConvDailySkip = 0;
-				for(Query query : _querySpace) {
-					double clicks = queryReport.getClicks(query);
-					double convs = salesReport.getConversions(query);
-					if(clicks == 0 || convs == 0) {
-						prConvSkip++;
-						prConvDailySkip++;
-					}
-					else {
-						//						debug("Predicted ConvPr: " + convprpredictions.get(query));
-						//						debug("Actual ConvPr: " + convs/clicks);
-						double error = (convs/clicks - convprpredictions.get(query))*(convs/clicks- convprpredictions.get(query));
-						dailyconvprerror += error;
-						sumConvPrError += error;
-					}
-				}
-				double stddevConvPr = Math.sqrt(sumConvPrError/(errorDayCounter*16 - prConvSkip));
-				debug("Daily Bid To ConvPr Error: " + Math.sqrt(dailyconvprerror/(16-prConvDailySkip)));
-				debug("ConvPr To Standard Deviation: " + stddevConvPr);
-
-				/*
-				 * NumImps Error
-				 */
-				HashMap<Query, Double> numimpspredictions = ImpPredictions.get(ImpPredictions.size()-3);
-				double dailyimperror = 0;
-				int impDailySkip = 0;
-				for(Query query : _querySpace) {
-					double imps = queryReport.getImpressions(query);
-					if(imps == 0) {
-						impSkip++;
-						impDailySkip++;
-					}
-					else {
-						//						debug("Predicted Imps: " + numimpspredictions.get(query));
-						//						debug("Actual Imps: " + imps);
-						double error = (imps - numimpspredictions.get(query))*(imps- numimpspredictions.get(query));
-						dailyimperror += error;
-						sumImpError += error;
-					}
-				}
-				double stddevImp = Math.sqrt(sumImpError/(errorDayCounter*16 - impSkip));
-				//				debug("Daily Bid To Num Imps Error: " + Math.sqrt(dailyimperror/(16-impDailySkip)));
-				//				debug("Num Imps To Standard Deviation: " + stddevImp);
-
-
-				//				if(_day == 60) {
-				//					debug("ClickPr Bid To Standard Deviation: " + stddevClickPr);
-				//					debug("CPC  Standard Deviation: " + stddevCPC);
-				//					((EnsembleBidToPrClick) _bidToPrClick).printEnsembleMemberSummary();
-				//					((EnsembleBidToCPC) _bidToCPC).printEnsembleMemberSummary();
-				//				}
-			}
-
+			_bidToCPC.updatePredictions(bidBundle);
+			_bidToPrClick.updatePredictions(bidBundle);
 		}
 		else {
 			for(Query q : _querySpace){
@@ -627,9 +468,7 @@ public class MCKPBid extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-		if(SAFETYBUDGET) {
-			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
-		}
+		
 		return bidBundle;
 	}
 
