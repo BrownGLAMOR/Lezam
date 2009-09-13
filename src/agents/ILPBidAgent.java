@@ -43,7 +43,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ILPAgentQ extends AbstractAgent{
+public class ILPBidAgent extends AbstractAgent{
 	
 	// ########################
 	// #### Game Decisions ####
@@ -90,7 +90,7 @@ public class ILPAgentQ extends AbstractAgent{
 	// #### The Agent ####
 	// ###################
 
-	public ILPAgentQ(){
+	public ILPBidAgent(){
 		System.out.println("Let's start");
 		_productRevenue = new HashMap<Product, Double>();
 		_bids = new HashMap<Query, Double>();

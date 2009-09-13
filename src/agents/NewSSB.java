@@ -44,7 +44,7 @@ public class NewSSB extends AbstractAgent{
 
 		for (Query query : _querySpace) {
 
-			_conversionPrModel.getPrediction(query,0.0);
+			_conversionPrModel.getPrediction(query);
 
 			//handle the case of no impression (the agent got no slot)
 			handleNoImpression(query);
@@ -140,7 +140,7 @@ public class NewSSB extends AbstractAgent{
 
 	protected double getQueryBid(Query q)
 	{
-		return _conversionPrModel.getPrediction(q,0.0)*_reinvestment.get(q)*_revenue.get(q);
+		return _conversionPrModel.getPrediction(q)*_reinvestment.get(q)*_revenue.get(q);
 	}
 
 	protected void handleNoImpression(Query q){
@@ -157,12 +157,12 @@ public class NewSSB extends AbstractAgent{
 		if(_queryReport.getPosition(q) < 1.1){
 			//if(_reinvestment.get(q)*0.6 <= 0.1) _reinvestment.put(q, 0.1);
 			//else _reinvestment.put(q,_reinvestment.get(q)*0.6);
-			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q,0.0)*_revenue.get(q)));
+			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q)*_revenue.get(q)));
 		}
 		if(_queryReport.getPosition(q)< 2.1 && _queryReport.getPosition(q) > 1.1 && _numPS ==2){
 			//if(_reinvestment.get(q)*0.6 <= 0.2) _reinvestment.put(q, 0.1);
 			//else _reinvestment.put(q,_reinvestment.get(q)*0.8);
-			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q,0.0)));
+			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q)));
 		}
 	}   
 

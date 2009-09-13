@@ -82,7 +82,7 @@ public class GoodConversionPrModel extends AbstractConversionModel {
 	}	
 
 	@Override
-	public double getPrediction(Query query, double bid) {
+	public double getPrediction(Query query) {
 		Double[] lim = _limits.findLimits(_wR.get(query), _wh.get(query), 0);
 
 		return lim[0];

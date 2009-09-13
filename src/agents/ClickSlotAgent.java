@@ -193,14 +193,14 @@ public class ClickSlotAgent extends AbstractAgent {
 	protected double getQueryBid(Query q) {
 		double prConv;
 		if (_day <= 6) prConv = _baseLineConversion.get(q);
-		else prConv = _conversionPrModel.getPrediction(q, 0.0);
+		else prConv = _conversionPrModel.getPrediction(q);
 		return _revenue.get(q) * _honestFactor.get(q) * prConv;
 	}
 
 	protected double setQuerySpendLimit(Query q) {
 		double prConv;
 		if (_day <= 6) prConv = _baseLineConversion.get(q);
-		else prConv = _conversionPrModel.getPrediction(q, 0.0);
+		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 		
 		double bid = _bidBundle.getBid(q);
@@ -278,7 +278,7 @@ public class ClickSlotAgent extends AbstractAgent {
 			if (_queryReport.getClicks(q) > 0) 
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.getPrediction(q, 0.0)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.getPrediction(q)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_wantedSales.get(q)).append("\n");
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");

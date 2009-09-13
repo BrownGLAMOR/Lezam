@@ -178,7 +178,7 @@ public class DPBidAgent extends AbstractAgent {
 				for (double bid : item.get(query).keySet()) {
 
 					int maxClick = item.get(query).get(bid);
-					double prConv = prConversionModel.getPrediction(query, 0.0);
+					double prConv = prConversionModel.getPrediction(query);
 
 					for (int capacity = 0; capacity / prConv <= maxClick; capacity++) {
 						if (j - capacity < 0) break; 
@@ -231,7 +231,7 @@ public class DPBidAgent extends AbstractAgent {
 			double dailyLimit = Double.NaN;
 			if (sales[i][capacity] > 0) {
 				bid = bids[i][capacity];
-				double prConv = prConversionModel.getPrediction(queries[i], 0.0);
+				double prConv = prConversionModel.getPrediction(queries[i]);
 				if (Double.isNaN(prConv) || prConv == 0) prConv = _baselineConv.get(queries[i]);
 				double clicks = sales[i][capacity] * 1.0/ prConv;
 				
@@ -446,7 +446,7 @@ public class DPBidAgent extends AbstractAgent {
 				buff.append("\t").append("Conversions Pr: ").append(
 					_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");}
 			else buff.append("\t").append("Conversions Pr: ").append("No click").append("\n");
-			buff.append("\t").append("Predicted Conversion Pr: ").append(prConversionModel.getPrediction(q, 0.0)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr: ").append(prConversionModel.getPrediction(q)).append("\n");
 			if (_queryReport.getImpressions(q) > 0) {
 				buff.append("\t").append("Click Pr: ").append(
 					_queryReport.getClicks(q)*1.0/_queryReport.getImpressions(q)).append("\n");}

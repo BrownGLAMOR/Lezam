@@ -317,7 +317,7 @@ public class MCKPBid extends AbstractAgent {
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q,bid);
+					double convProb = _convPrModel.getPrediction(q);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;

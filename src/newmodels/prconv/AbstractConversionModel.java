@@ -19,6 +19,6 @@ public abstract class AbstractConversionModel extends AbstractModel {
 	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bundle);
 	
 
-	public abstract double getPrediction(Query query, double bid);
+	public abstract double getPrediction(Query query);
 
 }

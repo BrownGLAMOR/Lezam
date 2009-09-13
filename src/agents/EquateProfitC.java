@@ -203,7 +203,7 @@ public class EquateProfitC extends AbstractAgent{
 	protected double getQueryBid(Query q){
 		double prConv;
 		if(_day <= 6) prConv = _baselineConv.get(q);
-		else prConv = _conversionPrModel.getPrediction(q, 0.0);
+		else prConv = _conversionPrModel.getPrediction(q);
 		
 		double rev = _estimatedPrice.get(q);
 		

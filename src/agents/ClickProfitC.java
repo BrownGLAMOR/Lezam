@@ -116,7 +116,7 @@ public class ClickProfitC extends AbstractAgent {
 		
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			double profit = _prConversionModel.getPrediction(query, 0.0)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
+			double profit = _prConversionModel.getPrediction(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
@@ -197,9 +197,9 @@ public class ClickProfitC extends AbstractAgent {
 		for (Query query : _querySpace) {
 			// set bids
 			double prConv;
-			if (_day <= 6 || !(_prConversionModel.getPrediction(query, 0.0) > 0))
+			if (_day <= 6 || !(_prConversionModel.getPrediction(query) > 0))
 				prConv = _baselineConversions.get(query);
-			else prConv= _prConversionModel.getPrediction(query, 0.0);
+			else prConv= _prConversionModel.getPrediction(query);
 			
 			double bid = prConv *_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
 			_bidBundle.setBid(query, bid);
@@ -275,7 +275,7 @@ public class ClickProfitC extends AbstractAgent {
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
 			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModel.getPrediction(q, 0.0)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModel.getPrediction(q)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
 			if (_salesReport.getConversions(q) > 0)

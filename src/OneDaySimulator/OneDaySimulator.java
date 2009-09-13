@@ -11,7 +11,7 @@ import java.util.Set;
 import se.sics.tasim.props.SimulationStatus;
 import se.sics.tasim.props.StartInfo;
 import usermodel.UserState;
-import agents.ILPAgentQ;
+import agents.ILPBidAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
@@ -30,7 +30,7 @@ import edu.umich.eecs.tac.props.SlotInfo;
  * @author ml63 (taken from jberg)
  * 
  */
-public class OneDaySimulator extends ILPAgentQ{	// You only need to change this line in order to choose an agent
+public class OneDaySimulator extends ILPBidAgent{	// You only need to change this line in order to choose an agent
 
 	Random _R = new Random();
 

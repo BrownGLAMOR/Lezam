@@ -132,7 +132,7 @@ public class SlotAgent extends AbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q,0);
+			conversion = _conversionPrModel.getPrediction(q);
 		return conversion * _reinvestment.get(q) * _revenue.get(q);
 	}
 
@@ -148,7 +148,7 @@ public class SlotAgent extends AbstractAgent {
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q,0);
+			conversion = _conversionPrModel.getPrediction(q);
 		
 		if (_queryReport.getPosition(q) <= 3) {
 			double newReinvest = Math.max(0.1, _reinvestment.get(q) * .9);
@@ -177,7 +177,7 @@ public class SlotAgent extends AbstractAgent {
 	protected double setQuerySpendLimit(Query q) {
 
 		double remainCap = 1.5 * _capacity / _capWindow;
-		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q,0)
+		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
 				/ _querySpace.size();
 	}
 
