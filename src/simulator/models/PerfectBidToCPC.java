@@ -40,4 +40,14 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 		return new PerfectBidToCPC(_simulator);
 	}
 
+	@Override
+	public String toString() {
+		return "PerfectBidToCPC";
+	}
+
+	@Override
+	public void updatePredictions(BidBundle bundle) {
+		//Not needed
+	}
+
 }

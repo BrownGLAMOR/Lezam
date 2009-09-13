@@ -20,8 +20,8 @@ import newmodels.AbstractModel;
 import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtopos.AbstractBidToPosModel;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.bidtoslot.AbstractBidToSlotModel;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
@@ -35,11 +35,10 @@ import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
-import agents.AdMaxAgent;
-import agents.BidPosModelTestAgent;
 import agents.Cheap;
+import agents.ConstantPM;
 import agents.EquateProfitC;
-import agents.ILPAgent;
+import agents.ILPBidAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
@@ -609,7 +608,7 @@ public class BasicSimulator {
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
 		AbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
-		AbstractBidToSlotModel bidToSlotModel = new PerfectBidToPosition(this);
+		AbstractBidToPosModel bidToSlotModel = new PerfectBidToPosition(this);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -1179,13 +1178,13 @@ public class BasicSimulator {
 			}
 		}
 		if(DEBUG) {
-			AvgPosToPosDist avgPosModel20 = new AvgPosToPosDist(20);
-			AvgPosToPosDist avgPosModel40 = new AvgPosToPosDist(40);
-			AvgPosToPosDist avgPosModel80 = new AvgPosToPosDist(80);
-			AvgPosToPosDist avgPosModel160 = new AvgPosToPosDist(160);
-			AvgPosToPosDist avgPosModel320 = new AvgPosToPosDist(320);
-			AvgPosToPosDist avgPosModel640 = new AvgPosToPosDist(640);
-			AvgPosToPosDist avgPosModelall = new AvgPosToPosDist(1000000);
+//			AvgPosToPosDist avgPosModel20 = new AvgPosToPosDist(20);
+//			AvgPosToPosDist avgPosModel40 = new AvgPosToPosDist(40);
+//			AvgPosToPosDist avgPosModel80 = new AvgPosToPosDist(80);
+//			AvgPosToPosDist avgPosModel160 = new AvgPosToPosDist(160);
+//			AvgPosToPosDist avgPosModel320 = new AvgPosToPosDist(320);
+//			AvgPosToPosDist avgPosModel640 = new AvgPosToPosDist(640);
+//			AvgPosToPosDist avgPosModelall = new AvgPosToPosDist(1000000);
 			for(int i = 0; i < agents.size(); i++) {
 				SimAgent agent = agents.get(i);
 				if(i == _ourAdvIdx) {
@@ -1417,10 +1416,10 @@ public class BasicSimulator {
 			return new Cheap();
 		}
 		else if(string.equals("Crest")) {
-			return new AdMaxAgent();
+			return new ConstantPM();
 		}
 		else if(string.equals("ILP")) {
-			return new ILPAgent();
+			return new ILPBidAgent();
 		}
 		else if(string.equals("newSSB")) {
 			//TODO

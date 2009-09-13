@@ -43,4 +43,19 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		return new PerfectBidToPrClick(_simulator);
 	}
 
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		//not needed
+	}
+
+	@Override
+	public String toString() {
+		return "PerfectBidToPrClick";
+	}
+
+	@Override
+	public void updatePredictions(BidBundle otherBidBundle) {
+		//Not needed
+	}
+
 }
