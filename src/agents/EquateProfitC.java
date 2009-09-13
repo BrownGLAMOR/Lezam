@@ -15,9 +15,8 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtoslot.BasicBidToClick;
-import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
@@ -80,6 +79,7 @@ public class EquateProfitC extends AbstractAgent{
 		
 		_bidBundleList.add(_bidBundle);
 //		printInfo();
+		_bidToCPC.updatePredictions(_bidBundle);
 		return _bidBundle;
 	}
 
@@ -127,7 +127,7 @@ public class EquateProfitC extends AbstractAgent{
 			}
 		}
 
-		_bidToCPC = new RegressionBidToCPC(_querySpace);
+		_bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
 		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
@@ -156,7 +156,7 @@ public class EquateProfitC extends AbstractAgent{
 		    
 			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
-			_conversionPrModel.setTimeHorizon(_timeHorizon);
+			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(_timeHorizon);
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 
 			for (Query query: _querySpace) {
