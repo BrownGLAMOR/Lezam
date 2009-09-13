@@ -119,32 +119,32 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		/*
 		 * Add Models
 		 */
-		for(int perQuery = 0; perQuery < 2; perQuery++) {
-			for(int IDVar = 1; IDVar < 6; IDVar++) {
-				for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
-					for(int weighted = 0; weighted < 2; weighted++) {
-						//Robust regressions don't work well
-						for(int robust = 0; robust < 1; robust++) {
-							for(int loglinear = 0; loglinear < 1; loglinear++) {
-								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-										for(int powers = 0; powers < 2; powers++) {
-											for(int ignoreNaN = 0; ignoreNaN < 2; ignoreNaN++) {
-												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
-													AbstractPosToCPC model = new RegressionPosToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
-													addModel(model.toString(),model);
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+//		for(int perQuery = 0; perQuery < 2; perQuery++) {
+//			for(int IDVar = 1; IDVar < 6; IDVar++) {
+//				for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
+//					for(int weighted = 0; weighted < 2; weighted++) {
+//						//Robust regressions don't work well
+//						for(int robust = 0; robust < 1; robust++) {
+//							for(int loglinear = 0; loglinear < 1; loglinear++) {
+//								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+//									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+//										for(int powers = 0; powers < 2; powers++) {
+//											for(int ignoreNaN = 0; ignoreNaN < 2; ignoreNaN++) {
+//												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+//													AbstractPosToCPC model = new RegressionPosToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+//													addModel(model.toString(),model);
+//												}
+//											}
+//										}
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
 	}
 
 	@Override

@@ -118,28 +118,28 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		/*
 		 * Add Models
 		 */
-				for(int perQuery = 0; perQuery < 2; perQuery++) {
-					for(int IDVar = 1; IDVar < 6; IDVar++) {
-						for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
-							for(int weighted = 0; weighted < 2; weighted++) {
-								//Robust regressions don't work well
-								for(int robust = 0; robust < 1; robust++) {
-									for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-										for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-											for(int powers = 0; powers < 2; powers++) {
-												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
-													AbstractPosToPrClick model = new RegressionPosToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
-													addModel(model.toString(),model);
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+//				for(int perQuery = 0; perQuery < 2; perQuery++) {
+//					for(int IDVar = 1; IDVar < 6; IDVar++) {
+//						for(int numPrevDays = 20; numPrevDays <= 20; numPrevDays += 20) {
+//							for(int weighted = 0; weighted < 2; weighted++) {
+//								//Robust regressions don't work well
+//								for(int robust = 0; robust < 1; robust++) {
+//									for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+//										for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+//											for(int powers = 0; powers < 2; powers++) {
+//												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))) {
+//													AbstractPosToPrClick model = new RegressionPosToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+//													addModel(model.toString(),model);
+//												}
+//											}
+//										}
+//									}
+//								}
+//							}
+//						}
+//					}
+//				}
 //		addModel(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 25, _targModel, true, false, true, false, true));
 //		addModel(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 20, _targModel, true, false, true, false, true));
 //		addModel(new RegressionPosToPrClick(rConnection, _querySpace, false, 1, 30, _targModel, true, false, true, false, true));
