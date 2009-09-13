@@ -43,7 +43,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	private boolean _powers;
 	private BasicTargetModel _targModel;
 	private boolean _weighted;
-	private double m = 0.85;
+	private double _mWeight = 0.85;
 	private boolean _robust;
 	private HashMap<Query, double[]> _coefficients;
 	private boolean _perQuery;
@@ -51,7 +51,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	private boolean _targetModification = true;
 
 
-	public RegressionPosToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
+	public RegressionPosToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, double mWeight, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {
 		c = rConnection;
 		_pos = new HashMap<Query,ArrayList<Double>>();
 		_clickPrs = new HashMap<Query,ArrayList<Double>>();
@@ -63,6 +63,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
+		_mWeight = mWeight;
 		_robust = robust;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
@@ -317,7 +318,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[i] = Math.pow(m,_queryReports.size() + 2 - i);
+							weights[i] = Math.pow(_mWeight,_queryReports.size() + 2 - i);
 						}
 					}
 
@@ -433,7 +434,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[idx] = Math.pow(m,_queryReports.size() + 2 - i);
+							weights[idx] = Math.pow(_mWeight,_queryReports.size() + 2 - i);
 						}
 						idx++;
 					}
@@ -637,7 +638,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionPosToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted,_robust, _queryIndicators, _queryTypeIndicators, _powers);
+		return new RegressionPosToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted, _mWeight, _robust, _queryIndicators, _queryTypeIndicators, _powers);
 	}
 
 	@Override
@@ -647,7 +648,8 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 
 	@Override
 	public String toString() {
-		return "RegressionPosToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
+		return "RegressionPosToPrClick(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", targModel, " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ")";
+//		return "RegressionPosToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
 	}
 
 	@Override

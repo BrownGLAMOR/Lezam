@@ -41,7 +41,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 	private boolean _weighted;
-	private double m = .85;
+	private double _mWeight = .85;
 	private boolean _robust;
 	private boolean _loglinear;
 	/*
@@ -51,7 +51,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 	private HashMap<Query, double[]> _coefficients;
 	private double _outOfAuction = 6.0;
 
-	public RegressionPosToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
+	public RegressionPosToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, double mWeight, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		c = rConnection;
 		_pos = new HashMap<Query,ArrayList<Double>>();
 		_CPCs = new HashMap<Query,ArrayList<Double>>();
@@ -62,6 +62,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
+		_mWeight = mWeight;
 		_robust = robust;
 		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
@@ -300,7 +301,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[i] = Math.pow(m, _queryReports.size()  + 2 - i);
+							weights[i] = Math.pow(_mWeight, _queryReports.size()  + 2 - i);
 						}
 					}
 
@@ -400,7 +401,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[idx] = Math.pow(m, _queryReports.size()  + 2 - i);
+							weights[idx] = Math.pow(_mWeight, _queryReports.size()  + 2 - i);
 						}
 						idx++;
 					}
@@ -592,12 +593,13 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionPosToCPC(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+		return new RegressionPosToCPC(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _mWeight, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
 	public String toString() {
-		return "RegressionPosToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+//		return "RegressionPosToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+		return "RegressionPosToCPC(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _loglinear + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
 
 	@Override

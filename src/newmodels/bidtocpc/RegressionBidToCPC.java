@@ -30,7 +30,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
-	private RConnection c;
+	private RConnection _rConnection;
 	private int _numQueries = 16;
 	private int _IDVar;
 	private boolean _perQuery;
@@ -42,7 +42,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 	private boolean _weighted;
-	private double m = .85;
+	private double _mWeight = .85;
 	private boolean _robust;
 	private boolean _loglinear;
 	/*
@@ -51,8 +51,8 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private boolean _ignoreNaN;
 	private HashMap<Query, double[]> _coefficients;
 
-	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
-		c = rConnection;
+	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, double mWeight, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
+		_rConnection = rConnection;
 		_bids = new HashMap<Query,ArrayList<Double>>();
 		_CPCs = new HashMap<Query,ArrayList<Double>>();
 		_coefficients = new HashMap<Query, double[]>();
@@ -63,6 +63,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_IDVar = IDVar;
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
+		_mWeight = mWeight;
 		_robust = robust;
 		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
@@ -80,7 +81,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 		if(_robust) {
 			try {
-				c.voidEval("library(MASS)");
+				_rConnection.voidEval("library(MASS)");
 			} catch (RserveException e) {
 				throw new RuntimeException("Could not load the R MASS library");
 			}
@@ -317,13 +318,13 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[i] = Math.pow(m, _bidBundles.size()  + 2 - i);
+							weights[i] = Math.pow(_mWeight, _bidBundles.size()  + 2 - i);
 						}
 					}
 
 					try {
-						c.assign("bids", bids);
-						c.assign("cpcs", cpcs);
+						_rConnection.assign("bids", bids);
+						_rConnection.assign("cpcs", cpcs);
 
 						String model;
 
@@ -364,15 +365,15 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						model = model.substring(0, model.length()-3);
 
 						if(_weighted == true) {
-							c.assign("regweights", weights);
+							_rConnection.assign("regweights", weights);
 							model += ", weights = regweights[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "]";
 						}
 
 						model += ")";
 
 						//				System.out.println(model);				
-						c.voidEval(model);
-						double[] coeff = c.eval("coefficients(model)").asDoubles();
+						_rConnection.voidEval(model);
+						double[] coeff = _rConnection.eval("coefficients(model)").asDoubles();
 						//				for(int i = 0 ; i < coeff.length; i++)
 						//					System.out.println(coeff[i]);
 						_coefficients.put(query, coeff);
@@ -417,7 +418,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 							 * $0 < m < 1$ and $t - t_i$ is the difference between the
 							 * day we are predicting and the day we observed the data
 							 */
-							weights[idx] = Math.pow(m, _bidBundles.size()  + 2 - i);
+							weights[idx] = Math.pow(_mWeight, _bidBundles.size()  + 2 - i);
 						}
 						idx++;
 					}
@@ -497,19 +498,19 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 				try {
 					if(_queryIndicators) {
-						c.assign("queryInd1",queryInd1);
-						c.assign("queryInd2",queryInd2);
-						c.assign("queryInd3",queryInd3);
-						c.assign("queryInd4",queryInd4);
-						c.assign("queryInd5",queryInd5);
-						c.assign("queryInd6",queryInd6);
+						_rConnection.assign("queryInd1",queryInd1);
+						_rConnection.assign("queryInd2",queryInd2);
+						_rConnection.assign("queryInd3",queryInd3);
+						_rConnection.assign("queryInd4",queryInd4);
+						_rConnection.assign("queryInd5",queryInd5);
+						_rConnection.assign("queryInd6",queryInd6);
 					}
 					else if(_queryTypeIndicators) {
-						c.assign("queryIndF1",queryIndF1);
-						c.assign("queryIndF2",queryIndF2);
+						_rConnection.assign("queryIndF1",queryIndF1);
+						_rConnection.assign("queryIndF2",queryIndF2);
 					}
-					c.assign("bids", bids);
-					c.assign("cpcs", cpcs);
+					_rConnection.assign("bids", bids);
+					_rConnection.assign("cpcs", cpcs);
 
 					String model;
 
@@ -557,15 +558,15 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 					model = model.substring(0, model.length()-3);
 
 					if(_weighted == true) {
-						c.assign("regweights", weights);
+						_rConnection.assign("regweights", weights);
 						model += ", weights = regweights[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "]";
 					}
 
 					model += ")";
 
 					//				System.out.println(model);				
-					c.voidEval(model);
-					double[] coeff = c.eval("coefficients(model)").asDoubles();
+					_rConnection.voidEval(model);
+					double[] coeff = _rConnection.eval("coefficients(model)").asDoubles();
 					//				for(int i = 0 ; i < coeff.length; i++)
 					//					System.out.println(coeff[i]);
 					for(Query query : _querySpace) {
@@ -609,12 +610,13 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionBidToCPC(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+		return new RegressionBidToCPC(_rConnection, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _mWeight, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
 	public String toString() {
-		return "TypeIRegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+//		return "RegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", mWeight: " + _mWeight + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+		return "RegressionBidToCPC(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _loglinear + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
 
 	@Override
