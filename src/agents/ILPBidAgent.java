@@ -18,18 +18,15 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.BasicBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtonumclicks.AbstractBidToNumClicks;
-import newmodels.bidtonumclicks.BasicBidToNumClicks;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.bidtoprclick.BasicBidToPrClick;
+import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
-import newmodels.bidtoprconv.AbstractBidToPrConv;
-import newmodels.bidtoprconv.BasicBidToPrConv;
-import newmodels.prconv.TrinaryPrConversion.GetsBonus;
+import newmodels.prconv.AbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
+import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
@@ -81,7 +78,7 @@ public class ILPBidAgent extends AbstractAgent{
 	private AbstractUserModel _userModel;	// the number of users in every state
 	private AbstractBidToPrClick _bidToClickPrModel; // the click probability for a bid in a query 
 	private AbstractBidToCPC _bidToCPCModel;
-	private AbstractBidToPrConv _convPrModel;
+	private AbstractConversionModel _convPrModel;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractQueryToNumImp _queryToNumImpModel;
 	private HashMap<Query, Double> _baseConvProbs;
@@ -510,8 +507,9 @@ public class ILPBidAgent extends AbstractAgent{
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
-		AbstractBidToCPC bidToCPC = new RegressionBidToCPC(_querySpace);
-		AbstractBidToPrClick bidToPrClick = new RegressionBidToPrClick(_querySpace, 4, 30, true, false, false);
+		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
 		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
 		models.add(userModel);
 		models.add(queryToNumImp);
