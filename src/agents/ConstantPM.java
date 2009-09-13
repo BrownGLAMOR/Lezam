@@ -157,7 +157,7 @@ public class ConstantPM extends AbstractAgent {
 		HashSet<AbstractModel> m = new HashSet<AbstractModel>();
 
 		_model = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		_model.setTimeHorizon(3);
+		((HistoricPrConversionModel) _model).setTimeHorizon(3);
 		m.add(_model);
 
 		_oldModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
@@ -171,7 +171,7 @@ public class ConstantPM extends AbstractAgent {
 			_day++;
 			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
-			_model.setTimeHorizon(_timeHorizon);
+			((HistoricPrConversionModel) _model).setTimeHorizon(_timeHorizon);
 			_model.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			_oldModel.setTimeHorizon(_timeHorizon);

@@ -12,12 +12,11 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.prconv.SimplePrConversion;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
@@ -101,6 +100,8 @@ public class ClickSlotAgent extends AbstractAgent {
 		
 		//printInfo();
 		
+		_bidToCPCModel.updatePredictions(_bidBundle);
+		
 		return _bidBundle;
 	}
 
@@ -166,9 +167,8 @@ public class ClickSlotAgent extends AbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity,
-				_capWindow);
-		_bidToCPCModel = new RegressionBidToCPC(_querySpace);
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+		_bidToCPCModel = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
 
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		return null;
@@ -180,7 +180,7 @@ public class ClickSlotAgent extends AbstractAgent {
 		if( (salesReport != null) && (queryReport != null)) {
 			
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-			_conversionPrModel.setTimeHorizon(timeHorizon);
+			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			if (_bidBundles.size() > 1) 

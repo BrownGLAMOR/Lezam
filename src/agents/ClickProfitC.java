@@ -18,7 +18,6 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.prconv.NoTargetHistoricPrConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
@@ -95,7 +94,7 @@ public class ClickProfitC extends AbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 		
-		_prConversionModel = new NoTargetHistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_baselineConversions = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
@@ -306,7 +305,7 @@ public class ClickProfitC extends AbstractAgent {
 			
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
-			_prConversionModel.setTimeHorizon(timeHorizon);
+			((HistoricPrConversionModel) _prConversionModel).setTimeHorizon(timeHorizon);
 			_prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 		

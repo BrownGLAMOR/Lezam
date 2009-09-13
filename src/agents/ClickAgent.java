@@ -111,7 +111,7 @@ public class ClickAgent extends AbstractAgent {
 
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
 					MAX_TIME_HORIZON);
-			_conversionPrModel.setTimeHorizon(timeHorizon);
+			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 

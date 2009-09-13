@@ -11,15 +11,14 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
-import newmodels.prconv.AbstractPrConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.prconv.SimplePrConversion;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.revenue.AbstractRevenueModel;
@@ -116,8 +115,6 @@ public class DPBidAgent extends AbstractAgent {
 		if(_day > lagDays + 2) {
 			QueryReport queryReport = _queryReports.getLast();
 			SalesReport salesReport = _salesReports.getLast();
-			((EnsembleBidToPrClick) bidToPrClickModel).updateEnsemble(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			((EnsembleBidToPrClick) bidToPrClickModel).createEnsemble();
 		}
 
 		// find relevant variables
@@ -286,7 +283,10 @@ public class DPBidAgent extends AbstractAgent {
 		this.printInfo();
 
 		bidBundleList.add(bidBundle);
-		((EnsembleBidToPrClick) bidToPrClickModel).updatePredictions(bidBundle);
+		
+		bidToPrClickModel.updatePredictions(bidBundle);
+		bidToCPCModel.updatePredictions(bidBundle);
+		
 		return bidBundle;
 	}
 
@@ -340,10 +340,11 @@ public class DPBidAgent extends AbstractAgent {
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
-		bidToCPCModel = new RegressionBidToCPC(_querySpace);
+		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
 		models.add(bidToCPCModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 5, 10, targetModel, null);
-		((EnsembleBidToPrClick)bidToPrClickModel).initializeEnsemble();
+		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+		models.add(basicTargModel);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
 		models.add(bidToPrClickModel);
 
 		revenues = new HashMap<Query, Double>();
@@ -383,7 +384,7 @@ public class DPBidAgent extends AbstractAgent {
 
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
 					MAX_TIME_HORIZON);
-			prConversionModel.setTimeHorizon(timeHorizon);
+			((HistoricPrConversionModel) prConversionModel).setTimeHorizon(timeHorizon);
 			prConversionModel.updateModel(queryReport, salesReport, bidBundleList
 					.get(bidBundleList.size() - 2));
 

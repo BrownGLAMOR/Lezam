@@ -12,7 +12,7 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.prconv.NoTargetHistoricPrConversionModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
@@ -82,7 +82,7 @@ public class ClickProfitS extends AbstractAgent {
 		
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 
-		_prConversionModel = new NoTargetHistoricPrConversionModel(_querySpace, _targetModel);
+		_prConversionModel = new HistoricPrConversionModel(_querySpace, _targetModel);
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
         	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
@@ -286,7 +286,7 @@ public class ClickProfitS extends AbstractAgent {
 		
 			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 	
-	        _prConversionModel.setTimeHorizon(_timeHorizon);
+	        ((HistoricPrConversionModel) _prConversionModel).setTimeHorizon(_timeHorizon);
 	        _prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
 			for (Query query : _querySpace) {
