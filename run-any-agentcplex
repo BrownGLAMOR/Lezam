@@ -13,4 +13,4 @@ for i in $( ls ${LIB}/*.jar ); do
   CLASSPATH=${CLASSPATH}:$i
 done
 
-java -Djava.library.path=/com/cplex/bin/x86_debian4.0_4.1/ -server -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
+java -Djava.library.path=/com/cplex112/bin/x86_debian4.0_4.1/ -server -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
