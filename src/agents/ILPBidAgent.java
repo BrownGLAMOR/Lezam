@@ -2,17 +2,16 @@ package agents;
 
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
+import ilog.concert.IloLinearIntExpr;
 import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
 
-import java.awt.Toolkit;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.Map;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
@@ -23,15 +22,22 @@ import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postoprclick.RegressionPosToPrClick;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
+import newmodels.sales.SalesDistributionModel;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
-import usermodel.UserState;
+import agents.mckp.IncItem;
+import agents.mckp.Item;
+import agents.mckp.ItemComparatorByWeight;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -40,116 +46,159 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ILPBidAgent extends AbstractAgent{
-	
-	// ########################
-	// #### Game Decisions ####
-	// ########################
+/**
+ * @author jberg
+ *
+ */
+public class ILPBidAgent extends AbstractAgent {
+
+	private static final int MAX_TIME_HORIZON = 5;
+	private static final boolean TARGET = false;
+	private static final boolean BUDGET = false;
+	private static final boolean SAFETYBUDGET = false;
+	private static final boolean BOOST = true;
+
+	private double _safetyBudget = 800;
+
+	//Days since Last Boost
+	private double lastBoost;
+	private double boostCoeff = 1.2;
+
 	private Random _R = new Random();
-	final static boolean USEOVERQUANTITY = true; 	// Do you want the MIP formula to include over capacity?
-	protected static int NUMUSERS = 90000;		// How many users are simulated?
-	double _regReserveScore = 0.4;					// I want the bids to be at least the regular reserve score
-	
-	
-	// ###################
-	// #### Variables ####
-	// ###################
-	/// Data from server 
-	protected static int NUMOFQUERIES;		// the size of the query space
-	protected static int DAILYCAPACITY;		// the daily capacity
-	protected static double DISCOUNTER;		// the discounter for the over capacity
-	
-	/// Agent variables
-	protected Set<Double> _possibleBids;
-	protected Set<Integer> _possibleQuantities;	// a vector of all the quantities that we are willing to over sell 
-	protected static Map <Product , Double> _productRevenue;	// the revenue from every product, including component specialty
-	protected HashMap<Query, Double> _bids;					// a set of our decision for bidding on every query. 0 if no bidding
-	protected HashMap<Query, Double> _dailyLimit;		// daily limit per query
-	protected HashMap<Integer, Query> _queryIndexing;	// mapping queries into integers - it help with the cplex variable array
-	protected Set<UserState> searchingUserStates;
-	protected int _numSearchingUsers;
-	protected HashMap<Query, HashMap<String,Double>> _previousDayData;
-	private int _wantedSales;	// how much we want to sell in a specific day
-	FileWriter _fstream;
-	BufferedWriter _fout;
-	protected BidBundle _bidBundle;
-
-	
-	private AbstractUserModel _userModel;	// the number of users in every state
-	private AbstractBidToPrClick _bidToClickPrModel; // the click probability for a bid in a query 
-	private AbstractBidToCPC _bidToCPCModel;
-	private AbstractConversionModel _convPrModel;
-	private AbstractUnitsSoldModel _unitsSold;
-	private AbstractQueryToNumImp _queryToNumImpModel;
+	private boolean DEBUG = false;
+	private double LAMBDA = .995;
+	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
+	private HashMap<Query, Double> _baseClickProbs;
+	private AbstractUserModel _userModel;
+	private AbstractQueryToNumImp _queryToNumImpModel;
+	private AbstractBidToCPC _bidToCPC;
+	private AbstractBidToPrClick _bidToPrClick;
+	private AbstractUnitsSoldModel _unitsSold;
+	private AbstractConversionModel _convPrModel;
+	private SalesDistributionModel _salesDist;
+	private BasicTargetModel _targModel;
+	private Hashtable<Query, Integer> _queryId;
+	private LinkedList<Double> _bidList;
+	private LinkedList<Integer> _capList;
+	private int _capacityInc = 10;
+	private int lagDays = 4;
+	private boolean salesDistFlag;
+	private IloCplex _cplex;
 
-	// ###################
-	// #### The Agent ####
-	// ###################
-
-	public ILPBidAgent(){
-		System.out.println("Let's start");
-		_productRevenue = new HashMap<Product, Double>();
-		_bids = new HashMap<Query, Double>();
-		_dailyLimit = new HashMap<Query, Double>();
-		_queryIndexing = new HashMap<Integer, Query>();
-		_previousDayData = new HashMap<Query, HashMap<String,Double>>();
-		_bidBundle = new BidBundle();
-
-		_numSearchingUsers = 0;
-		
-		searchingUserStates = new HashSet<UserState>();
-		searchingUserStates.add(UserState.F0);
-		searchingUserStates.add(UserState.F1);
-		searchingUserStates.add(UserState.F2);
-		searchingUserStates.add(UserState.IS);
+	public ILPBidAgent() {
 
 		try {
-			_fstream = new FileWriter("SalesSlotsOut.txt");
-			_fout = new BufferedWriter(_fstream);
+			IloCplex cplex = new IloCplex();
+			cplex.setOut(null);
+			_cplex = cplex;
+		} catch (IloException e) {
+			throw new RuntimeException("Could not initialize CPLEX");
 		}
-		catch (Exception e) {
-			System.err.println ("problem with opening file - " + e.getMessage());
+
+		_bidList = new LinkedList<Double>();
+		//		double increment = .25;
+		double bidIncrement  = .1;
+		double bidMin = .04;
+		double bidMax = 2;
+		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
+		for(int i = 0; i < tot; i++) {
+			_bidList.add(bidMin+(i*bidIncrement));
+		}
+
+		_capList = new LinkedList<Integer>();
+		int increment = 5;
+		int min = 0;
+		int max = 50;
+		for(int i = min; i <= max; i+= increment) {
+			_capList.add(i);
+		}
+
+		salesDistFlag = false;
+	}
+
+
+
+	@Override
+	public Set<AbstractModel> initModels() {
+		/*
+		 * Order is important because some of our models use other models
+		 * so we use a LinkedHashSet
+		 */
+		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
+		AbstractUserModel userModel = new BasicUserModel();
+		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
+		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
+		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		models.add(userModel);
+		models.add(queryToNumImp);
+		models.add(bidToCPC);
+		models.add(bidToPrClick);
+		models.add(unitsSold);
+		models.add(convPrModel);
+		models.add(basicTargModel);
+		return models;
+	}
+
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractUserModel) {
+				AbstractUserModel userModel = (AbstractUserModel) model;
+				_userModel = userModel;
+			}
+			else if(model instanceof AbstractQueryToNumImp) {
+				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
+				_queryToNumImpModel = queryToNumImp;
+			}
+			else if(model instanceof AbstractUnitsSoldModel) {
+				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
+				_unitsSold = unitsSold;
+			}
+			else if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				_bidToCPC = bidToCPC; 
+			}
+			else if(model instanceof AbstractBidToPrClick) {
+				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
+				_bidToPrClick = bidToPrClick;
+			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_convPrModel = convPrModel;
+			}
+			else if(model instanceof BasicTargetModel) {
+				BasicTargetModel targModel = (BasicTargetModel) model;
+				_targModel = targModel;
+			}
+			else {
+				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+			}
 		}
 	}
+
 	@Override
 	public void initBidder() {
-		System.out.println("Initilizing Bids");
-		
-		DAILYCAPACITY = _advertiserInfo.getDistributionCapacity() / _advertiserInfo.getDistributionWindow();
-		DISCOUNTER = _advertiserInfo.getDistributionCapacityDiscounter();
-		NUMOFQUERIES = _querySpace.size();
-		
-		for (Product p : _retailCatalog) {
-			int givesBonus=0;
-			if (p.getManufacturer().equals(_advertiserInfo.getManufacturerSpecialty())) givesBonus = 1;
-			double profit = _retailCatalog.getSalesProfit(p)*(1+_advertiserInfo.getComponentBonus()*givesBonus);
-			System.out.println("product " + p.getComponent() + " " + p.getManufacturer() + " with profit " + profit);
-			_productRevenue.put(p, profit);
-		}
 
-		int qvalue = 0;
-		for(Query query : _querySpace){	// just some reasonable numbers to start with 
-			double bid = 0;
-//			if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-//				bid = .5;
-//			else if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-//				bid = 0.8;
-//			else 
-//				bid = 1.2;
-			_bids.put(query, bid);
-			
-			_queryIndexing.put(qvalue, query);
-			qvalue++;
-			
-			_dailyLimit.put(query, Double.MAX_VALUE);
-		}
-
-		_possibleBids = new HashSet<Double>(setPossibleBids(0.1, 3.5, .01));
-		_possibleQuantities = new HashSet<Integer>(setPossibleQuantities(0, 10, 1));
-		
 		_baseConvProbs = new HashMap<Query, Double>();
+		_baseClickProbs = new HashMap<Query, Double>();
+
+		// set revenue prices
+		_salesPrices = new HashMap<Query,Double>();
 		for(Query q : _querySpace) {
+
+			String manufacturer = q.getManufacturer();
+			if(_manSpecialty.equals(manufacturer)) {
+				_salesPrices.put(q, 10*(_MSB+1));
+			}
+			else if(manufacturer == null) {
+				_salesPrices.put(q, (10*(_MSB+1)) * (1/3.0) + (10)*(2/3.0));
+			}
+			else {
+				_salesPrices.put(q, 10.0);
+			}
 
 			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 				_baseConvProbs.put(q, _piF0);
@@ -164,365 +213,50 @@ public class ILPBidAgent extends AbstractAgent{
 				throw new RuntimeException("Malformed query");
 			}
 
+			/*
+			 * These are the MAX e_q^a (they are randomly generated), which is our clickPr for being in slot 1!
+			 * 
+			 * Taken from the spec
+			 */
+
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baseClickProbs.put(q, .3);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baseClickProbs.put(q, .4);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baseClickProbs.put(q, .5);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
+
 			String component = q.getComponent();
-			if(component == _compSpecialty) {
+			if(_compSpecialty.equals(component)) {
 				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
 			}
+			else if(component == null) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
+			}
 		}
+
+		_queryId = new Hashtable<Query,Integer>();
+		int i = 0;
+		for(Query q : _querySpace){
+			i++;
+			_queryId.put(q, i);
+		}
+
+		lastBoost = 5;
+		boostCoeff = 1.2;
 	}
-	
+
+
 	@Override
-	public BidBundle getBidBundle(Set<AbstractModel> models) {		
-		if (_day >= 6) {
-			try {
-				buildMaps(models);
-				updateBids();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		else {
-			for(Query q : _querySpace){
-				double bid;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.1,.6);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.25,.75);
-				else 
-					bid = randDouble(.35,1.0);
-				_bids.put(q, bid);
-			}
-		}
-		
-		
-		
-		_bidBundle = new BidBundle();
-		
-		
-		for (Query query:_querySpace) {
-			_bidBundle.addQuery(query, _bids.get(query), new Ad()); //TODO add a daily limit
-		}
-		return _bidBundle;
-		
-	}
-	
-	
-	// ###############
-	// #### CPLEX ####
-	// ###############
-	/**
-	 * Creates the bids using the ILP calculation
-	 * @throws IOException 
-	 */
-	public void updateBids() throws IOException {
-		
-		double missingSales = _capacity - _unitsSold.getEstimate();
-		if (_day < 5) {
-			missingSales = missingSales - ((_capWindow - _day) * DAILYCAPACITY);
-		}
-		int qsize = _possibleQuantities.size();
-		Integer[] quantitiesSet = new Integer[qsize];
-		quantitiesSet = _possibleQuantities.toArray(quantitiesSet).clone();
-		int bsize = _possibleBids.size();
-		Double[] bidsSet = new Double[bsize];
-		bidsSet = _possibleBids.toArray(bidsSet).clone();
-		
-		try {
-			IloCplex cplex = new IloCplex();
-			IloIntVar[] overCapVar = cplex.boolVarArray(qsize);
-			IloIntVar[][] bidsVar = new IloIntVar[NUMOFQUERIES][bsize];
-			IloLinearNumExpr exprObj = cplex.linearNumExpr();
-			for (int query=0 ; query<NUMOFQUERIES ; query++) {
-				bidsVar[query] = cplex.boolVarArray(bsize);
+	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
-//				System.out.print(_queryIndexing.get(query).toString() + " ## ");
-				for (int bidIndex=0 ; bidIndex<bsize ; bidIndex++) {
-					exprObj.addTerm(bidsVar[query][bidIndex], getObjBidCoef(bidsSet[bidIndex] , _queryIndexing.get(query)));
-//					System.out.print(bidIndex + "->" + getObjBidCoef(bidsSet[bidIndex] , _queryIndexing.get(query)) + "\t");
-				}
-//				System.out.println();
-			}
-			if (USEOVERQUANTITY) for (int quantity=0 ; quantity < qsize ; quantity++) {
-				exprObj.addTerm(overCapVar[quantity], -getObjOverQuantityCoef(quantitiesSet[quantity]));				
-			}		
-			cplex.addMaximize(exprObj);
-
-			IloLinearNumExpr exprCapacity = cplex.linearNumExpr();
-			IloLinearNumExpr exprOverCapVarLE = cplex.linearNumExpr();
-			IloLinearNumExpr exprBidsVarLE = cplex.linearNumExpr();
-			for (int query=0 ; query<NUMOFQUERIES ; query++) {
-				for (int bidIndex=0 ; bidIndex<bsize; bidIndex++) {
-					exprCapacity.addTerm(bidsVar[query][bidIndex] , getQuantityBoundBidCoef(bidsSet[bidIndex] , _queryIndexing.get(query)));
-					exprBidsVarLE.addTerm(1.0, bidsVar[query][bidIndex]);
-				}
-				cplex.addLe(exprBidsVarLE, 1);
-				exprBidsVarLE = cplex.linearNumExpr();
-			}
-			if (USEOVERQUANTITY) {
-				for (int quantity=0 ; quantity<qsize ; quantity++) {
-					exprCapacity.addTerm(overCapVar[quantity] , -quantitiesSet[quantity]);				
-					exprOverCapVarLE.addTerm(1.0, overCapVar[quantity]);
-				}
-				cplex.addLe(exprOverCapVarLE, 1);
-			}
-
-			cplex.addLe(exprCapacity, DAILYCAPACITY + missingSales);	// the capacity sold minus the over capacity (=epxrCapacity) need to be less than the daily capacity
-			_fout.write(exprCapacity.toString());
-			_fout.write("\n We want to sell " + _wantedSales + "\n");
-			cplex.setOut(null);
-			if (cplex.solve()) {
-//				cplex.output().println("Solution status = " + cplex.getStatus());
-//				cplex.output().println("Solution value = " + cplex.getObjValue());
-				
-				_previousDayData = new HashMap<Query, HashMap<String,Double>>();
-				for (int queryIndex=0 ; queryIndex<NUMOFQUERIES ; queryIndex++) {
-					HashMap<String,Double> expectedData = new HashMap<String, Double>();
-					Query query = _queryIndexing.get(queryIndex);
-					double[] queryResults = cplex.getValues(bidsVar[queryIndex]);
-					boolean bidThisQuery = false;
-//					System.out.print(_queryIndexing.get(query).toString());
-					for (int bidIndex=0 ; bidIndex<queryResults.length ; bidIndex++) {
-						if (queryResults[bidIndex] == 1.0) {
-//							double simpleBid = (_numSlots - bidIndex + 1) * 0.71 + 0.71;	// if there is no good bid, use this
-//							double bid;	// the final bid for this slot
-//							if (_day < DAYSUNTILILKE) {
-//								bid = simpleBid;	// if we don't have enough data, use a simple bid decision
-//							} else {
-//								bid = _slotToBidModels_ilke.get(_queryIndexing.get(query)).getPrediction(bidIndex);
-//								if ((Double.isInfinite(bid) || Double.isNaN(bid)) || (bid == 0.0)) bid = simpleBid;	// if there is no good result from the models, use a simple decision
-//							}
-							bidThisQuery = true;
-							_bids.put(query , bidsSet[bidIndex]); 
-							_fout.write (query.toString() + "\t" + "Bid=" + bidsSet[bidIndex] + " ObjCoef=" + getObjBidCoef(bidsSet[bidIndex], query) + " QCoef=" + getQuantityBoundBidCoef(bidsSet[bidIndex], query) + "\n");
-							_fout.flush();
-							expectedData.put("Bid", bidsSet[bidIndex]);
-							expectedData.put("Sales", getQuantityBoundBidCoef(bidsSet[bidIndex], query));
-//							_fout.write ("\nPosition used the class " + temp.getClass());
-						}
-					}
-					if (!bidThisQuery) _bids.put(_queryIndexing.get(queryIndex), 0.0);
-					else {
-						_previousDayData.put(query, expectedData);
-					}
-				}
-				if (USEOVERQUANTITY) {
-					double[] quantityResults = cplex.getValues(overCapVar);
-					for (int quantity=0 ; quantity<quantityResults.length ; quantity++) {
-//						if (quantityResults[quantity] == 1.0) System.out.println("OverQuantity=" + quantitiesSet[quantity] + " ObjCoef=" + getObjOverQuantityCoef(quantity));
-					}
-				}
-			}
-			//System.out.println(cplex.toString());
-			cplex.end();
-		}
-		catch (IloException e) {
-			System.err.println ("Concert Exception" + e + "' caught");
-		}
-//		catch (Exception e) {
-//			System.err.println("problem with writing to file - " + e.getMessage());
-//		}
-		for (Query q : _querySpace) {
-//			_bids.put(q, 3.0);
-		}
-	}
-
-	// reviewing all of the objective and constrains, to work with query and not user and product
-	public double getObjBidCoef(double bid , Query query) {		
-
-		double start = System.currentTimeMillis();
-		double result = 0;
-		double revenue = getRevenue(query);
-
-		double conv = estimateConv(query, 0);
-		double cpc = estimateCPC(query, bid);
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
-		double numImps = _queryToNumImpModel.getPrediction(query);
-		int numClicks = (int) (clickPr * numImps);
-		result = numClicks * (conv*revenue - cpc); 
-		if (Double.isNaN(result) || Double.isInfinite(result)) {	// if there is a problem, beep and show me where
-			beep();
-			//System.out.print("\n The is a null result: \n bid2cpc=" + estimateCPC(query, bid) + "\n clickPr=" + estimateClicks(p,us,query,slot) + "\n get_convPr=" + estimateConv(p,us,0) + "\n p_x_Pr" + estimateIn + "\n");
-		}
-		
-		try {
-//			_fout.write("\nWith Query " + query.toString() + " And bid " + bid + " We found " + (imp * click) + " but we perfect model found " + _bidToNumClicks.get(query).getPrediction(bid));
-			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found a profit of " + cutDouble(result) + " (numclicks=" + cutDouble(numClicks) + " conversions=" + cutDouble(conv) + " cpc=" + cutDouble(cpc) + ")");
-		}
-		catch (Exception e) {
-			System.err.println ("getObjBidCoef() error with writing to file");
-		}
-
-		double stop = System.currentTimeMillis();
-//		System.out.println("Day " + _day + " getObjBidCoef() took " + ((stop-start) / 1000) + " seconds");
-		return result;
-	}
-
-	public double getQuantityBoundBidCoef(double bid, Query query) {
-		
-		double start = System.currentTimeMillis();
-		double result = 0;
-		
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
-		double numImps = _queryToNumImpModel.getPrediction(query);
-		int numClicks = (int) (clickPr * numImps);
-		double conv = estimateConv(query, 0);
-
-		result = numClicks * conv;
-		
-		try {
-			_fout.write("\nfor query " + query.toString() + " and bid " + cutDouble(bid) + " we found " + cutDouble(result) + " conversions (numClicks=" + cutDouble(numClicks) + " conv=" + cutDouble(conv));
-		}
-		catch (Exception e) {
-		}
-		double stop = System.currentTimeMillis();
-//		System.out.println("Day " + _day + " getQuantityBoundCoef() took " + ((stop-start) / 1000) + " seconds");
-		return result;
-	}
-
-	public double getObjOverQuantityCoef(int quantity) {
-		
-		double start = System.currentTimeMillis();
-		double result=0;
-				
-		for (int i=1 ; i <= quantity ; i++) {
-			for (Query query : _querySpace) {
-				result += estimateImpressionOutOfTotalSearchingUsers(query) * (estimateConv(query, 0) - estimateConv(query, i)) * getRevenue(query);
-			}
-		}
-		result = result / _querySpace.size();
-		result = result / _numSearchingUsers;
-		
-//		try {
-//			_fout.write("\nfor over quantity of " + quantity + " we found a lost of profit of " + cutDouble(result));
-//		}
-//		catch (Exception e) {
-//		}
-//
-//		double stop = System.currentTimeMillis();
-//		System.out.println("Day " + _day + " getObjOverQuantityCoef() took " + ((stop-start) / 1000) + " seconds");
-		return result;
-	}
-
-	// reviewing all of the estimation, to work with query and not user and product
-	public double estimateImpressionOutOfTotalSearchingUsers (Query query) {
-		double result = 0;
-
-//		Set<UserState> userStates = new HashSet<UserState>();
-//		userStates.add (UserState.IS);
-//		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) userStates.add (UserState.F0);
-//		if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) userStates.add (UserState.F1);
-//		if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO)) userStates.add (UserState.F2);		
-//		Set<Product> products = new HashSet<Product>();
-		
-		for (UserState userState : setOfUserStates(query)) {
-			for (Product product : setOfProducts(query, userState)) {
-				result += this._userModel.getPrediction(product, userState);
-			}
-		}
-
-		return result;
-	}
-
-	public double estimateClicks (Query query, double bid) {
-		//result = _userModel.getPrediction(p, us) / _numSearchingUsers;	// and estimate of the percent of this user in the query		
-		double clickPr = _bidToClickPrModel.getPrediction(query, bid, new Ad());
-
-		return clickPr;
-	}
-
-	private double estimateConv(Query query, double overCap) {
-		double baseline = 0;
-		String getBonus = "MAYBE";
-		QueryType queryType = query.getType();
-		String component = query.getComponent();
-		if(queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-			baseline = _piF0;
-		}
-		else {
-			if(queryType.equals(QueryType.FOCUS_LEVEL_ONE)) {
-				baseline = _piF1;
-				if (_compSpecialty.equals(component)) {
-					getBonus = "YES";
-				} else if (component == null) getBonus = "NO";
-			} else if(queryType.equals(QueryType.FOCUS_LEVEL_TWO)) {
-				baseline = _piF2;
-				if (_compSpecialty.equals(component)) getBonus = "YES";
-			} else {
-				throw new RuntimeException("Malformed query");
-			}	
-		}
-		
-		double result = 0;
-		double capdiscount = Math.pow(_lambda,Math.max(overCap, 0));
-		double firstTerm = baseline * capdiscount;
-		double secondTerm = 1 + _CSB;
-		double nuo = (firstTerm * secondTerm) / (firstTerm * secondTerm + (1 - firstTerm));
-		
-		if (getBonus == "YES") result = nuo;
-		else if (getBonus == "NO") result = firstTerm;
-		else result = (nuo + 3*firstTerm)/4;
-		
-		double nISusers = 0;
-		double nFusers = 0;
-		for (Product product : _retailCatalog) {
-			for (UserState userState : setOfUserStates(query)) {
-				if (userState.equals(UserState.IS)) nISusers += _userModel.getPrediction(product, UserState.IS);
-				else nFusers += _userModel.getPrediction(product, userState);
-			}
-		}
-		result = result * (nFusers/(nFusers+nISusers));
-		
-		return result;
-	}
-
-	public double estimateCPC (Query query, double bid) {
-		double result = 0;
-//		double start = System.currentTimeMillis();
-
-		result = _bidToCPCModel.getPrediction(query, bid);
-		if (Double.isNaN(result) || Double.isInfinite(result) || Double.isInfinite(-result) || Double.valueOf(result).equals(0.0)) result = _regReserveScore+0.01; 
-		
-//		double stop = System.currentTimeMillis();
-//		System.out.println("Day " + _day + " estimateImp() took " + ((stop-start) / 1000) + " seconds");
-		return result;
-	}
-
-	private double getRevenue(Query query) {
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) return (35.0/3.0);
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-			if (query.getManufacturer() == null) return (35.0/3.0);
-			if (_manSpecialty.equals(query.getManufacturer())) return 15.0;
-			return 10.0;
-		}
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
-			if (_manSpecialty.equals(query.getManufacturer())) return 15.0;
-			return 10.0;
-		}
-		return 0.0;
-	}
-	
-	@Override
-	public Set<AbstractModel> initModels() {
-		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		AbstractUserModel userModel = new BasicUserModel();
-		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
-		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
-		AbstractUnitsSoldModel unitsSold = new UnitsSoldMovingAvg(_querySpace,_capacity,_capWindow);
-		models.add(userModel);
-		models.add(queryToNumImp);
-		models.add(bidToCPC);
-		models.add(bidToPrClick);
-		models.add(unitsSold);
-		return models;
-	}
-	
-	@Override
-	public void updateModels(SalesReport salesReport,
-			QueryReport queryReport) {
-		for(AbstractModel model:_models) {
+		for(AbstractModel model: _models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
 				userModel.updateModel(queryReport, salesReport);
@@ -543,114 +277,366 @@ public class ILPBidAgent extends AbstractAgent{
 				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 				bidToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
+				if(model instanceof GoodConversionPrModel) {
+					GoodConversionPrModel adMaxModel = (GoodConversionPrModel) convPrModel;
+					adMaxModel.setTimeHorizon(timeHorizon);
+				}
+				if(model instanceof HistoricPrConversionModel) {
+					HistoricPrConversionModel adMaxModel = (HistoricPrConversionModel) convPrModel;
+					adMaxModel.setTimeHorizon(timeHorizon);
+				}
+				convPrModel.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
+			}
+			else if(model instanceof BasicTargetModel) {
+				//Do nothing
+			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}
 
-	protected void buildMaps(Set<AbstractModel> models) throws Exception {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractUserModel) {
-				AbstractUserModel userModel = (AbstractUserModel) model;
-				_userModel = userModel;
-				_numSearchingUsers = 0;
-				for (Product p : _retailCatalog) {
-					for (UserState us : searchingUserStates) {
-						_numSearchingUsers += _userModel.getPrediction(p, us); // I want to always count how many users are in a searching state. it help the impressions estimator later.
+
+	@Override
+	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		BidBundle bidBundle = new BidBundle();
+
+		if(SAFETYBUDGET) {
+			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
+		}
+
+		System.out.println("Day: " + _day);
+
+		if(_day > 1) {
+			if(!salesDistFlag) {
+				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
+				_salesDist = salesDist;
+				salesDistFlag = true;
+			}
+			_salesDist.updateModel(_salesReport);
+		}
+
+		if(_day > lagDays + 2) {
+			QueryReport queryReport = _queryReports.getLast();
+			SalesReport salesReport = _salesReports.getLast();
+		}
+
+		if(_day > lagDays || models != null){
+			buildMaps(models);
+			//NEED TO USE THE MODELS WE ARE PASSED!!!
+
+			/*
+			 * Setting up CPLEX
+			 */
+
+			try {
+				_cplex.clearModel();
+
+				/*
+				 * Setup the arrays we will need
+				 */
+				double[] profit = new double[_bidList.size()*_querySpace.size()];
+				double[] conversions = new double[_bidList.size()*_querySpace.size()];
+				double[] penalty = new double[_capList.size()];
+				int[] capList = new int[_capList.size()];
+
+				/*
+				 * Fill in profit and conversion arrays
+				 */
+
+				for(Query q : _querySpace) {
+					debug("Query: " + q);
+					for(int i = 0; i < _bidList.size(); i++) {
+						double salesPrice = _salesPrices.get(q);
+						double bid = _bidList.get(i);
+						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double numImps = _queryToNumImpModel.getPrediction(q);
+						int numClicks = (int) (clickPr * numImps);
+						double CPC = _bidToCPC.getPrediction(q, bid);
+						double convProb = _convPrModel.getPrediction(q);
+
+						if(Double.isNaN(CPC)) {
+							CPC = 0.0;
+						}
+
+						if(Double.isNaN(clickPr)) {
+							clickPr = 0.0;
+						}
+
+						if(Double.isNaN(convProb)) {
+							convProb = 0.0;
+						}
+
+						debug("\tBid: " + bid);
+						debug("\tCPC: " + CPC);
+						debug("\tNumImps: " + numImps);
+						debug("\tNumClicks: " + numClicks);
+						debug("\tClickPr: " + clickPr);
+						debug("\tConv Prob: " + convProb + "\n\n");
+
+						int isID = _queryId.get(q);
+						double w = numClicks*convProb;				//weight = numClicks * convProv  [conversions]
+						double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+
+						if(TARGET) {
+							/*
+							 * add a targeted version of our bid as well
+							 */
+							if(clickPr != 0) {
+								numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+								if(convProb != 0) {
+									convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
+								}
+								salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
+							}
+
+							w = numClicks*convProb;				//weight = numClciks * convProv
+							v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+						}
+
+						int idx = isID*_bidList.size() + i;
+						profit[idx] = v;
+						conversions[idx] = w;
+
 					}
 				}
-			}
-			else if(model instanceof AbstractQueryToNumImp) {
-				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
-				_queryToNumImpModel = queryToNumImp;
-			}
-			else if(model instanceof AbstractUnitsSoldModel) {
-				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
-				_unitsSold = unitsSold;
-			}
-			else if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPCModel = bidToCPC; 
-			}
-			else if(model instanceof AbstractBidToPrClick) {
-				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				_bidToClickPrModel = bidToPrClick;
-			}
-			else {
-				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
-			}
-		}
-	}
-	// ##########################
-	// #### Helper Functions ####
-	// ##########################
-	public Set<Double> setPossibleBids (double minBid, double maxBid, double interval) {
-		Set<Double> bids = new HashSet<Double>();
-		if ((minBid < 0) || (maxBid <= minBid)) return bids;
-		double bid = minBid;
-		while (bid < maxBid) {
-			bids.add(bid);
-			bid += interval;
-		}
-		return bids;
-	}
 
-	public Set<Integer> setPossibleQuantities(int minQ, int maxQ, int interval) {
-		Set<Integer> quantity = new HashSet<Integer>();
-		if ((minQ < 0) || (maxQ <= minQ)) return quantity;
-		int q = minQ;
-		while (q <= maxQ) {
-			quantity.add(q);
-			q += interval;
-		}
-		return quantity;
-	}
 
-	protected Set<UserState> setOfUserStates(Query query) {
-		Set<UserState> us = new HashSet<UserState>();
-		us.add(UserState.IS);
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) us.add(UserState.F0); 
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) us.add(UserState.F1);
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO)) us.add(UserState.F2);
-		return us;
-	}
+				/*
+				 * Fill in penalty and overcap arrays
+				 */
 
-	protected Set<Product> setOfProducts(Query query, UserState us) {
-		Set<Product> products = new HashSet<Product>();
-		if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO) || us.equals(UserState.IS)) {
-			for (Product p : _retailCatalog) {
-				products.add(p);
-			}
-		} else if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
-			products.add(new Product(query.getManufacturer(),query.getComponent()));
-		} else if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-			if (query.getManufacturer() == null) {
-				for (Product p : _retailCatalog) {
-					if (p.getComponent().equals(query.getComponent())) products.add(p);
+				double avgConvProb = 0; //the average probability of conversion;
+				for(Query q : _querySpace) {
+					if(_day < 2) {
+						avgConvProb += _baseConvProbs.get(q) / 16.0;
+					}
+					else {
+						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+					}
 				}
-			} else {
-				for (Product p : _retailCatalog) {
-					if (p.getManufacturer().equals(query.getManufacturer())) products.add(p);
+
+				double avgUSP = 0;
+				for(Query q : _querySpace) {
+					if(_day < 2) {
+						avgUSP += _salesPrices.get(q) / 16.0;
+					}
+					else {
+						avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+					}
 				}
-			}				
+
+				int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
+
+				double valueLost = 0.0;
+				for (int i = 0; i <= _capList.size(); i++){
+					if(i == 0) {
+						for(int j = 0; j <= _capList.get(i); j++) {
+							double iD = Math.pow(LAMBDA, j);
+							double worseConvProb = avgConvProb*iD;
+							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
+						}
+					}
+					else {
+						for(int j = _capList.get(i-1)+1; j <= _capList.get(i); j++) {
+							double iD = Math.pow(LAMBDA, j);
+							double worseConvProb = avgConvProb*iD;
+							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
+						}
+					}
+
+					penalty[i] = valueLost;
+					capList[i] = _capList.get(i);
+				}
+
+				/*
+				 * Setup Maximization
+				 */
+				IloLinearNumExpr linearNumExpr = _cplex.linearNumExpr();
+				IloIntVar[] bids = _cplex.intVarArray(profit.length, 0, 1);
+				for(Query q : _querySpace) {
+					for(int i = 0; i < _bidList.size(); i++) {
+						int isID = _queryId.get(q);
+						int idx = isID*_bidList.size() + i;
+						linearNumExpr.addTerm(profit[idx], bids[idx]);
+					}
+				}
+
+				IloIntVar[] overcap = _cplex.intVarArray(profit.length, 0, 1);
+				for(int i = 0; i < _capList.size(); i++) {
+					linearNumExpr.addTerm(-1.0 * penalty[i], overcap[i]);
+				}
+
+				_cplex.maximize(linearNumExpr);
+
+
+				/*
+				 * Add Constraints
+				 */
+
+				/*
+				 * Bid constraint
+				 *  -Can only bid once in each query
+				 */
+				for(Query query : _querySpace) {
+					IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
+					for(int i = 0; i < _bidList.size(); i++) {
+						int isID = _queryId.get(query);
+						int idx = isID*_bidList.size() + i;
+						linearIntExpr.addTerm(1, bids[idx]);
+					}
+					_cplex.addLe(linearIntExpr, 1);
+				}
+
+				/*
+				 * Capacity constraint I
+				 *  -Can only pick one way to go overcap
+				 */
+				IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
+				for(int i = 0; i < _capList.size(); i++) {
+					linearIntExpr.addTerm(1, bids[i]);
+				}
+				_cplex.addLe(linearIntExpr, 1);
+
+				/*
+				 * Capacity constraint II
+				 *  -Cannot sell more items than our capacity + overcap
+				 */
+				double capacity = _capacity/_capWindow;
+				if(_day < 4) {
+					//do nothing
+				}
+				else {
+					capacity = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+					if(capacity < 20) {
+						capacity = 20;
+					}
+					debug("Unit Sold Model Budget "  +capacity);
+				}
+
+				if(BOOST) {
+					if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
+						debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
+						lastBoost = -1;
+						capacity *= boostCoeff;
+					}
+					lastBoost++;
+				}
+
+				debug("Budget: "+ capacity);
+
+				linearNumExpr = _cplex.linearNumExpr();
+				for(Query q : _querySpace) {
+					for(int i = 0; i < _bidList.size(); i++) {
+						int isID = _queryId.get(q);
+						int idx = isID*_bidList.size() + i;
+						linearNumExpr.addTerm(conversions[idx], bids[idx]);
+					}
+				}
+
+				for(int i = 0; i < _capList.size(); i++) {
+					linearNumExpr.addTerm(-1.0 * capList[i], overcap[i]);
+				}
+
+				_cplex.addLe(linearNumExpr, capacity);
+
+				_cplex.solve();
+
+				System.out.println("Expected Profit: " + _cplex.getObjValue());
+
+				double[] bidVal = _cplex.getValues(bids);
+				double[] overcapVal = _cplex.getValues(overcap);
+
+				//set bids
+				for(Query q : _querySpace) {
+
+					Integer isID = _queryId.get(q);
+					double bid = 0.0;
+
+					if(bid != 0.0) {
+						//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
+						//					System.out.println("Bidding " + bid + "   for query: " + q);
+						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double numImps = _queryToNumImpModel.getPrediction(q);
+						int numClicks = (int) (clickPr * numImps);
+						double CPC = _bidToCPC.getPrediction(q, bid);
+
+						bidBundle.addQuery(q, bid, new Ad());
+
+
+						//					if(solution.get(isID).targ()) {
+						//
+						//						if(clickPr != 0) {
+						//							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+						//						}
+						//
+						//						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						//							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, _compSpecialty)));
+						//						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getComponent() == null)
+						//							bidBundle.setAd(q, new Ad(new Product(q.getManufacturer(), _compSpecialty)));
+						//						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getManufacturer() == null)
+						//							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
+						//						if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO) && q.getManufacturer().equals(_manSpecialty)) 
+						//							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
+						//					}
+
+						if(BUDGET) {
+							bidBundle.setDailyLimit(q, numClicks*CPC);
+						}
+					}
+					else {
+						/*
+						 * We decided that we did not want to be in this query, so we will use it to explore the space
+						 */
+						bid = 0.0;
+						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+						//					System.out.println("Bidding " + bid + "   for query: " + q);
+						//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//					else
+						//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//
+						//					System.out.println("Exploring " + q + "   bid: " + bid);
+						//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					}
+				}
+				_bidToCPC.updatePredictions(bidBundle);
+				_bidToPrClick.updatePredictions(bidBundle);
+			} catch (IloException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		return products;
+		else {
+			for(Query q : _querySpace){
+				double bid = 0.0;
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+				else
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+			}
+		}
+
+		return bidBundle;
 	}
-			
-	protected void beep() {
-		Toolkit.getDefaultToolkit().beep();
-	}
-	
-	protected double cutDouble (double d) {
-		if (Double.isNaN(d)) return d;
-		int result = (int)(d*100);
-		return (((double)result)/100);
-	}
-	
+
 	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
-	
+
+	public void debug(Object str) {
+		if(DEBUG) {
+			System.out.println(str);
+		}
+	}
+
 }
