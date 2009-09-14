@@ -63,10 +63,11 @@ public class BidToPosInverter extends AbstractModel {
 	public double getPrediction(Query query, double pos) {
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
-			return 0.0;
+			return Double.NaN;
 		}
 
 		double bid = coeff[0] + pos * coeff[1];
+		
 		return bid;
 	}
 

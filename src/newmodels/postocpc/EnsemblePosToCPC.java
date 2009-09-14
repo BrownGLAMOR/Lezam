@@ -56,16 +56,12 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 
 	private RConnection rConnection;
 
-	private BasicTargetModel _targModel;
-
 	private double _outOfAuction = 6.0;
 
-	public EnsemblePosToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
+	public EnsemblePosToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
 		_querySpace = querySpace;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
-
-		_targModel = targModel;
 
 		_borda = borda;
 		_ignoreNaN = ignoreNaN;
@@ -700,7 +696,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 	}
 
 	public AbstractModel getCopy() {
-		return new EnsemblePosToCPC(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN);
+		return new EnsemblePosToCPC(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
 
 }
