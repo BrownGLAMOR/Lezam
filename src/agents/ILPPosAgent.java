@@ -15,13 +15,25 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
 import newmodels.AbstractModel;
+import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtopos.AbstractBidToPosModel;
+import newmodels.bidtopos.BidToPosInverter;
+import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postocpc.AbstractPosToCPC;
+import newmodels.postocpc.EnsemblePosToCPC;
+import newmodels.postoprclick.AbstractPosToPrClick;
+import newmodels.postoprclick.BasicPosToPrClick;
+import newmodels.postoprclick.EnsemblePosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
@@ -50,7 +62,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public class ILPBidAgent extends AbstractAgent {
+public class ILPPosAgent extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
@@ -72,21 +84,25 @@ public class ILPBidAgent extends AbstractAgent {
 	private HashMap<Query, Double> _baseClickProbs;
 	private AbstractUserModel _userModel;
 	private AbstractQueryToNumImp _queryToNumImpModel;
-	private AbstractBidToCPC _bidToCPC;
-	private AbstractBidToPrClick _bidToPrClick;
+	private AbstractPosToCPC _posToCPC;
+	private AbstractPosToPrClick _posToPrClick;
+	private AbstractBidToPosModel _bidToPos;
+	private BidToPosInverter _bidToPosInverter;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
+	private AvgPosToPosDist _avgPosDist;
 	private Hashtable<Query, Integer> _queryId;
-	private LinkedList<Double> _bidList;
+	private LinkedList<Double> _posList;
 	private LinkedList<Integer> _capList;
 	private int _capacityInc = 10;
 	private int lagDays = 4;
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
+	private double _outOfAuction = 6.0;
 
-	public ILPBidAgent() {
+	public ILPPosAgent() {
 
 		try {
 			IloCplex cplex = new IloCplex();
@@ -96,16 +112,15 @@ public class ILPBidAgent extends AbstractAgent {
 			throw new RuntimeException("Could not initialize CPLEX");
 		}
 
-		_bidList = new LinkedList<Double>();
-		//		double increment = .25;
-		double bidIncrement  = .1;
-		double bidMin = .04;
-		double bidMax = 2;
-		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
+		_posList = new LinkedList<Double>();
+		double posIncrement  = .25;
+		double posMin = 1.0;
+		double posMax = _outOfAuction;
+		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
 		for(int i = 0; i < tot; i++) {
-			_bidList.add(bidMin+(i*bidIncrement));
+			_posList.add(posMin+(i*posIncrement));
 		}
-
+		
 		_capList = new LinkedList<Integer>();
 		int increment = 5;
 		int min = 0;
@@ -130,16 +145,29 @@ public class ILPBidAgent extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 12, 30, false, true);
+		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,12,30,false,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
+		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
+		BidToPosInverter bidToPosInverter;
+		try {
+			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.0);
+		} catch (RserveException e) {
+			throw new RuntimeException("Cannot Access Rserve");
+		}
+		
 		models.add(userModel);
 		models.add(queryToNumImp);
-		models.add(bidToCPC);
-		models.add(bidToPrClick);
+		models.add(posToCPC);
+		models.add(posToPrClick);
+		models.add(bidToPos);
 		models.add(unitsSold);
 		models.add(convPrModel);
 		models.add(basicTargModel);
+		models.add(avgPosToDistModel);
+		models.add(bidToPosInverter);
 		return models;
 	}
 
@@ -157,13 +185,17 @@ public class ILPBidAgent extends AbstractAgent {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
 				_unitsSold = unitsSold;
 			}
-			else if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPC = bidToCPC; 
+			else if(model instanceof AbstractPosToCPC) {
+				AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
+				_posToCPC = posToCPC; 
 			}
-			else if(model instanceof AbstractBidToPrClick) {
-				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				_bidToPrClick = bidToPrClick;
+			else if(model instanceof AbstractPosToPrClick) {
+				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
+				_posToPrClick = posToPrClick;
+			}
+			else if(model instanceof AbstractBidToPosModel) {
+				AbstractBidToPosModel bidToPos = (AbstractBidToPosModel) model;
+				_bidToPos = bidToPos;
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
@@ -173,8 +205,16 @@ public class ILPBidAgent extends AbstractAgent {
 				BasicTargetModel targModel = (BasicTargetModel) model;
 				_targModel = targModel;
 			}
+			else if(model instanceof AvgPosToPosDist) {
+				AvgPosToPosDist avgPosDist = (AvgPosToPosDist) model;
+				_avgPosDist = avgPosDist;
+			}
+			else if(model instanceof BidToPosInverter) {
+				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+				_bidToPosInverter = bidToPosInverter;
+			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
 			}
 		}
 	}
@@ -253,7 +293,6 @@ public class ILPBidAgent extends AbstractAgent {
 	}
 
 
-	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
 		for(AbstractModel model: _models) {
@@ -269,13 +308,22 @@ public class ILPBidAgent extends AbstractAgent {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
 				unitsSold.update(salesReport);
 			}
-			else if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				bidToCPC.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			else if(model instanceof AbstractPosToCPC) {
+				AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
+				posToCPC.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
-			else if(model instanceof AbstractBidToPrClick) {
-				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-				bidToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			else if(model instanceof AbstractPosToPrClick) {
+				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
+				posToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			}
+			else if(model instanceof AbstractBidToPosModel) {
+				AbstractBidToPosModel bidToPosModel = (AbstractBidToPosModel) model;
+				HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
+				for(Query query : _querySpace) {
+					double[] posDist = _avgPosDist.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
+					posDists.put(query, posDist);
+				}
+				bidToPosModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2),posDists);
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
@@ -292,6 +340,13 @@ public class ILPBidAgent extends AbstractAgent {
 			}
 			else if(model instanceof BasicTargetModel) {
 				//Do nothing
+			}
+			else if(model instanceof AvgPosToPosDist) {
+				//Do Nothing
+			}
+			else if(model instanceof BidToPosInverter) {
+				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+				bidToPosInverter.updateModel(_bidToPos);
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
@@ -338,8 +393,8 @@ public class ILPBidAgent extends AbstractAgent {
 				/*
 				 * Setup the arrays we will need
 				 */
-				double[] profit = new double[_bidList.size()*_querySpace.size()];
-				double[] conversions = new double[_bidList.size()*_querySpace.size()];
+				double[] profit = new double[_posList.size()*_querySpace.size()];
+				double[] conversions = new double[_posList.size()*_querySpace.size()];
 				double[] penalty = new double[_capList.size()];
 				int[] capList = new int[_capList.size()];
 
@@ -349,13 +404,13 @@ public class ILPBidAgent extends AbstractAgent {
 
 				for(Query q : _querySpace) {
 					debug("Query: " + q);
-					for(int i = 0; i < _bidList.size(); i++) {
+					for(int i = 0; i < _posList.size(); i++) {
 						double salesPrice = _salesPrices.get(q);
-						double bid = _bidList.get(i);
-						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double pos = _posList.get(i);
+						double clickPr = _posToPrClick.getPrediction(q, pos, new Ad());
 						double numImps = _queryToNumImpModel.getPrediction(q);
 						int numClicks = (int) (clickPr * numImps);
-						double CPC = _bidToCPC.getPrediction(q, bid);
+						double CPC = _posToCPC.getPrediction(q, pos);
 						double convProb = _convPrModel.getPrediction(q);
 
 						if(Double.isNaN(CPC)) {
@@ -369,8 +424,8 @@ public class ILPBidAgent extends AbstractAgent {
 						if(Double.isNaN(convProb)) {
 							convProb = 0.0;
 						}
-
-						debug("\tBid: " + bid);
+						
+						debug("\tDesired Pos: " + pos);
 						debug("\tCPC: " + CPC);
 						debug("\tNumImps: " + numImps);
 						debug("\tNumClicks: " + numClicks);
@@ -397,7 +452,7 @@ public class ILPBidAgent extends AbstractAgent {
 							v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 						}
 
-						int idx = isID*_bidList.size() + i;
+						int idx = isID*_posList.size() + i;
 						profit[idx] = v;
 						conversions[idx] = w;
 
@@ -456,12 +511,12 @@ public class ILPBidAgent extends AbstractAgent {
 				 * Setup Maximization
 				 */
 				IloLinearNumExpr linearNumExpr = _cplex.linearNumExpr();
-				IloIntVar[] bids = _cplex.intVarArray(profit.length, 0, 1);
+				IloIntVar[] positions = _cplex.intVarArray(profit.length, 0, 1);
 				for(Query q : _querySpace) {
-					for(int i = 0; i < _bidList.size(); i++) {
+					for(int i = 0; i < _posList.size(); i++) {
 						int isID = _queryId.get(q);
-						int idx = isID*_bidList.size() + i;
-						linearNumExpr.addTerm(profit[idx], bids[idx]);
+						int idx = isID*_posList.size() + i;
+						linearNumExpr.addTerm(profit[idx], positions[idx]);
 					}
 				}
 
@@ -483,10 +538,10 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				for(Query query : _querySpace) {
 					IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
-					for(int i = 0; i < _bidList.size(); i++) {
+					for(int i = 0; i < _posList.size(); i++) {
 						int isID = _queryId.get(query);
-						int idx = isID*_bidList.size() + i;
-						linearIntExpr.addTerm(1, bids[idx]);
+						int idx = isID*_posList.size() + i;
+						linearIntExpr.addTerm(1, positions[idx]);
 					}
 					_cplex.addLe(linearIntExpr, 1);
 				}
@@ -497,7 +552,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
 				for(int i = 0; i < _capList.size(); i++) {
-					linearIntExpr.addTerm(1, bids[i]);
+					linearIntExpr.addTerm(1, positions[i]);
 				}
 				_cplex.addLe(linearIntExpr, 1);
 
@@ -530,10 +585,10 @@ public class ILPBidAgent extends AbstractAgent {
 
 				linearNumExpr = _cplex.linearNumExpr();
 				for(Query q : _querySpace) {
-					for(int i = 0; i < _bidList.size(); i++) {
+					for(int i = 0; i < _posList.size(); i++) {
 						int isID = _queryId.get(q);
-						int idx = isID*_bidList.size() + i;
-						linearNumExpr.addTerm(conversions[idx], bids[idx]);
+						int idx = isID*_posList.size() + i;
+						linearNumExpr.addTerm(conversions[idx], positions[idx]);
 					}
 				}
 
@@ -547,7 +602,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
-				double[] bidVal = _cplex.getValues(bids);
+				double[] posVal = _cplex.getValues(positions);
 				double[] overcapVal = _cplex.getValues(overcap);
 				
 				double totOverCap = 0;
@@ -558,27 +613,31 @@ public class ILPBidAgent extends AbstractAgent {
 					}
 				}
 
-
 				//set bids
 				for(Query q : _querySpace) {
 
 					Integer isID = _queryId.get(q);
-					double bid = 0.0;
-					for(int i = 0; i < _bidList.size(); i++) {
-						int idx = isID*_bidList.size() + i;
-						if(bidVal[idx] == 1) {
-							bid = _bidList.get(i);
+					double pos = _outOfAuction;
+					for(int i = 0; i < _posList.size(); i++) {
+						int idx = isID*_posList.size() + i;
+						if(posVal[idx] == 1) {
+							pos = _posList.get(i);
 							break;
 						}
 					}
 
+					double bid = _bidToPosInverter.getPrediction(q, pos);
+					if(Double.isNaN(bid)) {
+						bid = 0.0;
+					}
+					
 					if(bid != 0.0) {
 						//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
-						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double clickPr = _posToPrClick.getPrediction(q, bid, new Ad());
 						double numImps = _queryToNumImpModel.getPrediction(q);
 						int numClicks = (int) (clickPr * numImps);
-						double CPC = _bidToCPC.getPrediction(q, bid);
+						double CPC = _posToCPC.getPrediction(q, bid);
 
 						bidBundle.addQuery(q, bid, new Ad());
 

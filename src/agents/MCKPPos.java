@@ -397,7 +397,8 @@ public class MCKPPos extends AbstractAgent {
 						convProb = 0.0;
 					}
 
-					debug("\tPos: " + pos);
+					debug("\tBid: " + bid);
+					debug("\tDesired Pos: " + pos);
 					debug("\tCPC: " + CPC);
 					debug("\tNumImps: " + numImps);
 					debug("\tNumClicks: " + numClicks);
