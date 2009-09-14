@@ -767,17 +767,19 @@ public class PredictionEvaluator {
 			 * Test all BID-POS models!
 			 */
 			for(int perQuery = 0; perQuery < 2; perQuery++) {
-				for(int IDVar = 1; IDVar < 6; IDVar++) {
+				for(int IDVar = 1; IDVar < 5; IDVar++) {
 					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
 						for(int weighted = 0; weighted < 2; weighted++) {
 							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-								BidToPos model = new BidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-								evaluator.bidToPosDistPredictionChallenge(model);
-								//															System.out.println(model);
-								double stop = System.currentTimeMillis();
-								double elapsed = stop - start;
-								System.out.println("This took " + (elapsed / 1000) + " seconds");
-								start = System.currentTimeMillis();
+								if(!(!intToBin(weighted) && mWeight > .84) && !(intToBin(perQuery) && numPrevDays < 45)) {
+									BidToPos model = new BidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
+									evaluator.bidToPosDistPredictionChallenge(model);
+									//															System.out.println(model);
+									double stop = System.currentTimeMillis();
+									double elapsed = stop - start;
+									System.out.println("This took " + (elapsed / 1000) + " seconds");
+									start = System.currentTimeMillis();
+								}
 							}
 						}
 					}
