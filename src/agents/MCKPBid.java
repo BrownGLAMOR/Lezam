@@ -49,10 +49,10 @@ public class MCKPBid extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = false;
+	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 800;
+	private double _safetyBudget = 750;
 
 	//Days since Last Boost
 	private double lastBoost;
@@ -75,15 +75,15 @@ public class MCKPBid extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
 	private int _capacityInc = 10;
-	private int lagDays = 4;
+	private int lagDays = 5;
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .1;
+		double increment  = .05;
 		double min = .04;
-		double max = 2;
+		double max = 3.0;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
@@ -105,8 +105,8 @@ public class MCKPBid extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, true);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -278,13 +278,13 @@ public class MCKPBid extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
-		
+
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
-		
+
 		System.out.println("Day: " + _day);
-		
+
 		if(_day > 1) {
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
@@ -299,7 +299,7 @@ public class MCKPBid extends AbstractAgent {
 			SalesReport salesReport = _salesReports.getLast();
 		}
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -439,18 +439,19 @@ public class MCKPBid extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					bid = 0.0;
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-					//					System.out.println("Bidding " + bid + "   for query: " + q);
-					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//					else
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//
-					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+//					bid = 0.0;
+//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+//					System.out.println("Bidding " + bid + "   for query: " + q);
+					
+					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					else
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+
+//					System.out.println("Exploring " + q + "   bid: " + bid);
+					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
 		}
@@ -466,7 +467,7 @@ public class MCKPBid extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-		
+
 		return bidBundle;
 	}
 

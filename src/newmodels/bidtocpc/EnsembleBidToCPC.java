@@ -174,85 +174,85 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, false, true, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, false,0.84, false, false, true, false, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.94, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.94, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.94, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.94, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.94, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.94, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.94, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, true, false, false, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.94, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.94, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.94, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.94, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.94, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,30, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.94, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,30, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,15, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, true, false, false, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, true,3,60, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,4,45, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, false, false, true, false));
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		_bidBundles.add(bidBundle);
-		
+
 		if(_ensemble != null) {
 			updatePredictions(bidBundle);
 		}
-		
+
 		boolean ensembleUsable = false;
 
 		/*
@@ -270,7 +270,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		//		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -416,7 +416,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			//			System.out.println(RMSE + ", " + avgRMSE);
+			System.out.println("Bid-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -469,7 +469,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			throw new RuntimeException("intToBin can only be called with 0 or 1");
 		}
 	}
-	
+
 	public void addModel(AbstractBidToCPC model) {
 		addModel(model.toString(),model);
 	}
