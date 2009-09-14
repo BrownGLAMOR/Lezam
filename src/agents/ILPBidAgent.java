@@ -98,7 +98,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .05;
+		double bidIncrement  = .1;
 		double bidMin = .04;
 		double bidMax = 3.0;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -543,8 +543,12 @@ public class ILPBidAgent extends AbstractAgent {
 
 				_cplex.addLe(linearNumExpr, capacity);
 
+				double start = System.currentTimeMillis();
 				_cplex.solve();
-
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				System.out.println("CPLEX took " + (elapsed / 1000) + " seconds");
+				
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
 				double[] bidVal = _cplex.getValues(bids);
