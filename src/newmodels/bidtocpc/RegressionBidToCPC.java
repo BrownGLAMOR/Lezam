@@ -42,7 +42,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 	private boolean _weighted;
-	private double _mWeight = .85;
+	private double _mWeight;
 	private boolean _robust;
 	private boolean _loglinear;
 	/*

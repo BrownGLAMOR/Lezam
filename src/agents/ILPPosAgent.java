@@ -97,7 +97,7 @@ public class ILPPosAgent extends AbstractAgent {
 	private LinkedList<Double> _posList;
 	private LinkedList<Integer> _capList;
 	private int _capacityInc = 10;
-	private int lagDays = 4;
+	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
 	private double _outOfAuction = 6.0;

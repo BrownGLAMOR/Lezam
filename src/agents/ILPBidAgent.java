@@ -55,10 +55,10 @@ public class ILPBidAgent extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = false;
+	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 800;
+	private double _safetyBudget = 750;
 
 	//Days since Last Boost
 	private double lastBoost;
@@ -82,7 +82,7 @@ public class ILPBidAgent extends AbstractAgent {
 	private LinkedList<Double> _bidList;
 	private LinkedList<Integer> _capList;
 	private int _capacityInc = 10;
-	private int lagDays = 4;
+	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
 
@@ -98,17 +98,17 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .1;
+		double bidIncrement  = .05;
 		double bidMin = .04;
-		double bidMax = 2;
+		double bidMax = 3.0;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
 
 		_capList = new LinkedList<Integer>();
-		int increment = 5;
-		int min = 0;
+		int increment = 10;
+		int min = 10;
 		int max = 50;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
