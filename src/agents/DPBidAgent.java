@@ -124,19 +124,19 @@ public class DPBidAgent extends AbstractAgent {
 			unitsSold += _salesReport.getConversions(query);
 		}
 
-		int targetCapacity = (int) (2*dailyCapacity);
+		int targetCapacity = (int) (1.25*dailyCapacity);
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
 
 		for (Query query : _querySpace) {
 			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
-			double minBid = .1;
-			double maxBid = 2.5;
+			double minBid = .04;
+			double maxBid = 3.0;
 			
 			if (ADJUSTMENT) {
-				minBid = Math.max(.1, _bidBundles.getLast().getBid(query) - .5);
-				maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, 2.5);
+				minBid = Math.max(minBid, _bidBundles.getLast().getBid(query) - .5);
+				maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, maxBid);
 			}
 			
 			double bid = minBid;
@@ -151,7 +151,7 @@ public class DPBidAgent extends AbstractAgent {
 				if (ADJUSTMENT) maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
 				
 				bidToClicks.put(bid, (int) (maxClicks));
-				bid += .05;
+				bid += .1;
 			}
 
 			item.put(query, bidToClicks);
@@ -279,7 +279,7 @@ public class DPBidAgent extends AbstractAgent {
 
 			}
 		
-		System.out.printf("********************\n");
+//		System.out.printf("********************\n");
 		this.printInfo();
 
 		bidBundleList.add(bidBundle);
@@ -338,11 +338,11 @@ public class DPBidAgent extends AbstractAgent {
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
-		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 10, 20, false, true);
 		models.add(bidToCPCModel);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		models.add(basicTargModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
 		models.add(bidToPrClickModel);
 
 		revenues = new HashMap<Query, Double>();
@@ -460,7 +460,7 @@ public class DPBidAgent extends AbstractAgent {
 			buff.append("****************\n");
 		}
 
-		System.out.println(buff);
+//		System.out.println(buff);
 		output.append(buff);
 		output.flush();
 
