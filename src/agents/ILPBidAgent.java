@@ -324,7 +324,7 @@ public class ILPBidAgent extends AbstractAgent {
 			SalesReport salesReport = _salesReports.getLast();
 		}
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 

@@ -151,7 +151,7 @@ public class DPBidAgent extends AbstractAgent {
 				if (ADJUSTMENT) maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
 				
 				bidToClicks.put(bid, (int) (maxClicks));
-				bid += .1;
+				bid += .2;
 			}
 
 			item.put(query, bidToClicks);
