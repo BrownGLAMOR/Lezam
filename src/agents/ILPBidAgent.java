@@ -244,8 +244,8 @@ public class ILPBidAgent extends AbstractAgent {
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
-			i++;
 			_queryId.put(q, i);
+			i++;
 		}
 
 		lastBoost = 5;
