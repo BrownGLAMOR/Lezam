@@ -160,6 +160,11 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
 		_bidBundles.add(bidBundle);
+		
+		if(_ensemble != null) {
+			updatePredictions(bidBundle);
+		}
+		
 		boolean ensembleUsable = false;
 
 		/*
@@ -186,7 +191,6 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		return ensembleUsable;
 	}
 
-	@Override
 	public void updatePredictions(BidBundle bundle) {
 
 		/*

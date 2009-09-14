@@ -602,8 +602,4 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 		return "RegressionPosToCPC(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _loglinear + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
 
-	@Override
-	public void updatePredictions(QueryReport otherQueryReport) {
-		//Not used in this class
-	}
 }

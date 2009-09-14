@@ -147,6 +147,10 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		boolean ensembleUsable = false;
 
+		if(_ensemble != null) {
+			updatePredictions(queryReport);
+		}
+		
 		/*
 		 * Update Models
 		 */

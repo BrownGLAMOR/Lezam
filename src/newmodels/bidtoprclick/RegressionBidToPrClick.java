@@ -642,11 +642,6 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public void updatePredictions(BidBundle otherBidBundle) {
-		//Not used in this class
-	}
-
-	@Override
 	public String toString() {
 		return "RegressionBidToPrClick(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", targModel, " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ")";
 //		return "RegressionBidToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;

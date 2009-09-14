@@ -266,6 +266,10 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		_queryReports.add(queryReport);
 		boolean ensembleUsable = false;
+		
+		if(_ensemble != null) {
+			updatePredictions(queryReport);
+		}
 
 		/*
 		 * Update Models

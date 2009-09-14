@@ -37,8 +37,4 @@ public class ConstantBidToCPC extends AbstractBidToCPC {
 		return new ConstantBidToCPC(_constant);
 	}
 
-	@Override
-	public void updatePredictions(BidBundle bundle) {
-	}
-
 }

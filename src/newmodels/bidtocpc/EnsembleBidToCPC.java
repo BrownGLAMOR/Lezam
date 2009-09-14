@@ -147,6 +147,11 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		_bidBundles.add(bidBundle);
+		
+		if(_ensemble != null) {
+			updatePredictions(bidBundle);
+		}
+		
 		boolean ensembleUsable = false;
 
 		/*

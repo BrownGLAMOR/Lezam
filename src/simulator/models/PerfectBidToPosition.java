@@ -47,10 +47,4 @@ public class PerfectBidToPosition extends AbstractBidToPosModel {
 		return true;
 	}
 
-	@Override
-	public void updatePredictions(BidBundle otherBidBundle) {
-		//Not needed
-	}
-
-
 }

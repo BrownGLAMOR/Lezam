@@ -100,8 +100,6 @@ public class ClickSlotAgent extends AbstractAgent {
 		
 		//printInfo();
 		
-		_bidToCPCModel.updatePredictions(_bidBundle);
-		
 		return _bidBundle;
 	}
 

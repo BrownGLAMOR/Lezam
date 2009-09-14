@@ -453,8 +453,6 @@ public class MCKPBid extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
-			_bidToCPC.updatePredictions(bidBundle);
-			_bidToPrClick.updatePredictions(bidBundle);
 		}
 		else {
 			for(Query q : _querySpace){

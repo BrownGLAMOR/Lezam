@@ -79,7 +79,6 @@ public class EquateProfitC extends AbstractAgent{
 		
 		_bidBundleList.add(_bidBundle);
 //		printInfo();
-		_bidToCPC.updatePredictions(_bidBundle);
 		return _bidBundle;
 	}
 

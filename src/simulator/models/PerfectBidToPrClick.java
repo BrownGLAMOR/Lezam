@@ -53,9 +53,4 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		return "PerfectBidToPrClick";
 	}
 
-	@Override
-	public void updatePredictions(BidBundle otherBidBundle) {
-		//Not needed
-	}
-
 }

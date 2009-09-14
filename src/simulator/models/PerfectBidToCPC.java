@@ -45,9 +45,4 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 		return "PerfectBidToCPC";
 	}
 
-	@Override
-	public void updatePredictions(BidBundle bundle) {
-		//Not needed
-	}
-
 }

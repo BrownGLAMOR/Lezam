@@ -27,8 +27,6 @@ public abstract class AbstractPosToCPC extends AbstractModel {
 
 	public abstract boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle);
 
-	public abstract void updatePredictions(QueryReport otherQueryReport);
-	
 	public abstract String toString();
 
 }

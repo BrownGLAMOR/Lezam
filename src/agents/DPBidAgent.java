@@ -284,8 +284,6 @@ public class DPBidAgent extends AbstractAgent {
 
 		bidBundleList.add(bidBundle);
 		
-		bidToPrClickModel.updatePredictions(bidBundle);
-		bidToCPCModel.updatePredictions(bidBundle);
 		
 		return bidBundle;
 	}

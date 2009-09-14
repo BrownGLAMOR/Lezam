@@ -605,8 +605,6 @@ public class ILPBidAgent extends AbstractAgent {
 						//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 					}
 				}
-				_bidToCPC.updatePredictions(bidBundle);
-				_bidToPrClick.updatePredictions(bidBundle);
 			} catch (IloException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

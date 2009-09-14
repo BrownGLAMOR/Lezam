@@ -618,8 +618,4 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 //		return "RegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", mWeight: " + _mWeight + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
 		return "RegressionBidToCPC(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _loglinear + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
-
-	@Override
-	public void updatePredictions(BidBundle bundle) {
-	}
 }
