@@ -56,7 +56,7 @@ public class PredictionEvaluator {
 		//		int max = 2;
 		//		int max = 9;
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 		int min = 1425;
 		int max = 1430;
 		//		int max = 1464;
