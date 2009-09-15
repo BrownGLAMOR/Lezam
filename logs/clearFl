@@ -1,0 +1,7 @@
+echo "" > f0data.txt
+echo "" > f1data.txt
+echo "" > f2data.txt
+echo "" > f0totdata.txt
+echo "" > f1totdata.txt
+echo "" > f2totdata.txt
+echo "" > numgames.txt
