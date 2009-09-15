@@ -90,7 +90,7 @@ public class MCKPPos extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> posList;
 	private int _capacityInc = 10;
-	private int lagDays = 5;
+	private int lagDays = 7;
 	private boolean salesDistFlag;
 	private double _outOfAuction = 6.0;
 
