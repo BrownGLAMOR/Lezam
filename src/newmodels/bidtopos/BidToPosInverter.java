@@ -2,11 +2,13 @@ package newmodels.bidtopos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
 
 import edu.umich.eecs.tac.props.Query;
 import newmodels.AbstractModel;
@@ -68,6 +70,14 @@ public class BidToPosInverter extends AbstractModel {
 
 		double bid = coeff[0] + pos * coeff[1];
 		
+		if(bid < _min) {
+			return _min;
+		}
+		
+		if(bid > _max) {
+			return _max;
+		}
+		
 		return bid;
 	}
 
@@ -108,5 +118,5 @@ public class BidToPosInverter extends AbstractModel {
 	public AbstractModel getCopy() {
 		return new BidToPosInverter(_rConnection, _querySpace, _increment, _min, _max);
 	}
-
+	
 }
