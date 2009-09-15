@@ -456,18 +456,17 @@ public class ILPBidAgent extends AbstractAgent {
 				 * Setup Maximization
 				 */
 				IloLinearNumExpr linearNumExpr = _cplex.linearNumExpr();
-				IloIntVar[] bids = _cplex.intVarArray(profit.length, 0, 1);
+				IloIntVar[] binVars = _cplex.intVarArray(profit.length + capList.length, 0, 1);
 				for(Query q : _querySpace) {
 					for(int i = 0; i < _bidList.size(); i++) {
 						int isID = _queryId.get(q);
 						int idx = isID*_bidList.size() + i;
-						linearNumExpr.addTerm(profit[idx], bids[idx]);
+						linearNumExpr.addTerm(profit[idx], binVars[idx]);
 					}
 				}
 
-				IloIntVar[] overcap = _cplex.intVarArray(profit.length, 0, 1);
 				for(int i = 0; i < _capList.size(); i++) {
-					linearNumExpr.addTerm(-1.0 * penalty[i], overcap[i]);
+					linearNumExpr.addTerm(-1.0 * penalty[i], binVars[profit.length + i]);
 				}
 
 				_cplex.maximize(linearNumExpr);
@@ -486,7 +485,7 @@ public class ILPBidAgent extends AbstractAgent {
 					for(int i = 0; i < _bidList.size(); i++) {
 						int isID = _queryId.get(query);
 						int idx = isID*_bidList.size() + i;
-						linearIntExpr.addTerm(1, bids[idx]);
+						linearIntExpr.addTerm(1, binVars[idx]);
 					}
 					_cplex.addLe(linearIntExpr, 1);
 				}
@@ -497,7 +496,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
 				for(int i = 0; i < _capList.size(); i++) {
-					linearIntExpr.addTerm(1, bids[i]);
+					linearIntExpr.addTerm(1, binVars[i]);
 				}
 				_cplex.addLe(linearIntExpr, 1);
 
@@ -533,12 +532,12 @@ public class ILPBidAgent extends AbstractAgent {
 					for(int i = 0; i < _bidList.size(); i++) {
 						int isID = _queryId.get(q);
 						int idx = isID*_bidList.size() + i;
-						linearNumExpr.addTerm(conversions[idx], bids[idx]);
+						linearNumExpr.addTerm(conversions[idx], binVars[idx]);
 					}
 				}
 
 				for(int i = 0; i < _capList.size(); i++) {
-					linearNumExpr.addTerm(-1.0 * capList[i], overcap[i]);
+					linearNumExpr.addTerm(-1.0 * capList[i], binVars[profit.length + i]);
 				}
 
 				_cplex.addLe(linearNumExpr, capacity);
@@ -551,12 +550,11 @@ public class ILPBidAgent extends AbstractAgent {
 				
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
-				double[] bidVal = _cplex.getValues(bids);
-				double[] overcapVal = _cplex.getValues(overcap);
+				double[] bidVal = _cplex.getValues(binVars);
 				
 				double totOverCap = 0;
-				for(int i = 0; i < overcapVal.length; i++) {
-					if(overcapVal[i] == 1) {
+				for(int i = 0; i < capList.length; i++) {
+					if(bidVal[profit.length + i] == 1) {
 						totOverCap = _capList.get(i);
 						break;
 					}
