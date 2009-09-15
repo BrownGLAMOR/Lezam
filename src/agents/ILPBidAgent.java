@@ -90,7 +90,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		try {
 			IloCplex cplex = new IloCplex();
-			cplex.setOut(null);
+//			cplex.setOut(null);
 			_cplex = cplex;
 		} catch (IloException e) {
 			throw new RuntimeException("Could not initialize CPLEX");
