@@ -469,7 +469,7 @@ public class ILPBidAgent extends AbstractAgent {
 					linearNumExpr.addTerm(-1.0 * penalty[i], binVars[profit.length + i]);
 				}
 
-				_cplex.maximize(linearNumExpr);
+				_cplex.addMaximize(linearNumExpr);
 
 
 				/*
