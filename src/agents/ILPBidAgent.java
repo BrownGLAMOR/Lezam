@@ -559,6 +559,8 @@ public class ILPBidAgent extends AbstractAgent {
 						break;
 					}
 				}
+				
+				System.out.println("Going overcap by: " + totOverCap);
 
 
 				//set bids
