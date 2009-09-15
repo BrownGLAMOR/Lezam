@@ -122,7 +122,7 @@ public class MCKPPos extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 12, 30, false, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,10,true,true);
+		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
@@ -188,6 +188,9 @@ public class MCKPPos extends AbstractAgent {
 			else if(model instanceof BidToPosInverter) {
 				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
 				_bidToPosInverter = bidToPosInverter;
+				for(Query query : _querySpace) {
+					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
+				}
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
