@@ -86,10 +86,8 @@ public class BidToPosInverter extends AbstractModel {
 		for(Query query : _querySpace) {
 			double[] bids = getIncrementedArray();
 			double[] positions = new double[bids.length];
-			System.out.println(query);
 			for(int i = 0; i < bids.length; i++) {
 				positions[i] = _model.getPrediction(query, bids[i]);
-				System.out.println(positions[i] + " " + bids[i]);
 			}
 				try {
 					_rConnection.assign("bids", bids);

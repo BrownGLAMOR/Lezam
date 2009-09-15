@@ -98,7 +98,7 @@ public class MCKPPos extends AbstractAgent {
 		posList = new LinkedList<Double>();
 		double increment  = .2;
 		double min = 1.0;
-		double max = _outOfAuction;
+		double max = _outOfAuction - .1;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			posList.add(min+(i*increment));
@@ -122,7 +122,7 @@ public class MCKPPos extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 12, 30, false, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,12,30,true,true);
+		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,10,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
@@ -376,8 +376,6 @@ public class MCKPPos extends AbstractAgent {
 					double CPC = _posToCPC.getPrediction(q, pos);
 					double convProb = _convPrModel.getPrediction(q);
 					double bid = _bidToPosInverter.getPrediction(q, pos);
-
-					System.out.println("Pos: " + pos + ", Bid: " + bid);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;

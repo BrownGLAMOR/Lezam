@@ -115,7 +115,7 @@ public class ILPPosAgent extends AbstractAgent {
 		_posList = new LinkedList<Double>();
 		double posIncrement  = .2;
 		double posMin = 1.0;
-		double posMax = _outOfAuction;
+		double posMax = _outOfAuction - .01;
 		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
 		for(int i = 0; i < tot; i++) {
 			_posList.add(posMin+(i*posIncrement));
@@ -147,7 +147,7 @@ public class ILPPosAgent extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 12, 30, false, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,12,30,false,true);
+		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,10,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
