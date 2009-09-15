@@ -143,6 +143,7 @@ public class MCKPPos extends AbstractAgent {
 		models.add(basicTargModel);
 		models.add(avgPosToDistModel);
 		models.add(bidToPosInverter);
+		buildMaps(models);
 		return models;
 	}
 
