@@ -160,11 +160,11 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	@Override
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
 		_bidBundles.add(bidBundle);
-		
+
 		if(_ensemble != null) {
 			updatePredictions(bidBundle);
 		}
-		
+
 		boolean ensembleUsable = false;
 
 		/*
@@ -182,9 +182,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		if(DEBUG > 0) {
-			System.out.println("Percent Usable [BidPos]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
-		}
+		System.out.println("Percent Usable [BidPos]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -339,7 +337,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			//			System.out.println(RMSE + ", " + avgRMSE);
+			System.out.println("Bid-Pos (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}

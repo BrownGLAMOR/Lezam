@@ -175,66 +175,66 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, false,0.84, false, false, false, true, true, false));
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, true, false, false, false));
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.84, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.84, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.84, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.89, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.89, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.89, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.89, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.89, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, true, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, true, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.94, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.99, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.94, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, false,0.84, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.94, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.94, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.94, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,30, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, true, false, false, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, true, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.84, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.84, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.84, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.89, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.89, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.89, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.89, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.89, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, true, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, true, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.94, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.99, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.94, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, false,0.84, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,45, true,0.94, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.94, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.94, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,15, false,0.84, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,45, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,30, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,30, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,45, true,0.89, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,30, true,0.99, false, false, false, false, true, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, true, false, false, false));
+		//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,3,60, true,0.89, false, false, true, false, true, false));
 	}
 
 	@Override
@@ -244,7 +244,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		if(_ensemble != null) {
 			updatePredictions(queryReport);
 		}
-		
+
 		/*
 		 * Update Models
 		 */
@@ -260,7 +260,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		//		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		System.out.println("Percent Usable [Pos-CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -406,7 +406,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			//			System.out.println(RMSE + ", " + avgRMSE);
+			System.out.println("Pos-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -421,11 +421,11 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		if(pos > _outOfAuction || pos < 1.0) {
 			throw new RuntimeException("Position cannot be less than 1.0 or more than " + _outOfAuction);
 		}
-		
+
 		if(_ensemble == null) {
 			return prediction;
 		}
-		
+
 		LinkedList<AbstractPosToCPC> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
 			return 0;
@@ -465,7 +465,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 			throw new RuntimeException("intToBin can only be called with 0 or 1");
 		}
 	}
-	
+
 	public void addModel(AbstractPosToCPC model) {
 		addModel(model.toString(),model);
 	}
