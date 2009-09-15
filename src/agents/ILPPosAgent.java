@@ -113,7 +113,7 @@ public class ILPPosAgent extends AbstractAgent {
 		}
 
 		_posList = new LinkedList<Double>();
-		double posIncrement  = .25;
+		double posIncrement  = .2;
 		double posMin = 1.0;
 		double posMax = _outOfAuction;
 		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
@@ -284,8 +284,8 @@ public class ILPPosAgent extends AbstractAgent {
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
-			i++;
 			_queryId.put(q, i);
+			i++;
 		}
 
 		lastBoost = 5;
@@ -379,7 +379,7 @@ public class ILPPosAgent extends AbstractAgent {
 			SalesReport salesReport = _salesReports.getLast();
 		}
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays) {
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -487,7 +487,7 @@ public class ILPPosAgent extends AbstractAgent {
 				int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
 
 				double valueLost = 0.0;
-				for (int i = 0; i <= _capList.size(); i++){
+				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {
 						for(int j = 0; j <= _capList.get(i); j++) {
 							double iD = Math.pow(LAMBDA, j);
@@ -511,7 +511,7 @@ public class ILPPosAgent extends AbstractAgent {
 				 * Setup Maximization
 				 */
 				IloLinearNumExpr linearNumExpr = _cplex.linearNumExpr();
-				IloIntVar[] positions = _cplex.intVarArray(profit.length, 0, 1);
+				IloIntVar[] positions = _cplex.intVarArray(profit.length + capList.length, 0, 1);
 				for(Query q : _querySpace) {
 					for(int i = 0; i < _posList.size(); i++) {
 						int isID = _queryId.get(q);
@@ -520,12 +520,11 @@ public class ILPPosAgent extends AbstractAgent {
 					}
 				}
 
-				IloIntVar[] overcap = _cplex.intVarArray(profit.length, 0, 1);
 				for(int i = 0; i < _capList.size(); i++) {
-					linearNumExpr.addTerm(-1.0 * penalty[i], overcap[i]);
+					linearNumExpr.addTerm(-1.0 * penalty[i], positions[profit.length + i]);
 				}
 
-				_cplex.maximize(linearNumExpr);
+				_cplex.addMaximize(linearNumExpr);
 
 
 				/*
@@ -593,7 +592,7 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				for(int i = 0; i < _capList.size(); i++) {
-					linearNumExpr.addTerm(-1.0 * capList[i], overcap[i]);
+					linearNumExpr.addTerm(-1.0 * capList[i], positions[profit.length + i]);
 				}
 
 				_cplex.addLe(linearNumExpr, capacity);
@@ -603,15 +602,16 @@ public class ILPPosAgent extends AbstractAgent {
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
 				double[] posVal = _cplex.getValues(positions);
-				double[] overcapVal = _cplex.getValues(overcap);
 				
 				double totOverCap = 0;
-				for(int i = 0; i < overcapVal.length; i++) {
-					if(overcapVal[i] == 1) {
+				for(int i = 0; i < capList.length; i++) {
+					if(posVal[profit.length + i] == 1) {
 						totOverCap = _capList.get(i);
 						break;
 					}
 				}
+				
+				System.out.println("Going overcap by: " + totOverCap);
 
 				//set bids
 				for(Query q : _querySpace) {

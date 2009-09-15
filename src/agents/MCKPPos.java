@@ -96,7 +96,7 @@ public class MCKPPos extends AbstractAgent {
 
 	public MCKPPos() {
 		posList = new LinkedList<Double>();
-		double increment  = .25;
+		double increment  = .2;
 		double min = 1.0;
 		double max = _outOfAuction;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -355,7 +355,7 @@ public class MCKPPos extends AbstractAgent {
 			SalesReport salesReport = _salesReports.getLast();
 		}
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -375,6 +375,8 @@ public class MCKPPos extends AbstractAgent {
 					double CPC = _posToCPC.getPrediction(q, pos);
 					double convProb = _convPrModel.getPrediction(q);
 					double bid = _bidToPosInverter.getPrediction(q, pos);
+					
+					System.out.println("Pos: " + pos + ", Bid: " + bid);
 					
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
