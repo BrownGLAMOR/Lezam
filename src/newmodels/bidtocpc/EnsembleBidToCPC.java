@@ -430,21 +430,24 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		}
 		LinkedList<AbstractBidToCPC> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
-			return 0;
+			return bid;
 		}
 		double totWeight = 0.0;
 		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
 		for(AbstractBidToCPC model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid);
+			double weight = ensembleWeights.get(model.toString());
 			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
-			if(!Double.isNaN(pred)) {
-				double weight = ensembleWeights.get(model.toString());
+			if(!(Double.isNaN(pred) || Double.isNaN(weight))) {
 				prediction += pred*weight;
 				totWeight += weight;
 			}
 		}
 		prediction /= totWeight;
-		if(Double.isNaN(prediction) || prediction < 0) {
+		if(prediction <= 0) {
+			return 0.0;
+		}
+		if(prediction > bid) {
 			return bid;
 		}
 		//		System.out.println("Overall Prediction: " + prediction);
