@@ -427,34 +427,36 @@ public class MCKPPos extends AbstractAgent {
 				IncItem[] iItems = getIncremental(items);
 				allIncItems.addAll(Arrays.asList(iItems));
 			}
-			double budget = _capacity/_capWindow;
+			double capacity = _capacity/_capWindow;
 			if(_day < 4) {
 				//do nothing
 			}
 			else {
-				budget = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
-				if(budget < 20) {
-					budget = 20;
+				capacity = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+				if(capacity < 20) {
+					capacity = 20;
 				}
-				debug("Unit Sold Model Budget "  +budget);
+				debug("Unit Sold Model Budget "  +capacity);
 			}
 
 			if(BOOST) {
 				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
 					debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
 					lastBoost = -1;
-					budget *= boostCoeff;
+					capacity *= boostCoeff;
 				}
 				lastBoost++;
 			}
+			
+			capacity *= 1.5;
 
-			debug("Budget: "+ budget);
+			debug("Budget: "+ capacity);
 
 			Collections.sort(allIncItems);
 			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
 			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
-			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, budget);
+			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, capacity);
 
 			//set bids
 			for(Query q : _querySpace) {

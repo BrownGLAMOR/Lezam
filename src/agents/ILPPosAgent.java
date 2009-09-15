@@ -584,6 +584,8 @@ public class ILPPosAgent extends AbstractAgent {
 					lastBoost++;
 				}
 
+				capacity *= 1.5;
+				
 				debug("Budget: "+ capacity);
 
 				linearNumExpr = _cplex.linearNumExpr();
