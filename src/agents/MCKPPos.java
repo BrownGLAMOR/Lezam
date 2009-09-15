@@ -132,7 +132,7 @@ public class MCKPPos extends AbstractAgent {
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
-		
+
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(posToCPC);
@@ -335,13 +335,13 @@ public class MCKPPos extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		BidBundle bidBundle = new BidBundle();
-		
+
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
-		
+
 		System.out.println("Day: " + _day);
-		
+
 		if(_day > 1) {
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
@@ -376,9 +376,9 @@ public class MCKPPos extends AbstractAgent {
 					double CPC = _posToCPC.getPrediction(q, pos);
 					double convProb = _convPrModel.getPrediction(q);
 					double bid = _bidToPosInverter.getPrediction(q, pos);
-					
+
 					System.out.println("Pos: " + pos + ", Bid: " + bid);
-					
+
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
 					}
@@ -391,7 +391,7 @@ public class MCKPPos extends AbstractAgent {
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
 					}
-					
+
 					if(Double.isNaN(bid)) {
 						bid = 0.0;
 						CPC = 0.0;
@@ -509,18 +509,18 @@ public class MCKPPos extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					bid = 0.0;
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					//					bid = 0.0;
+					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
-					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//					else
-					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					//
-					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					else
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+
+//					System.out.println("Exploring " + q + "   bid: " + bid);
+					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
 		}
@@ -536,7 +536,7 @@ public class MCKPPos extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-		
+
 		return bidBundle;
 	}
 
