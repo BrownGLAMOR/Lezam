@@ -115,7 +115,7 @@ public class ILPPosAgent extends AbstractAgent {
 		_posList = new LinkedList<Double>();
 		double posIncrement  = .2;
 		double posMin = 1.0;
-		double posMax = _outOfAuction - .01;
+		double posMax = _outOfAuction - .1;
 		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
 		for(int i = 0; i < tot; i++) {
 			_posList.add(posMin+(i*posIncrement));
@@ -153,7 +153,7 @@ public class ILPPosAgent extends AbstractAgent {
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
 		BidToPosInverter bidToPosInverter;
 		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.0);
+			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.5);
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
@@ -635,10 +635,10 @@ public class ILPPosAgent extends AbstractAgent {
 					if(bid != 0.0) {
 						//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
-						double clickPr = _posToPrClick.getPrediction(q, bid, new Ad());
+						double clickPr = _posToPrClick.getPrediction(q, pos, new Ad());
 						double numImps = _queryToNumImpModel.getPrediction(q);
 						int numClicks = (int) (clickPr * numImps);
-						double CPC = _posToCPC.getPrediction(q, bid);
+						double CPC = _posToCPC.getPrediction(q, pos);
 
 						bidBundle.addQuery(q, bid, new Ad());
 

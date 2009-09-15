@@ -128,7 +128,7 @@ public class MCKPPos extends AbstractAgent {
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
 		BidToPosInverter bidToPosInverter;
 		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.0);
+			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.5);
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
@@ -375,7 +375,6 @@ public class MCKPPos extends AbstractAgent {
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _posToCPC.getPrediction(q, pos);
 					double convProb = _convPrModel.getPrediction(q);
-					double bid = _bidToPosInverter.getPrediction(q, pos);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
@@ -390,15 +389,6 @@ public class MCKPPos extends AbstractAgent {
 						convProb = 0.0;
 					}
 
-					if(Double.isNaN(bid)) {
-						bid = 0.0;
-						CPC = 0.0;
-						clickPr = 0.0;
-						numClicks = 0;
-						convProb = 0.0;
-					}
-
-					debug("\tBid: " + bid);
 					debug("\tDesired Pos: " + pos);
 					debug("\tCPC: " + CPC);
 					debug("\tNumImps: " + numImps);
@@ -409,7 +399,7 @@ public class MCKPPos extends AbstractAgent {
 					int isID = _queryId.get(q);
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,bid,false,isID));
+					itemList.add(new Item(q,w,v,pos,false,isID));
 
 					if(TARGET) {
 						/*
@@ -426,7 +416,7 @@ public class MCKPPos extends AbstractAgent {
 						w = numClicks*convProb;				//weight = numClciks * convProv
 						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
-						itemList.add(new Item(q,w,v,bid,true,isID));
+						itemList.add(new Item(q,w,v,pos,true,isID));
 					}
 				}
 				debug("Items for " + q);
@@ -470,13 +460,27 @@ public class MCKPPos extends AbstractAgent {
 				double bid;
 
 				if(solution.containsKey(isID)) {
-					bid = solution.get(isID).b();
+					double pos = solution.get(isID).b();
+					bid = _bidToPosInverter.getPrediction(q, pos);
+					
+					if(Double.isNaN(bid)) {
+						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						else
+							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						
+						bidBundle.addQuery(q, bid, new Ad(), bid*10);
+						continue;
+					}
+					
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
-					double clickPr = _posToPrClick.getPrediction(q, bid, new Ad());
+					double clickPr = _posToPrClick.getPrediction(q, pos, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q);
 					int numClicks = (int) (clickPr * numImps);
-					double CPC = _posToCPC.getPrediction(q, bid);
+					double CPC = _posToCPC.getPrediction(q, pos);
 
 					if(solution.get(isID).targ()) {
 
