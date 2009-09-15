@@ -13,4 +13,4 @@ for i in $( ls ${LIB}/*.jar ); do
   CLASSPATH=${CLASSPATH}:$i
 done
 
-java -server -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
+java -server -Xmx1024M -Xms512M -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf

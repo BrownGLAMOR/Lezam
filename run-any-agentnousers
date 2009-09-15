@@ -14,4 +14,4 @@ for i in $( ls ${LIB}/*.jar ); do
 done
 
 wget http://localhost:8080/register/ --post-data="name=$1&p1=password&p2=password"
-java -server -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
+java -server -Xmx1024M -Xms512M -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
