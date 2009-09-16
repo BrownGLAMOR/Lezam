@@ -338,11 +338,11 @@ public class DPBidAgent extends AbstractAgent {
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
-		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 10, 20, false, true);
+		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 8, 25, true, true);
 		models.add(bidToCPCModel);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		models.add(basicTargModel);
-		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		models.add(bidToPrClickModel);
 
 		revenues = new HashMap<Query, Double>();

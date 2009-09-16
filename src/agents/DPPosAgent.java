@@ -363,13 +363,13 @@ public class DPPosAgent extends AbstractAgent {
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
-		posToCPCModel = new EnsemblePosToCPC(_querySpace, 12, 30, false, true);
+		posToCPCModel = new EnsemblePosToCPC(_querySpace, 8, 5, true, true);
 		models.add(posToCPCModel);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		models.add(basicTargModel);
-		posToPrClickModel = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, false, true);
+		posToPrClickModel = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		models.add(posToPrClickModel);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,12,30,false,true);
+		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
 		BidToPosInverter bidToPosInverter;
