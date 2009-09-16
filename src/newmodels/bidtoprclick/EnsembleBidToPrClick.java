@@ -455,6 +455,9 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer,component);
+		for(String modelName : _models.keySet()) {
+			_models.get(modelName).setSpecialty(manufacturer, component);
+		}
 	}
 
 	@Override

@@ -48,7 +48,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 	private HashMap<Query, double[]> _coefficients;
 	private boolean _perQuery;
 	private double _outOfAuctionPos = 6.0;
-	private boolean _targetModification = true;
+	private boolean _targetModification = false;
 
 
 	public RegressionPosToPrClick(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, BasicTargetModel targModel, boolean weighted, double mWeight, boolean robust, boolean queryIndicators, boolean queryTypeIndicators, boolean powers) {

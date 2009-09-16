@@ -454,11 +454,14 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer,component);
+		for(String modelName : _models.keySet()) {
+			_models.get(modelName).setSpecialty(manufacturer, component);
+		}
 	}
 
 	@Override
 	public String toString() {
-		return "EnsembleBidToPrClick(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
+		return "EnsemblePosToPrClick(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
 	}
 
 	public boolean intToBin(int x) {

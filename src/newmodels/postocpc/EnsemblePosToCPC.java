@@ -451,7 +451,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 
 	@Override
 	public String toString() {
-		return "EnsembleBidToCPC(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
+		return "EnsemblePosToCPC(" + "numPastDays: " + NUMPASTDAYS + ", ensemble size: " + ENSEMBLESIZE + ", borda count: " + _borda + ", ignoreNaN: " + _ignoreNaN + ")";
 	}
 
 	public boolean intToBin(int x) {
