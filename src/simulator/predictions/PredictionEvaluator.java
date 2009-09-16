@@ -15,16 +15,19 @@ import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtopos.AbstractBidToPosModel;
-import newmodels.bidtopos.BidToPos;
+import newmodels.bidtopos.AbstractBidToPos;
+import newmodels.bidtopos.RegressionBidToPos;
+import newmodels.bidtopos.SpatialBidToPos;
 import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.postocpc.AbstractPosToCPC;
+import newmodels.postocpc.EnsemblePosToCPC;
 import newmodels.postocpc.RegressionPosToCPC;
 import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.postoprclick.BasicPosToPrClick;
+import newmodels.postoprclick.EnsemblePosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.targeting.BasicTargetModel;
 
@@ -51,9 +54,9 @@ public class PredictionEvaluator {
 		//		int max = 455;
 		//		int max = 496;
 
-		String baseFile = "/Users/jordanberg/Desktop/games/game-";
-		int min = 1;
-		int max = 2;
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1425;
+		int max = 1430;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -585,7 +588,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
 	}
 
-	public void bidToPosDistPredictionChallenge(AbstractBidToPosModel baseModel) throws IOException, ParseException {
+	public void bidToPosDistPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -601,7 +604,7 @@ public class PredictionEvaluator {
 
 			int numPromSlots = status.getSlotInfo().getPromotedSlots();
 			BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(numPromSlots);
-			AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, numPromSlots, posToPrClickModel);
+			//			AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, numPromSlots, posToPrClickModel);
 
 			/*
 			 * One map for each advertiser
@@ -627,7 +630,7 @@ public class PredictionEvaluator {
 			for(int agent = 0; agent < agents.length; agent++) {
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
-				AbstractBidToPosModel model = (AbstractBidToPosModel) baseModel.getCopy();
+				AbstractBidToPos model = (AbstractBidToPos) baseModel.getCopy();
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -648,10 +651,10 @@ public class PredictionEvaluator {
 					BidBundle bidBundle = ourBidBundles.get(i);
 
 					HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
-					for(Query query : querySpace) {
-						double[] posDist = avgPosToDistModel.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
-						posDists.put(query, posDist);
-					}
+					//					for(Query query : querySpace) {
+					//						double[] posDist = avgPosToDistModel.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
+					//						posDists.put(query, posDist);
+					//					}
 
 					model.updateModel(queryReport, salesReport, bidBundle, posDists);
 					if(i >= 6) {
@@ -764,28 +767,39 @@ public class PredictionEvaluator {
 			RConnection rConnection = new RConnection();
 			BasicTargetModel targModel = new BasicTargetModel(null, null);
 
-			//			/*
-			//			 * Test all BID-POS models!
-			//			 */
-			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
-			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
-			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
-			//						for(int weighted = 0; weighted < 2; weighted++) {
-			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-			//								if(!(!intToBin(weighted) && mWeight > .84) && !(intToBin(perQuery) && numPrevDays < 45)) {
-			//									BidToPos model = new BidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-			//									evaluator.bidToPosDistPredictionChallenge(model);
-			//									//															System.out.println(model);
-			//									double stop = System.currentTimeMillis();
-			//									double elapsed = stop - start;
-			//									System.out.println("This took " + (elapsed / 1000) + " seconds");
-			//									start = System.currentTimeMillis();
-			//								}
-			//							}
-			//						}
-			//					}
-			//				}
-			//			}
+			/*
+			 * Test all BID-POS models!
+			 */
+			for(int perQuery = 0; perQuery < 2; perQuery++) {
+				for(int IDVar = 1; IDVar < 5; IDVar++) {
+					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+						for(int weighted = 0; weighted < 2; weighted++) {
+							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+										for(int powers = 0; powers < 2; powers++) {
+											for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
+												if(!(IDVar == 2) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))
+														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
+													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
+													evaluator.bidToPosDistPredictionChallenge(model);
+													//															System.out.println(model);
+													double stop = System.currentTimeMillis();
+													double elapsed = stop - start;
+													System.out.println("This took " + (elapsed / 1000) + " seconds");
+													start = System.currentTimeMillis();
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 
 
 			//
@@ -822,30 +836,27 @@ public class PredictionEvaluator {
 			//						}
 
 
-			//						/*
-			//						 * Test all POS-PRCLICK models!
-			//						 */
-			//						for(int perQuery = 0; perQuery < 2; perQuery++) {
-			//							for(int IDVar = 1; IDVar < 5; IDVar++) {
-			//								for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
-			//									for(int weighted = 0; weighted < 2; weighted++) {
-			//										for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-			//											for(int robust = 0; robust < 1; robust++) {
-			//												for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//													for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-			//														for(int powers = 0; powers < 2; powers++) {
-			//															if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-			//																	&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-			//																RegressionPosToPrClick model = new RegressionPosToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
-			//																evaluator.posToClickPrPredictionChallenge(model);
-			//																//															System.out.println(model);
-			//																double stop = System.currentTimeMillis();
-			//																double elapsed = stop - start;
-			//																System.out.println("This took " + (elapsed / 1000) + " seconds");
-			//																start = System.currentTimeMillis();
-			//															}
-			//														}
-			//													}
+			//			/*
+			//			 * Test all POS-PRCLICK models!
+			//			 */
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
+			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//								for(int robust = 0; robust < 1; robust++) {
+			//									for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//										for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//											for(int powers = 0; powers < 2; powers++) {
+			//												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
+			//													RegressionPosToPrClick model = new RegressionPosToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+			//													evaluator.posToClickPrPredictionChallenge(model);
+			//													//															System.out.println(model);
+			//													double stop = System.currentTimeMillis();
+			//													double elapsed = stop - start;
+			//													System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//													start = System.currentTimeMillis();
 			//												}
 			//											}
 			//										}
@@ -853,6 +864,9 @@ public class PredictionEvaluator {
 			//								}
 			//							}
 			//						}
+			//					}
+			//				}
+			//			}
 
 
 			//						/*
@@ -891,41 +905,46 @@ public class PredictionEvaluator {
 			//							}
 			//						}
 
-			/*
-			 * Test all BID-CPC models!
-			 */
-			for(int perQuery = 0; perQuery < 2; perQuery++) {
-				for(int IDVar = 1; IDVar < 5; IDVar++) {
-					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
-						for(int weighted = 0; weighted < 2; weighted++) {
-							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-								for(int robust = 0; robust < 1; robust++) {
-									for(int loglinear = 0; loglinear < 1; loglinear++) {
-										for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-											for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-												for(int powers = 0; powers < 2; powers++) {
-													for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
-														if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-																&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-															AbstractBidToCPC model = new RegressionBidToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
-															evaluator.bidToCPCPredictionChallenge(model);
-															//															System.out.println(model);
-															double stop = System.currentTimeMillis();
-															double elapsed = stop - start;
-															System.out.println("This took " + (elapsed / 1000) + " seconds");
-															start = System.currentTimeMillis();
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+
+			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+
+
+			//			
+			//			/*
+			//			 * Test all BID-CPC models!
+			//			 */
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
+			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//								for(int robust = 0; robust < 1; robust++) {
+			//									for(int loglinear = 0; loglinear < 1; loglinear++) {
+			//										for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//											for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//												for(int powers = 0; powers < 2; powers++) {
+			//													for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
+			//														if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//																&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
+			//															AbstractBidToCPC model = new RegressionBidToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+			//															evaluator.bidToCPCPredictionChallenge(model);
+			//															//															System.out.println(model);
+			//															double stop = System.currentTimeMillis();
+			//															double elapsed = stop - start;
+			//															System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//															start = System.currentTimeMillis();
+			//														}
+			//													}
+			//												}
+			//											}
+			//										}
+			//									}
+			//								}
+			//							}
+			//						}
+			//					}
+			//				}
+			//			}
 
 			//			for(double c = 0.0; c <= 1.01; c += .01) {
 			//				ConstantBidToCPC model = new ConstantBidToCPC(c);

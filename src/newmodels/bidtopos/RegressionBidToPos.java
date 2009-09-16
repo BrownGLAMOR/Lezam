@@ -1,4 +1,4 @@
-package newmodels.bidtocpc;
+package newmodels.bidtopos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
 
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
@@ -23,10 +24,10 @@ import edu.umich.eecs.tac.props.SalesReport;
  *
  */
 
-public class RegressionBidToCPC extends AbstractBidToCPC {
+public class RegressionBidToPos extends AbstractBidToPos {
 
 	protected HashMap<Query, ArrayList<Double>> _bids;
-	protected HashMap<Query,ArrayList<Double>> _CPCs;
+	protected HashMap<Query,ArrayList<Double>> _positions;
 	protected Set<Query> _querySpace;
 	protected int	_counter;
 	protected int[] _predCounter;
@@ -37,24 +38,22 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	private int _numPrevDays;
 	private ArrayList<QueryReport> _queryReports;
 	private ArrayList<BidBundle> _bidBundles;
-	private int predictErrors = 0;
 	private boolean _queryIndicators;
 	private boolean _queryTypeIndicators;
 	private boolean _powers;
 	private boolean _weighted;
 	private double _mWeight;
-	private boolean _robust;
-	private boolean _loglinear;
+	private double _outOfAuction = 6.0;
 	/*
 	 * When we don't get a position, we get NaN as our CPC
 	 */
 	private boolean _ignoreNaN;
 	private HashMap<Query, double[]> _coefficients;
 
-	public RegressionBidToCPC(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, double mWeight, boolean robust, boolean loglinear, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
+	public RegressionBidToPos(RConnection rConnection, Set<Query> queryspace, boolean perQuery, int IDVar, int numPrevDays, boolean weighted, double mWeight, boolean queryIndicators, boolean queryTypeIndicators, boolean powers, boolean ignoreNaN) {
 		_rConnection = rConnection;
 		_bids = new HashMap<Query,ArrayList<Double>>();
-		_CPCs = new HashMap<Query,ArrayList<Double>>();
+		_positions = new HashMap<Query,ArrayList<Double>>();
 		_coefficients = new HashMap<Query, double[]>();
 		_queryReports = new ArrayList<QueryReport>();
 		_bidBundles = new ArrayList<BidBundle>();
@@ -64,8 +63,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		_numPrevDays = numPrevDays;
 		_weighted = weighted;
 		_mWeight = mWeight;
-		_robust = robust;
-		_loglinear = loglinear;
 		_queryIndicators = queryIndicators;
 		_queryTypeIndicators = queryTypeIndicators;
 		_ignoreNaN = ignoreNaN;
@@ -73,19 +70,12 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 		for(Query query : _querySpace) {
 			ArrayList<Double> bids = new ArrayList<Double>();
-			ArrayList<Double> CPCs = new ArrayList<Double>();
+			ArrayList<Double> positions = new ArrayList<Double>();
 			_bids.put(query, bids);
-			_CPCs.put(query, CPCs);
+			_positions.put(query, positions);
 			_coefficients.put(query, null);
 		}
 
-		if(_robust) {
-			try {
-				_rConnection.voidEval("library(MASS)");
-			} catch (RserveException e) {
-				throw new RuntimeException("Could not load the R MASS library");
-			}
-		}
 	}
 
 	@Override
@@ -98,6 +88,10 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			return Double.NaN;
 		}
 
+		if(currentBid <= 0 || Double.isNaN(currentBid)) {
+			return _outOfAuction;
+		}
+
 		double prediction = 0.0;
 		/*
 		 * oldest - > newest
@@ -108,10 +102,10 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		}
 		bids.add(currentBid);
 
-		List<Double> CPCs = new ArrayList<Double>();
+		List<Double> positions = new ArrayList<Double>();
 		for(int i = _IDVar-3; i >= 0; i --) {
-			double cpc = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
-			CPCs.add(cpc);
+			double pos = _queryReports.get(_queryReports.size()-1-i).getCPC(query);
+			positions.add(pos);
 		}
 
 
@@ -189,40 +183,33 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			}
 		}
 		predCounter += bids.size();
-		for(int i = 0; i < CPCs.size(); i++) {
-			double CPC = CPCs.get(i);
-			if(Double.isNaN(CPC)) {
-				CPC = 0;
+		for(int i = 0; i < positions.size(); i++) {
+			double pos = positions.get(i);
+			if(Double.isNaN(pos)) {
+				pos = 0;
 			}
-			prediction += coeff[i+predCounter] * CPC;
+			prediction += coeff[i+predCounter] * pos;
 			if(_powers) {
-				if(i == CPCs.size() - 1) {
+				if(i == positions.size() - 1) {
 					predCounter++;
-					prediction += coeff[i+predCounter] * CPC * CPC;
+					prediction += coeff[i+predCounter] * pos * pos;
 					predCounter++;
-					prediction += coeff[i+predCounter] * CPC * CPC * CPC;
+					prediction += coeff[i+predCounter] * pos * pos * pos;
 				}
 			}
 		}
-		predCounter += CPCs.size();
-
-		if(_loglinear) {
-			prediction = Math.exp(prediction);
-		}
+		predCounter += positions.size();
 
 		if(Double.isNaN(prediction)) {
 			return Double.NaN;
 		}
 
-		/*
-		 * Our CPC can never be higher than our bid
-		 */
-		if(prediction > currentBid) {
-			return currentBid;
+		if(prediction > _outOfAuction) {
+			return _outOfAuction;
 		}
 
-		if(prediction < 0.0) {
-			return 0.0;
+		if(prediction < 1.0) {
+			return 1.0;
 		}
 
 		return prediction;
@@ -231,7 +218,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle) {
+	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle, HashMap<Query, double[]> posDist) {
 
 		double start = System.currentTimeMillis();
 
@@ -250,68 +237,58 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			_queryReports.remove(0);
 			for(Query query : _querySpace) {
 				ArrayList<Double> bids = _bids.get(query);
-				ArrayList<Double> CPCs = _CPCs.get(query);
+				ArrayList<Double> positions = _positions.get(query);
 				bids.remove(0);
-				CPCs.remove(0);
+				positions.remove(0);
 				_bids.put(query,bids);
-				_CPCs.put(query,CPCs);
+				_positions.put(query,positions);
 			}
 		}
 
 
 		for(Query query : _querySpace) {
 			ArrayList<Double> bids = _bids.get(query);
-			ArrayList<Double> CPCs = _CPCs.get(query);
+			ArrayList<Double> positions = _positions.get(query);
 			double bid = bidbundle.getBid(query);
-			double CPC = queryreport.getCPC(query);
-			if(!(Double.isNaN(CPC))) {
+			double pos = queryreport.getPosition(query);
+			
+			if(bid == 0 || Double.isNaN(bid)) {
+				bids.add(0.0);
+				positions.add(_outOfAuction);
+			}
+			if(!(Double.isNaN(pos))) {
 				bids.add(bid);
-				if(_loglinear) {
-					CPCs.add(Math.log(CPC));
-				}
-				else {
-					CPCs.add(CPC);
-				}
+				positions.add(pos);
 			}
 			else {
 				if(_ignoreNaN) {
 					bids.add(0.0);
-					if(_loglinear) {
-						CPCs.add(Math.log(0.01));
-					}
-					else {
-						CPCs.add(0.0);
-					}
+					positions.add(_outOfAuction);
 				}
 				else {
 					bids.add(bid);
-					if(_loglinear) {
-						CPCs.add(Math.log(0.01));
-					}
-					else {
-						CPCs.add(0.01);
-					}
+					positions.add(_outOfAuction);
 				}
 			}
 			_bids.put(query,bids);
-			_CPCs.put(query,CPCs);
+			_positions.put(query,positions);
 		}
 
 		if(_bidBundles.size() > _IDVar + 1) {
 			if(_perQuery) {
 				for(Query query: _querySpace) {
 					ArrayList<Double> bidsArr = _bids.get(query);
-					ArrayList<Double> CPCArr = _CPCs.get(query);
+					ArrayList<Double> posArr = _positions.get(query);
 
 					int len = bidsArr.size();
 
 					double[] bids = new double[len];
-					double[] cpcs = new double[len];
+					double[] positions = new double[len];
 					double[] weights = new double[len];
 
 					for(int i = 0; i < len; i++) {
 						bids[i] = bidsArr.get(i);
-						cpcs[i] = CPCArr.get(i);
+						positions[i] = posArr.get(i);
 						if(_weighted) {
 							/*
 							 * For our WLS we weight the points by $m^{t-t_i}$ where 
@@ -324,17 +301,12 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 					try {
 						_rConnection.assign("bids", bids);
-						_rConnection.assign("cpcs", cpcs);
+						_rConnection.assign("pos", positions);
 
 						String model;
 
 
-						if(_robust) {
-							model = "model = rlm(cpcs[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
-						}
-						else {
-							model = "model = lm(cpcs[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
-						}
+						model = "model = lm(pos[" + ((_IDVar - 1)+1) + ":" + _bidBundles.size() +  "] ~ ";
 
 						for(int i = 0; i < _IDVar; i++) {
 							int min = i + 1;
@@ -353,11 +325,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						for(int i = 0; i < _IDVar-2; i++) {
 							int min = i + 1;
 							int max = _bidBundles.size() - (_IDVar - 1 - i);
-							model += "cpcs[" + min +":" + max + "] + ";
+							model += "pos[" + min +":" + max + "] + ";
 							if(_powers) {
 								if(i == _IDVar -3) {
-									model += "I(cpcs[" + min +":" + max + "]^2) + ";
-									model += "I(cpcs[" + min +":" + max + "]^3) + ";
+									model += "I(pos[" + min +":" + max + "]^2) + ";
+									model += "I(pos[" + min +":" + max + "]^3) + ";
 								}
 							}
 						}
@@ -402,16 +374,16 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			else {
 				int len = _querySpace.size() * _bidBundles.size();
 				double[] bids = new double[len];
-				double[] cpcs = new double[len];
+				double[] positions = new double[len];
 				double[] weights = new double[len];
 
 				int idx = 0;
 				for(int i = 0; i < _bidBundles.size(); i++) {
 					for(Query query : _querySpace) {
 						ArrayList<Double> bidVec = _bids.get(query);
-						ArrayList<Double> CPCVec = _CPCs.get(query);
+						ArrayList<Double> posVec = _positions.get(query);
 						bids[idx] = bidVec.get(i);
-						cpcs[idx] = CPCVec.get(i);
+						positions[idx] = posVec.get(i);
 						if(_weighted) {
 							/*
 							 * For our WLS we weight the points by $m^{t-t_i}$ where 
@@ -510,17 +482,12 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						_rConnection.assign("queryIndF2",queryIndF2);
 					}
 					_rConnection.assign("bids", bids);
-					_rConnection.assign("cpcs", cpcs);
+					_rConnection.assign("pos", positions);
 
 					String model;
 
 
-					if(_robust) {
-						model = "model = rlm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
-					}
-					else {
-						model = "model = lm(cpcs[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
-					}
+					model = "model = lm(pos[" + ((_IDVar - 1)*_numQueries+1) + ":" + (_bidBundles.size() * _querySpace.size()) +  "] ~ ";
 
 					if(_queryIndicators) {
 						model += "queryInd1 + queryInd2 + queryInd3 + queryInd4 + queryInd5 + queryInd6 + ";
@@ -546,11 +513,11 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 					for(int i = 0; i < _IDVar-2; i++) {
 						int min = i * _numQueries + 1;
 						int max = (_bidBundles.size() - (_IDVar - 1 - i)) * _querySpace.size();
-						model += "cpcs[" + min +":" + max + "] + ";
+						model += "pos[" + min +":" + max + "] + ";
 						if(_powers) {
 							if(i == _IDVar -3) {
-								model += "I(cpcs[" + min +":" + max + "]^2) + ";
-								model += "I(cpcs[" + min +":" + max + "]^3) + ";
+								model += "I(pos[" + min +":" + max + "]^2) + ";
+								model += "I(pos[" + min +":" + max + "]^3) + ";
 							}
 						}
 					}
@@ -610,12 +577,13 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new RegressionBidToCPC(_rConnection, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _mWeight, _robust,_loglinear,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
+		return new RegressionBidToPos(_rConnection, _querySpace, _perQuery, _IDVar, _numPrevDays, _weighted, _mWeight,_queryIndicators, _queryTypeIndicators, _powers,_ignoreNaN);
 	}
 
 	@Override
 	public String toString() {
-//		return "RegressionBidToCPC(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", mWeight: " + _mWeight + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
-		return "RegressionBidToCPC(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _robust + ", " + _loglinear + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
+		//		return "RegressionBidToPos(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", mWeight: " + _mWeight + ", robust: " +  _robust + ", loglinear: " + _loglinear + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers + ", ignoreNan: " + _ignoreNaN;
+		return "RegressionBidToPos(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
+
 }

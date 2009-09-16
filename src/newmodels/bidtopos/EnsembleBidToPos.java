@@ -20,7 +20,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EnsembleBidToPos extends AbstractBidToPosModel {
+public class EnsembleBidToPos extends AbstractBidToPos {
 
 	private int DEBUG = 0;
 
@@ -31,8 +31,8 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	 * Models
 	 * 
 	 */
-	protected HashMap<String,AbstractBidToPosModel> _models;
-	protected HashMap<String,AbstractBidToPosModel> _usableModels;
+	protected HashMap<String,AbstractBidToPos> _models;
+	protected HashMap<String,AbstractBidToPos> _usableModels;
 	protected HashMap<String,HashMap<Query,LinkedList<Double>>> _dailyModelError;
 	protected HashMap<String,HashMap<Query,LinkedList<Integer>>> _bordaCount;
 	protected HashMap<BidBundle,HashMap<String,HashMap<Query,Double>>> _modelPredictions;
@@ -40,7 +40,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	/*
 	 * This holds the ensemble used for predicting
 	 */
-	protected HashMap<Query,LinkedList<AbstractBidToPosModel>> _ensemble;
+	protected HashMap<Query,LinkedList<AbstractBidToPos>> _ensemble;
 	protected HashMap<Query,LinkedList<Double>> _ensembleError;
 	protected LinkedList<Double> _RMSE;
 	protected HashMap<BidBundle,HashMap<Query,Double>> _ensemblePredictions;
@@ -55,7 +55,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
-	private RConnection rConnection;
+	private RConnection _rConnection;
 
 
 	private double _outOfAuction = 6.0;
@@ -75,8 +75,8 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Initialize Models
 		 */
-		_models = new HashMap<String, AbstractBidToPosModel>();
-		_usableModels = new HashMap<String,AbstractBidToPosModel>();
+		_models = new HashMap<String, AbstractBidToPos>();
+		_usableModels = new HashMap<String,AbstractBidToPos>();
 		_dailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
 		_bordaCount = new HashMap<String, HashMap<Query,LinkedList<Integer>>>();
 		_modelPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
@@ -84,10 +84,10 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Initialize Ensemble
 		 */
-		_ensemble = new HashMap<Query, LinkedList<AbstractBidToPosModel>>();
+		_ensemble = new HashMap<Query, LinkedList<AbstractBidToPos>>();
 		_ensembleError = new HashMap<Query, LinkedList<Double>>();
 		for(Query query : _querySpace) {
-			LinkedList<AbstractBidToPosModel> queryEnsemble = new LinkedList<AbstractBidToPosModel>();
+			LinkedList<AbstractBidToPos> queryEnsemble = new LinkedList<AbstractBidToPos>();
 			LinkedList<Double> queryEnsembleError = new LinkedList<Double>();
 			_ensemble.put(query, queryEnsemble);
 			_ensembleError.put(query, queryEnsembleError);
@@ -107,7 +107,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		}
 
 		try {
-			rConnection = new RConnection();
+			_rConnection = new RConnection();
 		} catch (RserveException e) {
 			e.printStackTrace();
 		}
@@ -119,126 +119,84 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Add Models
 		 */
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 60, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 60, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 45, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 45, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 60, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 60, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 60, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 45, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 60, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 45, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 45, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 60, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 45, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 45, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 60, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 45, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 60, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 45, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 45, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,3 , 60, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 60, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 45, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 60, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 45, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 60, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,4 , 45, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 45, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 60, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 45, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, true,2 , 60, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 15, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 15, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 30, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 15, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 45, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 60, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 30, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 45, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 60, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 15, true,0.99));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 15, false,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 30, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 15, true,0.89));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 15, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 45, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 15, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 30, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 45, true,0.84));
-		addModel(new BidToPos(rConnection, _querySpace, false,4 , 60, true,0.94));
-		addModel(new BidToPos(rConnection, _querySpace, false,3 , 60, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 30, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 15, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 15, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 45, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 60, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 30, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 30, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 30, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 45, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 60, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 45, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 30, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 60, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 45, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 30, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,4 , 60, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 45, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 60, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 45, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,3 , 60, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 15, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 15, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 15, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 30, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 45, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 60, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 15, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 30, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 15, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 45, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 60, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 30, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 60, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 45, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 45, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 60, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 60, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 45, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 45, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 60, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 30, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 45, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 60, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 30, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 45, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 60, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, true,1 , 45, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 60, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 45, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,2 , 60, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 30, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 60, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 60, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 30, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 45, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 45, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 15, false,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 15, true,0.99));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 60, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 45, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 30, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 15, true,0.94));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 60, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 45, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 30, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 15, true,0.89));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 60, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 45, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 30, true,0.84));
-//		addModel(new BidToPos(rConnection, _querySpace, false,1 , 15, true,0.84));
+
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.84, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.89, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.89, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.94, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.94, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.89, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.84, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.94, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.89, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, true,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, true,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.89, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.84, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.94, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, true,0.89, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.89, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, true,0.89, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.94, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.99, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.99, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, false,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, true,0.94, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, true,0.94, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.94, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.99, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, false,0.84, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, true,0.99, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, true,0.99, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, false,0.84, false, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,60, false,0.84, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, true,1,45, false,0.84, false, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, true,0.99, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, false,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, true,0.99, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.99, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, false,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, false,0.84, true, false, true, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.84, true, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.89, true, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,30, true,0.84, true, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,45, true,0.84, true, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.84, true, false, false, false));
+		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.94, true, false, false, false));
+
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.89));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, false,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, false,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.94));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, false,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, false,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.99));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, false,0.84));
+		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, false,0.84));
 	}
 
 	@Override
@@ -254,9 +212,9 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Update Models
 		 */
-		_usableModels = new HashMap<String, AbstractBidToPosModel>();
+		_usableModels = new HashMap<String, AbstractBidToPos>();
 		for(String name : _models.keySet()) {
-			AbstractBidToPosModel model = _models.get(name);
+			AbstractBidToPos model = _models.get(name);
 			boolean usable = model.updateModel(queryReport, salesReport, bidBundle,posDists);
 			if(usable) {
 				_usableModels.put(name, model);
@@ -280,7 +238,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		 */
 		HashMap<String,HashMap<Query,Double>> modelPredictions = new HashMap<String, HashMap<Query,Double>>();
 		for(String name : _usableModels.keySet()) {
-			AbstractBidToPosModel model = _usableModels.get(name);
+			AbstractBidToPos model = _usableModels.get(name);
 			HashMap<Query,Double> predictions = new HashMap<Query, Double>();
 			for(Query query : _querySpace) {
 				double prediction = model.getPrediction(query, bundle.getBid(query));
@@ -318,8 +276,8 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 				if(DEBUG > 0) {
 					System.out.println(query + ", pred: " + getPrediction(query, bid));
 				}
-				LinkedList<AbstractBidToPosModel> queryEnsemble = _ensemble.get(query);
-				for(AbstractBidToPosModel model : queryEnsemble) {
+				LinkedList<AbstractBidToPos> queryEnsemble = _ensemble.get(query);
+				for(AbstractBidToPos model : queryEnsemble) {
 					String modelName = model.toString();
 					double weight = _ensembleWeights.get(query).get(modelName);
 					LinkedList<Double> dailyModelError = _dailyModelError.get(modelName).get(query);
@@ -432,14 +390,14 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		if(bid == 0 || Double.isNaN(bid) || _ensemble == null) {
 			return prediction;
 		}
-		LinkedList<AbstractBidToPosModel> queryEnsemble = _ensemble.get(query);
+		LinkedList<AbstractBidToPos> queryEnsemble = _ensemble.get(query);
 		if(queryEnsemble.size() == 0) {
 			return prediction;
 		}
 		double totWeight = 0.0;
 		prediction = 0.0;
 		HashMap<String, Double> ensembleWeights = _ensembleWeights.get(query);
-		for(AbstractBidToPosModel model : queryEnsemble) {
+		for(AbstractBidToPos model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid);
 			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
 			if(!Double.isNaN(pred)) {
@@ -477,11 +435,11 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		}
 	}
 
-	public void addModel(AbstractBidToPosModel model) {
+	public void addModel(AbstractBidToPos model) {
 		addModel(model.toString(),model);
 	}
 
-	public void addModel(String name, AbstractBidToPosModel model) {
+	public void addModel(String name, AbstractBidToPos model) {
 		_models.put(name,model);
 		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
 		HashMap<Query, LinkedList<Integer>> bordaCount = new HashMap<Query, LinkedList<Integer>>();
@@ -496,7 +454,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		_bordaCount.put(name,bordaCount);
 	}
 
-	public HashMap<Query, LinkedList<AbstractBidToPosModel>> meanPredictionCombiner() {
+	public HashMap<Query, LinkedList<AbstractBidToPos>> meanPredictionCombiner() {
 		/*
 		 * Initialize Error Mappings
 		 */
@@ -510,7 +468,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		 * Add Models
 		 */
 		for(String name : _usableModels.keySet()) {
-			AbstractBidToPosModel model = _usableModels.get(name);
+			AbstractBidToPos model = _usableModels.get(name);
 			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _dailyModelError.get(name);
 			for(Query query : _querySpace) {
 				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
@@ -539,15 +497,15 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Initialize Ensemble
 		 */
-		HashMap<Query, LinkedList<AbstractBidToPosModel>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPosModel>>();
+		HashMap<Query, LinkedList<AbstractBidToPos>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPos>>();
 		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
 		for(Query query: _querySpace) {
-			LinkedList<AbstractBidToPosModel> queryEnsemble = new LinkedList<AbstractBidToPosModel>();
+			LinkedList<AbstractBidToPos> queryEnsemble = new LinkedList<AbstractBidToPos>();
 			ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			for(ModelErrorPair modelErrorPair : modelErrorPairList) {
 				//				System.out.println("Query: " + query +"  Name: " + modelErrorPair.getName() + "  Error: " + modelErrorPair.getError());
-				queryEnsemble.add((AbstractBidToPosModel) modelErrorPair.getModel());
+				queryEnsemble.add((AbstractBidToPos) modelErrorPair.getModel());
 				ensembleWeights.put(modelErrorPair.getName(), 1.0);
 				HashMap<String, Integer> ensembleMembers = _ensembleMembers.get(query);
 				Integer ensembleUseCount = ensembleMembers.get(modelErrorPair.getName());
@@ -569,7 +527,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		return ensemble;
 	}
 
-	public HashMap<Query, LinkedList<AbstractBidToPosModel>> bordaCountCombiner() {
+	public HashMap<Query, LinkedList<AbstractBidToPos>> bordaCountCombiner() {
 		/*
 		 * Initialize Error Mappings
 		 */
@@ -583,7 +541,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		 * Sort Model Errors
 		 */
 		for(String name : _usableModels.keySet()) {
-			AbstractBidToPosModel model = _usableModels.get(name);
+			AbstractBidToPos model = _usableModels.get(name);
 			HashMap<Query, LinkedList<Double>> typeIDailyModelError = _dailyModelError.get(name);
 			for(Query query : _querySpace) {
 				ArrayList<ModelErrorPair> modelErrorPairList = modelErrorMap.get(query);
@@ -650,10 +608,10 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 		/*
 		 * Initialize Ensemble and Weights
 		 */
-		HashMap<Query, LinkedList<AbstractBidToPosModel>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPosModel>>();
+		HashMap<Query, LinkedList<AbstractBidToPos>> ensemble = new HashMap<Query, LinkedList<AbstractBidToPos>>();
 		_ensembleWeights = new HashMap<Query, HashMap<String,Double>>();
 		for(Query query: _querySpace) {
-			LinkedList<AbstractBidToPosModel> queryEnsemble = new LinkedList<AbstractBidToPosModel>();
+			LinkedList<AbstractBidToPos> queryEnsemble = new LinkedList<AbstractBidToPos>();
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 
 			ArrayList<ModelBordaPair> modelBordaList = new ArrayList<ModelBordaPair>();
@@ -681,7 +639,7 @@ public class EnsembleBidToPos extends AbstractBidToPosModel {
 			int i = 0;
 			for(ModelBordaPair modelBordaPair : modelBordaList) {
 				if(i < ENSEMBLESIZE) {
-					queryEnsemble.add((AbstractBidToPosModel) modelBordaPair.getModel());
+					queryEnsemble.add((AbstractBidToPos) modelBordaPair.getModel());
 					ensembleWeights.put(modelBordaPair.getName(), modelBordaPair.getCount());
 				}
 				i++;

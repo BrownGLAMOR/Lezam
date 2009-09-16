@@ -17,7 +17,7 @@ import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtopos.AbstractBidToPosModel;
+import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtopos.BidToPosInverter;
 import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
@@ -55,7 +55,7 @@ public class DPPosAgent extends AbstractAgent {
 	private AbstractPosToCPC posToCPCModel;
 	private AbstractQueryToNumImp queryToNumImpModel;
 	private AbstractPosToPrClick posToPrClickModel;
-	private AbstractBidToPosModel _bidToPos;
+	private AbstractBidToPos _bidToPos;
 	private AvgPosToPosDist _avgPosDist;
 	private BidToPosInverter _bidToPosInverter;
 	private AbstractUserModel userModel;
@@ -369,7 +369,7 @@ public class DPPosAgent extends AbstractAgent {
 		models.add(basicTargModel);
 		posToPrClickModel = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		models.add(posToPrClickModel);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
+		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
 		BidToPosInverter bidToPosInverter;
@@ -455,8 +455,8 @@ public class DPPosAgent extends AbstractAgent {
 				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 				this.posToPrClickModel = posToPrClick;
 			}
-			else if(model instanceof AbstractBidToPosModel) {
-				AbstractBidToPosModel bidToPos = (AbstractBidToPosModel) model;
+			else if(model instanceof AbstractBidToPos) {
+				AbstractBidToPos bidToPos = (AbstractBidToPos) model;
 				_bidToPos = bidToPos;
 			}
 			else if(model instanceof AvgPosToPosDist) {

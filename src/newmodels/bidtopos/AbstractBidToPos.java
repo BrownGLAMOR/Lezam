@@ -15,7 +15,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractBidToPosModel extends AbstractModel {
+public abstract class AbstractBidToPos extends AbstractModel {
 	
 	
 	public abstract double getPrediction(Query query, double bid);

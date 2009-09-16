@@ -23,7 +23,7 @@ import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtopos.AbstractBidToPosModel;
+import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtopos.BidToPosInverter;
 import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
@@ -86,7 +86,7 @@ public class ILPPosAgent extends AbstractAgent {
 	private AbstractQueryToNumImp _queryToNumImpModel;
 	private AbstractPosToCPC _posToCPC;
 	private AbstractPosToPrClick _posToPrClick;
-	private AbstractBidToPosModel _bidToPos;
+	private AbstractBidToPos _bidToPos;
 	private BidToPosInverter _bidToPosInverter;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractConversionModel _convPrModel;
@@ -147,7 +147,7 @@ public class ILPPosAgent extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 8, 25, true, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
-		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,7,15,true,true);
+		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,7,15,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
 		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
@@ -194,8 +194,8 @@ public class ILPPosAgent extends AbstractAgent {
 				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 				_posToPrClick = posToPrClick;
 			}
-			else if(model instanceof AbstractBidToPosModel) {
-				AbstractBidToPosModel bidToPos = (AbstractBidToPosModel) model;
+			else if(model instanceof AbstractBidToPos) {
+				AbstractBidToPos bidToPos = (AbstractBidToPos) model;
 				_bidToPos = bidToPos;
 			}
 			else if(model instanceof AbstractConversionModel) {
@@ -320,8 +320,8 @@ public class ILPPosAgent extends AbstractAgent {
 				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 				posToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
-			else if(model instanceof AbstractBidToPosModel) {
-				AbstractBidToPosModel bidToPosModel = (AbstractBidToPosModel) model;
+			else if(model instanceof AbstractBidToPos) {
+				AbstractBidToPos bidToPosModel = (AbstractBidToPos) model;
 				HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
 				for(Query query : _querySpace) {
 					double[] posDist = _avgPosDist.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));

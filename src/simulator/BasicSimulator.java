@@ -20,7 +20,7 @@ import newmodels.AbstractModel;
 import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtopos.AbstractBidToPosModel;
+import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
@@ -608,7 +608,7 @@ public class BasicSimulator {
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
 		AbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
-		AbstractBidToPosModel bidToSlotModel = new PerfectBidToPosition(this);
+		AbstractBidToPos bidToSlotModel = new PerfectBidToPosition(this);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
 		models.add(userModel);
 		models.add(queryToNumImp);

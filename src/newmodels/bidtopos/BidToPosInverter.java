@@ -21,7 +21,7 @@ public class BidToPosInverter extends AbstractModel {
 	private double _increment;
 	private double _min;
 	private double _max;
-	private AbstractBidToPosModel _model;
+	private AbstractBidToPos _model;
 
 	public BidToPosInverter(RConnection rConnection, Set<Query> querySpace, double increment, double min, double max) {
 		_rConnection = rConnection;
@@ -81,7 +81,7 @@ public class BidToPosInverter extends AbstractModel {
 		return bid;
 	}
 
-	public boolean updateModel(AbstractBidToPosModel model) {
+	public boolean updateModel(AbstractBidToPos model) {
 		_model = model;
 		for(Query query : _querySpace) {
 			double[] bids = getIncrementedArray();

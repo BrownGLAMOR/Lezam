@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import newmodels.AbstractModel;
-import newmodels.bidtopos.AbstractBidToPosModel;
-import newmodels.bidtopos.BidToPos;
+import newmodels.bidtopos.AbstractBidToPos;
+import newmodels.bidtopos.SpatialBidToPos;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -18,7 +18,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPosition extends AbstractBidToPosModel {
+public class PerfectBidToPosition extends AbstractBidToPos {
 
 	private BasicSimulator _simulator;
 

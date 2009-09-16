@@ -17,7 +17,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class BidToPos extends AbstractBidToPosModel {
+public class SpatialBidToPos extends AbstractBidToPos {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
@@ -33,7 +33,7 @@ public class BidToPos extends AbstractBidToPosModel {
 	private boolean _perQuery;
 	private double _outOfAuction = 6.0;
 
-	public BidToPos(RConnection rConnection, Set<Query> querySpace, boolean perQuery, int degree, int numPrevDays, boolean weighted, double mWeight) {
+	public SpatialBidToPos(RConnection rConnection, Set<Query> querySpace, boolean perQuery, int degree, int numPrevDays, boolean weighted, double mWeight) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
 		_bids = new HashMap<Query,ArrayList<Double>>();
@@ -365,7 +365,7 @@ public class BidToPos extends AbstractBidToPosModel {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BidToPos(_rConnection, _querySpace, _perQuery, _degree,_numPrevDays,_weighted, _m);
+		return new SpatialBidToPos(_rConnection, _querySpace, _perQuery, _degree,_numPrevDays,_weighted, _m);
 	}
 
 	@Override
