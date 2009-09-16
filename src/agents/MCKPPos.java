@@ -61,7 +61,7 @@ public class MCKPPos extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = false;
+	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
 	private double _safetyBudget = 800;
@@ -120,8 +120,8 @@ public class MCKPPos extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 12, 30, true, true);
-		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 12, 30, basicTargModel, true, true);
+		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 8, 25, true, true);
+		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		AbstractBidToPosModel bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
