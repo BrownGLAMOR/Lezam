@@ -218,7 +218,7 @@ public class RegressionBidToPos extends AbstractBidToPos {
 	/*
 	 * MAKE SURE THAT THE BIDBUNDLE CORRESPONDS TO THE QUERY REPORT
 	 */
-	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle, HashMap<Query, double[]> posDist) {
+	public boolean updateModel(QueryReport queryreport, SalesReport salesReport, BidBundle bidbundle) {
 
 		double start = System.currentTimeMillis();
 

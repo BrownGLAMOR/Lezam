@@ -369,9 +369,9 @@ public class DPPosAgent extends AbstractAgent {
 		models.add(basicTargModel);
 		posToPrClickModel = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		models.add(posToPrClickModel);
-		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,5,15,true,true);
-		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
-		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
+		BasicPosToPrClick basicPosToPrClickModel = new BasicPosToPrClick(_numPS);
+		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicPosToPrClickModel);
+		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,5,15,true,true);
 		BidToPosInverter bidToPosInverter;
 		try {
 			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.0);
@@ -416,12 +416,7 @@ public class DPPosAgent extends AbstractAgent {
 				posToPrClickModel.updateModel(queryReport, salesReport, bidBundleList
 						.get(bidBundleList.size() - 2));
 				
-				HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
-				for(Query query : _querySpace) {
-					double[] posDist = _avgPosDist.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
-					posDists.put(query, posDist);
-				}
-				_bidToPos.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2),posDists);
+				_bidToPos.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 				
 				_bidToPosInverter.updateModel(_bidToPos);
 			}

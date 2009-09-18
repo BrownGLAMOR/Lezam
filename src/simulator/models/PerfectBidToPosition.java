@@ -43,7 +43,7 @@ public class PerfectBidToPosition extends AbstractBidToPos {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query, double[]> posDist) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		return true;
 	}
 

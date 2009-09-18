@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.targeting.BasicTargetModel;
 
 import org.jfree.base.modules.DefaultModuleInfo;
@@ -60,10 +61,13 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 
 	private double _outOfAuction = 6.0;
 
-	public EnsembleBidToPos(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
+	private AvgPosToPosDist _avgPosDistModel;
+
+	public EnsembleBidToPos(Set<Query> querySpace, AvgPosToPosDist avgPosDistModel, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
 		_bidBundles = new ArrayList<BidBundle>();
 
 		_querySpace = querySpace;
+		_avgPosDistModel = avgPosDistModel;
 		NUMPASTDAYS = numPastDays;
 		ENSEMBLESIZE = ensembleSize;
 
@@ -167,40 +171,40 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,60, true,0.84, true, false, false, false));
 		addModel(new RegressionBidToPos(_rConnection, _querySpace, false,1,15, true,0.94, true, false, false, false));
 
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.89));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 45, false,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,3 , 60, false,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.94));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 60, false,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,4 , 45, false,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, true,0.99));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 45, false,0.84));
-		addModel(new SpatialBidToPos(_rConnection, _querySpace, true,2 , 60, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 60, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 60, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 45, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 45, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 60, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 60, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 60, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 45, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 60, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 45, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 45, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 60, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 45, true,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 45, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 60, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 45, true,0.89));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 60, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 45, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 45, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,3 , 60, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 60, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 45, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 60, true,0.94));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 45, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 60, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,4 , 45, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 45, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 60, true,0.99));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 45, false,0.84));
+//		addModel(new SpatialBidToPos(_rConnection, _querySpace, _avgPosDistModel, true,2 , 60, false,0.84));
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
+	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		_bidBundles.add(bidBundle);
 
 		if(_ensemble != null) {
@@ -215,7 +219,7 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 		_usableModels = new HashMap<String, AbstractBidToPos>();
 		for(String name : _models.keySet()) {
 			AbstractBidToPos model = _models.get(name);
-			boolean usable = model.updateModel(queryReport, salesReport, bidBundle,posDists);
+			boolean usable = model.updateModel(queryReport, salesReport, bidBundle);
 			if(usable) {
 				_usableModels.put(name, model);
 				ensembleUsable = true;
@@ -767,7 +771,7 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 	}
 
 	public AbstractModel getCopy() {
-		return new EnsembleBidToPos(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
+		return new EnsembleBidToPos(_querySpace, _avgPosDistModel, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
 
 }

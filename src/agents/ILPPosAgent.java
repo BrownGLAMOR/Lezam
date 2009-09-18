@@ -147,10 +147,10 @@ public class ILPPosAgent extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 8, 25, true, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
-		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,7,15,true,true);
+		BasicPosToPrClick basicPosToPrClickModel = new BasicPosToPrClick(_numPS);
+		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicPosToPrClickModel);
+		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,7,15,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
-		BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(_numPS);
-		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, posToPrClickModel);
 		BidToPosInverter bidToPosInverter;
 		try {
 			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.5);
@@ -322,12 +322,7 @@ public class ILPPosAgent extends AbstractAgent {
 			}
 			else if(model instanceof AbstractBidToPos) {
 				AbstractBidToPos bidToPosModel = (AbstractBidToPos) model;
-				HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
-				for(Query query : _querySpace) {
-					double[] posDist = _avgPosDist.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
-					posDists.put(query, posDist);
-				}
-				bidToPosModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2),posDists);
+				bidToPosModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;

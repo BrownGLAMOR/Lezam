@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.avgpostoposdist.AvgPosToPosDist;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
@@ -32,10 +33,12 @@ public class SpatialBidToPos extends AbstractBidToPos {
 	private int _numPrevDays;
 	private boolean _perQuery;
 	private double _outOfAuction = 6.0;
+	private AvgPosToPosDist _avgPosToDistModel;
 
-	public SpatialBidToPos(RConnection rConnection, Set<Query> querySpace, boolean perQuery, int degree, int numPrevDays, boolean weighted, double mWeight) {
+	public SpatialBidToPos(RConnection rConnection, Set<Query> querySpace, AvgPosToPosDist avgPosToDistModel, boolean perQuery, int degree, int numPrevDays, boolean weighted, double mWeight) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
+		_avgPosToDistModel = avgPosToDistModel;
 		_bids = new HashMap<Query,ArrayList<Double>>();
 		_posDists = new HashMap<Query,ArrayList<double[]>>();
 		_coefficients = new HashMap<Query, double[]>();
@@ -61,10 +64,10 @@ public class SpatialBidToPos extends AbstractBidToPos {
 		if(posDist == null) {
 			return Double.NaN;
 		}
-		
+
 		double avgPos = 0.0;
 		double posTot = 0.0;
-		
+
 		for(int j = 0; j < posDist.length; j++) {
 			avgPos += posDist[j] * (j+1);
 			posTot += posDist[j];
@@ -75,6 +78,14 @@ public class SpatialBidToPos extends AbstractBidToPos {
 		}
 		else {
 			avgPos /= posTot;
+		}
+
+		if(avgPos < 1.0) {
+			return 1.0;
+		}
+
+		if(avgPos > _outOfAuction) {
+			return _outOfAuction;
 		}
 
 		return avgPos;
@@ -133,7 +144,13 @@ public class SpatialBidToPos extends AbstractBidToPos {
 	 * 
 	 * posDists must be normalized first!
 	 */
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,double[]> posDists) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
+		HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
+		for(Query query : _querySpace) {
+			double[] posDist = _avgPosToDistModel.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
+			posDists.put(query, posDist);
+		}
+
 		//First normalize the arrs
 		for(Query query : _querySpace) {
 			double[] posDist = posDists.get(query);
@@ -365,7 +382,7 @@ public class SpatialBidToPos extends AbstractBidToPos {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new SpatialBidToPos(_rConnection, _querySpace, _perQuery, _degree,_numPrevDays,_weighted, _m);
+		return new SpatialBidToPos(_rConnection, _querySpace, _avgPosToDistModel, _perQuery, _degree,_numPrevDays,_weighted, _m);
 	}
 
 	@Override

@@ -520,7 +520,7 @@ public class PredictionEvaluator {
 					BidBundle bidBundle = ourBidBundles.get(i);
 
 					model.updateModel(queryReport, salesReport, bidBundle);
-					if(i >= 5) {
+					if(i > 5) {
 						/*
 						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
 						 */
@@ -602,8 +602,8 @@ public class PredictionEvaluator {
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
 
-			int numPromSlots = status.getSlotInfo().getPromotedSlots();
-			BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(numPromSlots);
+			//			int numPromSlots = status.getSlotInfo().getPromotedSlots();
+			//			BasicPosToPrClick posToPrClickModel = new BasicPosToPrClick(numPromSlots);
 			//			AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, numPromSlots, posToPrClickModel);
 
 			/*
@@ -650,13 +650,7 @@ public class PredictionEvaluator {
 					QueryReport queryReport = ourQueryReports.get(i);
 					BidBundle bidBundle = ourBidBundles.get(i);
 
-					HashMap<Query,double[]> posDists = new HashMap<Query, double[]>();
-					//					for(Query query : querySpace) {
-					//						double[] posDist = avgPosToDistModel.getPrediction(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query), queryReport.getPosition(query), queryReport.getClicks(query));
-					//						posDists.put(query, posDist);
-					//					}
-
-					model.updateModel(queryReport, salesReport, bidBundle, posDists);
+					model.updateModel(queryReport, salesReport, bidBundle);
 					if(i >= 6) {
 						/*
 						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
@@ -767,39 +761,39 @@ public class PredictionEvaluator {
 			RConnection rConnection = new RConnection();
 			BasicTargetModel targModel = new BasicTargetModel(null, null);
 
-			/*
-			 * Test all BID-POS models!
-			 */
-			for(int perQuery = 0; perQuery < 2; perQuery++) {
-				for(int IDVar = 1; IDVar < 5; IDVar++) {
-					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
-						for(int weighted = 0; weighted < 2; weighted++) {
-							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-										for(int powers = 0; powers < 2; powers++) {
-											for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
-												if(!(IDVar == 2) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))
-														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
-													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
-													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-													evaluator.bidToPosDistPredictionChallenge(model);
-													//															System.out.println(model);
-													double stop = System.currentTimeMillis();
-													double elapsed = stop - start;
-													System.out.println("This took " + (elapsed / 1000) + " seconds");
-													start = System.currentTimeMillis();
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+			//			/*
+			//			 * Test all BID-POS models!
+			//			 */
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
+			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//										for(int powers = 0; powers < 2; powers++) {
+			//											for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
+			//												if(!(IDVar == 2) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))
+			//														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
+			//													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+			//													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
+			//													evaluator.bidToPosDistPredictionChallenge(model);
+			//													//															System.out.println(model);
+			//													double stop = System.currentTimeMillis();
+			//													double elapsed = stop - start;
+			//													System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//													start = System.currentTimeMillis();
+			//												}
+			//											}
+			//										}
+			//									}
+			//								}
+			//							}
+			//						}
+			//					}
+			//				}
+			//			}
 
 
 			//
@@ -906,7 +900,7 @@ public class PredictionEvaluator {
 			//						}
 
 
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
 
 
 			//			
