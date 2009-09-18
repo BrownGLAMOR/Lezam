@@ -2,8 +2,6 @@ package agents.mckp;
 
 import java.util.Comparator;
 
-import props.Misc;
-
 public class ItemComparatorByWeight implements Comparator<Item>{
 	/*
 	 * sorts by weight in INCREASING order
