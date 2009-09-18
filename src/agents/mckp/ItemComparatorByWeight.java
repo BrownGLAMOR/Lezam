@@ -28,7 +28,6 @@ public class ItemComparatorByWeight implements Comparator<Item>{
 		}else if(i1.w() < i2.w()) {
 			return -1;
 		}else{
-			Misc.myassert(false);
 			return 0;
 		}
 	}
