@@ -586,4 +586,9 @@ public class RegressionBidToPos extends AbstractBidToPos {
 		return "RegressionBidToPos(_rConnection, _querySpace, " + _perQuery + ", " +  _IDVar + ", " + _numPrevDays + ", " + _weighted  + ", " + _mWeight + ", " + _queryIndicators + ", " + _queryTypeIndicators + ", " + _powers + ", " + _ignoreNaN + ")";
 	}
 
+	@Override
+	public void setNumPromSlots(int numPromSlots) {
+		//This is only needed for the spacial classes
+	}
+
 }

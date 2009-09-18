@@ -774,4 +774,12 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 		return new EnsembleBidToPos(_querySpace, _avgPosDistModel, NUMPASTDAYS, ENSEMBLESIZE, _borda, _ignoreNaN);
 	}
 
+	@Override
+	public void setNumPromSlots(int numPromSlots) {
+		for(String modelName : _models.keySet()) {
+			AbstractBidToPos model = _models.get(modelName);
+			model.setNumPromSlots(numPromSlots);
+		}
+	}
+	
 }

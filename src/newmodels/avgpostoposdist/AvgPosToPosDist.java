@@ -203,6 +203,10 @@ public class AvgPosToPosDist extends AbstractModel {
 	public AbstractModel getCopy() {
 		return new AvgPosToPosDist(_numSols,_numPromSlots,_clickPrModel);
 	}
+	
+	public void setNumPromSlots(int numSlots) {
+		_numPromSlots = numSlots;
+	}
 
 	public static void main(String[] args) {
 		int numPromSlots = 2;

@@ -631,6 +631,7 @@ public class PredictionEvaluator {
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
 				AbstractBidToPos model = (AbstractBidToPos) baseModel.getCopy();
+				model.setNumPromSlots(status.getSlotInfo().getPromotedSlots());
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -778,7 +779,7 @@ public class PredictionEvaluator {
 			//														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
 			//													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
 			//													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-			//													evaluator.bidToPosDistPredictionChallenge(model);
+//																evaluator.bidToPosDistPredictionChallenge(model);
 			//													//															System.out.println(model);
 			//													double stop = System.currentTimeMillis();
 			//													double elapsed = stop - start;

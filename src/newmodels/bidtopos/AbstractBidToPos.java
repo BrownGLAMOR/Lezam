@@ -21,5 +21,7 @@ public abstract class AbstractBidToPos extends AbstractModel {
 	public abstract double getPrediction(Query query, double bid);
 
 	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle);
+	
+	public abstract void setNumPromSlots(int numPromSlots);
 
 }

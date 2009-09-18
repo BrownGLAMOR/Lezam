@@ -390,6 +390,11 @@ public class SpatialBidToPos extends AbstractBidToPos {
 		return "BidToPosDist( perQuery: " + _perQuery + ", degree: " + _degree + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", m: " + _m;
 	}
 
+	@Override
+	public void setNumPromSlots(int numPromSlots) {
+		_avgPosToDistModel.setNumPromSlots(numPromSlots);
+	}
+
 }
 
 

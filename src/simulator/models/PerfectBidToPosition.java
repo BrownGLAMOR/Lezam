@@ -47,4 +47,9 @@ public class PerfectBidToPosition extends AbstractBidToPos {
 		return true;
 	}
 
+	@Override
+	public void setNumPromSlots(int numPromSlots) {
+		//not used in this class
+	}
+
 }
