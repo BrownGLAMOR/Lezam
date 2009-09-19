@@ -99,11 +99,6 @@ public class BasicPosToPrClick extends AbstractPosToPrClick {
 	}
 
 	@Override
-	public void updatePredictions(QueryReport otherQueryReport) {
-		//Updating this model is not necessary
-	}
-
-	@Override
 	public void setSpecialty(String manufacturer, String component) {
 		_targModel = new BasicTargetModel(manufacturer, component);
 	}

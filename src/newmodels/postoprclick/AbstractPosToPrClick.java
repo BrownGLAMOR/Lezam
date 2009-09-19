@@ -22,8 +22,6 @@ public abstract class AbstractPosToPrClick extends AbstractModel {
 
 	public abstract void setSpecialty(String manufacturer, String component);
 
-	public abstract void updatePredictions(QueryReport otherQueryReport);
-	
 	public abstract String toString();
 	
 }

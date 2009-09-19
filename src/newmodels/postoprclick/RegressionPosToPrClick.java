@@ -652,8 +652,4 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 //		return "RegressionPosToPrClick(perQuery: " + _perQuery + ", IDVar: " + _IDVar + ", numPrevDays: " + _numPrevDays + ", weighted: " + _weighted + ", robust: " +  _robust + ", queryInd: " + _queryIndicators + ", queryTypeInd: " + _queryTypeIndicators + ", powers: " +  _powers;
 	}
 
-	@Override
-	public void updatePredictions(QueryReport otherQueryReport) {
-		//Not used in this class
-	}
 }

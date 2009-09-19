@@ -1,5 +1,7 @@
 package simulator.models;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
@@ -8,6 +10,7 @@ import org.omg.CORBA._PolicyStub;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.postocpc.AbstractPosToCPC;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -15,19 +18,30 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToCPC extends AbstractBidToCPC {
+public class PerfectPosToCPC extends AbstractPosToCPC {
 
 	private HashMap<Query, HashMap<Double, Reports>> _allReportsMap;
 	private HashMap<Query, double[]> _potentialBidsMap;
+	private HashMap<Query, HashMap<Double, Double>> _posToBidMap;
 
-	public PerfectBidToCPC(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap) {
+	public PerfectPosToCPC(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap, HashMap<Query,HashMap<Double,Double>> posToBidMap) {
 		_allReportsMap = allReportsMap;
 		_potentialBidsMap = potentialBidsMap;
+		_posToBidMap = posToBidMap;
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid) {
+	public double getPrediction(Query query, double pos) {
 		double avgCPC;
+		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
+		Set<Double> posToBidSet = posToBid.keySet();
+		ArrayList<Double> posToBidArrList = new ArrayList<Double>(posToBidSet);
+		Collections.sort(posToBidArrList);
+		double[] posToBidArr = new double[posToBidArrList.size()];
+		for(int i = 0; i < posToBidArr.length; i++) {
+			posToBidArr[i] = posToBidArrList.get(i);
+		}
+		double bid = getClosestElement(posToBidArr,pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
 		if(reports == null) {
@@ -66,7 +80,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectBidToCPC(_allReportsMap,_potentialBidsMap);
+		return new PerfectPosToCPC(_allReportsMap,_potentialBidsMap, _posToBidMap);
 	}
 
 	@Override

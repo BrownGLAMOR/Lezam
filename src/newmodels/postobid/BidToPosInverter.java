@@ -1,4 +1,4 @@
-package newmodels.bidtopos;
+package newmodels.postobid;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,10 +10,14 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.AbstractModel;
+import newmodels.bidtopos.AbstractBidToPos;
 
-public class BidToPosInverter extends AbstractModel {
+public class BidToPosInverter extends AbstractPosToBid {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
@@ -23,9 +27,10 @@ public class BidToPosInverter extends AbstractModel {
 	private double _max;
 	private AbstractBidToPos _model;
 
-	public BidToPosInverter(RConnection rConnection, Set<Query> querySpace, double increment, double min, double max) {
+	public BidToPosInverter(RConnection rConnection, Set<Query> querySpace, AbstractBidToPos model, double increment, double min, double max) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
+		_model = model;
 		_increment = increment;
 		_min = min;
 		_max = max;
@@ -81,8 +86,7 @@ public class BidToPosInverter extends AbstractModel {
 		return bid;
 	}
 
-	public boolean updateModel(AbstractBidToPos model) {
-		_model = model;
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		for(Query query : _querySpace) {
 			double[] bids = getIncrementedArray();
 			double[] positions = new double[bids.length];
@@ -111,12 +115,12 @@ public class BidToPosInverter extends AbstractModel {
 	}
 	
 	public String toString() {
-		return "BidToPosInverter(increment: "  + _increment + ", min: " + _min + ", max: " + _max + " )";
+		return "BidToPosInverter(model: " + _model + ",increment: "  + _increment + ", min: " + _min + ", max: " + _max + " )";
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BidToPosInverter(_rConnection, _querySpace, _increment, _min, _max);
+		return new BidToPosInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
 	}
 	
 }

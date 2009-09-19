@@ -1,10 +1,14 @@
 package simulator.models;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.postoprclick.AbstractPosToPrClick;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.Ad;
@@ -13,19 +17,30 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPrClick extends AbstractBidToPrClick {
+public class PerfectPosToPrClick extends AbstractPosToPrClick {
 
 	private HashMap<Query, HashMap<Double, Reports>> _allReportsMap;
 	private HashMap<Query, double[]> _potentialBidsMap;
+	private HashMap<Query, HashMap<Double, Double>> _posToBidMap;
 
-	public PerfectBidToPrClick(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap) {
+	public PerfectPosToPrClick(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap, HashMap<Query,HashMap<Double,Double>> posToBidMap) {
 		_allReportsMap = allReportsMap;
 		_potentialBidsMap = potentialBidsMap;
+		_posToBidMap = posToBidMap;
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid, Ad currentAd) {
+	public double getPrediction(Query query, double pos, Ad currentAd) {
 		double clickPr;
+		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
+		Set<Double> posToBidSet = posToBid.keySet();
+		ArrayList<Double> posToBidArrList = new ArrayList<Double>(posToBidSet);
+		Collections.sort(posToBidArrList);
+		double[] posToBidArr = new double[posToBidArrList.size()];
+		for(int i = 0; i < posToBidArr.length; i++) {
+			posToBidArr[i] = posToBidArrList.get(i);
+		}
+		double bid = getClosestElement(posToBidArr,pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
 		QueryReport queryReport;
@@ -73,7 +88,7 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectBidToPrClick(_allReportsMap,_potentialBidsMap);
+		return new PerfectPosToPrClick(_allReportsMap,_potentialBidsMap, _posToBidMap);
 	}
 
 	@Override
@@ -85,5 +100,4 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 	public String toString() {
 		return "PerfectBidToPrClick";
 	}
-
 }

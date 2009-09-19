@@ -23,13 +23,17 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.postocpc.AbstractPosToCPC;
+import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToPosition;
 import simulator.models.PerfectBidToPrClick;
-import simulator.models.PerfectBidToPrConv;
+import simulator.models.PerfectPosToCPC;
+import simulator.models.PerfectPosToPrClick;
+import simulator.models.PerfectQueryToPrConv;
 import simulator.models.PerfectQueryToNumImp;
 import simulator.models.PerfectUnitsSoldModel;
 import simulator.models.PerfectUserModel;
@@ -63,11 +67,10 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 1; //ALMOST ALWAYS HAVE THIS AT 2 MAX!!
-
+	private static final int NUM_PERF_ITERS = 1;
+	private int _numSplits = 3; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = false;
-
-	private static boolean CHART = false;
+	private Set<AbstractModel> _perfectModels;
 
 	private boolean DEBUG = false;
 
@@ -425,8 +428,8 @@ public class BasicSimulator {
 	 * Generates the perfect models to pass to the bidder
 	 */
 	public Set<AbstractModel> generatePerfectModels() {
+		_R.setSeed(lastSeed);
 		HashMap<Query, double[]> potentialBidsMap = getBidForEachSlot();
-		int numSplits = 3;  //How many bids to consider between each position
 		for(Query query : _querySpace) {
 			double[] potentialBids = potentialBidsMap.get(query);
 			ArrayList<Double> splitPotentialBids = new ArrayList<Double>();
@@ -436,8 +439,8 @@ public class BasicSimulator {
 				double bid2 = potentialBids[i+1];
 				double bidDiff = bid2-bid1;
 				splitPotentialBids.add(bid2);
-				for(int j = 1; j <= numSplits; j++) {
-					splitPotentialBids.add(bid1+bidDiff*((j*1.0)/numSplits));
+				for(int j = 1; j <= _numSplits; j++) {
+					splitPotentialBids.add(bid1+bidDiff*((j*1.0)/_numSplits));
 				}
 			}
 			HashSet removeDupesSet = new HashSet(splitPotentialBids);
@@ -452,18 +455,82 @@ public class BasicSimulator {
 			}
 			potentialBidsMap.put(query, newPotentialBids);
 		}
+		HashMap<Query,HashMap<Double,Reports>> allReportsMap = new HashMap<Query,HashMap<Double,Reports>>();
+		for(Query query : _querySpace) {
+			double[] potentialBids = potentialBidsMap.get(query);
+			HashMap<Double, Reports> queryReportsMap = new HashMap<Double,Reports>();
+			allReportsMap.put(query, queryReportsMap);
+		}
 		for(int i = 0; i < NUM_PERF_ITERS; i++) {
-
+			BidBundle bundle = new BidBundle();
+			for(Query query : _querySpace) {
+				double[] potentialBids = potentialBidsMap.get(query);
+				double rand = _R.nextDouble() * potentialBids.length;
+				int idx = (int) Math.floor(rand);
+				bundle.addQuery(query, potentialBids[idx], new Ad());
+			}
+			HashMap<String, Reports> reportsMap = runSimulation(bundle);
+			Reports ourReports = reportsMap.get(_agents[_ourAdvIdx]);
+			for(Query query : _querySpace) {
+				double bid = bundle.getBid(query);
+				HashMap<Double, Reports> queryReportsMap = allReportsMap.get(query);
+				Reports reports = queryReportsMap.get(bid);
+				if(reports == null) {
+					queryReportsMap.put(bid, ourReports);
+				}
+				else {
+					reports.addReport(ourReports);
+					queryReportsMap.put(bid, reports);
+				}
+				queryReportsMap.put(bid, reports);
+				allReportsMap.put(query, queryReportsMap);
+			}
+		}
+		HashMap<Query,double[]> potentialPositionsMap = new HashMap<Query, double[]>();
+		HashMap<Query,HashMap<Double,Double>> bidToPosMap = new HashMap<Query,HashMap<Double,Double>>();
+		HashMap<Query,HashMap<Double,Double>> posToBidMap = new HashMap<Query,HashMap<Double,Double>>();
+		for(Query query : _querySpace) {
+			HashMap<Double, Reports> queryReportsMap = allReportsMap.get(query);
+			double[] potentialBids = potentialBidsMap.get(query);
+			HashMap<Double,Double> bidToPosQueryMap = new HashMap<Double,Double>();
+			HashMap<Double,Double> posToBidQueryMap = new HashMap<Double,Double>();
+			ArrayList<Double> potentialPositionsList = new ArrayList<Double>();
+			for(int i = 0; i < potentialBids.length; i++) {
+				double bid = potentialBids[i];
+				Reports reports = queryReportsMap.get(bid);
+				double pos = reports.getQueryReport().getPosition(query);
+				potentialPositionsList.add(pos);
+				bidToPosQueryMap.put(bid, pos);
+				posToBidQueryMap.put(pos,bid);
+			}
+			Collections.sort(potentialPositionsList);
+			double[] potentialPositions = new double[potentialPositionsList.size()];
+			for(int i = 0; i < potentialPositions.length; i++) {
+				potentialPositions[i] = potentialPositionsList.get(i);
+			}
+			potentialPositionsMap.put(query, potentialPositions);
+			bidToPosMap.put(query, bidToPosQueryMap);
+			posToBidMap.put(query, posToBidQueryMap);
 		}
 
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
-		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(this);
-		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(this);
-		AbstractConversionModel bidToConvPrModel = new PerfectBidToPrConv(this);
+
+		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
+		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);
+		
+		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
+		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
+		
+		
+		AbstractConversionModel bidToConvPrModel = new PerfectQueryToPrConv(this);
 		AbstractBidToPos bidToSlotModel = new PerfectBidToPosition(this);
+		
+		
+		
+		
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -481,7 +548,9 @@ public class BasicSimulator {
 	 */
 	public BidBundle getBids(AbstractAgent agentToRun) {
 		if(PERFECTMODELS) {
-			agentToRun.setModels(generatePerfectModels());
+			Set<AbstractModel> perfectModels = generatePerfectModels();
+			_perfectModels = perfectModels;
+			agentToRun.setModels(perfectModels);
 		}
 		BidBundle bidBundle = agentToRun.getBidBundle(agentToRun.getModels());
 		return bidBundle;
@@ -810,7 +879,6 @@ public class BasicSimulator {
 			return new ILPBidAgent();
 		}
 		else if(string.equals("newSSB")) {
-			//TODO
 			return null;
 		}
 		else {

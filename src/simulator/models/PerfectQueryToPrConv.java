@@ -11,11 +11,11 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class PerfectBidToPrConv extends AbstractConversionModel {
+public class PerfectQueryToPrConv extends AbstractConversionModel {
 
 	private BasicSimulator _simulator;
 
-	public PerfectBidToPrConv(BasicSimulator simulator) {
+	public PerfectQueryToPrConv(BasicSimulator simulator) {
 		_simulator = simulator;
 	}
 
@@ -45,7 +45,7 @@ public class PerfectBidToPrConv extends AbstractConversionModel {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectBidToPrConv(_simulator);
+		return new PerfectQueryToPrConv(_simulator);
 	}
 
 }
