@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
@@ -136,8 +137,6 @@ public class BasicSimulator {
 
 	private long lastSeed = 876451;
 
-	private BidBundle _baseSolBundle;
-
 	private ArrayList<SimUser> _pregenUsers;
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
@@ -185,7 +184,6 @@ public class BasicSimulator {
 				_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
 			}
 
-			_baseSolBundle = null;
 			_pregenUsers = null;
 
 
@@ -201,7 +199,7 @@ public class BasicSimulator {
 				LinkedList<LinkedList<Integer>> bestVecs = new LinkedList<LinkedList<Integer>>();
 				double bestProf = 11;
 				int numBids = 6;
-				HashMap<Query,double[]> bids = getPotentialOptimalBids();
+				HashMap<Query,double[]> bids = getBidForEachSlot();
 				int counter = 0;
 				while(true) {
 					if(bidVecList.isEmpty()) {
@@ -381,7 +379,7 @@ public class BasicSimulator {
 		return reportsListMap;
 	}
 
-	private HashMap<Query, double[]> getPotentialOptimalBids() {
+	private HashMap<Query, double[]> getBidForEachSlot() {
 		HashMap<Query,double[]> bids = new HashMap<Query, double[]>();
 		for(Query query : _querySpace) {
 			double[] bidArr = new double[6];
@@ -601,6 +599,37 @@ public class BasicSimulator {
 	 * Generates the perfect models to pass to the bidder
 	 */
 	public Set<AbstractModel> generatePerfectModels() {
+		HashMap<Query, double[]> potentialBidsMap = getBidForEachSlot();
+		int numSplits = 3;  //How many bids to consider between each position
+		for(Query query : _querySpace) {
+			double[] potentialBids = potentialBidsMap.get(query);
+			ArrayList<Double> splitPotentialBids = new ArrayList<Double>();
+			splitPotentialBids.add(potentialBids[0]);
+			for(int i = 0; i < potentialBids.length-1; i++) {
+				double bid1 = potentialBids[i];
+				double bid2 = potentialBids[i+1];
+				double bidDiff = bid2-bid1;
+				splitPotentialBids.add(bid2);
+				for(int j = 1; j <= numSplits; j++) {
+					splitPotentialBids.add(bid1+bidDiff*(j/numSplits));
+				}
+			}
+			HashSet removeDupesSet = new HashSet(splitPotentialBids);
+			splitPotentialBids.clear();
+			splitPotentialBids.addAll(removeDupesSet);
+			Collections.sort(splitPotentialBids);
+			double[] newPotentialBids = new double[splitPotentialBids.size()];
+			System.out.println(query);
+			for(int i = 0; i < newPotentialBids.length;i++) {
+				newPotentialBids[i] = splitPotentialBids.get(i);
+				System.out.println(newPotentialBids[i]);
+			}
+			potentialBidsMap.put(query, newPotentialBids);
+		}
+		for(int i = 0; i < NUM_PERF_ITERS; i++) {
+
+		}
+
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
@@ -638,55 +667,7 @@ public class BasicSimulator {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = null;
-				if(PERFECTMODELS) {
-					_baseSolBundle = null;
-					int loopCounter = 0;
-					ArrayList<double[]> bidVectors = new ArrayList<double[]>();
-					while(true) {
-						loopCounter++;
-						_singleQueryReports = new HashMap<Query, HashMap<Double,LinkedList<Reports>>>();
-						for(Query query : _querySpace) {
-							_singleQueryReports.put(query,new HashMap<Double, LinkedList<Reports>>());
-						}
-						bundle = getBids(agentToRun);
-						double[] bidVector = new double[16];
-						int count = 0;
-						for(Query query : _querySpace) {
-							bidVector[count] = bundle.getBid(query);
-							count++;
-						}
-						bidVectors.add(bidVector);
-						if(_baseSolBundle != null) {
-							if(bidMapEqual(bundle, _baseSolBundle)) {
-								break;
-							}
-
-							//Search for cycles
-							if(((loopCounter + 1) % 10 == 0) && cycleDetect(bidVectors)) {
-								System.out.println("\n\n CYCLE \n\n");
-								break;
-							}
-						}
-						_baseSolBundle = bundle;
-						HashMap<String, Reports> reports = runSimulation(_baseSolBundle);
-						Reports ourReports = reports.get(_agents[_ourAdvIdx]);
-						QueryReport queryReport = ourReports.getQueryReport();
-						SalesReport salesReport = ourReports.getSalesReport();
-						double profit = 0.0;
-						for(Query query : _querySpace) {
-							profit += salesReport.getRevenue(query) - queryReport.getCost(query);
-						}
-						System.out.println("Profit: " + profit);
-					}
-					System.out.println("Bids:");
-					for(Query query : _querySpace) {
-						System.out.println("\t" + bundle.getBid(query));
-					}
-					System.out.println(loopCounter);
-				}
-				else {
-					bundle = getBids(agentToRun);
-				}
+				bundle = getBids(agentToRun);
 				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
@@ -784,19 +765,6 @@ public class BasicSimulator {
 		return true;
 	}
 
-	private boolean bidMapEqual(BidBundle bundle, BidBundle baseSolBundle) {
-		if(bundle.size() != baseSolBundle.size()) {
-			throw new RuntimeException("Vectors unequal length");
-		}
-		double epsilon = .005;
-		for(Query query : _querySpace) {
-			if(bundle.getBid(query) - baseSolBundle.getBid(query) > epsilon) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	public ArrayList<SimAgent> buildSingleQueryAgents(double simBid, Ad simAd, Query simQuery) {
 		ArrayList<SimAgent> agents = new ArrayList<SimAgent>();
 		for(int i = 0; i < _agents.length; i++) {
@@ -813,16 +781,9 @@ public class BasicSimulator {
 						adTypes.put(query, simAd);
 					}
 					else{
-						if(_baseSolBundle != null) {
-							bids.put(query,_baseSolBundle.getBid(query));
-							budgets.put(query,_baseSolBundle.getDailyLimit(query));
-							adTypes.put(query,_baseSolBundle.getAd(query));
-						}
-						else {
-							bids.put(query,_bids.get(_agents[i]).get(query));
-							budgets.put(query,_budgets.get(_agents[i]).get(query));
-							adTypes.put(query,_adType.get(_agents[i]).get(query));
-						}
+						bids.put(query,_bids.get(_agents[i]).get(query));
+						budgets.put(query,_budgets.get(_agents[i]).get(query));
+						adTypes.put(query,_adType.get(_agents[i]).get(query));
 					}
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_testId ,_squashing,_querySpace);
@@ -1178,13 +1139,13 @@ public class BasicSimulator {
 			}
 		}
 		if(DEBUG) {
-//			AvgPosToPosDist avgPosModel20 = new AvgPosToPosDist(20);
-//			AvgPosToPosDist avgPosModel40 = new AvgPosToPosDist(40);
-//			AvgPosToPosDist avgPosModel80 = new AvgPosToPosDist(80);
-//			AvgPosToPosDist avgPosModel160 = new AvgPosToPosDist(160);
-//			AvgPosToPosDist avgPosModel320 = new AvgPosToPosDist(320);
-//			AvgPosToPosDist avgPosModel640 = new AvgPosToPosDist(640);
-//			AvgPosToPosDist avgPosModelall = new AvgPosToPosDist(1000000);
+			//			AvgPosToPosDist avgPosModel20 = new AvgPosToPosDist(20);
+			//			AvgPosToPosDist avgPosModel40 = new AvgPosToPosDist(40);
+			//			AvgPosToPosDist avgPosModel80 = new AvgPosToPosDist(80);
+			//			AvgPosToPosDist avgPosModel160 = new AvgPosToPosDist(160);
+			//			AvgPosToPosDist avgPosModel320 = new AvgPosToPosDist(320);
+			//			AvgPosToPosDist avgPosModel640 = new AvgPosToPosDist(640);
+			//			AvgPosToPosDist avgPosModelall = new AvgPosToPosDist(1000000);
 			for(int i = 0; i < agents.size(); i++) {
 				SimAgent agent = agents.get(i);
 				if(i == _ourAdvIdx) {
