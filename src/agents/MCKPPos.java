@@ -128,7 +128,7 @@ public class MCKPPos extends AbstractAgent {
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BidToPosInverter bidToPosInverter;
 		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.5);
+			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, bidToPos, .1, 0.0, 3.5);
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
@@ -321,7 +321,7 @@ public class MCKPPos extends AbstractAgent {
 			}
 			else if(model instanceof BidToPosInverter) {
 				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
-				bidToPosInverter.updateModel(_bidToPos);
+				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");

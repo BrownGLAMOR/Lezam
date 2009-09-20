@@ -374,7 +374,7 @@ public class DPPosAgent extends AbstractAgent {
 		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,5,15,true,true);
 		BidToPosInverter bidToPosInverter;
 		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, .1, 0.0, 3.0);
+			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, bidToPos, .1, 0.0, 3.0);
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
@@ -418,7 +418,7 @@ public class DPPosAgent extends AbstractAgent {
 				
 				_bidToPos.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 				
-				_bidToPosInverter.updateModel(_bidToPos);
+				_bidToPosInverter.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
