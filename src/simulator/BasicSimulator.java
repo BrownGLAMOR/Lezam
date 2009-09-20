@@ -74,7 +74,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 18000;
+	private static final int NUM_PERF_ITERS = 600;
 	private int _numSplits = 2; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
@@ -198,20 +198,27 @@ public class BasicSimulator {
 
 			_pregenUsers = null;
 
-			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
-			
-//			HashMap<String, Reports> maps = runSimulation(agent);
-			
+
+			//			HashMap<String, Reports> maps = runSimulation(agent);
+
 			/*
 			 * TEST PERFECT MODEL ERROR
 			 */
-			
+
+			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
+			//No Targeting or Budgets
+			bundle.setCampaignDailySpendLimit(Double.NaN);
+			for(Query query : _querySpace) {
+				bundle.setAd(query, new Ad());
+				bundle.setDailyLimit(query, Double.NaN);
+			}
+
 			HashMap<String, Reports> maps = runSimulation(bundle);
 
 			_ourBidBundle = bundle;
 			Set<AbstractModel> perfectModels = generatePerfectModels();
 			_perfectModels = perfectModels;
-			
+
 			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
 
 			ArrayList<Double> impSE = new ArrayList<Double>();
@@ -222,19 +229,19 @@ public class BasicSimulator {
 
 			ArrayList<Double> posToCPCSE = new ArrayList<Double>();
 			ArrayList<Double> posToCPCActual = new ArrayList<Double>();
-			
+
 			ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
 			ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
 
 			ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
 			ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
-			
+
 			ArrayList<Double> bidToPosSE = new ArrayList<Double>();
 			ArrayList<Double> bidToPosActual = new ArrayList<Double>();
-			
+
 			ArrayList<Double> posToBidSE = new ArrayList<Double>();
 			ArrayList<Double> posToBidActual = new ArrayList<Double>();
-			
+
 			ArrayList<Double> convPrSE = new ArrayList<Double>();
 			ArrayList<Double> convPrActual = new ArrayList<Double>();
 
@@ -282,11 +289,15 @@ public class BasicSimulator {
 					for(Query query : _querySpace) {
 						double clickPr = ourReports.getClickPr(query);
 						double prClickPred = bidToPrClick.getPrediction(query, _ourBidBundle.getBid(query), _ourBidBundle.getAd(query));
-
-						double diff = clickPr - prClickPred;
-						double SE = diff*diff;
-						bidToPrClickSE.add(SE);
-						bidToPrClickActual.add(clickPr);
+						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
+							continue;
+						}
+						else {
+							double diff = clickPr - prClickPred;
+							double SE = diff*diff;
+							bidToPrClickSE.add(SE);
+							bidToPrClickActual.add(clickPr);
+						}
 					}
 				}
 				else if(model instanceof AbstractPosToCPC) {
@@ -310,11 +321,15 @@ public class BasicSimulator {
 					for(Query query : _querySpace) {
 						double clickPr = ourReports.getClickPr(query);
 						double prClickPred = posToPrClick.getPrediction(query, ourReports.getPosition(query), _ourBidBundle.getAd(query));
-
-						double diff = clickPr - prClickPred;
-						double SE = diff*diff;
-						posToPrClickSE.add(SE);
-						posToPrClickActual.add(clickPr);
+						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
+							continue;
+						}
+						else {
+							double diff = clickPr - prClickPred;
+							double SE = diff*diff;
+							posToPrClickSE.add(SE);
+							posToPrClickActual.add(clickPr);
+						}
 					}
 				}
 				else if(model instanceof AbstractBidToPos) {
@@ -354,7 +369,7 @@ public class BasicSimulator {
 					for(Query query : _querySpace) {
 						double convPr = ourReports.getConvPr(query);
 						double convPrPred = convPrModel.getPrediction(query);
-						if(convPr == 0 || convPrPred == 0) {
+						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred) || convPr == 0 || convPrPred == 0) {
 							continue;
 						}
 						else {
@@ -429,7 +444,7 @@ public class BasicSimulator {
 			double posToPrClickRMSE = Math.sqrt(posToPrClickErrorTot);
 			System.out.println("Pos-PrClick RMSE: " +  posToPrClickRMSE + ", %error: " + posToPrClickRMSE/posToPrClickActualTot);
 
-			
+
 			double bidToPosErrorTot = 0.0;
 			double bidToPosActualTot = 0.0;
 			for (int i = 0; i < bidToPosSE.size(); i++) {
@@ -441,7 +456,7 @@ public class BasicSimulator {
 			double bidToPosRMSE = Math.sqrt(bidToPosErrorTot);
 			System.out.println("Bid-Pos RMSE: " +  bidToPosRMSE + ", %error: " + bidToPosRMSE/bidToPosActualTot);
 
-			
+
 			double posToBidErrorTot = 0.0;
 			double posToBidActualTot = 0.0;
 			for (int i = 0; i < posToBidSE.size(); i++) {
@@ -453,7 +468,7 @@ public class BasicSimulator {
 			double posToBidRMSE = Math.sqrt(posToBidErrorTot);
 			System.out.println("Pos-Bid RMSE: " +  posToBidRMSE + ", %error: " + posToBidRMSE/posToBidActualTot);
 
-			
+
 			double convPrErrorTot = 0.0;
 			double convPrActualTot = 0.0;
 			for (int i = 0; i < convPrSE.size(); i++) {
@@ -822,7 +837,7 @@ public class BasicSimulator {
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
-		
+
 		return models;
 	}
 
@@ -911,6 +926,7 @@ public class BasicSimulator {
 	 * Runs the simulation and generates reports
 	 */
 	public HashMap<String, Reports> runSimulation(Object agentToRun) {
+		_R.setSeed(lastSeed);
 		ArrayList<SimAgent> agents;
 		if(agentToRun instanceof AbstractAgent) {
 			agents = buildAgents((AbstractAgent) agentToRun);
@@ -931,7 +947,6 @@ public class BasicSimulator {
 			Collections.shuffle(users,randGen);
 			_pregenUsers  = users;
 		}
-		_R.setSeed(lastSeed);
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.getUserQuery();
