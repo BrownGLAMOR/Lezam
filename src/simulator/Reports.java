@@ -137,7 +137,7 @@ public class Reports {
 		_clickPr.put(query, convPr);
 	}
 
-	public double getRegimps(Query query) {
+	public double getRegularImpressions(Query query) {
 		return _regimps.get(query);
 	}
 
@@ -145,7 +145,7 @@ public class Reports {
 		_regimps.put(query, regImps);
 	}
 
-	public double getPromimps(Query query) {
+	public double getPromotedImpressions(Query query) {
 		return _promimps.get(query);
 	}
 
@@ -153,7 +153,7 @@ public class Reports {
 		_promimps.put(query, promImps);
 	}
 
-	public double getAvgPos(Query query) {
+	public double getPosition(Query query) {
 		return _avgPos.get(query);
 	}
 
@@ -198,9 +198,9 @@ public class Reports {
 			double ourCPC = this.getCPC(query);
 			double ourConvPr = this.getConvPr(query);
 			double ourClickPr = this.getClickPr(query);
-			double ourRegimps = this.getRegimps(query);
-			double ourPromimps = this.getPromimps(query);
-			double ourAvgPos = this.getAvgPos(query);
+			double ourRegimps = this.getRegularImpressions(query);
+			double ourPromimps = this.getPromotedImpressions(query);
+			double ourAvgPos = this.getPosition(query);
 			double ourConversions = this.getConversions(query);
 			double ourRevenue = this.getRevenue(query);
 			
@@ -209,9 +209,9 @@ public class Reports {
 			double otherCPC = report.getCPC(query);
 			double otherConvPr = report.getConvPr(query);
 			double otherClickPr = report.getClickPr(query);
-			double otherRegimps = report.getRegimps(query);
-			double otherPromimps = report.getPromimps(query);
-			double otherAvgPos = report.getAvgPos(query);
+			double otherRegimps = report.getRegularImpressions(query);
+			double otherPromimps = report.getPromotedImpressions(query);
+			double otherAvgPos = report.getPosition(query);
 			double otherConversions = report.getConversions(query);
 			double otherRevenue = report.getRevenue(query);
 			

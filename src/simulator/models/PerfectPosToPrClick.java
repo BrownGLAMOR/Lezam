@@ -65,6 +65,7 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 				return elem;
 			}
 			double diff = bid - elem;
+			diff = Math.abs(diff);
 			if(diff < lastDiff) { 
 				lastDiff = diff;
 			}

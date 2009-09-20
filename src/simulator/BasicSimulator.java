@@ -75,7 +75,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 18000;
-	private int _numSplits = 3; //How many bids to consider between slots
+	private int _numSplits = 2; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -213,8 +213,6 @@ public class BasicSimulator {
 			_perfectModels = perfectModels;
 			
 			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
-			QueryReport queryReport = ourReports.getQueryReport();
-			SalesReport salesReport = ourReports.getSalesReport();
 
 			ArrayList<Double> impSE = new ArrayList<Double>();
 			ArrayList<Double> impActual = new ArrayList<Double>();
@@ -247,7 +245,7 @@ public class BasicSimulator {
 				else if(model instanceof AbstractQueryToNumImp) {
 					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 					for(Query query : _querySpace) {
-						int numImps = queryReport.getImpressions(query);
+						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
 						int numImpsPred = queryToNumImp.getPrediction(query);
 						if(numImps == 0 || numImpsPred == 0) {
 							continue;
@@ -266,7 +264,7 @@ public class BasicSimulator {
 				else if(model instanceof AbstractBidToCPC) {
 					AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
 					for(Query query : _querySpace) {
-						double CPC = queryReport.getCPC(query);
+						double CPC = ourReports.getCPC(query);
 						double CPCPred = bidToCPC.getPrediction(query, _ourBidBundle.getBid(query));
 						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
 							continue;
@@ -282,15 +280,7 @@ public class BasicSimulator {
 				else if(model instanceof AbstractBidToPrClick) {
 					AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
 					for(Query query : _querySpace) {
-						double clicks = queryReport.getClicks(query);
-						double impressions = queryReport.getImpressions(query);
-						double clickPr;
-						if(clicks == 0 || impressions == 0) {
-							clickPr = 0.0;
-						}
-						else {
-							clickPr = clicks/impressions;
-						}
+						double clickPr = ourReports.getClickPr(query);
 						double prClickPred = bidToPrClick.getPrediction(query, _ourBidBundle.getBid(query), _ourBidBundle.getAd(query));
 
 						double diff = clickPr - prClickPred;
@@ -302,8 +292,8 @@ public class BasicSimulator {
 				else if(model instanceof AbstractPosToCPC) {
 					AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
 					for(Query query : _querySpace) {
-						double CPC = queryReport.getCPC(query);
-						double CPCPred = posToCPC.getPrediction(query, queryReport.getPosition(query));
+						double CPC = ourReports.getCPC(query);
+						double CPCPred = posToCPC.getPrediction(query, ourReports.getPosition(query));
 						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
 							continue;
 						}
@@ -318,16 +308,8 @@ public class BasicSimulator {
 				else if(model instanceof AbstractPosToPrClick) {
 					AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 					for(Query query : _querySpace) {
-						double clicks = queryReport.getClicks(query);
-						double impressions = queryReport.getImpressions(query);
-						double clickPr;
-						if(clicks == 0 || impressions == 0) {
-							clickPr = 0.0;
-						}
-						else {
-							clickPr = clicks/impressions;
-						}
-						double prClickPred = posToPrClick.getPrediction(query, queryReport.getPosition(query), _ourBidBundle.getAd(query));
+						double clickPr = ourReports.getClickPr(query);
+						double prClickPred = posToPrClick.getPrediction(query, ourReports.getPosition(query), _ourBidBundle.getAd(query));
 
 						double diff = clickPr - prClickPred;
 						double SE = diff*diff;
@@ -338,7 +320,7 @@ public class BasicSimulator {
 				else if(model instanceof AbstractBidToPos) {
 					AbstractBidToPos bidToPos = (AbstractBidToPos) model;
 					for(Query query : _querySpace) {
-						double pos = queryReport.getPosition(query);
+						double pos = ourReports.getPosition(query);
 						double posPred = bidToPos.getPrediction(query,_ourBidBundle.getBid(query));
 						if(Double.isNaN(pos) || Double.isNaN(posPred)) {
 							continue;
@@ -355,7 +337,7 @@ public class BasicSimulator {
 					AbstractPosToBid posToBid = (AbstractPosToBid) model;
 					for(Query query : _querySpace) {
 						double bid = _ourBidBundle.getBid(query);
-						double bidPred = posToBid.getPrediction(query,queryReport.getPosition(query));
+						double bidPred = posToBid.getPrediction(query,ourReports.getPosition(query));
 						if(bid == 0 || bidPred == 0) {
 							continue;
 						}
@@ -370,15 +352,7 @@ public class BasicSimulator {
 				else if(model instanceof AbstractConversionModel) {
 					AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 					for(Query query : _querySpace) {
-						double convPr;
-						double clicks = queryReport.getClicks(query);
-						double conversions = salesReport.getConversions(query);
-						if(clicks == 0 || conversions == 0) {
-							convPr = 0.0;
-						}
-						else {
-							convPr = conversions/clicks;
-						}
+						double convPr = ourReports.getConvPr(query);
 						double convPrPred = convPrModel.getPrediction(query);
 						if(convPr == 0 || convPrPred == 0) {
 							continue;
@@ -822,7 +796,7 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
-		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
+		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);

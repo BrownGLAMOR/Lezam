@@ -52,6 +52,7 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 				return elem;
 			}
 			double diff = bid - elem;
+			diff = Math.abs(diff);
 			if(diff < lastDiff) { 
 				lastDiff = diff;
 			}
