@@ -29,7 +29,7 @@ import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
-import simulator.models.PerfectBidToPosition;
+import simulator.models.PerfectBidToPos;
 import simulator.models.PerfectBidToPrClick;
 import simulator.models.PerfectPosToCPC;
 import simulator.models.PerfectPosToPrClick;
@@ -524,9 +524,9 @@ public class BasicSimulator {
 		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
 		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
 		
-		
-		AbstractConversionModel bidToConvPrModel = new PerfectQueryToPrConv(this);
-		AbstractBidToPos bidToSlotModel = new PerfectBidToPosition(this);
+		AbstractConversionModel bidToConvPrModel = new PerfectQueryToPrConv(allReportsMap);
+
+		AbstractBidToPos bidToPosModel = new PerfectBidToPos(bidToPosMap);
 		
 		
 		
@@ -538,7 +538,7 @@ public class BasicSimulator {
 		models.add(bidToCPCModel);
 		models.add(bidToClickPrModel);
 		models.add(bidToConvPrModel);
-		models.add(bidToSlotModel);
+		models.add(bidToPosModel);
 		models.add(basicTargModel);
 		return models;
 	}

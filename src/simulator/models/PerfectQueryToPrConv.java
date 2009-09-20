@@ -1,5 +1,6 @@
 package simulator.models;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 import newmodels.AbstractModel;
@@ -13,28 +14,40 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class PerfectQueryToPrConv extends AbstractConversionModel {
 
-	private BasicSimulator _simulator;
+	private HashMap<Query,HashMap<Double,Reports>> _allReportsMap;
 
-	public PerfectQueryToPrConv(BasicSimulator simulator) {
-		_simulator = simulator;
+	public PerfectQueryToPrConv(HashMap<Query,HashMap<Double,Reports>> allReportsMap) {
+		_allReportsMap = allReportsMap;
 	}
 
 
 	@Override
 	public double getPrediction(Query query) {
-		//TODO
-		/*
-		 * Figure out how to properly deal with what the bid should be.....
-		 */
-		LinkedList<Reports> reports = _simulator.getSingleQueryReport(query, 2.0);
-		double avgPrConv = 0;
-		for(Reports report : reports) {
-			if(report.getQueryReport().getClicks(query) != 0) {
-				avgPrConv += report.getSalesReport().getConversions(query)/((double)report.getQueryReport().getClicks(query));
+		double avgConvProb = 0;
+		int totConvProbs = 0;
+		HashMap<Double, Reports> queryReportsMap = _allReportsMap.get(query);
+		for(Double bid : queryReportsMap.keySet()) {
+			Reports reports = queryReportsMap.get(bid);
+			QueryReport queryReport = reports.getQueryReport();
+			SalesReport salesReport = reports.getSalesReport();
+			int clicks = queryReport.getClicks(query);
+			int conversions = salesReport.getConversions(query);
+			if(clicks == 0 || conversions == 0) {
+				continue;
+			}
+			else {
+				avgConvProb += clicks/(conversions*1.0);
+				totConvProbs++;
 			}
 		}
-		avgPrConv = avgPrConv/((double) reports.size());
-		return avgPrConv;
+		if(totConvProbs > 0) {
+			avgConvProb /= totConvProbs;	
+		}
+		else {
+			avgConvProb = 0.0;
+		}
+		
+		return avgConvProb;
 	}
 
 	@Override
@@ -45,7 +58,7 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectQueryToPrConv(_simulator);
+		return new PerfectQueryToPrConv(_allReportsMap);
 	}
 
 }
