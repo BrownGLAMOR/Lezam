@@ -23,6 +23,7 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
+import newmodels.postobid.AbstractPosToBid;
 import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.prconv.AbstractConversionModel;
@@ -31,6 +32,7 @@ import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToPos;
 import simulator.models.PerfectBidToPrClick;
+import simulator.models.PerfectPosToBid;
 import simulator.models.PerfectPosToCPC;
 import simulator.models.PerfectPosToPrClick;
 import simulator.models.PerfectQueryToPrConv;
@@ -514,32 +516,31 @@ public class BasicSimulator {
 		}
 
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
+		
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(userModel);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
-
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);
-		
 		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
 		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
-		
-		AbstractConversionModel bidToConvPrModel = new PerfectQueryToPrConv(allReportsMap);
-
+		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap);
 		AbstractBidToPos bidToPosModel = new PerfectBidToPos(bidToPosMap);
-		
-		
-		
-		
+		AbstractPosToBid posToBidModel = new PerfectPosToBid(posToBidMap);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
+
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(unitsSold);
 		models.add(bidToCPCModel);
 		models.add(bidToClickPrModel);
-		models.add(bidToConvPrModel);
+		models.add(posToCPCModel);
+		models.add(posToClickPrModel);
+		models.add(queryToConvPrModel);
 		models.add(bidToPosModel);
+		models.add(posToBidModel);
 		models.add(basicTargModel);
+		
 		return models;
 	}
 
