@@ -9,6 +9,26 @@ public class Reports {
 	private QueryReport _queryReport;
 	private SalesReport _salesReport;
 	private int _numReports;
+	
+	public Reports(Reports reports) {
+		
+		QueryReport copyQueryReport = new QueryReport();
+		SalesReport copySalesReport = new SalesReport();
+		QueryReport queryReport = reports.getQueryReport();
+		SalesReport salesReport = reports.getSalesReport();
+		for(Query query : queryReport) {
+			copyQueryReport.setClicks(query, queryReport.getClicks(query));
+			copyQueryReport.setCost(query, queryReport.getCost(query));
+			copyQueryReport.setImpressions(query, queryReport.getRegularImpressions(query), queryReport.getPromotedImpressions(query));
+			copyQueryReport.setPositionSum(query, queryReport.getPosition(query) * (queryReport.getRegularImpressions(query) + queryReport.getPromotedImpressions(query)));
+			copySalesReport.setConversions(query, salesReport.getConversions(query));
+			copySalesReport.setRevenue(query, salesReport.getRevenue(query));
+		}
+		_queryReport = copyQueryReport;
+		_salesReport = copySalesReport;
+		_numReports = reports.getNumReports();
+		
+	}
 
 	public Reports(QueryReport queryReport, SalesReport salesReport) {
 		_queryReport = queryReport;
