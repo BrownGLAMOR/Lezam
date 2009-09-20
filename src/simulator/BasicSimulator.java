@@ -75,7 +75,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 20000;
-	private int _numSplits = 4; //How many bids to consider between slots
+	private int _numSplits = 6; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -1322,7 +1322,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Cheap(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPBid(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

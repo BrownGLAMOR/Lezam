@@ -439,10 +439,10 @@ public class MCKPBid extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-//					bid = 0.0;
-//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
-//					System.out.println("Bidding " + bid + "   for query: " + q);
-					
+					//					bid = 0.0;
+					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					//					System.out.println("Bidding " + bid + "   for query: " + q);
+
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
@@ -450,7 +450,7 @@ public class MCKPBid extends AbstractAgent {
 					else
 						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 
-//					System.out.println("Exploring " + q + "   bid: " + bid);
+					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
@@ -467,7 +467,7 @@ public class MCKPBid extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-
+		System.out.println(bidBundle);
 		return bidBundle;
 	}
 
