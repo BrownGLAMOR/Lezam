@@ -74,8 +74,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 2500;
-	private int _numSplits = 1; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 18000;
+	private int _numSplits = 3; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -143,7 +143,7 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed = 707541;
+	private long lastSeed = 848361943;
 
 	private ArrayList<SimUser> _pregenUsers;
 
@@ -159,7 +159,7 @@ public class BasicSimulator {
 	}
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
-		System.out.println("Num Iterations: " + NUM_PERF_ITERS);
+		System.out.println("Num Iterations: " + NUM_PERF_ITERS + ", Num Splits: " + _numSplits);
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
@@ -198,13 +198,20 @@ public class BasicSimulator {
 
 			_pregenUsers = null;
 
-			HashMap<String, Reports> maps = runSimulation(agent);
-
-
-
+			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
+			
+//			HashMap<String, Reports> maps = runSimulation(agent);
+			
 			/*
 			 * TEST PERFECT MODEL ERROR
 			 */
+			
+			HashMap<String, Reports> maps = runSimulation(bundle);
+
+			_ourBidBundle = bundle;
+			Set<AbstractModel> perfectModels = generatePerfectModels();
+			_perfectModels = perfectModels;
+			
 			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
 			QueryReport queryReport = ourReports.getQueryReport();
 			SalesReport salesReport = ourReports.getSalesReport();
@@ -892,7 +899,6 @@ public class BasicSimulator {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = agentToRun;
-				//				agentToRun.handleBidBundle(bundle);
 				double totBudget = bundle.getCampaignDailySpendLimit();
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();

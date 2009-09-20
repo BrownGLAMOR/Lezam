@@ -34,7 +34,6 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 		if(Double.isNaN(pos)) {
 			return 0.0;
 		}
-		double clickPr;
 		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
 		Set<Double> posToBidSet = posToBid.keySet();
 		ArrayList<Double> posToBidArrList = new ArrayList<Double>(posToBidSet);
@@ -46,22 +45,14 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 		double bid = getClosestElement(posToBidArr,pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
-		QueryReport queryReport;
+		double clickPr;
 		if(reports == null) {
 			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
-			queryReport = closestReports.getQueryReport();
+			clickPr = closestReports.getClickPr(query);
 		}
 		else {
-			queryReport = reports.getQueryReport();
-		}
-		int clicks = queryReport.getClicks(query);
-		int impressions = queryReport.getImpressions(query);
-		if(clicks == 0 || impressions == 0) {
-			clickPr = 0.0;
-		}
-		else {
-			clickPr = clicks/(impressions*1.0);
+			clickPr = reports.getClickPr(query);
 		}
 		return clickPr;
 	}

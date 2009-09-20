@@ -36,10 +36,10 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 		if(reports == null) {
 			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
-			avgCPC = closestReports.getQueryReport().getCPC(query);
+			avgCPC = closestReports.getCPC(query);
 		}
 		else {
-			avgCPC = reports.getQueryReport().getCPC(query);
+			avgCPC = reports.getCPC(query);
 		}
 		return avgCPC;
 	}

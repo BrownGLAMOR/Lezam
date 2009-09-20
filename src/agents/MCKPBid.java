@@ -149,7 +149,7 @@ public class MCKPBid extends AbstractAgent {
 				_targModel = targModel;
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
@@ -299,7 +299,7 @@ public class MCKPBid extends AbstractAgent {
 			SalesReport salesReport = _salesReports.getLast();
 		}
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 

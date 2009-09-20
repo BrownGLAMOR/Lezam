@@ -28,17 +28,8 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 		HashMap<Double, Reports> queryReportsMap = _allReportsMap.get(query);
 		for(Double bid : queryReportsMap.keySet()) {
 			Reports reports = queryReportsMap.get(bid);
-			QueryReport queryReport = reports.getQueryReport();
-			SalesReport salesReport = reports.getSalesReport();
-			int clicks = queryReport.getClicks(query);
-			int conversions = salesReport.getConversions(query);
-			if(clicks == 0 || conversions == 0) {
-				continue;
-			}
-			else {
-				avgConvProb += conversions/(clicks*1.0);
-				totConvProbs++;
-			}
+			avgConvProb += reports.getConvPr(query);
+			totConvProbs++;
 		}
 		if(totConvProbs > 0) {
 			avgConvProb /= totConvProbs;	
@@ -46,7 +37,7 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 		else {
 			avgConvProb = 0.0;
 		}
-		
+
 		return avgConvProb;
 	}
 

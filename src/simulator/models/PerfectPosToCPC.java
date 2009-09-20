@@ -35,7 +35,6 @@ public class PerfectPosToCPC extends AbstractPosToCPC {
 		if(Double.isNaN(pos)) {
 			return 0.0;
 		}
-		double avgCPC;
 		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
 		Set<Double> posToBidSet = posToBid.keySet();
 		ArrayList<Double> posToBidArrList = new ArrayList<Double>(posToBidSet);
@@ -47,13 +46,14 @@ public class PerfectPosToCPC extends AbstractPosToCPC {
 		double bid = getClosestElement(posToBidArr,pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
+		double avgCPC;
 		if(reports == null) {
 			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
-			avgCPC = closestReports.getQueryReport().getCPC(query);
+			avgCPC = closestReports.getCPC(query);
 		}
 		else {
-			avgCPC = reports.getQueryReport().getCPC(query);
+			avgCPC = reports.getCPC(query);
 		}
 		return avgCPC;
 	}

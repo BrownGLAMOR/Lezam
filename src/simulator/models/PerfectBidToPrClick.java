@@ -28,25 +28,16 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		if(bid == 0) {
 			return 0.0;
 		}
-		double clickPr;
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
-		QueryReport queryReport;
+		double clickPr;
 		if(reports == null) {
 			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
-			queryReport = closestReports.getQueryReport();
+			clickPr = closestReports.getClickPr(query);
 		}
 		else {
-			queryReport = reports.getQueryReport();
-		}
-		int clicks = queryReport.getClicks(query);
-		int impressions = queryReport.getImpressions(query);
-		if(clicks == 0 || impressions == 0) {
-			clickPr = 0.0;
-		}
-		else {
-			clickPr = clicks/(impressions*1.0);
+			clickPr = reports.getClickPr(query);
 		}
 		return clickPr;
 	}
