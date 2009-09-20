@@ -32,6 +32,9 @@ public class PerfectPosToCPC extends AbstractPosToCPC {
 
 	@Override
 	public double getPrediction(Query query, double pos) {
+		if(Double.isNaN(pos)) {
+			return 0.0;
+		}
 		double avgCPC;
 		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
 		Set<Double> posToBidSet = posToBid.keySet();

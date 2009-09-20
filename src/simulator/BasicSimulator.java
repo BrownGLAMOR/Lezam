@@ -393,7 +393,96 @@ public class BasicSimulator {
 			}
 
 
+			double impErrorTot = 0.0;
+			double impActualTot = 0.0;
+			for (int i = 0; i < impSE.size(); i++) {
+				impErrorTot += impSE.get(i);
+				impActualTot += impActual.get(i);
+			}
+			impErrorTot /= impSE.size();
+			impActualTot /= impActual.size();
+			double impRMSE = Math.sqrt(impErrorTot);
+			System.out.println("Impressions RMSE: " +  impRMSE + ", %error: " + impRMSE/impActualTot);
 
+			double bidToCPCErrorTot = 0.0;
+			double bidToCPCActualTot = 0.0;
+			for (int i = 0; i < bidToCPCSE.size(); i++) {
+				bidToCPCErrorTot += bidToCPCSE.get(i);
+				bidToCPCActualTot += bidToCPCActual.get(i);
+			}
+			bidToCPCErrorTot /= bidToCPCSE.size();
+			bidToCPCActualTot /= bidToCPCActual.size();
+			double bidToCPCRMSE = Math.sqrt(bidToCPCErrorTot);
+			System.out.println("Bid-CPC RMSE: " +  bidToCPCRMSE + ", %error: " + bidToCPCRMSE/bidToCPCActualTot);
+
+			double posToCPCErrorTot = 0.0;
+			double posToCPCActualTot = 0.0;
+			for (int i = 0; i < posToCPCSE.size(); i++) {
+				posToCPCErrorTot += posToCPCSE.get(i);
+				posToCPCActualTot += posToCPCActual.get(i);
+			}
+			posToCPCErrorTot /= posToCPCSE.size();
+			posToCPCActualTot /= posToCPCActual.size();
+			double posToCPCRMSE = Math.sqrt(posToCPCErrorTot);
+			System.out.println("Pos-CPC RMSE: " +  posToCPCRMSE + ", %error: " + posToCPCRMSE/posToCPCActualTot);
+
+			double bidToPrClickErrorTot = 0.0;
+			double bidToPrClickActualTot = 0.0;
+			for (int i = 0; i < bidToPrClickSE.size(); i++) {
+				bidToPrClickErrorTot += bidToPrClickSE.get(i);
+				bidToPrClickActualTot += bidToPrClickActual.get(i);
+			}
+			bidToPrClickErrorTot /= bidToPrClickSE.size();
+			bidToPrClickActualTot /= bidToPrClickActual.size();
+			double bidToPrClickRMSE = Math.sqrt(bidToPrClickErrorTot);
+			System.out.println("Bid-PrClick RMSE: " +  bidToPrClickRMSE + ", %error: " + bidToPrClickRMSE/bidToPrClickActualTot);
+
+			double posToPrClickErrorTot = 0.0;
+			double posToPrClickActualTot = 0.0;
+			for (int i = 0; i < posToPrClickSE.size(); i++) {
+				posToPrClickErrorTot += posToPrClickSE.get(i);
+				posToPrClickActualTot += posToPrClickActual.get(i);
+			}
+			posToPrClickErrorTot /= posToPrClickSE.size();
+			posToPrClickActualTot /= posToPrClickActual.size();
+			double posToPrClickRMSE = Math.sqrt(posToPrClickErrorTot);
+			System.out.println("Pos-PrClick RMSE: " +  posToPrClickRMSE + ", %error: " + posToPrClickRMSE/posToPrClickActualTot);
+
+			
+			double bidToPosErrorTot = 0.0;
+			double bidToPosActualTot = 0.0;
+			for (int i = 0; i < bidToPosSE.size(); i++) {
+				bidToPosErrorTot += bidToPosSE.get(i);
+				bidToPosActualTot += bidToPosActual.get(i);
+			}
+			bidToPosErrorTot /= bidToPosSE.size();
+			bidToPosActualTot /= bidToPosActual.size();
+			double bidToPosRMSE = Math.sqrt(bidToPosErrorTot);
+			System.out.println("Bid-Pos RMSE: " +  bidToPosRMSE + ", %error: " + bidToPosRMSE/bidToPosActualTot);
+
+			
+			double posToBidErrorTot = 0.0;
+			double posToBidActualTot = 0.0;
+			for (int i = 0; i < posToBidSE.size(); i++) {
+				posToBidErrorTot += posToBidSE.get(i);
+				posToBidActualTot += posToBidActual.get(i);
+			}
+			posToBidErrorTot /= posToBidSE.size();
+			posToBidActualTot /= posToBidActual.size();
+			double posToBidRMSE = Math.sqrt(posToBidErrorTot);
+			System.out.println("Pos-Bid RMSE: " +  posToBidRMSE + ", %error: " + posToBidRMSE/posToBidActualTot);
+
+			
+			double convPrErrorTot = 0.0;
+			double convPrActualTot = 0.0;
+			for (int i = 0; i < convPrSE.size(); i++) {
+				convPrErrorTot += convPrSE.get(i);
+				convPrActualTot += convPrActual.get(i);
+			}
+			convPrErrorTot /= convPrSE.size();
+			convPrActualTot /= convPrActual.size();
+			double convPrRMSE = Math.sqrt(convPrErrorTot);
+			System.out.println("ConvPr RMSE: " +  convPrRMSE + ", %error: " + convPrRMSE/convPrActualTot);
 
 			/*
 			 * END TEST PERFECT MODEL ERROR

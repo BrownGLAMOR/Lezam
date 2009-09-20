@@ -25,6 +25,9 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public double getPrediction(Query query, double bid, Ad currentAd) {
+		if(bid == 0) {
+			return 0.0;
+		}
 		double clickPr;
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);

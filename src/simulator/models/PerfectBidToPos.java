@@ -31,6 +31,9 @@ public class PerfectBidToPos extends AbstractBidToPos {
 
 	@Override
 	public double getPrediction(Query query, double bid) {
+		if(bid == 0) {
+			return 6.0;
+		}
 		HashMap<Double, Double> bidToPos = _bidToPosMap.get(query);
 		Set<Double> bidToPosSet = bidToPos.keySet();
 		ArrayList<Double> bidToPosArrList = new ArrayList<Double>(bidToPosSet);

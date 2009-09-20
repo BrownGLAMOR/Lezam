@@ -31,6 +31,9 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 
 	@Override
 	public double getPrediction(Query query, double pos, Ad currentAd) {
+		if(Double.isNaN(pos)) {
+			return 0.0;
+		}
 		double clickPr;
 		HashMap<Double, Double> posToBid = _posToBidMap.get(query);
 		Set<Double> posToBidSet = posToBid.keySet();

@@ -27,6 +27,9 @@ public class PerfectBidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public double getPrediction(Query query, double bid) {
+		if(bid == 0) {
+			return 0.0;
+		}
 		double avgCPC;
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
