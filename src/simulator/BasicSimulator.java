@@ -74,8 +74,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 20000;
-	private int _numSplits = 6; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 2500;
+	private int _numSplits = 1; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -757,7 +757,6 @@ public class BasicSimulator {
 		}
 		HashMap<Query,HashMap<Double,Reports>> allReportsMap = new HashMap<Query,HashMap<Double,Reports>>();
 		for(Query query : _querySpace) {
-			double[] potentialBids = potentialBidsMap.get(query);
 			HashMap<Double, Reports> queryReportsMap = new HashMap<Double,Reports>();
 			allReportsMap.put(query, queryReportsMap);
 		}

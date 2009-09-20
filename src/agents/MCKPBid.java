@@ -49,7 +49,7 @@ public class MCKPBid extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
+	private static final boolean SAFETYBUDGET = false;
 	private static final boolean BOOST = true;
 
 	private double _safetyBudget = 750;
