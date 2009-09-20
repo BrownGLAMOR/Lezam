@@ -36,7 +36,7 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 				continue;
 			}
 			else {
-				avgConvProb += clicks/(conversions*1.0);
+				avgConvProb += conversions/(clicks*1.0);
 				totConvProbs++;
 			}
 		}

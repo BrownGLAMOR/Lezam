@@ -74,8 +74,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 500;
-	private int _numSplits = 0; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 20000;
+	private int _numSplits = 4; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -729,6 +729,7 @@ public class BasicSimulator {
 	 * Generates the perfect models to pass to the bidder
 	 */
 	public Set<AbstractModel> generatePerfectModels() {
+		double start = System.currentTimeMillis();
 		_R.setSeed(lastSeed);
 		HashMap<Query, double[]> potentialBidsMap = getBidForEachSlot();
 		for(Query query : _querySpace) {
@@ -838,6 +839,10 @@ public class BasicSimulator {
 		models.add(posToBidModel);
 		models.add(basicTargModel);
 
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		
 		return models;
 	}
 
