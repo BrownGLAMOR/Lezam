@@ -75,7 +75,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 600;
-	private int _numSplits = 2; //How many bids to consider between slots
+	private int _numSplits = 0; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 
@@ -726,7 +726,13 @@ public class BasicSimulator {
 	 */
 	public Set<AbstractModel> generatePerfectModels() {
 		double start = System.currentTimeMillis();
-		_R.setSeed(lastSeed);
+		SecureRandom random = null;
+		try {
+			random = new SecureRandom().getInstance("SHA1PRNG");
+			random.setSeed(lastSeed);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
 		HashMap<Query, double[]> potentialBidsMap = getBidForEachSlot();
 		for(Query query : _querySpace) {
 			double[] potentialBids = potentialBidsMap.get(query);
@@ -760,7 +766,7 @@ public class BasicSimulator {
 			BidBundle bundle = new BidBundle();
 			for(Query query : _querySpace) {
 				double[] potentialBids = potentialBidsMap.get(query);
-				double rand = _R.nextDouble() * potentialBids.length;
+				double rand = random.nextDouble() * potentialBids.length;
 				int idx = (int) rand;
 				bundle.addQuery(query, potentialBids[idx], new Ad());
 			}
@@ -793,7 +799,10 @@ public class BasicSimulator {
 			for(int i = 0; i < potentialBids.length; i++) {
 				double bid = potentialBids[i];
 				Reports reports = queryReportsMap.get(bid);
-				double pos = reports.getQueryReport().getPosition(query);
+				double pos = reports.getPosition(query);
+				if(Double.isNaN(pos)) {
+					pos = 6.0;
+				}
 				potentialPositionsList.add(pos);
 				bidToPosQueryMap.put(bid, pos);
 				posToBidQueryMap.put(pos,bid);
