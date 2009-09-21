@@ -129,10 +129,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Add Models
 		 */
-		addModel(new ConstantBidToCPC(.5));
-		addModel(new ConstantBidToCPC(.6));
-		addModel(new ConstantBidToCPC(.7));
-		addModel(new ConstantBidToCPC(.8));
+//		addModel(new ConstantBidToCPC(.5));
+//		addModel(new ConstantBidToCPC(.6));
+//		addModel(new ConstantBidToCPC(.7));
+//		addModel(new ConstantBidToCPC(.8));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, false, true, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, false, true, true, false));
@@ -427,7 +427,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println("Bid-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+//			System.out.println("Bid-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -460,7 +460,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		if(prediction <= 0) {
 			return 0.0;
 		}
-		if(prediction > bid) {
+		if(prediction > bid || Double.isNaN(prediction)) {
 			return bid;
 		}
 		//		System.out.println("Overall Prediction: " + prediction);

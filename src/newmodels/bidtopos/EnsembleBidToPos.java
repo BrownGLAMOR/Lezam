@@ -383,7 +383,7 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println("Bid-Pos (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+//			System.out.println("Bid-Pos (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -415,7 +415,7 @@ public class EnsembleBidToPos extends AbstractBidToPos {
 		if(prediction < 1.0) {
 			return 1.0;
 		}
-		else if(prediction > _outOfAuction) {
+		else if(prediction > _outOfAuction || Double.isNaN(prediction)) {
 			return _outOfAuction;
 		}
 		//		System.out.println("Overall Prediction: " + prediction);

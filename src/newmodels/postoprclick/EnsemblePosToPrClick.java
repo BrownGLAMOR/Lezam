@@ -417,7 +417,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println("Pos-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+//			System.out.println("Pos-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}

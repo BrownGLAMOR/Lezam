@@ -418,7 +418,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println("Bid-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+			//			System.out.println("Bid-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}

@@ -764,6 +764,12 @@ public class PredictionEvaluator {
 			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
 
+			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,3,true,true));
+			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel, true,true));
+			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel, true,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
+
 
 			//			/*
 			//			 * Test all BID-POS models!
@@ -904,7 +910,7 @@ public class PredictionEvaluator {
 			//						}
 
 
-			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
 
 
 			//			

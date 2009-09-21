@@ -406,7 +406,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-			System.out.println("Pos-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+//			System.out.println("Pos-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
