@@ -74,8 +74,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 6000;
-	private int _numSplits = 2; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 600;
+	private int _numSplits = 0; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 	private boolean killBudgets = true;
@@ -254,7 +254,7 @@ public class BasicSimulator {
 					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 					for(Query query : _querySpace) {
 						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
-						int numImpsPred = queryToNumImp.getPrediction(query);
+						int numImpsPred = queryToNumImp.getPredictionWithBid(query, _ourBidBundle.getBid(query));
 						if(numImps == 0 || numImpsPred == 0) {
 							continue;
 						}
@@ -310,6 +310,8 @@ public class BasicSimulator {
 							continue;
 						}
 						else {
+//							System.out.println(query);
+//							System.out.println("CPC: " + CPC + ", CPCPred: " + CPCPred);
 							double diff = CPC - CPCPred;
 							double SE = diff*diff;
 							posToCPCSE.add(SE);
@@ -369,11 +371,14 @@ public class BasicSimulator {
 					AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 					for(Query query : _querySpace) {
 						double convPr = ourReports.getConvPr(query);
-						double convPrPred = convPrModel.getPrediction(query);
-						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred) || convPr == 0 || convPrPred == 0) {
+//						double convPrPred = convPrModel.getPrediction(query);
+						double convPrPred = convPrModel.getPredictionWithBid(query, _ourBidBundle.getBid(query));
+						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred)) {
 							continue;
 						}
 						else {
+							System.out.println(query);
+							System.out.println("ConvPr: " + convPr + ", Pred: " + convPrPred);
 							double diff = convPr - convPrPred;
 							double SE = diff*diff;
 							convPrSE.add(SE);
@@ -828,7 +833,7 @@ public class BasicSimulator {
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);
 		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
 		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
-		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap, potentialPositionsMap, posToBidMap);
+		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap, potentialBidsMap, posToBidMap);
 		AbstractBidToPos bidToPosModel = new PerfectBidToPos(bidToPosMap);
 		AbstractPosToBid posToBidModel = new PerfectPosToBid(posToBidMap);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
