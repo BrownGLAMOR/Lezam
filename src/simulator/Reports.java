@@ -120,7 +120,7 @@ public class Reports {
 	public void setCPC(Query query, double CPC) {
 		_CPC.put(query, CPC);
 	}
-	
+
 	public double getConvPr(Query query) {
 		return _convPr.get(query);
 	}
@@ -128,7 +128,7 @@ public class Reports {
 	public void setConvPr(Query query, double convPr) {
 		_convPr.put(query, convPr);
 	}
-	
+
 	public double getClickPr(Query query) {
 		return _clickPr.get(query);
 	}
@@ -192,7 +192,9 @@ public class Reports {
 	public void addReport(Reports report) {
 		_numReports += report.getNumReports();
 		double weight = (((_numReports-report.getNumReports())*1.0)/_numReports);
+		//		System.out.println("Weight: " + weight);
 		for(Query query : _queryReport) {
+			//			System.out.println(query);
 			double ourClicks = this.getClicks(query);
 			double ourCost = this.getCost(query);
 			double ourCPC = this.getCPC(query);
@@ -203,7 +205,7 @@ public class Reports {
 			double ourAvgPos = this.getPosition(query);
 			double ourConversions = this.getConversions(query);
 			double ourRevenue = this.getRevenue(query);
-			
+
 			double otherClicks = report.getClicks(query);
 			double otherCost = report.getCost(query);
 			double otherCPC = report.getCPC(query);
@@ -214,7 +216,7 @@ public class Reports {
 			double otherAvgPos = report.getPosition(query);
 			double otherConversions = report.getConversions(query);
 			double otherRevenue = report.getRevenue(query);
-			
+
 			if(Double.isNaN(ourCPC)) {
 				ourCPC = 0.0;
 			}
@@ -227,7 +229,7 @@ public class Reports {
 			if(Double.isNaN(ourClickPr)) {
 				ourClickPr = 0.0;
 			}
-			
+
 			if(Double.isNaN(otherCPC)) {
 				otherCPC = 0.0;
 			}
@@ -240,7 +242,10 @@ public class Reports {
 			if(Double.isNaN(otherClickPr)) {
 				otherClickPr = 0.0;
 			}
-			
+
+			//			System.out.println("Original: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
+			//			System.out.println("Other: " + otherClicks + ", " + otherCost + ", " + otherCPC + ", " + otherConvPr + ", " + otherClickPr + ", " + otherRegimps + ", " + otherPromimps + ", " + otherAvgPos + ", " + otherConversions + ", " + otherRevenue);
+
 			this.setClicks(query,ourClicks*weight + otherClicks*(1-weight));
 			this.setCost(query,ourCost*weight + otherCost*(1-weight));
 			this.setCPC(query,ourCPC*weight + otherCPC*(1-weight));
@@ -251,6 +256,19 @@ public class Reports {
 			this.setAvgPos(query,ourAvgPos*weight + otherAvgPos*(1-weight));
 			this.setConversions(query,ourConversions*weight + otherConversions*(1-weight));
 			this.setRevenue(query,ourRevenue*weight + otherRevenue*(1-weight));
+
+
+			ourClicks = this.getClicks(query);
+			ourCost = this.getCost(query);
+			ourCPC = this.getCPC(query);
+			ourConvPr = this.getConvPr(query);
+			ourClickPr = this.getClickPr(query);
+			ourRegimps = this.getRegularImpressions(query);
+			ourPromimps = this.getPromotedImpressions(query);
+			ourAvgPos = this.getPosition(query);
+			ourConversions = this.getConversions(query);
+			ourRevenue = this.getRevenue(query);
+			//			System.out.println("Aggregate: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
 		}
 	}
 }

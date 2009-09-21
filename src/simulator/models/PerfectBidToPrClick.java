@@ -32,7 +32,7 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		Reports reports = queryReportMaps.get(bid);
 		double clickPr;
 		if(reports == null) {
-			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
+			double closestBid = getClosestBid(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
 			clickPr = closestReports.getClickPr(query);
 		}
@@ -42,12 +42,17 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		return clickPr;
 	}
 
-	private double getClosestElement(double[] arr, double bid) {
+	/*
+	 * Need to get closest that ISN'T larger
+	 */
+	private double getClosestBid(double[] arr, double bid) {
 		double lastDiff = Double.MAX_VALUE;
+		int idx = -1;
 		for(int i = 0; i < arr.length; i++) {
 			double elem = arr[i];
 			if(elem == bid) {
-				return elem;
+				idx = i;
+				break;
 			}
 			double diff = bid - elem;
 			diff = Math.abs(diff);
@@ -55,10 +60,24 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 				lastDiff = diff;
 			}
 			else {
-				return arr[i-1];
+				idx = i-1;
+				break;
 			}
 		}
-		return arr[arr.length-1];
+		if(idx == -1) {
+			idx = arr.length-1;
+		}
+		if(arr[idx] > bid) {
+			if(idx == 0) {
+				return arr[0];
+			}
+			else {
+				return arr[idx-1];
+			}
+		}
+		else {
+			return arr[idx];
+		}
 	}
 
 	@Override

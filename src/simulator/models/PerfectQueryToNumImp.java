@@ -27,8 +27,11 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 		HashMap<Double, Reports> queryReportsMap = _allReportsMap.get(query);
 		for(Double bid : queryReportsMap.keySet()) {
 			Reports reports = queryReportsMap.get(bid);
-			avgNumImps += reports.getRegularImpressions(query) + reports.getPromotedImpressions(query);
-			totNumImps++;
+			double numImps = reports.getRegularImpressions(query) + reports.getPromotedImpressions(query);
+			if(numImps > 0) {
+				avgNumImps += numImps;
+				totNumImps++;
+			}
 		}
 		if(totNumImps > 0) {
 			avgNumImps /= totNumImps;	

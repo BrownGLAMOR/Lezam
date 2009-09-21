@@ -74,10 +74,11 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 600;
-	private int _numSplits = 0; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 18000;
+	private int _numSplits = 2; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
+	private boolean killBudgets = true;
 
 	private boolean DEBUG = false;
 
@@ -564,16 +565,17 @@ public class BasicSimulator {
 			}
 			Collections.sort(squashedBids);
 			double ourAdvEff = Math.pow(_advEffect.get(_agents[_ourAdvIdx]).get(query),_squashing);
-			for(int i = 0; i < 5; i++) {
+			int start = Math.max(0, squashedBids.size()-5);
+			for(int i = start; i < squashedBids.size(); i++) {
 				double squashedBid = squashedBids.get(i);
 				double bid;
 				if(squashedBid >= _regReserve) {
-					bid = squashedBid/ourAdvEff + .01;
+					bid = squashedBid/ourAdvEff + .00001;
 				}
 				else {
-					bid = _regReserve/ourAdvEff + .01;
+					bid = _regReserve/ourAdvEff + .00001;
 				}
-				bidArr[i+1] = bid;
+				bidArr[i+1-start] = bid;
 			}
 			bids.put(query, bidArr);
 		}
@@ -872,19 +874,39 @@ public class BasicSimulator {
 				bundle = getBids(agentToRun);
 				_ourBidBundle = bundle;
 				agentToRun.handleBidBundle(bundle);
-				double totBudget = bundle.getCampaignDailySpendLimit();
+				double totBudget;
+				if(!killBudgets) {
+					totBudget = bundle.getCampaignDailySpendLimit();
+				}
+				else {
+					totBudget = Double.NaN;
+				}
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				for(Query query : _querySpace) {
 					bids.put(query, bundle.getBid(query));
-					budgets.put(query,bundle.getDailyLimit(query));
+					if(!killBudgets) {
+						budgets.put(query,bundle.getDailyLimit(query));
+					}
+					else {
+						budgets.put(query,Double.NaN);
+					}
 					adTypes.put(query, bundle.getAd(query));
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
 			}
 			else {
-				agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+				if(!killBudgets) {
+					agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);					
+				}
+				else {
+					HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+					for(Query query : _querySpace) {
+						budgets.put(query,Double.NaN);
+					}
+					agent = new SimAgent(_bids.get(_agents[i]),budgets,Double.NaN,_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+				}
 			}
 			agents.add(agent);
 		}
@@ -897,19 +919,39 @@ public class BasicSimulator {
 			SimAgent agent;
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = agentToRun;
-				double totBudget = bundle.getCampaignDailySpendLimit();
+				double totBudget;
+				if(!killBudgets) {
+					totBudget = bundle.getCampaignDailySpendLimit();
+				}
+				else {
+					totBudget = Double.NaN;
+				}
 				HashMap<Query,Double> bids = new HashMap<Query, Double>();
 				HashMap<Query,Double> budgets = new HashMap<Query, Double>();
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				for(Query query : _querySpace) {
 					bids.put(query, bundle.getBid(query));
-					budgets.put(query,bundle.getDailyLimit(query));
+					if(!killBudgets) {
+						budgets.put(query,bundle.getDailyLimit(query));
+					}
+					else {
+						budgets.put(query,Double.NaN);
+					}
 					adTypes.put(query, bundle.getAd(query));
 				}
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
 			}
 			else {
-				agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+				if(!killBudgets) {
+					agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);					
+				}
+				else {
+					HashMap<Query,Double> budgets = new HashMap<Query, Double>();
+					for(Query query : _querySpace) {
+						budgets.put(query,Double.NaN);
+					}
+					agent = new SimAgent(_bids.get(_agents[i]),budgets,Double.NaN,_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
+				}
 			}
 			agents.add(agent);
 		}

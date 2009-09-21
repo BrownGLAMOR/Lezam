@@ -42,17 +42,22 @@ public class PerfectBidToPos extends AbstractBidToPos {
 		for(int i = 0; i < bidToPosArr.length; i++) {
 			bidToPosArr[i] = bidToPosArrList.get(i);
 		}
-		bid = getClosestElement(bidToPosArr,bid);
+		bid = getClosestBid(bidToPosArr,bid);
 		double pos = bidToPos.get(bid);
 		return pos;
 	}
 
-	private double getClosestElement(double[] arr, double bid) {
+	/*
+	 * Need to get closest that ISN'T larger
+	 */
+	private double getClosestBid(double[] arr, double bid) {
 		double lastDiff = Double.MAX_VALUE;
+		int idx = -1;
 		for(int i = 0; i < arr.length; i++) {
 			double elem = arr[i];
 			if(elem == bid) {
-				return elem;
+				idx = i;
+				break;
 			}
 			double diff = bid - elem;
 			diff = Math.abs(diff);
@@ -60,10 +65,24 @@ public class PerfectBidToPos extends AbstractBidToPos {
 				lastDiff = diff;
 			}
 			else {
-				return arr[i-1];
+				idx = i-1;
+				break;
 			}
 		}
-		return arr[arr.length-1];
+		if(idx == -1) {
+			idx = arr.length-1;
+		}
+		if(arr[idx] > bid) {
+			if(idx == 0) {
+				return arr[0];
+			}
+			else {
+				return arr[idx-1];
+			}
+		}
+		else {
+			return arr[idx];
+		}
 	}
 	
 	@Override

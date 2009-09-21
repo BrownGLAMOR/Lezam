@@ -42,38 +42,51 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 		for(int i = 0; i < posToBidArr.length; i++) {
 			posToBidArr[i] = posToBidArrList.get(i);
 		}
-		double bid = getClosestElement(posToBidArr,pos);
+		pos = getClosestPos(posToBidArr,pos);
+		double bid = posToBid.get(pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
-		double clickPr;
-		if(reports == null) {
-			double closestBid = getClosestElement(_potentialBidsMap.get(query),bid);
-			Reports closestReports = queryReportMaps.get(closestBid);
-			clickPr = closestReports.getClickPr(query);
-		}
-		else {
-			clickPr = reports.getClickPr(query);
-		}
+		double clickPr = reports.getClickPr(query);
 		return clickPr;
 	}
 
-	private double getClosestElement(double[] arr, double bid) {
+	/*
+	 * Need to get closest that IS larger
+	 */
+	private double getClosestPos(double[] arr, double pos) {
 		double lastDiff = Double.MAX_VALUE;
+		int idx = -1;
 		for(int i = 0; i < arr.length; i++) {
 			double elem = arr[i];
-			if(elem == bid) {
-				return elem;
+			if(elem == pos) {
+				idx = i;
+				break;
 			}
-			double diff = bid - elem;
+			double diff = pos - elem;
 			diff = Math.abs(diff);
 			if(diff < lastDiff) { 
 				lastDiff = diff;
 			}
 			else {
-				return arr[i-1];
+				idx = i-1;
+				break;
 			}
 		}
-		return arr[arr.length-1];
+		if(idx == -1) {
+			idx = arr.length-1;
+			throw new RuntimeException("");
+		}
+		if(arr[idx] > pos) {
+				return arr[idx];
+		}
+		else {
+			if(idx == arr.length-1 || arr[idx] == pos) {
+				return arr[idx];
+			}
+			else {
+				return arr[idx+1];
+			}
+		}
 	}
 
 	@Override
