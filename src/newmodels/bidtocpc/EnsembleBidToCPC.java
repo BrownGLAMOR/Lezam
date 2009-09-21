@@ -48,6 +48,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	protected HashMap<Query,HashMap<String,Double>> _ensembleWeights;
 
 	/*
+	 * Used to keep track of how often each model is used...
+	 */
+	protected HashMap<Query,HashMap<String, Integer>> _modelUseCount;
+	protected int _totUseCount;
+	
+	/*
 	 * Constants for making ensemble
 	 */
 	protected int NUMPASTDAYS = 5;
@@ -77,6 +83,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_dailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
 		_bordaCount = new HashMap<String, HashMap<Query,LinkedList<Integer>>>();
 		_modelPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
+		
+		_modelUseCount = new HashMap<Query,HashMap<String, Integer>>();
+		for(Query query : _querySpace) {
+			HashMap<String, Integer> queryModelUse = new HashMap<String, Integer>();
+			_modelUseCount.put(query, queryModelUse);
+		}
+		_totUseCount = 0;
 
 		/*
 		 * Initialize Ensemble

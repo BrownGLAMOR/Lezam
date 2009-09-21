@@ -11,9 +11,11 @@ import java.util.Set;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import newmodels.AbstractModel;
 import newmodels.avgpostoposdist.AvgPosToPosDist;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtopos.RegressionBidToPos;
@@ -55,13 +57,13 @@ public class PredictionEvaluator {
 		//		int max = 496;
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1425;
-		int max = 1430;
+		int min = 1430;
+		int max = 1436;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
-		//		int min = 1425;
-		//		int max = 1430;
+		//		int min = 1430;
+		//		int max = 1436;
 		//		int max = 1464;
 
 		ArrayList<String> filenames = new ArrayList<String>();
@@ -588,7 +590,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
 	}
 
-	public void bidToPosDistPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
+	public void bidToPosPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -759,8 +761,9 @@ public class PredictionEvaluator {
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			//			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
 			//			evaluator.clickPrPredictionChallenge(model);
-			RConnection rConnection = new RConnection();
-			BasicTargetModel targModel = new BasicTargetModel(null, null);
+			RConnection _rConnection = new RConnection();
+			BasicTargetModel _targModel = new BasicTargetModel(null, null);
+
 
 			//			/*
 			//			 * Test all BID-POS models!
@@ -779,7 +782,7 @@ public class PredictionEvaluator {
 			//														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
 			//													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
 			//													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-//																evaluator.bidToPosDistPredictionChallenge(model);
+			//																evaluator.bidToPosDistPredictionChallenge(model);
 			//													//															System.out.println(model);
 			//													double stop = System.currentTimeMillis();
 			//													double elapsed = stop - start;
