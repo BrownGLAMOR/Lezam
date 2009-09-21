@@ -84,6 +84,22 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
 	public int getPrediction(Query query) {
 		return _numImps.get(query);
 	}
+	
+	@Override
+	public int getPredictionWithBid(Query query, double bid) {
+		/*
+		 * We have no use for the bid in this specific model
+		 */
+		return getPrediction(query);
+	}
+	
+	@Override
+	public int getPredictionWithPos(Query query, double pos) {
+		/*
+		 * We have no use for the pos in this specific model
+		 */
+		return getPrediction(query);
+	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {

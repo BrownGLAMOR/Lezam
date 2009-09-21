@@ -74,7 +74,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 18000;
+	private static final int NUM_PERF_ITERS = 6000;
 	private int _numSplits = 2; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
@@ -160,7 +160,7 @@ public class BasicSimulator {
 	}
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
-		System.out.println("Num Iterations: " + NUM_PERF_ITERS + ", Num Splits: " + _numSplits);
+		System.out.println("Num Iterations: " + NUM_PERF_ITERS + ", Num Splits: " + _numSplits + ", Kill Budgets: " + killBudgets);
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
@@ -822,13 +822,13 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
-		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap);
+		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap, posToBidMap);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);
 		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
 		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
-		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap);
+		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap, potentialPositionsMap, posToBidMap);
 		AbstractBidToPos bidToPosModel = new PerfectBidToPos(bidToPosMap);
 		AbstractPosToBid posToBidModel = new PerfectPosToBid(posToBidMap);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_ourAdvInfo.getManufacturerSpecialty(),_ourAdvInfo.getComponentSpecialty());
@@ -998,6 +998,7 @@ public class BasicSimulator {
 			Collections.shuffle(users,randGen);
 			_pregenUsers  = users;
 		}
+		long lastMiniSeed = lastSeed;
 		for(int i = 0; i < users.size(); i++) {
 			SimUser user = users.get(i);
 			Query query = user.getUserQuery();
@@ -1005,6 +1006,10 @@ public class BasicSimulator {
 				//This means the user is IS or T
 				continue;
 			}
+			
+			_R.setSeed(lastMiniSeed);
+			lastMiniSeed = _R.nextLong();
+			
 			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
 			for(int j = 0; j < agents.size(); j++) {
 				SimAgent agent = agents.get(j);

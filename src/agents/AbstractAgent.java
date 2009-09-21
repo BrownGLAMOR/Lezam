@@ -259,7 +259,7 @@ public abstract class AbstractAgent extends Agent {
 			_rServePort = 6311;  // Default port, in case the config file isn't there or isn't valid
 		}
 		
-		System.out.println("Will attempt to connect to R on port " + _rServePort + " if R is needed.");
+//		System.out.println("Will attempt to connect to R on port " + _rServePort + " if R is needed.");
 	}
 	
 	public void sendSimMessage(Message message) {

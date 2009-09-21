@@ -39,11 +39,15 @@ public class PerfectBidToPos extends AbstractBidToPos {
 		ArrayList<Double> bidToPosArrList = new ArrayList<Double>(bidToPosSet);
 		Collections.sort(bidToPosArrList);
 		double[] bidToPosArr = new double[bidToPosArrList.size()];
+//		System.out.println(query + ", bid: " + bid);
 		for(int i = 0; i < bidToPosArr.length; i++) {
 			bidToPosArr[i] = bidToPosArrList.get(i);
+//			System.out.println(i + "  " + bidToPosArr[i] + "   " + bidToPos.get(bidToPosArr[i]));
 		}
 		bid = getClosestBid(bidToPosArr,bid);
+//		System.out.println("Closest bid: " + bid);
 		double pos = bidToPos.get(bid);
+//		System.out.println("Resulting Pos: " + pos);
 		return pos;
 	}
 

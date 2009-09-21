@@ -87,6 +87,22 @@ public class GoodConversionPrModel extends AbstractConversionModel {
 
 		return lim[0];
 	}
+	
+	@Override
+	public double getPredictionWithBid(Query query, double bid) {
+		/*
+		 * We have no use for the bid in this specific model
+		 */
+		return getPrediction(query);
+	}
+	
+	@Override
+	public double getPredictionWithPos(Query query, double pos) {
+		/*
+		 * We have no use for the pos in this specific model
+		 */
+		return getPrediction(query);
+	}
 
 	private class Limits {
 
