@@ -57,18 +57,18 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 		if(bid == 0) {
 			return 0.0;
 		}
-		double prClick;
+		double prConv;
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
 		if(reports == null) {
 			double closestBid = getClosestBid(_potentialBidsMap.get(query),bid);
 			Reports closestReports = queryReportMaps.get(closestBid);
-			prClick = closestReports.getClickPr(query);
+			prConv = closestReports.getConvPr(query);
 		}
 		else {
-			prClick = reports.getClickPr(query);
+			prConv = reports.getConvPr(query);
 		}
-		return prClick;
+		return prConv;
 	}
 
 
@@ -89,8 +89,8 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 		double bid = posToBid.get(pos);
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
-		double avgCPC = reports.getClickPr(query);
-		return avgCPC;
+		double prConv = reports.getConvPr(query);
+		return prConv;
 	}
 
 	/*

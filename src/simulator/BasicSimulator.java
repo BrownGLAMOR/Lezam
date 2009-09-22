@@ -74,8 +74,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 600;
-	private int _numSplits = 0; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 18000;
+	private int _numSplits = 1; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
 	private boolean killBudgets = true;
@@ -177,6 +177,30 @@ public class BasicSimulator {
 		}
 		int firstDay = 0;
 
+		ArrayList<Double> impSE = new ArrayList<Double>();
+		ArrayList<Double> impActual = new ArrayList<Double>();
+
+		ArrayList<Double> bidToCPCSE = new ArrayList<Double>();
+		ArrayList<Double> bidToCPCActual = new ArrayList<Double>();
+
+		ArrayList<Double> posToCPCSE = new ArrayList<Double>();
+		ArrayList<Double> posToCPCActual = new ArrayList<Double>();
+
+		ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
+		ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
+
+		ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
+		ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
+
+		ArrayList<Double> bidToPosSE = new ArrayList<Double>();
+		ArrayList<Double> bidToPosActual = new ArrayList<Double>();
+
+		ArrayList<Double> posToBidSE = new ArrayList<Double>();
+		ArrayList<Double> posToBidActual = new ArrayList<Double>();
+
+		ArrayList<Double> convPrSE = new ArrayList<Double>();
+		ArrayList<Double> convPrActual = new ArrayList<Double>();
+		
 		for(int day = firstDay; day < 59; day++) {
 
 			if(day >= 2) {
@@ -221,30 +245,6 @@ public class BasicSimulator {
 			_perfectModels = perfectModels;
 
 			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
-
-			ArrayList<Double> impSE = new ArrayList<Double>();
-			ArrayList<Double> impActual = new ArrayList<Double>();
-
-			ArrayList<Double> bidToCPCSE = new ArrayList<Double>();
-			ArrayList<Double> bidToCPCActual = new ArrayList<Double>();
-
-			ArrayList<Double> posToCPCSE = new ArrayList<Double>();
-			ArrayList<Double> posToCPCActual = new ArrayList<Double>();
-
-			ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
-			ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
-
-			ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
-			ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
-
-			ArrayList<Double> bidToPosSE = new ArrayList<Double>();
-			ArrayList<Double> bidToPosActual = new ArrayList<Double>();
-
-			ArrayList<Double> posToBidSE = new ArrayList<Double>();
-			ArrayList<Double> posToBidActual = new ArrayList<Double>();
-
-			ArrayList<Double> convPrSE = new ArrayList<Double>();
-			ArrayList<Double> convPrActual = new ArrayList<Double>();
 
 			for(AbstractModel model : _perfectModels) {
 				if(model instanceof AbstractUserModel) {
@@ -371,14 +371,14 @@ public class BasicSimulator {
 					AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 					for(Query query : _querySpace) {
 						double convPr = ourReports.getConvPr(query);
-//						double convPrPred = convPrModel.getPrediction(query);
+						//						double convPrPred = convPrModel.getPrediction(query);
 						double convPrPred = convPrModel.getPredictionWithBid(query, _ourBidBundle.getBid(query));
 						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred)) {
 							continue;
 						}
 						else {
-							System.out.println(query);
-							System.out.println("ConvPr: " + convPr + ", Pred: " + convPrPred);
+//							System.out.println(query + "Bid: " + _ourBidBundle.getBid(query));
+//							System.out.println("ConvPr: " + convPr + ", Pred: " + convPrPred);
 							double diff = convPr - convPrPred;
 							double SE = diff*diff;
 							convPrSE.add(SE);
@@ -788,7 +788,8 @@ public class BasicSimulator {
 					queryReportsMap.put(bid, ourReports);
 				}
 				else {
-					reports.addReport(ourReports);
+//					System.out.println(query + " bid: " + bid);
+					reports.addReport(ourReports,query);
 					queryReportsMap.put(bid, reports);
 				}
 				allReportsMap.put(query, queryReportsMap);
@@ -1011,10 +1012,10 @@ public class BasicSimulator {
 				//This means the user is IS or T
 				continue;
 			}
-			
+
 			_R.setSeed(lastMiniSeed);
 			lastMiniSeed = _R.nextLong();
-			
+
 			ArrayList<AgentBidPair> pairList = new ArrayList<AgentBidPair>();
 			for(int j = 0; j < agents.size(); j++) {
 				SimAgent agent = agents.get(j);

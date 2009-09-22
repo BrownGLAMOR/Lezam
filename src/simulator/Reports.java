@@ -189,12 +189,12 @@ public class Reports {
 		return _numReports;
 	}
 
-	public void addReport(Reports report) {
+	public void addReport(Reports report,Query q) {
 		_numReports += report.getNumReports();
 		double weight = (((_numReports-report.getNumReports())*1.0)/_numReports);
-		//		System.out.println("Weight: " + weight);
+//		System.out.println("\n\nWeight: " + weight);
+//		System.out.println(q);
 		for(Query query : _queryReport) {
-			//			System.out.println(query);
 			double ourClicks = this.getClicks(query);
 			double ourCost = this.getCost(query);
 			double ourCPC = this.getCPC(query);
@@ -243,8 +243,10 @@ public class Reports {
 				otherClickPr = 0.0;
 			}
 
-			//			System.out.println("Original: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
-			//			System.out.println("Other: " + otherClicks + ", " + otherCost + ", " + otherCPC + ", " + otherConvPr + ", " + otherClickPr + ", " + otherRegimps + ", " + otherPromimps + ", " + otherAvgPos + ", " + otherConversions + ", " + otherRevenue);
+//			if(query == q) {
+//				System.out.println("Original: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
+//				System.out.println("Other: " + otherClicks + ", " + otherCost + ", " + otherCPC + ", " + otherConvPr + ", " + otherClickPr + ", " + otherRegimps + ", " + otherPromimps + ", " + otherAvgPos + ", " + otherConversions + ", " + otherRevenue);
+//			}
 
 			this.setClicks(query,ourClicks*weight + otherClicks*(1-weight));
 			this.setCost(query,ourCost*weight + otherCost*(1-weight));
@@ -268,7 +270,10 @@ public class Reports {
 			ourAvgPos = this.getPosition(query);
 			ourConversions = this.getConversions(query);
 			ourRevenue = this.getRevenue(query);
-			//			System.out.println("Aggregate: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
+
+//			if(query == q) {
+//				System.out.println("Aggregate: " + ourClicks + ", " + ourCost + ", " + ourCPC + ", " + ourConvPr + ", " + ourClickPr + ", " + ourRegimps + ", " + ourPromimps + ", " + ourAvgPos + ", " + ourConversions + ", " + ourRevenue);
+//			}
 		}
 	}
 }
