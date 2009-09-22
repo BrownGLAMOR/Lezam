@@ -126,7 +126,7 @@ public class EquateProfitC extends AbstractAgent{
 			}
 		}
 
-		_bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		_bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
 		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){

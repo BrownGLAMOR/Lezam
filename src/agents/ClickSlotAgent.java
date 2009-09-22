@@ -166,7 +166,7 @@ public class ClickSlotAgent extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-		_bidToCPCModel = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
+		_bidToCPCModel = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
 
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		return null;
