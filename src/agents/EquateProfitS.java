@@ -45,7 +45,7 @@ public class EquateProfitS extends AbstractAgent{
 	protected final double MAX_BID_CPC_GAP = 1.5;
 	
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 	
 	protected PrintStream output;
 	

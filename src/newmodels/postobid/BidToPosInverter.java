@@ -35,13 +35,11 @@ public class BidToPosInverter extends AbstractPosToBid {
 		_min = min;
 		_max = max;
 
-		
+
 		_coefficients = new HashMap<Query, double[]>();
 		for(Query query : _querySpace) {
 			_coefficients.put(query, null);
 		}
-
-		_model = null;
 	}
 
 	public void setIncrements(double increment, double min, double max) {
@@ -74,15 +72,15 @@ public class BidToPosInverter extends AbstractPosToBid {
 		}
 
 		double bid = coeff[0] + pos * coeff[1];
-		
+
 		if(bid < _min) {
 			return _min;
 		}
-		
+
 		if(bid > _max) {
 			return _max;
 		}
-		
+
 		return bid;
 	}
 
@@ -93,27 +91,27 @@ public class BidToPosInverter extends AbstractPosToBid {
 			for(int i = 0; i < bids.length; i++) {
 				positions[i] = _model.getPrediction(query, bids[i]);
 			}
-				try {
-					_rConnection.assign("bids", bids);
-					_rConnection.assign("positions", positions);
-					String Rmodel = "model = lm(bids ~ positions)";
-					_rConnection.voidEval(Rmodel);
-					double[] coefficients = _rConnection.eval("coefficients(model)").asDoubles();
-					_coefficients.put(query, coefficients);
-					for(int i = 0; i < coefficients.length; i++) {
-						if(Double.isNaN(coefficients[i])) {
-							_coefficients.put(query, null);
-						}
+			try {
+				_rConnection.assign("bids", bids);
+				_rConnection.assign("positions", positions);
+				String Rmodel = "model = lm(bids ~ positions)";
+				_rConnection.voidEval(Rmodel);
+				double[] coefficients = _rConnection.eval("coefficients(model)").asDoubles();
+				_coefficients.put(query, coefficients);
+				for(int i = 0; i < coefficients.length; i++) {
+					if(Double.isNaN(coefficients[i])) {
+						_coefficients.put(query, null);
 					}
-				} catch (REngineException e) {
-					e.printStackTrace();
-				} catch (REXPMismatchException e) {
-					e.printStackTrace();
 				}
+			} catch (REngineException e) {
+				e.printStackTrace();
+			} catch (REXPMismatchException e) {
+				e.printStackTrace();
+			}
 		}
 		return true;
 	}
-	
+
 	public String toString() {
 		return "BidToPosInverter(model: " + _model + ",increment: "  + _increment + ", min: " + _min + ", max: " + _max + " )";
 	}
@@ -122,5 +120,5 @@ public class BidToPosInverter extends AbstractPosToBid {
 	public AbstractModel getCopy() {
 		return new BidToPosInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
 	}
-	
+
 }

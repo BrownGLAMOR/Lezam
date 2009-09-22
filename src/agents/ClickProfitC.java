@@ -57,7 +57,7 @@ public class ClickProfitC extends AbstractAgent {
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
+	protected final boolean BUDGET = true;
 	
 	// for debug
 	protected PrintStream output;

@@ -123,8 +123,8 @@ public class MCKPPos extends AbstractAgent {
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 8, 25, true, true);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
 		BasicPosToPrClick basicposToPrClickModel = new BasicPosToPrClick(_numPS);
-		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicposToPrClickModel);
-		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,5,15,true,true);
+//		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicposToPrClickModel);
+		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,null,8,25,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BidToPosInverter bidToPosInverter;
 		try {
@@ -141,7 +141,7 @@ public class MCKPPos extends AbstractAgent {
 		models.add(unitsSold);
 		models.add(convPrModel);
 		models.add(basicTargModel);
-		models.add(avgPosToDistModel);
+//		models.add(avgPosToDistModel);
 		models.add(bidToPosInverter);
 		buildMaps(models);
 		return models;
@@ -193,7 +193,7 @@ public class MCKPPos extends AbstractAgent {
 				}
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
 			}
 		}
 	}
