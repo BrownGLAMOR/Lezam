@@ -316,6 +316,9 @@ public class ClickProfitC extends AbstractAgent {
 		}
 		
 	}
-	
+	@Override
+	public String toString() {
+		return "ClickProfC";
+	}
 
 }

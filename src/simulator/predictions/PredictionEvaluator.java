@@ -57,13 +57,13 @@ public class PredictionEvaluator {
 		//		int max = 496;
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1430;
-		int max = 1436;
+		int min = 1434;
+		int max = 1435;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 		//		int min = 1430;
-		//		int max = 1436;
+		//		int max = 1435;
 		//		int max = 1464;
 
 		ArrayList<String> filenames = new ArrayList<String>();
@@ -178,9 +178,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
-		double avgRMSE = 0.0;
-		int RMSECounter = 0;
-		int dataPointCounter = 0;
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -192,17 +191,18 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
-				avgRMSE += RMSE;
-				//				System.out.println("\t\t RMSE: " + RMSE);
-				RMSECounter++;
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
 	public void bidToClickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
@@ -265,6 +265,7 @@ public class PredictionEvaluator {
 					BidBundle bidBundle = ourBidBundles.get(i);
 
 					model.updateModel(queryReport, salesReport, bidBundle);
+
 					if(i >= 5) {
 						/*
 						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
@@ -309,9 +310,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
-		double avgRMSE = 0.0;
-		int RMSECounter = 0;
-		int dataPointCounter = 0;
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -323,17 +323,18 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
-				avgRMSE += RMSE;
-				//				System.out.println("\t\t RMSE: " + RMSE);
-				RMSECounter++;
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
 	public void bidToCPCPredictionChallenge(AbstractBidToCPC baseModel) throws IOException, ParseException {
@@ -395,6 +396,7 @@ public class PredictionEvaluator {
 					BidBundle bidBundle = ourBidBundles.get(i);
 
 					model.updateModel(queryReport, salesReport, bidBundle);
+
 					if(i >= 5) {
 						/*
 						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
@@ -436,9 +438,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
-		double avgRMSE = 0.0;
-		int RMSECounter = 0;
-		int dataPointCounter = 0;
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -450,17 +451,18 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
-				avgRMSE += RMSE;
-				//				System.out.println("\t\t RMSE: " + RMSE);
-				RMSECounter++;
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
 	public void posToCPCPredictionChallenge(AbstractPosToCPC baseModel) throws IOException, ParseException {
@@ -563,9 +565,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
-		double avgRMSE = 0.0;
-		int RMSECounter = 0;
-		int dataPointCounter = 0;
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -577,17 +578,18 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
-				avgRMSE += RMSE;
-				//				System.out.println("\t\t RMSE: " + RMSE);
-				RMSECounter++;
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
 	public void bidToPosPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
@@ -697,9 +699,8 @@ public class PredictionEvaluator {
 			ourTotActualMegaMap.put(filename,ourTotActualMap);
 			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
 		}
-		double avgRMSE = 0.0;
-		int RMSECounter = 0;
-		int dataPointCounter = 0;
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
@@ -711,17 +712,40 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
-				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
-				avgRMSE += RMSE;
-				//				System.out.println("\t\t RMSE: " + RMSE);
-				RMSECounter++;
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
-		System.out.println(baseModel + ", " + (avgRMSE/RMSECounter));
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+	}
+
+	private double[] getStdDevAndMean(ArrayList<Double> list) {
+		double n = list.size();
+		double sum = 0.0;
+		for(Double data : list) {
+			sum += data;
+		}
+		double mean = sum/n;
+
+		double variance = 0.0;
+
+		for(Double data : list) {
+			variance += (data-mean)*(data-mean);
+		}
+
+		variance /= (n-1);
+
+		double[] stdDev = new double[2];
+		stdDev[0] = mean;
+		stdDev[1] = Math.sqrt(variance);
+		return stdDev;
 	}
 
 	public static boolean intToBin(int x) {
@@ -764,12 +788,20 @@ public class PredictionEvaluator {
 			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
 
-			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,3,true,true));
+			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,12,100,true,true));
 			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel, true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel, true,true));
+			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel, true,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel, true,true));
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
 
+			//						evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
+			//			evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));
+			//			evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
+			//			evaluator.bidToPosPredictionChallenge(new RegressionBidToPos(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false));
+
+
+			//			evaluator.bidToPosPredictionChallenge(new SpatialBidToPos(_rConnection, _querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), false, 1, 30,true, .85));
 
 			//			/*
 			//			 * Test all BID-POS models!
@@ -778,18 +810,19 @@ public class PredictionEvaluator {
 			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
 			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
 			//						for(int weighted = 0; weighted < 2; weighted++) {
-			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//							for(double mWeight = 0.74; mWeight < 1.0; mWeight += .075) {
 			//								for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//									for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//									for(int queryTypeIndicators = 0; queryTypeIndicators < 1; queryTypeIndicators++) {
 			//										for(int powers = 0; powers < 2; powers++) {
-			//											for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
+			//											for(int ignoreNaN = 0; ignoreNaN < 2; ignoreNaN++) {
 			//												if(!(IDVar == 2) && !(queryIndicators == 1 && queryTypeIndicators == 1)
 			//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1))
-			//														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .84)) {
-			//													RegressionBidToPos model = new RegressionBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
-			//													//									SpatialBidToPos model = new SpatialBidToPos(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight);
-			//																evaluator.bidToPosDistPredictionChallenge(model);
-			//													//															System.out.println(model);
+			//														&& !(intToBin(perQuery) && numPrevDays <= 30) && !(!intToBin(weighted) && mWeight > .74)) {
+			//													AbstractBidToPos model = new RegressionBidToPos(_rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+			//													evaluator.bidToPosPredictionChallenge(model);
+			//													model = new SpatialBidToPos(_rConnection, _querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), intToBin(ignoreNaN), IDVar, numPrevDays, intToBin(weighted), mWeight);
+			//													evaluator.bidToPosPredictionChallenge(model);
+			//													System.out.println(model);
 			//													double stop = System.currentTimeMillis();
 			//													double elapsed = stop - start;
 			//													System.out.println("This took " + (elapsed / 1000) + " seconds");
@@ -806,7 +839,7 @@ public class PredictionEvaluator {
 			//			}
 
 
-			//
+
 			//						/*
 			//						 * Test all BID-PRCLICK models!
 			//						 */
@@ -814,14 +847,14 @@ public class PredictionEvaluator {
 			//							for(int IDVar = 1; IDVar < 5; IDVar++) {
 			//								for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
 			//									for(int weighted = 0; weighted < 2; weighted++) {
-			//										for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//										for(double mWeight = 0.74; mWeight < 1.0; mWeight += .075) {
 			//											for(int robust = 0; robust < 1; robust++) {
 			//												for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//													for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//													for(int queryTypeIndicators = 0; queryTypeIndicators < 1; queryTypeIndicators++) {
 			//														for(int powers = 0; powers < 2; powers++) {
 			//															if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-			//																	&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-			//																RegressionBidToPrClick model = new RegressionBidToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+			//																	&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 30) && !(!intToBin(weighted) && mWeight > .74)) {
+			//																RegressionBidToPrClick model = new RegressionBidToPrClick(_rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
 			//																evaluator.bidToClickPrPredictionChallenge(model);
 			//																//															System.out.println(model);
 			//																double stop = System.currentTimeMillis();
@@ -840,21 +873,21 @@ public class PredictionEvaluator {
 			//						}
 
 
-			//			/*
-			//			 * Test all POS-PRCLICK models!
-			//			 */
+			/*
+//			 * Test all POS-PRCLICK models!
+//			 */
 			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
 			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
 			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
 			//						for(int weighted = 0; weighted < 2; weighted++) {
-			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//							for(double mWeight = 0.64; mWeight < 1.0; mWeight += .075) {
 			//								for(int robust = 0; robust < 1; robust++) {
 			//									for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//										for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//										for(int queryTypeIndicators = 0; queryTypeIndicators < 1; queryTypeIndicators++) {
 			//											for(int powers = 0; powers < 2; powers++) {
 			//												if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-			//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-			//													RegressionPosToPrClick model = new RegressionPosToPrClick(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
+			//														&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 30) && !(!intToBin(weighted) && mWeight > .74)) {
+			//													RegressionPosToPrClick model = new RegressionPosToPrClick(_rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, _targModel, intToBin(weighted), mWeight, intToBin(robust), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers));
 			//													evaluator.posToClickPrPredictionChallenge(model);
 			//													//															System.out.println(model);
 			//													double stop = System.currentTimeMillis();
@@ -872,33 +905,30 @@ public class PredictionEvaluator {
 			//				}
 			//			}
 
-
-			//						/*
-			//						 * Test all POS-CPC models!
-			//						 */
-			//						for(int perQuery = 0; perQuery < 2; perQuery++) {
-			//							for(int IDVar = 1; IDVar < 5; IDVar++) {
-			//								for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
-			//									for(int weighted = 0; weighted < 2; weighted++) {
-			//										for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
-			//											for(int robust = 0; robust < 1; robust++) {
-			//												for(int loglinear = 0; loglinear < 1; loglinear++) {
-			//													for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//														for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
-			//															for(int powers = 0; powers < 2; powers++) {
-			//																for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
-			//																	if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-			//																			&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-			//																		RegressionPosToCPC model = new RegressionPosToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
-			//																		evaluator.posToCPCPredictionChallenge(model);
-			//																		//															System.out.println(model);
-			//																		double stop = System.currentTimeMillis();
-			//																		double elapsed = stop - start;
-			//																		System.out.println("This took " + (elapsed / 1000) + " seconds");
-			//																		start = System.currentTimeMillis();
-			//																	}
-			//																}
-			//															}
+			//
+			//			/*
+			//			 * Test all POS-CPC models!
+			//			 */
+			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
+			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
+			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//						for(int weighted = 0; weighted < 2; weighted++) {
+			//							for(double mWeight = 0.74; mWeight < 1.0; mWeight += .075) {
+			//								for(int robust = 0; robust < 1; robust++) {
+			//									for(int loglinear = 0; loglinear < 1; loglinear++) {
+			//										for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
+			//											for(int queryTypeIndicators = 0; queryTypeIndicators < 1; queryTypeIndicators++) {
+			//												for(int powers = 0; powers < 2; powers++) {
+			//													for(int ignoreNaN = 0; ignoreNaN < 2; ignoreNaN++) {
+			//														if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
+			//																&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 30) && !(!intToBin(weighted) && mWeight > .74)) {
+			//															RegressionPosToCPC model = new RegressionPosToCPC(_rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+			//															evaluator.posToCPCPredictionChallenge(model);
+			//															//															System.out.println(model);
+			//															double stop = System.currentTimeMillis();
+			//															double elapsed = stop - start;
+			//															System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//															start = System.currentTimeMillis();
 			//														}
 			//													}
 			//												}
@@ -908,29 +938,29 @@ public class PredictionEvaluator {
 			//								}
 			//							}
 			//						}
+			//					}
+			//				}
+			//			}
 
 
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
 
-
-			//			
 			//			/*
 			//			 * Test all BID-CPC models!
 			//			 */
 			//			for(int perQuery = 0; perQuery < 2; perQuery++) {
 			//				for(int IDVar = 1; IDVar < 5; IDVar++) {
-			//					for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+			//					for(int numPrevDays = 60; numPrevDays <= 60; numPrevDays += 15) {
 			//						for(int weighted = 0; weighted < 2; weighted++) {
-			//							for(double mWeight = 0.84; mWeight < 1.0; mWeight += .05) {
+			//							for(double mWeight = 0.74; mWeight < 1.0; mWeight += .075) {
 			//								for(int robust = 0; robust < 1; robust++) {
 			//									for(int loglinear = 0; loglinear < 1; loglinear++) {
 			//										for(int queryIndicators = 0; queryIndicators < 2; queryIndicators++) {
-			//											for(int queryTypeIndicators = 0; queryTypeIndicators < 2; queryTypeIndicators++) {
+			//											for(int queryTypeIndicators = 0; queryTypeIndicators < 1; queryTypeIndicators++) {
 			//												for(int powers = 0; powers < 2; powers++) {
-			//													for(int ignoreNaN = 0; ignoreNaN < 1; ignoreNaN++) {
+			//													for(int ignoreNaN = 0; ignoreNaN < 2; ignoreNaN++) {
 			//														if(!(IDVar == 2) && !(robust == 1 && (queryIndicators == 1 || queryTypeIndicators == 1 || powers == 1)) && !(queryIndicators == 1 && queryTypeIndicators == 1)
-			//																&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 35) && !(!intToBin(weighted) && mWeight > .84)) {
-			//															AbstractBidToCPC model = new RegressionBidToCPC(rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
+			//																&& !(perQuery == 1 && (queryIndicators == 1 || queryTypeIndicators == 1)) && !(intToBin(perQuery) && numPrevDays < 30) && !(!intToBin(weighted) && mWeight > .74)) {
+			//															AbstractBidToCPC model = new RegressionBidToCPC(_rConnection, _querySpace, intToBin(perQuery), IDVar, numPrevDays, intToBin(weighted), mWeight, intToBin(robust), intToBin(loglinear), intToBin(queryIndicators), intToBin(queryTypeIndicators), intToBin(powers), intToBin(ignoreNaN));
 			//															evaluator.bidToCPCPredictionChallenge(model);
 			//															//															System.out.println(model);
 			//															double stop = System.currentTimeMillis();

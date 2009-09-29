@@ -198,4 +198,9 @@ public class SlotAgent extends AbstractAgent {
 		}
 	}
 
+	@Override
+	public String toString() {
+		return "Slot";
+	}
+	
 }

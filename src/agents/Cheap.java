@@ -74,4 +74,9 @@ public class Cheap extends AbstractAgent {
 		return rand * (b - a) + a;
 	}
 
+	@Override
+	public String toString() {
+		return "Cheap";
+	}
+
 }

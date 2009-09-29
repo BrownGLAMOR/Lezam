@@ -52,7 +52,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	 */
 	protected HashMap<Query,HashMap<String, Integer>> _modelUseCount;
 	protected int _totUseCount;
-	
+
 	/*
 	 * Constants for making ensemble
 	 */
@@ -83,7 +83,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_dailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
 		_bordaCount = new HashMap<String, HashMap<Query,LinkedList<Integer>>>();
 		_modelPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
-		
+
 		_modelUseCount = new HashMap<Query,HashMap<String, Integer>>();
 		for(Query query : _querySpace) {
 			HashMap<String, Integer> queryModelUse = new HashMap<String, Integer>();
@@ -129,10 +129,10 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Add Models
 		 */
-//		addModel(new ConstantBidToCPC(.5));
-//		addModel(new ConstantBidToCPC(.6));
-//		addModel(new ConstantBidToCPC(.7));
-//		addModel(new ConstantBidToCPC(.8));
+		//		addModel(new ConstantBidToCPC(.5));
+		//		addModel(new ConstantBidToCPC(.6));
+		//		addModel(new ConstantBidToCPC(.7));
+		//		addModel(new ConstantBidToCPC(.8));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, true, false, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.94, false, false, false, true, true, false));
 		addModel(new RegressionBidToCPC(_rConnection, _querySpace, false,3,15, true,0.84, false, false, false, true, true, false));
@@ -281,7 +281,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		//		System.out.println("Percent Usable [CPC]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -427,7 +427,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-//			System.out.println("Bid-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+			//			System.out.println("Bid-CPC (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -450,7 +450,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		for(AbstractBidToCPC model : queryEnsemble) {
 			double pred = model.getPrediction(query, bid);
 			double weight = ensembleWeights.get(model.toString());
-			//			System.out.println(query + ", bid: " + bid + ", pred: " + pred);
+			//						System.out.println(query + ", bid: " + bid + ", pred: " + pred);
 			if(!(Double.isNaN(pred) || Double.isNaN(weight))) {
 				prediction += pred*weight;
 				totWeight += weight;

@@ -197,6 +197,10 @@ public class NewSSB extends AbstractAgent{
 		return getQueryBid(q)*remainCap/8;
 	}
 
+	@Override
+	public String toString() {
+		return "NewSSB";
+	}
 
 
 }

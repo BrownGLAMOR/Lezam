@@ -475,6 +475,8 @@ public abstract class AbstractAgent extends Agent {
      */
     public abstract void initBidder();
     
+    public abstract String toString();
+    
     /*
      * This will be called once each day to get the bid bundle for the day, i.e. the bids,
      * budgets, and ad types

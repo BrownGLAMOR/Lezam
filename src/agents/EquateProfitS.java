@@ -262,5 +262,10 @@ public class EquateProfitS extends AbstractAgent{
 		output.flush();
 	
 	}
+	
+	@Override
+	public String toString() {
+		return "EquateProfitS";
+	}
 
 }

@@ -152,4 +152,9 @@ public class ClickAgent extends AbstractAgent {
 		return _revenue.get(q)*(1 - _PM.get(q))*conversion;
 	}
 
+	@Override
+	public String toString() {
+		return "Click";
+	}
+	
 }

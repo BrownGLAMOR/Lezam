@@ -215,4 +215,10 @@ public class XFixedProfitAgent extends AbstractAgent {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	@Override
+	public String toString() {
+		return "XFixedProfit";
+	}
+	
 }

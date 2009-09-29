@@ -49,8 +49,8 @@ public class MCKPBid extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean SAFETYBUDGET = false;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 
@@ -149,7 +149,7 @@ public class MCKPBid extends AbstractAgent {
 				_targModel = targModel;
 			}
 			else {
-//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
@@ -294,12 +294,7 @@ public class MCKPBid extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays + 2) {
-			QueryReport queryReport = _queryReports.getLast();
-			SalesReport salesReport = _salesReports.getLast();
-		}
-
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -439,19 +434,19 @@ public class MCKPBid extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					//					bid = 0.0;
-					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					bid = 0.0;
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-
-					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//
+					//					//					System.out.println("Exploring " + q + "   bid: " + bid);
+					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
 		}
@@ -705,6 +700,11 @@ public class MCKPBid extends AbstractAgent {
 		if(DEBUG) {
 			System.out.println(str);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "MCKPBid";
 	}
 
 }

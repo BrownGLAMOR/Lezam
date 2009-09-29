@@ -55,8 +55,8 @@ public class ILPBidAgent extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean SAFETYBUDGET = false;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 900;
 
@@ -90,7 +90,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		try {
 			IloCplex cplex = new IloCplex();
-//			cplex.setOut(null);
+			//			cplex.setOut(null);
 			_cplex = cplex;
 		} catch (IloException e) {
 			throw new RuntimeException("Could not initialize CPLEX");
@@ -319,12 +319,8 @@ public class ILPBidAgent extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays + 2) {
-			QueryReport queryReport = _queryReports.getLast();
-			SalesReport salesReport = _salesReports.getLast();
-		}
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -547,11 +543,11 @@ public class ILPBidAgent extends AbstractAgent {
 				double stop = System.currentTimeMillis();
 				double elapsed = stop - start;
 				System.out.println("CPLEX took " + (elapsed / 1000) + " seconds");
-				
+
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
 				double[] bidVal = _cplex.getValues(binVars);
-				
+
 				double totOverCap = 0;
 				for(int i = 0; i < capList.length; i++) {
 					if(bidVal[profit.length + i] == 1) {
@@ -559,7 +555,7 @@ public class ILPBidAgent extends AbstractAgent {
 						break;
 					}
 				}
-				
+
 				System.out.println("Going overcap by: " + totOverCap);
 
 
@@ -611,18 +607,18 @@ public class ILPBidAgent extends AbstractAgent {
 						/*
 						 * We decided that we did not want to be in this query, so we will use it to explore the space
 						 */
-//						bid = 0.0;
-//						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+						bid = 0.0;
+						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
-											if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-											else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-											else
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-						
-//											System.out.println("Exploring " + q + "   bid: " + bid);
-											bidBundle.addQuery(q, bid, new Ad(), bid*10);
+						//											if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//											else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//											else
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//
+						//											System.out.println("Exploring " + q + "   bid: " + bid);
+						//											bidBundle.addQuery(q, bid, new Ad(), bid*10);
 					}
 				}
 			} catch (IloException e) {
@@ -654,6 +650,11 @@ public class ILPBidAgent extends AbstractAgent {
 		if(DEBUG) {
 			System.out.println(str);
 		}
+	}
+
+	@Override
+	public String toString() {
+		return "ILPBid";
 	}
 
 }

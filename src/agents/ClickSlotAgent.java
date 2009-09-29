@@ -288,5 +288,10 @@ public class ClickSlotAgent extends AbstractAgent {
 		output.flush();
 
 	}
+	
+	@Override
+	public String toString() {
+		return "ClickSlot";
+	}
 
 }

@@ -67,8 +67,8 @@ public class ILPPosAgent extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean SAFETYBUDGET = false;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 
@@ -106,7 +106,7 @@ public class ILPPosAgent extends AbstractAgent {
 
 		try {
 			IloCplex cplex = new IloCplex();
-//			cplex.setOut(null);
+			//			cplex.setOut(null);
 			_cplex = cplex;
 		} catch (IloException e) {
 			throw new RuntimeException("Could not initialize CPLEX");
@@ -120,7 +120,7 @@ public class ILPPosAgent extends AbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			_posList.add(posMin+(i*posIncrement));
 		}
-		
+
 		_capList = new LinkedList<Integer>();
 		int increment = 5;
 		int min = 0;
@@ -157,7 +157,7 @@ public class ILPPosAgent extends AbstractAgent {
 		} catch (RserveException e) {
 			throw new RuntimeException("Cannot Access Rserve");
 		}
-		
+
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(posToCPC);
@@ -213,9 +213,9 @@ public class ILPPosAgent extends AbstractAgent {
 			else if(model instanceof BidToPosInverter) {
 				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
 				_bidToPosInverter = bidToPosInverter;
-				for(Query query : _querySpace) {
-					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
-				}
+				//				for(Query query : _querySpace) {
+				//					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
+				//				}
 			}
 			else {
 				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
@@ -373,12 +373,7 @@ public class ILPPosAgent extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays + 2) {
-			QueryReport queryReport = _queryReports.getLast();
-			SalesReport salesReport = _salesReports.getLast();
-		}
-
-		if(_day > lagDays) {
+		if(_day > lagDays || models != null) {
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -423,7 +418,7 @@ public class ILPPosAgent extends AbstractAgent {
 						if(Double.isNaN(convProb)) {
 							convProb = 0.0;
 						}
-						
+
 						debug("\tDesired Pos: " + pos);
 						debug("\tCPC: " + CPC);
 						debug("\tNumImps: " + numImps);
@@ -580,7 +575,7 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				capacity *= 1.5;
-				
+
 				debug("Budget: "+ capacity);
 
 				linearNumExpr = _cplex.linearNumExpr();
@@ -607,7 +602,7 @@ public class ILPPosAgent extends AbstractAgent {
 				System.out.println("Expected Profit: " + _cplex.getObjValue());
 
 				double[] posVal = _cplex.getValues(positions);
-				
+
 				double totOverCap = 0;
 				for(int i = 0; i < capList.length; i++) {
 					if(posVal[profit.length + i] == 1) {
@@ -615,7 +610,7 @@ public class ILPPosAgent extends AbstractAgent {
 						break;
 					}
 				}
-				
+
 				System.out.println("Going overcap by: " + totOverCap);
 
 				//set bids
@@ -635,7 +630,7 @@ public class ILPPosAgent extends AbstractAgent {
 					if(Double.isNaN(bid)) {
 						bid = 0.0;
 					}
-					
+
 					if(bid != 0.0) {
 						//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
@@ -671,18 +666,18 @@ public class ILPPosAgent extends AbstractAgent {
 						/*
 						 * We decided that we did not want to be in this query, so we will use it to explore the space
 						 */
-//						bid = 0.0;
-//						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+						bid = 0.0;
+						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
-											if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-											else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-											else
-												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-						
-//											System.out.println("Exploring " + q + "   bid: " + bid);
-											bidBundle.addQuery(q, bid, new Ad(), bid*10);
+						//											if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//											else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//											else
+						//												bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//						
+						////											System.out.println("Exploring " + q + "   bid: " + bid);
+						//											bidBundle.addQuery(q, bid, new Ad(), bid*10);
 					}
 				}
 			} catch (IloException e) {
@@ -714,6 +709,12 @@ public class ILPPosAgent extends AbstractAgent {
 		if(DEBUG) {
 			System.out.println(str);
 		}
+	}
+
+
+	@Override
+	public String toString() {
+		return "ILP Pos";
 	}
 
 }

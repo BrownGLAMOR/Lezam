@@ -189,5 +189,10 @@ public class NewJESOM2 extends AbstractAgent{
 			}
 		}
 	}
+	@Override
+	public String toString() {
+		return "NewJesom";
+	}
+	
 }
 	

@@ -297,6 +297,10 @@ public class ClickProfitS extends AbstractAgent {
 		
 	}
 
+	@Override
+	public String toString() {
+		return "ClickProfS";
+	}
 
 }
 

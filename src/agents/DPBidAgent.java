@@ -465,5 +465,9 @@ public class DPBidAgent extends AbstractAgent {
 		output.flush();
 
 	}
-
+	@Override
+	public String toString() {
+		return "DPBid";
+	}
+	
 }

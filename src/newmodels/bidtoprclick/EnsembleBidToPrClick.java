@@ -265,7 +265,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+//		System.out.println("Percent Usable [ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 

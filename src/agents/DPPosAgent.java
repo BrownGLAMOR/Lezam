@@ -519,5 +519,10 @@ public class DPPosAgent extends AbstractAgent {
 		output.flush();
 
 	}
+	
+	@Override
+	public String toString() {
+		return "DPPos";
+	}
 
 }

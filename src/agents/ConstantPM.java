@@ -178,4 +178,10 @@ public class ConstantPM extends AbstractAgent {
 			_oldModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
+	
+	@Override
+	public String toString() {
+		return "Constant PM";
+	}
+	
 }

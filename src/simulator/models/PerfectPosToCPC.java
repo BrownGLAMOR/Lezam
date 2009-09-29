@@ -74,8 +74,8 @@ public class PerfectPosToCPC extends AbstractPosToCPC {
 			}
 		}
 		if(idx == -1) {
+			System.out.println(pos);
 			idx = arr.length-1;
-			throw new RuntimeException("");
 		}
 		if(arr[idx] > pos) {
 				return arr[idx];
