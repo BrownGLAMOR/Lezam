@@ -505,10 +505,7 @@ public class ILPBidAgent extends AbstractAgent {
 					//do nothing
 				}
 				else {
-					capacity = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
-					if(capacity < 20) {
-						capacity = 20;
-					}
+					capacity = _capacity - _unitsSold.getWindowSold();
 					debug("Unit Sold Model Budget "  +capacity);
 				}
 
