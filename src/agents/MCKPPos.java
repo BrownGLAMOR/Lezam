@@ -22,6 +22,7 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postobid.AbstractPosToBid;
 import newmodels.postobid.BidToPosInverter;
 import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postocpc.EnsemblePosToCPC;
@@ -81,7 +82,7 @@ public class MCKPPos extends AbstractAgent {
 	private AbstractPosToCPC _posToCPC;
 	private AbstractPosToPrClick _posToPrClick;
 	private AbstractBidToPos _bidToPos;
-	private BidToPosInverter _bidToPosInverter;
+	private AbstractPosToBid _bidToPosInverter;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
@@ -185,8 +186,8 @@ public class MCKPPos extends AbstractAgent {
 				AvgPosToPosDist avgPosDist = (AvgPosToPosDist) model;
 				_avgPosDist = avgPosDist;
 			}
-			else if(model instanceof BidToPosInverter) {
-				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+			else if(model instanceof AbstractPosToBid) {
+				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
 				_bidToPosInverter = bidToPosInverter;
 //				for(Query query : _querySpace) {
 //					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
@@ -319,8 +320,8 @@ public class MCKPPos extends AbstractAgent {
 			else if(model instanceof AvgPosToPosDist) {
 				//Do Nothing
 			}
-			else if(model instanceof BidToPosInverter) {
-				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+			else if(model instanceof AbstractPosToBid) {
+				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
 				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
@@ -460,6 +461,9 @@ public class MCKPPos extends AbstractAgent {
 					bid = _bidToPosInverter.getPrediction(q, pos);
 					
 					if(Double.isNaN(bid)) {
+						
+						System.out.println("DOOOOKIE");
+						
 						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 						else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
@@ -534,7 +538,7 @@ public class MCKPPos extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-
+		System.out.println(bidBundle);
 		return bidBundle;
 	}
 

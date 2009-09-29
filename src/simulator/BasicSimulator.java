@@ -541,7 +541,7 @@ public class BasicSimulator {
 			}
 			System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/reports.size()));
 			System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/reports.size()));
-			System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/reports.size()));
+			System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalCost/reports.size()));
 			System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/reports.size()));
 			System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/reports.size()));
 			System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/reports.size()));
@@ -1339,6 +1339,36 @@ public class BasicSimulator {
 			}
 
 		}
+		
+//		LinkedList<Reports> reports = reportsListMap.get(_agents[_ourAdvIdx]);
+//		System.out.println("Agent: "  + agent);
+//		double totalRevenue = 0;
+//		double totalCost = 0;
+//		double totalImp = 0;
+//		double totalClick = 0;
+//		double totalConv = 0;
+//		for(Reports report : reports) {
+//			QueryReport queryReport = report.getQueryReport();
+//			SalesReport salesReport = report.getSalesReport();
+//			for(Query query : _querySpace) {
+//				totalRevenue += salesReport.getRevenue(query);
+//				totalCost += queryReport.getCost(query);
+//				totalImp += queryReport.getImpressions(query);
+//				totalClick += queryReport.getClicks(query);
+//				totalConv += salesReport.getConversions(query);
+//			}
+//		}
+//		System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/reports.size()));
+//		System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/reports.size()));
+//		System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/reports.size()));
+//		System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/reports.size()));
+//		System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/reports.size()));
+//		System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/reports.size()));
+//		System.out.println("\tCPC: " + (totalCost/totalClick));
+//		System.out.println("\tClickPr: " + (totalClick/totalImp));
+//		System.out.println("\tConvPr: " + (totalConv/totalClick));
+		
+		
 	}
 
 
@@ -1528,7 +1558,6 @@ public class BasicSimulator {
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
-
 	}
 
 }

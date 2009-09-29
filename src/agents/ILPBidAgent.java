@@ -637,7 +637,7 @@ public class ILPBidAgent extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-
+		System.out.println(bidBundle);
 		return bidBundle;
 	}
 

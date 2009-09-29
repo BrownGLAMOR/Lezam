@@ -28,6 +28,7 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postobid.AbstractPosToBid;
 import newmodels.postobid.BidToPosInverter;
 import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postocpc.EnsemblePosToCPC;
@@ -87,7 +88,7 @@ public class ILPPosAgent extends AbstractAgent {
 	private AbstractPosToCPC _posToCPC;
 	private AbstractPosToPrClick _posToPrClick;
 	private AbstractBidToPos _bidToPos;
-	private BidToPosInverter _bidToPosInverter;
+	private AbstractPosToBid _bidToPosInverter;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
@@ -210,8 +211,8 @@ public class ILPPosAgent extends AbstractAgent {
 				AvgPosToPosDist avgPosDist = (AvgPosToPosDist) model;
 				_avgPosDist = avgPosDist;
 			}
-			else if(model instanceof BidToPosInverter) {
-				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+			else if(model instanceof AbstractPosToBid) {
+				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
 				_bidToPosInverter = bidToPosInverter;
 				//				for(Query query : _querySpace) {
 				//					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
@@ -343,8 +344,8 @@ public class ILPPosAgent extends AbstractAgent {
 			else if(model instanceof AvgPosToPosDist) {
 				//Do Nothing
 			}
-			else if(model instanceof BidToPosInverter) {
-				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
+			else if(model instanceof AbstractPosToBid) {
+				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
 				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
@@ -696,7 +697,7 @@ public class ILPPosAgent extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-
+		System.out.println(bidBundle);
 		return bidBundle;
 	}
 

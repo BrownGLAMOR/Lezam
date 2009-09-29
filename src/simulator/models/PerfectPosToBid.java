@@ -71,7 +71,6 @@ public class PerfectPosToBid extends AbstractPosToBid {
 			}
 		}
 		if(idx == -1) {
-			System.out.println(pos);
 			idx = arr.length-1;
 		}
 		if(arr[idx] > pos) {

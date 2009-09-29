@@ -74,7 +74,6 @@ public class PerfectPosToPrClick extends AbstractPosToPrClick {
 		}
 		if(idx == -1) {
 			idx = arr.length-1;
-			System.out.println(pos);
 		}
 		if(arr[idx] > pos) {
 				return arr[idx];
