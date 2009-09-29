@@ -1282,7 +1282,6 @@ public class BasicSimulator {
 
 
 	public void runSimulations() throws IOException, ParseException {
-		int numSims = 1;
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1293,13 +1292,16 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+				String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		int min = 1430;
 		int max = 1435;
 
+		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
+
 		String[] filenames = new String[max-min];
-		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
+		System.out.println("Min: " + min + "  Max: " + max);
 		for(int i = min; i < max; i++) { 
 			filenames[i-min] = baseFile + i + ".slg";
 		}
@@ -1323,52 +1325,51 @@ public class BasicSimulator {
 				_querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 
-			HashMap<String,LinkedList<LinkedList<Reports>>> reportsListMap = new HashMap<String,LinkedList<LinkedList<Reports>>>();
+			HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String,LinkedList<Reports>>();
 			for(int i = 0; i < agents.length; i++) {
-				LinkedList<LinkedList<Reports>> reportsList = new LinkedList<LinkedList<Reports>>();
+				LinkedList<Reports> reportsList = new LinkedList<Reports>();
 				reportsListMap.put(agents[i], reportsList);
 			}
 
-			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPPos(), advId);
-				for(int j = 0; j < agents.length; j++) {
-					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
-					reportsList.add(maps.get(agents[j]));
-					reportsListMap.put(agents[j], reportsList);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPPos(), advId);
+
+			for(int j = 0; j < agents.length; j++) {
+				reportsListMap.put(agents[j],maps.get(agents[j]));
+			}
+			reportsListMegaMap.put(filename, reportsListMap);
+		}
+
+		double totalRevenue = 0;
+		double totalCost = 0;
+		double totalImp = 0;
+		double totalClick = 0;
+		double totalConv = 0;
+		double totDays = 0;
+		for(String filename : reportsListMegaMap.keySet()) {
+			HashMap<String, LinkedList<Reports>> map = reportsListMegaMap.get(filename);
+			LinkedList<Reports> reports = map.get(_agents[_ourAdvIdx]);
+			totDays = reportsListMegaMap.size() * reports.size();
+			for(Reports report : reports) {
+				QueryReport queryReport = report.getQueryReport();
+				SalesReport salesReport = report.getSalesReport();
+				for(Query query : _querySpace) {
+					totalRevenue += salesReport.getRevenue(query);
+					totalCost += queryReport.getCost(query);
+					totalImp += queryReport.getImpressions(query);
+					totalClick += queryReport.getClicks(query);
+					totalConv += salesReport.getConversions(query);
 				}
 			}
-
 		}
-		
-//		LinkedList<Reports> reports = reportsListMap.get(_agents[_ourAdvIdx]);
-//		System.out.println("Agent: "  + agent);
-//		double totalRevenue = 0;
-//		double totalCost = 0;
-//		double totalImp = 0;
-//		double totalClick = 0;
-//		double totalConv = 0;
-//		for(Reports report : reports) {
-//			QueryReport queryReport = report.getQueryReport();
-//			SalesReport salesReport = report.getSalesReport();
-//			for(Query query : _querySpace) {
-//				totalRevenue += salesReport.getRevenue(query);
-//				totalCost += queryReport.getCost(query);
-//				totalImp += queryReport.getImpressions(query);
-//				totalClick += queryReport.getClicks(query);
-//				totalConv += salesReport.getConversions(query);
-//			}
-//		}
-//		System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/reports.size()));
-//		System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/reports.size()));
-//		System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/reports.size()));
-//		System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/reports.size()));
-//		System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/reports.size()));
-//		System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/reports.size()));
-//		System.out.println("\tCPC: " + (totalCost/totalClick));
-//		System.out.println("\tClickPr: " + (totalClick/totalImp));
-//		System.out.println("\tConvPr: " + (totalConv/totalClick));
-		
-		
+		System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/totDays));
+		System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/totDays));
+		System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/totDays));
+		System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/totDays));
+		System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/totDays));
+		System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/totDays));
+		System.out.println("\tCPC: " + (totalCost/totalClick));
+		System.out.println("\tClickPr: " + (totalClick/totalImp));
+		System.out.println("\tConvPr: " + (totalConv/totalClick));
 	}
 
 
