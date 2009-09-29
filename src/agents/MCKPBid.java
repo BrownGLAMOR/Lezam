@@ -269,7 +269,7 @@ public class MCKPBid extends AbstractAgent {
 				//Do nothing
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}

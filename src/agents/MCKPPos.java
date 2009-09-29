@@ -325,7 +325,7 @@ public class MCKPPos extends AbstractAgent {
 				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}

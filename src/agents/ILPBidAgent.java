@@ -174,7 +174,7 @@ public class ILPBidAgent extends AbstractAgent {
 				_targModel = targModel;
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
@@ -294,7 +294,7 @@ public class ILPBidAgent extends AbstractAgent {
 				//Do nothing
 			}
 			else {
-				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
+//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}
