@@ -174,7 +174,7 @@ public class ILPBidAgent extends AbstractAgent {
 				_targModel = targModel;
 			}
 			else {
-//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
 			}
 		}
 	}
@@ -294,7 +294,7 @@ public class ILPBidAgent extends AbstractAgent {
 				//Do nothing
 			}
 			else {
-//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}
@@ -478,8 +478,8 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				for(Query query : _querySpace) {
 					IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
+					int isID = _queryId.get(query);
 					for(int i = 0; i < _bidList.size(); i++) {
-						int isID = _queryId.get(query);
 						int idx = isID*_bidList.size() + i;
 						linearIntExpr.addTerm(1, binVars[idx]);
 					}
@@ -557,6 +557,17 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				System.out.println("Going overcap by: " + totOverCap);
+
+				for(Query query : _querySpace) {
+					Integer isID = _queryId.get(query);
+					String toprint = "";
+					toprint += query + "  ";
+					for(int i = 0; i < _bidList.size(); i++) {
+						int idx = isID*_bidList.size() + i;
+						toprint += bidVal[idx];
+					}
+					System.out.println(toprint);
+				}
 
 
 				//set bids

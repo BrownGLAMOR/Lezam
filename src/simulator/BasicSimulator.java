@@ -1471,7 +1471,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPBid(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPBidAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
