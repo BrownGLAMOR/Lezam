@@ -344,7 +344,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 
 				for(Query q : _querySpace) {
-					debug("Query: " + q);
+					System.out.println("Query: " + q);
 					for(int i = 0; i < _bidList.size(); i++) {
 						double salesPrice = _salesPrices.get(q);
 						double bid = _bidList.get(i);
@@ -366,12 +366,12 @@ public class ILPBidAgent extends AbstractAgent {
 							convProb = 0.0;
 						}
 
-						debug("\tBid: " + bid);
-						debug("\tCPC: " + CPC);
-						debug("\tNumImps: " + numImps);
-						debug("\tNumClicks: " + numClicks);
-						debug("\tClickPr: " + clickPr);
-						debug("\tConv Prob: " + convProb + "\n\n");
+						System.out.println("\tBid: " + bid);
+						System.out.println("\tCPC: " + CPC);
+						System.out.println("\tNumImps: " + numImps);
+						System.out.println("\tNumClicks: " + numClicks);
+						System.out.println("\tClickPr: " + clickPr);
+						System.out.println("\tConv Prob: " + convProb + "\n\n");
 
 						int isID = _queryId.get(q);
 						double w = numClicks*convProb;				//weight = numClicks * convProv  [conversions]
