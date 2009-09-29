@@ -211,7 +211,7 @@ public class ClickSlotAgent extends AbstractAgent {
 		double newHonest;
 
 		/* if we sold less than what we expected, and we got bad position
-		 and also wanted sales does not tend to go over capacity, then higher
+		 and also wanted sales does not tend to go over capacity, then raise
 		 our bid*/
 		if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
 			if (!(_queryReport.getPosition(q) <= 4)) {
@@ -245,7 +245,7 @@ public class ClickSlotAgent extends AbstractAgent {
 			} else {
 				/* if we sold more than what we expected, but we got bad
 				 position, then increase our expectation*/
-				if (!(_queryReport.getPosition(q) <= 4)) {
+				if (!(_queryReport.getPosition(q) >= 4)) {
 					_wantedSales.put(q, _wantedSales.get(q) * 1.25);
 				}
 			}
