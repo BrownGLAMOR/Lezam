@@ -51,6 +51,7 @@ import agents.Cheap;
 import agents.ConstantPM;
 import agents.EquateProfitC;
 import agents.ILPBidAgent;
+import agents.ILPPosAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import agents.MCKPPos;
@@ -1331,7 +1332,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPPos(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPPosAgent(), advId);
 
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
