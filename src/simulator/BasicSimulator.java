@@ -1332,7 +1332,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPPosAgent(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPBidAgent(), advId);
 
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
