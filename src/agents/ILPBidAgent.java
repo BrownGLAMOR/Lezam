@@ -492,7 +492,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
 				for(int i = 0; i < _capList.size(); i++) {
-					linearIntExpr.addTerm(1, binVars[i]);
+					linearIntExpr.addTerm(1, binVars[profit.length + i]);
 				}
 				_cplex.addLe(linearIntExpr, 1);
 
