@@ -100,16 +100,16 @@ public class ILPBidAgent extends AbstractAgent {
 		//		double increment = .25;
 		double bidIncrement  = .05;
 		double bidMin = .04;
-		double bidMax = 3.0;
+		double bidMax = 2.5;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
 
 		_capList = new LinkedList<Integer>();
-		int increment = 10;
-		int min = 10;
-		int max = 50;
+		int increment = 5;
+		int min = 5;
+		int max = 75;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}
@@ -425,7 +425,8 @@ public class ILPBidAgent extends AbstractAgent {
 					}
 				}
 
-				int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
+				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){

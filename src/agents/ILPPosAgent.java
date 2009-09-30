@@ -124,8 +124,8 @@ public class ILPPosAgent extends AbstractAgent {
 
 		_capList = new LinkedList<Integer>();
 		int increment = 5;
-		int min = 0;
-		int max = 50;
+		int min = 5;
+		int max = 75;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}
@@ -479,7 +479,8 @@ public class ILPPosAgent extends AbstractAgent {
 					}
 				}
 
-				int valueLostWindow = (int) Math.max(1, Math.min(_capWindow, 59 - _day));
+				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
@@ -559,7 +560,7 @@ public class ILPPosAgent extends AbstractAgent {
 					//do nothing
 				}
 				else {
-					capacity = _capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4;
+					capacity = _capacity - _unitsSold.getWindowSold();
 					if(capacity < 20) {
 						capacity = 20;
 					}
