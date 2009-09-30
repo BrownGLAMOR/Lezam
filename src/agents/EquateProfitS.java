@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -51,6 +52,8 @@ public class EquateProfitS extends AbstractAgent{
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		
+		buildMaps(models);
 
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
@@ -79,6 +82,19 @@ public class EquateProfitS extends AbstractAgent{
 		return _bidBundle;
 	}
 
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				_bidToCPC = bidToCPC; 
+			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_conversionPrModel = convPrModel;
+			}
+		}
+	}
+	
 	@Override
 	public void initBidder() {
 	
@@ -103,11 +119,13 @@ public class EquateProfitS extends AbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		_bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
-
+		models.add(_bidToCPC);
+		models.add(_conversionPrModel);
+		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
 			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
@@ -125,8 +143,6 @@ public class EquateProfitS extends AbstractAgent{
 				else _estimatedPrice.put(query, 10.0);
 			}
 		}
-
-		_bidToCPC = new EnsembleBidToCPC(_querySpace, 12, 30, false, true);
 		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
@@ -146,7 +162,7 @@ public class EquateProfitS extends AbstractAgent{
         	_prClick.put(query, .01);
         }
         
-		return null;
+		return models;
 	}
 
 	@Override

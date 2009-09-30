@@ -1,13 +1,19 @@
 package agents;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.targeting.BasicTargetModel;
+import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -19,11 +25,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ClickAgent extends AbstractAgent {
 
 	protected AbstractConversionModel _conversionPrModel;
-	
+
 	protected HashMap<Query, Double> _baselineConversion;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _PM;
-	
+
 	protected double _desiredSale;
 	protected final double _lamda = 0.9;
 	protected BidBundle _bidBundle;
@@ -33,12 +39,14 @@ public class ClickAgent extends AbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-
+		buildMaps(models);
 		// build bid bundle
 		for (Query query : _querySpace) {
-			adjustPM(query);
+			if(_day > 1) {
+				adjustPM(query);
+			}
 			_bidBundle.setBid(query, getQueryBid(query));
-			
+
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
@@ -49,10 +57,19 @@ public class ClickAgent extends AbstractAgent {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
-			
+
 			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 		}
 		return _bidBundle;
+	}
+
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_conversionPrModel = convPrModel;
+			}
+		}
 	}
 
 	@Override
@@ -101,8 +118,10 @@ public class ClickAgent extends AbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		return null;
+		models.add(_conversionPrModel);
+		return models;
 	}
 
 	@Override
@@ -156,5 +175,5 @@ public class ClickAgent extends AbstractAgent {
 	public String toString() {
 		return "Click";
 	}
-	
+
 }

@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -16,6 +17,8 @@ import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.profits.ProfitsMovingAvg;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
+import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -80,9 +83,6 @@ public class ClickProfitS extends AbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 		
-		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-
-		_prConversionModel = new HistoricPrConversionModel(_querySpace, _targetModel);
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
         	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
@@ -120,6 +120,8 @@ public class ClickProfitS extends AbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		
+		buildMaps(models);
 		
 		if(_salesReport == null || _queryReport == null) {
 			return new BidBundle();
@@ -176,6 +178,15 @@ public class ClickProfitS extends AbstractAgent {
 		}
 		
 		return buildBidBundle();
+	}
+	
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_prConversionModel = convPrModel;
+			}
+		}
 	}
 	
 	protected BidBundle buildBidBundle()  {
@@ -274,8 +285,10 @@ public class ClickProfitS extends AbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		// Not used
-		return null;
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		models.add(_prConversionModel);
+		return models;
 	}
 
 	@Override

@@ -48,13 +48,19 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.Cheap;
+import agents.ClickAgent;
+import agents.ClickProfitC;
+import agents.ClickProfitS;
+import agents.ClickSlotAgent;
 import agents.ConstantPM;
 import agents.EquateProfitC;
+import agents.EquateProfitS;
 import agents.ILPBidAgent;
 import agents.ILPPosAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import agents.MCKPPos;
+import agents.SlotAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -170,8 +176,8 @@ public class BasicSimulator {
 		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		agent.initBidder();
 		Set<AbstractModel> models = agent.initModels();
+		agent.initBidder();
 		agent.setModels(models);
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
@@ -227,7 +233,7 @@ public class BasicSimulator {
 
 
 			HashMap<String, Reports> maps = runSimulation(agent);
-
+			
 			//			/*
 			//			 * TEST PERFECT MODEL ERROR
 			//			 */
@@ -1293,8 +1299,8 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-				String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		int min = 1430;
 		int max = 1435;
@@ -1332,8 +1338,8 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPBidAgent(), advId);
-
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPBid(), advId);
+//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
 			}
@@ -1471,7 +1477,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ILPBidAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new SlotAgent(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

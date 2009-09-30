@@ -12,6 +12,7 @@ import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
+import newmodels.unitssold.AbstractUnitsSoldModel;
 import agents.AbstractAgent;
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -39,7 +40,6 @@ public class ConstantPM extends AbstractAgent {
 	private int _timeHorizon;
 	
 	private AbstractConversionModel _model;
-	private GoodConversionPrModel _oldModel;
 
 	private int _day;
 	private int _capacity;
@@ -58,11 +58,8 @@ public class ConstantPM extends AbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		HistoricPrConversionModel convModel = null;
-		for(AbstractModel m : models)
-			if(m instanceof HistoricPrConversionModel)
-				convModel = (HistoricPrConversionModel)m;
-
+		buildMaps(models);
+		
 		double avgBid = 0;
 		double avgConvRate = 0;
 
@@ -81,12 +78,6 @@ public class ConstantPM extends AbstractAgent {
 
 			System.out.print(ad.toString() + ", ");
 			double pr = 0.1;
-			if(_day > 2) {
-				pr = convModel.getPrediction(q);
-				double oldPr = _oldModel.getPrediction(q);
-				
-				System.out.println("Old prediction: " + oldPr +"\tNew Prediction: " + pr + "\tDelta: " + (oldPr - pr));
-			}
 
 			double myBid = (_queryAvgProfit.get(q) * 0.4) * pr;
 
@@ -105,6 +96,15 @@ public class ConstantPM extends AbstractAgent {
 		//bids.setCampaignDailySpendLimit((((double)_capacity / 4.0) * avgBid) / avgConvRate);
 
 		return bids;
+	}
+
+	private void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_model = convPrModel;
+			}
+		}
 	}
 
 	@Override
@@ -160,8 +160,6 @@ public class ConstantPM extends AbstractAgent {
 		((HistoricPrConversionModel) _model).setTimeHorizon(3);
 		m.add(_model);
 
-		_oldModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-
 		return m;
 	}
 
@@ -174,8 +172,6 @@ public class ConstantPM extends AbstractAgent {
 			((HistoricPrConversionModel) _model).setTimeHorizon(_timeHorizon);
 			_model.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			
-			_oldModel.setTimeHorizon(_timeHorizon);
-			_oldModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 	

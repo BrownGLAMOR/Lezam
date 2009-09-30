@@ -2,6 +2,7 @@ package agents;
 
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -24,7 +25,7 @@ public class SlotAgent extends AbstractAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, Double> _baselineConversion;
-	
+
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
@@ -33,6 +34,8 @@ public class SlotAgent extends AbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+
+		buildMaps(models);
 		for (Query query : _querySpace) {
 			double current = _reinvestment.get(query);
 
@@ -42,9 +45,9 @@ public class SlotAgent extends AbstractAgent {
 				// handle the case when the agent got the promoted slots
 				handlePromotedSlots(query);
 			}
-			
+
 			_bidBundle.setBid(query, getQueryBid(query));
-			
+
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
@@ -61,6 +64,15 @@ public class SlotAgent extends AbstractAgent {
 		}
 		// output.flush();
 		return _bidBundle;
+	}
+
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_conversionPrModel = convPrModel;
+			}
+		}
 	}
 
 	@Override
@@ -149,7 +161,7 @@ public class SlotAgent extends AbstractAgent {
 			conversion = _baselineConversion.get(q);
 		else
 			conversion = _conversionPrModel.getPrediction(q);
-		
+
 		if (_queryReport.getPosition(q) <= 3) {
 			double newReinvest = Math.max(0.1, _reinvestment.get(q) * .9);
 			_reinvestment.put(q, newReinvest);
@@ -177,14 +189,22 @@ public class SlotAgent extends AbstractAgent {
 	protected double setQuerySpendLimit(Query q) {
 
 		double remainCap = 1.5 * _capacity / _capWindow;
-		return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
-				/ _querySpace.size();
+		if(_conversionPrModel != null) {
+			return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
+			/ _querySpace.size();
+		}
+		else {
+			return getQueryBid(q) * remainCap / _baselineConversion.get(q)
+			/ _querySpace.size();
+		}
 	}
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		_conversionPrModel = new GoodConversionPrModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		return null;
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		models.add(_conversionPrModel);
+		return models;
 	}
 
 	@Override
@@ -202,5 +222,5 @@ public class SlotAgent extends AbstractAgent {
 	public String toString() {
 		return "Slot";
 	}
-	
+
 }

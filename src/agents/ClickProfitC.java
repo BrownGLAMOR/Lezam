@@ -9,19 +9,23 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.revenue.RevenueMovingAvg;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
+import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -33,7 +37,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class ClickProfitC extends AbstractAgent {
 	protected BidBundle _bidBundle;
-	
+
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected AbstractConversionModel _prConversionModel;
@@ -42,59 +46,56 @@ public class ClickProfitC extends AbstractAgent {
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
 	private Random _R = new Random();
-	
+
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
-	
+
 	protected int _distributionCapacity;
 	protected int _distributionWindow;
 	protected int _dailyCapacity;
-	
+
 	protected ArrayList<BidBundle> _bidBundleList;
-	
+
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = true;
-	
+
 	// for debug
 	protected PrintStream output;
-	
+
 	@Override
 	public void initBidder() {
-		
+
 		// set constants
-		
+
 		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
 		_distributionWindow = _advertiserInfo.getDistributionWindow();
 		_dailyCapacity = (int) (_distributionCapacity /_distributionWindow);
-		
+
 		// initialize strategy related variables
-		
+
 		double initProfitMargin = .7;
 		_profitMargins = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_profitMargins.put(query, initProfitMargin);
 		}
-		
+
 		_desiredSales = new HashMap<Query, Double>();
-		
+
 		for (Query query : _querySpace) {
 			_desiredSales.put(query, 1.0*_distributionCapacity/_querySpace.size());
 		}
-		
+
 		// initialize models
-		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
-		
+
 		_revenueModels = new HashMap<Query, RevenueMovingAvg>(); 
 		for (Query query : _querySpace) {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
-		
-		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+
 		_baselineConversions = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
@@ -104,110 +105,126 @@ public class ClickProfitC extends AbstractAgent {
 				conv = .2;
 			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
 				conv = .3;
-			
+
 			double componentBonus = 1;
 			if (query.getComponent() != null && query.getComponent().equals(_advertiserInfo.getComponentSpecialty()))
 				componentBonus = _advertiserInfo.getComponentBonus();
 			conv = (conv*componentBonus)/(componentBonus + 1 - conv);
 			_baselineConversions.put(query, conv);
 		}
-		
 
-		
+
+
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			double profit = _prConversionModel.getPrediction(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
+			double profit = _baselineConversions.get(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
 		_oldAvgProfit = _avgProfit;
-		
+
 		_bidBundleList = new ArrayList<BidBundle>();
 		// setup the debug info recorder
-		
+
 		try {
 			output = new PrintStream(new File("logeqpft.txt"));
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
-		
+
 		// initialize the bid bundle
-		
+
 		_bidBundle = new BidBundle();
 	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		
+
+		buildMaps(models);
+
 		this.setAvgProfit();
-		
+
 		// try to equate profit
-		
-		for (Query query: _querySpace) {
-			
-			//double latestProfit = _profitsModels.get(query).getLatestSample();
-			double latestProfit = 0;
-			if (_queryReport.getClicks(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
-			
-			if (latestProfit > _avgProfit) {	
-				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
-					_desiredSales.put(query, _desiredSales.get(query)*1.25);
+		if(_day > 1) {
+
+			for (Query query: _querySpace) {
+
+				//double latestProfit = _profitsModels.get(query).getLatestSample();
+				double latestProfit = 0;
+				if (_queryReport.getClicks(query) > 0)
+					latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
+
+				if (latestProfit > _avgProfit) {	
+					if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
+						_desiredSales.put(query, _desiredSales.get(query)*1.25);
+				}
+				else if  (_queryReport.getClicks(query) > 0) {
+					if (_salesReport.getConversions(query) < _desiredSales.get(query))
+						_desiredSales.put(query, _desiredSales.get(query)*0.8);
+				}
 			}
-			else if  (_queryReport.getClicks(query) > 0) {
-				if (_salesReport.getConversions(query) < _desiredSales.get(query))
-					_desiredSales.put(query, _desiredSales.get(query)*0.8);
+
+			// normalize desiredSales
+			double normalizeFactor = 0;
+			for (Query query : _querySpace) {
+				normalizeFactor += _desiredSales.get(query);
+			}
+			normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
+			for (Query query : _querySpace) {
+				_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
+			}
+
+			for (Query query: _querySpace) {
+
+				if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query) &&
+						!(_queryReport.getPosition(query) <= 1.5)) {
+					double newProfitMargin = _profitMargins.get(query)*0.9;
+					newProfitMargin = Math.min(0.9, newProfitMargin);
+					newProfitMargin = Math.max(0.1, newProfitMargin);
+					_profitMargins.put(query, newProfitMargin);
+				}
+				else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
+					double newProfitMargin = _profitMargins.get(query)*1.1;
+					newProfitMargin = Math.min(0.9, newProfitMargin);
+					newProfitMargin = Math.max(0.1, newProfitMargin);
+					_profitMargins.put(query, newProfitMargin);
+				}
+
 			}
 		}
-		
-		// normalize desiredSales
-		double normalizeFactor = 0;
-		for (Query query : _querySpace) {
-			normalizeFactor += _desiredSales.get(query);
-		}
-		normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
-		for (Query query : _querySpace) {
-			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
-		}
-		
-		for (Query query: _querySpace) {
-			
-			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query) &&
-					!(_queryReport.getPosition(query) <= 1.5)) {
-				double newProfitMargin = _profitMargins.get(query)*0.9;
-				newProfitMargin = Math.min(0.9, newProfitMargin);
-				newProfitMargin = Math.max(0.1, newProfitMargin);
-				_profitMargins.put(query, newProfitMargin);
-			}
-			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
-				double newProfitMargin = _profitMargins.get(query)*1.1;
-				newProfitMargin = Math.min(0.9, newProfitMargin);
-				newProfitMargin = Math.max(0.1, newProfitMargin);
-				_profitMargins.put(query, newProfitMargin);
-			}
-			
-		}
-		
 		return buildBidBundle();
 	}
-	
+
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractUnitsSoldModel) {
+				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
+				_unitsSoldModel = unitsSold;
+			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_prConversionModel = convPrModel;
+			}
+		}
+	}
+
 	protected BidBundle buildBidBundle()  {
-		
+
 		for (Query query : _querySpace) {
 			// set bids
 			double prConv;
 			if (_day <= 6 || !(_prConversionModel.getPrediction(query) > 0))
 				prConv = _baselineConversions.get(query);
 			else prConv= _prConversionModel.getPrediction(query);
-			
+
 			double bid = prConv *_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
 			_bidBundle.setBid(query, bid);
-			
+
 			// set target ads
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-				_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
 					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
@@ -215,7 +232,7 @@ public class ClickProfitC extends AbstractAgent {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
-			
+
 			// set spend limit
 			// must set spend limit in the first few days
 			if (BUDGET || _day < 10) {
@@ -224,14 +241,14 @@ public class ClickProfitC extends AbstractAgent {
 				_bidBundle.setDailyLimit(query, dailyLimit);
 			}
 		}
-		
+
 		//this.printInfo();
-		 
+
 		_bidBundleList.add(_bidBundle);
-		
+
 		return _bidBundle;
 	}
-	
+
 	protected void setAvgProfit() {
 		double result = 0;
 		int n = 0;
@@ -241,15 +258,15 @@ public class ClickProfitC extends AbstractAgent {
 				n += _queryReport.getClicks(query);
 			}
 		result /= n;
-		
+
 		_oldAvgProfit = _avgProfit;
 		_avgProfit = result;
 	}
-	
+
 	protected double getAvgProfit() {
 		return _avgProfit;
 	}
-	
+
 	protected void printInfo() {
 		// print debug info
 		StringBuffer buff = new StringBuffer(255);
@@ -285,36 +302,40 @@ public class ClickProfitC extends AbstractAgent {
 			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
 			buff.append("****************\n");
 		}
-		
+
 		System.out.println(buff);
 		output.append(buff);
 		output.flush();
-	
+
 	}
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		// Not used
-		return null;
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
+		models.add(_prConversionModel);
+		models.add(_unitsSoldModel);
+		return models;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		if (_day > 1 && salesReport != null && queryReport != null) {
 			_unitsSoldModel.update(salesReport);
-			
+
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 
 			((HistoricPrConversionModel) _prConversionModel).setTimeHorizon(timeHorizon);
 			_prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			
-		
+
+
 			for (Query query : _querySpace) {
 				if (salesReport.getRevenue(query) > 0) 
 					_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
 			}
 		}
-		
+
 	}
 	@Override
 	public String toString() {

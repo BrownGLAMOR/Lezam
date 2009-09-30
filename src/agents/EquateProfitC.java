@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -55,6 +56,10 @@ public class EquateProfitC extends AbstractAgent{
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
+		
+		buildMaps(models);
+		
+		buildMaps(models);
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
@@ -81,6 +86,19 @@ public class EquateProfitC extends AbstractAgent{
 //		printInfo();
 		return _bidBundle;
 	}
+	
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				_bidToCPC = bidToCPC; 
+			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_conversionPrModel = convPrModel;
+			}
+		}
+	}
 
 	@Override
 	public void initBidder() {
@@ -104,9 +122,12 @@ public class EquateProfitC extends AbstractAgent{
 
 	@Override
 	public Set<AbstractModel> initModels() {
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-
+		_bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
+		models.add(_bidToCPC);
+		models.add(_conversionPrModel);
 		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -126,8 +147,6 @@ public class EquateProfitC extends AbstractAgent{
 			}
 		}
 
-		_bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
-		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){
         	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
@@ -145,7 +164,7 @@ public class EquateProfitC extends AbstractAgent{
         for (Query query: _querySpace) {
         	_prClick.put(query, .01);
         }
-		return null;
+        return models;
 	}
 
 	@Override

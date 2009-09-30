@@ -107,7 +107,7 @@ public class ILPPosAgent extends AbstractAgent {
 
 		try {
 			IloCplex cplex = new IloCplex();
-			//			cplex.setOut(null);
+			cplex.setOut(null);
 			_cplex = cplex;
 		} catch (IloException e) {
 			throw new RuntimeException("Could not initialize CPLEX");
@@ -219,7 +219,7 @@ public class ILPPosAgent extends AbstractAgent {
 				//				}
 			}
 			else {
-//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
 			}
 		}
 	}
@@ -349,7 +349,7 @@ public class ILPPosAgent extends AbstractAgent {
 				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
-//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
+				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
 			}
 		}
 	}
@@ -546,7 +546,7 @@ public class ILPPosAgent extends AbstractAgent {
 				 */
 				IloLinearIntExpr linearIntExpr = _cplex.linearIntExpr();
 				for(int i = 0; i < _capList.size(); i++) {
-					linearIntExpr.addTerm(1, positions[i]);
+					linearIntExpr.addTerm(1, positions[profit.length + i]);
 				}
 				_cplex.addLe(linearIntExpr, 1);
 

@@ -8,18 +8,22 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
+import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
+import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -39,67 +43,70 @@ public class ClickSlotAgent extends AbstractAgent {
 
 	protected BidBundle _bidBundle;
 	protected double _dailyCapacity;
-	
+
 	protected ArrayList<BidBundle> _bidBundles;
 
 	protected final double _errorOfLimit = .1;
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
-	
+
 	protected PrintStream output;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		
-		// adjust parameters
-		for (Query q : _querySpace) {
-			adjustWantedSales(q);
-		}
-		
-		double normalizeFactor = 0;
-		for (Query query : _querySpace) {
-			normalizeFactor += _wantedSales.get(query);
-		}
-		
-		int unitsSold = 0;
-		for (Query query : _querySpace) {
-			unitsSold += _salesReport.getConversions(query);
-		}
-		
-		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
-		normalizeFactor = targetCapacity/normalizeFactor;
-		for (Query query : _querySpace) {
-			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
-		}
 
-		for (Query q : _querySpace) {
-			adjustHonestFactor(q);
-		}
-		
-		// build bid bundle
-		for (Query query : _querySpace) {
-			_bidBundle.setBid(query, getQueryBid(query));
-			
-			// set target ads
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+		buildMaps(models);
+
+		if(_day > 1) {
+			// adjust parameters
+			for (Query q : _querySpace) {
+				adjustWantedSales(q);
 			}
-			
-			if (BUDGET) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+
+			double normalizeFactor = 0;
+			for (Query query : _querySpace) {
+				normalizeFactor += _wantedSales.get(query);
+			}
+
+			int unitsSold = 0;
+			for (Query query : _querySpace) {
+				unitsSold += _salesReport.getConversions(query);
+			}
+
+			int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
+			normalizeFactor = targetCapacity/normalizeFactor;
+			for (Query query : _querySpace) {
+				_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
+			}
+
+			for (Query q : _querySpace) {
+				adjustHonestFactor(q);
+			}
+
+			// build bid bundle
+			for (Query query : _querySpace) {
+				_bidBundle.setBid(query, getQueryBid(query));
+
+				// set target ads
+				if (TARGET) {
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+						_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+					if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				}
+
+				if (BUDGET) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			}
+
+			_bidBundles.add(_bidBundle);
 		}
-		
-		_bidBundles.add(_bidBundle);
-		
 		//printInfo();
-		
+
 		return _bidBundle;
 	}
 
@@ -131,7 +138,7 @@ public class ClickSlotAgent extends AbstractAgent {
 		}
 
 		_dailyCapacity = 1.5*_capacity/_capWindow;
-		
+
 		double slice = _capacity*1.5 / (20 * _capWindow);
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
@@ -151,9 +158,9 @@ public class ClickSlotAgent extends AbstractAgent {
 		}
 
 		_bidBundle = new BidBundle();
-		
+
 		_bidBundles = new ArrayList<BidBundle>();
-		
+
 
 		try {
 			output = new PrintStream(new File("ch.txt"));
@@ -163,28 +170,48 @@ public class ClickSlotAgent extends AbstractAgent {
 		}
 	}
 
+	protected void buildMaps(Set<AbstractModel> models) {
+		for(AbstractModel model : models) {
+			if(model instanceof AbstractUnitsSoldModel) {
+				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
+				_unitsSoldModel = unitsSold;
+			}
+			else if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				_bidToCPCModel = bidToCPC; 
+			}
+			else if(model instanceof AbstractConversionModel) {
+				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+				_conversionPrModel = convPrModel;
+			}
+		}
+	}
+
 	@Override
 	public Set<AbstractModel> initModels() {
+		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 		_bidToCPCModel = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
-
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		return null;
+		models.add(_bidToCPCModel);
+		models.add(_conversionPrModel);
+		models.add(_unitsSoldModel);
+		return models;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		
+
 		if( (salesReport != null) && (queryReport != null)) {
-			
+
 			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
 			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			
+
 			if (_bidBundles.size() > 1) 
 				_bidToCPCModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
 		}
-		
+
 
 	}
 
@@ -200,10 +227,10 @@ public class ClickSlotAgent extends AbstractAgent {
 		if (_day <= 6) prConv = _baseLineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
-		
+
 		double bid = _bidBundle.getBid(q);
 		double dailyLimit = bid*dailySalesLimit;
-		
+
 		return dailyLimit;
 	}
 
@@ -236,19 +263,19 @@ public class ClickSlotAgent extends AbstractAgent {
 	}
 
 	protected void adjustWantedSales(Query q) {
-			/* if we sold less than what we expected, but we got good position,
+		/* if we sold less than what we expected, but we got good position,
 			 then lower our expectation*/
-			if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
-				if (_queryReport.getPosition(q) <= 3) {
-					_wantedSales.put(q, _wantedSales.get(q) * .8);
-				}
-			} else {
-				/* if we sold more than what we expected, but we got bad
-				 position, then increase our expectation*/
-				if (!(_queryReport.getPosition(q) >= 4)) {
-					_wantedSales.put(q, _wantedSales.get(q) * 1.25);
-				}
+		if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
+			if (_queryReport.getPosition(q) <= 3) {
+				_wantedSales.put(q, _wantedSales.get(q) * .8);
 			}
+		} else {
+			/* if we sold more than what we expected, but we got bad
+				 position, then increase our expectation*/
+			if (!(_queryReport.getPosition(q) >= 4)) {
+				_wantedSales.put(q, _wantedSales.get(q) * 1.25);
+			}
+		}
 	}
 
 	protected void printInfo() {
@@ -288,7 +315,7 @@ public class ClickSlotAgent extends AbstractAgent {
 		output.flush();
 
 	}
-	
+
 	@Override
 	public String toString() {
 		return "ClickSlot";
