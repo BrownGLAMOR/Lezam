@@ -272,7 +272,7 @@ public class ClickSlotAgent extends AbstractAgent {
 		} else {
 			/* if we sold more than what we expected, but we got bad
 				 position, then increase our expectation*/
-			if (!(_queryReport.getPosition(q) >= 4)) {
+			if (!(_queryReport.getPosition(q) <= 4)) {
 				_wantedSales.put(q, _wantedSales.get(q) * 1.25);
 			}
 		}
