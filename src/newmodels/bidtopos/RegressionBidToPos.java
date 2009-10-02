@@ -593,10 +593,11 @@ public class RegressionBidToPos extends AbstractBidToPos {
 	}
 	
 	private boolean monotonicCheck(Query query) {
-		double lastPos = 0;
+		double lastPos = 6.0;
 		for(double bid = 0; bid < 3.0; bid += .1) {
 			double pos = getPrediction(query, bid);
 			if(!(pos <= lastPos)) {
+				System.out.println("lastPos: " + lastPos +"   pos: " + pos);
 				return false;
 			}
 		}
