@@ -98,9 +98,9 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .05;
+		double bidIncrement  = .01;
 		double bidMin = .04;
-		double bidMax = 2.5;
+		double bidMax = 3.0;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
@@ -344,7 +344,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 
 				for(Query q : _querySpace) {
-					System.out.println("Query: " + q);
+					debug("Query: " + q);
 					for(int i = 0; i < _bidList.size(); i++) {
 						double salesPrice = _salesPrices.get(q);
 						double bid = _bidList.get(i);
@@ -366,12 +366,12 @@ public class ILPBidAgent extends AbstractAgent {
 							convProb = 0.0;
 						}
 
-						System.out.println("\tBid: " + bid);
-						System.out.println("\tCPC: " + CPC);
-						System.out.println("\tNumImps: " + numImps);
-						System.out.println("\tNumClicks: " + numClicks);
-						System.out.println("\tClickPr: " + clickPr);
-						System.out.println("\tConv Prob: " + convProb + "\n\n");
+						debug("\tBid: " + bid);
+						debug("\tCPC: " + CPC);
+						debug("\tNumImps: " + numImps);
+						debug("\tNumClicks: " + numClicks);
+						debug("\tClickPr: " + clickPr);
+						debug("\tConv Prob: " + convProb + "\n\n");
 
 						int isID = _queryId.get(q);
 						double w = numClicks*convProb;				//weight = numClicks * convProv  [conversions]
@@ -426,7 +426,6 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){

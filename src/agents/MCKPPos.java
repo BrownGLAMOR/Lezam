@@ -97,7 +97,7 @@ public class MCKPPos extends AbstractAgent {
 
 	public MCKPPos() {
 		posList = new LinkedList<Double>();
-		double increment  = .2;
+		double increment  = .05;
 		double min = 1.0;
 		double max = _outOfAuction - .1;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -629,7 +629,6 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail

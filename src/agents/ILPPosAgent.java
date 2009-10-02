@@ -114,7 +114,7 @@ public class ILPPosAgent extends AbstractAgent {
 		}
 
 		_posList = new LinkedList<Double>();
-		double posIncrement  = .2;
+		double posIncrement  = .05;
 		double posMin = 1.0;
 		double posMax = _outOfAuction - .1;
 		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
@@ -480,7 +480,6 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){

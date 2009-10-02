@@ -24,6 +24,8 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.postobid.AbstractPosToBid;
+import newmodels.postobid.BidToPosInverter;
 import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postocpc.EnsemblePosToCPC;
 import newmodels.postocpc.RegressionPosToCPC;
@@ -72,6 +74,139 @@ public class PredictionEvaluator {
 			filenames.add(baseFile + i + ".slg");
 		}
 		return filenames;
+	}
+	
+	public void bidToPosToClickPrPredictionChallenge(AbstractBidToPos bidToPosBaseModel, AbstractPosToPrClick baseModel) throws IOException, ParseException {
+		/*
+		 * All these maps they are like this: <fileName<agentName,error>>
+		 */
+		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		ArrayList<String> filenames = getGameStrings();
+		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
+			String filename = filenames.get(fileIdx);
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			/*
+			 * One map for each advertiser
+			 */
+			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
+			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
+
+			//Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+
+			for(int agent = 0; agent < agents.length; agent++) {
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
+				AbstractPosToPrClick model = (AbstractPosToPrClick) baseModel.getCopy();
+				AbstractBidToPos bidToPosModel = (AbstractBidToPos) bidToPosBaseModel.getCopy();
+				model.setSpecialty(advInfo.getManufacturerSpecialty(),advInfo.getComponentSpecialty());
+
+				double ourTotError = 0;
+				double ourTotActual = 0;
+				int ourTotErrorCounter = 0;
+
+				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
+				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
+				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+
+				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
+				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				//				System.out.println(agents[agent]);
+				for(int i = 0; i < 57; i++) {
+					SalesReport salesReport = ourSalesReports.get(i);
+					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
+
+					model.updateModel(queryReport, salesReport, bidBundle);
+					if(i >= 5) {
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double bid = otherBidBundle.getBid(q);
+							if(bid != 0) {
+								double pos = bidToPosModel.getPrediction(q, bid);
+								double error = model.getPrediction(q, pos, otherBidBundle.getAd(q));
+								if(Double.isNaN(error)) {
+									error = 0.0;
+								}
+								double clicks = otherQueryReport.getClicks(q);
+								double imps = otherQueryReport.getImpressions(q);
+								double clickPr = 0;
+								if(!(clicks == 0 || imps == 0)) {
+									clickPr = clicks/imps;
+								}
+								else {
+									if(_ignoreNan ) {
+										continue;
+									}
+								}
+								error -= clickPr;
+								error = error*error;
+								ourTotActual += clickPr;
+								ourTotError += error;
+								ourTotErrorCounter++;
+							}
+						}
+					}
+				}
+				ourTotErrorMap.put(agents[agent],ourTotError);
+				ourTotActualMap.put(agents[agent],ourTotActual);
+				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+
+			}
+
+			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
+			ourTotActualMegaMap.put(filename,ourTotActualMap);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
+		//		System.out.println("Model: " + baseModel);
+		for(String file : filenames) {
+			//			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				//				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
+			}
+		}
+		//		System.out.println("Data Points: " + dataPointCounter);
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
 	public void posToClickPrPredictionChallenge(AbstractPosToPrClick baseModel) throws IOException, ParseException {
@@ -408,6 +543,148 @@ public class PredictionEvaluator {
 							double bid = otherBidBundle.getBid(q);
 							if(bid != 0) {
 								double error = model.getPrediction(q, otherBidBundle.getBid(q));
+								if(Double.isNaN(error)) {
+									error = bid;
+									continue;
+								}
+								double CPC = otherQueryReport.getCPC(q);
+								if(Double.isNaN(CPC)) {
+									if(_ignoreNan ) {
+										continue;
+									}
+									CPC = 0.0;
+								}
+								error -= CPC;
+								error = error*error;
+								ourTotActual += CPC;
+								ourTotError += error;
+								ourTotErrorCounter++;
+							}
+						}
+					}
+				}
+				ourTotErrorMap.put(agents[agent],ourTotError);
+				ourTotActualMap.put(agents[agent],ourTotActual);
+				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+
+			}
+
+			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
+			ourTotActualMegaMap.put(filename,ourTotActualMap);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
+		//		System.out.println("Model: " + baseModel);
+		for(String file : filenames) {
+			//			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				//				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
+			}
+		}
+		//		System.out.println("Data Points: " + dataPointCounter);
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+	}
+	
+	
+	public void posToBidToCPCPredictionChallenge(AbstractBidToPos bidToPosBaseModel, AbstractBidToCPC baseModel) throws IOException, ParseException {
+		/*
+		 * All these maps they are like this: <fileName<agentName,error>>
+		 */
+		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		ArrayList<String> filenames = getGameStrings();
+		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
+			String filename = filenames.get(fileIdx);
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			/*
+			 * One map for each advertiser
+			 */
+			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
+			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
+
+			//Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+
+			for(int agent = 0; agent < agents.length; agent++) {
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
+				AbstractBidToPos bidToPosModel = (AbstractBidToPos) bidToPosBaseModel.getCopy();
+				AbstractBidToCPC model = (AbstractBidToCPC) baseModel.getCopy();
+				AbstractPosToBid posToBid = null;
+				try {
+					posToBid = new BidToPosInverter(new RConnection(), querySpace, bidToPosModel, .05, 0, 3.0);
+				} catch (RserveException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				double ourTotError = 0;
+				double ourTotActual = 0;
+				int ourTotErrorCounter = 0;
+
+				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
+				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
+				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+
+				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
+				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				//				System.out.println(agents[agent]);
+				for(int i = 0; i < 57; i++) {
+					SalesReport salesReport = ourSalesReports.get(i);
+					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
+
+					bidToPosModel.updateModel(queryReport, salesReport, bidBundle);
+					model.updateModel(queryReport, salesReport, bidBundle);
+
+					if(i >= 5) {
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double pos = otherQueryReport.getPosition(q);
+							double bid = posToBid.getPrediction(q, pos);
+							if(Double.isNaN(bid)) {
+								bid = 0;
+							}
+							if(bid != 0) {
+								double error = model.getPrediction(q, bid);
 								if(Double.isNaN(error)) {
 									error = bid;
 									continue;
@@ -840,18 +1117,23 @@ public class PredictionEvaluator {
 //			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,50,_targModel,true,true));
 //			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,50,_targModel,false,true));
 			
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,20,false,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,false,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,false,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,false,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,false,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,true,true));
-			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,false,true));			
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,20,false,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,false,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,false,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,false,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,false,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,true,true));
+//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,false,true));			
+			
+//			evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true), new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
+
+			evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
+
 			
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
 

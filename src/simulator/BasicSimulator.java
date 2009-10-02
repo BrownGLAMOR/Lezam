@@ -209,6 +209,9 @@ public class BasicSimulator {
 		//		ArrayList<Double> convPrSE = new ArrayList<Double>();
 		//		ArrayList<Double> convPrActual = new ArrayList<Double>();
 
+		double totalOverCapPerc = 0.0;
+		double totalOverCapAbs = 0.0;
+
 		for(int day = firstDay; day < 59; day++) {
 
 			if(day >= 2) {
@@ -506,9 +509,16 @@ public class BasicSimulator {
 				Integer[] newSales = new Integer[sales.length];
 
 				int totConversions = 0;
+
 				for(Query query : _querySpace) {
-					totConversions += maps.get(_agents[i]).getSalesReport().getConversions(query);
+					if(i == _ourAdvIdx) {
+						totConversions += maps.get(_agents[i]).getSalesReport().getConversions(query);
+					}
+					else {
+						totConversions += _status.getSalesReports().get(_agents[i]).get(day).getConversions(query);
+					}
 				}
+
 				newSales[0] = totConversions;
 
 				for(int j = 0; j < sales.length-1; j++) {
@@ -529,12 +539,16 @@ public class BasicSimulator {
 			 * TESTING
 			 */
 			LinkedList<Reports> reports = reportsListMap.get(_agents[_ourAdvIdx]);
-			System.out.println("Agent: "  + agent);
-			double totalRevenue = 0;
-			double totalCost = 0;
-			double totalImp = 0;
-			double totalClick = 0;
-			double totalConv = 0;
+			double totalRevenue = 0.0;
+			double totalCost = 0.0;
+			double totalImp = 0.0;
+			double totalClick = 0.0;
+			double totalConv = 0.0;
+			double totalNoneConv = 0.0;
+			double totalCompConv = 0.0;
+			double totalManConv = 0.0;
+			double totalPerfConv = 0.0;
+			double totalPos = 0.0;
 			for(Reports report : reports) {
 				QueryReport queryReport = report.getQueryReport();
 				SalesReport salesReport = report.getSalesReport();
@@ -544,17 +558,55 @@ public class BasicSimulator {
 					totalImp += queryReport.getImpressions(query);
 					totalClick += queryReport.getClicks(query);
 					totalConv += salesReport.getConversions(query);
+					if(Double.isNaN(queryReport.getPosition(query))) {
+						totalPos += 6.0;
+					}
+					else {
+						totalPos += queryReport.getPosition(query);
+					}
+					if(_ourManSpecialty.equals(query.getManufacturer())) {
+						totalManConv += salesReport.getConversions(query);
+					}
+					if(_ourCompSpecialty.equals(query.getComponent())) {
+						totalCompConv += salesReport.getConversions(query);
+					}
+					if(_ourManSpecialty.equals(query.getManufacturer()) && _ourCompSpecialty.equals(query.getComponent())) {
+						totalPerfConv += salesReport.getConversions(query);
+					}
+					if(!(_ourManSpecialty.equals(query.getManufacturer()) || _ourCompSpecialty.equals(query.getComponent()))) {
+						totalNoneConv += salesReport.getConversions(query);
+					}
 				}
 			}
-			System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/reports.size()));
-			System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/reports.size()));
-			System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalCost/reports.size()));
-			System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/reports.size()));
-			System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/reports.size()));
-			System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/reports.size()));
-			System.out.println("\tCPC: " + (totalCost/totalClick));
-			System.out.println("\tClickPr: " + (totalClick/totalImp));
-			System.out.println("\tConvPr: " + (totalConv/totalClick));
+
+			double totSales = 0.0;
+			Integer[] salesOverWindow = _salesOverWindow.get(_agents[_ourAdvIdx]);
+			for(int i = 0; i < salesOverWindow.length; i++) {
+				totSales += salesOverWindow[i];
+			}
+			double capacity = _capacities.get(_agents[_ourAdvIdx]);
+
+			if(capacity != 0) {
+				totalOverCapPerc += (totSales/capacity);
+			}
+			if(totSales - capacity > 0) {
+				totalOverCapAbs += (totSales - capacity);
+			}
+
+			String output = agent + ", ";
+			output += totalRevenue + ", ";
+			output += totalCost + ", ";
+			output += totalImp + ", ";
+			output += totalClick + ", ";
+			output += totalConv + ", ";
+			output += totalNoneConv/totalConv + ", ";
+			output += totalManConv/totalConv + ", ";
+			output += totalCompConv/totalConv + ", ";
+			output += totalPerfConv/totalConv + ", ";
+			output += totalPos/(reports.size()*16) + ", ";
+			output += totalOverCapPerc/(reports.size()) + ", ";
+			output += totalOverCapAbs/(reports.size()) + ", ";
+			System.out.println(output);
 		}
 		return reportsListMap;
 	}
@@ -1288,7 +1340,7 @@ public class BasicSimulator {
 	}
 
 
-	public void runSimulations() throws IOException, ParseException {
+	public void runSimulations(int min, int max) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1299,13 +1351,10 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
-		int min = 1430;
-		int max = 1435;
-
-//		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
+		//		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max);
@@ -1314,7 +1363,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 4;
+			int advId = 1;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
@@ -1332,51 +1381,51 @@ public class BasicSimulator {
 				_querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 
-//			HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String,LinkedList<Reports>>();
-//			for(int i = 0; i < agents.length; i++) {
-//				LinkedList<Reports> reportsList = new LinkedList<Reports>();
-//				reportsListMap.put(agents[i], reportsList);
-//			}
-
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new SlotAgent(), advId);
+			//			HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String,LinkedList<Reports>>();
+			//			for(int i = 0; i < agents.length; i++) {
+			//				LinkedList<Reports> reportsList = new LinkedList<Reports>();
+			//				reportsListMap.put(agents[i], reportsList);
+			//			}
+			System.out.println(filename);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitS(), advId);
 			//TODO
-//			for(int j = 0; j < agents.length; j++) {
-//				reportsListMap.put(agents[j],maps.get(agents[j]));
-//			}
-//			reportsListMegaMap.put(filename, reportsListMap);
+			//			for(int j = 0; j < agents.length; j++) {
+			//				reportsListMap.put(agents[j],maps.get(agents[j]));
+			//			}
+			//			reportsListMegaMap.put(filename, reportsListMap);
 		}
 
-//		double totalRevenue = 0;
-//		double totalCost = 0;
-//		double totalImp = 0;
-//		double totalClick = 0;
-//		double totalConv = 0;
-//		double totDays = 0;
-//		for(String filename : reportsListMegaMap.keySet()) {
-//			HashMap<String, LinkedList<Reports>> map = reportsListMegaMap.get(filename);
-//			LinkedList<Reports> reports = map.get(_agents[_ourAdvIdx]);
-//			totDays = reportsListMegaMap.size() * reports.size();
-//			for(Reports report : reports) {
-//				QueryReport queryReport = report.getQueryReport();
-//				SalesReport salesReport = report.getSalesReport();
-//				for(Query query : _querySpace) {
-//					totalRevenue += salesReport.getRevenue(query);
-//					totalCost += queryReport.getCost(query);
-//					totalImp += queryReport.getImpressions(query);
-//					totalClick += queryReport.getClicks(query);
-//					totalConv += salesReport.getConversions(query);
-//				}
-//			}
-//		}
-//		System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/totDays));
-//		System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/totDays));
-//		System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/totDays));
-//		System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/totDays));
-//		System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/totDays));
-//		System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/totDays));
-//		System.out.println("\tCPC: " + (totalCost/totalClick));
-//		System.out.println("\tClickPr: " + (totalClick/totalImp));
-//		System.out.println("\tConvPr: " + (totalConv/totalClick));
+		//		double totalRevenue = 0;
+		//		double totalCost = 0;
+		//		double totalImp = 0;
+		//		double totalClick = 0;
+		//		double totalConv = 0;
+		//		double totDays = 0;
+		//		for(String filename : reportsListMegaMap.keySet()) {
+		//			HashMap<String, LinkedList<Reports>> map = reportsListMegaMap.get(filename);
+		//			LinkedList<Reports> reports = map.get(_agents[_ourAdvIdx]);
+		//			totDays = reportsListMegaMap.size() * reports.size();
+		//			for(Reports report : reports) {
+		//				QueryReport queryReport = report.getQueryReport();
+		//				SalesReport salesReport = report.getSalesReport();
+		//				for(Query query : _querySpace) {
+		//					totalRevenue += salesReport.getRevenue(query);
+		//					totalCost += queryReport.getCost(query);
+		//					totalImp += queryReport.getImpressions(query);
+		//					totalClick += queryReport.getClicks(query);
+		//					totalConv += salesReport.getConversions(query);
+		//				}
+		//			}
+		//		}
+		//		System.out.println("\tTotal/Avg Profit: " + (totalRevenue-totalCost) + ", " +  ((totalRevenue-totalCost)/totDays));
+		//		System.out.println("\tTotal/Avg Revenue: " + totalRevenue + ", " +  (totalRevenue/totDays));
+		//		System.out.println("\tTotal/Avg Cost: " + totalCost + ", " +  (totalRevenue/totDays));
+		//		System.out.println("\tTotal/Avg Impressions: " + totalImp + ", " +  (totalImp/totDays));
+		//		System.out.println("\tTotal/Avg Clicks: " + totalClick + ", " +  (totalClick/totDays));
+		//		System.out.println("\tTotal/Avg Conversions: " + totalConv + ", " +  (totalConv/totDays));
+		//		System.out.println("\tCPC: " + (totalCost/totalClick));
+		//		System.out.println("\tClickPr: " + (totalClick/totalImp));
+		//		System.out.println("\tConvPr: " + (totalConv/totalClick));
 	}
 
 
@@ -1404,8 +1453,8 @@ public class BasicSimulator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
-		int min = 1430;
-		int max = 1435;
+		int min = 1425;
+		int max = 1440;
 
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max + "  Num Sims: " + numSims);
@@ -1561,7 +1610,10 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-		sim.runSimulations();
+//		int min = Integer.parseInt(args[0]);
+//		int max = Integer.parseInt(args[1]);
+
+		sim.runSimulations(1460,1465);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

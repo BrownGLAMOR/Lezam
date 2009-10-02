@@ -72,7 +72,7 @@ public class BidToPosInverter extends AbstractPosToBid {
 		}
 
 		double bid = coeff[0] + pos * coeff[1];
-
+		
 		if(bid < _min) {
 			return _min;
 		}

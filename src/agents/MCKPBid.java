@@ -81,9 +81,9 @@ public class MCKPBid extends AbstractAgent {
 	public MCKPBid() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .05;
+		double increment  = .01;
 		double min = .04;
-		double max = 2.5;
+		double max = 3.0;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
@@ -554,7 +554,6 @@ public class MCKPBid extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
