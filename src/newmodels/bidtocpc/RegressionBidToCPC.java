@@ -394,7 +394,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 
 					if(_coefficients.get(query) != null) {
 						if(!monotonicCheck(query)) {
-							System.out.println(toString() + " FAILED MONOTONIC CHECK");
 							_coefficients.put(query, null);
 						}
 					}
@@ -606,7 +605,6 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 				Query query = _querySpace.iterator().next();
 				if(_coefficients.get(query) != null) {
 					if(!monotonicCheck(query)) {
-						System.out.println(toString() + " FAILED MONOTONIC CHECK");
 						for(Query q : _querySpace) {
 							_coefficients.put(q, null);
 						}

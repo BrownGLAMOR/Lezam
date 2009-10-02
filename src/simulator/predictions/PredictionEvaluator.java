@@ -1571,7 +1571,7 @@ public class PredictionEvaluator {
 						 */
 						for(int perQuery = 0; perQuery < 2; perQuery++) {
 							for(int IDVar = 1; IDVar < 5; IDVar++) {
-								for(int numPrevDays = 15; numPrevDays <= 60; numPrevDays += 15) {
+								for(int numPrevDays = 20; numPrevDays <= 60; numPrevDays += 20) {
 									for(int weighted = 0; weighted < 2; weighted++) {
 										for(double mWeight = 0.74; mWeight < 1.0; mWeight += .075) {
 											for(int robust = 0; robust < 1; robust++) {
