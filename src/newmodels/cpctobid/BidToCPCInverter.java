@@ -1,4 +1,4 @@
-package newmodels.postobid;
+package newmodels.cpctobid;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,9 +15,10 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.AbstractModel;
+import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 
-public class BidToPosInverter extends AbstractPosToBid {
+public class BidToCPCInverter extends AbstractCPCToBid {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
@@ -25,9 +26,9 @@ public class BidToPosInverter extends AbstractPosToBid {
 	private double _increment;
 	private double _min;
 	private double _max;
-	private AbstractBidToPos _model;
+	private AbstractBidToCPC _model;
 
-	public BidToPosInverter(RConnection rConnection, Set<Query> querySpace, AbstractBidToPos model, double increment, double min, double max) {
+	public BidToCPCInverter(RConnection rConnection, Set<Query> querySpace, AbstractBidToCPC model, double increment, double min, double max) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
 		_model = model;
@@ -87,14 +88,14 @@ public class BidToPosInverter extends AbstractPosToBid {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		for(Query query : _querySpace) {
 			double[] bids = getIncrementedArray();
-			double[] positions = new double[bids.length];
+			double[] CPCs = new double[bids.length];
 			for(int i = 0; i < bids.length; i++) {
-				positions[i] = _model.getPrediction(query, bids[i]);
+				CPCs[i] = _model.getPrediction(query, bids[i]);
 			}
 			try {
 				_rConnection.assign("bids", bids);
-				_rConnection.assign("positions", positions);
-				String Rmodel = "model = lm(bids ~ positions)";
+				_rConnection.assign("CPCs", CPCs);
+				String Rmodel = "model = lm(bids ~ CPCs)";
 				_rConnection.voidEval(Rmodel);
 				double[] coefficients = _rConnection.eval("coefficients(model)").asDoubles();
 				_coefficients.put(query, coefficients);
@@ -113,12 +114,12 @@ public class BidToPosInverter extends AbstractPosToBid {
 	}
 
 	public String toString() {
-		return "BidToPosInverter(model: " + _model + ",increment: "  + _increment + ", min: " + _min + ", max: " + _max + " )";
+		return "BidToCPCInverter(model: " + _model + ",increment: "  + _increment + ", min: " + _min + ", max: " + _max + " )";
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BidToPosInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
+		return new BidToCPCInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
 	}
 
 }
