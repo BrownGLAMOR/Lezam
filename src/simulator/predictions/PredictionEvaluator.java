@@ -60,14 +60,14 @@ public class PredictionEvaluator {
 		//		int max = 455;
 		//		int max = 496;
 
-		//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		int min = 1430;
-		//		int max = 1431;
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1430;
+		int max = 1431;
 		//				int max = 9;
 
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
-		int min = 1435;
-		int max = 1451;
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		//		int min = 1435;
+		//		int max = 1451;
 		//		int max = 1464;
 
 		ArrayList<String> filenames = new ArrayList<String>();
@@ -1403,20 +1403,20 @@ public class PredictionEvaluator {
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,true,true));
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,false,true));			
 
-			//			evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true), new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
+//						evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 
-			//			evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
+						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
 
 
-			//			evaluator.posToBidPredictionChallenge(new RegressionBidToPos(_rConnection, _querySpace, true, 1, 60, true, .815, false, false, false, false));
+			//			evaluator.posToBidPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true));
 			//			double stop = System.currentTimeMillis();
 			//			double elapsed = stop - start;
 			//			System.out.println("This took " + (elapsed / 1000) + " seconds");
-			//			evaluator.posToCPCToBidPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, true, 1, 60, true, .89, false, false, false, false,false,false), new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 15, true, .74, false, false, true, false, false, false));
+//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,true), new EnsemblePosToCPC(_querySpace,10,20,true,true));
 
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
 
-			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
+			//			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
 			//			evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));
 			//			evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
 			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));

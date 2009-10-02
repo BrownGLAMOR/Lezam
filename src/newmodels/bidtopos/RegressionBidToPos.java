@@ -595,7 +595,6 @@ public class RegressionBidToPos extends AbstractBidToPos {
 		for(double bid = 0; bid < 3.0; bid += .1) {
 			double pos = getPrediction(query, bid);
 			if(!(pos <= lastPos)) {
-				System.out.println("lastPos: " + lastPos +"   pos: " + pos);
 				return false;
 			}
 			lastPos = pos;
