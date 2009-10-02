@@ -397,6 +397,13 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 						}
 						_coefficients.put(query, null);
 					}
+					
+					if(_coefficients.get(query) != null) {
+						if(!monotonicCheck(query)) {
+							System.out.println(toString() + " FAILED MONOTONIC CHECK");
+							_coefficients.put(query, null);
+						}
+					}
 
 					double stop = System.currentTimeMillis();
 					double elapsed = stop - start;
@@ -618,6 +625,16 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 					}
 					return false;
 				}
+				
+				Query query = _querySpace.iterator().next();
+				if(_coefficients.get(query) != null) {
+					if(!monotonicCheck(query)) {
+						System.out.println(toString() + " FAILED MONOTONIC CHECK");
+						for(Query q : _querySpace) {
+							_coefficients.put(q, null);
+						}
+					}
+				}
 
 				double stop = System.currentTimeMillis();
 				double elapsed = stop - start;
@@ -631,6 +648,17 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 		}
 	}
 
+	private boolean monotonicCheck(Query query) {
+		double lastPrClick = 0;
+		for(double bid = 0; bid < 3.0; bid += .1) {
+			double prClick = getPrediction(query, bid, new Ad());
+			if(!(prClick >= lastPrClick)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	@Override
 	public AbstractModel getCopy() {
 		return new RegressionBidToPrClick(c, _querySpace, _perQuery, _IDVar, _numPrevDays, _targModel, _weighted, _mWeight, _robust, _queryIndicators, _queryTypeIndicators, _powers);

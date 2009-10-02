@@ -294,6 +294,13 @@ public class SpatialBidToPos extends AbstractBidToPos {
 						_coefficients.put(query, null);
 						//						e.printStackTrace();
 					}
+					
+					if(_coefficients.get(query) != null) {
+						if(!monotonicCheck(query)) {
+							System.out.println(toString() + " FAILED MONOTONIC CHECK");
+							_coefficients.put(query, null);
+						}
+					}
 				}
 				return true;
 			}
@@ -359,6 +366,18 @@ public class SpatialBidToPos extends AbstractBidToPos {
 					for(Query query : _querySpace) {
 						_coefficients.put(query, coeff);
 					}
+					
+					Query query = _querySpace.iterator().next();
+					if(_coefficients.get(query) != null) {
+						if(!monotonicCheck(query)) {
+							System.out.println(toString() + " FAILED MONOTONIC CHECK");
+							for(Query q : _querySpace) {
+								_coefficients.put(q, null);
+							}
+						}
+					}
+					
+					
 					return true;
 				} catch (REngineException e) {
 					for(Query query : _querySpace) {
@@ -378,6 +397,17 @@ public class SpatialBidToPos extends AbstractBidToPos {
 		else {
 			return false;
 		}
+	}
+	
+	private boolean monotonicCheck(Query query) {
+		double lastPos = 0;
+		for(double bid = 0; bid < 3.0; bid += .1) {
+			double pos = getPrediction(query, bid);
+			if(!(pos <= lastPos)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override

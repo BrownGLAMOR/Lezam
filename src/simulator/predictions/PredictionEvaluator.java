@@ -684,10 +684,11 @@ public class PredictionEvaluator {
 							double CPC = posToCPCModel.getPrediction(q, pos);
 							double error = CPCToBid.getPrediction(q, CPC);
 							if(Double.isNaN(error)) {
-								error = 0;
+								error = 0.0;
 							}
-							if(error != 0) {
-								double bid = otherBidBundle.getBid(q);
+							double bid = otherBidBundle.getBid(q);
+							//							System.out.println("Pos: " + pos + "  CPC: " + CPC + "  BidEst: " + error + "   bid: " + bid);
+							if(bid != 0) {
 								error -= bid;
 								error = error*error;
 								ourTotActual += bid;
@@ -710,6 +711,7 @@ public class PredictionEvaluator {
 		ArrayList<Double> RMSEList = new ArrayList<Double>();
 		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
+		int dataPointCounter = 0;
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
 			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
@@ -720,6 +722,7 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
+				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
@@ -728,7 +731,7 @@ public class PredictionEvaluator {
 				actualList.add(actual);
 			}
 		}
-		//		System.out.println("Data Points: " + dataPointCounter);
+		System.out.println("Data Points: " + dataPointCounter);
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
@@ -1220,10 +1223,11 @@ public class PredictionEvaluator {
 							double pos = otherQueryReport.getPosition(q);
 							double error = posToBid.getPrediction(q, pos);
 							if(Double.isNaN(error)) {
-								error = 0;
+								error = 0.0;
 							}
-							if(error != 0) {
-								double bid = otherBidBundle.getBid(q);
+							double bid = otherBidBundle.getBid(q);
+							//							System.out.println(q + "  Pos: " + pos + "  BidEst: " + error + "  bid: " + bid);
+							if(bid != 0) {
 								error -= bid;
 								error = error*error;
 								ourTotActual += bid;
@@ -1246,6 +1250,7 @@ public class PredictionEvaluator {
 		ArrayList<Double> RMSEList = new ArrayList<Double>();
 		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
+		int dataPointCounter = 0;
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
 			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
@@ -1256,6 +1261,7 @@ public class PredictionEvaluator {
 				double totError = totErrorMap.get(agent);
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
+				dataPointCounter += totErrorCounter;
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
 				double MSE = (totError/totErrorCounter);
 				double RMSE = Math.sqrt(MSE);
@@ -1264,7 +1270,7 @@ public class PredictionEvaluator {
 				actualList.add(actual);
 			}
 		}
-		//		System.out.println("Data Points: " + dataPointCounter);
+		System.out.println("Data Points: " + dataPointCounter);
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
@@ -1402,8 +1408,11 @@ public class PredictionEvaluator {
 			//			evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
 
 
-			evaluator.posToBidPredictionChallenge(new RegressionBidToPos(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false));
-			evaluator.posToCPCToBidPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false), new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));
+			evaluator.posToBidPredictionChallenge(new RegressionBidToPos(_rConnection, _querySpace, true, 1, 60, true, .815, false, false, false, false));
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			System.out.println("This took " + (elapsed / 1000) + " seconds");
+			evaluator.posToCPCToBidPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, true, 1, 60, true, .89, false, false, false, false,false,false), new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 15, true, .74, false, false, true, false, false, false));
 
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
 
@@ -1603,8 +1612,8 @@ public class PredictionEvaluator {
 			//				start = System.currentTimeMillis();
 			//			}
 
-			double stop = System.currentTimeMillis();
-			double elapsed = stop - start;
+			stop = System.currentTimeMillis();
+			elapsed = stop - start;
 			System.out.println("This took " + (elapsed / 1000) + " seconds");
 
 		} catch (IOException e) {

@@ -384,14 +384,21 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 						}
 					}
 					catch (REngineException e) {
-						e.printStackTrace();
+//						e.printStackTrace();
 						_coefficients.put(query, null);
 					}
 					catch (REXPMismatchException e) {
-						e.printStackTrace();
+//						e.printStackTrace();
 						_coefficients.put(query, null);
 					}
 
+					if(_coefficients.get(query) != null) {
+						if(!monotonicCheck(query)) {
+							System.out.println(toString() + " FAILED MONOTONIC CHECK");
+							_coefficients.put(query, null);
+						}
+					}
+					
 					double stop = System.currentTimeMillis();
 					double elapsed = stop - start;
 					//			System.out.println("\n\n\n\n\nThis took " + (elapsed / 1000) + " seconds\n\n\n\n\n");
@@ -595,6 +602,16 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 					}
 					return false;
 				}
+				
+				Query query = _querySpace.iterator().next();
+				if(_coefficients.get(query) != null) {
+					if(!monotonicCheck(query)) {
+						System.out.println(toString() + " FAILED MONOTONIC CHECK");
+						for(Query q : _querySpace) {
+							_coefficients.put(q, null);
+						}
+					}
+				}
 
 				double stop = System.currentTimeMillis();
 				double elapsed = stop - start;
@@ -606,6 +623,17 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 		else {
 			return false;
 		}
+	}
+
+	private boolean monotonicCheck(Query query) {
+		double lastCPC = 0;
+		for(double bid = 0; bid < 3.0; bid += .1) {
+			double CPC = getPrediction(query, bid);
+			if(!(CPC >= lastCPC)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Override
