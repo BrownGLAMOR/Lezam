@@ -1387,7 +1387,7 @@ public class BasicSimulator {
 			//				reportsListMap.put(agents[i], reportsList);
 			//			}
 			System.out.println(filename);
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitS(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPPos(), advId);
 			//TODO
 			//			for(int j = 0; j < agents.length; j++) {
 			//				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1610,10 +1610,10 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-//		int min = Integer.parseInt(args[0]);
-//		int max = Integer.parseInt(args[1]);
+		//		int min = Integer.parseInt(args[0]);
+		//		int max = Integer.parseInt(args[1]);
 
-		sim.runSimulations(1460,1465);
+		sim.runSimulations(1460,1461);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
