@@ -406,6 +406,7 @@ public class SpatialBidToPos extends AbstractBidToPos {
 			if(!(pos <= lastPos)) {
 				return false;
 			}
+			lastPos = pos;
 		}
 		return true;
 	}

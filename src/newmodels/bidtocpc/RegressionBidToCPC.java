@@ -632,6 +632,7 @@ public class RegressionBidToCPC extends AbstractBidToCPC {
 			if(!(CPC >= lastCPC)) {
 				return false;
 			}
+			lastCPC = CPC;
 		}
 		return true;
 	}

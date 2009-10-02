@@ -655,6 +655,7 @@ public class RegressionBidToPrClick extends AbstractBidToPrClick {
 			if(!(prClick >= lastPrClick)) {
 				return false;
 			}
+			lastPrClick = prClick;
 		}
 		return true;
 	}

@@ -660,6 +660,7 @@ public class RegressionPosToPrClick extends AbstractPosToPrClick {
 			if(!(prClick >= lastPrClick)) {
 				return false;
 			}
+			lastPrClick = prClick;
 		}
 		return true;
 	}

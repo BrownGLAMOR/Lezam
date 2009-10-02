@@ -600,6 +600,7 @@ public class RegressionBidToPos extends AbstractBidToPos {
 				System.out.println("lastPos: " + lastPos +"   pos: " + pos);
 				return false;
 			}
+			lastPos = pos;
 		}
 		return true;
 	}

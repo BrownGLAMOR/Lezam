@@ -616,6 +616,7 @@ public class RegressionPosToCPC extends AbstractPosToCPC {
 			if(!(CPC >= lastCPC)) {
 				return false;
 			}
+			lastCPC = CPC;
 		}
 		return true;
 	}
