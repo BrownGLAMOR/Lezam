@@ -98,7 +98,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .01;
+		double bidIncrement  = .03;
 		double bidMin = .04;
 		double bidMax = 3.0;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);

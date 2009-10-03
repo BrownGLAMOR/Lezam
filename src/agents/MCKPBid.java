@@ -81,7 +81,7 @@ public class MCKPBid extends AbstractAgent {
 	public MCKPBid() {
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .01;
+		double increment  = .03;
 		double min = .04;
 		double max = 3.0;
 		int tot = (int) Math.ceil((max-min) / increment);

@@ -97,7 +97,7 @@ public class MCKPPos extends AbstractAgent {
 
 	public MCKPPos() {
 		posList = new LinkedList<Double>();
-		double increment  = .05;
+		double increment  = .25;
 		double min = 1.0;
 		double max = _outOfAuction - .1;
 		int tot = (int) Math.ceil((max-min) / increment);

@@ -1351,8 +1351,8 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		//		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 
@@ -1610,10 +1610,10 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-		//		int min = Integer.parseInt(args[0]);
-		//		int max = Integer.parseInt(args[1]);
+		int min = Integer.parseInt(args[0]);
+		int max = Integer.parseInt(args[1]);
 
-		sim.runSimulations(1460,1461);
+		sim.runSimulations(min,max);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

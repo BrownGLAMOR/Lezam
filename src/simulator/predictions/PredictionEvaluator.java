@@ -61,8 +61,8 @@ public class PredictionEvaluator {
 		//		int max = 496;
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1430;
-		int max = 1431;
+		int min = 1435;
+		int max = 1451;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -1338,74 +1338,34 @@ public class PredictionEvaluator {
 			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
 
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,false,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,false,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,50,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,50,false,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,false,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,false,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,50,true,true));
-			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,50,false,true));
+//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,true));
+//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
+//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
+//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
 
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,false,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,50,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,50,false,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,false,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,false,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,50,true,true));
-			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,50,false,true));
+//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
+//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,true,true));
+//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,true,true));
 
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel,false,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,50,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,50,_targModel,false,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,false,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,false,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,50,_targModel,true,true));
-			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,50,_targModel,false,true));
+//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
+//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel,true,true));
+//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,true,true));
+//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
 
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel,false,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,50,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,50,_targModel,false,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,20,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,20,_targModel,false,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,false,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,50,_targModel,true,true));
-			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,50,_targModel,false,true));
+//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
+//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,20,_targModel,true,true));
+//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,true,true));
 
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)), 10, 20,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,20,false,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,30,false,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),10,50,false,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,20,false,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,30,false,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,true,true));
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, new AvgPosToPosDist(40,1,new BasicPosToPrClick(1)),5,50,false,true));			
+						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,true));
+						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,30,true,true));
+						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,20,true,true));
+						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,30,true,true));
 
 //						evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 
-						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
+//						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
 
 
 			//			evaluator.posToBidPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true));

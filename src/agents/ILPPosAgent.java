@@ -114,7 +114,7 @@ public class ILPPosAgent extends AbstractAgent {
 		}
 
 		_posList = new LinkedList<Double>();
-		double posIncrement  = .05;
+		double posIncrement  = .25;
 		double posMin = 1.0;
 		double posMax = _outOfAuction - .1;
 		int tot = (int) Math.ceil((posMax-posMin) / posIncrement);
