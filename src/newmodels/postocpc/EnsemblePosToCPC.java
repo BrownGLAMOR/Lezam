@@ -379,7 +379,7 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		}
 		prediction /= totWeight;
 		if(Double.isNaN(prediction) || prediction < 0) {
-			return pos;
+			return 0.0;
 		}
 		//		System.out.println("Overall Prediction: " + prediction);
 		return prediction;

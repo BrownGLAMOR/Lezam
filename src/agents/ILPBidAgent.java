@@ -81,7 +81,6 @@ public class ILPBidAgent extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> _bidList;
 	private LinkedList<Integer> _capList;
-	private int _capacityInc = 10;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
@@ -100,16 +99,16 @@ public class ILPBidAgent extends AbstractAgent {
 		//		double increment = .25;
 		double bidIncrement  = .03;
 		double bidMin = .04;
-		double bidMax = 3.0;
+		double bidMax = 2.5;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
 
 		_capList = new LinkedList<Integer>();
-		int increment = 5;
-		int min = 5;
-		int max = 75;
+		int increment = 10;
+		int min = 10;
+		int max = 200;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}

@@ -97,7 +97,6 @@ public class ILPPosAgent extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> _posList;
 	private LinkedList<Integer> _capList;
-	private int _capacityInc = 10;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
@@ -123,9 +122,9 @@ public class ILPPosAgent extends AbstractAgent {
 		}
 
 		_capList = new LinkedList<Integer>();
-		int increment = 5;
-		int min = 5;
-		int max = 75;
+		int increment = 10;
+		int min = 10;
+		int max = 200;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}

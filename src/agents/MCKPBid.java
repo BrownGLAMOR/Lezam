@@ -83,7 +83,7 @@ public class MCKPBid extends AbstractAgent {
 		//		double increment = .25;
 		double increment  = .03;
 		double min = .04;
-		double max = 3.0;
+		double max = 2.5;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
