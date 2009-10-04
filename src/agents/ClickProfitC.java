@@ -10,22 +10,13 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.revenue.RevenueMovingAvg;
-import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
-import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -35,24 +26,17 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class ClickProfitC extends AbstractAgent {
+public class ClickProfitC extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-	protected AbstractConversionModel _prConversionModel;
-	protected HashMap<Query, Double> _baselineConversions;
 
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
-	private Random _R = new Random();
 
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
-
-	protected int _distributionCapacity;
-	protected int _distributionWindow;
-	protected int _dailyCapacity;
 
 	protected ArrayList<BidBundle> _bidBundleList;
 
@@ -68,12 +52,7 @@ public class ClickProfitC extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
-
-		// set constants
-
-		_distributionCapacity = _advertiserInfo.getDistributionCapacity();
-		_distributionWindow = _advertiserInfo.getDistributionWindow();
-		_dailyCapacity = (int) (_distributionCapacity /_distributionWindow);
+		setDailyQueryCapacity();
 
 		// initialize strategy related variables
 
@@ -86,7 +65,7 @@ public class ClickProfitC extends AbstractAgent {
 		_desiredSales = new HashMap<Query, Double>();
 
 		for (Query query : _querySpace) {
-			_desiredSales.put(query, 1.0*_distributionCapacity/_querySpace.size());
+			_desiredSales.put(query, 1.0*_capacity/_querySpace.size());
 		}
 
 		// initialize models
@@ -96,7 +75,7 @@ public class ClickProfitC extends AbstractAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 
-		_baselineConversions = new HashMap<Query, Double>();
+		_baselineConversion = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			double conv = 0;
 			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
@@ -110,14 +89,14 @@ public class ClickProfitC extends AbstractAgent {
 			if (query.getComponent() != null && query.getComponent().equals(_advertiserInfo.getComponentSpecialty()))
 				componentBonus = _advertiserInfo.getComponentBonus();
 			conv = (conv*componentBonus)/(componentBonus + 1 - conv);
-			_baselineConversions.put(query, conv);
+			_baselineConversion.put(query, conv);
 		}
 
 
 
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			double profit = _baselineConversions.get(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
+			double profit = _baselineConversion.get(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
@@ -170,7 +149,7 @@ public class ClickProfitC extends AbstractAgent {
 			for (Query query : _querySpace) {
 				normalizeFactor += _desiredSales.get(query);
 			}
-			normalizeFactor = _distributionCapacity*1.25/_distributionWindow/normalizeFactor;
+			normalizeFactor = _capacity*1.25/_capWindow/normalizeFactor;
 			for (Query query : _querySpace) {
 				_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
 			}
@@ -204,7 +183,7 @@ public class ClickProfitC extends AbstractAgent {
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_prConversionModel = convPrModel;
+				_conversionPrModel = convPrModel;
 			}
 		}
 	}
@@ -213,13 +192,10 @@ public class ClickProfitC extends AbstractAgent {
 
 		for (Query query : _querySpace) {
 			// set bids
-			double prConv;
-			if (_day <= 6 || !(_prConversionModel.getPrediction(query) > 0))
-				prConv = _baselineConversions.get(query);
-			else prConv= _prConversionModel.getPrediction(query);
-
-			double bid = prConv *_revenueModels.get(query).getRevenue()*(1 - _profitMargins.get(query));
-			_bidBundle.setBid(query, bid);
+			
+			double targetCPC = getTargetCPC(query);
+			
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query,targetCPC));
 
 			// set target ads
 			if (TARGET) {
@@ -236,9 +212,7 @@ public class ClickProfitC extends AbstractAgent {
 			// set spend limit
 			// must set spend limit in the first few days
 			if (BUDGET || _day < 10) {
-				double dailySalesLimit = Math.max(_desiredSales.get(query)/prConv,2);
-				double dailyLimit = _bidBundle.getBid(query)*dailySalesLimit*1.1;
-				_bidBundle.setDailyLimit(query, dailyLimit);
+				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 			}
 		}
 
@@ -247,6 +221,26 @@ public class ClickProfitC extends AbstractAgent {
 		_bidBundleList.add(_bidBundle);
 
 		return _bidBundle;
+	}
+	
+	@Override
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
+		double conversion;
+		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
+			conversion = _baselineConversion.get(q);
+		else conversion= _conversionPrModel.getPrediction(q);
+		
+		double dailySalesLimit = Math.max(_desiredSales.get(q)/conversion,2);
+		return targetCPC * dailySalesLimit * 1.1;
+	}
+	
+	protected double getTargetCPC(Query q) {
+		double conversion;
+		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
+			conversion = _baselineConversion.get(q);
+		else conversion= _conversionPrModel.getPrediction(q);
+		
+		return conversion *_revenueModels.get(q).getRevenue()*(1 - _profitMargins.get(q));
 	}
 
 	protected void setAvgProfit() {
@@ -292,7 +286,7 @@ public class ClickProfitC extends AbstractAgent {
 				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
 			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
 			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModel.getPrediction(q)).append("\n");
+			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.getPrediction(q)).append("\n");
 			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
 			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
 			if (_salesReport.getConversions(q) > 0)
@@ -312,23 +306,20 @@ public class ClickProfitC extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_prConversionModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
-		models.add(_prConversionModel);
+		
+		models.addAll(super.initModels());
+		
+		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 		models.add(_unitsSoldModel);
 		return models;
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
+		super.updateModels(salesReport, queryReport);
+		
 		if (_day > 1 && salesReport != null && queryReport != null) {
 			_unitsSoldModel.update(salesReport);
-
-			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-
-			((HistoricPrConversionModel) _prConversionModel).setTimeHorizon(timeHorizon);
-			_prConversionModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-
 
 			for (Query query : _querySpace) {
 				if (salesReport.getRevenue(query) > 0) 
