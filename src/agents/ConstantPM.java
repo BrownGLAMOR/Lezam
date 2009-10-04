@@ -20,8 +20,7 @@ public class ConstantPM extends RuleBasedAgent {
 	private static final boolean SET_TARGET = true;
 	private static final boolean SET_BUDGET = false;
 
-	private Set<Product> _productSpace;
-	private HashMap<Query, Double> _queryAvgProfit;
+	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Set<Product>> _queryToProducts;
 
 	private HashMap<Product, Double> _profit;
@@ -76,7 +75,7 @@ public class ConstantPM extends RuleBasedAgent {
 			conversion = _baselineConversion.get(q);
 		else
 			conversion = _conversionPrModel.getPrediction(q);
-		return _queryAvgProfit.get(q) * 0.4 * conversion;
+		return _revenue.get(q) * 0.4 * conversion;
 	}
 	
 	private void buildMaps(Set<AbstractModel> models) {
@@ -109,9 +108,6 @@ public class ConstantPM extends RuleBasedAgent {
 					_baselineConversion.put(q, 0.3);
 			}
 		}
-		
-		_capacity = _advertiserInfo.getDistributionCapacity();
-		_queryAvgProfit = initHashMap(new HashMap<Query, Double>());
 
 		_queryToProducts = new HashMap<Query, Set<Product>>();
 		for(Query q : _querySpace) {
@@ -119,37 +115,27 @@ public class ConstantPM extends RuleBasedAgent {
 			_queryToProducts.put(q, s);
 		}
 
-		String spec = _advertiserInfo.getManufacturerSpecialty();
-
-		_profit = new HashMap<Product, Double>();
-		_productSpace = new HashSet<Product>();
-		for(String m : _retailCatalog.getManufacturers()) {
-			double mult = 1.0;
-			if(m.equals(spec))
-				mult += _advertiserInfo.getManufacturerBonus();
-
-			for(String c : _retailCatalog.getComponents()) {
-				Product p = new Product(m,c);
-				_productSpace.add(p);
-
-				_profit.put(p, mult * _retailCatalog.getSalesProfit(p));
-
-				for(Query q : _querySpace) {
-					Set<Product> s = _queryToProducts.get(q);
-					if( (q.getComponent() == null || q.getComponent().equals(c)) && (q.getManufacturer() == null || q.getManufacturer().equals(m)))
-						s.add(p);
+		_revenue = new HashMap<Query, Double>();
+		for (Query query : _querySpace) {
+			if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_revenue.put(query, 10.0 + 5 / 3);
+			}
+			if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				if (_manSpecialty.equals(query.getManufacturer()))
+					_revenue.put(query, 15.0);
+				else {
+					if (query.getManufacturer() != null)
+						_revenue.put(query, 10.0);
+					else
+						_revenue.put(query, 10.0 + 5 / 3);
 				}
 			}
-		}
-		
-		for(Query q : _querySpace) {
-			Set<Product> s = _queryToProducts.get(q);
-			double profit = 0;
-
-			for(Product p : s)
-				profit += (_profit.get(p) / (double)s.size());
-			_queryAvgProfit.put(q, profit);
-			System.out.println(q + ": " + profit);
+			if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				if (_manSpecialty.equals(query.getManufacturer()))
+					_revenue.put(query, 15.0);
+				else
+					_revenue.put(query, 10.0);
+			}
 		}
 	}
 	
