@@ -35,6 +35,8 @@ import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.postoprclick.BasicPosToPrClick;
 import newmodels.postoprclick.EnsemblePosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
+import newmodels.prclicktobid.AbstractPrClickToBid;
+import newmodels.prclicktobid.BidToPrClickInverter;
 import newmodels.targeting.BasicTargetModel;
 
 
@@ -62,7 +64,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1435;
-		int max = 1451;
+		int max = 1436;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -602,7 +604,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
 	}
 
-	public void posToCPCToBidPredictionChallenge(AbstractBidToCPC CPCtoBidBaseModel, AbstractPosToCPC baseModel) throws IOException, ParseException {
+	public void posToClickPrToBidPredictionChallenge(AbstractBidToPrClick bidToPrClickBaseModel, AbstractPosToPrClick baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -640,7 +642,142 @@ public class PredictionEvaluator {
 			for(int agent = 0; agent < agents.length; agent++) {
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
-				AbstractBidToCPC bidToCPCModel = (AbstractBidToCPC) CPCtoBidBaseModel.getCopy();
+				AbstractBidToPrClick bidToClickPrModel = (AbstractBidToPrClick) bidToPrClickBaseModel.getCopy();
+				AbstractPosToPrClick posToClickPrModel = (AbstractPosToPrClick) baseModel.getCopy();
+				AbstractPrClickToBid clickPrToBid = null;
+				//TODO
+				try {
+					clickPrToBid = new BidToPrClickInverter(new RConnection(), querySpace, bidToClickPrModel, .05, 0, 3.0);
+				} catch (RserveException e) {
+					e.printStackTrace();
+				}
+
+				double ourTotError = 0;
+				double ourTotActual = 0;
+				int ourTotErrorCounter = 0;
+
+				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
+				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
+				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+
+				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
+				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				//				System.out.println(agents[agent]);
+				for(int i = 0; i < 57; i++) {
+					SalesReport salesReport = ourSalesReports.get(i);
+					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
+
+					bidToClickPrModel.updateModel(queryReport, salesReport, bidBundle);
+					posToClickPrModel.updateModel(queryReport, salesReport, bidBundle);
+					clickPrToBid.updateModel(queryReport, salesReport, bidBundle);
+
+					if(i >= 6) {
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double pos = otherQueryReport.getPosition(q);
+							double clickPr = posToClickPrModel.getPrediction(q, pos, new Ad());
+							double error = clickPrToBid.getPrediction(q, clickPr);
+							if(Double.isNaN(error)) {
+								error = 0.0;
+							}
+							double bid = otherBidBundle.getBid(q);
+							//							System.out.println("Pos: " + pos + "  CPC: " + CPC + "  BidEst: " + error + "   bid: " + bid);
+							if(bid != 0) {
+								error -= bid;
+								error = error*error;
+								ourTotActual += bid;
+								ourTotError += error;
+								ourTotErrorCounter++;
+							}
+						}
+					}
+				}
+				ourTotErrorMap.put(agents[agent],ourTotError);
+				ourTotActualMap.put(agents[agent],ourTotActual);
+				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+
+			}
+
+			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
+			ourTotActualMegaMap.put(filename,ourTotActualMap);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
+		//		System.out.println("Model: " + baseModel);
+		int dataPointCounter = 0;
+		for(String file : filenames) {
+			//			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				//				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				dataPointCounter += totErrorCounter;
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
+			}
+		}
+		System.out.println("Data Points: " + dataPointCounter);
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+	}
+
+	public void posToCPCToBidPredictionChallenge(AbstractBidToCPC bidToCPCBaseModel, AbstractPosToCPC baseModel) throws IOException, ParseException {
+		/*
+		 * All these maps they are like this: <fileName<agentName,error>>
+		 */
+		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		ArrayList<String> filenames = getGameStrings();
+		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
+			String filename = filenames.get(fileIdx);
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			/*
+			 * One map for each advertiser
+			 */
+			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
+			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
+
+			//Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+
+			for(int agent = 0; agent < agents.length; agent++) {
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
+				AbstractBidToCPC bidToCPCModel = (AbstractBidToCPC) bidToCPCBaseModel.getCopy();
 				AbstractPosToCPC posToCPCModel = (AbstractPosToCPC) baseModel.getCopy();
 				AbstractCPCToBid CPCToBid = null;
 				//TODO
@@ -1338,43 +1475,61 @@ public class PredictionEvaluator {
 			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
 
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,true));
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
 
-//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
-//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
-//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,true,true));
-//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,true,true));
+			/*
+			 * Bid-CPC is true,false
+			 */
 
-//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
-//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel,true,true));
-//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,true,true));
-//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
+			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,false));
+			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
+			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
+			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
 
-//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
-//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
-//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,20,_targModel,true,true));
-//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,true,true));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,false));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,true));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,false));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,true));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,true,true));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,true,true));
 
-						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,true));
-						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,30,true,true));
-						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,20,true,true));
-						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,30,true,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,false));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,false));
+			//									evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,30,_targModel,true,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,true,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
 
-//						evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,false));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,false));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,30,_targModel,true,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,20,_targModel,true,true));
+			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,true,true));
 
-//						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,true));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,false));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,true));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,false));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,30,true,true));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,20,true,true));
+			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,30,true,true));
+
+			//						evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+
+			//						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
 
 
 			//			evaluator.posToBidPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true));
 			//			double stop = System.currentTimeMillis();
 			//			double elapsed = stop - start;
 			//			System.out.println("This took " + (elapsed / 1000) + " seconds");
-//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,true), new EnsemblePosToCPC(_querySpace,10,20,true,true));
 
-			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,30,true,true));
+//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
+//			evaluator.posToClickPrToBidPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,20,true,true));
 
 			//			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
 			//			evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));

@@ -1,4 +1,4 @@
-package newmodels.cpctobid;
+package newmodels.prclicktobid;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +10,7 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -17,8 +18,9 @@ import edu.umich.eecs.tac.props.SalesReport;
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
+import newmodels.bidtoprclick.AbstractBidToPrClick;
 
-public class BidToCPCInverter extends AbstractCPCToBid {
+public class BidToPrClickInverter extends AbstractPrClickToBid {
 
 	private RConnection _rConnection;
 	private Set<Query> _querySpace;
@@ -26,9 +28,9 @@ public class BidToCPCInverter extends AbstractCPCToBid {
 	private double _increment;
 	private double _min;
 	private double _max;
-	private AbstractBidToCPC _model;
+	private AbstractBidToPrClick _model;
 
-	public BidToCPCInverter(RConnection rConnection, Set<Query> querySpace, AbstractBidToCPC model, double increment, double min, double max) {
+	public BidToPrClickInverter(RConnection rConnection, Set<Query> querySpace, AbstractBidToPrClick model, double increment, double min, double max) {
 		_rConnection = rConnection;
 		_querySpace = querySpace;
 		_model = model;
@@ -66,13 +68,15 @@ public class BidToCPCInverter extends AbstractCPCToBid {
 		return incrementedArr;
 	}
 
-	public double getPrediction(Query query, double cpc) {
+	public double getPrediction(Query query, double prclick) {
 		double[] coeff = _coefficients.get(query);
 		if(coeff == null) {
 			return Double.NaN;
 		}
 
-		double bid = coeff[0] + cpc * coeff[1];
+		double bid = coeff[0] + prclick * coeff[1];
+		
+		bid = 1/(1+Math.exp(-bid));
 		
 		if(bid < _min) {
 			return _min;
@@ -88,14 +92,14 @@ public class BidToCPCInverter extends AbstractCPCToBid {
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
 		for(Query query : _querySpace) {
 			double[] bids = getIncrementedArray();
-			double[] CPCs = new double[bids.length];
+			double[] clickPrs = new double[bids.length];
 			for(int i = 0; i < bids.length; i++) {
-				CPCs[i] = _model.getPrediction(query, bids[i]);
+				clickPrs[i] = _model.getPrediction(query, bids[i], new Ad());
 			}
 			try {
 				_rConnection.assign("bids", bids);
-				_rConnection.assign("CPCs", CPCs);
-				String Rmodel = "model = lm(bids ~ CPCs)";
+				_rConnection.assign("clickPrs", clickPrs);
+				String Rmodel = "model = glm(bids ~ clickPrs, family = quasibinomial(link = \"logit\"))";
 				_rConnection.voidEval(Rmodel);
 				double[] coefficients = _rConnection.eval("coefficients(model)").asDoubles();
 				_coefficients.put(query, coefficients);
@@ -119,7 +123,7 @@ public class BidToCPCInverter extends AbstractCPCToBid {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BidToCPCInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
+		return new BidToPrClickInverter(_rConnection, _querySpace, _model, _increment, _min, _max);
 	}
 
 }
