@@ -3,6 +3,8 @@ package agents;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -21,6 +23,7 @@ import org.rosuda.REngine.Rserve.RserveException;
 
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public abstract class RuleBasedAgent extends AbstractAgent {
@@ -36,6 +39,74 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected AbstractConversionModel _conversionPrModel;
 	protected AbstractBidToCPC _bidToCPCModel;
 	protected AbstractCPCToBid _CPCToBidModel;
+	private HashMap<Query, Double> _baseClickProbs;
+	private HashMap<Query, Double> _salesPrices;
+	private Random _R;
+
+	@Override
+	public void initBidder() {
+		
+		_R = new Random();
+
+		_baselineConversion = new HashMap<Query, Double>();
+		_baseClickProbs = new HashMap<Query, Double>();
+
+		// set revenue prices
+		_salesPrices = new HashMap<Query,Double>();
+		for(Query q : _querySpace) {
+
+			String manufacturer = q.getManufacturer();
+			if(_manSpecialty.equals(manufacturer)) {
+				_salesPrices.put(q, 10*(_MSB+1));
+			}
+			else if(manufacturer == null) {
+				_salesPrices.put(q, (10*(_MSB+1)) * (1/3.0) + (10)*(2/3.0));
+			}
+			else {
+				_salesPrices.put(q, 10.0);
+			}
+
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baselineConversion.put(q, _piF0);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baselineConversion.put(q, _piF1);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baselineConversion.put(q, _piF2);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
+
+			/*
+			 * These are the MAX e_q^a (they are randomly generated), which is our clickPr for being in slot 1!
+			 * 
+			 * Taken from the spec
+			 */
+
+			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+				_baseClickProbs.put(q, .3);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				_baseClickProbs.put(q, .4);
+			}
+			else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				_baseClickProbs.put(q, .5);
+			}
+			else {
+				throw new RuntimeException("Malformed query");
+			}
+
+			String component = q.getComponent();
+			if(_compSpecialty.equals(component)) {
+				_baselineConversion.put(q,eta(_baselineConversion.get(q),1+_CSB));
+			}
+			else if(component == null) {
+				_baselineConversion.put(q,eta(_baselineConversion.get(q),1+_CSB)*(1/3.0) + _baselineConversion.get(q)*(2/3.0));
+			}
+		}
+	}
 
 	@Override
 	public Set<AbstractModel> initModels() {
@@ -114,4 +185,21 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			return targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
 		}
 	}
+
+	protected double getRandomBid(Query q) {
+		double bid = 0.0;
+		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+			bid = randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
+		else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+			bid = randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
+		else
+			bid = randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
+		return bid;
+	}
+	
+	private double randDouble(double a, double b) {
+		double rand = _R.nextDouble();
+		return rand * (b - a) + a;
+	}
+
 }

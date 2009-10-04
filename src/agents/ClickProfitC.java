@@ -41,6 +41,7 @@ public class ClickProfitC extends RuleBasedAgent {
 
 	@Override
 	public void initBidder() {
+		super.initBidder();
 		setDailyQueryCapacity();
 
 		// initialize strategy related variables
@@ -64,25 +65,6 @@ public class ClickProfitC extends RuleBasedAgent {
 			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
 		}
 
-		_baselineConversion = new HashMap<Query, Double>();
-		for (Query query : _querySpace) {
-			double conv = 0;
-			if(query.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				conv = .1;
-			else if(query.getType() == QueryType.FOCUS_LEVEL_ONE)
-				conv = .2;
-			else if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-				conv = .3;
-
-			double componentBonus = 1;
-			if (query.getComponent() != null && query.getComponent().equals(_advertiserInfo.getComponentSpecialty()))
-				componentBonus = _advertiserInfo.getComponentBonus();
-			conv = (conv*componentBonus)/(componentBonus + 1 - conv);
-			_baselineConversion.put(query, conv);
-		}
-
-
-
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
 			double profit = _baselineConversion.get(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
@@ -91,9 +73,6 @@ public class ClickProfitC extends RuleBasedAgent {
 		_avgProfit /= _querySpace.size();
 		_oldAvgProfit = _avgProfit;
 
-		// initialize the bid bundle
-
-		_bidBundle = new BidBundle();
 	}
 
 	@Override
@@ -156,6 +135,8 @@ public class ClickProfitC extends RuleBasedAgent {
 
 	protected BidBundle buildBidBundle()  {
 
+		_bidBundle = new BidBundle();
+		
 		for (Query query : _querySpace) {
 			// set bids
 			
@@ -184,8 +165,6 @@ public class ClickProfitC extends RuleBasedAgent {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 			}
 		}
-
-		//this.printInfo();
 
 		_bidBundleList.add(_bidBundle);
 

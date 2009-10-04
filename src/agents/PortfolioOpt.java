@@ -23,7 +23,6 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 public class PortfolioOpt extends RuleBasedAgent {
-	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _honestFactor;
 	protected HashMap<Query, Double> _wantedSales;
