@@ -3,7 +3,6 @@ package agents;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Random;
 import java.util.Set;
 
@@ -39,6 +38,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected AbstractConversionModel _conversionPrModel;
 	protected AbstractBidToCPC _bidToCPCModel;
 	protected AbstractCPCToBid _CPCToBidModel;
+	protected BasicTargetModel _targetModel;
 	private HashMap<Query, Double> _baseClickProbs;
 	private HashMap<Query, Double> _salesPrices;
 	private Random _R;
@@ -120,11 +120,13 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
+		
 		models.add(_unitsSoldModel);
 		models.add(_bidToCPCModel);
 		models.add(_conversionPrModel);
 		models.add(_CPCToBidModel);
-
+		models.add(_targetModel);
 		return models;
 	}
 
@@ -159,6 +161,10 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			if(model instanceof AbstractCPCToBid) {
 				AbstractCPCToBid CPCtoBid = (AbstractCPCToBid) model;
 				_CPCToBidModel = CPCtoBid; 
+			}
+			if(model instanceof BasicTargetModel) {
+				BasicTargetModel targModel = (BasicTargetModel) model;
+				_targetModel = targModel; 
 			}
 		}
 	}

@@ -36,8 +36,8 @@ public class ClickProfitC extends RuleBasedAgent {
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
-	protected final boolean TARGET = true;
-	protected final boolean BUDGET = true;
+	protected boolean TARGET = true;
+	protected boolean BUDGET = true;
 
 	@Override
 	public void initBidder() {
@@ -161,7 +161,7 @@ public class ClickProfitC extends RuleBasedAgent {
 
 			// set spend limit
 			// must set spend limit in the first few days
-			if (BUDGET || _day < 10) {
+			if (BUDGET || (_day < 10)) {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 			}
 		}

@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.AbstractConversionModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -23,20 +22,10 @@ public class ConstantPM extends RuleBasedAgent {
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Set<Product>> _queryToProducts;
 
-	private HashMap<Product, Double> _profit;
-
 	private int _day;
 
 	public ConstantPM() {
 		_day = 0;
-	}
-
-	public HashMap<Query, Double> initHashMap(HashMap<Query, Double> map) {
-		for(Query q : _querySpace) {
-			map.put(q, (double)0);
-		}
-
-		return map;
 	}
 
 	@Override
@@ -83,26 +72,9 @@ public class ConstantPM extends RuleBasedAgent {
 	
 	@Override
 	public void initBidder() {
+		super.initBidder();
 		setDailyQueryCapacity();
 		
-		_baselineConversion = new HashMap<Query, Double>();
-		for (Query q : _querySpace) {
-			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_baselineConversion.put(q, 0.1);
-			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.27);
-				else
-					_baselineConversion.put(q, 0.2);
-			}
-			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.39);
-				else
-					_baselineConversion.put(q, 0.3);
-			}
-		}
-
 		_queryToProducts = new HashMap<Query, Set<Product>>();
 		for(Query q : _querySpace) {
 			HashSet<Product> s = new HashSet<Product>();

@@ -6,18 +6,11 @@
 package agents;
 
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.prconv.AbstractConversionModel;
-import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -28,22 +21,21 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquateProfitS extends RuleBasedAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected BasicTargetModel _targetModel;
 	protected HashMap<Query, Double> _prClick;
 	
 	protected double k; //k is a constant that equates EPPS across queries
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundleList;
 	
-	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
-	
-	protected PrintStream output;
+	protected boolean TARGET = true;
+	protected boolean BUDGET = false;
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		
 		buildMaps(models);
+		
+		_bidBundle = new BidBundle();
 
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
@@ -72,46 +64,18 @@ public class EquateProfitS extends RuleBasedAgent{
 		}
 
 		_bidBundleList.add(_bidBundle);
-		//this.printInfo();
 		return _bidBundle;
 	}
 
-	protected void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPCModel = bidToCPC; 
-			}
-			else if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
-	}
-	
 	@Override
 	public void initBidder() {
+		super.initBidder();
 		setDailyQueryCapacity();
 		_bidBundleList = new ArrayList<BidBundle>();
 		
 		if (_capacity == 500) k = 12;
 		else if (_capacity == 400) k = 11;
 		else k = 10;
-		
-		try {
-			output = new PrintStream(new File("g3.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		models.addAll(super.initModels());
-		
-		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -131,25 +95,11 @@ public class EquateProfitS extends RuleBasedAgent{
 			}
 		}
 		
-		_baselineConversion = new HashMap<Query, Double>();
-        for(Query q: _querySpace){
-        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConversion.put(q, 0.1);
-        	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-        		if(q.getComponent() == _compSpecialty) _baselineConversion.put(q, 0.27);
-        		else _baselineConversion.put(q, 0.2);
-        	}
-        	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
-        		if(q.getComponent()== _compSpecialty) _baselineConversion.put(q, 0.39);
-        		else _baselineConversion.put(q,0.3);
-        	}
-        }
-        
         _prClick = new HashMap<Query, Double>();
         for (Query query: _querySpace) {
         	_prClick.put(query, .01);
         }
-        
-		return models;
+		
 	}
 
 	@Override
@@ -161,9 +111,7 @@ public class EquateProfitS extends RuleBasedAgent{
             }
             
 		}
-
 	}
-
 
 	protected double updateK(){
 		double sum = 0.0;
@@ -202,43 +150,6 @@ public class EquateProfitS extends RuleBasedAgent{
 		return (rev - k)*prConv;
 	}
  
-
-	protected void printInfo() {
-		// print debug info
-		if (_salesReport == null) return;
-		
-		StringBuffer buff = new StringBuffer(255);
-		buff.append("****************\n");
-		buff.append("\t").append("Day: ").append(_day).append("\n");
-		buff.append("\t").append("k: ").append(k).append("\n");
-		buff.append("****************\n");
-		for(Query q : _querySpace){
-			buff.append("\t").append("Day: ").append(_day).append("\n");
-			buff.append(q).append("\n");
-			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
-			buff.append("\t").append("capacity: ").append(_capacity).append("\n");
-			if (_salesReport.getConversions(q) > 0) 
-				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
-			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
-			if (_queryReport.getClicks(q) > 0) 
-				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
-			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
-			if (_salesReport.getConversions(q) > 0)
-				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_queryReport.getClicks(q))).append("\n");
-			else buff.append("\t").append("Profit: ").append("0").append("\n");
-			buff.append("\t").append("Click Pr: ").append(_prClick.get(q)).append("\n");
-			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
-			buff.append("****************\n");
-		}
-		
-		System.out.println(buff);
-		output.append(buff);
-		output.flush();
-	
-	}
-	
 	@Override
 	public String toString() {
 		return "EquateProfitS";
