@@ -4,19 +4,12 @@
 
 package agents;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.AbstractConversionModel;
 import newmodels.revenue.RevenueMovingAvg;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -29,7 +22,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ClickProfitC extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 
-	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 
 	protected double _avgProfit;
@@ -46,9 +38,6 @@ public class ClickProfitC extends RuleBasedAgent {
 	protected final double _errorOfLimit = .1;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = true;
-
-	// for debug
-	protected PrintStream output;
 
 	@Override
 	public void initBidder() {
@@ -101,16 +90,6 @@ public class ClickProfitC extends RuleBasedAgent {
 		}
 		_avgProfit /= _querySpace.size();
 		_oldAvgProfit = _avgProfit;
-
-		_bidBundleList = new ArrayList<BidBundle>();
-		// setup the debug info recorder
-
-		try {
-			output = new PrintStream(new File("logeqpft.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} 
 
 		// initialize the bid bundle
 
@@ -175,27 +154,17 @@ public class ClickProfitC extends RuleBasedAgent {
 		return buildBidBundle();
 	}
 
-	protected void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractUnitsSoldModel) {
-				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
-				_unitsSoldModel = unitsSold;
-			}
-			else if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
-	}
-
 	protected BidBundle buildBidBundle()  {
 
 		for (Query query : _querySpace) {
 			// set bids
 			
 			double targetCPC = getTargetCPC(query);
-			
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query,targetCPC));
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 			// set target ads
 			if (TARGET) {
@@ -261,65 +230,11 @@ public class ClickProfitC extends RuleBasedAgent {
 		return _avgProfit;
 	}
 
-	protected void printInfo() {
-		// print debug info
-		StringBuffer buff = new StringBuffer(255);
-		buff.append("****************\n");
-		buff.append("\t").append("Day: ").append(_day).append("\n");
-		buff.append("\t").append("Window Sold: ").append(_unitsSoldModel.getWindowSold()).append("\n");
-		buff.append("\t").append("Daily Capacity: ").append(_dailyCapacity).append("\n");
-		buff.append("\t").append("Yesterday Sold: ").append(_unitsSoldModel.getLatestSample()).append("\n");
-		buff.append("\t").append("Manufacturer Specialty: ").append(_advertiserInfo.getManufacturerSpecialty()).append("\n");
-		buff.append("\t").append("Average Profit:").append(_avgProfit).append("\n");
-		buff.append("\t").append("Old Average Profit:").append(_oldAvgProfit).append("\n");
-		buff.append("****************\n");
-		for(Query q : _querySpace){
-			buff.append("\t").append("Day: ").append(_day).append("\n");
-			buff.append(q).append("\n");
-			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
-			buff.append("\t").append("SpendLimit: ").append(_bidBundle.getDailyLimit(q)).append("\n");
-			if (_salesReport.getConversions(q) > 0) 
-				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
-			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
-			buff.append("\t").append("Predicted Revenue:").append(_revenueModels.get(q).getRevenue()).append("\n");
-			if (_queryReport.getClicks(q) > 0) 
-				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
-			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			//buff.append("\t").append("Predicted Conversion Pr:").append(_prConversionModels.get(q).getPrediction()).append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.getPrediction(q)).append("\n");
-			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
-			buff.append("\t").append("Desired Sales: ").append(_desiredSales.get(q)).append("\n");
-			if (_salesReport.getConversions(q) > 0)
-				buff.append("\t").append("Profit: ").append((_salesReport.getRevenue(q) - _queryReport.getCost(q))/(_queryReport.getClicks(q))).append("\n");
-			else buff.append("\t").append("Profit: ").append("0").append("\n");
-			buff.append("\t").append("Profit Margin: ").append(_profitMargins.get(q)).append("\n");
-			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
-			buff.append("****************\n");
-		}
-
-		System.out.println(buff);
-		output.append(buff);
-		output.flush();
-
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		
-		models.addAll(super.initModels());
-		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-		models.add(_unitsSoldModel);
-		return models;
-	}
-
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		super.updateModels(salesReport, queryReport);
 		
 		if (_day > 1 && salesReport != null && queryReport != null) {
-			_unitsSoldModel.update(salesReport);
 
 			for (Query query : _querySpace) {
 				if (salesReport.getRevenue(query) > 0) 

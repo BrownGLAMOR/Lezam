@@ -11,13 +11,12 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class ClickAgent extends RuleBasedAgent {
+public class ConstantSales extends RuleBasedAgent {
 
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _PM;
 
 	protected double _desiredSale;
-	protected final double _lamda = 0.9;
 	protected BidBundle _bidBundle;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
@@ -32,6 +31,10 @@ public class ClickAgent extends RuleBasedAgent {
 			}
 			
 			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
 			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 			if (TARGET) {
@@ -48,15 +51,6 @@ public class ClickAgent extends RuleBasedAgent {
 			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 		}
 		return _bidBundle;
-	}
-
-	protected void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
 	}
 
 	@Override
@@ -95,14 +89,6 @@ public class ClickAgent extends RuleBasedAgent {
 			else
 				_revenue.put(query, 10.0);
 		}
-
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {
-			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
-			_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
-		}
-
 	}
 
 	protected void adjustPM(Query q) {

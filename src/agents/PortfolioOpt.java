@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class ClickSlotAgent extends RuleBasedAgent {
+public class PortfolioOpt extends RuleBasedAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _honestFactor;
@@ -73,6 +73,10 @@ public class ClickSlotAgent extends RuleBasedAgent {
 			// build bid bundle
 			for (Query query : _querySpace) {
 				double targetCPC = getTargetCPC(query);
+				double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+				if(Double.isNaN(bid)) {
+					bid = targetCPC;
+				}
 				_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 				// set target ads

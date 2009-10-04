@@ -53,6 +53,10 @@ public class EquateProfitC extends RuleBasedAgent{
 		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
 			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 			
 			if (TARGET) {

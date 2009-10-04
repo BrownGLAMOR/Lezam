@@ -177,6 +177,10 @@ public class ClickProfitS extends RuleBasedAgent {
 			// set bids
 			
 			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
 			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 			
 			// set target ads

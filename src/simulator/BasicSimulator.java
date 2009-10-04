@@ -48,10 +48,10 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.Cheap;
-import agents.ClickAgent;
+import agents.ConstantSales;
 import agents.ClickProfitC;
 import agents.ClickProfitS;
-import agents.ClickSlotAgent;
+import agents.PortfolioOpt;
 import agents.ConstantPM;
 import agents.EquateProfitC;
 import agents.EquateProfitS;
@@ -60,7 +60,7 @@ import agents.ILPPosAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import agents.MCKPPos;
-import agents.SlotAgent;
+import agents.GoodSlot;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -1526,7 +1526,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new SlotAgent(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new GoodSlot(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

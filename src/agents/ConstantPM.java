@@ -59,8 +59,11 @@ public class ConstantPM extends RuleBasedAgent {
 			System.out.print(ad.toString() + ", ");
 
 			double targetCPC = getTargetCPC(q);
-			
-			bids.setBidAndAd(q, _CPCToBidModel.getPrediction(q, targetCPC), ad);
+			double bid = _CPCToBidModel.getPrediction(q, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
+			bids.setBid(q, _CPCToBidModel.getPrediction(q, targetCPC));
 			
 			if(SET_BUDGET)
 				bids.setDailyLimit(q, getDailySpendingLimit(q, targetCPC));
@@ -78,15 +81,6 @@ public class ConstantPM extends RuleBasedAgent {
 		return _revenue.get(q) * 0.4 * conversion;
 	}
 	
-	private void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
-	}
-
 	@Override
 	public void initBidder() {
 		setDailyQueryCapacity();

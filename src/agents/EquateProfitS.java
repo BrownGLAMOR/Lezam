@@ -51,6 +51,10 @@ public class EquateProfitS extends RuleBasedAgent{
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
 			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 			
 			if (TARGET) {
@@ -88,11 +92,6 @@ public class EquateProfitS extends RuleBasedAgent{
 	@Override
 	public void initBidder() {
 		setDailyQueryCapacity();
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {	
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, getTargetCPC(query)));
-		}
-
 		_bidBundleList = new ArrayList<BidBundle>();
 		
 		if (_capacity == 500) k = 12;
