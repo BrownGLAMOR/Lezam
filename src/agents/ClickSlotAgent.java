@@ -87,7 +87,8 @@ public class ClickSlotAgent extends RuleBasedAgent {
 						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 				}
 
-				if (BUDGET) _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
+				if (BUDGET) 
+					_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
 				}
 
 			_bidBundles.add(_bidBundle);
@@ -191,16 +192,13 @@ public class ClickSlotAgent extends RuleBasedAgent {
 	}
 
 	@Override
-	protected double getDailySpendingLimit(Query q, double targetCpc) {
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		double prConv;
 		if (_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 
-		double bid = _bidBundle.getBid(q);
-		double dailyLimit = bid*dailySalesLimit;
-
-		return dailyLimit;
+		return targetCPC * dailySalesLimit;
 	}
 
 	protected void adjustHonestFactor(Query q) {

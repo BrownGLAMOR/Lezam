@@ -52,7 +52,8 @@ public class EquateProfitC extends RuleBasedAgent{
 		}
 		
 		for(Query query: _querySpace){
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, getTargetCPC(query)));
+			double targetCPC = getTargetCPC(query);
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 			
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -64,10 +65,11 @@ public class EquateProfitC extends RuleBasedAgent{
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}		
-			
+			if (BUDGET) 
+				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 		}
 		
-		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(1200);
+		
 		
 		_bidBundleList.add(_bidBundle);
 //		printInfo();
@@ -165,16 +167,15 @@ public class EquateProfitC extends RuleBasedAgent{
 	}
 
 	protected double updateK(){
-		double dailyLimit = _capacity/_capWindow;
 		double sum = 0.0;
 		for(Query query:_querySpace){
 			sum+= _salesReport.getConversions(query);
 		}
 
-		if(sum <= 0.9*dailyLimit) {
+		if(sum <= 0.9* _dailyCapacity) {
 			k *= .9;
 		}
-		if(sum >= 1.1*dailyLimit){
+		if(sum >= 1.1* _dailyCapacity){
 			k *= 1.1;
 		}
 
