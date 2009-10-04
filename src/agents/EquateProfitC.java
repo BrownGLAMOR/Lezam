@@ -11,19 +11,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.EnsembleBidToCPC;
-import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.targeting.BasicTargetModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -32,11 +25,8 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EquateProfitC extends AbstractAgent{
-	protected HashMap<Query, Double> _baselineConv;
-	protected AbstractConversionModel _conversionPrModel;
+public class EquateProfitC extends RuleBasedAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected AbstractBidToCPC _bidToCPC;
 	protected BasicTargetModel _targetModel;
 	protected HashMap<Query, Double> _prClick;
 	
@@ -45,9 +35,6 @@ public class EquateProfitC extends AbstractAgent{
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundleList;
 	
-	protected final double MAX_BID_CPC_GAP = 1.5;
-	protected int _timeHorizon;
-	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = true;
 	
@@ -65,7 +52,7 @@ public class EquateProfitC extends AbstractAgent{
 		}
 		
 		for(Query query: _querySpace){
-			_bidBundle.setBid(query, getQueryBid(query));
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, getTargetCPC(query)));
 			
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -91,7 +78,7 @@ public class EquateProfitC extends AbstractAgent{
 		for(AbstractModel model : models) {
 			if(model instanceof AbstractBidToCPC) {
 				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPC = bidToCPC; 
+				_bidToCPCModel = bidToCPC; 
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
@@ -102,10 +89,10 @@ public class EquateProfitC extends AbstractAgent{
 
 	@Override
 	public void initBidder() {
-
+		setDailyQueryCapacity();
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {	
-			_bidBundle.setBid(query, getQueryBid(query));
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, getTargetCPC(query)));
 		}
 
 		_bidBundleList = new ArrayList<BidBundle>();
@@ -123,11 +110,9 @@ public class EquateProfitC extends AbstractAgent{
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		models.addAll(super.initModels());
+
 		_targetModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		_bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace, _targetModel);
-		models.add(_bidToCPC);
-		models.add(_conversionPrModel);
 		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -147,16 +132,16 @@ public class EquateProfitC extends AbstractAgent{
 			}
 		}
 
-		_baselineConv = new HashMap<Query, Double>();
+		_baselineConversion = new HashMap<Query, Double>();
         for(Query q: _querySpace){
-        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConv.put(q, 0.1);
+        	if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) _baselineConversion.put(q, 0.1);
         	if(q.getType() == QueryType.FOCUS_LEVEL_ONE){
-        		if(q.getComponent() == _compSpecialty) _baselineConv.put(q, 0.27);
-        		else _baselineConv.put(q, 0.2);
+        		if(q.getComponent() == _compSpecialty) _baselineConversion.put(q, 0.27);
+        		else _baselineConversion.put(q, 0.2);
         	}
         	if(q.getType()== QueryType.FOCUS_LEVEL_TWO){
-        		if(q.getComponent()== _compSpecialty) _baselineConv.put(q, 0.39);
-        		else _baselineConv.put(q,0.3);
+        		if(q.getComponent()== _compSpecialty) _baselineConversion.put(q, 0.39);
+        		else _baselineConversion.put(q,0.3);
         	}
         }
         
@@ -169,21 +154,13 @@ public class EquateProfitC extends AbstractAgent{
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		// update models
+		super.updateModels(salesReport, queryReport);
+		
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
-		    
-			_timeHorizon = (int)Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-
-			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(_timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-
+		  
 			for (Query query: _querySpace) {
 				if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
 			}
-               
-			if (_bidBundleList.size() > 1) 
-				_bidToCPC.updateModel(_queryReport, salesReport, _bidBundleList.get(_bidBundleList.size() - 2));
-
 		}
 	}
 
@@ -207,20 +184,9 @@ public class EquateProfitC extends AbstractAgent{
 		return k;
 	}
 
-	protected double cpcTobid(double cpc, Query query){
-		if (_day <= 6) return cpc + .1;
-		double bid = cpc + .1;
-		while (_bidToCPC.getPrediction(query,bid) < cpc){
-			bid += 0.1;
-			if (bid - cpc >= MAX_BID_CPC_GAP) break;
-		}     
-		return bid;
-
-	}
-
-	protected double getQueryBid(Query q){
+	protected double getTargetCPC(Query q){
 		double prConv;
-		if(_day <= 6) prConv = _baselineConv.get(q);
+		if(_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		
 		double rev = _estimatedPrice.get(q);
@@ -232,14 +198,7 @@ public class EquateProfitC extends AbstractAgent{
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
 		
-		double bid = cpcTobid(rev*prConv - k,q);
-		
-		if(bid <= 0) return 0;
-		else{
-			if(bid > 2.5) return 2.5;
-			else return bid;
-		}
-
+		return rev * prConv -k;
 	}
 
 

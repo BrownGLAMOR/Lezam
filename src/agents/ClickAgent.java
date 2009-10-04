@@ -1,39 +1,24 @@
 package agents;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.querytonumimp.AbstractQueryToNumImp;
-import newmodels.targeting.BasicTargetModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickAgent extends AbstractAgent {
+public class ClickAgent extends RuleBasedAgent {
 
-	protected AbstractConversionModel _conversionPrModel;
-
-	protected HashMap<Query, Double> _baselineConversion;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _PM;
 
 	protected double _desiredSale;
 	protected final double _lamda = 0.9;
 	protected BidBundle _bidBundle;
-	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
 
@@ -45,7 +30,9 @@ public class ClickAgent extends AbstractAgent {
 			if(_day > 1) {
 				adjustPM(query);
 			}
-			_bidBundle.setBid(query, getQueryBid(query));
+			
+			double targetCPC = getTargetCPC(query);
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -58,7 +45,7 @@ public class ClickAgent extends AbstractAgent {
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 
-			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 		}
 		return _bidBundle;
 	}
@@ -74,8 +61,9 @@ public class ClickAgent extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
+		setDailyQueryCapacity();
 
-		_desiredSale = _capacity * 1.5 / _capWindow / _querySpace.size();
+		_desiredSale = _dailyQueryCapacity;
 
 		_baselineConversion = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
@@ -110,28 +98,9 @@ public class ClickAgent extends AbstractAgent {
 
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {
-			_bidBundle.setBid(query, getQueryBid(query));
-			//_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
-		}
-
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		models.add(_conversionPrModel);
-		return models;
-	}
-
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		if (_day > 1 && salesReport != null && queryReport != null) {
-
-			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
-					MAX_TIME_HORIZON);
-			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			double targetCPC = getTargetCPC(query);
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 		}
 
 	}
@@ -152,17 +121,7 @@ public class ClickAgent extends AbstractAgent {
 		_PM.put(q, 1 - tmp);
 	}
 
-	protected double setQuerySpendLimit(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
-		else
-			conversion = _conversionPrModel.getPrediction(q);
-		double dailySalesLimit = _desiredSale/conversion;
-		return _bidBundle.getBid(q) * dailySalesLimit;
-	}
-
-	protected double getQueryBid(Query q) {
+	protected double getTargetCPC(Query q) {
 		double conversion;
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);

@@ -2,31 +2,22 @@ package agents;
 
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
-public class SlotAgent extends AbstractAgent {
+public class SlotAgent extends RuleBasedAgent {
 
-	protected AbstractConversionModel _conversionPrModel;
 	protected HashMap<Query, Double> _reinvestment;
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;
-	protected HashMap<Query, Double> _baselineConversion;
 
-	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
 
@@ -36,6 +27,7 @@ public class SlotAgent extends AbstractAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
 		buildMaps(models);
+		
 		for (Query query : _querySpace) {
 			double current = _reinvestment.get(query);
 
@@ -46,7 +38,8 @@ public class SlotAgent extends AbstractAgent {
 				handlePromotedSlots(query);
 			}
 
-			_bidBundle.setBid(query, getQueryBid(query));
+			double targetCPC = getTargetCPC(query);
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -59,7 +52,7 @@ public class SlotAgent extends AbstractAgent {
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 
-			if (BUDGET)  _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			if (BUDGET)  _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 
 		}
 		// output.flush();
@@ -77,6 +70,8 @@ public class SlotAgent extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
+		setDailyQueryCapacity();
+		
 		_reinvestment = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			_reinvestment.put(query, 0.3);
@@ -123,23 +118,20 @@ public class SlotAgent extends AbstractAgent {
 			}
 		}
 
-		/*
-		 * try { output = new PrintStream(new File("log.txt")); } catch
-		 * (FileNotFoundException e) { // TODO Auto-generated catch block
-		 * e.printStackTrace(); }
-		 */
-
+		setDailyQueryCapacity();
+		
 		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {
 
-			_bidBundle.setBid(query, getQueryBid(query));
+			double bid = getTargetCPC(query);
+			_bidBundle.setBid(query, bid);
 
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+			_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, bid));
 		}
 
 	}
 
-	protected double getQueryBid(Query q) {
+	protected double getTargetCPC(Query q) {
 		double conversion;
 		if (_day <= 6)
 			conversion = _baselineConversion.get(q);
@@ -156,12 +148,6 @@ public class SlotAgent extends AbstractAgent {
 	}
 
 	protected void handlePromotedSlots(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
-		else
-			conversion = _conversionPrModel.getPrediction(q);
-
 		if (_queryReport.getPosition(q) <= 3) {
 			double newReinvest = Math.max(0.1, _reinvestment.get(q) * .9);
 			_reinvestment.put(q, newReinvest);
@@ -184,38 +170,6 @@ public class SlotAgent extends AbstractAgent {
 		 * if(currentReinvest - rfDistance <= 0.1) _reinvestment.put(q,0.1);
 		 * else _reinvestment.put(q, currentReinvest - rfDistance); } }
 		 */
-	}
-
-	protected double setQuerySpendLimit(Query q) {
-
-		double remainCap = 1.5 * _capacity / _capWindow;
-		if(_conversionPrModel != null) {
-			return getQueryBid(q) * remainCap / _conversionPrModel.getPrediction(q)
-			/ _querySpace.size();
-		}
-		else {
-			return getQueryBid(q) * remainCap / _baselineConversion.get(q)
-			/ _querySpace.size();
-		}
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		models.add(_conversionPrModel);
-		return models;
-	}
-
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		if (_day > 1 && salesReport != null && queryReport != null) {
-
-			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
-					MAX_TIME_HORIZON);
-			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-		}
 	}
 
 	@Override

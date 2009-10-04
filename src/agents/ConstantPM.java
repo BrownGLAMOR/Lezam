@@ -8,28 +8,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
-import newmodels.prconv.AbstractConversionModel;
-import newmodels.targeting.BasicTargetModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import agents.AbstractAgent;
 import newmodels.AbstractModel;
+import newmodels.prconv.AbstractConversionModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
-public class ConstantPM extends AbstractAgent {
+public class ConstantPM extends RuleBasedAgent {
 	private static final boolean SET_TARGET = true;
 	private static final boolean SET_BUDGET = false;
-	
-	private static final double BUDGET_CAPACITY = 1.5 * 0.2;
-	
-	private static final int MAX_TIME_HORIZON = 5;
 
 	private Set<Product> _productSpace;
 	private HashMap<Query, Double> _queryAvgProfit;
@@ -37,12 +26,7 @@ public class ConstantPM extends AbstractAgent {
 
 	private HashMap<Product, Double> _profit;
 
-	private int _timeHorizon;
-	
-	private AbstractConversionModel _model;
-
 	private int _day;
-	private int _capacity;
 
 	public ConstantPM() {
 		_day = 0;
@@ -59,9 +43,6 @@ public class ConstantPM extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
-		
-		double avgBid = 0;
-		double avgConvRate = 0;
 
 		System.out.println("\nBidding");
 		BidBundle bids = new BidBundle();
@@ -77,38 +58,58 @@ public class ConstantPM extends AbstractAgent {
 				ad = new Ad(null);
 
 			System.out.print(ad.toString() + ", ");
-			double pr = 0.1;
 
-			double myBid = (_queryAvgProfit.get(q) * 0.4) * pr;
-
-			avgBid += (myBid / (double)_querySpace.size());
-			avgConvRate += (pr / (double)_querySpace.size());
-
-			double budget =
-				((double)_capacity * BUDGET_CAPACITY * avgBid) / avgConvRate;
+			double targetCPC = getTargetCPC(q);
 			
-			//System.out.println(myBid);
-			bids.setBidAndAd(q, myBid, ad);
+			bids.setBidAndAd(q, _CPCToBidModel.getPrediction(q, targetCPC), ad);
+			
 			if(SET_BUDGET)
-				bids.setCampaignDailySpendLimit(budget);
+				bids.setDailyLimit(q, getDailySpendingLimit(q, targetCPC));
 		}
-		//System.out.println("Limit: " + ((((double)_capacity / 4.0) * avgBid) / avgConvRate));
-		//bids.setCampaignDailySpendLimit((((double)_capacity / 4.0) * avgBid) / avgConvRate);
 
 		return bids;
 	}
 
+	protected double getTargetCPC(Query q) {
+		double conversion;
+		if (_day <= 6)
+			conversion = _baselineConversion.get(q);
+		else
+			conversion = _conversionPrModel.getPrediction(q);
+		return _queryAvgProfit.get(q) * 0.4 * conversion;
+	}
+	
 	private void buildMaps(Set<AbstractModel> models) {
 		for(AbstractModel model : models) {
 			if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_model = convPrModel;
+				_conversionPrModel = convPrModel;
 			}
 		}
 	}
 
 	@Override
 	public void initBidder() {
+		setDailyQueryCapacity();
+		
+		_baselineConversion = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
+				_baselineConversion.put(q, 0.1);
+			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+				if (q.getComponent() == _compSpecialty)
+					_baselineConversion.put(q, 0.27);
+				else
+					_baselineConversion.put(q, 0.2);
+			}
+			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+				if (q.getComponent() == _compSpecialty)
+					_baselineConversion.put(q, 0.39);
+				else
+					_baselineConversion.put(q, 0.3);
+			}
+		}
+		
 		_capacity = _advertiserInfo.getDistributionCapacity();
 		_queryAvgProfit = initHashMap(new HashMap<Query, Double>());
 
@@ -140,7 +141,7 @@ public class ConstantPM extends AbstractAgent {
 				}
 			}
 		}
-
+		
 		for(Query q : _querySpace) {
 			Set<Product> s = _queryToProducts.get(q);
 			double profit = 0;
@@ -149,29 +150,6 @@ public class ConstantPM extends AbstractAgent {
 				profit += (_profit.get(p) / (double)s.size());
 			_queryAvgProfit.put(q, profit);
 			System.out.println(q + ": " + profit);
-		}
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> m = new HashSet<AbstractModel>();
-
-		_model = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		((HistoricPrConversionModel) _model).setTimeHorizon(3);
-		m.add(_model);
-
-		return m;
-	}
-
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		if( (salesReport != null) && (queryReport != null) ) {
-			_day++;
-			_timeHorizon = Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-
-			((HistoricPrConversionModel) _model).setTimeHorizon(_timeHorizon);
-			_model.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			
 		}
 	}
 	

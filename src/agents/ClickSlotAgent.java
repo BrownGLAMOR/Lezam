@@ -13,30 +13,17 @@ import java.util.Set;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.EnsembleBidToCPC;
-import newmodels.bidtocpc.RegressionBidToCPC;
-import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.prconv.GoodConversionPrModel;
-import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
-import newmodels.querytonumimp.AbstractQueryToNumImp;
-import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
-import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
-public class ClickSlotAgent extends AbstractAgent {
+public class ClickSlotAgent extends RuleBasedAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected AbstractBidToCPC _bidToCPCModel;
-	protected AbstractConversionModel _conversionPrModel;
-	protected HashMap<Query, Double> _baseLineConversion;
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _honestFactor;
 	protected HashMap<Query, Double> _wantedSales;
@@ -47,7 +34,6 @@ public class ClickSlotAgent extends AbstractAgent {
 	protected ArrayList<BidBundle> _bidBundles;
 
 	protected final double _errorOfLimit = .1;
-	protected final int MAX_TIME_HORIZON = 5;
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
 
@@ -86,7 +72,8 @@ public class ClickSlotAgent extends AbstractAgent {
 
 			// build bid bundle
 			for (Query query : _querySpace) {
-				_bidBundle.setBid(query, getQueryBid(query));
+				double targetCPC = getTargetCPC(query);
+				_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 				// set target ads
 				if (TARGET) {
@@ -100,8 +87,8 @@ public class ClickSlotAgent extends AbstractAgent {
 						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 				}
 
-				if (BUDGET) _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
-			}
+				if (BUDGET) _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
+				}
 
 			_bidBundles.add(_bidBundle);
 		}
@@ -112,34 +99,32 @@ public class ClickSlotAgent extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
-
+		setDailyQueryCapacity();
 
 		_honestFactor = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			_honestFactor.put(q, .3);
 		}
 
-		_baseLineConversion = new HashMap<Query, Double>();
+		_baselineConversion = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_baseLineConversion.put(q, 0.1);
+				_baselineConversion.put(q, 0.1);
 			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
 				if (q.getComponent() == _compSpecialty)
-					_baseLineConversion.put(q, 0.27);
+					_baselineConversion.put(q, 0.27);
 				else
-					_baseLineConversion.put(q, 0.2);
+					_baselineConversion.put(q, 0.2);
 			}
 			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
 				if (q.getComponent() == _compSpecialty)
-					_baseLineConversion.put(q, 0.39);
+					_baselineConversion.put(q, 0.39);
 				else
-					_baseLineConversion.put(q, 0.3);
+					_baselineConversion.put(q, 0.3);
 			}
 		}
 
-		_dailyCapacity = 1.5*_capacity/_capWindow;
-
-		double slice = _capacity*1.5 / (20 * _capWindow);
+		double slice = _dailyCapacity / 20;
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			if (q.getManufacturer() == _manSpecialty)
@@ -190,41 +175,25 @@ public class ClickSlotAgent extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
+		models.addAll(super.initModels());
+		
 		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-		_bidToCPCModel = new EnsembleBidToCPC(_querySpace, 10, 25, true, true);
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		models.add(_bidToCPCModel);
-		models.add(_conversionPrModel);
+
 		models.add(_unitsSoldModel);
 		return models;
 	}
 
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-
-		if( (salesReport != null) && (queryReport != null)) {
-
-			int timeHorizon = (int) Math.min(Math.max(1,_day - 1), MAX_TIME_HORIZON);
-			((HistoricPrConversionModel) _conversionPrModel).setTimeHorizon(timeHorizon);
-			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-
-			if (_bidBundles.size() > 1) 
-				_bidToCPCModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
-		}
-
-
-	}
-
-	protected double getQueryBid(Query q) {
+	protected double getTargetCPC(Query q) {
 		double prConv;
-		if (_day <= 6) prConv = _baseLineConversion.get(q);
+		if (_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		return _revenue.get(q) * _honestFactor.get(q) * prConv;
 	}
 
-	protected double setQuerySpendLimit(Query q) {
+	@Override
+	protected double getDailySpendingLimit(Query q, double targetCpc) {
 		double prConv;
-		if (_day <= 6) prConv = _baseLineConversion.get(q);
+		if (_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 
