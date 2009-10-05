@@ -149,7 +149,6 @@ public class ILPPosAgent extends AbstractAgent {
 		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 10, 20, true, true);
 		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, false);
 		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
-		BasicPosToPrClick basicPosToPrClickModel = new BasicPosToPrClick(_numPS);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		AbstractCPCToBid CPCToBid = null;
 		try {
