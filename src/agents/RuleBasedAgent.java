@@ -149,6 +149,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			if(model instanceof AbstractUnitsSoldModel) {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
 				_unitsSoldModel = unitsSold;
+				setDailyQueryCapacity();
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;

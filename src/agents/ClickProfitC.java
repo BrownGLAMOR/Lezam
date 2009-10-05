@@ -30,8 +30,6 @@ public class ClickProfitC extends RuleBasedAgent {
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
 
-	protected ArrayList<BidBundle> _bidBundleList;
-
 	protected final int MAX_TIME_HORIZON = 5;
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
@@ -170,8 +168,6 @@ public class ClickProfitC extends RuleBasedAgent {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 			}
 		}
-
-		_bidBundleList.add(_bidBundle);
 
 		return _bidBundle;
 	}

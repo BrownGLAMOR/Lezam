@@ -102,6 +102,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	@Override
 	public void initBidder() {
+		super.initBidder();
 		setDailyQueryCapacity();
 
 		_honestFactor = new HashMap<Query, Double>();
@@ -181,8 +182,9 @@ public class PortfolioOpt extends RuleBasedAgent {
 		HashMap<Query, Double> relatives = getRelatives(_queryReport, _salesReport);
 		normalizeWeights(_wantedSales);
 		HashMap<Query, Double> weights = EGUpdate(_wantedSales,relatives);
+		normalizeWeights(weights);
 		for(Query query : _querySpace) {
-			_wantedSales.put(query, weights.get(query));
+			_wantedSales.put(query, weights.get(query)*_dailyCapacity);
 		}
 	}
 	
@@ -214,7 +216,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 			}
 			relatives.put(query, newprices.get(query));
 			//			_oldprices.put(query,newprices.get(query));
-			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
 		}
 		return relatives;
 	}
@@ -236,6 +237,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 		// Now update the weights
 		for(Query query:_querySpace) {
 			weights.put(query, (weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
+			System.out.println("\n\n"+"*************"+"\n"+weights.get(query));
 		}
 		return weights;
 	}
@@ -243,7 +245,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "ClickSlot";
+		return "PortfolioOpt";
 	}
 
 }

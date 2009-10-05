@@ -21,7 +21,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquateProfitC extends RuleBasedAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected BasicTargetModel _targetModel;
 	protected HashMap<Query, Double> _prClick;
 	
 	//k is a constant that equates EPPC across queries
