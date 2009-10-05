@@ -425,7 +425,6 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
@@ -500,12 +499,12 @@ public class ILPBidAgent extends AbstractAgent {
 				 * Capacity constraint II
 				 *  -Cannot sell more items than our capacity + overcap
 				 */
-				double capacity = _capacity/_capWindow;
+				double capacity = _capacity/((double)_capWindow);
 				if(_day < 4) {
 					//do nothing
 				}
 				else {
-					capacity = _capacity - _unitsSold.getWindowSold();
+					capacity = Math.max(_capacity/((double)_capWindow) * (2/3.0),(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
 					debug("Unit Sold Model Budget "  +capacity);
 				}
 

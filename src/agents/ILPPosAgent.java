@@ -467,7 +467,6 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {
@@ -546,10 +545,7 @@ public class ILPPosAgent extends AbstractAgent {
 					//do nothing
 				}
 				else {
-					capacity = _capacity - _unitsSold.getWindowSold();
-					if(capacity < 20) {
-						capacity = 20;
-					}
+					capacity = Math.max(_capacity/((double)_capWindow) * (2/3.0),(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
 					debug("Unit Sold Model Budget "  +capacity);
 				}
 

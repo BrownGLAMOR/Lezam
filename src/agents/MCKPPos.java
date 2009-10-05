@@ -412,10 +412,7 @@ public class MCKPPos extends AbstractAgent {
 				//do nothing
 			}
 			else {
-				capacity = _capacity- _unitsSold.getWindowSold();
-				if(capacity < 20) {
-					capacity = 20;
-				}
+				capacity = Math.max(_capacity/((double)_capWindow) * (2/3.0),(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
 				debug("Unit Sold Model Budget "  +capacity);
 			}
 
@@ -617,7 +614,6 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= .75;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
