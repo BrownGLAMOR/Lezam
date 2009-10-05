@@ -15,6 +15,7 @@ import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.BasicUnitsSoldLambdaModel;
 import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 
@@ -112,7 +113,8 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_unitsSoldModel = new BasicUnitsSoldModel(_querySpace, _capacity, _capWindow);
+		setDailyQueryCapacity();
+		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,_dailyCapacityLambda);
 		_bidToCPCModel = new EnsembleBidToCPC(_querySpace,10,20,true,false);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		try {
@@ -190,7 +192,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * .75 ,_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
 		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
-		System.out.println("Daily CAp: " + _dailyCapacity);
+		System.out.println("Daily Cap: " + _dailyCapacity);
 	}
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {

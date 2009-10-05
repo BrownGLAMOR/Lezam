@@ -135,8 +135,8 @@ public class EquateProfitC extends RuleBasedAgent{
 			k *= 1.1;
 		}
 
-		k = Math.max(7, k);
-		k = Math.min(14.5, k);
+		k = Math.max(1, k);
+		k = Math.min(7, k);
 	
 		return k;
 	}
