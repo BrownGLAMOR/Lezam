@@ -179,7 +179,7 @@ public class ClickProfitC extends RuleBasedAgent {
 			conversion = _baselineConversion.get(q);
 		else conversion= _conversionPrModel.getPrediction(q);
 
-		double dailySalesLimit = Math.max(_desiredSales.get(q)/conversion,2);
+		double dailySalesLimit = Math.max(_desiredSales.get(q)/conversion,3);
 		return targetCPC * dailySalesLimit * 1.1;
 	}
 

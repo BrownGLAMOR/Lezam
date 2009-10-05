@@ -545,7 +545,7 @@ public class ILPPosAgent extends AbstractAgent {
 					//do nothing
 				}
 				else {
-					capacity = Math.max(_capacity/((double)_capWindow)*.8,(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
+					capacity = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
 					debug("Unit Sold Model Budget "  +capacity);
 				}
 
