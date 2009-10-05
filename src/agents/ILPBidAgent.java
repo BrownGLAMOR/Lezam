@@ -62,7 +62,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.2;
+	private double boostCoeff = 1.3;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -97,7 +97,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .03;
+		double bidIncrement  = .05;
 		double bidMin = .04;
 		double bidMax = 2.5;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -425,6 +425,7 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= .75;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){

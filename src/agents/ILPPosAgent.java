@@ -77,7 +77,7 @@ public class ILPPosAgent extends AbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.2;
+	private double boostCoeff = 1.3;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -467,7 +467,7 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-
+				valueLostWindow *= .75;
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {

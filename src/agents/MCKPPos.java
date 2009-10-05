@@ -71,7 +71,7 @@ public class MCKPPos extends AbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.2;
+	private double boostCoeff = 1.3;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -92,7 +92,7 @@ public class MCKPPos extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> posList;
 	private int _capacityInc = 10;
-	private int lagDays = 7;
+	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private double _outOfAuction = 6.0;
 
@@ -617,6 +617,7 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= .75;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
