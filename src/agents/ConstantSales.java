@@ -17,8 +17,8 @@ public class ConstantSales extends RuleBasedAgent {
 
 	protected double _desiredSale;
 	protected BidBundle _bidBundle;
-	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
+	protected final boolean TARGET = false;
+	protected final boolean BUDGET = true;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -44,7 +44,7 @@ public class ConstantSales extends RuleBasedAgent {
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setBid(query, bid);
 
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))

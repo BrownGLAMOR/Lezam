@@ -30,8 +30,8 @@ public class ClickProfitS extends RuleBasedAgent {
 	protected final double _errorOfConversions = 2;
 	protected final double _errorOfProfit = .1;
 	protected final double _errorOfLimit = .1;
-	protected boolean TARGET = true;
-	protected boolean BUDGET = false;
+	protected boolean TARGET = false;
+	protected boolean BUDGET = true;
 
 	
 	@Override
@@ -145,7 +145,7 @@ public class ClickProfitS extends RuleBasedAgent {
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setBid(query, bid);
 			
 			// set target ads
 			if (TARGET) {

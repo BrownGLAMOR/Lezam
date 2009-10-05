@@ -16,8 +16,8 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 public class ConstantPM extends RuleBasedAgent {
-	private static final boolean SET_TARGET = true;
-	private static final boolean SET_BUDGET = false;
+	private static final boolean SET_TARGET = false;
+	private static final boolean SET_BUDGET = true;
 
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Set<Product>> _queryToProducts;
@@ -61,7 +61,7 @@ public class ConstantPM extends RuleBasedAgent {
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			bids.setBid(q, _CPCToBidModel.getPrediction(q, targetCPC));
+			bids.setBid(q, bid);
 			
 			if(SET_BUDGET)
 				bids.setDailyLimit(q, getDailySpendingLimit(q, targetCPC));

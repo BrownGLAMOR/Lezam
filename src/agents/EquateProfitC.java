@@ -28,7 +28,7 @@ public class EquateProfitC extends RuleBasedAgent{
 	protected BidBundle _bidBundle;
 	protected ArrayList<BidBundle> _bidBundleList;
 	
-	protected boolean TARGET = true;
+	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
 	
 
@@ -57,7 +57,7 @@ public class EquateProfitC extends RuleBasedAgent{
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setBid(query, bid);
 			
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))

@@ -25,9 +25,8 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	protected ArrayList<BidBundle> _bidBundles;
 
-	protected final double _errorOfLimit = .1;
-	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
+	protected boolean TARGET = false;
+	protected boolean BUDGET = true;
 
 	protected final static double LEARNING_RATE = .075;
 
@@ -60,7 +59,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setBid(query, bid);
 
 			// set target ads
 			if (TARGET) {

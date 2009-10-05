@@ -17,8 +17,8 @@ public class GoodSlot extends RuleBasedAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;
 
-	protected boolean TARGET = true;
-	protected boolean BUDGET = false;
+	protected boolean TARGET = false;
+	protected boolean BUDGET = true;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -50,7 +50,7 @@ public class GoodSlot extends RuleBasedAgent {
 			if(Double.isNaN(bid)) {
 				bid = targetCPC;
 			}
-			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+			_bidBundle.setBid(query, bid);
 
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
