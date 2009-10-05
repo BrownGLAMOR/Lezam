@@ -178,13 +178,22 @@ public class PortfolioOpt extends RuleBasedAgent {
 	}
 
 	protected void adjustWantedSales() {
-
 		HashMap<Query, Double> relatives = getRelatives(_queryReport, _salesReport);
-
+		normalizeWeights(_wantedSales);
 		HashMap<Query, Double> weights = EGUpdate(_wantedSales,relatives);
-		
 		for(Query query : _querySpace) {
 			_wantedSales.put(query, weights.get(query));
+		}
+	}
+	
+	protected void normalizeWeights(HashMap<Query, Double> weights) {
+		double total = 0;
+		for(Query query:weights.keySet())
+			total += weights.get(query);
+		
+		for(Query query:weights.keySet()) {
+			double value = weights.get(query)/total;
+			weights.put(query, value);
 		}
 	}
 
