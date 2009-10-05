@@ -146,9 +146,9 @@ public class ILPPosAgent extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 10, 20, true, true);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, false);
-		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
+		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 10, 10, true, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 10, true, false);
+		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		AbstractCPCToBid CPCToBid = null;
 		try {
