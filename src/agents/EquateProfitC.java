@@ -128,15 +128,15 @@ public class EquateProfitC extends RuleBasedAgent{
 			sum+= _salesReport.getConversions(query);
 		}
 
-		if(sum <= 0.9* _dailyCapacity) {
+		if(sum <= .9*_dailyCapacity) {
 			k *= .9;
 		}
-		if(sum >= 1.1* _dailyCapacity){
+		if(sum >= 1.1*_dailyCapacity){
 			k *= 1.1;
 		}
 
-		k = Math.max(2, k);
-		k = Math.min(5, k);
+		k = Math.max(7, k);
+		k = Math.min(14.5, k);
 	
 		return k;
 	}
