@@ -15,6 +15,7 @@ import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
+import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 
 import org.rosuda.REngine.Rserve.RConnection;
@@ -111,7 +112,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+		_unitsSoldModel = new BasicUnitsSoldModel(_querySpace, _capacity, _capWindow);
 		_bidToCPCModel = new EnsembleBidToCPC(_querySpace,10,20,true,false);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		try {
@@ -138,6 +139,8 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 
 		if (_bidBundles.size() > 1 && salesReport != null && queryReport != null) {
+			_unitsSoldModel.update(salesReport);
+			setDailyQueryCapacity();
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			_bidToCPCModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
 			_CPCToBidModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
@@ -149,7 +152,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			if(model instanceof AbstractUnitsSoldModel) {
 				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
 				_unitsSoldModel = unitsSold;
-				setDailyQueryCapacity();
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
