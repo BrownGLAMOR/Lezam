@@ -64,10 +64,10 @@ public class MCKPPos extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = false;
-	private static final boolean BOOST = false;
+	private static final boolean SAFETYBUDGET = true;
+	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 800;
+	private double _safetyBudget = 1000;
 
 	//Days since Last Boost
 	private double lastBoost;
