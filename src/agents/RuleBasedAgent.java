@@ -45,7 +45,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
-		
+
 		_R = new Random();
 
 		_baselineConversion = new HashMap<Query, Double>();
@@ -121,7 +121,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			e.printStackTrace();
 		}
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
-		
+
 		models.add(_unitsSoldModel);
 		models.add(_bidToCPCModel);
 		models.add(_conversionPrModel);
@@ -172,15 +172,20 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 
 	protected void setDailyQueryCapacity(){
 		if(_capacity >= HIGH_CAPACITY) {
-			_dailyCapacityLambda = 1.7;
+			_dailyCapacityLambda = 1.2;
 		}
 		else if(_capacity >= MEDIUM_CAPACITY) {
-			_dailyCapacityLambda = 1.5;
+			_dailyCapacityLambda = 1.35;
 		}
 		else {
-			_dailyCapacityLambda = 1.3;
+			_dailyCapacityLambda = 1.5;
 		}
-		_dailyCapacity = _dailyCapacityLambda * (_capacity - _unitsSoldModel.getWindowSold());
+		if(_day < 2 ){
+			_dailyCapacity = _dailyCapacityLambda * (_capacity/_capWindow);
+		}
+		else {
+			_dailyCapacity = _dailyCapacityLambda * (_capacity - _unitsSoldModel.getWindowSold());
+		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
 	}
 
@@ -203,7 +208,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			bid = randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
 		return bid;
 	}
-	
+
 	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;

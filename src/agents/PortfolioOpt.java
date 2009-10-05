@@ -41,7 +41,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace) {
 				double bid = getRandomBid(q);
-				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+				_bidBundle.addQuery(q, bid, new Ad());
 			}
 			return _bidBundle;
 		}
@@ -110,7 +110,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 			_honestFactor.put(q, .3);
 		}
 
-		double slice = _dailyCapacity / 20;
+		double slice = _dailyCapacity / 20.0;
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			if (q.getManufacturer() == _manSpecialty)
@@ -214,8 +214,8 @@ public class PortfolioOpt extends RuleBasedAgent {
 			else {
 				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
 			}
+			
 			relatives.put(query, newprices.get(query));
-			//			_oldprices.put(query,newprices.get(query));
 		}
 		return relatives;
 	}
