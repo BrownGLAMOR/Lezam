@@ -319,7 +319,7 @@ public class ILPBidAgent extends AbstractAgent {
 		}
 
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -553,18 +553,6 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				System.out.println("Going overcap by: " + totOverCap);
-
-				for(Query query : _querySpace) {
-					Integer isID = _queryId.get(query);
-					String toprint = "";
-					toprint += query + "  ";
-					for(int i = 0; i < _bidList.size(); i++) {
-						int idx = isID*_bidList.size() + i;
-						toprint += bidVal[idx];
-					}
-					System.out.println(toprint);
-				}
-
 
 				//set bids
 				for(Query q : _querySpace) {

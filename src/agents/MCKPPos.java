@@ -339,7 +339,7 @@ public class MCKPPos extends AbstractAgent {
 		}
 
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 

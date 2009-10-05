@@ -294,7 +294,7 @@ public class MCKPBid extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays || models != null){
+		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
