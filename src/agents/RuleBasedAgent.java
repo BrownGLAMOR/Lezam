@@ -182,7 +182,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		else {
 			_dailyCapacityLambda = 1.5;
 		}
-		if(_day < 2 ){
+		if(_day < 5 ){
 			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));
 		}
 		else {
