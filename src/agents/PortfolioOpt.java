@@ -22,7 +22,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected HashMap<Query, Double> _wantedSales;
 
 	protected BidBundle _bidBundle;
-	protected double _dailyCapacity;
 
 	protected ArrayList<BidBundle> _bidBundles;
 
@@ -49,22 +48,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 		_bidBundle = new BidBundle();
 
 		adjustWantedSales();
-
-		double normalizeFactor = 0;
-		for (Query query : _querySpace) {
-			normalizeFactor += _wantedSales.get(query);
-		}
-
-		int unitsSold = 0;
-		for (Query query : _querySpace) {
-			unitsSold += _salesReport.getConversions(query);
-		}
-
-		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
-		normalizeFactor = targetCapacity/normalizeFactor;
-		for (Query query : _querySpace) {
-			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
-		}
 
 		for (Query q : _querySpace) {
 			adjustHonestFactor(q);
@@ -110,14 +93,23 @@ public class PortfolioOpt extends RuleBasedAgent {
 			_honestFactor.put(q, .3);
 		}
 
+		System.out.println("Daily Cap in Port Opt: " + _dailyCapacity);;
+		
 		double slice = _dailyCapacity / 20.0;
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			if (q.getManufacturer() == _manSpecialty)
+			if (_manSpecialty.equals(q.getManufacturer()))
 				_wantedSales.put(q, 2 * slice);
 			else
 				_wantedSales.put(q, slice);
 
+		}
+		
+		System.out.println("Slice: " + slice);
+		
+		System.out.println("Initial Wanted Sales");
+		for(Query query : _querySpace) {
+			System.out.println(query + "  " + _wantedSales.get(query));
 		}
 
 		_revenue = new HashMap<Query, Double>();
@@ -186,6 +178,10 @@ public class PortfolioOpt extends RuleBasedAgent {
 		for(Query query : _querySpace) {
 			_wantedSales.put(query, weights.get(query)*_dailyCapacity);
 		}
+		System.out.println("New Wanted Sales");
+		for(Query query : _querySpace) {
+			System.out.println(query + "  " + _wantedSales.get(query));
+		}
 	}
 	
 	protected void normalizeWeights(HashMap<Query, Double> weights) {
@@ -237,7 +233,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 		// Now update the weights
 		for(Query query:_querySpace) {
 			weights.put(query, (weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
-			System.out.println("\n\n"+"*************"+"\n"+weights.get(query));
 		}
 		return weights;
 	}

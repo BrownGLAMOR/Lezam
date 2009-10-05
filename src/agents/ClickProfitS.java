@@ -22,7 +22,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ClickProfitS extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-	protected BasicTargetModel _targetModel;
 	protected double _avgProfit;
 	
 	protected HashMap<Query, Double> _desiredSales;
