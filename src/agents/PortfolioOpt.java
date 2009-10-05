@@ -5,19 +5,16 @@ package agents;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.prconv.AbstractConversionModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.SalesReport;
 
 public class PortfolioOpt extends RuleBasedAgent {
 	protected HashMap<Query, Double> _revenue;
@@ -33,11 +30,13 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
 
+	protected final static double LEARNING_RATE = .075;
+
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
 		buildMaps(models);
-		
+
 		if(_day < 2) { 
 			_bidBundle = new BidBundle();
 			for(Query q : _querySpace) {
@@ -46,13 +45,10 @@ public class PortfolioOpt extends RuleBasedAgent {
 			}
 			return _bidBundle;
 		}
-		
+
 		_bidBundle = new BidBundle();
 
-		// adjust parameters
-		for (Query q : _querySpace) {
-			adjustWantedSales(q);
-		}
+		adjustWantedSales();
 
 		double normalizeFactor = 0;
 		for (Query query : _querySpace) {
@@ -181,21 +177,60 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	}
 
-	protected void adjustWantedSales(Query q) {
-		/* if we sold less than what we expected, but we got good position,
-			 then lower our expectation*/
-		if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
-			if (_queryReport.getPosition(q) <= 3) {
-				_wantedSales.put(q, _wantedSales.get(q) * .8);
-			}
-		} else {
-			/* if we sold more than what we expected, but we got bad
-				 position, then increase our expectation*/
-			if (!(_queryReport.getPosition(q) <= 4)) {
-				_wantedSales.put(q, _wantedSales.get(q) * 1.25);
-			}
+	protected void adjustWantedSales() {
+
+		HashMap<Query, Double> relatives = getRelatives(_queryReport, _salesReport);
+
+		HashMap<Query, Double> weights = EGUpdate(_wantedSales,relatives);
+		
+		for(Query query : _querySpace) {
+			_wantedSales.put(query, weights.get(query));
 		}
 	}
+
+	private HashMap<Query, Double> getRelatives(QueryReport queryReport, SalesReport salesReport) {
+		HashMap<Query,Double> newprices = new HashMap<Query,Double>();
+		HashMap<Query,Double> relatives = new HashMap<Query, Double>();
+		for(Query query:_querySpace) {
+			// Zero case, not in the query at all
+			// We don't want to not explore this at all, so for the time being
+			// we will set it to 1.
+			if( Math.abs( queryReport.getCost(query) ) <= .001 || 
+					salesReport.getRevenue(query) <= .001) {
+				newprices.put(query, 1.0);
+			}
+			// Otherwise we put the actual relative in there
+			else {
+				newprices.put(query,salesReport.getRevenue(query) / queryReport.getCost(query));
+			}
+			relatives.put(query, newprices.get(query));
+			//			_oldprices.put(query,newprices.get(query));
+			System.out.println("\n\n"+"*************"+"\n"+relatives.get(query));
+		}
+		return relatives;
+	}
+
+	protected HashMap<Query,Double> EGUpdate(HashMap<Query,Double> weights, HashMap<Query,Double> relatives) {
+		// Update weights using the EG algorithm
+		// First get the dot product
+		double dotProduct = 0;
+		for(Query query:_querySpace)  {
+			dotProduct += weights.get(query)*relatives.get(query);
+		}
+
+		// Now get the denominator
+		double totalWeights = 0;
+		for(Query query:_querySpace) {
+			totalWeights += weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct);
+		}
+
+		// Now update the weights
+		for(Query query:_querySpace) {
+			weights.put(query, (weights.get(query)*Math.exp((LEARNING_RATE)*relatives.get(query)/dotProduct))/totalWeights);
+		}
+		return weights;
+	}
+
 
 	@Override
 	public String toString() {
