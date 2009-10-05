@@ -1480,7 +1480,7 @@ public class PredictionEvaluator {
 			 * Bid-CPC is true,false
 			 */
 
-			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,10,true,false));
+			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
