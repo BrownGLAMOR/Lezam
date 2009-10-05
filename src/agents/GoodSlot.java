@@ -1,6 +1,5 @@
 package agents;
 
-import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -18,16 +17,14 @@ public class GoodSlot extends RuleBasedAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected BidBundle _bidBundle;
 
-	protected final boolean TARGET = true;
-	protected final boolean BUDGET = false;
-
-	protected PrintStream output;
+	protected boolean TARGET = true;
+	protected boolean BUDGET = false;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
 		buildMaps(models);
-		
+		_bidBundle = new BidBundle();
 		for (Query query : _querySpace) {
 			double current = _reinvestment.get(query);
 
@@ -39,6 +36,10 @@ public class GoodSlot extends RuleBasedAgent {
 			}
 
 			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
 			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
 
 			if (TARGET) {
@@ -55,21 +56,12 @@ public class GoodSlot extends RuleBasedAgent {
 			if (BUDGET)  _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 
 		}
-		// output.flush();
 		return _bidBundle;
-	}
-
-	protected void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
 	}
 
 	@Override
 	public void initBidder() {
+		super.initBidder();
 		setDailyQueryCapacity();
 		
 		_reinvestment = new HashMap<Query, Double>();
@@ -99,36 +91,6 @@ public class GoodSlot extends RuleBasedAgent {
 					_revenue.put(query, 10.0);
 			}
 		}
-
-		_baselineConversion = new HashMap<Query, Double>();
-		for (Query q : _querySpace) {
-			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_baselineConversion.put(q, 0.1);
-			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.27);
-				else
-					_baselineConversion.put(q, 0.2);
-			}
-			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.39);
-				else
-					_baselineConversion.put(q, 0.3);
-			}
-		}
-
-		setDailyQueryCapacity();
-		
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {
-
-			double bid = getTargetCPC(query);
-			_bidBundle.setBid(query, bid);
-
-			_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, bid));
-		}
-
 	}
 
 	protected double getTargetCPC(Query q) {
@@ -174,7 +136,7 @@ public class GoodSlot extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "Slot";
+		return "GoodSlot";
 	}
 
 }

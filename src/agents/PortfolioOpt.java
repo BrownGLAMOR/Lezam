@@ -3,9 +3,6 @@
  */
 package agents;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,12 +33,11 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected final boolean TARGET = true;
 	protected final boolean BUDGET = false;
 
-	protected PrintStream output;
-
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
 		buildMaps(models);
+		_bidBundle = new BidBundle();
 
 		if(_day > 1) {
 			// adjust parameters
@@ -96,7 +92,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 			_bidBundles.add(_bidBundle);
 		}
-		//printInfo();
 
 		return _bidBundle;
 	}
@@ -108,24 +103,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 		_honestFactor = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			_honestFactor.put(q, .3);
-		}
-
-		_baselineConversion = new HashMap<Query, Double>();
-		for (Query q : _querySpace) {
-			if (q.getType() == QueryType.FOCUS_LEVEL_ZERO)
-				_baselineConversion.put(q, 0.1);
-			if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.27);
-				else
-					_baselineConversion.put(q, 0.2);
-			}
-			if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
-				if (q.getComponent() == _compSpecialty)
-					_baselineConversion.put(q, 0.39);
-				else
-					_baselineConversion.put(q, 0.3);
-			}
 		}
 
 		double slice = _dailyCapacity / 20;
@@ -149,42 +126,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 		_bidBundle = new BidBundle();
 
 		_bidBundles = new ArrayList<BidBundle>();
-
-
-		try {
-			output = new PrintStream(new File("ch.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	protected void buildMaps(Set<AbstractModel> models) {
-		for(AbstractModel model : models) {
-			if(model instanceof AbstractUnitsSoldModel) {
-				AbstractUnitsSoldModel unitsSold = (AbstractUnitsSoldModel) model;
-				_unitsSoldModel = unitsSold;
-			}
-			else if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPCModel = bidToCPC; 
-			}
-			else if(model instanceof AbstractConversionModel) {
-				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-				_conversionPrModel = convPrModel;
-			}
-		}
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		models.addAll(super.initModels());
-		
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
-
-		models.add(_unitsSoldModel);
-		return models;
 	}
 
 	protected double getTargetCPC(Query q) {
@@ -246,44 +187,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 				_wantedSales.put(q, _wantedSales.get(q) * 1.25);
 			}
 		}
-	}
-
-	protected void printInfo() {
-		// print debug info
-		StringBuffer buff = new StringBuffer(255);
-		buff.append("****************\n");
-		buff.append("\t").append("Day: ").append(_day).append("\n");
-		buff.append("\t").append("Window Sold: ").append(
-				_unitsSoldModel.getWindowSold()).append("\n");
-		buff.append("\t").append("Yesterday sold: ").append(
-				_unitsSoldModel.getLatestSample()).append("\n");
-		buff.append("\t").append("Estimated sold: ").append(
-				_unitsSoldModel.getEstimate()).append("\n");
-		buff.append("\t").append("Manufacturer specialty: ").append(
-				_advertiserInfo.getManufacturerSpecialty()).append("\n");
-		for (Query q : _querySpace) {
-			buff.append("\t").append("Day: ").append(_day).append("\n");
-			buff.append(q).append("\n");
-			buff.append("\t").append("Bid: ").append(_bidBundle.getBid(q)).append("\n");
-			buff.append("\t").append("SpendLimit: ").append(_bidBundle.getDailyLimit(q)).append("\n");
-			if (_salesReport.getConversions(q) > 0) 
-				buff.append("\t").append("Revenue: ").append(_salesReport.getRevenue(q)/_salesReport.getConversions(q)).append("\n");
-			else buff.append("\t").append("Revenue: ").append("0.0").append("\n");
-			buff.append("\t").append("Predicted Revenue:").append(_revenue.get(q)).append("\n");
-			if (_queryReport.getClicks(q) > 0) 
-				buff.append("\t").append("Conversion Pr: ").append(_salesReport.getConversions(q)*1.0/_queryReport.getClicks(q)).append("\n");
-			else buff.append("\t").append("Conversion Pr: ").append("No Clicks").append("\n");
-			buff.append("\t").append("Predicted Conversion Pr:").append(_conversionPrModel.getPrediction(q)).append("\n");
-			buff.append("\t").append("Conversions: ").append(_salesReport.getConversions(q)).append("\n");
-			buff.append("\t").append("Desired Sales: ").append(_wantedSales.get(q)).append("\n");
-			buff.append("\t").append("Average Position:").append(_queryReport.getPosition(q)).append("\n");
-			buff.append("****************\n");
-		}
-
-		System.out.println(buff);
-		output.append(buff);
-		output.flush();
-
 	}
 
 	@Override
