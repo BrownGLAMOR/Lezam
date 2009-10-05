@@ -28,6 +28,8 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.cpctobid.AbstractCPCToBid;
+import newmodels.cpctobid.BidToCPCInverter;
 import newmodels.postobid.AbstractPosToBid;
 import newmodels.postobid.BidToPosInverter;
 import newmodels.postocpc.AbstractPosToCPC;
@@ -86,14 +88,13 @@ public class ILPPosAgent extends AbstractAgent {
 	private AbstractUserModel _userModel;
 	private AbstractQueryToNumImp _queryToNumImpModel;
 	private AbstractPosToCPC _posToCPC;
+	private AbstractBidToCPC _bidToCPC;
+	private AbstractCPCToBid _CPCToBid;
 	private AbstractPosToPrClick _posToPrClick;
-	private AbstractBidToPos _bidToPos;
-	private AbstractPosToBid _bidToPosInverter;
 	private AbstractUnitsSoldModel _unitsSold;
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
-	private AvgPosToPosDist _avgPosDist;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> _posList;
 	private LinkedList<Integer> _capList;
@@ -145,29 +146,27 @@ public class ILPPosAgent extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 8, 25, true, true);
-		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
+		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 10, 20, true, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, false);
+		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
 		BasicPosToPrClick basicPosToPrClickModel = new BasicPosToPrClick(_numPS);
-		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicPosToPrClickModel);
-		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,7,15,true,true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
-		BidToPosInverter bidToPosInverter;
+		AbstractCPCToBid CPCToBid = null;
 		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, bidToPos, .1, 0.0, 3.5);
+			CPCToBid = new BidToCPCInverter(new RConnection(), _querySpace, bidToCPC, .05, 0, 3.0);
 		} catch (RserveException e) {
-			throw new RuntimeException("Cannot Access Rserve");
+			e.printStackTrace();
 		}
-
+		
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(posToCPC);
+		models.add(bidToCPC);
 		models.add(posToPrClick);
-		models.add(bidToPos);
 		models.add(unitsSold);
 		models.add(convPrModel);
 		models.add(basicTargModel);
-		models.add(avgPosToDistModel);
-		models.add(bidToPosInverter);
+		models.add(CPCToBid);
 		buildMaps(models);
 		return models;
 	}
@@ -190,13 +189,17 @@ public class ILPPosAgent extends AbstractAgent {
 				AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
 				_posToCPC = posToCPC; 
 			}
+			else if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				_bidToCPC = bidToCPC; 
+			}
+			else if(model instanceof AbstractCPCToBid) {
+				AbstractCPCToBid CPCToBid = (AbstractCPCToBid) model;
+				_CPCToBid = CPCToBid; 
+			}
 			else if(model instanceof AbstractPosToPrClick) {
 				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 				_posToPrClick = posToPrClick;
-			}
-			else if(model instanceof AbstractBidToPos) {
-				AbstractBidToPos bidToPos = (AbstractBidToPos) model;
-				_bidToPos = bidToPos;
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
@@ -205,17 +208,6 @@ public class ILPPosAgent extends AbstractAgent {
 			else if(model instanceof BasicTargetModel) {
 				BasicTargetModel targModel = (BasicTargetModel) model;
 				_targModel = targModel;
-			}
-			else if(model instanceof AvgPosToPosDist) {
-				AvgPosToPosDist avgPosDist = (AvgPosToPosDist) model;
-				_avgPosDist = avgPosDist;
-			}
-			else if(model instanceof AbstractPosToBid) {
-				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
-				_bidToPosInverter = bidToPosInverter;
-				//				for(Query query : _querySpace) {
-				//					System.out.println(query + ", pos: 2.5, bid: " + _bidToPosInverter.getPrediction(query, 2.5));
-				//				}
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)" + model);
@@ -316,13 +308,17 @@ public class ILPPosAgent extends AbstractAgent {
 				AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
 				posToCPC.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
+			else if(model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				bidToCPC.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			}
+			else if(model instanceof AbstractCPCToBid) {
+				AbstractCPCToBid CPCToBid = (AbstractCPCToBid) model;
+				CPCToBid.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			}
 			else if(model instanceof AbstractPosToPrClick) {
 				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
 				posToPrClick.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			}
-			else if(model instanceof AbstractBidToPos) {
-				AbstractBidToPos bidToPosModel = (AbstractBidToPos) model;
-				bidToPosModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
@@ -339,13 +335,6 @@ public class ILPPosAgent extends AbstractAgent {
 			}
 			else if(model instanceof BasicTargetModel) {
 				//Do nothing
-			}
-			else if(model instanceof AvgPosToPosDist) {
-				//Do Nothing
-			}
-			else if(model instanceof AbstractPosToBid) {
-				AbstractPosToBid bidToPosInverter = (AbstractPosToBid) model;
-				bidToPosInverter.updateModel(queryReport, salesReport,_bidBundles.get(_bidBundles.size()-2));
 			}
 			else {
 				//				throw new RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)");
@@ -626,7 +615,7 @@ public class ILPPosAgent extends AbstractAgent {
 						}
 					}
 
-					double bid = _bidToPosInverter.getPrediction(q, pos);
+					double bid = _CPCToBid.getPrediction(q, _posToCPC.getPrediction(q, pos));
 					if(Double.isNaN(bid)) {
 						bid = 0.0;
 					}
