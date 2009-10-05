@@ -125,7 +125,7 @@ public class ILPPosAgent extends AbstractAgent {
 		_capList = new LinkedList<Integer>();
 		int increment = 10;
 		int min = 10;
-		int max = 200;
+		int max = 150;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}
