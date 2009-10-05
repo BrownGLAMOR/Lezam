@@ -186,7 +186,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));
 		}
 		else {
-			_dailyCapacity = _dailyCapacityLambda * (_capacity - _unitsSoldModel.getWindowSold());
+			_dailyCapacity = Math.min(20,_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
 		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
 		System.out.println("Daily CAp: " + _dailyCapacity);
