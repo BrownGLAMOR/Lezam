@@ -184,7 +184,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	}
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
-		if(_conversionPrModel != null) {
+		if(_day >= 6 && _conversionPrModel != null) {
 			return targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
 		}
 		else {

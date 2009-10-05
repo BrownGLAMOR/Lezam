@@ -32,7 +32,16 @@ public class ConstantPM extends RuleBasedAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
 
-		System.out.println("\nBidding");
+		if(_day < 2) { 
+			BidBundle bundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				bundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return bundle;
+		}
+		
+		
 		BidBundle bids = new BidBundle();
 		for(Query q : _querySpace) {
 			System.out.print("\t" + q.toString() + ": ");

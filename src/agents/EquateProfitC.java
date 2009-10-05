@@ -36,6 +36,16 @@ public class EquateProfitC extends RuleBasedAgent{
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
+		
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
+		}
+		
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			updateK();
 		}
@@ -150,10 +160,6 @@ public class EquateProfitC extends RuleBasedAgent{
 	}
 
 
-	protected double setQuerySpendLimit(Query q) {
-		return 0;
-	}
-	
 	@Override
 	public String toString() {
 		return "EquateProfitC";

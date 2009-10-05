@@ -24,6 +24,16 @@ public class ConstantSales extends RuleBasedAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
 		_bidBundle = new BidBundle();
+		
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
+		}
+		
 		for (Query query : _querySpace) {
 			if(_day > 1) {
 				adjustPM(query);

@@ -37,61 +37,69 @@ public class PortfolioOpt extends RuleBasedAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
 		buildMaps(models);
+		
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
+		}
+		
 		_bidBundle = new BidBundle();
 
-		if(_day > 1) {
-			// adjust parameters
-			for (Query q : _querySpace) {
-				adjustWantedSales(q);
-			}
-
-			double normalizeFactor = 0;
-			for (Query query : _querySpace) {
-				normalizeFactor += _wantedSales.get(query);
-			}
-
-			int unitsSold = 0;
-			for (Query query : _querySpace) {
-				unitsSold += _salesReport.getConversions(query);
-			}
-
-			int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
-			normalizeFactor = targetCapacity/normalizeFactor;
-			for (Query query : _querySpace) {
-				_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
-			}
-
-			for (Query q : _querySpace) {
-				adjustHonestFactor(q);
-			}
-
-			// build bid bundle
-			for (Query query : _querySpace) {
-				double targetCPC = getTargetCPC(query);
-				double bid = _CPCToBidModel.getPrediction(query, targetCPC);
-				if(Double.isNaN(bid)) {
-					bid = targetCPC;
-				}
-				_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
-
-				// set target ads
-				if (TARGET) {
-					if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-						_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-					if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-					if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-						_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				}
-
-				if (BUDGET) 
-					_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
-				}
-
-			_bidBundles.add(_bidBundle);
+		// adjust parameters
+		for (Query q : _querySpace) {
+			adjustWantedSales(q);
 		}
+
+		double normalizeFactor = 0;
+		for (Query query : _querySpace) {
+			normalizeFactor += _wantedSales.get(query);
+		}
+
+		int unitsSold = 0;
+		for (Query query : _querySpace) {
+			unitsSold += _salesReport.getConversions(query);
+		}
+
+		int targetCapacity = (int)Math.max(2*_dailyCapacity - unitsSold, _dailyCapacity*.5);
+		normalizeFactor = targetCapacity/normalizeFactor;
+		for (Query query : _querySpace) {
+			_wantedSales.put(query, _wantedSales.get(query)*normalizeFactor);
+		}
+
+		for (Query q : _querySpace) {
+			adjustHonestFactor(q);
+		}
+
+		// build bid bundle
+		for (Query query : _querySpace) {
+			double targetCPC = getTargetCPC(query);
+			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
+			if(Double.isNaN(bid)) {
+				bid = targetCPC;
+			}
+			_bidBundle.setBid(query, _CPCToBidModel.getPrediction(query, targetCPC));
+
+			// set target ads
+			if (TARGET) {
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
+					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
+					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
+			}
+
+			if (BUDGET) 
+				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
+		}
+
+		_bidBundles.add(_bidBundle);
 
 		return _bidBundle;
 	}

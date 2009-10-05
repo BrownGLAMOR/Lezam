@@ -35,6 +35,15 @@ public class EquateProfitS extends RuleBasedAgent{
 		
 		buildMaps(models);
 		
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
+		}
+		
 		_bidBundle = new BidBundle();
 
 		if (_day > 1 && _salesReport != null && _queryReport != null) {

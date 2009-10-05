@@ -73,11 +73,15 @@ public class ClickProfitS extends RuleBasedAgent {
 		
 		buildMaps(models);
 		
-		if(_salesReport == null || _queryReport == null) {
-			return new BidBundle();
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
 		}
 		
-
 		
 		this.setAvgProfit();
 		

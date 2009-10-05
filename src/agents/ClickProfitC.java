@@ -80,54 +80,59 @@ public class ClickProfitC extends RuleBasedAgent {
 
 		buildMaps(models);
 
+		if(_day < 2) { 
+			_bidBundle = new BidBundle();
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+			}
+			return _bidBundle;
+		}
+		
 		this.setAvgProfit();
 
 		// try to equate profit
-		if(_day > 1) {
+		for (Query query: _querySpace) {
 
-			for (Query query: _querySpace) {
+			//double latestProfit = _profitsModels.get(query).getLatestSample();
+			double latestProfit = 0;
+			if (_queryReport.getClicks(query) > 0)
+				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
 
-				//double latestProfit = _profitsModels.get(query).getLatestSample();
-				double latestProfit = 0;
-				if (_queryReport.getClicks(query) > 0)
-					latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_queryReport.getClicks(query);
-
-				if (latestProfit > _avgProfit) {	
-					if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
-						_desiredSales.put(query, _desiredSales.get(query)*1.25);
-				}
-				else if  (_queryReport.getClicks(query) > 0) {
-					if (_salesReport.getConversions(query) < _desiredSales.get(query))
-						_desiredSales.put(query, _desiredSales.get(query)*0.8);
-				}
+			if (latestProfit > _avgProfit) {	
+				if (_salesReport.getConversions(query) > _desiredSales.get(query) && _queryReport.getPosition(query) > 1.5) 
+					_desiredSales.put(query, _desiredSales.get(query)*1.25);
 			}
-
-			// normalize desiredSales
-			double normalizeFactor = 0;
-			for (Query query : _querySpace) {
-				normalizeFactor += _desiredSales.get(query);
+			else if  (_queryReport.getClicks(query) > 0) {
+				if (_salesReport.getConversions(query) < _desiredSales.get(query))
+					_desiredSales.put(query, _desiredSales.get(query)*0.8);
 			}
-			normalizeFactor = _capacity*1.25/_capWindow/normalizeFactor;
-			for (Query query : _querySpace) {
-				_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
+		}
+
+		// normalize desiredSales
+		double normalizeFactor = 0;
+		for (Query query : _querySpace) {
+			normalizeFactor += _desiredSales.get(query);
+		}
+		normalizeFactor = _capacity*1.25/_capWindow/normalizeFactor;
+		for (Query query : _querySpace) {
+			_desiredSales.put(query, _desiredSales.get(query)*normalizeFactor);
+		}
+
+		for (Query query: _querySpace) {
+
+			if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query) &&
+					!(_queryReport.getPosition(query) <= 1.5)) {
+				double newProfitMargin = _profitMargins.get(query)*0.9;
+				newProfitMargin = Math.min(0.9, newProfitMargin);
+				newProfitMargin = Math.max(0.1, newProfitMargin);
+				_profitMargins.put(query, newProfitMargin);
 			}
-
-			for (Query query: _querySpace) {
-
-				if (_salesReport.getConversions(query) + _errorOfConversions < _desiredSales.get(query) &&
-						!(_queryReport.getPosition(query) <= 1.5)) {
-					double newProfitMargin = _profitMargins.get(query)*0.9;
-					newProfitMargin = Math.min(0.9, newProfitMargin);
-					newProfitMargin = Math.max(0.1, newProfitMargin);
-					_profitMargins.put(query, newProfitMargin);
-				}
-				else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
-					double newProfitMargin = _profitMargins.get(query)*1.1;
-					newProfitMargin = Math.min(0.9, newProfitMargin);
-					newProfitMargin = Math.max(0.1, newProfitMargin);
-					_profitMargins.put(query, newProfitMargin);
-				}
-
+			else if (_salesReport.getConversions(query) - _errorOfConversions > _desiredSales.get(query)) {
+				double newProfitMargin = _profitMargins.get(query)*1.1;
+				newProfitMargin = Math.min(0.9, newProfitMargin);
+				newProfitMargin = Math.max(0.1, newProfitMargin);
+				_profitMargins.put(query, newProfitMargin);
 			}
 		}
 		return buildBidBundle();
@@ -136,10 +141,10 @@ public class ClickProfitC extends RuleBasedAgent {
 	protected BidBundle buildBidBundle()  {
 
 		_bidBundle = new BidBundle();
-		
+
 		for (Query query : _querySpace) {
 			// set bids
-			
+
 			double targetCPC = getTargetCPC(query);
 			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
 			if(Double.isNaN(bid)) {
@@ -170,24 +175,24 @@ public class ClickProfitC extends RuleBasedAgent {
 
 		return _bidBundle;
 	}
-	
+
 	@Override
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		double conversion;
 		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
 			conversion = _baselineConversion.get(q);
 		else conversion= _conversionPrModel.getPrediction(q);
-		
+
 		double dailySalesLimit = Math.max(_desiredSales.get(q)/conversion,2);
 		return targetCPC * dailySalesLimit * 1.1;
 	}
-	
+
 	protected double getTargetCPC(Query q) {
 		double conversion;
 		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
 			conversion = _baselineConversion.get(q);
 		else conversion= _conversionPrModel.getPrediction(q);
-		
+
 		return conversion *_revenueModels.get(q).getRevenue()*(1 - _profitMargins.get(q));
 	}
 
@@ -212,7 +217,7 @@ public class ClickProfitC extends RuleBasedAgent {
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		super.updateModels(salesReport, queryReport);
-		
+
 		if (_day > 1 && salesReport != null && queryReport != null) {
 
 			for (Query query : _querySpace) {
