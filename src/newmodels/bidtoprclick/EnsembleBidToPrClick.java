@@ -164,11 +164,11 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, false,0.84, false, false, false, false));
 		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, false, false, false));
 		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, false, false, false));
+//		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, false, false, false));
+//		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, false, false, false));
+//		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, false, false, false));
+//		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, false, false, false));
+//		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, false, false, false));
 //		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, false, false, false));
 //		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, false, false, false));
 //		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, false, false, false));
@@ -617,7 +617,10 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 					bordaCount.put(query, bordaList);
 				}
 				else if(bordaList.size() != len) {
-					throw new RuntimeException("Error in Borda Count");
+					while(bordaList.size() < len) {
+						bordaList.add(0);
+					}
+					bordaCount.put(query, bordaList);
 				}
 				while(bordaList.size() > NUMPASTDAYS) {
 					bordaList.remove(0);

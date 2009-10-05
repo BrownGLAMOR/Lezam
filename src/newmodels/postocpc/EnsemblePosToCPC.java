@@ -160,11 +160,11 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, false, false, false, false));
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, false, false, false));
 		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, false, false, true, false));
-		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, false, false, true, false));
+//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, false, false, true, false));
+//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, false, true, false));
+//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, false, false, true, false));
+//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, false, false, true, false));
+//		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, false, false, true, false));
 //		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, false, true, false));
 //		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, false, false, true, false));
 //		addModel(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, true, false));
@@ -562,7 +562,10 @@ public class EnsemblePosToCPC extends AbstractPosToCPC {
 					bordaCount.put(query, bordaList);
 				}
 				else if(bordaList.size() != len) {
-					throw new RuntimeException("Error in Borda Count");
+					while(bordaList.size() < len) {
+						bordaList.add(0);
+					}
+					bordaCount.put(query, bordaList);
 				}
 				while(bordaList.size() > NUMPASTDAYS) {
 					bordaList.remove(0);
