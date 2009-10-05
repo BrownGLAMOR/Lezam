@@ -105,7 +105,7 @@ public class MCKPBid extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 20, true, false);
 		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 10, 20, basicTargModel, true, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		models.add(userModel);
