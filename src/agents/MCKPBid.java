@@ -366,7 +366,7 @@ public class MCKPBid extends AbstractAgent {
 				//do nothing
 			}
 			else {
-				budget = Math.max(_capacity/((double)_capWindow) * (2/3.0),(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
+				budget = Math.max(_capacity/((double)_capWindow),(_capacity)*(2/5.0) - _unitsSold.getWindowSold()/4.0);
 				debug("Unit Sold Model Budget "  +budget);
 			}
 
