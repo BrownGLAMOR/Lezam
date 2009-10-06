@@ -50,6 +50,8 @@ public class EquateProfitS extends RuleBasedAgent{
 			updateK();
 		}
 
+		_bidBundle = new BidBundle();
+		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
 			_bidBundle.setBid(query, targetCPC+.01);

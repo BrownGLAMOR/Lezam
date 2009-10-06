@@ -88,8 +88,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 			_honestFactor.put(q, .3);
 		}
 
-		System.out.println("Daily Cap in Port Opt: " + _dailyCapacity);;
-		
 		double slice = _dailyCapacity / 20.0;
 		_wantedSales = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
