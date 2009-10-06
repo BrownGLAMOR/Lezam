@@ -3,6 +3,7 @@ package simulator.predictions;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -64,7 +65,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1435;
-		int max = 1451;
+		int max = 1455;
 		//				int max = 9;
 
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -208,9 +209,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToClickPrPredictionChallenge(AbstractPosToPrClick baseModel) throws IOException, ParseException {
@@ -339,9 +397,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToClickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
@@ -471,9 +586,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToCPCPredictionChallenge(AbstractBidToCPC baseModel) throws IOException, ParseException {
@@ -599,9 +771,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToClickPrToBidPredictionChallenge(AbstractBidToPrClick bidToPrClickBaseModel, AbstractPosToPrClick baseModel) throws IOException, ParseException {
@@ -734,9 +963,66 @@ public class PredictionEvaluator {
 			}
 		}
 		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToCPCToBidPredictionChallenge(AbstractBidToCPC bidToCPCBaseModel, AbstractPosToCPC baseModel) throws IOException, ParseException {
@@ -869,9 +1155,66 @@ public class PredictionEvaluator {
 			}
 		}
 		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 
@@ -1011,9 +1354,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToCPCPredictionChallenge(AbstractPosToCPC baseModel) throws IOException, ParseException {
@@ -1138,9 +1538,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToPosPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
@@ -1272,9 +1729,66 @@ public class PredictionEvaluator {
 			}
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToBidPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
@@ -1408,9 +1922,66 @@ public class PredictionEvaluator {
 			}
 		}
 		System.out.println("Data Points: " + dataPointCounter);
+		 Collections.sort(RMSEList);
+		 double percentile5 = 0.0;
+		 double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		 int k = (int) Math.floor(n);
+		 double d = n-k;
+		 if(n == 1) {
+			 percentile5 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile5 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile25 = 0.0;
+		 n = (25/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile25 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile25 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile75 = 0.0;
+		 n = (75/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile75 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile75 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		 
+		 double percentile95 = 0.0;
+		 n = (95/100.0) * (RMSEList.size()-1) + 1;
+		 k = (int) Math.floor(n);
+		 d = n-k;
+		 if(n == 1) {
+			 percentile95 = RMSEList.get(0);
+		 }
+		 else if(n == RMSEList.size()) {
+			 percentile95 = RMSEList.get(RMSEList.size()-1);
+		 }
+		 else {
+			 percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		 }
+		
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1]);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
@@ -1480,7 +2051,7 @@ public class PredictionEvaluator {
 			 * Bid-CPC is true,false
 			 */
 
-			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
+//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
@@ -1531,7 +2102,7 @@ public class PredictionEvaluator {
 			//			evaluator.posToClickPrToBidPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,20,true,true));
 
-			//			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
+						evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
 			//			evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));
 			//			evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
 			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
