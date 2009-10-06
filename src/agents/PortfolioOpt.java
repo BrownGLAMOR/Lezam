@@ -46,12 +46,12 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 		_bidBundle = new BidBundle();
 
-		adjustWantedSales();
-
 		for (Query q : _querySpace) {
 			adjustHonestFactor(q);
 		}
 
+		adjustWantedSales();
+		
 		// build bid bundle
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
