@@ -57,11 +57,7 @@ public class ConstantPM extends RuleBasedAgent {
 			System.out.print(ad.toString() + ", ");
 
 			double targetCPC = getTargetCPC(q);
-			double bid = _CPCToBidModel.getPrediction(q, targetCPC);
-			if(Double.isNaN(bid)) {
-				bid = targetCPC;
-			}
-			bids.setBid(q, bid);
+			bids.setBid(q, targetCPC+.01);
 			
 			if(SET_BUDGET)
 				bids.setDailyLimit(q, getDailySpendingLimit(q, targetCPC));

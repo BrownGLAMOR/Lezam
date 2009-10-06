@@ -40,11 +40,7 @@ public class ConstantSales extends RuleBasedAgent {
 			}
 			
 			double targetCPC = getTargetCPC(query);
-			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
-			if(Double.isNaN(bid)) {
-				bid = targetCPC;
-			}
-			_bidBundle.setBid(query, bid);
+			_bidBundle.setBid(query, targetCPC+.01);
 
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))

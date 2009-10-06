@@ -19,9 +19,6 @@ import newmodels.unitssold.BasicUnitsSoldLambdaModel;
 import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
-
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -38,8 +35,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected HashMap<Query, Double> _baselineConversion;
 	protected AbstractConversionModel _conversionPrModel;
-	protected AbstractBidToCPC _bidToCPCModel;
-	protected AbstractCPCToBid _CPCToBidModel;
 	protected BasicTargetModel _targetModel;
 	private HashMap<Query, Double> _baseClickProbs;
 	private HashMap<Query, Double> _salesPrices;
@@ -115,20 +110,11 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
 		setDailyQueryCapacity();
 		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,_dailyCapacityLambda);
-		_bidToCPCModel = new EnsembleBidToCPC(_querySpace,10,20,true,false);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
-		try {
-			_CPCToBidModel = new BidToCPCInverter(new RConnection(), _querySpace, _bidToCPCModel, .05, 0, 3.0);
-		} catch (RserveException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
 
 		models.add(_unitsSoldModel);
-		models.add(_bidToCPCModel);
 		models.add(_conversionPrModel);
-		models.add(_CPCToBidModel);
 		models.add(_targetModel);
 		return models;
 	}
@@ -144,8 +130,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_unitsSoldModel.update(salesReport);
 			setDailyQueryCapacity();
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			_bidToCPCModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
-			_CPCToBidModel.updateModel(_queryReport, salesReport, _bidBundles.get(_bidBundles.size() - 2));
 		}
 	}
 
@@ -158,14 +142,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			else if(model instanceof AbstractConversionModel) {
 				AbstractConversionModel convPrModel = (AbstractConversionModel) model;
 				_conversionPrModel = convPrModel;
-			}
-			if(model instanceof AbstractBidToCPC) {
-				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-				_bidToCPCModel = bidToCPC; 
-			}
-			if(model instanceof AbstractCPCToBid) {
-				AbstractCPCToBid CPCtoBid = (AbstractCPCToBid) model;
-				_CPCToBidModel = CPCtoBid; 
 			}
 			if(model instanceof BasicTargetModel) {
 				BasicTargetModel targModel = (BasicTargetModel) model;

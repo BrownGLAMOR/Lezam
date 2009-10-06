@@ -55,11 +55,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 		// build bid bundle
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
-			double bid = _CPCToBidModel.getPrediction(query, targetCPC);
-			if(Double.isNaN(bid)) {
-				bid = targetCPC;
-			}
-			_bidBundle.setBid(query, bid);
+			_bidBundle.setBid(query, targetCPC+.01);
 
 			// set target ads
 			if (TARGET) {
