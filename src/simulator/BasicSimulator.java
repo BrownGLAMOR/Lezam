@@ -82,11 +82,18 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 1000;
-	private int _numSplits = 3; //How many bids to consider between slots
+	private static final int NUM_PERF_ITERS = 300;
+	private int _numSplits = 1; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = true;
 	private Set<AbstractModel> _perfectModels;
-	private boolean killBudgets = false;
+	private boolean _killBudgets = true;
+
+	/*
+	 * Gaussian noise for perf models
+	 */
+	private boolean _noise;
+	private double _noiseVar;
+	private double _noiseMean;
 
 	private boolean DEBUG = false;
 
@@ -168,7 +175,17 @@ public class BasicSimulator {
 	}
 
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
-		System.out.println("Num Iterations: " + NUM_PERF_ITERS + ", Num Splits: " + _numSplits + ", Kill Budgets: " + killBudgets);
+		if(PERFECTMODELS) {
+			System.out.println("****USING \"PERFECT\" MODELS***");
+			System.out.println("\t Num Iters: " + NUM_PERF_ITERS);
+			System.out.println("\t NumSplits: " + _numSplits);
+			if(_killBudgets) {
+				System.out.println("\t Removing all budgets");
+			}
+			if(_noise) {
+				System.out.println("\t ADDING MEAN=" + _noiseMean + ",VAR=" + _noiseVar + " GAUSSIAN ERROR");
+			}
+		}
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
@@ -185,29 +202,29 @@ public class BasicSimulator {
 		}
 		int firstDay = 0;
 
-		//		ArrayList<Double> impSE = new ArrayList<Double>();
-		//		ArrayList<Double> impActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> bidToCPCSE = new ArrayList<Double>();
-		//		ArrayList<Double> bidToCPCActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> posToCPCSE = new ArrayList<Double>();
-		//		ArrayList<Double> posToCPCActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
-		//		ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
-		//		ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> bidToPosSE = new ArrayList<Double>();
-		//		ArrayList<Double> bidToPosActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> posToBidSE = new ArrayList<Double>();
-		//		ArrayList<Double> posToBidActual = new ArrayList<Double>();
-		//
-		//		ArrayList<Double> convPrSE = new ArrayList<Double>();
-		//		ArrayList<Double> convPrActual = new ArrayList<Double>();
+//		ArrayList<Double> impSE = new ArrayList<Double>();
+//		ArrayList<Double> impActual = new ArrayList<Double>();
+//
+//		ArrayList<Double> bidToCPCSE = new ArrayList<Double>();
+//		ArrayList<Double> bidToCPCActual = new ArrayList<Double>();
+//
+//		ArrayList<Double> posToCPCSE = new ArrayList<Double>();
+//		ArrayList<Double> posToCPCActual = new ArrayList<Double>();
+
+		ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
+		ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
+
+		ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
+		ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
+
+//		ArrayList<Double> bidToPosSE = new ArrayList<Double>();
+//		ArrayList<Double> bidToPosActual = new ArrayList<Double>();
+//
+//		ArrayList<Double> posToBidSE = new ArrayList<Double>();
+//		ArrayList<Double> posToBidActual = new ArrayList<Double>();
+//
+//		ArrayList<Double> convPrSE = new ArrayList<Double>();
+//		ArrayList<Double> convPrActual = new ArrayList<Double>();
 
 		double totalOverCapPerc = 0.0;
 		double totalOverCapAbs = 0.0;
@@ -235,271 +252,271 @@ public class BasicSimulator {
 			_pregenUsers = null;
 
 
-			HashMap<String, Reports> maps = runSimulation(agent);
+			//			HashMap<String, Reports> maps = runSimulation(agent);
 
-			//			/*
-			//			 * TEST PERFECT MODEL ERROR
-			//			 */
-			//
-			//			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
-			//			//No Targeting or Budgets
-			//			bundle.setCampaignDailySpendLimit(Double.NaN);
-			//			for(Query query : _querySpace) {
-			//				bundle.setAd(query, new Ad());
-			//				bundle.setDailyLimit(query, Double.NaN);
-			//			}
-			//
-			//			HashMap<String, Reports> maps = runSimulation(bundle);
-			//
-			//			_ourBidBundle = bundle;
-			//			Set<AbstractModel> perfectModels = generatePerfectModels();
-			//			_perfectModels = perfectModels;
-			//
-			//			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
-			//
-			//			for(AbstractModel model : _perfectModels) {
-			//				if(model instanceof AbstractUserModel) {
-			//					//Do Nothing
-			//				}
-			//				else if(model instanceof AbstractQueryToNumImp) {
-			//					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
-			//					for(Query query : _querySpace) {
-			//						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
-			//						int numImpsPred = queryToNumImp.getPredictionWithBid(query, _ourBidBundle.getBid(query));
-			//						if(numImps == 0 || numImpsPred == 0) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = numImps - numImpsPred;
-			//							double SE = diff*diff;
-			//							impSE.add(SE);
-			//							impActual.add(numImps*1.0);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractUnitsSoldModel) {
-			//					//Do Nothing
-			//				}
-			//				else if(model instanceof AbstractBidToCPC) {
-			//					AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
-			//					for(Query query : _querySpace) {
-			//						double CPC = ourReports.getCPC(query);
-			//						double CPCPred = bidToCPC.getPrediction(query, _ourBidBundle.getBid(query));
-			//						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = CPC - CPCPred;
-			//							double SE = diff*diff;
-			//							bidToCPCSE.add(SE);
-			//							bidToCPCActual.add(CPC);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractBidToPrClick) {
-			//					AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
-			//					for(Query query : _querySpace) {
-			//						double clickPr = ourReports.getClickPr(query);
-			//						double prClickPred = bidToPrClick.getPrediction(query, _ourBidBundle.getBid(query), _ourBidBundle.getAd(query));
-			//						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = clickPr - prClickPred;
-			//							double SE = diff*diff;
-			//							bidToPrClickSE.add(SE);
-			//							bidToPrClickActual.add(clickPr);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractPosToCPC) {
-			//					AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
-			//					for(Query query : _querySpace) {
-			//						double CPC = ourReports.getCPC(query);
-			//						double CPCPred = posToCPC.getPrediction(query, ourReports.getPosition(query));
-			//						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							//							System.out.println(query);
-			//							//							System.out.println("CPC: " + CPC + ", CPCPred: " + CPCPred);
-			//							double diff = CPC - CPCPred;
-			//							double SE = diff*diff;
-			//							posToCPCSE.add(SE);
-			//							posToCPCActual.add(CPC);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractPosToPrClick) {
-			//					AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
-			//					for(Query query : _querySpace) {
-			//						double clickPr = ourReports.getClickPr(query);
-			//						double prClickPred = posToPrClick.getPrediction(query, ourReports.getPosition(query), _ourBidBundle.getAd(query));
-			//						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = clickPr - prClickPred;
-			//							double SE = diff*diff;
-			//							posToPrClickSE.add(SE);
-			//							posToPrClickActual.add(clickPr);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractBidToPos) {
-			//					AbstractBidToPos bidToPos = (AbstractBidToPos) model;
-			//					for(Query query : _querySpace) {
-			//						double pos = ourReports.getPosition(query);
-			//						double posPred = bidToPos.getPrediction(query,_ourBidBundle.getBid(query));
-			//						if(Double.isNaN(pos) || Double.isNaN(posPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = pos - posPred;
-			//							double SE = diff*diff;
-			//							bidToPosSE.add(SE);
-			//							bidToPosActual.add(pos*1.0);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractPosToBid) {
-			//					AbstractPosToBid posToBid = (AbstractPosToBid) model;
-			//					for(Query query : _querySpace) {
-			//						double bid = _ourBidBundle.getBid(query);
-			//						double bidPred = posToBid.getPrediction(query,ourReports.getPosition(query));
-			//						if(bid == 0 || bidPred == 0) {
-			//							continue;
-			//						}
-			//						else {
-			//							double diff = bid - bidPred;
-			//							double SE = diff*diff;
-			//							posToBidSE.add(SE);
-			//							posToBidActual.add(bid*1.0);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof AbstractConversionModel) {
-			//					AbstractConversionModel convPrModel = (AbstractConversionModel) model;
-			//					for(Query query : _querySpace) {
-			//						double convPr = ourReports.getConvPr(query);
-			//						//						double convPrPred = convPrModel.getPrediction(query);
-			//						double convPrPred = convPrModel.getPredictionWithBid(query, _ourBidBundle.getBid(query));
-			//						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred)) {
-			//							continue;
-			//						}
-			//						else {
-			//							//							System.out.println(query + "Bid: " + _ourBidBundle.getBid(query));
-			//							//							System.out.println("ConvPr: " + convPr + ", Pred: " + convPrPred);
-			//							double diff = convPr - convPrPred;
-			//							double SE = diff*diff;
-			//							convPrSE.add(SE);
-			//							convPrActual.add(convPr*1.0);
-			//						}
-			//					}
-			//				}
-			//				else if(model instanceof BasicTargetModel) {
-			//					//Do nothing
-			//				}
-			//				else {
-			//					throw new RuntimeException("Forgot error check on perfect model");
-			//				}
-			//			}
-			//
-			//
-			//			double impErrorTot = 0.0;
-			//			double impActualTot = 0.0;
-			//			for (int i = 0; i < impSE.size(); i++) {
-			//				impErrorTot += impSE.get(i);
-			//				impActualTot += impActual.get(i);
-			//			}
-			//			impErrorTot /= impSE.size();
-			//			impActualTot /= impActual.size();
-			//			double impRMSE = Math.sqrt(impErrorTot);
-			//			System.out.println("Impressions RMSE: " +  impRMSE + ", %error: " + impRMSE/impActualTot);
-			//
-			//			double bidToCPCErrorTot = 0.0;
-			//			double bidToCPCActualTot = 0.0;
-			//			for (int i = 0; i < bidToCPCSE.size(); i++) {
-			//				bidToCPCErrorTot += bidToCPCSE.get(i);
-			//				bidToCPCActualTot += bidToCPCActual.get(i);
-			//			}
-			//			bidToCPCErrorTot /= bidToCPCSE.size();
-			//			bidToCPCActualTot /= bidToCPCActual.size();
-			//			double bidToCPCRMSE = Math.sqrt(bidToCPCErrorTot);
-			//			System.out.println("Bid-CPC RMSE: " +  bidToCPCRMSE + ", %error: " + bidToCPCRMSE/bidToCPCActualTot);
-			//
-			//			double posToCPCErrorTot = 0.0;
-			//			double posToCPCActualTot = 0.0;
-			//			for (int i = 0; i < posToCPCSE.size(); i++) {
-			//				posToCPCErrorTot += posToCPCSE.get(i);
-			//				posToCPCActualTot += posToCPCActual.get(i);
-			//			}
-			//			posToCPCErrorTot /= posToCPCSE.size();
-			//			posToCPCActualTot /= posToCPCActual.size();
-			//			double posToCPCRMSE = Math.sqrt(posToCPCErrorTot);
-			//			System.out.println("Pos-CPC RMSE: " +  posToCPCRMSE + ", %error: " + posToCPCRMSE/posToCPCActualTot);
-			//
-			//			double bidToPrClickErrorTot = 0.0;
-			//			double bidToPrClickActualTot = 0.0;
-			//			for (int i = 0; i < bidToPrClickSE.size(); i++) {
-			//				bidToPrClickErrorTot += bidToPrClickSE.get(i);
-			//				bidToPrClickActualTot += bidToPrClickActual.get(i);
-			//			}
-			//			bidToPrClickErrorTot /= bidToPrClickSE.size();
-			//			bidToPrClickActualTot /= bidToPrClickActual.size();
-			//			double bidToPrClickRMSE = Math.sqrt(bidToPrClickErrorTot);
-			//			System.out.println("Bid-PrClick RMSE: " +  bidToPrClickRMSE + ", %error: " + bidToPrClickRMSE/bidToPrClickActualTot);
-			//
-			//			double posToPrClickErrorTot = 0.0;
-			//			double posToPrClickActualTot = 0.0;
-			//			for (int i = 0; i < posToPrClickSE.size(); i++) {
-			//				posToPrClickErrorTot += posToPrClickSE.get(i);
-			//				posToPrClickActualTot += posToPrClickActual.get(i);
-			//			}
-			//			posToPrClickErrorTot /= posToPrClickSE.size();
-			//			posToPrClickActualTot /= posToPrClickActual.size();
-			//			double posToPrClickRMSE = Math.sqrt(posToPrClickErrorTot);
-			//			System.out.println("Pos-PrClick RMSE: " +  posToPrClickRMSE + ", %error: " + posToPrClickRMSE/posToPrClickActualTot);
-			//
-			//
-			//			double bidToPosErrorTot = 0.0;
-			//			double bidToPosActualTot = 0.0;
-			//			for (int i = 0; i < bidToPosSE.size(); i++) {
-			//				bidToPosErrorTot += bidToPosSE.get(i);
-			//				bidToPosActualTot += bidToPosActual.get(i);
-			//			}
-			//			bidToPosErrorTot /= bidToPosSE.size();
-			//			bidToPosActualTot /= bidToPosActual.size();
-			//			double bidToPosRMSE = Math.sqrt(bidToPosErrorTot);
-			//			System.out.println("Bid-Pos RMSE: " +  bidToPosRMSE + ", %error: " + bidToPosRMSE/bidToPosActualTot);
-			//
-			//
-			//			double posToBidErrorTot = 0.0;
-			//			double posToBidActualTot = 0.0;
-			//			for (int i = 0; i < posToBidSE.size(); i++) {
-			//				posToBidErrorTot += posToBidSE.get(i);
-			//				posToBidActualTot += posToBidActual.get(i);
-			//			}
-			//			posToBidErrorTot /= posToBidSE.size();
-			//			posToBidActualTot /= posToBidActual.size();
-			//			double posToBidRMSE = Math.sqrt(posToBidErrorTot);
-			//			System.out.println("Pos-Bid RMSE: " +  posToBidRMSE + ", %error: " + posToBidRMSE/posToBidActualTot);
-			//
-			//
-			//			double convPrErrorTot = 0.0;
-			//			double convPrActualTot = 0.0;
-			//			for (int i = 0; i < convPrSE.size(); i++) {
-			//				convPrErrorTot += convPrSE.get(i);
-			//				convPrActualTot += convPrActual.get(i);
-			//			}
-			//			convPrErrorTot /= convPrSE.size();
-			//			convPrActualTot /= convPrActual.size();
-			//			double convPrRMSE = Math.sqrt(convPrErrorTot);
-			//			System.out.println("ConvPr RMSE: " +  convPrRMSE + ", %error: " + convPrRMSE/convPrActualTot);
-			//
-			//			/*
-			//			 * END TEST PERFECT MODEL ERROR
-			//			 */
+			/*
+			 * TEST PERFECT MODEL ERROR
+			 */
+
+			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
+			//No Targeting or Budgets
+			bundle.setCampaignDailySpendLimit(Double.NaN);
+			for(Query query : _querySpace) {
+				bundle.setAd(query, new Ad());
+				bundle.setDailyLimit(query, Double.NaN);
+			}
+
+			HashMap<String, Reports> maps = runSimulation(bundle);
+
+			_ourBidBundle = bundle;
+			Set<AbstractModel> perfectModels = generatePerfectModels();
+			_perfectModels = perfectModels;
+
+			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
+
+			for(AbstractModel model : _perfectModels) {
+				if(model instanceof AbstractUserModel) {
+					//Do Nothing
+				}
+//				else if(model instanceof AbstractQueryToNumImp) {
+//					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
+//					for(Query query : _querySpace) {
+//						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
+//						int numImpsPred = queryToNumImp.getPredictionWithBid(query, _ourBidBundle.getBid(query));
+//						if(numImps == 0 || numImpsPred == 0) {
+//							continue;
+//						}
+//						else {
+//							double diff = numImps - numImpsPred;
+//							double SE = diff*diff;
+//							impSE.add(SE);
+//							impActual.add(numImps*1.0);
+//						}
+//					}
+//				}
+//				else if(model instanceof AbstractUnitsSoldModel) {
+//					//Do Nothing
+//				}
+//				else if(model instanceof AbstractBidToCPC) {
+//					AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+//					for(Query query : _querySpace) {
+//						double CPC = ourReports.getCPC(query);
+//						double CPCPred = bidToCPC.getPrediction(query, _ourBidBundle.getBid(query));
+//						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
+//							continue;
+//						}
+//						else {
+//							double diff = CPC - CPCPred;
+//							double SE = diff*diff;
+//							bidToCPCSE.add(SE);
+//							bidToCPCActual.add(CPC);
+//						}
+//					}
+//				}
+				else if(model instanceof AbstractBidToPrClick) {
+					AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
+					for(Query query : _querySpace) {
+						double clickPr = ourReports.getClickPr(query);
+						double prClickPred = bidToPrClick.getPrediction(query, _ourBidBundle.getBid(query), _ourBidBundle.getAd(query));
+						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
+							continue;
+						}
+						else {
+							double diff = clickPr - prClickPred;
+							double SE = diff*diff;
+							bidToPrClickSE.add(SE);
+							bidToPrClickActual.add(clickPr);
+						}
+					}
+				}
+//				else if(model instanceof AbstractPosToCPC) {
+//					AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
+//					for(Query query : _querySpace) {
+//						double CPC = ourReports.getCPC(query);
+//						double CPCPred = posToCPC.getPrediction(query, ourReports.getPosition(query));
+//						if(Double.isNaN(CPC) || Double.isNaN(CPCPred)) {
+//							continue;
+//						}
+//						else {
+//							//							System.out.println(query);
+//							//							System.out.println("CPC: " + CPC + ", CPCPred: " + CPCPred);
+//							double diff = CPC - CPCPred;
+//							double SE = diff*diff;
+//							posToCPCSE.add(SE);
+//							posToCPCActual.add(CPC);
+//						}
+//					}
+//				}
+				else if(model instanceof AbstractPosToPrClick) {
+					AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
+					for(Query query : _querySpace) {
+						double clickPr = ourReports.getClickPr(query);
+						double prClickPred = posToPrClick.getPrediction(query, ourReports.getPosition(query), _ourBidBundle.getAd(query));
+						if(Double.isNaN(clickPr) || Double.isNaN(prClickPred)) {
+							continue;
+						}
+						else {
+							double diff = clickPr - prClickPred;
+							double SE = diff*diff;
+							posToPrClickSE.add(SE);
+							posToPrClickActual.add(clickPr);
+						}
+					}
+				}
+//				else if(model instanceof AbstractBidToPos) {
+//					AbstractBidToPos bidToPos = (AbstractBidToPos) model;
+//					for(Query query : _querySpace) {
+//						double pos = ourReports.getPosition(query);
+//						double posPred = bidToPos.getPrediction(query,_ourBidBundle.getBid(query));
+//						if(Double.isNaN(pos) || Double.isNaN(posPred)) {
+//							continue;
+//						}
+//						else {
+//							double diff = pos - posPred;
+//							double SE = diff*diff;
+//							bidToPosSE.add(SE);
+//							bidToPosActual.add(pos*1.0);
+//						}
+//					}
+//				}
+//				else if(model instanceof AbstractPosToBid) {
+//					AbstractPosToBid posToBid = (AbstractPosToBid) model;
+//					for(Query query : _querySpace) {
+//						double bid = _ourBidBundle.getBid(query);
+//						double bidPred = posToBid.getPrediction(query,ourReports.getPosition(query));
+//						if(bid == 0 || bidPred == 0) {
+//							continue;
+//						}
+//						else {
+//							double diff = bid - bidPred;
+//							double SE = diff*diff;
+//							posToBidSE.add(SE);
+//							posToBidActual.add(bid*1.0);
+//						}
+//					}
+//				}
+//				else if(model instanceof AbstractConversionModel) {
+//					AbstractConversionModel convPrModel = (AbstractConversionModel) model;
+//					for(Query query : _querySpace) {
+//						double convPr = ourReports.getConvPr(query);
+//						//						double convPrPred = convPrModel.getPrediction(query);
+//						double convPrPred = convPrModel.getPredictionWithBid(query, _ourBidBundle.getBid(query));
+//						if(Double.isNaN(convPr) ||Double.isNaN(convPrPred)) {
+//							continue;
+//						}
+//						else {
+//							//							System.out.println(query + "Bid: " + _ourBidBundle.getBid(query));
+//							//							System.out.println("ConvPr: " + convPr + ", Pred: " + convPrPred);
+//							double diff = convPr - convPrPred;
+//							double SE = diff*diff;
+//							convPrSE.add(SE);
+//							convPrActual.add(convPr*1.0);
+//						}
+//					}
+//				}
+//				else if(model instanceof BasicTargetModel) {
+//					//Do nothing
+//				}
+//				else {
+//					throw new RuntimeException("Forgot error check on perfect model");
+//				}
+			}
+
+
+//			double impErrorTot = 0.0;
+//			double impActualTot = 0.0;
+//			for (int i = 0; i < impSE.size(); i++) {
+//				impErrorTot += impSE.get(i);
+//				impActualTot += impActual.get(i);
+//			}
+//			impErrorTot /= impSE.size();
+//			impActualTot /= impActual.size();
+//			double impRMSE = Math.sqrt(impErrorTot);
+//			System.out.println("Impressions RMSE: " +  impRMSE + ", %error: " + impRMSE/impActualTot);
+//
+//			double bidToCPCErrorTot = 0.0;
+//			double bidToCPCActualTot = 0.0;
+//			for (int i = 0; i < bidToCPCSE.size(); i++) {
+//				bidToCPCErrorTot += bidToCPCSE.get(i);
+//				bidToCPCActualTot += bidToCPCActual.get(i);
+//			}
+//			bidToCPCErrorTot /= bidToCPCSE.size();
+//			bidToCPCActualTot /= bidToCPCActual.size();
+//			double bidToCPCRMSE = Math.sqrt(bidToCPCErrorTot);
+//			System.out.println("Bid-CPC RMSE: " +  bidToCPCRMSE + ", %error: " + bidToCPCRMSE/bidToCPCActualTot);
+//
+//			double posToCPCErrorTot = 0.0;
+//			double posToCPCActualTot = 0.0;
+//			for (int i = 0; i < posToCPCSE.size(); i++) {
+//				posToCPCErrorTot += posToCPCSE.get(i);
+//				posToCPCActualTot += posToCPCActual.get(i);
+//			}
+//			posToCPCErrorTot /= posToCPCSE.size();
+//			posToCPCActualTot /= posToCPCActual.size();
+//			double posToCPCRMSE = Math.sqrt(posToCPCErrorTot);
+//			System.out.println("Pos-CPC RMSE: " +  posToCPCRMSE + ", %error: " + posToCPCRMSE/posToCPCActualTot);
+
+			double bidToPrClickErrorTot = 0.0;
+			double bidToPrClickActualTot = 0.0;
+			for (int i = 0; i < bidToPrClickSE.size(); i++) {
+				bidToPrClickErrorTot += bidToPrClickSE.get(i);
+				bidToPrClickActualTot += bidToPrClickActual.get(i);
+			}
+			bidToPrClickErrorTot /= bidToPrClickSE.size();
+			bidToPrClickActualTot /= bidToPrClickActual.size();
+			double bidToPrClickRMSE = Math.sqrt(bidToPrClickErrorTot);
+			System.out.println("Bid-PrClick RMSE: " +  bidToPrClickRMSE + ", %error: " + bidToPrClickRMSE/bidToPrClickActualTot);
+
+			double posToPrClickErrorTot = 0.0;
+			double posToPrClickActualTot = 0.0;
+			for (int i = 0; i < posToPrClickSE.size(); i++) {
+				posToPrClickErrorTot += posToPrClickSE.get(i);
+				posToPrClickActualTot += posToPrClickActual.get(i);
+			}
+			posToPrClickErrorTot /= posToPrClickSE.size();
+			posToPrClickActualTot /= posToPrClickActual.size();
+			double posToPrClickRMSE = Math.sqrt(posToPrClickErrorTot);
+			System.out.println("Pos-PrClick RMSE: " +  posToPrClickRMSE + ", %error: " + posToPrClickRMSE/posToPrClickActualTot);
+
+
+//			double bidToPosErrorTot = 0.0;
+//			double bidToPosActualTot = 0.0;
+//			for (int i = 0; i < bidToPosSE.size(); i++) {
+//				bidToPosErrorTot += bidToPosSE.get(i);
+//				bidToPosActualTot += bidToPosActual.get(i);
+//			}
+//			bidToPosErrorTot /= bidToPosSE.size();
+//			bidToPosActualTot /= bidToPosActual.size();
+//			double bidToPosRMSE = Math.sqrt(bidToPosErrorTot);
+//			System.out.println("Bid-Pos RMSE: " +  bidToPosRMSE + ", %error: " + bidToPosRMSE/bidToPosActualTot);
+//
+//
+//			double posToBidErrorTot = 0.0;
+//			double posToBidActualTot = 0.0;
+//			for (int i = 0; i < posToBidSE.size(); i++) {
+//				posToBidErrorTot += posToBidSE.get(i);
+//				posToBidActualTot += posToBidActual.get(i);
+//			}
+//			posToBidErrorTot /= posToBidSE.size();
+//			posToBidActualTot /= posToBidActual.size();
+//			double posToBidRMSE = Math.sqrt(posToBidErrorTot);
+//			System.out.println("Pos-Bid RMSE: " +  posToBidRMSE + ", %error: " + posToBidRMSE/posToBidActualTot);
+//
+//
+//			double convPrErrorTot = 0.0;
+//			double convPrActualTot = 0.0;
+//			for (int i = 0; i < convPrSE.size(); i++) {
+//				convPrErrorTot += convPrSE.get(i);
+//				convPrActualTot += convPrActual.get(i);
+//			}
+//			convPrErrorTot /= convPrSE.size();
+//			convPrActualTot /= convPrActual.size();
+//			double convPrRMSE = Math.sqrt(convPrErrorTot);
+//			System.out.println("ConvPr RMSE: " +  convPrRMSE + ", %error: " + convPrRMSE/convPrActualTot);
+
+			/*
+			 * END TEST PERFECT MODEL ERROR
+			 */
 
 			/*
 			 * Keep track of capacities
@@ -855,11 +872,13 @@ public class BasicSimulator {
 		}
 		HashMap<Query,double[]> potentialPositionsMap = new HashMap<Query, double[]>();
 		HashMap<Query,HashMap<Double,Double>> bidToPosMap = new HashMap<Query,HashMap<Double,Double>>();
+		HashMap<Query,HashMap<Double,Double>> bidToCPCMap = new HashMap<Query,HashMap<Double,Double>>();
 		HashMap<Query,HashMap<Double,Double>> posToBidMap = new HashMap<Query,HashMap<Double,Double>>();
 		for(Query query : _querySpace) {
 			HashMap<Double, Reports> queryReportsMap = allReportsMap.get(query);
 			double[] potentialBids = potentialBidsMap.get(query);
 			HashMap<Double,Double> bidToPosQueryMap = new HashMap<Double,Double>();
+			HashMap<Double,Double> bidToCPCQueryMap = new HashMap<Double,Double>();
 			HashMap<Double,Double> posToBidQueryMap = new HashMap<Double,Double>();
 			ArrayList<Double> potentialPositionsList = new ArrayList<Double>();
 			for(int i = 0; i < potentialBids.length; i++) {
@@ -869,8 +888,13 @@ public class BasicSimulator {
 				if(Double.isNaN(pos)) {
 					pos = 6.0;
 				}
+				double cpc = reports.getCPC(query);
+				if(Double.isNaN(cpc)) {
+					cpc = 0.0;
+				}
 				potentialPositionsList.add(pos);
 				bidToPosQueryMap.put(bid, pos);
+				bidToCPCQueryMap.put(bid,cpc);
 				posToBidQueryMap.put(pos,bid);
 			}
 			Collections.sort(potentialPositionsList);
@@ -880,8 +904,32 @@ public class BasicSimulator {
 			}
 			potentialPositionsMap.put(query, potentialPositions);
 			bidToPosMap.put(query, bidToPosQueryMap);
+			bidToCPCMap.put(query, bidToCPCQueryMap);
 			posToBidMap.put(query, posToBidQueryMap);
 		}
+
+
+		/*
+		 * Create Gaussian noise for models
+		 * 
+		 */
+
+		HashMap<Query,Double> bidToPrClickNoise = new HashMap<Query, Double>();
+		HashMap<Query,Double> posToPrClickNoise = new HashMap<Query, Double>();
+
+		if(_noise) {
+			for(Query q : _querySpace) {
+				bidToPrClickNoise.put(q, random.nextGaussian()*_noiseVar + _noiseMean);
+				posToPrClickNoise.put(q, random.nextGaussian()*_noiseVar + _noiseMean);
+			}
+		}
+		else {
+			for(Query q : _querySpace) {
+				bidToPrClickNoise.put(q, 0.0);
+				posToPrClickNoise.put(q, 0.0);
+			}
+		}
+
 
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 
@@ -889,9 +937,9 @@ public class BasicSimulator {
 		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap, posToBidMap);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
-		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap);
+		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap,bidToPrClickNoise);
 		AbstractPosToCPC posToCPCModel = new PerfectPosToCPC(allReportsMap,potentialBidsMap, posToBidMap);
-		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap);
+		AbstractPosToPrClick posToClickPrModel = new PerfectPosToPrClick(allReportsMap,potentialBidsMap, posToBidMap,posToPrClickNoise);
 		AbstractConversionModel queryToConvPrModel = new PerfectQueryToPrConv(allReportsMap, potentialBidsMap, posToBidMap);
 		AbstractBidToPos bidToPosModel = new PerfectBidToPos(bidToPosMap);
 		AbstractPosToBid posToBidModel = new PerfectPosToBid(posToBidMap);
@@ -939,7 +987,7 @@ public class BasicSimulator {
 				_ourBidBundle = bundle;
 				agentToRun.handleBidBundle(bundle);
 				double totBudget;
-				if(!killBudgets) {
+				if(!_killBudgets) {
 					totBudget = bundle.getCampaignDailySpendLimit();
 				}
 				else {
@@ -950,7 +998,7 @@ public class BasicSimulator {
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				for(Query query : _querySpace) {
 					bids.put(query, bundle.getBid(query));
-					if(!killBudgets) {
+					if(!_killBudgets) {
 						budgets.put(query,bundle.getDailyLimit(query));
 					}
 					else {
@@ -961,7 +1009,7 @@ public class BasicSimulator {
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
 			}
 			else {
-				if(!killBudgets) {
+				if(!_killBudgets) {
 					agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);					
 				}
 				else {
@@ -984,7 +1032,7 @@ public class BasicSimulator {
 			if(i == _ourAdvIdx) {
 				BidBundle bundle = agentToRun;
 				double totBudget;
-				if(!killBudgets) {
+				if(!_killBudgets) {
 					totBudget = bundle.getCampaignDailySpendLimit();
 				}
 				else {
@@ -995,7 +1043,7 @@ public class BasicSimulator {
 				HashMap<Query,Ad> adTypes = new HashMap<Query, Ad>();
 				for(Query query : _querySpace) {
 					bids.put(query, bundle.getBid(query));
-					if(!killBudgets) {
+					if(!_killBudgets) {
 						budgets.put(query,bundle.getDailyLimit(query));
 					}
 					else {
@@ -1006,7 +1054,7 @@ public class BasicSimulator {
 				agent = new SimAgent(bids,budgets,totBudget,_advEffect.get(_agents[i]),adTypes,_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);
 			}
 			else {
-				if(!killBudgets) {
+				if(!_killBudgets) {
 					agent = new SimAgent(_bids.get(_agents[i]),_budgets.get(_agents[i]),_totBudget.get(_agents[i]),_advEffect.get(_agents[i]),_adType.get(_agents[i]),_salesOverWindow.get(_agents[i]),_capacities.get(_agents[i]), _manSpecialties.get(_agents[i]),_compSpecialties.get(_agents[i]),_agents[i],_squashing,_querySpace);					
 				}
 				else {
@@ -1340,7 +1388,7 @@ public class BasicSimulator {
 	}
 
 
-	public void runSimulations(int min, int max) throws IOException, ParseException {
+	public void runSimulations(int min, int max, double noiseMean, double noiseVar) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1351,10 +1399,16 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		//		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
+		_noise = false;
+		if(noiseMean != 0 || noiseVar != 0) {
+			_noise = true;
+			_noiseMean = noiseMean;
+			_noiseVar = noiseVar;
+		}
 
 		String[] filenames = new String[max-min];
 		System.out.println("Min: " + min + "  Max: " + max);
@@ -1612,9 +1666,13 @@ public class BasicSimulator {
 
 		int min = Integer.parseInt(args[0]);
 		int max = Integer.parseInt(args[1]);
+//		double noiseMean = Double.parseDouble(args[2]);
+//		double noiseVar = Double.parseDouble(args[3]);
 
-		sim.runSimulations(min,max);
-
+//		sim.runSimulations(min,max,noiseMean,noiseVar);
+		sim.runSimulations(min,max,0,0.25);
+		
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");

@@ -17,10 +17,12 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	private HashMap<Query, HashMap<Double, Reports>> _allReportsMap;
 	private HashMap<Query, double[]> _potentialBidsMap;
+	private HashMap<Query, Double> _noise;
 
-	public PerfectBidToPrClick(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap) {
+	public PerfectBidToPrClick(HashMap<Query, HashMap<Double, Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap, HashMap<Query, Double> noise) {
 		_allReportsMap = allReportsMap;
 		_potentialBidsMap = potentialBidsMap;
+		_noise = noise;
 	}
 
 	@Override
@@ -39,6 +41,16 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 		else {
 			clickPr = reports.getClickPr(query);
 		}
+		
+		clickPr += _noise.get(query);
+		if(clickPr < 0.0) {
+			return 0.0;
+		}
+		
+		if(clickPr > .6) {
+			return .6;
+		}
+		
 		return clickPr;
 	}
 
@@ -87,7 +99,7 @@ public class PerfectBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectBidToPrClick(_allReportsMap,_potentialBidsMap);
+		return new PerfectBidToPrClick(_allReportsMap,_potentialBidsMap,_noise);
 	}
 
 	@Override
