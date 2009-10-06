@@ -1,4 +1,4 @@
-package agents;
+          package agents;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -79,9 +79,10 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
+		_R.setSeed(123125);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .05;
+		double increment  = .04;
 		double min = .04;
 		double max = 2.5;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -224,7 +225,6 @@ public class MCKPBid extends AbstractAgent {
 		}
 
 		lastBoost = 5;
-		boostCoeff = 1.2;
 	}
 
 

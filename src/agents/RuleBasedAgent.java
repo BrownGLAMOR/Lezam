@@ -152,13 +152,13 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 
 	protected void setDailyQueryCapacity(){
 		if(_capacity >= HIGH_CAPACITY) {
-			_dailyCapacityLambda = 1.2;
+			_dailyCapacityLambda = 1.4;
 		}
 		else if(_capacity >= MEDIUM_CAPACITY) {
-			_dailyCapacityLambda = 1.3;
+			_dailyCapacityLambda = 1.5;
 		}
 		else {
-			_dailyCapacityLambda = 1.4;
+			_dailyCapacityLambda = 1.6;
 		}
 		if(_day < 5 ){
 			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));
@@ -168,7 +168,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (2/3.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
 		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
-		System.out.println("Daily Cap: " + _dailyCapacity);
 	}
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
