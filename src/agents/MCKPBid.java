@@ -52,11 +52,11 @@ public class MCKPBid extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 600;
+	private double _safetyBudget = 700;
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.3;
+	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -550,7 +550,7 @@ public class MCKPBid extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= 1.3;
+				valueLostWindow *= 1.1;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail

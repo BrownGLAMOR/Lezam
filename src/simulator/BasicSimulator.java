@@ -1399,8 +1399,8 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
-//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
@@ -1418,7 +1418,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 0;  //Set to 1 for schlemazl on day-2/server1
+			int advId = 1;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
@@ -1707,7 +1707,7 @@ public class BasicSimulator {
 		//
 		//		sim.runSimulations(min,max,noiseMean,noiseVar);
 
-		sim.runSimulations(8,13,0,0);
+		sim.runSimulations(1425,1433,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
