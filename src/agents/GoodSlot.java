@@ -19,6 +19,13 @@ public class GoodSlot extends RuleBasedAgent {
 
 	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
+	
+	protected double goodslot = 2;
+	protected double badslot = 3;
+	protected double increment = 1.1;
+	protected double decrement = .7;
+	protected double maxreinvestment = .9;
+	protected double minreinvestment = .1;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -39,10 +46,7 @@ public class GoodSlot extends RuleBasedAgent {
 			double current = _reinvestment.get(query);
 
 			if (_day > 1) {
-				// handle the case of no impression (the agent got no slot)
-				handleNoImpression(query, current);
-				// handle the case when the agent got the promoted slots
-				handlePromotedSlots(query);
+				adjustSlots(query, current);
 			}
 
 			double targetCPC = getTargetCPC(query);
@@ -108,18 +112,19 @@ public class GoodSlot extends RuleBasedAgent {
 		return conversion * _reinvestment.get(q) * _revenue.get(q);
 	}
 
-	protected void handleNoImpression(Query q, double currentReinvest) {
-		if (!(_queryReport.getPosition(q) < 4)) {
-			double newReinvest = Math.min(0.9, currentReinvest * 1.1);
-			_reinvestment.put(q, newReinvest);
+	protected void adjustSlots(Query q, double currentReinvest) {
+		double pos = _queryReport.getPosition(q);
+		if(Double.isNaN(pos)) {
+			 pos = 6.0;
 		}
-	}
-
-	protected void handlePromotedSlots(Query q) {
-		if (_queryReport.getPosition(q) <= 3) {
-			double newReinvest = Math.max(0.1, _reinvestment.get(q) * .9);
-			_reinvestment.put(q, newReinvest);
+		double newReinvest = currentReinvest;
+		if (_queryReport.getPosition(q) <= goodslot) {
+			newReinvest = Math.min(maxreinvestment, currentReinvest * increment);
 		}
+		else if (_queryReport.getPosition(q) >= badslot) {
+			 newReinvest = Math.max(minreinvestment, currentReinvest * decrement);
+		}
+		_reinvestment.put(q, newReinvest);
 	}
 
 	protected void walking(Query q, double currentReinvest) {

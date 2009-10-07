@@ -84,7 +84,7 @@ public class BasicSimulator {
 
 	private static final int NUM_PERF_ITERS = 1000;
 	private int _numSplits = 3; //How many bids to consider between slots
-	private static final boolean PERFECTMODELS = true;
+	private static final boolean PERFECTMODELS = false;
 	private Set<AbstractModel> _perfectModels;
 	private boolean _killBudgets = false;
 
@@ -1399,8 +1399,9 @@ public class BasicSimulator {
 		//		int min = 454;
 		//		int max = 455;
 
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 		_noise = false;
@@ -1417,7 +1418,7 @@ public class BasicSimulator {
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 			String filename = filenames[fileIdx];
-			int advId = 1;  //Set to 1 for schlemazl on day-2/server1
+			int advId = 0;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
@@ -1664,48 +1665,49 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-		int min = Integer.parseInt(args[0]);
-		int max = Integer.parseInt(args[1]);
-		double noiseMean = Integer.parseInt(args[2]);
-		double noiseVar = Integer.parseInt(args[3]);
+		//		int min = Integer.parseInt(args[0]);
+		//		int max = Integer.parseInt(args[1]);
+		//		double noiseMean = Integer.parseInt(args[2]);
+		//		double noiseVar = Integer.parseInt(args[3]);
+		//
+		//		if(noiseMean == 0) {
+		//			noiseMean = -.1;
+		//		}
+		//		if(noiseMean == 1) {
+		//			noiseMean = -.05;
+		//		}
+		//		if(noiseMean == 2) {
+		//			noiseMean = 0;
+		//		}
+		//		if(noiseMean == 3) {
+		//			noiseMean = .05;
+		//		}
+		//		if(noiseMean == 4) {
+		//			noiseMean = .1;
+		//		}
+		//		
+		//		if(noiseVar == 0) {
+		//			noiseVar = 0;
+		//		}
+		//		if(noiseVar == 1) {
+		//			noiseVar = .05;
+		//		}
+		//		if(noiseVar == 2) {
+		//			noiseVar = .1;
+		//		}
+		//		if(noiseVar == 3) {
+		//			noiseVar = .15;
+		//		}
+		//		if(noiseVar == 4) {
+		//			noiseVar = .2;
+		//		}
+		//		if(noiseVar == 5) {
+		//			noiseVar = .25;
+		//		}
+		//
+		//		sim.runSimulations(min,max,noiseMean,noiseVar);
 
-		if(noiseMean == 0) {
-			noiseMean = -.1;
-		}
-		if(noiseMean == 1) {
-			noiseMean = -.05;
-		}
-		if(noiseMean == 2) {
-			noiseMean = 0;
-		}
-		if(noiseMean == 3) {
-			noiseMean = .05;
-		}
-		if(noiseMean == 4) {
-			noiseMean = .1;
-		}
-		
-		if(noiseVar == 0) {
-			noiseVar = 0;
-		}
-		if(noiseVar == 1) {
-			noiseVar = .05;
-		}
-		if(noiseVar == 2) {
-			noiseVar = .1;
-		}
-		if(noiseVar == 3) {
-			noiseVar = .15;
-		}
-		if(noiseVar == 4) {
-			noiseVar = .2;
-		}
-		if(noiseVar == 5) {
-			noiseVar = .25;
-		}
-
-		sim.runSimulations(min,max,noiseMean,noiseVar);
-
+		sim.runSimulations(8,13,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

@@ -1,4 +1,4 @@
-          package agents;
+package agents;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,7 +52,7 @@ public class MCKPBid extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 1000;
+	private double _safetyBudget = 600;
 
 	//Days since Last Boost
 	private double lastBoost;
@@ -79,12 +79,11 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
-//		_R.setSeed(123125);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
 		double min = .04;
-		double max = 2.5;
+		double max = 2.25;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
@@ -551,6 +550,7 @@ public class MCKPBid extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= 1.3;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
