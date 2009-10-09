@@ -34,7 +34,7 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 
 		int numProds = 9; //FIXME: DON'T HARDCODE!!! Is this data available globally?
 		int numDays = 60; //FIXME: DON'T HARDCODE!!! Is this data available globally?
-		String filename = "/home/sodomka/workspace/TAC_AA/src/newmodels/usermodel/UserDetailData-Finals.csv";
+		String filename = "src/newmodels/usermodel/UserDetailData-Finals.csv";;
 
 		String[][] rawVals = readCSVData(filename);
 
