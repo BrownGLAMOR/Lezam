@@ -19,15 +19,13 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 	private HashMap<Query, double[]> _potentialBidsMap;
 	private HashMap<Query, HashMap<Double, Double>> _posToBidMap;
 
-	public PerfectQueryToNumImp(HashMap<Query,HashMap<Double,Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap,
-			HashMap<Query,HashMap<Double,Double>> posToBidMap) {
+	public PerfectQueryToNumImp(HashMap<Query,HashMap<Double,Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap) {
 		_allReportsMap = allReportsMap;
 		_potentialBidsMap = potentialBidsMap;
-		_posToBidMap = posToBidMap;
 	}
 
 	@Override
-	public int getPrediction(Query query) {
+	public int getPrediction(Query query,int day) {
 		double avgNumImps = 0;
 		int totNumImps = 0;
 		HashMap<Double, Reports> queryReportsMap = _allReportsMap.get(query);
@@ -50,7 +48,7 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 	}
 	
 	@Override
-	public int getPredictionWithBid(Query query, double bid) {
+	public int getPredictionWithBid(Query query, double bid, int day) {
 		if(bid == 0) {
 			return 0;
 		}
@@ -70,7 +68,7 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 
 
 	@Override
-	public int getPredictionWithPos(Query query, double pos) {
+	public int getPredictionWithPos(Query query, double pos, int day) {
 		if(Double.isNaN(pos)) {
 			return 0;
 		}
@@ -174,7 +172,7 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectQueryToNumImp(_allReportsMap, _potentialBidsMap, _posToBidMap);
+		return new PerfectQueryToNumImp(_allReportsMap, _potentialBidsMap);
 	}
 
 }
