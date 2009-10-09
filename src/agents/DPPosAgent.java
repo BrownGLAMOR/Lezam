@@ -160,7 +160,7 @@ public class DPPosAgent extends AbstractAgent {
 			while (pos <= maxPos) {
 				double prClicks = posToPrClickModel.getPrediction(query, pos, null);
 				if (TARGET) prClicks = targetModel.getClickPrPrediction(query, prClicks, false);
-				double imp = queryToNumImpModel.getPrediction(query);
+				double imp = queryToNumImpModel.getPrediction(query,(int) (_day+1));
 				
 				double maxClicks = prClicks * imp;
 				

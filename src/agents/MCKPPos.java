@@ -71,7 +71,7 @@ public class MCKPPos extends AbstractAgent {
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.3;
+	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -122,9 +122,9 @@ public class MCKPPos extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 10, 10, true, true);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 10, true, false);
-		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
+		AbstractPosToCPC posToCPC = new EnsemblePosToCPC(_querySpace, 25, 20, true, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 25, 20, true, false);
+		AbstractPosToPrClick posToPrClick = new EnsemblePosToPrClick(_querySpace, 25, 20, basicTargModel, true, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		AbstractCPCToBid CPCToBid = null;
 		try {
@@ -354,7 +354,7 @@ public class MCKPPos extends AbstractAgent {
 					double salesPrice = _salesPrices.get(q);
 					double pos = posList.get(i);
 					double clickPr = _posToPrClick.getPrediction(q, pos, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q);
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _posToCPC.getPrediction(q, pos);
 					double convProb = _convPrModel.getPrediction(q);
@@ -461,7 +461,7 @@ public class MCKPPos extends AbstractAgent {
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _posToPrClick.getPrediction(q, pos, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q);
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _posToCPC.getPrediction(q, pos);
 

@@ -79,6 +79,7 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
+		_R.setSeed(174962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
@@ -105,8 +106,8 @@ public class MCKPBid extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 10, 10, true, false);
-		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
+		AbstractBidToCPC bidToCPC = new EnsembleBidToCPC(_querySpace, 25, 20, true, false);
+		AbstractBidToPrClick bidToPrClick = new EnsembleBidToPrClick(_querySpace, 25, 20, basicTargModel, true, true);
 		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -308,7 +309,7 @@ public class MCKPBid extends AbstractAgent {
 					double salesPrice = _salesPrices.get(q);
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q);
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
 					double convProb = _convPrModel.getPrediction(q);
@@ -365,6 +366,7 @@ public class MCKPBid extends AbstractAgent {
 				//do nothing
 			}
 			else {
+//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
 				budget = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
 				debug("Unit Sold Model Budget "  +budget);
 			}
@@ -397,7 +399,7 @@ public class MCKPBid extends AbstractAgent {
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q);
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
 
@@ -423,7 +425,7 @@ public class MCKPBid extends AbstractAgent {
 					}
 
 					if(BUDGET) {
-						bidBundle.setDailyLimit(q, numClicks*CPC);
+						bidBundle.setDailyLimit(q, numClicks*CPC*1.3);
 					}
 				}
 				else {
@@ -435,11 +437,11 @@ public class MCKPBid extends AbstractAgent {
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
@@ -450,11 +452,11 @@ public class MCKPBid extends AbstractAgent {
 			for(Query q : _querySpace){
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}

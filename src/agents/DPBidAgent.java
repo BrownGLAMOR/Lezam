@@ -144,7 +144,7 @@ public class DPBidAgent extends AbstractAgent {
 				double prClicks = bidToPrClickModel.getPrediction(query, bid,
 						null);
 				if (TARGET) prClicks = targetModel.getClickPrPrediction(query, prClicks, false);
-				double imp = queryToNumImpModel.getPrediction(query);
+				double imp = queryToNumImpModel.getPrediction(query,(int) (_day+1));
 				
 				double maxClicks = prClicks * imp;
 				

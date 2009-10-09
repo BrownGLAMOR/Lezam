@@ -348,7 +348,7 @@ public class ILPBidAgent extends AbstractAgent {
 						double salesPrice = _salesPrices.get(q);
 						double bid = _bidList.get(i);
 						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-						double numImps = _queryToNumImpModel.getPrediction(q);
+						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 						int numClicks = (int) (clickPr * numImps);
 						double CPC = _bidToCPC.getPrediction(q, bid);
 						double convProb = _convPrModel.getPrediction(q);
@@ -571,7 +571,7 @@ public class ILPBidAgent extends AbstractAgent {
 						//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
 						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-						double numImps = _queryToNumImpModel.getPrediction(q);
+						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 						int numClicks = (int) (clickPr * numImps);
 						double CPC = _bidToCPC.getPrediction(q, bid);
 

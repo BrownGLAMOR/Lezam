@@ -28,7 +28,7 @@ public class EquateProfitS extends RuleBasedAgent{
 	protected ArrayList<BidBundle> _bidBundleList;
 	
 	protected boolean TARGET = false;
-	protected boolean BUDGET = true;
+	protected boolean BUDGET = false;
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -51,6 +51,7 @@ public class EquateProfitS extends RuleBasedAgent{
 		}
 
 		_bidBundle = new BidBundle();
+		_bidBundle.setCampaignDailySpendLimit(1200);
 		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
