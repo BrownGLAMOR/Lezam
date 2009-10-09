@@ -26,7 +26,7 @@ public class PerfectUserModel extends AbstractUserModel {
 	}
 
 	@Override
-	public int getPrediction(Product product, UserState state) {
+	public int getPrediction(Product product, UserState state, int day) {
 		/*
 		 * The incoming info for a User model should always be a UserState and
 		 * we will return the ratio of users in that state
