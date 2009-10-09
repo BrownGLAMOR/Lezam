@@ -67,14 +67,14 @@ public class PredictionEvaluator {
 		//		int max = 455;
 		//		int max = 496;
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1435;
-		int max = 1445;
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		int min = 1435;
+//		int max = 1445;
 		//				int max = 9;
 
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
-		//		int min = 1435;
-		//		int max = 1451;
+				String baseFile = "/pro/aa/finals/day-2/server-1/game";
+				int min = 1435;
+				int max = 1445;
 		//		int max = 1464;
 
 		ArrayList<String> filenames = new ArrayList<String>();
