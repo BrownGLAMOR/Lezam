@@ -49,7 +49,10 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
             // The F2 query class
             _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
         }
+	}
 
+	@Override
+	public int getPrediction(Query q, UserState userState, int day) {
         //Set num impressions per query
         for(Query query : _querySpace) {
         	int numIS = 0;
@@ -58,19 +61,19 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
         	int numF2 = 0;
         	for(Product product : _products) {
         		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-        			numF0 += _userModel.getPrediction(product, UserState.F0);
-        			numIS += _userModel.getPrediction(product, UserState.IS) / 3;
+        			numF0 += _userModel.getPrediction(product, UserState.F0,day);
+        			numIS += _userModel.getPrediction(product, UserState.IS,day) / 3;
         		}
         		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
         			if(product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-        				numF1 += _userModel.getPrediction(product, UserState.F1) / 2;
-        				numIS += _userModel.getPrediction(product, UserState.IS) / 6;
+        				numF1 += _userModel.getPrediction(product, UserState.F1,day) / 2;
+        				numIS += _userModel.getPrediction(product, UserState.IS,day) / 6;
         			}
         		}
         		else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
         			if(product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-        				numF2 += _userModel.getPrediction(product, UserState.F2);
-        				numIS += _userModel.getPrediction(product, UserState.IS)/3;
+        				numF2 += _userModel.getPrediction(product, UserState.F2,day);
+        				numIS += _userModel.getPrediction(product, UserState.IS,day)/3;
         			}
         		}
         	}
@@ -81,11 +84,7 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
         	users.put(UserState.F2, numF2);
         	_numUsers.put(query, users);
         }
-	}
-
-	@Override
-	public int getPrediction(Query query, UserState userState) {
-		return _numUsers.get(query).get(userState);
+		return _numUsers.get(q).get(userState);
 	}
 
 	@Override

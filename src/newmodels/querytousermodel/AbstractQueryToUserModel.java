@@ -10,6 +10,6 @@ public abstract class AbstractQueryToUserModel extends AbstractModel {
 	
 	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport);
 	
-	public abstract int getPrediction(Query query, UserState userState);
+	public abstract int getPrediction(Query query, UserState userState, int day);
 
 }
