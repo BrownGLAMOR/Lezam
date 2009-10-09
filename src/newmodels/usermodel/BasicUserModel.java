@@ -33,7 +33,7 @@ public class BasicUserModel extends AbstractUserModel {
 	}
 	
 	@Override
-	public int getPrediction(Product product, UserState userState) {
+	public int getPrediction(Product product, UserState userState, int day) {
 
 		if(userState == UserState.F0) {
 			return (int) F0users;

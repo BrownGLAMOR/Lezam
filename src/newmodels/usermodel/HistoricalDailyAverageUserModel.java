@@ -143,20 +143,8 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 		return null;
 	}
 
-
-
-
 	@Override
-	public int getPrediction(Product product, UserState userState) {
-		//FIXME: What day is it today??? For now, just using values for day 1.
-		System.out.println("WARNING: This predictor also requires a date as input.");
-		return getPrediction(product, userState, 1);
-	}
-
-
-
 	public int getPrediction(Product product, UserState userState, int day) {
-
 		String manString = product.getManufacturer();
 		String compString = product.getComponent();
 		int prodIdx=getProdIdx(manString, compString);
@@ -300,7 +288,6 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 
 		System.out.println("prediction: " + model.getPrediction(p,u,d));
 	}
-
 
 
 }
