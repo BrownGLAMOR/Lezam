@@ -90,22 +90,15 @@ public class PredictionEvaluator {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
-		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		HashMap<String,Double> ourTotErrorMegaMap = new HashMap<String,Double>();
+		HashMap<String,Double> ourTotActualMegaMap = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterMegaMap = new HashMap<String,Integer>();
 		ArrayList<String> filenames = getGameStrings();
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
-
-			/*
-			 * One map for each advertiser
-			 */
-			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
-			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
 
 			//Make the query space
 			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
@@ -121,85 +114,60 @@ public class PredictionEvaluator {
 				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 
-			for(int agent = 0; agent < agents.length; agent++) {
-				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
-				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
-				AbstractQueryToNumImp model = (AbstractQueryToNumImp) baseModel.getCopy();
+			AbstractQueryToNumImp model = (AbstractQueryToNumImp) baseModel.getCopy();
 
-				double ourTotError = 0;
-				double ourTotActual = 0;
-				int ourTotErrorCounter = 0;
+			double ourTotError = 0;
+			double ourTotActual = 0;
+			int ourTotErrorCounter = 0;
 
-				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
-				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
-				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
 
-				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
-				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
-				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
-
-				//				System.out.println(agents[agent]);
-				for(int i = 0; i < 57; i++) {
-					SalesReport salesReport = ourSalesReports.get(i);
-					QueryReport queryReport = ourQueryReports.get(i);
-					BidBundle bidBundle = ourBidBundles.get(i);
-
-					model.updateModel(queryReport, salesReport);
-
-					if(i >= 5) {
-						/*
-						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
-						 */
-						SalesReport otherSalesReport = ourSalesReports.get(i+2);
-						QueryReport otherQueryReport = ourQueryReports.get(i+2);
-						BidBundle otherBidBundle = ourBidBundles.get(i+2);
-						for(Query q : querySpace) {
-							double bid = otherBidBundle.getBid(q);
-							if(bid != 0) {
-								double imppred = model.getPrediction(q,i+1);
-								if(Double.isNaN(imppred)) {
-									imppred = 0.0;
-								}
-								double imps = otherQueryReport.getImpressions(q);
-								imppred -= imps;
-								imppred = imppred*imppred;
-								ourTotActual += imps;
-								ourTotError += imppred;
-								ourTotErrorCounter++;
-							}
-						}
+			//				System.out.println(agents[agent]);
+			for(int i = 0; i < 57; i++) {
+				for(Query q : querySpace) {
+					double imps = 0.0;
+					for(int agent = 0; agent < agents.length; agent++) {
+						LinkedList<QueryReport> queryReportsList = allQueryReports.get(agents[agent]);
+						QueryReport queryReport = queryReportsList.get(i+2);
+						imps = Math.max(imps, queryReport.getImpressions(q));
 					}
+					if(imps == 0.0) {
+						/*
+						 * We only care what the error is on days we actually got in the auction
+						 */
+						continue;
+					}
+					double imppred = model.getPrediction(q,i+1);
+					if(Double.isNaN(imppred)) {
+						imppred = 0.0;
+					}
+					imppred -= imps;
+					imppred = imppred*imppred;
+					ourTotActual += imps;
+					ourTotError += imppred;
+					ourTotErrorCounter++;
 				}
-				ourTotErrorMap.put(agents[agent],ourTotError);
-				ourTotActualMap.put(agents[agent],ourTotActual);
-				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
-
 			}
 
-			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
-			ourTotActualMegaMap.put(filename,ourTotActualMap);
-			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+			ourTotErrorMegaMap.put(filename,ourTotError);
+			ourTotActualMegaMap.put(filename,ourTotActual);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounter);
 		}
 		ArrayList<Double> RMSEList = new ArrayList<Double>();
 		ArrayList<Double> actualList = new ArrayList<Double>();
 		//		System.out.println("Model: " + baseModel);
 		for(String file : filenames) {
 			//			System.out.println("File: " + file);
-			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
-			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
-			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
-			for(String agent : totErrorCounterMap.keySet()) {
-				//				System.out.println("\t Agent: " + agent);
-				double totError = totErrorMap.get(agent);
-				double totActual = totActualMap.get(agent);
-				double totErrorCounter = totErrorCounterMap.get(agent);
-				//				System.out.println("\t\t Predictions: " + totErrorCounter);
-				double MSE = (totError/totErrorCounter);
-				double RMSE = Math.sqrt(MSE);
-				double actual = totActual/totErrorCounter;
-				RMSEList.add(RMSE);
-				actualList.add(actual);
-			}
+			double totError = ourTotErrorMegaMap.get(file);
+			double totActual = ourTotActualMegaMap.get(file);
+			int totErrorCounter = ourTotErrorCounterMegaMap.get(file);
+			//				System.out.println("\t Agent: " + agent);
+			//				System.out.println("\t\t Predictions: " + totErrorCounter);
+			double MSE = (totError/totErrorCounter);
+			double RMSE = Math.sqrt(MSE);
+			double actual = totActual/totErrorCounter;
+			RMSEList.add(RMSE);
+			actualList.add(actual);
 		}
 		//		System.out.println("Data Points: " + dataPointCounter);
 		Collections.sort(RMSEList);
@@ -2238,14 +2206,9 @@ public class PredictionEvaluator {
 			 * 
 			 * 
 			 */
-						AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
+									AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
 //			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
 			evaluator.queryToNumImpPredictionChallenge(model);
-
-
-
-
-
 
 
 
