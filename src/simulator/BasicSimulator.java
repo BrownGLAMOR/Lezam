@@ -934,7 +934,7 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
-		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap, posToBidMap);
+		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap,bidToPrClickNoise);
