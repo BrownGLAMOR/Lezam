@@ -35,6 +35,9 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 	protected HashMap<String,AbstractBidToCPC> _usableModels;
 	protected HashMap<String,HashMap<Query,LinkedList<Double>>> _dailyModelError;
 	protected HashMap<String,HashMap<Query,LinkedList<Integer>>> _bordaCount;
+	protected HashMap<String,Integer> _totalBordaCount;
+	protected HashMap<String,LinkedList<Double>> _errorDifference;
+	protected LinkedList<String> _modelList;
 	protected HashMap<BidBundle,HashMap<String,HashMap<Query,Double>>> _modelPredictions;
 
 	/*
@@ -74,6 +77,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_ignoreNaN = ignoreNaN;
 
 		_RMSE = new LinkedList<Double>();
+		
+		_modelList = new LinkedList<String>();
 
 		/*
 		 * Initialize Models
@@ -82,6 +87,8 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_usableModels = new HashMap<String,AbstractBidToCPC>();
 		_dailyModelError = new HashMap<String, HashMap<Query,LinkedList<Double>>>();
 		_bordaCount = new HashMap<String, HashMap<Query,LinkedList<Integer>>>();
+		_totalBordaCount = new HashMap<String, Integer>();
+		_errorDifference = new HashMap<String, LinkedList<Double>>();
 		_modelPredictions = new HashMap<BidBundle, HashMap<String,HashMap<Query,Double>>>();
 
 		_modelUseCount = new HashMap<Query,HashMap<String, Integer>>();
@@ -347,17 +354,30 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 			return false;
 		}
 		else {
+			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
 			for(String name : _models.keySet()) {
+				LinkedList<Double> errorDiffList = _errorDifference.get(name);
 				HashMap<Query, LinkedList<Double>> dailyModelError = _dailyModelError.get(name);
 				HashMap<Query, Double> predictions = modelPredictions.get(name);
 				for(Query query : _querySpace) {
 					LinkedList<Double> queryDailyError = dailyModelError.get(query);
+					double ensemblepred = ensemblePredictions.get(query);
 					if(predictions != null) {
 						double error = predictions.get(query);
 						double CPC = queryReport.getCPC(query);
 						if(Double.isNaN(CPC)) {
 							CPC = 0.0;
 						}
+						
+						double errorDiff = 0.0;
+						double ensembleerror = ensemblepred-CPC;
+						if(Double.isNaN(error)) {
+							error = bundle.getBid(query);
+						}
+						double modelDiff = error-CPC;
+						errorDiff = Math.abs(modelDiff-ensembleerror);
+						errorDiffList.add(errorDiff);
+						
 						if(!(_ignoreNaN && CPC == 0.0)) {
 							error -= CPC;
 							error = error*error;
@@ -371,13 +391,13 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 					}
 					dailyModelError.put(query, queryDailyError);
 				}
+				_errorDifference.put(name, errorDiffList);
 				_dailyModelError.put(name, dailyModelError);
 			}
 
 			/*
 			 * Update Ensemble Error
 			 */
-			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
 			double MSE = 0.0;
 			for(Query query : _querySpace) {
 				LinkedList<Double> queryEnsembleError = _ensembleError.get(query);
@@ -467,6 +487,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		_models.put(name,model);
 		HashMap<Query, LinkedList<Double>> dailyModelError = new HashMap<Query,LinkedList<Double>>();
 		HashMap<Query, LinkedList<Integer>> bordaCount = new HashMap<Query, LinkedList<Integer>>();
+		LinkedList<Double> errorDifference = new LinkedList<Double>();
 		for(Query query : _querySpace) {
 			LinkedList<Double> dailyModelErrorList = new LinkedList<Double>();
 			dailyModelError.put(query,dailyModelErrorList);
@@ -476,6 +497,9 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		}
 		_dailyModelError.put(name,dailyModelError);
 		_bordaCount.put(name,bordaCount);
+		_totalBordaCount.put(name,0);
+		_errorDifference.put(name, errorDifference);
+		_modelList.add(name);
 	}
 
 	public HashMap<Query, LinkedList<AbstractBidToCPC>> meanPredictionCombiner() {
@@ -599,6 +623,9 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(mep.getName());
 				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
 				bordaCountList.add(ENSEMBLESIZE-i);
+				
+				_totalBordaCount.put(mep.getName(),_totalBordaCount.get(mep.getName()) + ENSEMBLESIZE-i);
+				
 				if(len < bordaCountList.size()) {
 					len = bordaCountList.size();
 				}
@@ -791,6 +818,30 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		public String toString() {
 			return _name + ": " + _bordaCount;
 		}
+	}
+	
+	public void printErrDiffAndBorda() {
+		double totalBorda = 0;
+
+		for(String name : _totalBordaCount.keySet()) {
+			totalBorda += _totalBordaCount.get(name);
+		}
+		
+		String bordaoutput = "Borda: ";
+		String diffoutput = "Diff Error: ";
+		for(String name : _modelList) {
+			double bordaCount = _totalBordaCount.get(name)/totalBorda;
+			LinkedList<Double> errorDiff = _errorDifference.get(name);
+			double totError = 0.0;
+			for(Double err : errorDiff) {
+				totError += err;
+			}
+			totError /= errorDiff.size();
+			diffoutput += totError +  ", ";
+			bordaoutput += bordaCount + ", ";
+		}
+		System.out.println(bordaoutput);
+		System.out.println(diffoutput);
 	}
 
 	public AbstractModel getCopy() {
