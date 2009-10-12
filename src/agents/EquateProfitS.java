@@ -34,6 +34,7 @@ public class EquateProfitS extends RuleBasedAgent{
 	protected final static double decPPS = .9;
 	
 	
+	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		

@@ -34,13 +34,14 @@ public class QualBidder extends RuleBasedAgent {
 	protected boolean BUDGET = true;
 	private double incTS = 1.23;
 	private double decTS = .8;
-	private double goodslot = 2;
-	private double badslot = 3;
-	private double decPM = .9;
-	private double incPM = 1.1;
-	private double minPM = .1;
-	private double maxPM = .9;
-	private double initPM = .7;
+	private double goodslot = 3;
+	private double badslot = 2;
+	private Double decPM = .8;
+	private Double incPM = 1.2;
+	private double minPM = .4;
+	private double maxPM = .8;
+	private double initPM = .4;
+	
 
 	@Override
 	public void initBidder() {		

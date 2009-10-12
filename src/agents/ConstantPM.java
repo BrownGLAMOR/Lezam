@@ -17,24 +17,23 @@ import edu.umich.eecs.tac.props.QueryType;
 
 public class ConstantPM extends RuleBasedAgent {
 	private static final boolean SET_TARGET = false;
-	private static final boolean SET_BUDGET = true;
+	private static final boolean SET_BUDGET = false;
 
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Set<Product>> _queryToProducts;
 
-	private static final double PM = .2;
+	private static final double PM = .7;
 
-	private int _day;
 
 	public ConstantPM() {
-		_day = 0;
+		budgetModifier = 2.0;
 	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
 
-		if(_day < 2) { 
+		if(_day < 5) { 
 			BidBundle bundle = new BidBundle();
 			for(Query q : _querySpace) {
 				double bid = getRandomBid(q);
@@ -46,7 +45,6 @@ public class ConstantPM extends RuleBasedAgent {
 
 		BidBundle bids = new BidBundle();
 		for(Query q : _querySpace) {
-			System.out.print("\t" + q.toString() + ": ");
 			Ad ad = null;
 			if(q.getManufacturer() == null) {
 				if(SET_TARGET)
@@ -56,16 +54,14 @@ public class ConstantPM extends RuleBasedAgent {
 			} else
 				ad = new Ad(null);
 
-			System.out.print(ad.toString() + ", ");
-
 			double targetCPC = getTargetCPC(q);
-			bids.setBid(q, targetCPC+.01);
+			
+			bids.setBidAndAd(q, targetCPC+.01,ad);
 		}
 
 		if(SET_BUDGET) {
 			bids.setCampaignDailySpendLimit(getTotalSpendingLimit(bids));
 		}
-		System.out.println(bids);
 		return bids;
 	}
 

@@ -48,9 +48,9 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.Cheap;
-import agents.ConstantSales;
+import agents.AdjustPM;
 import agents.ClickProfitC;
-import agents.ClickProfitS;
+import agents.QualBidder;
 import agents.PortfolioOpt;
 import agents.ConstantPM;
 import agents.EquateProfitC;
@@ -60,7 +60,7 @@ import agents.ILPPosAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import agents.MCKPPos;
-import agents.GoodSlot;
+import agents.Goldilocks;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -85,15 +85,14 @@ public class BasicSimulator {
 	private static final int NUM_PERF_ITERS = 1000;
 	private int _numSplits = 3; //How many bids to consider between slots
 	private static final boolean PERFECTMODELS = false;
-	private Set<AbstractModel> _perfectModels;
 	private boolean _killBudgets = false;
 
 	/*
 	 * Gaussian noise for perf models
 	 */
 	private boolean _noise;
-	private double _noiseVar;
-	private double _noiseMean;
+	private double _noisePrClick;
+	private double _noiseImps;
 
 	private boolean DEBUG = false;
 
@@ -183,7 +182,7 @@ public class BasicSimulator {
 				System.out.println("\t Removing all budgets");
 			}
 			if(_noise) {
-				System.out.println("\t ADDING MEAN=" + _noiseMean + ",VAR=" + _noiseVar + " GAUSSIAN ERROR");
+				System.out.println("\t IMP VAR=" + _noiseImps + ",CLICKPR VAR=" + _noisePrClick + " GAUSSIAN ERROR");
 			}
 		}
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
@@ -204,18 +203,18 @@ public class BasicSimulator {
 
 		//		ArrayList<Double> impSE = new ArrayList<Double>();
 		//		ArrayList<Double> impActual = new ArrayList<Double>();
-		//
+
 		//		ArrayList<Double> bidToCPCSE = new ArrayList<Double>();
 		//		ArrayList<Double> bidToCPCActual = new ArrayList<Double>();
 		//
 		//		ArrayList<Double> posToCPCSE = new ArrayList<Double>();
 		//		ArrayList<Double> posToCPCActual = new ArrayList<Double>();
 
-		ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
-		ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
+		//		ArrayList<Double> bidToPrClickSE = new ArrayList<Double>();
+		//		ArrayList<Double> bidToPrClickActual = new ArrayList<Double>();
 
-		ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
-		ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
+		//		ArrayList<Double> posToPrClickSE = new ArrayList<Double>();
+		//		ArrayList<Double> posToPrClickActual = new ArrayList<Double>();
 
 		//		ArrayList<Double> bidToPosSE = new ArrayList<Double>();
 		//		ArrayList<Double> bidToPosActual = new ArrayList<Double>();
@@ -241,9 +240,9 @@ public class BasicSimulator {
 				QueryReport queryReport = reports.getQueryReport();
 				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
-				if(!PERFECTMODELS) {
-					agent.updateModels(salesReport, queryReport);
-				}
+				//				if(!PERFECTMODELS) {
+				agent.updateModels(salesReport, queryReport);
+				//				}
 			}
 			lastSeed = getNewSeed();
 			initializeDaySpecificInfo(day, advertiseridx);
@@ -258,42 +257,42 @@ public class BasicSimulator {
 			//			 * TEST PERFECT MODEL ERROR
 			//			 */
 			//
-			//			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
-			//			//No Targeting or Budgets
-			//			bundle.setCampaignDailySpendLimit(Double.NaN);
-			//			for(Query query : _querySpace) {
-			//				bundle.setAd(query, new Ad());
-			//				bundle.setDailyLimit(query, Double.NaN);
-			//			}
-			//
-			//			HashMap<String, Reports> maps = runSimulation(bundle);
-			//
-			//			_ourBidBundle = bundle;
-			//			Set<AbstractModel> perfectModels = generatePerfectModels();
-			//			_perfectModels = perfectModels;
+			//			//			BidBundle bundle = status.getBidBundles().get(_agents[_ourAdvIdx]).get(day);
+			//			//			//No Targeting or Budgets
+			//			//			bundle.setCampaignDailySpendLimit(Double.NaN);
+			//			//			for(Query query : _querySpace) {
+			//			//				bundle.setAd(query, new Ad());
+			//			//				bundle.setDailyLimit(query, Double.NaN);
+			//			//			}
+			//			//
+			//			//			HashMap<String, Reports> maps = runSimulation(bundle);
+			//			//
+			//			//			_ourBidBundle = bundle;
+			//			Set<AbstractModel> ourModels = agent.getModels();
 			//
 			//			Reports ourReports = maps.get(_agents[_ourAdvIdx]);
 			//
-			//			for(AbstractModel model : _perfectModels) {
-			//				if(model instanceof AbstractUserModel) {
-			//					//Do Nothing
-			//				}
-			//				//				else if(model instanceof AbstractQueryToNumImp) {
-			//				//					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
-			//				//					for(Query query : _querySpace) {
-			//				//						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
-			//				//						int numImpsPred = queryToNumImp.getPredictionWithBid(query, _ourBidBundle.getBid(query));
-			//				//						if(numImps == 0 || numImpsPred == 0) {
-			//				//							continue;
-			//				//						}
-			//				//						else {
-			//				//							double diff = numImps - numImpsPred;
-			//				//							double SE = diff*diff;
-			//				//							impSE.add(SE);
-			//				//							impActual.add(numImps*1.0);
-			//				//						}
-			//				//					}
+			//			for(AbstractModel model : ourModels) {
+			//				//				if(model instanceof AbstractUserModel) {
+			//				//					//Do Nothing
 			//				//				}
+			//				if(model instanceof AbstractQueryToNumImp) {
+			//					AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
+			//					System.out.println(queryToNumImp.toString());
+			//					for(Query query : _querySpace) {
+			//						int numImps = (int) (ourReports.getRegularImpressions(query) + ourReports.getPromotedImpressions(query));
+			//						int numImpsPred = queryToNumImp.getPredictionWithBid(query, _ourBidBundle.getBid(query),day+1);
+			//						if(numImps == 0 || numImpsPred == 0) {
+			//							continue;
+			//						}
+			//						else {
+			//							double diff = numImps - numImpsPred;
+			//							double SE = diff*diff;
+			//							impSE.add(SE);
+			//							impActual.add(numImps*1.0);
+			//						}
+			//					}
+			//				}
 			//				//				else if(model instanceof AbstractUnitsSoldModel) {
 			//				//					//Do Nothing
 			//				//				}
@@ -315,6 +314,7 @@ public class BasicSimulator {
 			//				//				}
 			//				else if(model instanceof AbstractBidToPrClick) {
 			//					AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
+			//					System.out.println(bidToPrClick.toString());
 			//					for(Query query : _querySpace) {
 			//						double clickPr = ourReports.getClickPr(query);
 			//						double prClickPred = bidToPrClick.getPrediction(query, _ourBidBundle.getBid(query), _ourBidBundle.getAd(query));
@@ -349,6 +349,7 @@ public class BasicSimulator {
 			//				//				}
 			//				else if(model instanceof AbstractPosToPrClick) {
 			//					AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
+			//					System.out.println(posToPrClick.toString());
 			//					for(Query query : _querySpace) {
 			//						double clickPr = ourReports.getClickPr(query);
 			//						double prClickPred = posToPrClick.getPrediction(query, ourReports.getPosition(query), _ourBidBundle.getAd(query));
@@ -423,17 +424,17 @@ public class BasicSimulator {
 			//			}
 			//
 			//
-			//			//			double impErrorTot = 0.0;
-			//			//			double impActualTot = 0.0;
-			//			//			for (int i = 0; i < impSE.size(); i++) {
-			//			//				impErrorTot += impSE.get(i);
-			//			//				impActualTot += impActual.get(i);
-			//			//			}
-			//			//			impErrorTot /= impSE.size();
-			//			//			impActualTot /= impActual.size();
-			//			//			double impRMSE = Math.sqrt(impErrorTot);
-			//			//			System.out.println("Impressions RMSE: " +  impRMSE + ", %error: " + impRMSE/impActualTot);
-			//			//
+			//			double impErrorTot = 0.0;
+			//			double impActualTot = 0.0;
+			//			for (int i = 0; i < impSE.size(); i++) {
+			//				impErrorTot += impSE.get(i);
+			//				impActualTot += impActual.get(i);
+			//			}
+			//			impErrorTot /= impSE.size();
+			//			impActualTot /= impActual.size();
+			//			double impRMSE = Math.sqrt(impErrorTot);
+			//			System.out.println("Impressions RMSE: " +  impRMSE + ", %error: " + impRMSE/impActualTot);
+			//
 			//			//			double bidToCPCErrorTot = 0.0;
 			//			//			double bidToCPCActualTot = 0.0;
 			//			//			for (int i = 0; i < bidToCPCSE.size(); i++) {
@@ -846,6 +847,7 @@ public class BasicSimulator {
 		}
 		for(int i = 0; i < NUM_PERF_ITERS; i++) {
 			BidBundle bundle = new BidBundle();
+			bundle.setCampaignDailySpendLimit(700);
 			for(Query query : _querySpace) {
 				double[] potentialBids = potentialBidsMap.get(query);
 				double rand = random.nextDouble() * potentialBids.length;
@@ -916,17 +918,20 @@ public class BasicSimulator {
 
 		HashMap<Query,Double> bidToPrClickNoise = new HashMap<Query, Double>();
 		HashMap<Query,Double> posToPrClickNoise = new HashMap<Query, Double>();
+		HashMap<Query,Double> queryToNumImpsNoise = new HashMap<Query, Double>();
 
 		if(_noise) {
 			for(Query q : _querySpace) {
-				bidToPrClickNoise.put(q, random.nextGaussian()*_noiseVar + _noiseMean);
-				posToPrClickNoise.put(q, random.nextGaussian()*_noiseVar + _noiseMean);
+				bidToPrClickNoise.put(q, random.nextGaussian()*_noisePrClick);
+				posToPrClickNoise.put(q, random.nextGaussian()*_noisePrClick);
+				queryToNumImpsNoise.put(q, random.nextGaussian()*_noiseImps);
 			}
 		}
 		else {
 			for(Query q : _querySpace) {
 				bidToPrClickNoise.put(q, 0.0);
 				posToPrClickNoise.put(q, 0.0);
+				queryToNumImpsNoise.put(q, 0.0);
 			}
 		}
 
@@ -934,7 +939,7 @@ public class BasicSimulator {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 
 		PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
-		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap);
+		PerfectQueryToNumImp queryToNumImp = new PerfectQueryToNumImp(allReportsMap,potentialBidsMap,queryToNumImpsNoise);
 		PerfectUnitsSoldModel unitsSold = new PerfectUnitsSoldModel(_salesOverWindow.get(_agents[_ourAdvIdx]), _ourAdvInfo.getDistributionCapacity(), _ourAdvInfo.getDistributionWindow());
 		AbstractBidToCPC bidToCPCModel = new PerfectBidToCPC(allReportsMap,potentialBidsMap);
 		AbstractBidToPrClick bidToClickPrModel = new PerfectBidToPrClick(allReportsMap,potentialBidsMap,bidToPrClickNoise);
@@ -970,8 +975,77 @@ public class BasicSimulator {
 	public BidBundle getBids(AbstractAgent agentToRun) {
 		if(PERFECTMODELS) {
 			Set<AbstractModel> perfectModels = generatePerfectModels();
-			_perfectModels = perfectModels;
+			Set<AbstractModel> regModels = agentToRun.getModels();
+
+			//			//OPTION 1 (MOSTLY PERF MODELS)
+			//
+			//			//Remove models we want reg in perfect models:
+			//			ArrayList<AbstractModel> modelsToRemove = new ArrayList<AbstractModel>();
+			//			for(AbstractModel model : perfectModels) {
+			//				//				if(model instanceof AbstractQueryToNumImp) {
+			//				//					modelsToRemove.add(model);
+			//				//				}
+			//				if(model instanceof AbstractBidToPrClick) {
+			//					modelsToRemove.add(model);
+			//				}
+			//				if(model instanceof AbstractPosToPrClick) {
+			//					modelsToRemove.add(model);
+			//				}
+			//			}
+			//			perfectModels.removeAll(modelsToRemove);
+			//
+			//			//add regmodels models we want
+			//			for(AbstractModel model : regModels) {
+			//				//				if(model instanceof AbstractQueryToNumImp) {
+			//				//					perfectModels.add(model);
+			//				//				}
+			//				if(model instanceof AbstractBidToPrClick) {
+			//					perfectModels.add(model);
+			//				}
+			//				if(model instanceof AbstractPosToPrClick) {
+			//					perfectModels.add(model);
+			//				}
+			//			}
+			//			agentToRun.setModels(perfectModels);
+
+
+
+
+			//			//OPTION 2 (MOSTLY REG MODELs)
+			//
+			//			//Remove models we want perfect in reg models:
+			//			ArrayList<AbstractModel> modelsToRemove = new ArrayList<AbstractModel>();
+			//			for(AbstractModel model : regModels) {
+			//				//				if(model instanceof AbstractQueryToNumImp) {
+			//				//					modelsToRemove.add(model);
+			//				//				}
+			//				if(model instanceof AbstractBidToPrClick) {
+			//					modelsToRemove.add(model);
+			//				}
+			//				if(model instanceof AbstractPosToPrClick) {
+			//					modelsToRemove.add(model);
+			//				}
+			//			}
+			//			regModels.removeAll(modelsToRemove);
+			//
+			//			//add perfect models we want
+			//			for(AbstractModel model : perfectModels) {
+			//				//				if(model instanceof AbstractQueryToNumImp) {
+			//				//					regModels.add(model);
+			//				//				}
+			//				if(model instanceof AbstractBidToPrClick) {
+			//					regModels.add(model);
+			//				}
+			//				if(model instanceof AbstractPosToPrClick) {
+			//					regModels.add(model);
+			//				}
+			//			}
+			//			agentToRun.setModels(regModels);
+
+
+			//OPTION 3 (ALL PERF MODELS)
 			agentToRun.setModels(perfectModels);
+
 		}
 		BidBundle bidBundle = agentToRun.getBidBundle(agentToRun.getModels());
 		return bidBundle;
@@ -1388,7 +1462,7 @@ public class BasicSimulator {
 	}
 
 
-	public void runSimulations(int min, int max, double noiseMean, double noiseVar) throws IOException, ParseException {
+	public void runSimulations(int min, int max, double noiseImps, double noisePrClick) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1405,10 +1479,10 @@ public class BasicSimulator {
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 		_noise = false;
-		if(noiseMean != 0 || noiseVar != 0) {
+		if(noiseImps != 0 || noisePrClick != 0) {
 			_noise = true;
-			_noiseMean = noiseMean;
-			_noiseVar = noiseVar;
+			_noiseImps = noiseImps;
+			_noisePrClick = noisePrClick;
 		}
 
 		String[] filenames = new String[max-min];
@@ -1442,7 +1516,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			System.out.println(filename);
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new MCKPBid(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ConstantPM(), advId);
 			//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1581,7 +1655,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new GoodSlot(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Goldilocks(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));
@@ -1667,47 +1741,60 @@ public class BasicSimulator {
 
 		//		int min = Integer.parseInt(args[0]);
 		//		int max = Integer.parseInt(args[1]);
-		//		double noiseMean = Integer.parseInt(args[2]);
-		//		double noiseVar = Integer.parseInt(args[3]);
+		//		double impVar = Integer.parseInt(args[2]);
+		//		double prClickVar = Integer.parseInt(args[3]);
 		//
-		//		if(noiseMean == 0) {
-		//			noiseMean = -.1;
+		//		if(impVar == 0) {
+		//			impVar = 25;
 		//		}
-		//		if(noiseMean == 1) {
-		//			noiseMean = -.05;
+		//		if(impVar == 1) {
+		//			impVar = 50;
 		//		}
-		//		if(noiseMean == 2) {
-		//			noiseMean = 0;
+		//		if(impVar == 2) {
+		//			impVar = 100;
 		//		}
-		//		if(noiseMean == 3) {
-		//			noiseMean = .05;
+		//		if(impVar == 3) {
+		//			impVar = 200;
 		//		}
-		//		if(noiseMean == 4) {
-		//			noiseMean = .1;
+		//		if(impVar == 4) {
+		//			impVar = 300;
 		//		}
-		//		
-		//		if(noiseVar == 0) {
-		//			noiseVar = 0;
+		//		if(impVar == 5) {
+		//			impVar = 400;
 		//		}
-		//		if(noiseVar == 1) {
-		//			noiseVar = .05;
-		//		}
-		//		if(noiseVar == 2) {
-		//			noiseVar = .1;
-		//		}
-		//		if(noiseVar == 3) {
-		//			noiseVar = .15;
-		//		}
-		//		if(noiseVar == 4) {
-		//			noiseVar = .2;
-		//		}
-		//		if(noiseVar == 5) {
-		//			noiseVar = .25;
+		//		if(impVar == 6) {
+		//			impVar = 500;
 		//		}
 		//
-		//		sim.runSimulations(min,max,noiseMean,noiseVar);
+		//		if(prClickVar == 0) {
+		//			prClickVar = 0;
+		//		}
+		//		if(prClickVar == 1) {
+		//			prClickVar = .025;
+		//		}
+		//		if(prClickVar == 2) {
+		//			prClickVar = .05;
+		//		}
+		//		if(prClickVar == 3) {
+		//			prClickVar = .075;
+		//		}
+		//		if(prClickVar == 4) {
+		//			prClickVar = .1;
+		//		}
+		//		if(prClickVar == 5) {
+		//			prClickVar = .15;
+		//		}
+		//		if(prClickVar == 6) {
+		//			prClickVar = .2;
+		//		}
+		//		if(prClickVar == 7) {
+		//			prClickVar = .25;
+		//		}
+		//
+		//
+		//		sim.runSimulations(min,max,impVar,prClickVar);
 
-		sim.runSimulations(1425,1433,0,0);
+		sim.runSimulations(1425,1437,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

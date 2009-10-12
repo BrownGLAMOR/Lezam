@@ -28,13 +28,14 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
 
-	private double goodslot = 2;
-	private double badslot = 3;
-	private Double decPM = .9;
-	private Double incPM = 1.1;
-	private double minPM = .1;
-	private double maxPM = .9;
-	private double initPM = .7;
+	private double goodslot = 3;
+	private double badslot = 2;
+	private Double decPM = .8;
+	private Double incPM = 1.2;
+	private double minPM = .4;
+	private double maxPM = .8;
+	private double initPM = .4;
+	
 	
 	protected final static double LEARNING_RATE = .075;
 

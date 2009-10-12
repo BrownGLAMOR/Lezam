@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
@@ -37,9 +40,10 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected HashMap<Query, Double> _baselineConversion;
 	protected AbstractConversionModel _conversionPrModel;
 	protected BasicTargetModel _targetModel;
-	private HashMap<Query, Double> _baseClickProbs;
-	private HashMap<Query, Double> _salesPrices;
-	private Random _R;
+	protected HashMap<Query, Double> _baseClickProbs;
+	protected HashMap<Query, Double> _salesPrices;
+	protected Random _R;
+	protected double budgetModifier = 1.2;
 
 	@Override
 	public void initBidder() {
@@ -175,10 +179,10 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {
-			return targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
+			return budgetModifier*targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
 		}
 		else {
-			return targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
+			return budgetModifier*targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
 		}
 	}
 
@@ -196,7 +200,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 		targetCPC /= _querySpace.size();
 		convPr /= _querySpace.size();
-		return targetCPC*_dailyCapacity/convPr;
+		return budgetModifier*targetCPC*_dailyCapacity/convPr;
 	}
 	
 	protected double getRandomBid(Query q) {

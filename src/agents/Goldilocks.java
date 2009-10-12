@@ -3,6 +3,8 @@ package agents;
 import java.util.HashMap;
 import java.util.Set;
 
+import com.sun.tools.internal.xjc.model.Constructor;
+
 import newmodels.AbstractModel;
 import newmodels.prconv.AbstractConversionModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -18,15 +20,19 @@ public class Goldilocks extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 
 	protected boolean TARGET = false;
-	protected boolean BUDGET = true;
+	protected boolean BUDGET = false;
 	
-	protected double goodslot = 2;
-	protected double badslot = 3;
-	protected double increment = 1.1;
-	protected double decrement = .7;
-	protected double maxreinvestment = .9;
-	protected double minreinvestment = .1;
-	protected double initPM = .7;
+	protected double goodslot = 3;
+	protected double badslot = 2;
+	protected double increment = 1.2;
+	protected double decrement = .9;
+	protected double maxreinvestment = .8;
+	protected double minreinvestment = .4;
+	protected double initPM = .4;
+	
+	public Goldilocks() {
+		budgetModifier = 1.6;
+	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {

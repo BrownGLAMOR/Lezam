@@ -18,10 +18,12 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 	private HashMap<Query, HashMap<Double, Reports>> _allReportsMap;
 	private HashMap<Query, double[]> _potentialBidsMap;
 	private HashMap<Query, HashMap<Double, Double>> _posToBidMap;
+	private HashMap<Query, Double> _noise;
 
-	public PerfectQueryToNumImp(HashMap<Query,HashMap<Double,Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap) {
+	public PerfectQueryToNumImp(HashMap<Query,HashMap<Double,Reports>> allReportsMap, HashMap<Query, double[]> potentialBidsMap, HashMap<Query, Double> noise) {
 		_allReportsMap = allReportsMap;
 		_potentialBidsMap = potentialBidsMap;
+		_noise = noise;
 	}
 
 	@Override
@@ -43,6 +45,12 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 		else {
 			avgNumImps = 0.0;
 		}
+		
+		avgNumImps += _noise.get(query);
+		if(avgNumImps < 0) {
+			avgNumImps = 0;
+		}
+		
 
 		return (int) avgNumImps;
 	}
@@ -63,6 +71,12 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 		else {
 			impressions = (int) (reports.getRegularImpressions(query) + reports.getPromotedImpressions(query));
 		}
+		
+		impressions += _noise.get(query);
+		if(impressions < 0) {
+			impressions = 0;
+		}
+		
 		return impressions;
 	}
 
@@ -85,6 +99,10 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 		HashMap<Double, Reports> queryReportMaps = _allReportsMap.get(query);
 		Reports reports = queryReportMaps.get(bid);
 		int impressions = (int) (reports.getRegularImpressions(query) + reports.getPromotedImpressions(query));
+		impressions += _noise.get(query);
+		if(impressions < 0) {
+			impressions = 0;
+		}
 		return impressions;
 	}
 
@@ -172,7 +190,7 @@ public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new PerfectQueryToNumImp(_allReportsMap, _potentialBidsMap);
+		return new PerfectQueryToNumImp(_allReportsMap, _potentialBidsMap,_noise);
 	}
 
 }
