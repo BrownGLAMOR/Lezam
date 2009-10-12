@@ -79,7 +79,7 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
-		_R.setSeed(174962748);
+		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
@@ -366,7 +366,7 @@ public class MCKPBid extends AbstractAgent {
 				//do nothing
 			}
 			else {
-//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
+				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
 				budget = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
 				debug("Unit Sold Model Budget "  +budget);
 			}
@@ -432,19 +432,19 @@ public class MCKPBid extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					//					bid = 0.0;
-					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					bid = 0.0;
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-
-					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					//					else
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					//
+					//					//					System.out.println("Exploring " + q + "   bid: " + bid);
+					//					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
 		}

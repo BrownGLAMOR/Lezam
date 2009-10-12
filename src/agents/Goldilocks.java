@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class GoodSlot extends RuleBasedAgent {
+public class Goldilocks extends RuleBasedAgent {
 
 	protected HashMap<Query, Double> _reinvestment;
 	protected HashMap<Query, Double> _revenue;
@@ -147,7 +147,7 @@ public class GoodSlot extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "GoodSlot";
+		return "Goldilocks";
 	}
 
 }

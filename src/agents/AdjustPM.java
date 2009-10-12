@@ -10,7 +10,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class ConstantSales extends RuleBasedAgent {
+public class AdjustPM extends RuleBasedAgent {
 
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _PM;
@@ -106,7 +106,7 @@ public class ConstantSales extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "ConstantSales";
+		return "AdjustPM";
 	}
 
 }

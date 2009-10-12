@@ -19,7 +19,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class ClickProfitS extends RuleBasedAgent {
+public class QualBidder extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected double _avgProfit;
@@ -218,7 +218,7 @@ public class ClickProfitS extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "ClickProfS";
+		return "QualBidder";
 	}
 
 }
