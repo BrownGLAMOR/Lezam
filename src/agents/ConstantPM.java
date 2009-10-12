@@ -26,7 +26,7 @@ public class ConstantPM extends RuleBasedAgent {
 
 
 	public ConstantPM() {
-		budgetModifier = 2.0;
+		budgetModifier = 1.5;
 	}
 
 	@Override

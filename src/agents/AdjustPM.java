@@ -26,6 +26,9 @@ public class AdjustPM extends RuleBasedAgent {
 	private double maxPM = .8;
 	private double initPM = .4;
 	
+	public AdjustPM() {
+		budgetModifier = 1.25;
+	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {

@@ -32,7 +32,7 @@ public class QualBidder extends RuleBasedAgent {
 	protected final double _errorOfLimit = .1;
 	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
-	private double incTS = 1.23;
+	private double incTS = 1.2;
 	private double decTS = .8;
 	private double goodslot = 3;
 	private double badslot = 2;
@@ -41,6 +41,10 @@ public class QualBidder extends RuleBasedAgent {
 	private double minPM = .4;
 	private double maxPM = .8;
 	private double initPM = .4;
+	
+	public QualBidder() {
+		budgetModifier = 1.0;
+	}
 	
 
 	@Override
@@ -167,7 +171,7 @@ public class QualBidder extends RuleBasedAgent {
 		else prConv = _conversionPrModel.getPrediction(q);
 
 		double dailySalesLimit = Math.max(_desiredSales.get(q)/prConv,3);
-		return targetCPC * dailySalesLimit*1.1;
+		return targetCPC * dailySalesLimit*budgetModifier;
 	}
 
 	protected double getTargetCPC(Query q) {

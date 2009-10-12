@@ -1474,7 +1474,8 @@ public class BasicSimulator {
 		//		int max = 455;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
@@ -1516,7 +1517,8 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			System.out.println(filename);
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ConstantPM(), advId);
+			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitS(), advId);
 			//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1794,7 +1796,7 @@ public class BasicSimulator {
 		//
 		//		sim.runSimulations(min,max,impVar,prClickVar);
 
-		sim.runSimulations(1425,1437,0,0);
+		sim.runSimulations(11,21,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

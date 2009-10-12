@@ -31,7 +31,7 @@ public class Goldilocks extends RuleBasedAgent {
 	protected double initPM = .4;
 	
 	public Goldilocks() {
-		budgetModifier = 1.6;
+		budgetModifier = 1.5;
 	}
 
 	@Override

@@ -37,8 +37,14 @@ public class PortfolioOpt extends RuleBasedAgent {
 	private double initPM = .4;
 	
 	
-	protected final static double LEARNING_RATE = .075;
+	protected final static double LEARNING_RATE = .225;
 
+	
+	public PortfolioOpt() {
+		budgetModifier = 1.4;
+	}
+
+	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 
@@ -81,7 +87,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 			if (BUDGET) 
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));			
 		}
-
+		System.out.println(_bidBundle);
 		_bidBundles.add(_bidBundle);
 
 		return _bidBundle;
@@ -134,7 +140,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 
-		return targetCPC * dailySalesLimit;
+		return targetCPC * dailySalesLimit*budgetModifier;
 	}
 
 	protected void adjustHonestFactor(Query q) {
