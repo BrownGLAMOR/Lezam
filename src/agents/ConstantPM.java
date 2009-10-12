@@ -22,6 +22,8 @@ public class ConstantPM extends RuleBasedAgent {
 	private HashMap<Query, Double> _revenue;
 	private HashMap<Query, Set<Product>> _queryToProducts;
 
+	private static final double PM = .2;
+
 	private int _day;
 
 	public ConstantPM() {
@@ -40,8 +42,8 @@ public class ConstantPM extends RuleBasedAgent {
 			}
 			return bundle;
 		}
-		
-		
+
+
 		BidBundle bids = new BidBundle();
 		for(Query q : _querySpace) {
 			System.out.print("\t" + q.toString() + ": ");
@@ -58,11 +60,12 @@ public class ConstantPM extends RuleBasedAgent {
 
 			double targetCPC = getTargetCPC(q);
 			bids.setBid(q, targetCPC+.01);
-			
-			if(SET_BUDGET)
-				bids.setDailyLimit(q, getDailySpendingLimit(q, targetCPC));
 		}
 
+		if(SET_BUDGET) {
+			bids.setCampaignDailySpendLimit(getTotalSpendingLimit(bids));
+		}
+		System.out.println(bids);
 		return bids;
 	}
 
@@ -72,14 +75,14 @@ public class ConstantPM extends RuleBasedAgent {
 			conversion = _baselineConversion.get(q);
 		else
 			conversion = _conversionPrModel.getPrediction(q);
-		return _revenue.get(q) * 0.4 * conversion;
+		return _revenue.get(q) * (1-PM) * conversion;
 	}
-	
+
 	@Override
 	public void initBidder() {
 		super.initBidder();
 		setDailyQueryCapacity();
-		
+
 		_queryToProducts = new HashMap<Query, Set<Product>>();
 		for(Query q : _querySpace) {
 			HashSet<Product> s = new HashSet<Product>();
@@ -109,10 +112,10 @@ public class ConstantPM extends RuleBasedAgent {
 			}
 		}
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Constant PM";
 	}
-	
+
 }

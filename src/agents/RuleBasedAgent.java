@@ -19,6 +19,7 @@ import newmodels.unitssold.BasicUnitsSoldLambdaModel;
 import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -44,6 +45,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	public void initBidder() {
 
 		_R = new Random();
+		_R.setSeed(12452748);
 
 		_baselineConversion = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
@@ -180,6 +182,23 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 	}
 
+	protected double getTotalSpendingLimit(BidBundle bundle) {
+		double targetCPC = 0;
+		double convPr = 0;
+		for(Query q : _querySpace) { 
+			targetCPC += bundle.getBid(q);
+			if(_day >= 6 && _conversionPrModel != null) {
+				convPr += _conversionPrModel.getPrediction(q);
+			}
+			else {
+				convPr += _baselineConversion.get(q);
+			}
+		}
+		targetCPC /= _querySpace.size();
+		convPr /= _querySpace.size();
+		return targetCPC*_dailyCapacity/convPr;
+	}
+	
 	protected double getRandomBid(Query q) {
 		double bid = 0.0;
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))

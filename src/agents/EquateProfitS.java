@@ -28,7 +28,11 @@ public class EquateProfitS extends RuleBasedAgent{
 	protected ArrayList<BidBundle> _bidBundleList;
 	
 	protected boolean TARGET = false;
-	protected boolean BUDGET = false;
+	protected boolean BUDGET = true;
+	
+	protected final static double incPPS = 1.1;
+	protected final static double decPPS = .9;
+	
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -51,7 +55,6 @@ public class EquateProfitS extends RuleBasedAgent{
 		}
 
 		_bidBundle = new BidBundle();
-		_bidBundle.setCampaignDailySpendLimit(1200);
 		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
@@ -67,8 +70,10 @@ public class EquateProfitS extends RuleBasedAgent{
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
-			if(BUDGET)
-				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
+		}
+		
+		if(BUDGET) {
+			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
 
 		_bidBundleList.add(_bidBundle);
@@ -127,11 +132,11 @@ public class EquateProfitS extends RuleBasedAgent{
 			sum+= _salesReport.getConversions(query);
 		}
 
-		if(sum <= .9*_dailyCapacity) {
-			k *= .9;
+		if(sum <= _dailyCapacity) {
+			k *= decPPS;
 		}
-		if(sum >= 1.1*_dailyCapacity){
-			k *= 1.1;
+		if(sum >= _dailyCapacity){
+			k *= incPPS;
 		}
 
 		k = Math.max(7, k);

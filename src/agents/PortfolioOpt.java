@@ -28,6 +28,14 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
 
+	private double goodslot = 2;
+	private double badslot = 3;
+	private Double decPM = .9;
+	private Double incPM = 1.1;
+	private double minPM = .1;
+	private double maxPM = .9;
+	private double initPM = .7;
+	
 	protected final static double LEARNING_RATE = .075;
 
 	@Override
@@ -46,11 +54,11 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 		_bidBundle = new BidBundle();
 
+		adjustWantedSales();
+		
 		for (Query q : _querySpace) {
 			adjustHonestFactor(q);
 		}
-
-		adjustWantedSales();
 		
 		// build bid bundle
 		for (Query query : _querySpace) {
@@ -85,7 +93,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 		_honestFactor = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_honestFactor.put(q, .3);
+			_honestFactor.put(q, initPM);
 		}
 
 		double slice = _dailyCapacity / 20.0;
@@ -96,13 +104,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 			else
 				_wantedSales.put(q, slice);
 
-		}
-		
-		System.out.println("Slice: " + slice);
-		
-		System.out.println("Initial Wanted Sales");
-		for(Query query : _querySpace) {
-			System.out.println(query + "  " + _wantedSales.get(query));
 		}
 
 		_revenue = new HashMap<Query, Double>();
@@ -138,28 +139,19 @@ public class PortfolioOpt extends RuleBasedAgent {
 	protected void adjustHonestFactor(Query q) {
 		double newHonest;
 
-		/* if we sold less than what we expected, and we got bad position
-		 and also wanted sales does not tend to go over capacity, then raise
-		 our bid*/
-		if (_salesReport.getConversions(q) < _wantedSales.get(q)) {
-			if (!(_queryReport.getPosition(q) <= 4)) {
-
-				newHonest = Math.min(_honestFactor.get(q) * 1.1, .9);
-				_honestFactor.put(q, newHonest);
-
-			}
-		} else {
-			/* if we sold more than what expected, and we got good position,
-			 then lower the bid*/
-			if (_salesReport.getConversions(q) >=  _wantedSales.get(q)) {
-				if (_queryReport.getPosition(q) <= 3) {
-					/*newHonest = (_queryReport.getCPC(q) - 0.01)
-							/ (_revenue.get(q) * conversion);*/
-					newHonest = Math.min(_honestFactor.get(q)*0.9, .1);
-					_honestFactor.put(q, newHonest);
-				}
-			}
+		double tmp = _honestFactor.get(q);
+		// if we does not get enough clicks (and bad position), then decrease PM
+		// (increase bids, and hence slot)
+		if (_salesReport.getConversions(q) >= _wantedSales.get(q) && _queryReport.getPosition(q) < goodslot) {
+			tmp = _honestFactor.get(q) * incPM;
+			tmp = Math.min(minPM, tmp);
+		} else if(_salesReport.getConversions(q) < _wantedSales.get(q) && _queryReport.getPosition(q) >= badslot) {
+			// if we get too many clicks (and good position), increase
+			// PM(decrease bids and hence slot)
+			tmp = _honestFactor.get(q) * decPM;
+			tmp = Math.max(maxPM, tmp);
 		}
+		_honestFactor.put(q, tmp);
 
 	}
 

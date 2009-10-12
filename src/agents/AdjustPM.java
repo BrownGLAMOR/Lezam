@@ -15,10 +15,16 @@ public class AdjustPM extends RuleBasedAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _PM;
 
-	protected double _desiredSale;
 	protected BidBundle _bidBundle;
 	protected final boolean TARGET = false;
 	protected final boolean BUDGET = true;
+	private double goodslot = 2;
+	private double badslot = 3;
+	private Double decPM = .9;
+	private Double incPM = 1.1;
+	private double minPM = .1;
+	private double maxPM = .9;
+	private double initPM = .7;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -53,8 +59,11 @@ public class AdjustPM extends RuleBasedAgent {
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 
-			if (BUDGET || _day < 10) _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
 		}
+		if(BUDGET) {
+			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
+		}
+		
 		return _bidBundle;
 	}
 
@@ -63,11 +72,9 @@ public class AdjustPM extends RuleBasedAgent {
 		super.initBidder();
 		setDailyQueryCapacity();
 
-		_desiredSale = _dailyQueryCapacity;
-
 		_PM = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_PM.put(q, 0.7);
+			_PM.put(q, initPM);
 		}
 
 		_revenue = new HashMap<Query, Double>();
@@ -80,19 +87,19 @@ public class AdjustPM extends RuleBasedAgent {
 	}
 
 	protected void adjustPM(Query q) {
-		double tmp;
+		double tmp = _PM.get(q);
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
-		if (_salesReport.getConversions(q) < _desiredSale) {
-			tmp = (1 - _PM.get(q)) * 1.1;
-			tmp = Math.min(.9, tmp);
-		} else {
+		if (_salesReport.getConversions(q) >= _dailyQueryCapacity && _queryReport.getPosition(q) <= goodslot) {
+			tmp = _PM.get(q) * incPM;
+			tmp = Math.min(minPM, tmp);
+		} else if(_salesReport.getConversions(q) < _dailyQueryCapacity && _queryReport.getPosition(q) >= badslot) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
-			tmp = (1 - _PM.get(q)) * .9;
-			tmp = Math.max(.1, tmp);
+			tmp = _PM.get(q) * decPM;
+			tmp = Math.max(maxPM, tmp);
 		}
-		_PM.put(q, 1 - tmp);
+		_PM.put(q, tmp);
 	}
 
 	protected double getTargetCPC(Query q) {

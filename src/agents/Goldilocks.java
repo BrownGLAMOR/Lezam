@@ -26,6 +26,7 @@ public class Goldilocks extends RuleBasedAgent {
 	protected double decrement = .7;
 	protected double maxreinvestment = .9;
 	protected double minreinvestment = .1;
+	protected double initPM = .7;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -63,8 +64,9 @@ public class Goldilocks extends RuleBasedAgent {
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 
-			if (BUDGET)  _bidBundle.setDailyLimit(query, getDailySpendingLimit(query, targetCPC));
-
+		}
+		if(BUDGET || _day < 10) {
+			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
 		return _bidBundle;
 	}
@@ -76,7 +78,7 @@ public class Goldilocks extends RuleBasedAgent {
 		
 		_reinvestment = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
-			_reinvestment.put(query, 0.3);
+			_reinvestment.put(query, initPM);
 		}
 
 		_revenue = new HashMap<Query, Double>();
@@ -109,7 +111,7 @@ public class Goldilocks extends RuleBasedAgent {
 			conversion = _baselineConversion.get(q);
 		else
 			conversion = _conversionPrModel.getPrediction(q);
-		return conversion * _reinvestment.get(q) * _revenue.get(q);
+		return conversion * (1-_reinvestment.get(q)) * _revenue.get(q);
 	}
 
 	protected void adjustSlots(Query q, double currentReinvest) {
