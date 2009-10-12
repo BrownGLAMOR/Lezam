@@ -50,7 +50,7 @@ import usermodel.UserState;
 import agents.Cheap;
 import agents.AdjustPM;
 import agents.ClickProfitC;
-import agents.QualBidder;
+import agents.PPSBidder;
 import agents.PortfolioOpt;
 import agents.ConstantPM;
 import agents.EquateProfitC;
@@ -1518,7 +1518,7 @@ public class BasicSimulator {
 			}
 			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquateProfitS(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Goldilocks(), advId);
 			//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1796,7 +1796,7 @@ public class BasicSimulator {
 		//
 		//		sim.runSimulations(min,max,impVar,prClickVar);
 
-		sim.runSimulations(11,21,0,0);
+		sim.runSimulations(31,41,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

@@ -19,7 +19,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class QualBidder extends RuleBasedAgent {
+public class PPSBidder extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected double _avgProfit;
@@ -42,7 +42,7 @@ public class QualBidder extends RuleBasedAgent {
 	private double maxPM = .8;
 	private double initPM = .4;
 	
-	public QualBidder() {
+	public PPSBidder() {
 		budgetModifier = 1.0;
 	}
 	
