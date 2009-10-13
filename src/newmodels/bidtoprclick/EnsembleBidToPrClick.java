@@ -371,6 +371,7 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 						double modelDiff = error-clickPr;
 						errorDiff = Math.abs(modelDiff-ensembleerror);
 						errorDiffList.add(errorDiff);
+
 						
 						if(!(_ignoreNaN && clickPr == 0.0)) {
 							error -= clickPr;

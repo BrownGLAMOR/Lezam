@@ -1520,7 +1520,7 @@ public class BasicSimulator {
 			}
 			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquatePM(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new ConstantPM(), advId);
 			//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1756,8 +1756,8 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-//		int min = Integer.parseInt(args[0]);
-//		int max = Integer.parseInt(args[1]);
+		//		int min = Integer.parseInt(args[0]);
+		//		int max = Integer.parseInt(args[1]);
 		//		double impVar = Integer.parseInt(args[2]);
 		//		double prClickVar = Integer.parseInt(args[3]);
 		//
@@ -1811,7 +1811,7 @@ public class BasicSimulator {
 		//
 		//		sim.runSimulations(min,max,0,0);
 
-		sim.runSimulations(1425,1437,0,0);
+		sim.runSimulations(1425,1465,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
