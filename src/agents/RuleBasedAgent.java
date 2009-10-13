@@ -159,13 +159,13 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected void setDailyQueryCapacity(){
 //		_dailyCapacityLambda = 1.4;
 		if(_capacity >= HIGH_CAPACITY) {
-			_dailyCapacityLambda = 1.25;
+			_dailyCapacityLambda = 1.15;
 		}
 		else if(_capacity >= MEDIUM_CAPACITY) {
-			_dailyCapacityLambda = 1.35;
+			_dailyCapacityLambda = 1.25;
 		}
 		else {
-			_dailyCapacityLambda = 1.45;
+			_dailyCapacityLambda = 1.35;
 		}
 		if(_day < 5 ){
 			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));

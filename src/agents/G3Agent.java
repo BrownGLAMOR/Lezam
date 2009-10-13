@@ -99,7 +99,6 @@ public class G3Agent extends AbstractAgent{
 		try {
 			output = new PrintStream(new File("g3.txt"));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 	}
