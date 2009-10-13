@@ -467,7 +467,6 @@ public class ILPPosAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= 1.25;
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {

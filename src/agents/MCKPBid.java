@@ -52,7 +52,7 @@ public class MCKPBid extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 700;
+	private double _safetyBudget = 800;
 
 	//Days since Last Boost
 	private double lastBoost;

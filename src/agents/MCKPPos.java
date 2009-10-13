@@ -612,7 +612,6 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= 1.25;
 
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
