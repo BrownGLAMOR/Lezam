@@ -49,7 +49,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	public void initBidder() {
 
 		_R = new Random();
-//		_R.setSeed(12452748);
+		_R.setSeed(12452748);
 
 		_baselineConversion = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
@@ -157,16 +157,16 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	}
 
 	protected void setDailyQueryCapacity(){
-//		_dailyCapacityLambda = 1.4;
-		if(_capacity >= HIGH_CAPACITY) {
-			_dailyCapacityLambda = 1.15;
-		}
-		else if(_capacity >= MEDIUM_CAPACITY) {
-			_dailyCapacityLambda = 1.25;
-		}
-		else {
-			_dailyCapacityLambda = 1.35;
-		}
+		_dailyCapacityLambda = 1.0;
+		//		if(_capacity >= HIGH_CAPACITY) {
+		//			_dailyCapacityLambda = 1.15;
+		//		}
+		//		else if(_capacity >= MEDIUM_CAPACITY) {
+		//			_dailyCapacityLambda = 1.25;
+		//		}
+		//		else {
+		//			_dailyCapacityLambda = 1.35;
+		//		}
 		if(_day < 5 ){
 			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));
 		}
