@@ -342,6 +342,9 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		}
 		else {
 			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
+			if(ensemblePredictions == null) {
+				return false;
+			}
 			for(String name : _models.keySet()) {
 				LinkedList<Double> errorDiffList = _errorDifference.get(name);
 				HashMap<Query, LinkedList<Double>> dailyModelError = _dailyModelError.get(name);
