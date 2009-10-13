@@ -67,7 +67,7 @@ public class MCKPPos extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 700;
+	private double _safetyBudget = 800;
 
 	//Days since Last Boost
 	private double lastBoost;
@@ -98,7 +98,7 @@ public class MCKPPos extends AbstractAgent {
 
 	public MCKPPos() {
 		posList = new LinkedList<Double>();
-		double increment  = .25;
+		double increment  = .1;
 		double min = 1.0;
 		double max = _outOfAuction - .1;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -339,7 +339,7 @@ public class MCKPPos extends AbstractAgent {
 		}
 
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -412,7 +412,7 @@ public class MCKPPos extends AbstractAgent {
 				//do nothing
 			}
 			else {
-				capacity = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
+				capacity = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
 				debug("Unit Sold Model Budget "  +capacity);
 			}
 
@@ -494,15 +494,15 @@ public class MCKPPos extends AbstractAgent {
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
-					//					bid = 0.0;
-					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					bid = 0.0;
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+					//					else
+					//						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
@@ -612,6 +612,8 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= 1.25;
+				
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail

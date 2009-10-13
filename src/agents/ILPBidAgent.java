@@ -58,11 +58,11 @@ public class ILPBidAgent extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 1000;
+	private double _safetyBudget = 800;
 
 	//Days since Last Boost
 	private double lastBoost;
-	private double boostCoeff = 1.3;
+	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -97,9 +97,9 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .05;
+		double bidIncrement  = .02;
 		double bidMin = .04;
-		double bidMax = 2.5;
+		double bidMax = 1.65;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
@@ -319,7 +319,7 @@ public class ILPBidAgent extends AbstractAgent {
 		}
 
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -425,6 +425,7 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				valueLostWindow *= 1.25;
 
 				double valueLost = 0.0;
 				for (int i = 0; i < _capList.size(); i++){
@@ -504,7 +505,7 @@ public class ILPBidAgent extends AbstractAgent {
 					//do nothing
 				}
 				else {
-					capacity = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
+					capacity = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
 					debug("Unit Sold Model Budget "  +capacity);
 				}
 
@@ -602,18 +603,18 @@ public class ILPBidAgent extends AbstractAgent {
 						/*
 						 * We decided that we did not want to be in this query, so we will use it to explore the space
 						 */
-						//						bid = 0.0;
-						//						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+						bid = 0.0;
+						bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 						//					System.out.println("Bidding " + bid + "   for query: " + q);
-						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-						else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-						else
-							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-
-						//																	System.out.println("Exploring " + q + "   bid: " + bid);
-						bidBundle.addQuery(q, bid, new Ad(), bid*10);
+						//						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
+						//							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//						else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
+						//							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//						else
+						//							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+						//
+						//						//																	System.out.println("Exploring " + q + "   bid: " + bid);
+						//						bidBundle.addQuery(q, bid, new Ad(), bid*10);
 					}
 				}
 			} catch (IloException e) {

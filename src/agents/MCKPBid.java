@@ -52,7 +52,7 @@ public class MCKPBid extends AbstractAgent {
 	private static final boolean SAFETYBUDGET = true;
 	private static final boolean BOOST = true;
 
-	private double _safetyBudget = 700;
+	private double _safetyBudget = 800;
 
 	//Days since Last Boost
 	private double lastBoost;
@@ -82,9 +82,9 @@ public class MCKPBid extends AbstractAgent {
 		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .04;
+		double increment  = .02;
 		double min = .04;
-		double max = 2.25;
+		double max = 1.65;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
@@ -294,7 +294,7 @@ public class MCKPBid extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
-		if(_day > lagDays){
+		if(_day > lagDays || models != null){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
@@ -367,7 +367,7 @@ public class MCKPBid extends AbstractAgent {
 			}
 			else {
 				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = Math.max(_capacity/((double)_capWindow)*(2/3.0),_capacity - _unitsSold.getWindowSold());
+				budget = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
 				debug("Unit Sold Model Budget "  +budget);
 			}
 
@@ -552,7 +552,6 @@ public class MCKPBid extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				valueLostWindow *= 1.1;
 				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
 					double iD = Math.pow(LAMBDA, i);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail

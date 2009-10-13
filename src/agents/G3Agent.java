@@ -17,6 +17,7 @@ import org.rosuda.REngine.Rserve.RserveException;
 
 import newmodels.AbstractModel;
 import newmodels.bidtocpc.AbstractBidToCPC;
+import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.HistoricPrConversionModel;
@@ -128,12 +129,7 @@ public class G3Agent extends AbstractAgent{
 			}
 		}
 
-		try {
-			_bidToCPC = new RegressionBidToCPC(new RConnection(), _querySpace, true, 1, 30, true, .85, false, false, false, false, false, false);
-		} catch (RserveException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		_bidToCPC = new EnsembleBidToCPC(_querySpace, 25, 20, true, false);
 		
 		_baselineConv = new HashMap<Query, Double>();
         for(Query q: _querySpace){

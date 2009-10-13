@@ -63,6 +63,8 @@ public class EquateProfitS extends RuleBasedAgent{
 		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
+			targetCPC = Math.max(targetCPC, 0);
+			targetCPC = Math.min(targetCPC, 1.5);
 			_bidBundle.setBid(query, targetCPC+.01);
 			
 			if (TARGET) {
@@ -80,6 +82,7 @@ public class EquateProfitS extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
+		System.out.println(_bidBundle);
 
 		_bidBundleList.add(_bidBundle);
 		return _bidBundle;
@@ -137,10 +140,10 @@ public class EquateProfitS extends RuleBasedAgent{
 			sum+= _salesReport.getConversions(query);
 		}
 
-		if(sum <= _dailyCapacity) {
+		if(sum <= _dailyCapacity*decPPS) {
 			k *= decPPS;
 		}
-		if(sum >= _dailyCapacity){
+		if(sum >= _dailyCapacity*incPPS){
 			k *= incPPS;
 		}
 
