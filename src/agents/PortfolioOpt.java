@@ -151,12 +151,12 @@ public class PortfolioOpt extends RuleBasedAgent {
 		// (increase bids, and hence slot)
 		if (_salesReport.getConversions(q) >= _wantedSales.get(q) && _queryReport.getPosition(q) < goodslot) {
 			tmp = _honestFactor.get(q) * incPM;
-			tmp = Math.min(minPM, tmp);
+			tmp = Math.min(maxPM, tmp);
 		} else if(_salesReport.getConversions(q) < _wantedSales.get(q) && _queryReport.getPosition(q) >= badslot) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _honestFactor.get(q) * decPM;
-			tmp = Math.max(maxPM, tmp);
+			tmp = Math.max(minPM, tmp);
 		}
 		_honestFactor.put(q, tmp);
 

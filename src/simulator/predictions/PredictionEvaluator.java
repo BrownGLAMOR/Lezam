@@ -516,6 +516,9 @@ public class PredictionEvaluator {
 							}
 						}
 					}
+					if(i == 56) {
+						((EnsemblePosToPrClick)model).printErrDiffAndBorda();
+					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
@@ -704,6 +707,9 @@ public class PredictionEvaluator {
 								ourTotErrorCounter++;
 							}
 						}
+					}
+					if(i == 56) {
+						((EnsembleBidToPrClick)model).printErrDiffAndBorda();
 					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
@@ -2206,8 +2212,8 @@ public class PredictionEvaluator {
 			 * 
 			 * 
 			 */
-									AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
-//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
+			AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
+			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
 			evaluator.queryToNumImpPredictionChallenge(model);
 
 

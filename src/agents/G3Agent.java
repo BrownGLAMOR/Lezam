@@ -74,7 +74,7 @@ public class G3Agent extends AbstractAgent{
 			
 		}
 		
-		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(1200);
+		if (BUDGET) _bidBundle.setCampaignDailySpendLimit(1000);
 
 		_bidBundleList.add(_bidBundle);
 		//this.printInfo();
@@ -222,7 +222,7 @@ public class G3Agent extends AbstractAgent{
 		
 		if(bid <= 0) return 0;
 		else{
-			if(bid > 2.5) return 2.5;
+			if(bid > 1.5) return 1.5;
 			else return bid;
 		}
 

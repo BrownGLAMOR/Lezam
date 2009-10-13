@@ -207,12 +207,12 @@ public class PPSBidder extends RuleBasedAgent {
 		// (increase bids, and hence slot)
 		if (_salesReport.getConversions(q) >= _desiredSales.get(q) && _queryReport.getPosition(q) < goodslot) {
 			tmp = _profitMargins.get(q) * incPM;
-			tmp = Math.min(minPM, tmp);
+			tmp = Math.min(maxPM, tmp);
 		} else if(_salesReport.getConversions(q) < _desiredSales.get(q) && _queryReport.getPosition(q) >= badslot) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _profitMargins.get(q) * decPM;
-			tmp = Math.max(maxPM, tmp);
+			tmp = Math.max(minPM, tmp);
 		}
 		_profitMargins.put(q, tmp);
 	}

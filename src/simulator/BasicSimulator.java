@@ -50,6 +50,8 @@ import usermodel.UserState;
 import agents.Cheap;
 import agents.AdjustPM;
 import agents.ClickProfitC;
+import agents.EquatePM;
+import agents.G3Agent;
 import agents.PPSBidder;
 import agents.PortfolioOpt;
 import agents.ConstantPM;
@@ -240,9 +242,9 @@ public class BasicSimulator {
 				QueryReport queryReport = reports.getQueryReport();
 				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
-				//				if(!PERFECTMODELS) {
-				agent.updateModels(salesReport, queryReport);
-				//				}
+				if(!PERFECTMODELS) {
+					agent.updateModels(salesReport, queryReport);
+				}
 			}
 			lastSeed = getNewSeed();
 			initializeDaySpecificInfo(day, advertiseridx);
@@ -975,7 +977,7 @@ public class BasicSimulator {
 	public BidBundle getBids(AbstractAgent agentToRun) {
 		if(PERFECTMODELS) {
 			Set<AbstractModel> perfectModels = generatePerfectModels();
-			Set<AbstractModel> regModels = agentToRun.getModels();
+			//			Set<AbstractModel> regModels = agentToRun.getModels();
 
 			//			//OPTION 1 (MOSTLY PERF MODELS)
 			//
@@ -1474,8 +1476,8 @@ public class BasicSimulator {
 		//		int max = 455;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
@@ -1518,7 +1520,7 @@ public class BasicSimulator {
 			}
 			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Goldilocks(), advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new EquatePM(), advId);
 			//TODO
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
@@ -1531,22 +1533,33 @@ public class BasicSimulator {
 		double totalImp = 0;
 		double totalClick = 0;
 		double totalConv = 0;
+		double totalPos = 0;
 		double totDays = 0;
+		String profits = "";
 		for(String filename : reportsListMegaMap.keySet()) {
 			HashMap<String, LinkedList<Reports>> map = reportsListMegaMap.get(filename);
 			LinkedList<Reports> reports = map.get(_agents[_ourAdvIdx]);
 			totDays = reportsListMegaMap.size() * reports.size();
+			double profitTot = 0;
 			for(Reports report : reports) {
 				QueryReport queryReport = report.getQueryReport();
 				SalesReport salesReport = report.getSalesReport();
 				for(Query query : _querySpace) {
+					profitTot += salesReport.getRevenue(query)-queryReport.getCost(query);
 					totalRevenue += salesReport.getRevenue(query);
 					totalCost += queryReport.getCost(query);
 					totalImp += queryReport.getImpressions(query);
 					totalClick += queryReport.getClicks(query);
 					totalConv += salesReport.getConversions(query);
+					if(Double.isNaN(queryReport.getPosition(query))) {
+						totalPos += 6.0;
+					}
+					else {
+						totalPos += queryReport.getPosition(query);
+					}
 				}
 			}
+			profits += profitTot + ", ";
 		}
 		System.out.println("\tAvg Profit: " + ((totalRevenue-totalCost)/reportsListMegaMap.size()));
 		System.out.println("\tAvg Revenue: " +  (totalRevenue/reportsListMegaMap.size()));
@@ -1554,9 +1567,11 @@ public class BasicSimulator {
 		System.out.println("\tAvg Impressions: " +  (totalImp/reportsListMegaMap.size()));
 		System.out.println("\tAvg Clicks: " +  (totalClick/reportsListMegaMap.size()));
 		System.out.println("\tAvg Conversions: " +  (totalConv/reportsListMegaMap.size()));
+		System.out.println("\tAvg Position(out of pos = 6.0): " +  (totalPos/(totDays*16)));
 		System.out.println("\tCPC: " + (totalCost/totalClick));
 		System.out.println("\tClickPr: " + (totalClick/totalImp));
 		System.out.println("\tConvPr: " + (totalConv/totalClick));
+		System.out.println("Profit per game: , " + profits);
 	}
 
 
@@ -1741,8 +1756,8 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-		//		int min = Integer.parseInt(args[0]);
-		//		int max = Integer.parseInt(args[1]);
+//		int min = Integer.parseInt(args[0]);
+//		int max = Integer.parseInt(args[1]);
 		//		double impVar = Integer.parseInt(args[2]);
 		//		double prClickVar = Integer.parseInt(args[3]);
 		//
@@ -1794,9 +1809,9 @@ public class BasicSimulator {
 		//		}
 		//
 		//
-		//		sim.runSimulations(min,max,impVar,prClickVar);
+		//		sim.runSimulations(min,max,0,0);
 
-		sim.runSimulations(31,41,0,0);
+		sim.runSimulations(1425,1437,0,0);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

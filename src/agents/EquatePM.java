@@ -31,9 +31,9 @@ public class EquatePM extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	
-	private Double decPM = .8;
-	private Double incPM = 1.2;
-	private double minPM = .4;
+	private Double decPM = .85;
+	private Double incPM = 1.15;
+	private double minPM = .2;
 	private double maxPM = .8;
 	private double initPM = .4;
 	
@@ -143,10 +143,10 @@ public class EquatePM extends RuleBasedAgent{
 		}
 
 		if(sum <= _dailyCapacity*decPM) {
-			k = Math.max(maxPM, k * decPM);
+			k = Math.max(minPM, k * decPM);
 		}
 		if(sum >= _dailyCapacity*incPM){
-			k = Math.min(minPM, k * incPM);
+			k = Math.min(maxPM, k * incPM);
 		}
 	
 		return k;
@@ -172,7 +172,7 @@ public class EquatePM extends RuleBasedAgent{
  
 	@Override
 	public String toString() {
-		return "EquateProfitS";
+		return "EquatePM";
 	}
 
 }

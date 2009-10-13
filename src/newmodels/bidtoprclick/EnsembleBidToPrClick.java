@@ -825,19 +825,40 @@ public class EnsembleBidToPrClick extends AbstractBidToPrClick {
 		
 		String bordaoutput = "Borda: ";
 		String diffoutput = "Diff Error: ";
+		String stdoutput = "Std Dev: ";
 		for(String name : _modelList) {
 			double bordaCount = _totalBordaCount.get(name)/totalBorda;
 			LinkedList<Double> errorDiff = _errorDifference.get(name);
-			double totError = 0.0;
-			for(Double err : errorDiff) {
-				totError += err;
-			}
-			totError /= errorDiff.size();
-			diffoutput += totError +  ", ";
+			double[] stdDevAndMean = getStdDevAndMean(errorDiff);
+			diffoutput += stdDevAndMean[0] +  ", ";
+			stdoutput += stdDevAndMean[1] +  ", ";
 			bordaoutput += bordaCount + ", ";
 		}
 		System.out.println(bordaoutput);
 		System.out.println(diffoutput);
+		System.out.println(stdoutput);
+	}
+	
+	private double[] getStdDevAndMean(LinkedList<Double> list) {
+		double n = list.size();
+		double sum = 0.0;
+		for(Double data : list) {
+			sum += data;
+		}
+		double mean = sum/n;
+
+		double variance = 0.0;
+
+		for(Double data : list) {
+			variance += (data-mean)*(data-mean);
+		}
+
+		variance /= (n-1);
+
+		double[] stdDev = new double[2];
+		stdDev[0] = mean;
+		stdDev[1] = Math.sqrt(variance);
+		return stdDev;
 	}
 
 
