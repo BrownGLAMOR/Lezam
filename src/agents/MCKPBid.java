@@ -79,7 +79,7 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
-		_R.setSeed(124962748);
+//		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;

@@ -49,7 +49,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	public void initBidder() {
 
 		_R = new Random();
-		_R.setSeed(12452748);
+//		_R.setSeed(12452748);
 
 		_baselineConversion = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
