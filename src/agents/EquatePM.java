@@ -31,9 +31,9 @@ public class EquatePM extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	
-	private Double decPM = .85;
-	private Double incPM = 1.15;
-	private double minPM = .2;
+	private Double decPM = .9;
+	private Double incPM = 1.2;
+	private double minPM = .3;
 	private double maxPM = .8;
 	private double initPM = .4;
 	

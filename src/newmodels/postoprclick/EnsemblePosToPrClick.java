@@ -170,60 +170,60 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
 		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
 		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, false));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, false, false, true));
-//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, false));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, false, false, true));
+		//		addModel(new RegressionPosToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, false, false, true));
 	}
 
 	@Override
@@ -250,7 +250,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 
 		double totmodels = _models.size();
 		double workingmodels = _usableModels.size();
-//		System.out.println("Percent Usable [Pos-ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
+		//		System.out.println("Percent Usable [Pos-ClickPr]: " + (workingmodels/totmodels) + ", total: " + totmodels + ", working: " + workingmodels);
 
 		updateEnsemble(queryReport, salesReport, bidBundle);
 
@@ -337,22 +337,19 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		 */
 		HashMap<String, HashMap<Query, Double>> modelPredictions = _modelPredictions.get(queryReport);
 		if(modelPredictions == null) {
-			//			System.out.println("No Predictions Yet");
+						System.out.println("No Predictions Yet");
 			return false;
 		}
 		else {
-			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(bundle);
-			if(ensemblePredictions == null) {
-				return false;
-			}
+			HashMap<Query, Double> ensemblePredictions = _ensemblePredictions.get(queryReport);
 			for(String name : _models.keySet()) {
 				LinkedList<Double> errorDiffList = _errorDifference.get(name);
 				HashMap<Query, LinkedList<Double>> dailyModelError = _dailyModelError.get(name);
 				HashMap<Query, Double> predictions = modelPredictions.get(name);
 				for(Query query : _querySpace) {
 					LinkedList<Double> queryDailyError = dailyModelError.get(query);
-					double ensemblepred = ensemblePredictions.get(query);
 					if(predictions != null) {
+						double ensemblepred = ensemblePredictions.get(query);
 						double error = predictions.get(query);
 						double imps = queryReport.getImpressions(query);
 						double clicks = queryReport.getClicks(query);
@@ -365,7 +362,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 							//							}
 							clickPr = clicks/imps;
 						}
-						
+
 						double errorDiff = 0.0;
 						double ensembleerror = ensemblepred-clickPr;
 						if(Double.isNaN(error)) {
@@ -374,7 +371,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 						double modelDiff = error-clickPr;
 						errorDiff = Math.abs(modelDiff-ensembleerror);
 						errorDiffList.add(errorDiff);
-						
+
 						if(!(_ignoreNaN && clickPr == 0.0)) {
 							error -= clickPr;
 							error = error*error;
@@ -419,7 +416,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 				totRMSE += _RMSE.get(i);
 			}
 			double avgRMSE = totRMSE/_RMSE.size();
-//			System.out.println("Pos-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
+			//			System.out.println("Pos-PrClick (Today,Avg) RMSE: " + RMSE + ", " + avgRMSE);
 			return true;
 		}
 	}
@@ -622,9 +619,9 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 				HashMap<Query, LinkedList<Integer>> bordaCountMap = _bordaCount.get(mep.getName());
 				LinkedList<Integer> bordaCountList = bordaCountMap.get(query);
 				bordaCountList.add(ENSEMBLESIZE-i);
-				
+
 				_totalBordaCount.put(mep.getName(),_totalBordaCount.get(mep.getName()) + ENSEMBLESIZE-i);
-				
+
 				if(len < bordaCountList.size()) {
 					len = bordaCountList.size();
 				}
@@ -825,7 +822,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		for(String name : _totalBordaCount.keySet()) {
 			totalBorda += _totalBordaCount.get(name);
 		}
-		
+
 		String bordaoutput = "Borda: ";
 		String diffoutput = "Diff Error: ";
 		String stdoutput = "Std Dev: ";
@@ -841,7 +838,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		System.out.println(diffoutput);
 		System.out.println(stdoutput);
 	}
-	
+
 	private double[] getStdDevAndMean(LinkedList<Double> list) {
 		double n = list.size();
 		double sum = 0.0;
@@ -864,7 +861,7 @@ public class EnsemblePosToPrClick extends AbstractPosToPrClick {
 		return stdDev;
 	}
 
-	
+
 	public AbstractModel getCopy() {
 		return new EnsemblePosToPrClick(_querySpace, NUMPASTDAYS, ENSEMBLESIZE, _targModel, _borda, _ignoreNaN);
 	}
