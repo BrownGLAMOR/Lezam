@@ -235,6 +235,11 @@ public class HistoricPrConversionModel extends AbstractConversionModel {
 
 		}
 	}
+	
+	@Override
+	public void setSpecialty(String manufacturer, String component) {
+		_targModel = new BasicTargetModel(manufacturer,component);
+	}
 
 	@Override
 	public AbstractModel getCopy() {

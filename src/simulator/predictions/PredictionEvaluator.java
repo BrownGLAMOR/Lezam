@@ -38,6 +38,9 @@ import newmodels.postoprclick.EnsemblePosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
 import newmodels.prclicktobid.AbstractPrClickToBid;
 import newmodels.prclicktobid.BidToPrClickInverter;
+import newmodels.prconv.AbstractConversionModel;
+import newmodels.prconv.GoodConversionPrModel;
+import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.querytousermodel.BasicQueryToUserModel;
@@ -70,7 +73,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1425;
-		int max = 1465;
+		int max = 1435;
 		//						int max = 9;
 
 		//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -84,6 +87,193 @@ public class PredictionEvaluator {
 			filenames.add(baseFile + i + ".slg");
 		}
 		return filenames;
+	}
+
+	public void queryToPrConv(AbstractConversionModel baseModel) throws IOException, ParseException {
+		/*
+		 * All these maps they are like this: <fileName<agentName,error>>
+		 */
+		HashMap<String,HashMap<String,Double>> ourTotErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotActualMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Integer>> ourTotErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+		ArrayList<String> filenames = getGameStrings();
+		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
+			String filename = filenames.get(fileIdx);
+			GameStatusHandler statusHandler = new GameStatusHandler(filename);
+			GameStatus status = statusHandler.getGameStatus();
+			String[] agents = status.getAdvertisers();
+
+			/*
+			 * One map for each advertiser
+			 */
+			HashMap<String,Double> ourTotErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotActualMap = new HashMap<String, Double>();
+			HashMap<String,Integer> ourTotErrorCounterMap = new HashMap<String, Integer>();
+
+			//Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null));
+			for(Product product : status.getRetailCatalog()) {
+				// The F1 query classes
+				// F1 Manufacturer only
+				querySpace.add(new Query(product.getManufacturer(), null));
+				// F1 Component only
+				querySpace.add(new Query(null, product.getComponent()));
+
+				// The F2 query class
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+			}
+
+			for(int agent = 0; agent < agents.length; agent++) {
+				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
+				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
+				AbstractConversionModel model = (AbstractConversionModel) baseModel.getCopy();
+				model.setSpecialty(advInfo.getManufacturerSpecialty(),advInfo.getComponentSpecialty());
+
+				double ourTotError = 0;
+				double ourTotActual = 0;
+				int ourTotErrorCounter = 0;
+
+				HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
+				HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
+				HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
+
+				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
+				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+
+				//				System.out.println(agents[agent]);
+				for(int i = 0; i < 57; i++) {
+					SalesReport salesReport = ourSalesReports.get(i);
+					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
+
+					model.updateModel(queryReport, salesReport, bidBundle);
+					model.setTimeHorizon(5);
+					if(i >= 5) {
+						/*
+						 * Make Predictions and Evaluate Error Remember to do this for i + 2 !!!
+						 */
+						SalesReport otherSalesReport = ourSalesReports.get(i+2);
+						QueryReport otherQueryReport = ourQueryReports.get(i+2);
+						BidBundle otherBidBundle = ourBidBundles.get(i+2);
+						for(Query q : querySpace) {
+							double bid = otherBidBundle.getBid(q);
+							if(bid != 0) {
+								double error = model.getPrediction(q);
+								if(Double.isNaN(error)) {
+									error = 0.0;
+								}
+								double clicks = otherQueryReport.getClicks(q);
+								double conversions = otherSalesReport.getConversions(q);
+								double convPr = 0;
+								if(!(clicks == 0 || conversions == 0)) {
+									convPr = conversions/clicks;
+								}
+								else {
+									continue;
+								}
+								error -= convPr;
+								error = error*error;
+								ourTotActual += convPr;
+								ourTotError += error;
+								ourTotErrorCounter++;
+							}
+						}
+					}
+				}
+				ourTotErrorMap.put(agents[agent],ourTotError);
+				ourTotActualMap.put(agents[agent],ourTotActual);
+				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+
+			}
+
+			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
+			ourTotActualMegaMap.put(filename,ourTotActualMap);
+			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounterMap);
+		}
+		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> actualList = new ArrayList<Double>();
+		//		System.out.println("Model: " + baseModel);
+		for(String file : filenames) {
+			//			System.out.println("File: " + file);
+			HashMap<String, Double> totErrorMap = ourTotErrorMegaMap.get(file);
+			HashMap<String, Double> totActualMap = ourTotActualMegaMap.get(file);
+			HashMap<String, Integer> totErrorCounterMap = ourTotErrorCounterMegaMap.get(file);
+			for(String agent : totErrorCounterMap.keySet()) {
+				//				System.out.println("\t Agent: " + agent);
+				double totError = totErrorMap.get(agent);
+				double totActual = totActualMap.get(agent);
+				double totErrorCounter = totErrorCounterMap.get(agent);
+				//				System.out.println("\t\t Predictions: " + totErrorCounter);
+				double MSE = (totError/totErrorCounter);
+				double RMSE = Math.sqrt(MSE);
+				double actual = totActual/totErrorCounter;
+				RMSEList.add(RMSE);
+				actualList.add(actual);
+			}
+		}
+		//		System.out.println("Data Points: " + dataPointCounter);
+		Collections.sort(RMSEList);
+		double percentile5 = 0.0;
+		double n = (5/100.0) * (RMSEList.size()-1) + 1;
+		int k = (int) Math.floor(n);
+		double d = n-k;
+		if(n == 1) {
+			percentile5 = RMSEList.get(0);
+		}
+		else if(n == RMSEList.size()) {
+			percentile5 = RMSEList.get(RMSEList.size()-1);
+		}
+		else {
+			percentile5 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		}
+
+		double percentile25 = 0.0;
+		n = (25/100.0) * (RMSEList.size()-1) + 1;
+		k = (int) Math.floor(n);
+		d = n-k;
+		if(n == 1) {
+			percentile25 = RMSEList.get(0);
+		}
+		else if(n == RMSEList.size()) {
+			percentile25 = RMSEList.get(RMSEList.size()-1);
+		}
+		else {
+			percentile25 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		}
+
+		double percentile75 = 0.0;
+		n = (75/100.0) * (RMSEList.size()-1) + 1;
+		k = (int) Math.floor(n);
+		d = n-k;
+		if(n == 1) {
+			percentile75 = RMSEList.get(0);
+		}
+		else if(n == RMSEList.size()) {
+			percentile75 = RMSEList.get(RMSEList.size()-1);
+		}
+		else {
+			percentile75 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		}
+
+		double percentile95 = 0.0;
+		n = (95/100.0) * (RMSEList.size()-1) + 1;
+		k = (int) Math.floor(n);
+		d = n-k;
+		if(n == 1) {
+			percentile95 = RMSEList.get(0);
+		}
+		else if(n == RMSEList.size()) {
+			percentile95 = RMSEList.get(RMSEList.size()-1);
+		}
+		else {
+			percentile95 = RMSEList.get(k-1) + d*(RMSEList.get(k)-RMSEList.get(k-1));
+		}
+
+		double[] rmseStd = getStdDevAndMean(RMSEList);
+		double[] actualStd = getStdDevAndMean(actualList);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void queryToNumImpPredictionChallenge(AbstractQueryToNumImp baseModel) throws IOException, ParseException {
@@ -2203,18 +2393,22 @@ public class PredictionEvaluator {
 			//			evaluator.clickPrPredictionChallenge(model);
 			//			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
+			
+			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
+			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
+			
 
 
 
 
-//			/*
-//			 * HI ERIC!
-//			 * 
-//			 * 
-//			 */
-//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
-//			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
-//			evaluator.queryToNumImpPredictionChallenge(model);
+			//			/*
+			//			 * HI ERIC!
+			//			 * 
+			//			 * 
+			//			 */
+			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
+			//			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
+			//			evaluator.queryToNumImpPredictionChallenge(model);
 
 
 
@@ -2223,14 +2417,14 @@ public class PredictionEvaluator {
 			 */
 
 
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
+			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
 
 
 
-//												evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
+			//												evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,false));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,true));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,false));
@@ -2240,7 +2434,7 @@ public class PredictionEvaluator {
 
 
 
-												evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
+			//												evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,false));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,true));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,false));
@@ -2249,7 +2443,7 @@ public class PredictionEvaluator {
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
 
 
-//												evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			//												evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,false));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,true));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,false));
@@ -2275,7 +2469,7 @@ public class PredictionEvaluator {
 			//			double elapsed = stop - start;
 			//			System.out.println("This took " + (elapsed / 1000) + " seconds");
 
-			//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
+//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
 			//			evaluator.posToClickPrToBidPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,20,true,true));
 

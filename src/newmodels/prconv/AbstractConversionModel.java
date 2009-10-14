@@ -27,4 +27,10 @@ public abstract class AbstractConversionModel extends AbstractModel {
 	
 	public abstract double getPredictionWithPos(Query query, double pos);
 
+	public abstract void setSpecialty(String manufacturerSpecialty,
+			String componentSpecialty);
+
+	public abstract void setTimeHorizon(int min);
+
+	
 }

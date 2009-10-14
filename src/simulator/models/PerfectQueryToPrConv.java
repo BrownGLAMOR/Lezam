@@ -181,4 +181,15 @@ public class PerfectQueryToPrConv extends AbstractConversionModel {
 		return new PerfectQueryToPrConv(_allReportsMap, _potentialBidsMap, _posToBidMap);
 	}
 
+
+	@Override
+	public void setSpecialty(String manufacturerSpecialty,
+			String componentSpecialty) {
+	}
+
+
+	@Override
+	public void setTimeHorizon(int min) {
+	}
+
 }
