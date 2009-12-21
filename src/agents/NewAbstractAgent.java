@@ -332,6 +332,9 @@ public abstract class NewAbstractAgent extends Agent {
 		if (content instanceof QueryReport) {
 			handleQueryReport((QueryReport) content);
 		} else if (content instanceof SalesReport) {
+			SalesReport salesReport = ((SalesReport) content);
+			System.out.println("Day " + _day + " messages  " + "From: " + message.getSender() + "  to: " + message.getReceiver());
+			System.out.println("salesReport : " + salesReport);
 			handleSalesReport((SalesReport) content);
 		} else if (content instanceof SimulationStatus) {
 			handleSimulationStatus((SimulationStatus) content);
@@ -375,6 +378,8 @@ public abstract class NewAbstractAgent extends Agent {
 		}
 		else if (content instanceof UserPopulationState) {
 			UserPopulationState	userPopState = (UserPopulationState) content;
+			System.out.println("Day " + _day + " messages  " + "From: " + message.getSender() + "  to: " + message.getReceiver());
+			System.out.println("userPopState: " + userPopState);
 			_userDist = new HashMap<Product, HashMap<UserState,Integer>>();
 			for(Product p : _retailCatalog) {
 				int[] users = userPopState.getDistribution(p);
@@ -409,23 +414,23 @@ public abstract class NewAbstractAgent extends Agent {
 		if(_day == 0) {
 			_models = initModels();
 			initBidder();
-			String[] advertisers = _advertiserInfos.keySet().toArray(new String[0]);
-			int ourAdvIdx = 0;
-			for(int i = 0; i < advertisers.length; i++) {
-				if(advertisers[i].equals(_advId)) {
-					ourAdvIdx = i;
-					break;
-				}
-			}
-			_ourAdvIdx = ourAdvIdx;
-			GameStatus status = new GameStatus(advertisers,null,null,null,null,_advertiserInfos,null,
-					_slotInfo,_reserveInfo,_publisherInfo,_retailCatalog,_userClickModel);
-			_simulator.initializeBasicInfo(status, ourAdvIdx);
+//			String[] advertisers = _advertiserInfos.keySet().toArray(new String[0]);
+//			int ourAdvIdx = 0;
+//			for(int i = 0; i < advertisers.length; i++) {
+//				if(advertisers[i].equals(_advId)) {
+//					ourAdvIdx = i;
+//					break;
+//				}
+//			}
+//			_ourAdvIdx = ourAdvIdx;
+//			GameStatus status = new GameStatus(advertisers,null,null,null,null,_advertiserInfos,null,
+//					_slotInfo,_reserveInfo,_publisherInfo,_retailCatalog,_userClickModel);
+//			_simulator.initializeBasicInfo(status, ourAdvIdx);
 		}
 		if(_day >= 2) {
 			updateModels(_salesReport, _queryReport);
 		}
-		_simulator.initializeDaySpecificInfo(_bundleMap, _userDist);
+//		_simulator.initializeDaySpecificInfo(_bundleMap, _userDist);
 
 		BidBundle bidBundle = getBidBundle(_models);
 		_bidBundles.add(bidBundle);
