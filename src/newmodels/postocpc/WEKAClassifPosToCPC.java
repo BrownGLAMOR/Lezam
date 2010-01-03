@@ -236,7 +236,14 @@ public class WEKAClassifPosToCPC extends AbstractPosToCPC {
 		for(int i = 0; i < count; i++) {
 			StringTokenizer tokenizer = new StringTokenizer(enumStrings[i], "'()-[]");
 			String token1 = tokenizer.nextToken();
-			String token2 = tokenizer.nextToken();
+			String token2;
+			if(tokenizer.hasMoreTokens()) {
+				token2 = tokenizer.nextToken();
+			}
+			else {
+				token1 = "0.0";
+				token2 = "0.0";
+			}
 			double tokeVal1,tokeVal2;
 			if(token1.equals("inf")) {
 				tokeVal1 = -Double.MAX_VALUE;
@@ -368,29 +375,26 @@ public class WEKAClassifPosToCPC extends AbstractPosToCPC {
 	@Override
 	public String toString() {
 		switch (_idx) {
-		case 1:  return "WEKAClassifBidToCPC(BayesNet)";
-		case 2:  return "WEKAClassifBidToCPC(NaiveBayes)";
-		case 3:  return "WEKAClassifBidToCPC(IBk)";
-		case 4: return "WEKAClassifBidToCPC(KStar)";
-		case 5: return "WEKAClassifBidToCPC(LWL)";
-		case 6:  return "WEKAClassifBidToCPC(AttributeSelectedClassifier)";
-		case 7:  return "WEKAClassifBidToCPC(Bagging)";
-		case 8:  return "WEKAClassifBidToCPC(LogitBoost)";
-		case 9:  return "WEKAClassifBidToCPC(RandomCommittee)";
-		case 10:  return "WEKAClassifBidToCPC(RotationForest)";
-		case 11:  return "WEKAClassifBidToCPC(DecisionTable)";
-		case 12:  return "WEKAClassifBidToCPC(DTNB)";
-		case 13:  return "WEKAClassifBidToCPC(NNge)";
-		case 14:  return "WEKAClassifBidToCPC(OneR)";
-		case 15:  return "WEKAClassifBidToCPC(PART)";
-		case 16:  return "WEKAClassifBidToCPC(Ridor)";
-		case 17:  return "WEKAClassifBidToCPC(BFTree)";
-		case 18:  return "WEKAClassifBidToCPC(J48)";
-		case 19:  return "WEKAClassifBidToCPC(J48graft)";
-		case 20:  return "WEKAClassifBidToCPC(NBTree)";
-		case 21:  return "WEKAClassifBidToCPC(RandomForest)";
-		case 22:  return "WEKAClassifBidToCPC(REPTree)";
-		default: return "WEKAClassifBidToCPC(NaiveBayes)";
+		case 1:  return "WEKAClassifPosToCPC(BayesNet)";
+		case 2:  return "WEKAClassifPosToCPC(NaiveBayes)";
+		case 3:  return "WEKAClassifPosToCPC(IBk)";
+		case 4: return "WEKAClassifPosToCPC(KStar)";
+		case 5: return "WEKAClassifPosToCPC(LWL)";
+		case 6:  return "WEKAClassifPosToCPC(AttributeSelectedClassifier)";
+		case 7:  return "WEKAClassifPosToCPC(Bagging)";
+		case 8:  return "WEKAClassifPosToCPC(LogitBoost)";
+		case 9:  return "WEKAClassifPosToCPC(RandomCommittee)";
+		case 10:  return "WEKAClassifPosToCPC(DecisionTable)";
+		case 11:  return "WEKAClassifPosToCPC(DTNB)";
+		case 12:  return "WEKAClassifPosToCPC(NNge)";
+		case 13:  return "WEKAClassifPosToCPC(OneR)";
+		case 14:  return "WEKAClassifPosToCPC(PART)";
+		case 15:  return "WEKAClassifPosToCPC(J48)";
+		case 16:  return "WEKAClassifPosToCPC(J48graft)";
+		case 17:  return "WEKAClassifPosToCPC(NBTree)";
+		case 18:  return "WEKAClassifPosToCPC(RandomForest)";
+		case 19:  return "WEKAClassifPosToCPC(REPTree)";
+		default: return "WEKAClassifPosToCPC(NaiveBayes)";
 		}
 	}
 
@@ -453,19 +457,16 @@ public class WEKAClassifPosToCPC extends AbstractPosToCPC {
 		case 7:  classifier = (Classifier)new Bagging(); break;
 		case 8:  classifier = (Classifier)new LogitBoost(); break;
 		case 9:  classifier = (Classifier)new RandomCommittee(); break;
-		case 10:  classifier = (Classifier)new RotationForest(); break;
-		case 11:  classifier = (Classifier)new DecisionTable(); break;
-		case 12:  classifier = (Classifier)new DTNB(); break;
-		case 13:  classifier = (Classifier)new NNge(); break;
-		case 14:  classifier = (Classifier)new OneR(); break;
-		case 15:  classifier = (Classifier)new PART(); break;
-		case 16:  classifier = (Classifier)new Ridor(); break;
-		case 17:  classifier = (Classifier)new BFTree(); break;
-		case 18:  classifier = (Classifier)new J48(); break;
-		case 19:  classifier = (Classifier)new J48graft(); break;
-		case 20:  classifier = (Classifier)new NBTree(); break;
-		case 21:  classifier = (Classifier)new RandomForest(); break;
-		case 22:  classifier = (Classifier)new REPTree(); break;
+		case 10:  classifier = (Classifier)new DecisionTable(); break;
+		case 11:  classifier = (Classifier)new DTNB(); break;
+		case 12:  classifier = (Classifier)new NNge(); break;
+		case 13:  classifier = (Classifier)new OneR(); break;
+		case 14:  classifier = (Classifier)new PART(); break;
+		case 15:  classifier = (Classifier)new J48(); break;
+		case 16:  classifier = (Classifier)new J48graft(); break;
+		case 17:  classifier = (Classifier)new NBTree(); break;
+		case 18:  classifier = (Classifier)new RandomForest(); break;
+		case 19:  classifier = (Classifier)new REPTree(); break;
 		default: classifier = (Classifier)new NaiveBayes(); break;
 		}
 		return classifier;

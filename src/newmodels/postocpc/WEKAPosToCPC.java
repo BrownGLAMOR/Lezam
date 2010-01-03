@@ -201,14 +201,14 @@ public class WEKAPosToCPC extends AbstractPosToCPC {
 	@Override
 	public String toString() {
         switch (_idx) {
-        case 1:  return "WEKABidToCPC(LinearRegression)";
-        case 2:  return "WEKABidToCPC(IBk)";
-        case 3:  return "WEKABidToCPC(KStar)";
-        case 4: return "WEKABidToCPC(LWL)";
-        case 5: return "WEKABidToCPC(AdditiveRegression)";
-        case 6:  return "WEKABidToCPC(REPTree)";
-        case 7:  return "WEKABidToCPC(RegressionByDiscretization)";
-        default: return "WEKABidToCPC(LinearRegression)";
+        case 1:  return "WEKAPosToCPC(LinearRegression)";
+        case 2:  return "WEKAPosToCPC(IBk)";
+        case 3:  return "WEKAPosToCPC(KStar)";
+        case 4: return "WEKAPosToCPC(LWL)";
+        case 5: return "WEKAPosToCPC(AdditiveRegression)";
+        case 6:  return "WEKAPosToCPC(REPTree)";
+        case 7:  return "WEKAPosToCPC(RegressionByDiscretization)";
+        default: return "WEKAPosToCPC(LinearRegression)";
         }
 	}
 

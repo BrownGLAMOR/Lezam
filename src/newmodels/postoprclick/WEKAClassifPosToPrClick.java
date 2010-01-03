@@ -238,7 +238,14 @@ public class WEKAClassifPosToPrClick extends AbstractPosToPrClick {
 		for(int i = 0; i < count; i++) {
 			StringTokenizer tokenizer = new StringTokenizer(enumStrings[i], "'()-[]");
 			String token1 = tokenizer.nextToken();
-			String token2 = tokenizer.nextToken();
+			String token2;
+			if(tokenizer.hasMoreTokens()) {
+				token2 = tokenizer.nextToken();
+			}
+			else {
+				token1 = "0.0";
+				token2 = "0.0";
+			}
 			double tokeVal1,tokeVal2;
 			if(token1.equals("inf")) {
 				tokeVal1 = -Double.MAX_VALUE;
@@ -387,19 +394,16 @@ public class WEKAClassifPosToPrClick extends AbstractPosToPrClick {
 		case 7:  return "WEKAClassifPosToPrClick(Bagging)";
 		case 8:  return "WEKAClassifPosToPrClick(LogitBoost)";
 		case 9:  return "WEKAClassifPosToPrClick(RandomCommittee)";
-		case 10:  return "WEKAClassifPosToPrClick(RotationForest)";
-		case 11:  return "WEKAClassifPosToPrClick(DecisionTable)";
-		case 12:  return "WEKAClassifPosToPrClick(DTNB)";
-		case 13:  return "WEKAClassifPosToPrClick(NNge)";
-		case 14:  return "WEKAClassifPosToPrClick(OneR)";
-		case 15:  return "WEKAClassifPosToPrClick(PART)";
-		case 16:  return "WEKAClassifPosToPrClick(Ridor)";
-		case 17:  return "WEKAClassifPosToPrClick(BFTree)";
-		case 18:  return "WEKAClassifPosToPrClick(J48)";
-		case 19:  return "WEKAClassifPosToPrClick(J48graft)";
-		case 20:  return "WEKAClassifPosToPrClick(NBTree)";
-		case 21:  return "WEKAClassifPosToPrClick(RandomForest)";
-		case 22:  return "WEKAClassifPosToPrClick(REPTree)";
+		case 10:  return "WEKAClassifPosToPrClick(DecisionTable)";
+		case 11:  return "WEKAClassifPosToPrClick(DTNB)";
+		case 12:  return "WEKAClassifPosToPrClick(NNge)";
+		case 13:  return "WEKAClassifPosToPrClick(OneR)";
+		case 14:  return "WEKAClassifPosToPrClick(PART)";
+		case 15:  return "WEKAClassifPosToPrClick(J48)";
+		case 16:  return "WEKAClassifPosToPrClick(J48graft)";
+		case 17:  return "WEKAClassifPosToPrClick(NBTree)";
+		case 18:  return "WEKAClassifPosToPrClick(RandomForest)";
+		case 19:  return "WEKAClassifPosToPrClick(REPTree)";
 		default: return "WEKAClassifPosToPrClick(NaiveBayes)";
 		}
 	}
@@ -468,19 +472,16 @@ public class WEKAClassifPosToPrClick extends AbstractPosToPrClick {
 		case 7:  classifier = (Classifier)new Bagging(); break;
 		case 8:  classifier = (Classifier)new LogitBoost(); break;
 		case 9:  classifier = (Classifier)new RandomCommittee(); break;
-		case 10:  classifier = (Classifier)new RotationForest(); break;
-		case 11:  classifier = (Classifier)new DecisionTable(); break;
-		case 12:  classifier = (Classifier)new DTNB(); break;
-		case 13:  classifier = (Classifier)new NNge(); break;
-		case 14:  classifier = (Classifier)new OneR(); break;
-		case 15:  classifier = (Classifier)new PART(); break;
-		case 16:  classifier = (Classifier)new Ridor(); break;
-		case 17:  classifier = (Classifier)new BFTree(); break;
-		case 18:  classifier = (Classifier)new J48(); break;
-		case 19:  classifier = (Classifier)new J48graft(); break;
-		case 20:  classifier = (Classifier)new NBTree(); break;
-		case 21:  classifier = (Classifier)new RandomForest(); break;
-		case 22:  classifier = (Classifier)new REPTree(); break;
+		case 10:  classifier = (Classifier)new DecisionTable(); break;
+		case 11:  classifier = (Classifier)new DTNB(); break;
+		case 12:  classifier = (Classifier)new NNge(); break;
+		case 13:  classifier = (Classifier)new OneR(); break;
+		case 14:  classifier = (Classifier)new PART(); break;
+		case 15:  classifier = (Classifier)new J48(); break;
+		case 16:  classifier = (Classifier)new J48graft(); break;
+		case 17:  classifier = (Classifier)new NBTree(); break;
+		case 18:  classifier = (Classifier)new RandomForest(); break;
+		case 19:  classifier = (Classifier)new REPTree(); break;
 		default: classifier = (Classifier)new NaiveBayes(); break;
 		}
 		return classifier;
