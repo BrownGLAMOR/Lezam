@@ -20,6 +20,7 @@ import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
 import newmodels.bidtocpc.WEKABidToCPC;
 import newmodels.bidtocpc.WEKAClassifBidToCPC;
+import newmodels.bidtocpc.WEKAEnsembleBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtopos.RegressionBidToPos;
 import newmodels.bidtopos.SpatialBidToPos;
@@ -27,6 +28,9 @@ import newmodels.bidtopos.EnsembleBidToPos;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
+import newmodels.bidtoprclick.WEKABidToPrClick;
+import newmodels.bidtoprclick.WEKAClassifBidToPrClick;
+import newmodels.bidtoprclick.WEKAEnsembleBidToPrClick;
 import newmodels.cpctobid.AbstractCPCToBid;
 import newmodels.cpctobid.BidToCPCInverter;
 import newmodels.postobid.AbstractPosToBid;
@@ -34,10 +38,16 @@ import newmodels.postobid.BidToPosInverter;
 import newmodels.postocpc.AbstractPosToCPC;
 import newmodels.postocpc.EnsemblePosToCPC;
 import newmodels.postocpc.RegressionPosToCPC;
+import newmodels.postocpc.WEKAClassifPosToCPC;
+import newmodels.postocpc.WEKAEnsemblePosToCPC;
+import newmodels.postocpc.WEKAPosToCPC;
 import newmodels.postoprclick.AbstractPosToPrClick;
 import newmodels.postoprclick.BasicPosToPrClick;
 import newmodels.postoprclick.EnsemblePosToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
+import newmodels.postoprclick.WEKAClassifPosToPrClick;
+import newmodels.postoprclick.WEKAEnsemblePosToPrClick;
+import newmodels.postoprclick.WEKAPosToPrClick;
 import newmodels.prclicktobid.AbstractPrClickToBid;
 import newmodels.prclicktobid.BidToPrClickInverter;
 import newmodels.prconv.AbstractConversionModel;
@@ -708,9 +718,9 @@ public class PredictionEvaluator {
 							}
 						}
 					}
-					if(i == 56) {
-						((EnsemblePosToPrClick)model).printErrDiffAndBorda();
-					}
+					//					if(i == 56) {
+					//						((EnsemblePosToPrClick)model).printErrDiffAndBorda();
+					//					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
@@ -900,9 +910,9 @@ public class PredictionEvaluator {
 							}
 						}
 					}
-					if(i == 56) {
-						((EnsembleBidToPrClick)model).printErrDiffAndBorda();
-					}
+					//					if(i == 56) {
+					//						((EnsembleBidToPrClick)model).printErrDiffAndBorda();
+					//					}
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
@@ -2413,30 +2423,80 @@ public class PredictionEvaluator {
 			 * Bid-CPC is true,false
 			 */
 
-//			for(int i = 1; i < 10; i++) {
-//				start = System.currentTimeMillis();
-//				evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i));
-//				double stop = System.currentTimeMillis();
-//				double elapsed = stop - start;
-//				System.out.println("This took " + (elapsed / 1000) + " seconds");
-//			}
-
-			for(int i = 1; i < 23; i++) {
-				start = System.currentTimeMillis();
-				evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
-				double stop = System.currentTimeMillis();
-				double elapsed = stop - start;
-				System.out.println("This took " + (elapsed / 1000) + " seconds");
-			}
-
-//												evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,10,true,false));
+			//			double stop1 = System.currentTimeMillis();
+			//			double elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,5,true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,2,true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			for(int i = 1; i < 8; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//
+			//			for(int i = 1; i < 20; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
 
 
 
-			//												evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
+			//			start = System.currentTimeMillis();
+			//			evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,10,true,false));
+			//			double stop1 = System.currentTimeMillis();
+			//			double elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,5,true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,2,true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			for(int i = 1; i < 8; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.posToCPCPredictionChallenge(new WEKAPosToCPC(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//
+			//			for(int i = 1; i < 20; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.posToCPCPredictionChallenge(new WEKAClassifPosToCPC(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//			evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,true,false));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,true));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,30,false,false));
@@ -2444,9 +2504,41 @@ public class PredictionEvaluator {
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,20,true,true));
 			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,5,30,true,true));
 
-
-
-			//												evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,10,_targModel, true,false));
+			//			double stop1 = System.currentTimeMillis();
+			//			double elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,5,_targModel, true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			start = System.currentTimeMillis();
+			//			evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,2,_targModel, true,false));
+			//			stop1 = System.currentTimeMillis();
+			//			elapsed1 = stop1 - start;
+			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			//
+			//			for(int i = 1; i < 8; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.bidToClickPrPredictionChallenge(new WEKABidToPrClick(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//
+			//			for(int i = 1; i < 20; i++) {
+			//				start = System.currentTimeMillis();
+			//				evaluator.bidToClickPrPredictionChallenge(new WEKAClassifBidToPrClick(i));
+			//				double stop = System.currentTimeMillis();
+			//				double elapsed = stop - start;
+			//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			//			}
+			//			evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,false));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,true));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,false,false));
@@ -2454,8 +2546,39 @@ public class PredictionEvaluator {
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,20,_targModel,true,true));
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
 
+			start = System.currentTimeMillis();
+			evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,10,_targModel, true,false));
+			double stop1 = System.currentTimeMillis();
+			double elapsed1 = stop1 - start;
+			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
 
-			//												evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			start = System.currentTimeMillis();
+			evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,5,_targModel, true,false));
+			stop1 = System.currentTimeMillis();
+			elapsed1 = stop1 - start;
+			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+
+			start = System.currentTimeMillis();
+			evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,2,_targModel, true,false));
+			stop1 = System.currentTimeMillis();
+			elapsed1 = stop1 - start;
+			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
+			for(int i = 1; i < 8; i++) {
+				start = System.currentTimeMillis();
+				evaluator.posToClickPrPredictionChallenge(new WEKAPosToPrClick(i));
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			}
+
+			for(int i = 1; i < 20; i++) {
+				start = System.currentTimeMillis();
+				evaluator.posToClickPrPredictionChallenge(new WEKAClassifPosToPrClick(i));
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			}
+			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,false));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,true));
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,false,false));

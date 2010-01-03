@@ -235,7 +235,14 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 		for(int i = 0; i < count; i++) {
 			StringTokenizer tokenizer = new StringTokenizer(enumStrings[i], "'()-[]");
 			String token1 = tokenizer.nextToken();
-			String token2 = tokenizer.nextToken();
+			String token2;
+			if(tokenizer.hasMoreTokens()) {
+				token2 = tokenizer.nextToken();
+			}
+			else {
+				token1 = "0.0";
+				token2 = "0.0";
+			}
 			double tokeVal1,tokeVal2;
 			if(token1.equals("inf")) {
 				tokeVal1 = -Double.MAX_VALUE;
