@@ -18,6 +18,8 @@ import newmodels.bidtocpc.AbstractBidToCPC;
 import newmodels.bidtocpc.ConstantBidToCPC;
 import newmodels.bidtocpc.EnsembleBidToCPC;
 import newmodels.bidtocpc.RegressionBidToCPC;
+import newmodels.bidtocpc.WEKABidToCPC;
+import newmodels.bidtocpc.WEKAClassifBidToCPC;
 import newmodels.bidtopos.AbstractBidToPos;
 import newmodels.bidtopos.RegressionBidToPos;
 import newmodels.bidtopos.SpatialBidToPos;
@@ -73,7 +75,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1425;
-		int max = 1435;
+		int max = 1445;
 		//						int max = 9;
 
 		//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -2391,21 +2393,16 @@ public class PredictionEvaluator {
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			//			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
 			//			evaluator.clickPrPredictionChallenge(model);
-			//			RConnection _rConnection = new RConnection();
+			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
-			
-			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
-			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
-			
+
+			//			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
+			//			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
 
 
 
 
-			//			/*
-			//			 * HI ERIC!
-			//			 * 
-			//			 * 
-			//			 */
+
 			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new HistoricalDailyAverageUserModel());
 			//			//			AbstractQueryToNumImp model = new BasicQueryToNumImp(new BasicUserModel());
 			//			evaluator.queryToNumImpPredictionChallenge(model);
@@ -2416,8 +2413,23 @@ public class PredictionEvaluator {
 			 * Bid-CPC is true,false
 			 */
 
+//			for(int i = 1; i < 10; i++) {
+//				start = System.currentTimeMillis();
+//				evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i));
+//				double stop = System.currentTimeMillis();
+//				double elapsed = stop - start;
+//				System.out.println("This took " + (elapsed / 1000) + " seconds");
+//			}
 
-			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
+			for(int i = 1; i < 23; i++) {
+				start = System.currentTimeMillis();
+				evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
+				double stop = System.currentTimeMillis();
+				double elapsed = stop - start;
+				System.out.println("This took " + (elapsed / 1000) + " seconds");
+			}
+
+//												evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,20,true,true));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,5,30,true,true));
@@ -2469,11 +2481,11 @@ public class PredictionEvaluator {
 			//			double elapsed = stop - start;
 			//			System.out.println("This took " + (elapsed / 1000) + " seconds");
 
-//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
+			//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
 			//			evaluator.posToClickPrToBidPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,20,true,true));
 
-			//						evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
+			//			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
 			//			evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false, 1, 30, true, .85, false, false, false, false, false, false));
 			//			evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
 			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false, 1, 30, _targModel, true, .85, false, false, false, false));
