@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.omg.CORBA._PolicyStub;
@@ -299,45 +300,82 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String filename = "/u/jberg/Desktop/mckpgames/localhost_sim";
-		boolean firstSim = true;
-		int min = 454;
-		int max = 497;
+		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1425;
+		int max = 1426;
 		HashMap<String,Double> results = new HashMap<String, Double>();
 		for(int i = min; i < max; i++) {
 			String file = filename + i + ".slg";
 			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
 			GameStatus gameStatus = gameStatusHandler.getGameStatus();
 			String[] advertisers = gameStatus.getAdvertisers();
-			if(firstSim) {
-				for(int j = 0; j < advertisers.length; j++) {
-					results.put(advertisers[j], 0.0);
-				}
-				firstSim = false;
-			}
 			HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
-			//			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-			//			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-			//			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-			//			HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
+			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
 			//			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> usersDists = gameStatus.getUserDistributions();
 			//			SlotInfo slotInfo = gameStatus.getSlotInfo();
 			//			ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-			//			PublisherInfo pubInfo = gameStatus.getPubInfo();
+			PublisherInfo pubInfo = gameStatus.getPubInfo();
 			//			RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
-			//			UserClickModel userClickModel = gameStatus.getUserClickModel();
-			for(int j = 0; j < advertisers.length; j++)	{
-				LinkedList<BankStatus> bankStatus = bankStatuses.get(advertisers[j]);
-				BankStatus status = bankStatus.get(bankStatus.size()-1);
-				results.put(advertisers[j], results.get(advertisers[j]) + status.getAccountBalance());
+			System.out.println("%");
+			System.out.println("%  TAC AA Dataset");
+			System.out.println("%");
+			System.out.println("@RELATION TACAA");
+			System.out.println("");
+			System.out.println("@ATTRIBUTE bid NUMERIC");
+			//			System.out.println("@ATTRIBUTE position NUMERIC");
+			System.out.println("@ATTRIBUTE cpc NUMERIC");
+			//			System.out.println("@ATTRIBUTE prclick NUMERIC");
+			//			System.out.println("@ATTRIBUTE bid NUMERIC");
+			//			System.out.println("@ATTRIBUTE prconv NUMERIC");
+			System.out.println("@ATTRIBUTE query {null-null,lioneer-null,null-tv,lioneer-tv,null-audio,lioneer-audio,null-dvd,lioneer-dvd,pg-null,pg-tv,pg-audio,pg-dvd,flat-null,flat-tv,flat-audio,flat-dvd}");
+			System.out.println("");
+			System.out.println("@DATA");
+			for(int j = 0; j < 59; j++) {
+				Iterator iter = bidBundles.get("Schlemazl").get(j).iterator();
+				while(iter.hasNext()) {
+					Query query = (Query) iter.next();
+					String adv = "Schlemazl";
+					BidBundle bundle = bidBundles.get(adv).get(j);
+					QueryReport qreport = queryReports.get(adv).get(j);
+					SalesReport sreport = salesReports.get(adv).get(j);
+					//bid
+					System.out.print(bundle.getBid(query));
+					//					//position
+					//					if(Double.isNaN(qreport.getPosition(query))) {
+					//						System.out.print(",6.0");
+					//					}
+					//					else {
+					//						System.out.print("," + qreport.getPosition(query));
+					//					}
+					//CPC
+					if(Double.isNaN(qreport.getCPC(query))) {
+						System.out.print(",0.0");
+					}
+					else {
+						System.out.print("," + qreport.getCPC(query));
+					}
+					//					//clickpr
+					//					if(qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
+					//						System.out.print(",0.0");
+					//					}
+					//					else {
+					//						System.out.print("," + (qreport.getClicks(query)/((double) qreport.getImpressions(query))));
+					//					}
+					//					//convPr
+					//					if(qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
+					//						System.out.print(",0.0");
+					//					}
+					//					else {
+					//						System.out.print("," + (sreport.getConversions(query)/((double) qreport.getClicks(query))));
+					//					}
+					System.out.println("," + query.getManufacturer() +"-" + query.getComponent());
+				}
 			}
 		}
-		for(String name : results.keySet()) {
-			results.put(name, results.get(name) / (1.0 * (max-min)));
-		}
-		for(String name : results.keySet()) {
-			System.out.println(name + "    " + results.get(name));
-		}
 	}
+
 
 }

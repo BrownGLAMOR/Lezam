@@ -1,4 +1,4 @@
-package newmodels.bidtoprclick;
+package newmodels.postoprclick;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -69,7 +69,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
+public class WEKAClassifPosToPrClick extends AbstractPosToPrClick {
 
 	FastVector _allAttributes;
 	Instances _data,_filteredData;
@@ -77,9 +77,9 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 	Filter _filter;
 	int _idx;
 
-	public WEKAClassifBidToPrClick(int idx) {
+	public WEKAClassifPosToPrClick(int idx) {
 		_idx = idx;
-		Attribute bidAttribute = new Attribute("bid");
+		Attribute posAttribute = new Attribute("pos");
 		Attribute clickPrAttribute = new Attribute("clickpr");
 		FastVector fvQuery = new FastVector(16);
 		fvQuery.addElement("null-null");
@@ -100,7 +100,7 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 		fvQuery.addElement("flat-dvd");
 		Attribute queryAttribute = new Attribute("query",fvQuery);
 		_allAttributes = new FastVector(3);
-		_allAttributes.addElement(bidAttribute);
+		_allAttributes.addElement(posAttribute);
 		_allAttributes.addElement(clickPrAttribute);
 		_allAttributes.addElement(queryAttribute);
 		Random random = new Random();
@@ -223,7 +223,10 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid, Ad currentAd) {
+	public double getPrediction(Query query, double pos, Ad currentAd) {
+		if(Double.isNaN(pos) || pos > 5) {
+			return 0;
+		}
 		Enumeration enumer = _filteredData.attribute(0).enumerateValues();
 		String[] enumStrings = new String[_filteredData.attribute(0).numValues()];
 		int count = 0;
@@ -250,7 +253,7 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 			else {
 				tokeVal2 = Double.parseDouble(token2);
 			}
-			if(bid >= tokeVal1 && bid <= tokeVal2) {
+			if(pos >= tokeVal1 && pos <= tokeVal2) {
 				bidIdx = i;
 				break;
 			}
@@ -299,7 +302,7 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 		pred.setValue(_filteredData.attribute(2),query.getManufacturer() + "-" + query.getComponent());
 		pred.setDataset(_filteredData);
 
-		double prediction = bid;
+		double prediction = 0.0;
 		try {
 			//						double predIdx = _predictor.classifyInstance(pred);
 			//						
@@ -375,29 +378,29 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 	@Override
 	public String toString() {
 		switch (_idx) {
-		case 1:  return "WEKAClassifBidToPrClick(BayesNet)";
-		case 2:  return "WEKAClassifBidToPrClick(NaiveBayes)";
-		case 3:  return "WEKAClassifBidToPrClick(IBk)";
-		case 4: return "WEKAClassifBidToPrClick(KStar)";
-		case 5: return "WEKAClassifBidToPrClick(LWL)";
-		case 6:  return "WEKAClassifBidToPrClick(AttributeSelectedClassifier)";
-		case 7:  return "WEKAClassifBidToPrClick(Bagging)";
-		case 8:  return "WEKAClassifBidToPrClick(LogitBoost)";
-		case 9:  return "WEKAClassifBidToPrClick(RandomCommittee)";
-		case 10:  return "WEKAClassifBidToPrClick(RotationForest)";
-		case 11:  return "WEKAClassifBidToPrClick(DecisionTable)";
-		case 12:  return "WEKAClassifBidToPrClick(DTNB)";
-		case 13:  return "WEKAClassifBidToPrClick(NNge)";
-		case 14:  return "WEKAClassifBidToPrClick(OneR)";
-		case 15:  return "WEKAClassifBidToPrClick(PART)";
-		case 16:  return "WEKAClassifBidToPrClick(Ridor)";
-		case 17:  return "WEKAClassifBidToPrClick(BFTree)";
-		case 18:  return "WEKAClassifBidToPrClick(J48)";
-		case 19:  return "WEKAClassifBidToPrClick(J48graft)";
-		case 20:  return "WEKAClassifBidToPrClick(NBTree)";
-		case 21:  return "WEKAClassifBidToPrClick(RandomForest)";
-		case 22:  return "WEKAClassifBidToPrClick(REPTree)";
-		default: return "WEKAClassifBidToPrClick(NaiveBayes)";
+		case 1:  return "WEKAClassifPosToPrClick(BayesNet)";
+		case 2:  return "WEKAClassifPosToPrClick(NaiveBayes)";
+		case 3:  return "WEKAClassifPosToPrClick(IBk)";
+		case 4: return "WEKAClassifPosToPrClick(KStar)";
+		case 5: return "WEKAClassifPosToPrClick(LWL)";
+		case 6:  return "WEKAClassifPosToPrClick(AttributeSelectedClassifier)";
+		case 7:  return "WEKAClassifPosToPrClick(Bagging)";
+		case 8:  return "WEKAClassifPosToPrClick(LogitBoost)";
+		case 9:  return "WEKAClassifPosToPrClick(RandomCommittee)";
+		case 10:  return "WEKAClassifPosToPrClick(RotationForest)";
+		case 11:  return "WEKAClassifPosToPrClick(DecisionTable)";
+		case 12:  return "WEKAClassifPosToPrClick(DTNB)";
+		case 13:  return "WEKAClassifPosToPrClick(NNge)";
+		case 14:  return "WEKAClassifPosToPrClick(OneR)";
+		case 15:  return "WEKAClassifPosToPrClick(PART)";
+		case 16:  return "WEKAClassifPosToPrClick(Ridor)";
+		case 17:  return "WEKAClassifPosToPrClick(BFTree)";
+		case 18:  return "WEKAClassifPosToPrClick(J48)";
+		case 19:  return "WEKAClassifPosToPrClick(J48graft)";
+		case 20:  return "WEKAClassifPosToPrClick(NBTree)";
+		case 21:  return "WEKAClassifPosToPrClick(RandomForest)";
+		case 22:  return "WEKAClassifPosToPrClick(REPTree)";
+		default: return "WEKAClassifPosToPrClick(NaiveBayes)";
 		}
 	}
 
@@ -405,7 +408,10 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 	public boolean updateModel(QueryReport queryReport,SalesReport salesReport, BidBundle bidBundle) {
 		for(Query query : queryReport) {
 			Instance newInstance = new Instance(3);
-			double bid = bidBundle.getBid(query);
+			double pos = queryReport.getPosition(query);
+			if(Double.isNaN(pos)) {
+				pos = 6.0;
+			}
 			double numClicks = queryReport.getClicks(query);
 			double numImps = queryReport.getImpressions(query);
 			double clickPr;
@@ -415,7 +421,7 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 			else {
 				clickPr = numClicks / numImps;
 			}
-			newInstance.setValue((Attribute)_allAttributes.elementAt(0),bid);
+			newInstance.setValue((Attribute)_allAttributes.elementAt(0),pos);
 			newInstance.setValue((Attribute)_allAttributes.elementAt(1),clickPr);
 			newInstance.setValue((Attribute)_allAttributes.elementAt(2),query.getManufacturer() + "-" + query.getComponent());
 			_data.add(newInstance);
@@ -482,7 +488,7 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKAClassifBidToPrClick(_idx);
+		return new WEKAClassifPosToPrClick(_idx);
 	}
 
 	@Override

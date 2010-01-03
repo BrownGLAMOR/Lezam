@@ -205,15 +205,13 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	@Override
 	public String toString() {
         switch (_idx) {
-        case 1:  return "WEKABidToCPC(M5P)";
-        case 2:  return "WEKABidToCPC(LinearRegression)";
-        case 3:  return "WEKABidToCPC(IBk)";
-        case 4:  return "WEKABidToCPC(KStar)";
-        case 5: return "WEKABidToCPC(LWL)";
-        case 6: return "WEKABidToCPC(AdditiveRegression)";
-        case 7:  return "WEKABidToCPC(DecisionTable)";
-        case 8:  return "WEKABidToCPC(REPTree)";
-        case 9:  return "WEKABidToCPC(RegressionByDiscretization)";
+        case 1:  return "WEKABidToCPC(LinearRegression)";
+        case 2:  return "WEKABidToCPC(IBk)";
+        case 3:  return "WEKABidToCPC(KStar)";
+        case 4: return "WEKABidToCPC(LWL)";
+        case 5: return "WEKABidToCPC(AdditiveRegression)";
+        case 6:  return "WEKABidToCPC(REPTree)";
+        case 7:  return "WEKABidToCPC(RegressionByDiscretization)";
         default: return "WEKABidToCPC(LinearRegression)";
         }
 	}
@@ -245,15 +243,13 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	public Classifier getClassifier(int idx) {
 		Classifier classifier;
         switch (idx) {
-            case 1:  classifier = (Classifier)new M5P(); break;
-            case 2:  classifier = (Classifier)new LinearRegression(); break;
-            case 3:  classifier = (Classifier)new IBk(); break;
-            case 4:  classifier = (Classifier)new KStar(); break;
-            case 5: classifier = (Classifier)new LWL(); break;
-            case 6: classifier = (Classifier)new AdditiveRegression(); break;
-            case 7:  classifier = (Classifier)new DecisionTable(); break;
-            case 8:  classifier = (Classifier)new REPTree(); break;
-            case 9:  classifier = (Classifier)new RegressionByDiscretization(); break;
+            case 1:  classifier = (Classifier)new LinearRegression(); break;
+            case 2:  classifier = (Classifier)new IBk(); break;
+            case 3:  classifier = (Classifier)new KStar(); break;
+            case 4: classifier = (Classifier)new LWL(); break;
+            case 5: classifier = (Classifier)new AdditiveRegression(); break;
+            case 6:  classifier = (Classifier)new REPTree(); break;
+            case 7:  classifier = (Classifier)new RegressionByDiscretization(); break;
             default: classifier = (Classifier)new LinearRegression(); break;
         }
 		return classifier;
