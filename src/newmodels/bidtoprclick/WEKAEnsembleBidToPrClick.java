@@ -124,19 +124,10 @@ public class WEKAEnsembleBidToPrClick extends AbstractBidToPrClick {
 		/*
 		 * Add Models
 		 */
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.84, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.84, false, false, false, false));
-		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
-
-		for(int i = 1; i < 8; i++) {
-			addModel(new WEKABidToPrClick(i));
+		for(double weight = 1.0; weight > .89; weight -= .1) {
+			for(int i = 1; i < 8; i++) {
+				addModel(new WEKABidToPrClick(i,weight));
+			}
 		}
 
 		for(int i = 1; i < 20; i++) {

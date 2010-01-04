@@ -41,9 +41,11 @@ public class WEKAPosToPrClick extends AbstractPosToPrClick {
 	Instances _data;
 	Classifier _predictor;
 	int _idx;
+	double _weight;
 
-	public WEKAPosToPrClick(int idx) {
+	public WEKAPosToPrClick(int idx,double weight) {
 		_idx = idx;
+		_weight = weight;
 		Attribute posAttribute = new Attribute("pos");
 		Attribute prClickAttribute = new Attribute("prclick");
 		FastVector fvQuery = new FastVector(16);
@@ -218,20 +220,32 @@ public class WEKAPosToPrClick extends AbstractPosToPrClick {
 	@Override
 	public String toString() {
         switch (_idx) {
-        case 1:  return "WEKAPosToPrClick(LinearRegression)";
-        case 2:  return "WEKAPosToPrClick(IBk)";
-        case 3:  return "WEKAPosToPrClick(KStar)";
-        case 4: return "WEKAPosToPrClick(LWL)";
-        case 5: return "WEKAPosToPrClick(AdditiveRegression)";
-        case 6:  return "WEKAPosToPrClick(REPTree)";
-        case 7:  return "WEKAPosToPrClick(RegressionByDiscretization)";
-        default: return "WEKAPosToPrClick(LinearRegression)";
+        case 1:  return "WEKAPosToPrClick(LinearRegression), weight: " + _weight + ")";
+        case 2:  return "WEKAPosToPrClick(IBk), weight: " + _weight + ")";
+        case 3:  return "WEKAPosToPrClick(KStar), weight: " + _weight + ")";
+        case 4: return "WEKAPosToPrClick(LWL), weight: " + _weight + ")";
+        case 5: return "WEKAPosToPrClick(AdditiveRegression), weight: " + _weight + ")";
+        case 6:  return "WEKAPosToPrClick(REPTree), weight: " + _weight + ")";
+        case 7:  return "WEKAPosToPrClick(RegressionByDiscretization), weight: " + _weight + ")";
+        default: return "WEKAPosToPrClick(LinearRegression), weight: " + _weight + ")";
         }
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
+
+		if(_weight > 0.0 && _weight != 0) {
+			/*
+			 * Reweight old data
+			 */
+			int numDays = (int) (_data.numInstances()/16.0);
+			for(int i = 0; i < _data.numInstances(); i++) {
+				int idx = (int) (i/16.0);
+				_data.instance(i).setWeight(Math.pow(_weight, numDays - idx));
+			}
+		}
+		
 		for(Query query : queryReport) {
 			Instance newInstance = new Instance(3);
 			double pos = queryReport.getPosition(query);
@@ -278,7 +292,7 @@ public class WEKAPosToPrClick extends AbstractPosToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKAPosToPrClick(_idx);
+		return new WEKAPosToPrClick(_idx,_weight);
 	}
 
 	@Override

@@ -41,9 +41,11 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 	Instances _data;
 	Classifier _predictor;
 	int _idx;
+	double _weight;
 
-	public WEKABidToPrClick(int idx) {
+	public WEKABidToPrClick(int idx,double weight) {
 		_idx = idx;
+		_weight = weight;
 		Attribute bidAttribute = new Attribute("bid");
 		Attribute prClickAttribute = new Attribute("prclick");
 		FastVector fvQuery = new FastVector(16);
@@ -215,20 +217,32 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 	@Override
 	public String toString() {
         switch (_idx) {
-        case 1:  return "WEKABidToPrClick(LinearRegression)";
-        case 2:  return "WEKABidToPrClick(IBk)";
-        case 3:  return "WEKABidToPrClick(KStar)";
-        case 4: return "WEKABidToPrClick(LWL)";
-        case 5: return "WEKABidToPrClick(AdditiveRegression)";
-        case 6:  return "WEKABidToPrClick(REPTree)";
-        case 7:  return "WEKABidToPrClick(RegressionByDiscretization)";
-        default: return "WEKABidToPrClick(LinearRegression)";
+        case 1:  return "WEKABidToPrClick(LinearRegression), weight: " + _weight + ")";
+        case 2:  return "WEKABidToPrClick(IBk), weight: " + _weight + ")";
+        case 3:  return "WEKABidToPrClick(KStar), weight: " + _weight + ")";
+        case 4: return "WEKABidToPrClick(LWL), weight: " + _weight + ")";
+        case 5: return "WEKABidToPrClick(AdditiveRegression), weight: " + _weight + ")";
+        case 6:  return "WEKABidToPrClick(REPTree), weight: " + _weight + ")";
+        case 7:  return "WEKABidToPrClick(RegressionByDiscretization), weight: " + _weight + ")";
+        default: return "WEKABidToPrClick(LinearRegression), weight: " + _weight + ")";
         }
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
+
+		if(_weight > 0.0 && _weight != 0) {
+			/*
+			 * Reweight old data
+			 */
+			int numDays = (int) (_data.numInstances()/16.0);
+			for(int i = 0; i < _data.numInstances(); i++) {
+				int idx = (int) (i/16.0);
+				_data.instance(i).setWeight(Math.pow(_weight, numDays - idx));
+			}
+		}
+		
 		for(Query query : queryReport) {
 			Instance newInstance = new Instance(3);
 			double bid = bidBundle.getBid(query);
@@ -272,7 +286,7 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKABidToPrClick(_idx);
+		return new WEKABidToPrClick(_idx,_weight);
 	}
 
 	@Override

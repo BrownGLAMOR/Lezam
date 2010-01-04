@@ -136,14 +136,10 @@ public class WEKAEnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Add Models
 		 */
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.915, false, false, false, false, false, false));
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.915, false, false, true, false, false, false));
-		addModel( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
-		for(int i = 1; i < 8; i++) {
-			addModel(new WEKABidToCPC(i));
+		for(double weight = 1.0; weight > .89; weight -= .1) {
+			for(int i = 1; i < 8; i++) {
+				addModel(new WEKABidToCPC(i,weight));
+			}
 		}
 
 		for(int i = 1; i < 20; i++) {
