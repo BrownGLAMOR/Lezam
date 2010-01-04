@@ -85,7 +85,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1425;
-		int max = 1427;
+		int max = 1430;
 		//						int max = 9;
 
 		//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -626,6 +626,8 @@ public class PredictionEvaluator {
 	}
 
 	public void posToClickPrPredictionChallenge(AbstractPosToPrClick baseModel) throws IOException, ParseException {
+		double start = System.currentTimeMillis();
+		
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -813,10 +815,15 @@ public class PredictionEvaluator {
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
+		double stop = System.currentTimeMillis();
+		double elapsed = (stop - start)/1000.0;
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
+//		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToClickPrPredictionChallenge(AbstractBidToPrClick baseModel) throws IOException, ParseException {
+		double start = System.currentTimeMillis();
+		
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -1005,10 +1012,14 @@ public class PredictionEvaluator {
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
+		double stop = System.currentTimeMillis();
+		double elapsed = (stop - start)/1000.0;
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
+//		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToCPCPredictionChallenge(AbstractBidToCPC baseModel) throws IOException, ParseException {
+		double start = System.currentTimeMillis();
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -1190,7 +1201,10 @@ public class PredictionEvaluator {
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
+		double stop = System.currentTimeMillis();
+		double elapsed = (stop - start)/1000.0;
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
+//		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void posToClickPrToBidPredictionChallenge(AbstractBidToPrClick bidToPrClickBaseModel, AbstractPosToPrClick baseModel) throws IOException, ParseException {
@@ -1777,6 +1791,9 @@ public class PredictionEvaluator {
 	}
 
 	public void posToCPCPredictionChallenge(AbstractPosToCPC baseModel) throws IOException, ParseException {
+		
+		double start = System.currentTimeMillis();
+		
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -1957,7 +1974,10 @@ public class PredictionEvaluator {
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
 		double[] actualStd = getStdDevAndMean(actualList);
-		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
+		double stop = System.currentTimeMillis();
+		double elapsed = (stop - start)/1000.0;
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
+//		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
 	public void bidToPosPredictionChallenge(AbstractBidToPos baseModel) throws IOException, ParseException {
@@ -2452,11 +2472,7 @@ public class PredictionEvaluator {
 			//			}
 
 			for(int i = 1; i < 20; i++) {
-					start = System.currentTimeMillis();
 					evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
-					double stop = System.currentTimeMillis();
-					double elapsed = stop - start;
-					System.out.println("This took " + (elapsed / 1000) + " seconds");
 				}
 			//			evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,30,true,true));
@@ -2478,7 +2494,7 @@ public class PredictionEvaluator {
 			//						System.out.println("This took " + (elapsed1 / 1000) + " seconds");
 			//			
 			//						start = System.currentTimeMillis();
-			//						evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,8,true,false));
+//									evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,8,true,false));
 			//						stop1 = System.currentTimeMillis();
 			//						elapsed1 = stop1 - start;
 			//						System.out.println("This took " + (elapsed1 / 1000) + " seconds");
@@ -2508,7 +2524,7 @@ public class PredictionEvaluator {
 
 
 			//			start = System.currentTimeMillis();
-			//			evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,12,_targModel, true,false));
+//						evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,12,_targModel, true,false));
 			//			double stop1 = System.currentTimeMillis();
 			//			double elapsed1 = stop1 - start;
 			//			System.out.println("This took " + (elapsed1 / 1000) + " seconds");
@@ -2549,7 +2565,7 @@ public class PredictionEvaluator {
 			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,5,30,_targModel,true,true));
 			//
 			//									start = System.currentTimeMillis();
-			//									evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
+//												evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
 			//									double stop1 = System.currentTimeMillis();
 			//									double elapsed1 = stop1 - start;
 			//									System.out.println("This took " + (elapsed1 / 1000) + " seconds");
