@@ -57,6 +57,7 @@ import newmodels.prclicktobid.BidToPrClickInverter;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
+import newmodels.prconv.WEKAPrConv;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
 import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.querytousermodel.BasicQueryToUserModel;
@@ -2430,257 +2431,262 @@ public class PredictionEvaluator {
 			RConnection _rConnection = new RConnection();
 			BasicTargetModel _targModel = new BasicTargetModel(null, null);
 
-			//			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
-			//			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.99, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, false,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.99, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, false,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.99, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.99, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, false,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.99, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.99, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, false,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.99, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, false,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, false,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.99, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, false,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, false,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.84, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.915, false, false, false, false, false, false));
-//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, false, false, false, false));
-//						for(double weight = 1.0; weight > .89; weight -= .1) {
-//							for(int i = 1; i < 8; i++) {
-//								evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i,weight));
-//							}
-//						}
-//			
-//						for(int i = 1; i < 20; i++) {
-//							evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
-//						}
-//						evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,12,true,false));
-//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
-//						evaluator.bidToCPCPredictionChallenge(new KitchenSinkEnsembleBidToCPC(_querySpace,10,20,true,false));
-
-
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.915, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.99, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.99, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, false,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, false,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, true, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, false, false, false));
-//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, false, false, true, false));
-//						for(double weight = 1.0; weight > .89; weight -= .1) {
-//							for(int i = 1; i < 8; i++) {
-//								evaluator.posToCPCPredictionChallenge(new WEKAPosToCPC(i,weight));
-//							}
-//						}
-//			
-//						for(int i = 1; i < 20; i++) {
-//							evaluator.posToCPCPredictionChallenge(new WEKAClassifPosToCPC(i));
-//						}
-//						evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,12,true,false));
-//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
-//						evaluator.posToCPCPredictionChallenge(new KitchenSinkEnsemblePosToCPC(_querySpace,10,20,true,false));
-
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.84, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.84, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.915, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.915, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.99, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, false,0.84, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.99, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, false,0.84, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, false, false, false));
-//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, false));
-//						for(double weight = 1.0; weight > .89; weight -= .1) {
-//							for(int i = 1; i < 8; i++) {
-//								evaluator.bidToClickPrPredictionChallenge(new WEKABidToPrClick(i,weight));
-//							}
-//						}
-//			
-//						for(int i = 1; i < 20; i++) {
-//							evaluator.bidToClickPrPredictionChallenge(new WEKAClassifBidToPrClick(i));
-//						}		
-//						evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,12,_targModel, true,false));
-//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
-//						evaluator.bidToClickPrPredictionChallenge(new KitchenSinkEnsembleBidToPrClick(_querySpace,10,20,_targModel, true,false));
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, false,0.84, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.915, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, false,0.84, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.915, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.84, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.84, false, false, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, true));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
-			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
+			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
+			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
 			for(double weight = 1.0; weight > .89; weight -= .1) {
 				for(int i = 1; i < 8; i++) {
-					evaluator.posToClickPrPredictionChallenge(new WEKAPosToPrClick(i,weight));
+					evaluator.queryToPrConv(new WEKAPrConv(i,weight));
 				}
 			}
 
-			for(int i = 1; i < 20; i++) {
-				evaluator.posToClickPrPredictionChallenge(new WEKAClassifPosToPrClick(i));
-			}
-			evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
-			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
-			evaluator.posToClickPrPredictionChallenge(new KitchenSinkEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.99, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, false,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.99, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, false,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.99, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.99, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, false,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.99, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.99, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, false,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.99, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,40, false,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, false,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.99, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, false,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, false,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,20, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,60, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.84, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.915, false, false, false, false, false, false));
+			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, false, false, false, false));
+			//						for(double weight = 1.0; weight > .89; weight -= .1) {
+			//							for(int i = 1; i < 8; i++) {
+			//								evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i,weight));
+			//							}
+			//						}
+			//			
+			//						for(int i = 1; i < 20; i++) {
+			//							evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
+			//						}
+			//						evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,12,true,false));
+			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
+			//						evaluator.bidToCPCPredictionChallenge(new KitchenSinkEnsembleBidToCPC(_querySpace,10,20,true,false));
+
+
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.915, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, true,0.99, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, true,0.99, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,40, false,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, true,1,60, false,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.915, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.915, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, true,0.99, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,20, false,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, true, false, true, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, true,0.99, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.99, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,40, false,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, false,0.84, false, false, false, false, false, false));
+			//						evaluator.posToCPCPredictionChallenge(new RegressionPosToCPC(_rConnection, _querySpace, false,1,60, true,0.915, false, false, false, false, true, false));
+			//						for(double weight = 1.0; weight > .89; weight -= .1) {
+			//							for(int i = 1; i < 8; i++) {
+			//								evaluator.posToCPCPredictionChallenge(new WEKAPosToCPC(i,weight));
+			//							}
+			//						}
+			//			
+			//						for(int i = 1; i < 20; i++) {
+			//							evaluator.posToCPCPredictionChallenge(new WEKAClassifPosToCPC(i));
+			//						}
+			//						evaluator.posToCPCPredictionChallenge(new WEKAEnsemblePosToCPC(_querySpace,10,12,true,false));
+			//						evaluator.posToCPCPredictionChallenge(new EnsemblePosToCPC(_querySpace,10,20,true,true));
+			//						evaluator.posToCPCPredictionChallenge(new KitchenSinkEnsemblePosToCPC(_querySpace,10,20,true,false));
+
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.84, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.84, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.915, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.915, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.915, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.99, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,40, _targModel, false,0.84, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, true,0.99, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.99, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,60, _targModel, false,0.84, false, true, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, true,1,60, _targModel, false,0.84, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,40, _targModel, true,0.915, false, false, false, false));
+			//						evaluator.bidToClickPrPredictionChallenge(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, false));
+			//						for(double weight = 1.0; weight > .89; weight -= .1) {
+			//							for(int i = 1; i < 8; i++) {
+			//								evaluator.bidToClickPrPredictionChallenge(new WEKABidToPrClick(i,weight));
+			//							}
+			//						}
+			//			
+			//						for(int i = 1; i < 20; i++) {
+			//							evaluator.bidToClickPrPredictionChallenge(new WEKAClassifBidToPrClick(i));
+			//						}		
+			//						evaluator.bidToClickPrPredictionChallenge(new WEKAEnsembleBidToPrClick(_querySpace,10,12,_targModel, true,false));
+			//						evaluator.bidToClickPrPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true));
+			//						evaluator.bidToClickPrPredictionChallenge(new KitchenSinkEnsembleBidToPrClick(_querySpace,10,20,_targModel, true,false));
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, false,0.84, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.915, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, false,0.84, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.915, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,60, _targModel, true,0.84, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.99, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, false,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, true,1,40, _targModel, true,0.84, false, false, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.915, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.99, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.99, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.915, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, false,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, false,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.915, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,20, _targModel, true,0.84, false, true, false, true));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.99, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, false,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.915, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, true,0.99, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, true,0.99, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,40, _targModel, false,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,3,60, _targModel, false,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,60, _targModel, true,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,40, _targModel, true,0.84, false, true, false, false));
+			//			evaluator.posToClickPrPredictionChallenge(new RegressionPosToPrClick(_rConnection, _querySpace, false,1,20, _targModel, true,0.84, false, true, false, false));
+			//			for(double weight = 1.0; weight > .89; weight -= .1) {
+			//				for(int i = 1; i < 8; i++) {
+			//					evaluator.posToClickPrPredictionChallenge(new WEKAPosToPrClick(i,weight));
+			//				}
+			//			}
+			//
+			//			for(int i = 1; i < 20; i++) {
+			//				evaluator.posToClickPrPredictionChallenge(new WEKAClassifPosToPrClick(i));
+			//			}
+			//			evaluator.posToClickPrPredictionChallenge(new WEKAEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
+			//			evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+			//			evaluator.posToClickPrPredictionChallenge(new KitchenSinkEnsemblePosToPrClick(_querySpace,10,12,_targModel, true,false));
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
