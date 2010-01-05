@@ -172,7 +172,8 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 		else {
 			//We do the max to ensure some degree of smoothness
-			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (2/3.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
+//			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (1/5.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
+			_dailyCapacity = Math.max(0.0,_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
 		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
 	}

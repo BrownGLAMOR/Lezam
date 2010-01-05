@@ -19,7 +19,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 
-public class PPSBidder extends RuleBasedAgent {
+public class AdjustPPS extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
 	protected double _avgProfit;
@@ -27,9 +27,6 @@ public class PPSBidder extends RuleBasedAgent {
 	protected HashMap<Query, Double> _desiredSales;
 	protected HashMap<Query, Double> _profitMargins;
 
-	protected final double _errorOfConversions = 2;
-	protected final double _errorOfProfit = .1;
-	protected final double _errorOfLimit = .1;
 	protected boolean TARGET = false;
 	protected boolean BUDGET = true;
 	private double incTS = 1.2;
@@ -38,11 +35,11 @@ public class PPSBidder extends RuleBasedAgent {
 	private double badslot = 2;
 	private Double decPM = .8;
 	private Double incPM = 1.2;
-	private double minPM = .4;
+	private double minPM = .2;
 	private double maxPM = .8;
 	private double initPM = .4;
 	
-	public PPSBidder() {
+	public AdjustPPS() {
 		budgetModifier = 1.0;
 	}
 	

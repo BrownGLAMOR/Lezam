@@ -52,17 +52,17 @@ import agents.AdjustPM;
 import agents.ClickProfitC;
 import agents.EquatePM;
 import agents.G3Agent;
-import agents.PPSBidder;
+import agents.AdjustPPS;
 import agents.PortfolioOpt;
-import agents.ConstantPM;
+import agents.Goldilocks;
 import agents.EquateProfitC;
-import agents.EquateProfitS;
+import agents.EquatePPS;
 import agents.ILPBidAgent;
 import agents.ILPPosAgent;
 import agents.MCKPBid;
 import agents.AbstractAgent;
 import agents.MCKPPos;
-import agents.Goldilocks;
+import agents.GoodSlot;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -1415,7 +1415,7 @@ public class BasicSimulator {
 			return new Cheap();
 		}
 		else if(string.equals("Crest")) {
-			return new ConstantPM();
+			return new Goldilocks();
 		}
 		else if(string.equals("ILP")) {
 			return new ILPBidAgent();
@@ -1724,7 +1724,7 @@ public class BasicSimulator {
 				reportsListMap.put(agents[i], reportsList);
 			}
 			for(int i = 0; i < numSims; i++) {
-				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new Goldilocks(), advId);
+				HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new GoodSlot(), advId);
 				for(int j = 0; j < agents.length; j++) {
 					LinkedList<LinkedList<Reports>> reportsList = reportsListMap.get(agents[j]);
 					reportsList.add(maps.get(agents[j]));

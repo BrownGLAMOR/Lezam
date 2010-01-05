@@ -19,7 +19,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EquateProfitS extends RuleBasedAgent{
+public class EquatePPS extends RuleBasedAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
 	protected HashMap<Query, Double> _prClick;
 	
@@ -34,7 +34,7 @@ public class EquateProfitS extends RuleBasedAgent{
 	protected final static double decPPS = .9;
 	
 	
-	public EquateProfitS() {
+	public EquatePPS() {
 		budgetModifier = 2.0;
 	}
 	

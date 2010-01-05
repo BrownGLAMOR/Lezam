@@ -1,12 +1,14 @@
+/**
+ * Used to be BraddMaxx
+ * Used to be Crest
+ */
 package agents;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
-import com.sun.tools.internal.xjc.model.Constructor;
-
 import newmodels.AbstractModel;
-import newmodels.prconv.AbstractConversionModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -14,77 +16,73 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 public class Goldilocks extends RuleBasedAgent {
+	private static final boolean SET_TARGET = false;
+	private static final boolean SET_BUDGET = false;
 
-	protected HashMap<Query, Double> _reinvestment;
-	protected HashMap<Query, Double> _revenue;
-	protected BidBundle _bidBundle;
+	private HashMap<Query, Double> _revenue;
+	private HashMap<Query, Set<Product>> _queryToProducts;
 
-	protected boolean TARGET = false;
-	protected boolean BUDGET = false;
-	
-	protected double goodslot = 3;
-	protected double badslot = 2;
-	protected double increment = 1.2;
-	protected double decrement = .9;
-	protected double maxreinvestment = .8;
-	protected double minreinvestment = .4;
-	protected double initPM = .4;
-	
+	private static final double PM = .7;
+
+
 	public Goldilocks() {
 		budgetModifier = 1.5;
 	}
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-
 		buildMaps(models);
-		
-		if(_day < 2) { 
-			_bidBundle = new BidBundle();
+
+		if(_day < 5) { 
+			BidBundle bundle = new BidBundle();
 			for(Query q : _querySpace) {
 				double bid = getRandomBid(q);
-				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
+				bundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
 			}
-			return _bidBundle;
+			return bundle;
 		}
-		
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {
-			double current = _reinvestment.get(query);
 
-			if (_day > 1) {
-				adjustSlots(query, current);
-			}
 
-			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
+		BidBundle bids = new BidBundle();
+		for(Query q : _querySpace) {
+			Ad ad = null;
+			if(q.getManufacturer() == null) {
+				if(SET_TARGET)
+					ad = new Ad(new Product(_manSpecialty, _compSpecialty));
+				else
+					ad = new Ad(null);
+			} else
+				ad = new Ad(null);
 
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
-
+			double targetCPC = getTargetCPC(q);
+			
+			bids.setBidAndAd(q, targetCPC+.01,ad);
 		}
-		if(BUDGET || _day < 10) {
-			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
+
+		if(SET_BUDGET) {
+			bids.setCampaignDailySpendLimit(getTotalSpendingLimit(bids));
 		}
-		return _bidBundle;
+		return bids;
+	}
+
+	protected double getTargetCPC(Query q) {
+		double conversion;
+		if (_day <= 6)
+			conversion = _baselineConversion.get(q);
+		else
+			conversion = _conversionPrModel.getPrediction(q);
+		return _revenue.get(q) * (1-PM) * conversion;
 	}
 
 	@Override
 	public void initBidder() {
 		super.initBidder();
 		setDailyQueryCapacity();
-		
-		_reinvestment = new HashMap<Query, Double>();
-		for (Query query : _querySpace) {
-			_reinvestment.put(query, initPM);
+
+		_queryToProducts = new HashMap<Query, Set<Product>>();
+		for(Query q : _querySpace) {
+			HashSet<Product> s = new HashSet<Product>();
+			_queryToProducts.put(q, s);
 		}
 
 		_revenue = new HashMap<Query, Double>();
@@ -111,51 +109,9 @@ public class Goldilocks extends RuleBasedAgent {
 		}
 	}
 
-	protected double getTargetCPC(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
-		else
-			conversion = _conversionPrModel.getPrediction(q);
-		return conversion * (1-_reinvestment.get(q)) * _revenue.get(q);
-	}
-
-	protected void adjustSlots(Query q, double currentReinvest) {
-		double pos = _queryReport.getPosition(q);
-		if(Double.isNaN(pos)) {
-			 pos = 6.0;
-		}
-		double newReinvest = currentReinvest;
-		if (_queryReport.getPosition(q) <= goodslot) {
-			newReinvest = Math.min(maxreinvestment, currentReinvest * increment);
-		}
-		else if (_queryReport.getPosition(q) >= badslot) {
-			 newReinvest = Math.max(minreinvestment, currentReinvest * decrement);
-		}
-		_reinvestment.put(q, newReinvest);
-	}
-
-	protected void walking(Query q, double currentReinvest) {
-
-		/*
-		 * if((_queryReport.getPosition(q) > 1) && _queryReport.getPosition(q) <
-		 * 5){ Random random = new Random(); double currentBid = getQueryBid(q);
-		 * double y = currentBid/currentReinvest; double distance =
-		 * Math.abs(currentBid - _queryReport.getCPC(q)); double rfDistance =
-		 * (currentReinvest - (distance/y))/10;
-		 * 
-		 * if(random.nextDouble() < 0.5){ if(currentReinvest + rfDistance >=
-		 * 0.90) _reinvestment.put(q,0.90); else
-		 * _reinvestment.put(q,currentReinvest + rfDistance); } else{
-		 * 
-		 * if(currentReinvest - rfDistance <= 0.1) _reinvestment.put(q,0.1);
-		 * else _reinvestment.put(q, currentReinvest - rfDistance); } }
-		 */
-	}
-
 	@Override
 	public String toString() {
-		return "Goldilocks";
+		return "Constant PM";
 	}
 
 }
