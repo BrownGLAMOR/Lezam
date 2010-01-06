@@ -35,7 +35,7 @@ public class EquatePR extends RuleBasedAgent{
 	
 	
 	public EquatePR() {
-		budgetModifier = 2.0;
+		_budgetModifier = 2.0;
 	}
 	
 	

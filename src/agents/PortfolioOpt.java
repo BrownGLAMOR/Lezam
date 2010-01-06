@@ -41,7 +41,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	
 	public PortfolioOpt() {
-		budgetModifier = 1.4;
+		_budgetModifier = 1.4;
 	}
 
 	
@@ -140,7 +140,7 @@ public class PortfolioOpt extends RuleBasedAgent {
 		else prConv = _conversionPrModel.getPrediction(q);
 		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
 
-		return targetCPC * dailySalesLimit*budgetModifier;
+		return targetCPC * dailySalesLimit*_budgetModifier;
 	}
 
 	protected void adjustHonestFactor(Query q) {

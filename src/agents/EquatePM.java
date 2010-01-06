@@ -39,7 +39,7 @@ public class EquatePM extends RuleBasedAgent{
 	
 	
 	public EquatePM() {
-		budgetModifier = 2.0;
+		_budgetModifier = 2.0;
 	}
 	
 	

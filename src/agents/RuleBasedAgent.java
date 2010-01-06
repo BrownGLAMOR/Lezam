@@ -43,7 +43,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected HashMap<Query, Double> _baseClickProbs;
 	protected HashMap<Query, Double> _salesPrices;
 	protected Random _R;
-	protected double budgetModifier = 1.2;
+	protected double _budgetModifier = 1.2;
 
 	@Override
 	public void initBidder() {
@@ -180,10 +180,10 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {
-			return budgetModifier*targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
+			return _budgetModifier*targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
 		}
 		else {
-			return budgetModifier*targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
+			return _budgetModifier*targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
 		}
 	}
 
@@ -201,7 +201,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 		targetCPC /= _querySpace.size();
 		convPr /= _querySpace.size();
-		return budgetModifier*targetCPC*_dailyCapacity/convPr;
+		return _budgetModifier*targetCPC*_dailyCapacity/convPr;
 	}
 
 	protected double getRandomBid(Query q) {

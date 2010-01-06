@@ -35,7 +35,7 @@ public class EquatePPS extends RuleBasedAgent{
 	
 	
 	public EquatePPS() {
-		budgetModifier = 2.0;
+		_budgetModifier = 2.0;
 	}
 	
 	

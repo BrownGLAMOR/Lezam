@@ -58,7 +58,7 @@ import agents.EquatePR;
 import agents.G3Agent;
 import agents.AdjustPPS;
 import agents.PortfolioOpt;
-import agents.Goldilocks;
+import agents.ConstantPM;
 import agents.EquateProfitC;
 import agents.EquatePPS;
 import agents.ILPBidAgent;
@@ -1419,7 +1419,7 @@ public class BasicSimulator {
 			return new Cheap();
 		}
 		else if(string.equals("Crest")) {
-			return new Goldilocks();
+			return new ConstantPM();
 		}
 		else if(string.equals("ILP")) {
 			return new ILPBidAgent();

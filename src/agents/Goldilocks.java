@@ -1,117 +1,76 @@
-/**
- * Used to be BraddMaxx
- * Used to be Crest
- */
 package agents;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import newmodels.AbstractModel;
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryType;
 
-public class Goldilocks extends RuleBasedAgent {
-	private static final boolean SET_TARGET = false;
-	private static final boolean SET_BUDGET = false;
+public abstract class Goldilocks extends RuleBasedAgent {
 
-	private HashMap<Query, Double> _revenue;
-	private HashMap<Query, Set<Product>> _queryToProducts;
+	protected BidBundle _bidBundle;
+	protected HashMap<Query, Double> _desiredSales;
+	protected final boolean TARGET = false;
+	protected final boolean BUDGET = true;
+	protected final boolean DAILYBUDGET = true;
+	protected double _incTS;
+	protected double _decTS;
+	protected double _decPM;
+	protected double _incPM;
+	protected double _minPM;
+	protected double _maxPM;
+	protected double _initPM;
+	protected HashMap<Query, Double> _PM;
 
-	private static final double PM = .7;
-
-
-	public Goldilocks() {
-		budgetModifier = 1.5;
-	}
-
-	@Override
-	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		buildMaps(models);
-
-		if(_day < 5) { 
-			BidBundle bundle = new BidBundle();
-			for(Query q : _querySpace) {
-				double bid = getRandomBid(q);
-				bundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
-			}
-			return bundle;
-		}
-
-
-		BidBundle bids = new BidBundle();
-		for(Query q : _querySpace) {
-			Ad ad = null;
-			if(q.getManufacturer() == null) {
-				if(SET_TARGET)
-					ad = new Ad(new Product(_manSpecialty, _compSpecialty));
-				else
-					ad = new Ad(null);
-			} else
-				ad = new Ad(null);
-
-			double targetCPC = getTargetCPC(q);
-			
-			bids.setBidAndAd(q, targetCPC+.01,ad);
-		}
-
-		if(SET_BUDGET) {
-			bids.setCampaignDailySpendLimit(getTotalSpendingLimit(bids));
-		}
-		return bids;
-	}
-
-	protected double getTargetCPC(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
-		else
-			conversion = _conversionPrModel.getPrediction(q);
-		return _revenue.get(q) * (1-PM) * conversion;
+	public Goldilocks(double incTS, double decTS, double initPM,double decPM, double incPM, double minPM, double maxPM, double budgetModifier) {
+		_incTS = incTS;
+		_decTS = decTS;
+		_decPM = decPM;
+		_incPM = incPM;
+		_minPM = minPM;
+		_maxPM = maxPM;
+		_initPM = initPM;
+		_budgetModifier = budgetModifier;
 	}
 
 	@Override
 	public void initBidder() {
 		super.initBidder();
-		setDailyQueryCapacity();
+		
+		_PM = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_PM.put(q, _initPM);
+		}
+		
+		_desiredSales = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_desiredSales.put(q, _dailyQueryCapacity);
+		}
+	}
 
-		_queryToProducts = new HashMap<Query, Set<Product>>();
+	protected void adjustPM() {
 		for(Query q : _querySpace) {
-			HashSet<Product> s = new HashSet<Product>();
-			_queryToProducts.put(q, s);
-		}
-
-		_revenue = new HashMap<Query, Double>();
-		for (Query query : _querySpace) {
-			if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-				_revenue.put(query, 10.0 + 5 / 3);
+			double tmp = _PM.get(q);
+			// if we does not get enough clicks (and bad position), then decrease PM
+			// (increase bids, and hence slot)
+			if (_salesReport.getConversions(q) >= _desiredSales.get(q)) {
+				tmp = _PM.get(q) * _incPM;
+				tmp = Math.min(_maxPM, tmp);
+			} else {
+				// if we get too many clicks (and good position), increase
+				// PM(decrease bids and hence slot)
+				tmp = _PM.get(q) * _decPM;
+				tmp = Math.max(_minPM, tmp);
 			}
-			if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-				if (_manSpecialty.equals(query.getManufacturer()))
-					_revenue.put(query, 15.0);
-				else {
-					if (query.getManufacturer() != null)
-						_revenue.put(query, 10.0);
-					else
-						_revenue.put(query, 10.0 + 5 / 3);
-				}
-			}
-			if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-				if (_manSpecialty.equals(query.getManufacturer()))
-					_revenue.put(query, 15.0);
-				else
-					_revenue.put(query, 10.0);
-			}
+			_PM.put(q, tmp);
 		}
 	}
-
+	
 	@Override
-	public String toString() {
-		return "Constant PM";
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
+		if(_day >= 6 && _conversionPrModel != null) {
+			return _budgetModifier*targetCPC * _desiredSales.get(q) / _conversionPrModel.getPrediction(q);
+		}
+		else {
+			return _budgetModifier*targetCPC * _desiredSales.get(q) / _baselineConversion.get(q);
+		}
 	}
-
 }
