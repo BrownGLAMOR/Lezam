@@ -9,7 +9,7 @@ public abstract class Goldilocks extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, Double> _desiredSales;
 	protected final boolean TARGET = false;
-	protected final boolean BUDGET = true;
+	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = true;
 	protected double _incTS;
 	protected double _decTS;
