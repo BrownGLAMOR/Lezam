@@ -82,7 +82,7 @@ public class EquatePPS extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-		System.out.println(_bidBundle);
+//		System.out.println(_bidBundle);
 
 		_bidBundleList.add(_bidBundle);
 		return _bidBundle;
@@ -173,7 +173,7 @@ public class EquatePPS extends RuleBasedAgent{
  
 	@Override
 	public String toString() {
-		return "EquateProfitS";
+		return "EquatePPS";
 	}
 
 }

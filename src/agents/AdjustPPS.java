@@ -161,15 +161,15 @@ public class AdjustPPS extends RuleBasedAgent {
 		return _bidBundle;
 	}
 
-	@Override
-	protected double getDailySpendingLimit(Query q, double targetCPC) {
-		double prConv;
-		if(_day <= 6) prConv = _baselineConversion.get(q);
-		else prConv = _conversionPrModel.getPrediction(q);
-
-		double dailySalesLimit = Math.max(_desiredSales.get(q)/prConv,3);
-		return targetCPC * dailySalesLimit*budgetModifier;
-	}
+//	@Override
+//	protected double getDailySpendingLimit(Query q, double targetCPC) {
+//		double prConv;
+//		if(_day <= 6) prConv = _baselineConversion.get(q);
+//		else prConv = _conversionPrModel.getPrediction(q);
+//
+//		double dailySalesLimit = Math.max(_desiredSales.get(q)/prConv,3);
+//		return targetCPC * dailySalesLimit*budgetModifier;
+//	}
 
 	protected double getTargetCPC(Query q) {
 		double prConv;
@@ -202,10 +202,10 @@ public class AdjustPPS extends RuleBasedAgent {
 		double tmp = _profitMargins.get(q);
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
-		if (_salesReport.getConversions(q) >= _desiredSales.get(q) && _queryReport.getPosition(q) < goodslot) {
+		if (_salesReport.getConversions(q) >= _desiredSales.get(q)) {
 			tmp = _profitMargins.get(q) * incPM;
 			tmp = Math.min(maxPM, tmp);
-		} else if(_salesReport.getConversions(q) < _desiredSales.get(q) && _queryReport.getPosition(q) >= badslot) {
+		} else if(_salesReport.getConversions(q) < _desiredSales.get(q)) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _profitMargins.get(q) * decPM;
@@ -230,7 +230,7 @@ public class AdjustPPS extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "QualBidder";
+		return "AdjustPPS";
 	}
 
 }

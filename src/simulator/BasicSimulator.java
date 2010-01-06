@@ -1,6 +1,8 @@
 package simulator;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.ParseException;
@@ -47,10 +49,12 @@ import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
+import agents.AdjustPR;
 import agents.Cheap;
 import agents.AdjustPM;
 import agents.ClickProfitC;
 import agents.EquatePM;
+import agents.EquatePR;
 import agents.G3Agent;
 import agents.AdjustPPS;
 import agents.PortfolioOpt;
@@ -178,13 +182,13 @@ public class BasicSimulator {
 	public HashMap<String,LinkedList<Reports>> runFullSimulation(GameStatus status, AbstractAgent agent, int advertiseridx) {
 		if(PERFECTMODELS) {
 			System.out.println("****USING \"PERFECT\" MODELS***");
-			System.out.println("\t Num Iters: " + NUM_PERF_ITERS);
-			System.out.println("\t NumSplits: " + _numSplits);
+			System.out.println(" Num Iters: " + NUM_PERF_ITERS);
+			System.out.println(" NumSplits: " + _numSplits);
 			if(_killBudgets) {
-				System.out.println("\t Removing all budgets");
+				System.out.println(" Removing all budgets");
 			}
 			if(_noise) {
-				System.out.println("\t IMP VAR=" + _noiseImps + ",CLICKPR VAR=" + _noisePrClick + " GAUSSIAN ERROR");
+				System.out.println(" IMP VAR=" + _noiseImps + ",CLICKPR VAR=" + _noisePrClick + " GAUSSIAN ERROR");
 			}
 		}
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
@@ -626,7 +630,7 @@ public class BasicSimulator {
 			output += totalPos/(reports.size()*16) + ", ";
 			output += totalOverCapPerc/(reports.size()) + ", ";
 			output += totalOverCapAbs/(reports.size()) + ", ";
-//			System.out.println(output);
+			//			System.out.println(output);
 		}
 		return reportsListMap;
 	}
@@ -1348,31 +1352,31 @@ public class BasicSimulator {
 					debug("****US****");
 					//				}
 					debug("Adv Id: " + agent.getAdvId());
-					debug("\tTotal Cost: " + agent.getTotCost());
-					debug("\tTotal Budget: " + agent.getTotBudget());
-					debug("\tTotal revenue: " + agent.getTotRevenue());
-					debug("\tTotal Units Sold: " + agent.getTotUnitsSold());
+					debug("Total Cost: " + agent.getTotCost());
+					debug("Total Budget: " + agent.getTotBudget());
+					debug("Total revenue: " + agent.getTotRevenue());
+					debug("Total Units Sold: " + agent.getTotUnitsSold());
 					for(Query query : _querySpace) {
-						debug("\t Query: " + query);
-						debug("\t\t Bid: " + agent.getBid(query));
-						debug("\t\t CPC: " + agent.getCPC(query));
-						debug("\t\t Cost: " + agent.getCost(query));
-						debug("\t\t Budget: " + agent.getBudget(query));
-						debug("\t\t Revenue: " + agent.getRevenue(query));
-						debug("\t\t Units Sold: " + agent.getUnitsSold(query));
-						debug("\t\t Num Clicks: " + agent.getNumClicks(query));
-						debug("\t\t Num Prom Slots: " + _numPromSlots);
-						debug("\t\t Prom Impressions: " + agent.getNumPromImps(query));
-						debug("\t\t Reg Impressions: " + agent.getNumRegImps(query));
-						debug("\t\t Avg Pos per Imp: " + (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))));
+						debug(" Query: " + query);
+						debug(" Bid: " + agent.getBid(query));
+						debug(" CPC: " + agent.getCPC(query));
+						debug(" Cost: " + agent.getCost(query));
+						debug(" Budget: " + agent.getBudget(query));
+						debug(" Revenue: " + agent.getRevenue(query));
+						debug(" Units Sold: " + agent.getUnitsSold(query));
+						debug(" Num Clicks: " + agent.getNumClicks(query));
+						debug(" Num Prom Slots: " + _numPromSlots);
+						debug(" Prom Impressions: " + agent.getNumPromImps(query));
+						debug(" Reg Impressions: " + agent.getNumRegImps(query));
+						debug(" Avg Pos per Imp: " + (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))));
 						double[] perQPos = agent.getPerQPosSum(query);
 						for(int j = 0; j < 5; j++) {
-							debug("\t\t Imps in Slot " + (j+1) + ": " + (perQPos[j]));
+							debug(" Imps in Slot " + (j+1) + ": " + (perQPos[j]));
 						}
 						//						if(!Double.isNaN((agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))))) {
 						//							double[] expPos = avgPosModel80.getPrediction(query, agent.getNumRegImps(query), agent.getNumPromImps(query), (agent.getPosSum(query)/(agent.getNumPromImps(query)+agent.getNumRegImps(query))), agent.getNumClicks(query), _numPromSlots);
 						//							for(int j = 0; j < 5; j++) {
-						//								debug("\t\t Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
+						//								debug(" Estimated Imps in Slot " + (j+1) + ": " + (expPos[j]));
 						//							}
 						//							System.out.println("Likelihood: " + KLLikelihood(normalizeArr(perQPos),normalizeArr(expPos)));
 						//						}
@@ -1464,7 +1468,7 @@ public class BasicSimulator {
 	}
 
 
-	public void runSimulations(int min, int max, double noiseImps, double noisePrClick) throws IOException, ParseException {
+	public void runSimulations(int min, int max, double noiseImps, double noisePrClick, AbstractAgent agent) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1476,9 +1480,9 @@ public class BasicSimulator {
 		//		int max = 455;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+				String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 		_noise = false;
@@ -1520,8 +1524,28 @@ public class BasicSimulator {
 			}
 			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, new PortfolioOpt(), advId);
-			//TODO
+			AbstractAgent agentCopy = null;
+			Class<?> c;
+			try {
+				c = Class.forName(agent.getClass().getName());
+				Constructor<?> constr = c.getConstructor();
+				agentCopy = (AbstractAgent)(constr.newInstance());
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				e.printStackTrace();
+			} catch (NoSuchMethodException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			} catch (InstantiationException e) {
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (InvocationTargetException e) {
+				e.printStackTrace();
+			}
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agentCopy, advId);
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
 			}
@@ -1596,33 +1620,31 @@ public class BasicSimulator {
 					}
 				}
 				convs += sales[j];
-				if(convs > capacity) {
-					totOverCap += convs-capacity;
-					percOverCap += convs/capacity;
-				}
+				totOverCap += convs-capacity;
+				percOverCap += convs/capacity;
 			}
 		}
 		System.out.println("Profit per game: , " + profits);
-		String header = "Avg Profit,\tAvg Revenue,\tAvg Cost,\tAvg Impressions,\tAvg Clicks,\tAvg Conversions,\tAvg Position,\tCPC,\tClickPr,\tConvPr,\tConvPr neither,\tConvPr in comp" +
-				",\tConvPr in man,\tConvPr in both,\t # Overcap,\t % Overcap";
-		String output = "";
-		
-		output += ((totalRevenue-totalCost)/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalRevenue/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalCost/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalImp/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalClick/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalConv/reportsListMegaMap.size()) + ",\t";
-		output +=  (totalPos/(totDays*16)) + ",\t";
-		output += (totalCost/totalClick) + ",\t";
-		output += (totalClick/totalImp) + ",\t";
-		output += (totalConv/totalClick) + ",\t";
-		output += (totalNoneConv/totalConv) + ",\t";
-		output += (totalCompConv/totalConv) + ",\t";
-		output += (totalManConv/totalConv) + ",\t";
-		output += (totalPerfConv/totalConv) + ",\t";
-		output += (totOverCap/(totDays)) + ",\t";
-		output += (percOverCap/(totDays)) + ",\t";
+		String header = "Agent,Avg Profit,Avg Revenue,Avg Cost,Avg Impressions,Avg Clicks,Avg Conversions,Avg Position,CPC,ClickPr,ConvPr,ConvPr neither,ConvPr in comp" +
+		",ConvPr in man,ConvPr in both, # Overcap, % Overcap";
+		String output = agent + ",";
+
+		output += ((totalRevenue-totalCost)/reportsListMegaMap.size()) + ",";
+		output +=  (totalRevenue/reportsListMegaMap.size()) + ",";
+		output +=  (totalCost/reportsListMegaMap.size()) + ",";
+		output +=  (totalImp/reportsListMegaMap.size()) + ",";
+		output +=  (totalClick/reportsListMegaMap.size()) + ",";
+		output +=  (totalConv/reportsListMegaMap.size()) + ",";
+		output +=  (totalPos/(totDays*16)) + ",";
+		output += (totalCost/totalClick) + ",";
+		output += (totalClick/totalImp) + ",";
+		output += (totalConv/totalClick) + ",";
+		output += (totalNoneConv/totalConv) + ",";
+		output += (totalCompConv/totalConv) + ",";
+		output += (totalManConv/totalConv) + ",";
+		output += (totalPerfConv/totalConv) + ",";
+		output += (totOverCap/(totDays)) + ",";
+		output += (percOverCap/(totDays)) + ",";
 		System.out.println(header + "\n" + output);
 	}
 
@@ -1863,8 +1885,18 @@ public class BasicSimulator {
 		//
 		//		sim.runSimulations(min,max,0,0);
 
-		sim.runSimulations(1425,1465,0,0);
-
+		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
+		agentList.add(new AdjustPM());
+		agentList.add(new AdjustPPS());
+		agentList.add(new AdjustPR());
+		agentList.add(new EquatePM());
+		agentList.add(new EquatePPS());
+		agentList.add(new EquatePR());
+		
+		for(AbstractAgent agent : agentList) {
+			sim.runSimulations(1425,1437,0,0, agent);
+		}
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");

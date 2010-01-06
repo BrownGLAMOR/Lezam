@@ -94,10 +94,10 @@ public class AdjustPM extends RuleBasedAgent {
 		double tmp = _PM.get(q);
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
-		if (_salesReport.getConversions(q) >= _dailyQueryCapacity && _queryReport.getPosition(q) <= goodslot) {
+		if (_salesReport.getConversions(q) >= _dailyQueryCapacity) {
 			tmp = _PM.get(q) * incPM;
 			tmp = Math.min(maxPM, tmp);
-		} else if(_salesReport.getConversions(q) < _dailyQueryCapacity && _queryReport.getPosition(q) >= badslot) {
+		} else if(_salesReport.getConversions(q) < _dailyQueryCapacity) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _PM.get(q) * decPM;

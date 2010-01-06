@@ -34,18 +34,16 @@ public class AdjustPR extends RuleBasedAgent {
 	protected boolean BUDGET = true;
 	private double incTS = 1.2;
 	private double decTS = .8;
-	private double goodslot = 3;
-	private double badslot = 2;
 	private Double decPM = .8;
 	private Double incPM = 1.2;
 	private double minPM = .4;
 	private double maxPM = .8;
 	private double initPM = .4;
-	
+
 	public AdjustPR() {
 		budgetModifier = 1.0;
 	}
-	
+
 
 	@Override
 	public void initBidder() {		
@@ -96,15 +94,22 @@ public class AdjustPR extends RuleBasedAgent {
 
 		this.setAvgProfit();
 
+		double avgPr = 0;
+		for (Query query: _querySpace) {
+			if(_queryReport.getCost(query) > 0) {
+				avgPr += (_salesReport.getRevenue(query)/_queryReport.getCost(query))/_querySpace.size();
+			}
+		}
+
 		// try to equate profit
 
 		for (Query query: _querySpace) {
 
-			double latestProfit = 0;
-			if (_queryReport.getClicks(query) > 0)
-				latestProfit = (_salesReport.getRevenue(query) - _queryReport.getCost(query))/_salesReport.getConversions(query);
+			double latestPr = 1.0;
+			if (_queryReport.getCost(query) > 0)
+				latestPr = (_salesReport.getRevenue(query)/_queryReport.getCost(query));
 
-			if (latestProfit > _avgProfit) {	
+			if (latestPr > avgPr) {	
 				_desiredSales.put(query, _desiredSales.get(query)*incTS);
 			}
 			else if  (_queryReport.getClicks(query) > 0) {
@@ -205,10 +210,10 @@ public class AdjustPR extends RuleBasedAgent {
 		double tmp = _profitMargins.get(q);
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
-		if (_salesReport.getConversions(q) >= _desiredSales.get(q) && _queryReport.getPosition(q) < goodslot) {
+		if (_salesReport.getConversions(q) >= _desiredSales.get(q)) {
 			tmp = _profitMargins.get(q) * incPM;
 			tmp = Math.min(maxPM, tmp);
-		} else if(_salesReport.getConversions(q) < _desiredSales.get(q) && _queryReport.getPosition(q) >= badslot) {
+		} else if(_salesReport.getConversions(q) < _desiredSales.get(q)) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _profitMargins.get(q) * decPM;
@@ -233,7 +238,7 @@ public class AdjustPR extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "QualBidder";
+		return "AdjustPR";
 	}
 
 }

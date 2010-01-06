@@ -30,8 +30,8 @@ public class EquatePR extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	
-	protected final static double incPPS = 1.1;
-	protected final static double decPPS = .9;
+	protected final static double incPR = 1.1;
+	protected final static double decPR = .9;
 	
 	
 	public EquatePR() {
@@ -82,7 +82,7 @@ public class EquatePR extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-		System.out.println(_bidBundle);
+//		System.out.println(_bidBundle);
 
 		_bidBundleList.add(_bidBundle);
 		return _bidBundle;
@@ -94,9 +94,9 @@ public class EquatePR extends RuleBasedAgent{
 		setDailyQueryCapacity();
 		_bidBundleList = new ArrayList<BidBundle>();
 		
-		if (_capacity == 500) k = 12;
-		else if (_capacity == 400) k = 11;
-		else k = 10;
+		if (_capacity == 500) k = 1.5;
+		else if (_capacity == 400) k = 1.5;
+		else k = 1.5;
 		
 		_estimatedPrice = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -140,15 +140,14 @@ public class EquatePR extends RuleBasedAgent{
 			sum+= _salesReport.getConversions(query);
 		}
 
-		if(sum <= _dailyCapacity*decPPS) {
-			k *= decPPS;
+		if(sum <= _dailyCapacity*decPR) {
+			k *= decPR;
 		}
-		if(sum >= _dailyCapacity*incPPS){
-			k *= incPPS;
+		if(sum >= _dailyCapacity*incPR){
+			k *= incPR;
 		}
 
-		k = Math.max(7, k);
-		k = Math.min(14.5, k);
+		k = Math.max(1.0, k);
 	
 		return k;
 	}
@@ -168,12 +167,12 @@ public class EquatePR extends RuleBasedAgent{
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
 		
-		return (rev - k)*prConv;
+		return (rev * prConv)/k;
 	}
  
 	@Override
 	public String toString() {
-		return "EquateProfitS";
+		return "EquatePR";
 	}
 
 }
