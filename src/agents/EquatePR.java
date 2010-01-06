@@ -1,15 +1,8 @@
-/**
- * Used to be NewG3
- * Used to be G3Agent
- */
-
 package agents;
 
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -20,32 +13,32 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquatePR extends RuleBasedAgent{
-	protected HashMap<Query,Double> _estimatedPrice;
 	protected HashMap<Query, Double> _prClick;
-	
-	protected double k; //k is a constant that equates EPPS across queries
 	protected BidBundle _bidBundle;
-	protected ArrayList<BidBundle> _bidBundleList;
-	
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
+	protected double _PR;
+	protected double _decPR;
+	protected double _incPR;
+	protected double _minPR;
+	protected double _maxPR;
+	protected double _initPR;
 	
-	protected final static double incPR = 1.1;
-	protected final static double decPR = .9;
-	
-	
-	public EquatePR() {
-		_budgetModifier = 2.0;
+	public EquatePR(double initPR,double decPR, double incPR, double minPR, double maxPR, double budgetModifier) {
+		_decPR = decPR;
+		_incPR = incPR;
+		_minPR = minPR;
+		_maxPR = maxPR;
+		_initPR = initPR;
+		_budgetModifier = budgetModifier;
 	}
 	
 	
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		
 		buildMaps(models);
-		
+		_bidBundle = new BidBundle();
 		if(_day < 2) { 
-			_bidBundle = new BidBundle();
 			for(Query q : _querySpace) {
 				double bid = getRandomBid(q);
 				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
@@ -53,18 +46,25 @@ public class EquatePR extends RuleBasedAgent{
 			return _bidBundle;
 		}
 		
-		_bidBundle = new BidBundle();
-
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
-			updateK();
-		}
+			/*
+			 * Equate PMs
+			 */
+			double sum = 0.0;
+			for(Query query:_querySpace){
+				sum+= _salesReport.getConversions(query);
+			}
 
-		_bidBundle = new BidBundle();
+			if(sum <= _dailyCapacity*_decPR) {
+				_PR = Math.max(_minPR, _PR * _decPR);
+			}
+			else {
+				_PR = Math.min(_maxPR, _PR * _incPR);
+			}
+		}
 		
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			targetCPC = Math.max(targetCPC, 0);
-			targetCPC = Math.min(targetCPC, 1.65);
 			_bidBundle.setBid(query, targetCPC+.01);
 			
 			if (TARGET) {
@@ -82,9 +82,7 @@ public class EquatePR extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-//		System.out.println(_bidBundle);
 
-		_bidBundleList.add(_bidBundle);
 		return _bidBundle;
 	}
 
@@ -92,29 +90,8 @@ public class EquatePR extends RuleBasedAgent{
 	public void initBidder() {
 		super.initBidder();
 		setDailyQueryCapacity();
-		_bidBundleList = new ArrayList<BidBundle>();
 		
-		if (_capacity == 500) k = 1.5;
-		else if (_capacity == 400) k = 1.5;
-		else k = 1.5;
-		
-		_estimatedPrice = new HashMap<Query, Double>();
-		for(Query query:_querySpace){
-			if(query.getType()== QueryType.FOCUS_LEVEL_ZERO){
-				_estimatedPrice.put(query, 10.0 + 5/3);
-			}
-			if(query.getType()== QueryType.FOCUS_LEVEL_ONE){
-				if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
-				else{
-					if(query.getManufacturer() != null) _estimatedPrice.put(query, 10.0);
-					else _estimatedPrice.put(query, 10.0 + 5/3);
-				}
-			}
-			if(query.getType()== QueryType.FOCUS_LEVEL_TWO){
-				if(_manSpecialty.equals(query.getManufacturer())) _estimatedPrice.put(query, 15.0);
-				else _estimatedPrice.put(query, 10.0);
-			}
-		}
+		_PR = _initPR;
 		
         _prClick = new HashMap<Query, Double>();
         for (Query query: _querySpace) {
@@ -134,31 +111,13 @@ public class EquatePR extends RuleBasedAgent{
 		}
 	}
 
-	protected double updateK(){
-		double sum = 0.0;
-		for(Query query:_querySpace){
-			sum+= _salesReport.getConversions(query);
-		}
-
-		if(sum <= _dailyCapacity*decPR) {
-			k *= decPR;
-		}
-		if(sum >= _dailyCapacity*incPR){
-			k *= incPR;
-		}
-
-		k = Math.max(1.0, k);
-	
-		return k;
-	}
-
 	protected double getTargetCPC(Query q){		
 		
 		double prConv;
 		if(_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
 		
-		double rev = _estimatedPrice.get(q);
+		double rev = _salesPrices.get(q);
 		
 		if (TARGET) {
 			double clickPr = _prClick.get(q);
@@ -167,7 +126,7 @@ public class EquatePR extends RuleBasedAgent{
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
 		
-		return (rev * prConv)/k;
+		return (rev * prConv)/_PR;
 	}
  
 	@Override
