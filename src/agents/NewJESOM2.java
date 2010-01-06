@@ -194,5 +194,10 @@ public class NewJESOM2 extends AbstractAgent{
 		return "NewJesom";
 	}
 	
+	@Override
+	public AbstractAgent getCopy() {
+		return new NewJESOM2();
+	}
+	
 }
 	

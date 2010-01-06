@@ -107,5 +107,10 @@ public class AdjustPPS extends Goldilocks {
 	public String toString() {
 		return "AdjustPPS";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new AdjustPPS(_incTS,_decTS,_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+	}
 
 }

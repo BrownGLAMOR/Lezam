@@ -654,4 +654,8 @@ public class ILPBidAgent extends AbstractAgent {
 		return "ILPBid";
 	}
 
+	@Override
+	public AbstractAgent getCopy() {
+		return new ILPBidAgent();
+	}
 }

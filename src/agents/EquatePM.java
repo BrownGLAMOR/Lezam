@@ -136,4 +136,10 @@ public class EquatePM extends RuleBasedAgent{
 		return "EquatePM";
 	}
 
+
+	@Override
+	public AbstractAgent getCopy() {
+		return new EquatePM(_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+	}
+
 }

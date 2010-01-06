@@ -107,5 +107,10 @@ public class AdjustPM extends Goldilocks {
 	public String toString() {
 		return "AdjustPM";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new AdjustPM(_incTS,_decTS,_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+	}
 
 }

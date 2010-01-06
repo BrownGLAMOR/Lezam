@@ -113,5 +113,10 @@ public class ConstantPM extends RuleBasedAgent {
 	public String toString() {
 		return "Constant PM";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new ConstantPM();
+	}
 
 }

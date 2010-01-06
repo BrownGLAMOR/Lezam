@@ -223,5 +223,10 @@ public class ClickProfitC extends RuleBasedAgent {
 	public String toString() {
 		return "ClickProfC";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new ClickProfitC();
+	}
 
 }

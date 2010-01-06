@@ -490,6 +490,8 @@ public abstract class AbstractAgent extends Agent {
 	public Set<AbstractModel> getModels() {
 		return _models;
 	}
+	
+	public abstract AbstractAgent getCopy();
 
 
 }

@@ -234,5 +234,10 @@ public class PortfolioOpt extends RuleBasedAgent {
 	public String toString() {
 		return "PortfolioOpt";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new PortfolioOpt();
+	}
 
 }

@@ -133,5 +133,10 @@ public class EquatePPS extends RuleBasedAgent{
 	public String toString() {
 		return "EquatePPS";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new EquatePPS(_initPPS, _decPPS, _incPPS, _minPPs, _maxPPS, _budgetModifier);
+	}
 
 }

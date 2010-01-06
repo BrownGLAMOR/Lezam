@@ -133,5 +133,10 @@ public class EquatePR extends RuleBasedAgent{
 	public String toString() {
 		return "EquatePR";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new EquatePR(_initPR, _decPR, _incPR, _minPR, _maxPR, _budgetModifier);
+	}
 
 }

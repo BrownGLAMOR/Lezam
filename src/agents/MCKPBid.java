@@ -706,5 +706,10 @@ public class MCKPBid extends AbstractAgent {
 	public String toString() {
 		return "MCKPBid";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new MCKPBid();
+	}
 
 }

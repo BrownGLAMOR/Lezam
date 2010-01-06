@@ -267,8 +267,12 @@ public class G3Agent extends AbstractAgent{
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return null;
+		return "G3Agent";
+	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new G3Agent();
 	}
 
 }

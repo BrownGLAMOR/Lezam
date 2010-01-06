@@ -470,4 +470,9 @@ public class DPBidAgent extends AbstractAgent {
 		return "DPBid";
 	}
 	
+	@Override
+	public AbstractAgent getCopy() {
+		return new DPBidAgent();
+	}
+	
 }

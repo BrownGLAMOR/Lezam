@@ -78,5 +78,10 @@ public class Cheap extends AbstractAgent {
 	public String toString() {
 		return "Cheap";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new Cheap();
+	}
 
 }

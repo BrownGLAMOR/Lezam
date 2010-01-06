@@ -108,4 +108,9 @@ public class AdjustPR extends Goldilocks {
 		return "AdjustPR";
 	}
 
+	@Override
+	public AbstractAgent getCopy() {
+		return new AdjustPR(_incTS,_decTS,_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+	}
+	
 }

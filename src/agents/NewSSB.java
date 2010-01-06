@@ -202,5 +202,9 @@ public class NewSSB extends AbstractAgent{
 		return "NewSSB";
 	}
 
+	@Override
+	public AbstractAgent getCopy() {
+		return new NewSSB();
+	}
 
 }

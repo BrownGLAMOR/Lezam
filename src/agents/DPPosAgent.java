@@ -524,5 +524,10 @@ public class DPPosAgent extends AbstractAgent {
 	public String toString() {
 		return "DPPos";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new DPPosAgent();
+	}
 
 }

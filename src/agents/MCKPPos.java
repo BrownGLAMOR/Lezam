@@ -769,4 +769,9 @@ public class MCKPPos extends AbstractAgent {
 		return "MCKPPos";
 	}
 
+	@Override
+	public AbstractAgent getCopy() {
+		return new MCKPPos();
+	}
+	
 }

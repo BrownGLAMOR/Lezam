@@ -220,5 +220,10 @@ public class XFixedProfitAgent extends AbstractAgent {
 	public String toString() {
 		return "XFixedProfit";
 	}
+
+	@Override
+	public AbstractAgent getCopy() {
+		return new XFixedProfitAgent();
+	}
 	
 }

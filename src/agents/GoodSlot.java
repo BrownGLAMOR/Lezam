@@ -155,5 +155,10 @@ public class GoodSlot extends RuleBasedAgent {
 	public String toString() {
 		return "Goldilocks";
 	}
+	
+	@Override
+	public AbstractAgent getCopy() {
+		return new GoodSlot();
+	}
 
 }

@@ -160,4 +160,10 @@ public class EquateProfitC extends RuleBasedAgent{
 		return "EquateProfitC";
 	}
 	
+	@Override
+	public AbstractAgent getCopy() {
+		return new EquateProfitC();
+	}
+
+	
 }

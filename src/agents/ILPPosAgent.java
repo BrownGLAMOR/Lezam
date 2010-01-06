@@ -702,4 +702,9 @@ public class ILPPosAgent extends AbstractAgent {
 		return "ILP Pos";
 	}
 
+	@Override
+	public AbstractAgent getCopy() {
+		return new ILPPosAgent();
+	}
+
 }
