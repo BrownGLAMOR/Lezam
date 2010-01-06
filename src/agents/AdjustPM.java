@@ -42,6 +42,9 @@ public class AdjustPM extends Goldilocks {
 			}
 		}
 		avgPM /= numPM;
+		if(Double.isNaN(avgPM)) {
+			avgPM = _initPM;
+		}
 
 		/*
 		 * Adjust Target Sales
@@ -51,24 +54,26 @@ public class AdjustPM extends Goldilocks {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
 				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) < avgPM) {
-					_desiredSales.put(q, _desiredSales.get(q)*_decTS);
+					_salesDistribution.put(q, _salesDistribution.get(q)*_decTS);
 				}
 				else {
-					_desiredSales.put(q, _desiredSales.get(q)*_incTS);
+					_salesDistribution.put(q, _salesDistribution.get(q)*_incTS);
 				}
 			}
 			else {
-				_desiredSales.put(q, _desiredSales.get(q)*((_incTS+1)/2.0));
+				if(_dailyCapacity != 0) {
+					_salesDistribution.put(q, _salesDistribution.get(q)*((_incTS+1)/2.0));
+				}
 			}
-			totDesiredSales += _desiredSales.get(q);
+			totDesiredSales += _salesDistribution.get(q);
 		}
 
 		/*
 		 * Normalize
 		 */
-		double normFactor = _dailyCapacity/totDesiredSales;
+		double normFactor = 1.0/totDesiredSales;
 		for(Query q : _querySpace) {
-			_desiredSales.put(q, _desiredSales.get(q)*normFactor);
+			_salesDistribution.put(q, _salesDistribution.get(q)*normFactor);
 		}
 
 		/*

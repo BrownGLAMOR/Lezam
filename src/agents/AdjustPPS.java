@@ -43,6 +43,9 @@ public class AdjustPPS extends Goldilocks {
 			}
 		}
 		avgPPS /= numPPS;
+		if(Double.isNaN(avgPPS)) {
+			avgPPS = 7.5;
+		}
 
 		/*
 		 * Adjust Target Sales
@@ -53,24 +56,26 @@ public class AdjustPPS extends Goldilocks {
 					_salesReport.getRevenue(q) !=0 &&
 					_salesReport.getConversions(q) != 0) { //the last check is unnecessary, but safe
 				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q) < avgPPS) {
-					_desiredSales.put(q, _desiredSales.get(q)*_decTS);
+					_salesDistribution.put(q, _salesDistribution.get(q)*_decTS);
 				}
 				else {
-					_desiredSales.put(q, _desiredSales.get(q)*_incTS);
+					if(_dailyCapacity != 0) {
+						_salesDistribution.put(q, _salesDistribution.get(q)*_incTS);
+					}
 				}
 			}
 			else {
-				_desiredSales.put(q, _desiredSales.get(q)*((_incTS+1)/2.0));
+				_salesDistribution.put(q, _salesDistribution.get(q)*((_incTS+1)/2.0));
 			}
-			totDesiredSales += _desiredSales.get(q);
+			totDesiredSales += _salesDistribution.get(q);
 		}
 
 		/*
 		 * Normalize
 		 */
-		double normFactor = _dailyCapacity/totDesiredSales;
+		double normFactor = 1.0/totDesiredSales;
 		for(Query q : _querySpace) {
-			_desiredSales.put(q, _desiredSales.get(q)*normFactor);
+			_salesDistribution.put(q, _salesDistribution.get(q)*normFactor);
 		}
 
 		/*
@@ -103,6 +108,8 @@ public class AdjustPPS extends Goldilocks {
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
+
+		System.out.println(_salesDistribution);
 
 		return _bidBundle;
 	}

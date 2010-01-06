@@ -7,7 +7,7 @@ import edu.umich.eecs.tac.props.Query;
 public abstract class Goldilocks extends RuleBasedAgent {
 
 	protected BidBundle _bidBundle;
-	protected HashMap<Query, Double> _desiredSales;
+	protected HashMap<Query, Double> _salesDistribution;
 	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = true;
@@ -40,9 +40,9 @@ public abstract class Goldilocks extends RuleBasedAgent {
 			_PM.put(q, _initPM);
 		}
 		
-		_desiredSales = new HashMap<Query, Double>();
+		_salesDistribution = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_desiredSales.put(q, _dailyQueryCapacity);
+			_salesDistribution.put(q, 1.0/_querySpace.size());
 		}
 	}
 
@@ -51,7 +51,7 @@ public abstract class Goldilocks extends RuleBasedAgent {
 			double tmp = _PM.get(q);
 			// if we does not get enough clicks (and bad position), then decrease PM
 			// (increase bids, and hence slot)
-			if (_salesReport.getConversions(q) >= _desiredSales.get(q)) {
+			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
 				tmp = _PM.get(q) * _incPM;
 				tmp = Math.min(_maxPM, tmp);
 			} else {
@@ -67,10 +67,10 @@ public abstract class Goldilocks extends RuleBasedAgent {
 	@Override
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {
-			return _budgetModifier*targetCPC * _desiredSales.get(q) / _conversionPrModel.getPrediction(q);
+			return (_budgetModifier*targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
 		}
 		else {
-			return _budgetModifier*targetCPC * _desiredSales.get(q) / _baselineConversion.get(q);
+			return (_budgetModifier*targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
 		}
 	}
 }
