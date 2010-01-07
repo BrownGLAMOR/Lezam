@@ -255,7 +255,9 @@ public class AgentTuner {
 	}
 
 	public static void main(String[] args) {
-		//		AbstractAgent adjustPM = new AdjustPR(1.1, .9, .4, .9, 1.1, .1, .9, 1.0);
+		//		AbstractAgent adjustPM = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8, 1.2);
+		//		AbstractAgent adjustPM = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9, 1.4);
+		//		AbstractAgent adjustPM = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8, 1.3);
 		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 		//
 		//		ArrayList<Double> incTS = new ArrayList<Double>();
@@ -309,7 +311,7 @@ public class AgentTuner {
 		//		AgentTuner tuner = new AgentTuner(adjustPM,parameters);
 		//		tuner.solveWithGA(8, 2, 25, 8);
 
-		//		AbstractAgent equatePM = new EquatePM(.4, .9, 1.1, .1, .9, 1.0);
+		//		AbstractAgent equatePM = new EquatePM(.4, .9, 1.2, .4, .9, 1.4);
 		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 		//
 		//		ArrayList<Double> initPM = new ArrayList<Double>();
@@ -351,7 +353,7 @@ public class AgentTuner {
 		//		AgentTuner tuner = new AgentTuner(equatePM,parameters);
 		//		tuner.solveWithGA(8, 2, 25, 8);
 
-		//		AbstractAgent equatePR = new EquatePR(1.5, .9, 1.1, 1.0, 5.0, 1.0);
+		//		AbstractAgent equatePR = new EquatePR(2.0, .95, 1.25, 1.0, 10.0, 1.4);
 		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 		//
 		//		ArrayList<Double> initPR = new ArrayList<Double>();
@@ -394,7 +396,7 @@ public class AgentTuner {
 		//		tuner.solveWithGA(8, 2, 25, 8);
 
 
-		AbstractAgent equatePPS = new EquatePPS(7.5, .9, 1.1, 4, 15, 1.0);
+		AbstractAgent equatePPS = new EquatePPS(5, .95, 1.2, 8, 12, 1.4);
 		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 
 		ArrayList<Double> initPPS = new ArrayList<Double>();

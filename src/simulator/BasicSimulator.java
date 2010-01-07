@@ -1480,9 +1480,9 @@ public class BasicSimulator {
 		//		int max = 455;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
-//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
-//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
+		//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 		_noise = false;
@@ -1542,6 +1542,7 @@ public class BasicSimulator {
 		double totalManConv = 0.0;
 		double totalPerfConv = 0.0;
 		double totalPos = 0;
+		double percInAuctions = 0;
 		double totDays = 0;
 		double totOverCap = 0;
 		double percOverCap = 0;
@@ -1565,11 +1566,9 @@ public class BasicSimulator {
 					totalClick += queryReport.getClicks(query);
 					totalConv += salesReport.getConversions(query);
 					totSales += salesReport.getConversions(query);
-					if(Double.isNaN(queryReport.getPosition(query))) {
-						totalPos += 6.0;
-					}
-					else {
+					if(!Double.isNaN(queryReport.getPosition(query))) {
 						totalPos += queryReport.getPosition(query);
+						percInAuctions++;
 					}
 					if(_ourManSpecialty.equals(query.getManufacturer())) {
 						totalManConv += salesReport.getConversions(query);
@@ -1604,7 +1603,7 @@ public class BasicSimulator {
 			}
 		}
 		System.out.println("Profit per game: , " + profits);
-		String header = "Agent,Avg Profit,Avg Revenue,Avg Cost,Avg Impressions,Avg Clicks,Avg Conversions,Avg Position,CPC,ClickPr,ConvPr,ConvPr neither,ConvPr in comp" +
+		String header = "Agent,Avg Profit,Avg Revenue,Avg Cost,Avg Impressions,Avg Clicks,Avg Conversions,Avg Position,% in auction,CPC,ClickPr,ConvPr,ConvPr neither,ConvPr in comp" +
 		",ConvPr in man,ConvPr in both, # Overcap, % Overcap";
 		String output = agent + ",";
 
@@ -1614,7 +1613,8 @@ public class BasicSimulator {
 		output +=  (totalImp/reportsListMegaMap.size()) + ",";
 		output +=  (totalClick/reportsListMegaMap.size()) + ",";
 		output +=  (totalConv/reportsListMegaMap.size()) + ",";
-		output +=  (totalPos/(totDays*16)) + ",";
+		output +=  (totalPos/(percInAuctions)) + ",";
+		output +=  (percInAuctions/(totDays*16)) + ",";
 		output += (totalCost/totalClick) + ",";
 		output += (totalClick/totalImp) + ",";
 		output += (totalConv/totalClick) + ",";
@@ -1625,7 +1625,7 @@ public class BasicSimulator {
 		output += (totOverCap/(totDays)) + ",";
 		output += (percOverCap/(totDays)) + ",";
 		System.out.println(header + "\n" + output);
-		
+
 		return ((totalRevenue-totalCost)/reportsListMegaMap.size());
 	}
 
@@ -1867,14 +1867,19 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent adjustPM = new EquatePM(.4,.9,1.1,.1,.9,1.0);
-		agentList.add(adjustPM);
+		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12, 1.4);
+//		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0, 1.4);
+//		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9, 1.4);
+//		AbstractAgent agent = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8, 1.2);
+//		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9, 1.4);
+//		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8, 1.3);
+		agentList.add(agent);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		
-		for(AbstractAgent agent : agentList) {
-			sim.runSimulations(baseFile,1425,1437,0,0, agent);
+
+		for(AbstractAgent a : agentList) {
+			sim.runSimulations(baseFile,1425,1465,0,0, a);
 		}
-		
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
