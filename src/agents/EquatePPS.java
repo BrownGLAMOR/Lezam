@@ -18,17 +18,17 @@ public class EquatePPS extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	protected double _PPS;
-	protected double _decPPS;
-	protected double _incPPS;
-	protected double _minPPs;
-	protected double _maxPPS;
+	protected double _alphaIncPPS;
+	protected double _betaIncPPS;
+	protected double _alphaDecPPS;
+	protected double _betaDecPPS;
 	protected double _initPPS;
 	
-	public EquatePPS(double initPPS,double decPPS, double incPPS, double minPPS, double maxPPS, double budgetModifier) {
-		_decPPS = decPPS;
-		_incPPS = incPPS;
-		_minPPs = minPPS;
-		_maxPPS = maxPPS;
+	public EquatePPS(double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS, double budgetModifier) {
+		_alphaIncPPS = alphaIncPPS;
+		_betaIncPPS = betaIncPPS;
+		_alphaDecPPS = alphaDecPPS;
+		_betaDecPPS = betaDecPPS;
 		_initPPS = initPPS;
 		_budgetModifier = budgetModifier;
 	}
@@ -55,11 +55,11 @@ public class EquatePPS extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity*_decPPS) {
-				_PPS = Math.max(_minPPs, _PPS * _decPPS);
+			if(sum <= _dailyCapacity) {
+				_PPS *=  (1-(_alphaDecPPS*Math.abs(sum - _dailyCapacity)  +  _betaDecPPS));
 			}
 			else {
-				_PPS = Math.min(_maxPPS, _PPS * _incPPS);
+				_PPS *=  (1+_alphaIncPPS*Math.abs(sum - _dailyCapacity)  +  _betaIncPPS);
 			}
 		}
 		
@@ -136,7 +136,7 @@ public class EquatePPS extends RuleBasedAgent{
 	
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePPS(_initPPS, _decPPS, _incPPS, _minPPs, _maxPPS, _budgetModifier);
+		return new EquatePPS(_initPPS, _alphaIncPPS, _betaIncPPS, _alphaDecPPS, _betaDecPPS, _budgetModifier);
 	}
 
 }

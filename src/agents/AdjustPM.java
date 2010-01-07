@@ -11,8 +11,8 @@ import edu.umich.eecs.tac.props.QueryType;
 
 public class AdjustPM extends Goldilocks {
 
-	public AdjustPM(double incTS, double decTS, double initPM,double decPM, double incPM, double minPM, double maxPM, double budgetModifier) {
-		super(incTS,decTS,initPM,decPM,incPM,minPM,maxPM,budgetModifier);
+	public AdjustPM(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
+		super(alphaIncTS, betaIncTS, alphaDecTS, betaDecTS,initPM,alphaIncPM,betaIncPM,alphaDecPM,betaDecPM,budgetModifier);
 	}
 
 	@Override
@@ -54,15 +54,15 @@ public class AdjustPM extends Goldilocks {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
 				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) < avgPM) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*_decTS);
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) - avgPM) +  _betaDecTS)));
 				}
 				else {
-					_salesDistribution.put(q, _salesDistribution.get(q)*_incTS);
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) - avgPM)  +  _betaIncTS));
 				}
 			}
 			else {
 				if(_dailyCapacity != 0) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*((_incTS+1)/2.0));
+					_salesDistribution.put(q, _salesDistribution.get(q)*(((1+_alphaIncTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) - avgPM)  +  _betaIncTS)+1)/2.0));
 				}
 			}
 			totDesiredSales += _salesDistribution.get(q);
@@ -126,7 +126,7 @@ public class AdjustPM extends Goldilocks {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPM(_incTS,_decTS,_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+		return new AdjustPM(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM, _budgetModifier);
 	}
 
 }

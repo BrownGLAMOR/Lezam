@@ -11,22 +11,26 @@ public abstract class Goldilocks extends RuleBasedAgent {
 	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = true;
-	protected double _incTS;
-	protected double _decTS;
-	protected double _decPM;
-	protected double _incPM;
-	protected double _minPM;
-	protected double _maxPM;
+	protected double _alphaIncTS;
+	protected double _betaIncTS;
+	protected double _alphaDecTS;
+	protected double _betaDecTS;
+	protected double _alphaIncPM;
+	protected double _betaIncPM;
+	protected double _alphaDecPM;
+	protected double _betaDecPM;
 	protected double _initPM;
 	protected HashMap<Query, Double> _PM;
 
-	public Goldilocks(double incTS, double decTS, double initPM,double decPM, double incPM, double minPM, double maxPM, double budgetModifier) {
-		_incTS = incTS;
-		_decTS = decTS;
-		_decPM = decPM;
-		_incPM = incPM;
-		_minPM = minPM;
-		_maxPM = maxPM;
+	public Goldilocks(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
+		_alphaIncTS = alphaIncTS;
+		_betaIncTS = betaIncTS;
+		_alphaDecTS = alphaDecTS;
+		_betaDecTS = betaDecTS;
+		_alphaIncPM = alphaIncPM;
+		_betaIncPM = betaIncPM;
+		_alphaDecPM = alphaDecPM;
+		_betaDecPM = betaDecPM;
 		_initPM = initPM;
 		_budgetModifier = budgetModifier;
 	}
@@ -49,16 +53,10 @@ public abstract class Goldilocks extends RuleBasedAgent {
 	protected void adjustPM() {
 		for(Query q : _querySpace) {
 			double tmp = _PM.get(q);
-			// if we does not get enough clicks (and bad position), then decrease PM
-			// (increase bids, and hence slot)
 			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
-				tmp = _PM.get(q) * _incPM;
-				tmp = Math.min(_maxPM, tmp);
+				tmp *= (1+_alphaIncPM * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPM);
 			} else {
-				// if we get too many clicks (and good position), increase
-				// PM(decrease bids and hence slot)
-				tmp = _PM.get(q) * _decPM;
-				tmp = Math.max(_minPM, tmp);
+				tmp *= (1-(_alphaDecPM * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPM));
 			}
 			_PM.put(q, tmp);
 		}

@@ -19,23 +19,23 @@ public class EquatePM extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	protected double _PM;
-	protected double _decPM;
-	protected double _incPM;
-	protected double _minPM;
-	protected double _maxPM;
+	protected double _alphaIncPM;
+	protected double _betaIncPM;
+	protected double _alphaDecPM;
+	protected double _betaDecPM;
 	protected double _initPM;
-	
-	
-	public EquatePM(double initPM,double decPM, double incPM, double minPM, double maxPM, double budgetModifier) {
-		_decPM = decPM;
-		_incPM = incPM;
-		_minPM = minPM;
-		_maxPM = maxPM;
+
+
+	public EquatePM(double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
+		_alphaIncPM = alphaIncPM;
+		_betaIncPM = betaIncPM;
+		_alphaDecPM = alphaDecPM;
+		_betaDecPM = betaDecPM;
 		_initPM = initPM;
 		_budgetModifier = budgetModifier;
 	}
-	
-	
+
+
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
@@ -47,7 +47,7 @@ public class EquatePM extends RuleBasedAgent{
 			}
 			return _bidBundle;
 		}
-		
+
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			/*
 			 * Equate PMs
@@ -57,18 +57,18 @@ public class EquatePM extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity*_decPM) {
-				_PM = Math.max(_minPM, _PM * _decPM);
+			if(sum <= _dailyCapacity) {
+				_PM *=  (1-(_alphaDecPM*Math.abs(sum - _dailyCapacity)  +  _betaDecPM));
 			}
 			else {
-				_PM = Math.min(_maxPM, _PM * _incPM);
+				_PM *=  (1+_alphaIncPM*Math.abs(sum - _dailyCapacity)  +  _betaIncPM);
 			}
 		}
-		
+
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
 			_bidBundle.setBid(query, targetCPC+.01);
-			
+
 			if (TARGET) {
 				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
@@ -80,11 +80,11 @@ public class EquatePM extends RuleBasedAgent{
 					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
 			}
 		}
-		
+
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-		
+
 		return _bidBundle;
 	}
 
@@ -92,45 +92,45 @@ public class EquatePM extends RuleBasedAgent{
 	public void initBidder() {
 		super.initBidder();
 		setDailyQueryCapacity();
-		
+
 		_PM = _initPM;
-		
-        _prClick = new HashMap<Query, Double>();
-        for (Query query: _querySpace) {
-        	_prClick.put(query, .01);
-        }
-		
+
+		_prClick = new HashMap<Query, Double>();
+		for (Query query: _querySpace) {
+			_prClick.put(query, .01);
+		}
+
 	}
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 		super.updateModels(salesReport, queryReport);
 		if (_day > 1 && salesReport != null && queryReport != null) {	
-            for (Query query: _querySpace) {
-            	if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
-            }
-            
+			for (Query query: _querySpace) {
+				if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
+			}
+
 		}
 	}
 
 	protected double getTargetCPC(Query q){		
-		
+
 		double prConv;
 		if(_day <= 6) prConv = _baselineConversion.get(q);
 		else prConv = _conversionPrModel.getPrediction(q);
-		
+
 		double rev = _salesPrices.get(q);
-		
+
 		if (TARGET) {
 			double clickPr = _prClick.get(q);
 			if (clickPr <=0 || clickPr >= 1) clickPr = .5;
 			prConv = _targetModel.getConvPrPrediction(q, clickPr, prConv, 0);
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
-		
+
 		return (1 - _PM)*rev* prConv;
 	}
- 
+
 	@Override
 	public String toString() {
 		return "EquatePM";
@@ -139,7 +139,7 @@ public class EquatePM extends RuleBasedAgent{
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePM(_initPM, _decPM, _incPM, _minPM, _maxPM, _budgetModifier);
+		return new EquatePM(_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM, _budgetModifier);
 	}
 
 }

@@ -19,9 +19,9 @@ import agents.EquatePR;
 
 public class AgentTuner {
 
-	String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-	int _min = 1425;
-	int _max = 1430;
+	String baseFile = "/Users/jordanberg/Desktop/finalsday1/server1/game";
+	int _min = 1299;
+	int _max = 1300;
 	private AbstractAgent _agent;
 	private ArrayList<ArrayList<Double>> _parameters;
 	private Random _random;

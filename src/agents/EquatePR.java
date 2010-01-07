@@ -18,17 +18,17 @@ public class EquatePR extends RuleBasedAgent{
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	protected double _PR;
-	protected double _decPR;
-	protected double _incPR;
-	protected double _minPR;
-	protected double _maxPR;
+	protected double _alphaIncPR;
+	protected double _betaIncPR;
+	protected double _alphaDecPR;
+	protected double _betaDecPR;
 	protected double _initPR;
 	
-	public EquatePR(double initPR,double decPR, double incPR, double minPR, double maxPR, double budgetModifier) {
-		_decPR = decPR;
-		_incPR = incPR;
-		_minPR = minPR;
-		_maxPR = maxPR;
+	public EquatePR(double initPR,double alphaIncPR,double betaIncPR,double alphaDecPR,double betaDecPR, double budgetModifier) {
+		_alphaIncPR = alphaIncPR;
+		_betaIncPR = betaIncPR;
+		_alphaDecPR = alphaDecPR;
+		_betaDecPR = betaDecPR;
 		_initPR = initPR;
 		_budgetModifier = budgetModifier;
 	}
@@ -55,11 +55,11 @@ public class EquatePR extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity*_decPR) {
-				_PR = Math.max(_minPR, _PR * _decPR);
+			if(sum <= _dailyCapacity) {
+				_PR *=  (1-(_alphaDecPR*Math.abs(sum - _dailyCapacity)  +  _betaDecPR));
 			}
 			else {
-				_PR = Math.min(_maxPR, _PR * _incPR);
+				_PR *=  (1+_alphaIncPR*Math.abs(sum - _dailyCapacity)  +  _betaIncPR);
 			}
 		}
 		
@@ -136,7 +136,7 @@ public class EquatePR extends RuleBasedAgent{
 	
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePR(_initPR, _decPR, _incPR, _minPR, _maxPR, _budgetModifier);
+		return new EquatePR(_initPR, _alphaIncPR, _betaIncPR, _alphaDecPR, _betaDecPR, _budgetModifier);
 	}
 
 }
