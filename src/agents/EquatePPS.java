@@ -48,7 +48,7 @@ public class EquatePPS extends RuleBasedAgent{
 		
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			/*
-			 * Equate PMs
+			 * Equate PPS
 			 */
 			double sum = 0.0;
 			for(Query query:_querySpace){

@@ -84,7 +84,7 @@ public class EquatePM extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-
+		
 		return _bidBundle;
 	}
 

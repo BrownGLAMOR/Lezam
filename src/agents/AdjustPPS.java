@@ -109,8 +109,6 @@ public class AdjustPPS extends Goldilocks {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
 
-		System.out.println(_salesDistribution);
-
 		return _bidBundle;
 	}
 

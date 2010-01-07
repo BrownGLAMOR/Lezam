@@ -1468,7 +1468,7 @@ public class BasicSimulator {
 	}
 
 
-	public void runSimulations(int min, int max, double noiseImps, double noisePrClick, AbstractAgent agent) throws IOException, ParseException {
+	public double runSimulations(String baseFile, int min, int max, double noiseImps, double noisePrClick, AbstractAgent agent) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1482,7 +1482,7 @@ public class BasicSimulator {
 		//		String baseFile = "/Users/jordanberg/Desktop/lalagames/localhost_sim";
 //		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/test/game";
-				String baseFile = "/pro/aa/finals/day-2/server-1/game";
+//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
 		HashMap<String,HashMap<String, LinkedList<Reports>>> reportsListMegaMap = new HashMap<String, HashMap<String,LinkedList<Reports>>>();
 		_noise = false;
@@ -1524,28 +1524,7 @@ public class BasicSimulator {
 			}
 			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
-			AbstractAgent agentCopy = null;
-			Class<?> c;
-			try {
-				c = Class.forName(agent.getClass().getName());
-				Constructor<?> constr = c.getConstructor();
-				agentCopy = (AbstractAgent)(constr.newInstance());
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SecurityException e) {
-				e.printStackTrace();
-			} catch (NoSuchMethodException e) {
-				e.printStackTrace();
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-			} catch (InstantiationException e) {
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-			} catch (InvocationTargetException e) {
-				e.printStackTrace();
-			}
-			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agentCopy, advId);
+			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agent.getCopy(), advId);
 			for(int j = 0; j < agents.length; j++) {
 				reportsListMap.put(agents[j],maps.get(agents[j]));
 			}
@@ -1646,6 +1625,8 @@ public class BasicSimulator {
 		output += (totOverCap/(totDays)) + ",";
 		output += (percOverCap/(totDays)) + ",";
 		System.out.println(header + "\n" + output);
+		
+		return ((totalRevenue-totalCost)/reportsListMegaMap.size());
 	}
 
 
@@ -1886,15 +1867,12 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		agentList.add(new AdjustPM());
-		agentList.add(new AdjustPPS());
-		agentList.add(new AdjustPR());
-		agentList.add(new EquatePM());
-		agentList.add(new EquatePPS());
-		agentList.add(new EquatePR());
+		AbstractAgent adjustPM = new EquatePM(.4,.9,1.1,.1,.9,1.0);
+		agentList.add(adjustPM);
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		
 		for(AbstractAgent agent : agentList) {
-			sim.runSimulations(1425,1437,0,0, agent);
+			sim.runSimulations(baseFile,1425,1437,0,0, agent);
 		}
 		
 		double stop = System.currentTimeMillis();
