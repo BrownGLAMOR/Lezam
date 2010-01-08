@@ -1499,6 +1499,12 @@ public class BasicSimulator {
 			filenames[i-min] = baseFile + i + ".slg";
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
+
+			/*
+			 * ENSURE GARBAGE COLLECTOR IS RUN BETWEEN ITERATIONS
+			 */
+			System.gc(); emptyFunction(); emptyFunction(); emptyFunction(); emptyFunction();
+
 			String filename = filenames[fileIdx];
 			int advId = 1;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -1871,12 +1877,12 @@ public class BasicSimulator {
 		AbstractAgent agent = new AdjustPM(.001,.1, .001, .1, .4, .001,.1, .001, .1);
 		AbstractAgent agent2 = new AdjustPR(.001,.1, .001, .1, .4, .001,.1, .001, .1);
 		AbstractAgent agent3 = new AdjustPPS(.001,.1, .001, .1, .4, .001,.1, .001, .1);
-//		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12);
-//		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0);
-//		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9);
-//		AbstractAgent agent = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8);
-//		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9);
-//		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8);
+		//		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12);
+		//		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0);
+		//		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9);
+		//		AbstractAgent agent = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8);
+		//		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9);
+		//		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8);
 		agentList.add(agent);
 		agentList.add(agent2);
 		agentList.add(agent3);
@@ -1890,5 +1896,7 @@ public class BasicSimulator {
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
+	
+	public void emptyFunction() {}
 
 }
