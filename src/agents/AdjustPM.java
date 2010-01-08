@@ -27,7 +27,7 @@ public class AdjustPM extends RuleBasedAgent {
 	protected double _betaDecPM;
 	protected double _initPM;
 	protected HashMap<Query, Double> _PM;
-	
+
 	public AdjustPM(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
 		_alphaIncTS = alphaIncTS;
 		_betaIncTS = betaIncTS;
@@ -39,16 +39,16 @@ public class AdjustPM extends RuleBasedAgent {
 		_betaDecPM = betaDecPM;
 		_initPM = initPM;
 	}
-	
+
 	@Override
 	public void initBidder() {
 		super.initBidder();
-		
+
 		_PM = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			_PM.put(q, _initPM);
 		}
-		
+
 		_salesDistribution = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			_salesDistribution.put(q, 1.0/_querySpace.size());
@@ -101,11 +101,6 @@ public class AdjustPM extends RuleBasedAgent {
 					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) - avgPM)  +  _betaIncTS));
 				}
 			}
-			else {
-				if(_dailyCapacity != 0) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(((1+_alphaIncTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q) - avgPM)  +  _betaIncTS)+1)/2.0));
-				}
-			}
 			totDesiredSales += _salesDistribution.get(q);
 		}
 
@@ -147,7 +142,6 @@ public class AdjustPM extends RuleBasedAgent {
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-
 		return _bidBundle;
 	}
 
@@ -161,7 +155,7 @@ public class AdjustPM extends RuleBasedAgent {
 		CPC = Math.max(0.0, Math.min(3.5, CPC));
 		return CPC;
 	}
-	
+
 	protected void adjustPM() {
 		for(Query q : _querySpace) {
 			double tmp = _PM.get(q);
@@ -170,10 +164,16 @@ public class AdjustPM extends RuleBasedAgent {
 			} else {
 				tmp *= (1-(_alphaDecPM * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPM));
 			}
+			if(Double.isNaN(tmp) || tmp <= 0) {
+				tmp = _initPM;
+			}
+			if(tmp > 1.0) {
+				tmp = 1.0;
+			}
 			_PM.put(q, tmp);
 		}
 	}
-	
+
 	@Override
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {

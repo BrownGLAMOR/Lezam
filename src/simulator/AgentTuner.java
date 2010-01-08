@@ -10,11 +10,19 @@ import java.util.HashMap;
 import java.util.Random;
 
 import agents.AbstractAgent;
+import agents.AdjustPM;
 import agents.AdjustPPS;
+import agents.AdjustPR;
+import agents.AdjustROI;
+import agents.EquatePM;
+import agents.EquatePPS;
+import agents.EquatePR;
+import agents.EquateROI;
 
 public class AgentTuner {
 
-	String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+	String baseFile = "/pro/aa/finals/day-2/server-1/game";
 	int _min = 1430;
 	int _max = 172;
 	private AbstractAgent _agent;
@@ -38,7 +46,6 @@ public class AgentTuner {
 				ArrayList<Double> params = _parameters.get(j);
 				randState.add(_random.nextInt(params.size()));
 			}
-			System.out.println(randState);
 			population.add(randState);
 		}
 		HashMap<ArrayList<Integer>,Double> paramScore = new HashMap<ArrayList<Integer>, Double>();
@@ -58,6 +65,8 @@ public class AgentTuner {
 				if(score == null) {
 					score = evaluateAgent(createCopy(chromosome));
 				}
+				System.out.println("chromosome: " + chromosome);
+				System.out.println("score: " + score);
 				paramScore.put(chromosome, score);
 				currentParamScore.put(chromosome, score);
 				if(score > bestScore) {
@@ -254,70 +263,7 @@ public class AgentTuner {
 	}
 
 	public static void main(String[] args) {
-		//		AbstractAgent adjustPM = new AdjustPM(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> alphaIncTS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncTS.add(val);
-		//		}
-		//		parameters.add(alphaIncTS);
-		//
-		//		ArrayList<Double> betaIncTS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncTS.add(val);
-		//		}
-		//		parameters.add(betaIncTS);
-		//
-		//		ArrayList<Double> alphaDecTS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecTS.add(val);
-		//		}
-		//		parameters.add(alphaDecTS);
-		//
-		//		ArrayList<Double> betaDecTS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecTS.add(val);
-		//		}
-		//		parameters.add(betaDecTS);
-		//
-		//		ArrayList<Double> initPM = new ArrayList<Double>();
-		//		for(double val = .1; val < .91; val += .05) {
-		//			initPM.add(val);
-		//		}
-		//		parameters.add(initPM);
-		//
-		//		ArrayList<Double> alphaIncPM = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncPM.add(val);
-		//		}
-		//		parameters.add(alphaIncPM);
-		//
-		//		ArrayList<Double> betaIncPM = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncPM.add(val);
-		//		}
-		//		parameters.add(betaIncPM);
-		//
-		//		ArrayList<Double> alphaDecPM = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecPM.add(val);
-		//		}
-		//		parameters.add(alphaDecPM);
-		//
-		//		ArrayList<Double> betaDecPM = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecPM.add(val);
-		//		}
-		//		parameters.add(betaDecPM);
-		//
-		//		AgentTuner tuner = new AgentTuner(adjustPM,parameters);
-		//		tuner.solveWithGA(10, 2, 50, 16);
-
-
-
-
-//				AbstractAgent adjustPR = new AdjustPR(0, 0, 0, 0, 0, 0, 0, 0, 0);
+//				AbstractAgent adjustPM = new AdjustPM(0, 0, 0, 0, 0, 0, 0, 0, 0);
 //				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 //		
 //				ArrayList<Double> alphaIncTS = new ArrayList<Double>();
@@ -344,320 +290,383 @@ public class AgentTuner {
 //				}
 //				parameters.add(betaDecTS);
 //		
-//				ArrayList<Double> initPR = new ArrayList<Double>();
-//				for(double val = 1.5; val < 3.5; val += .2) {
-//					initPR.add(val);
+//				ArrayList<Double> initPM = new ArrayList<Double>();
+//				for(double val = .1; val < .91; val += .05) {
+//					initPM.add(val);
 //				}
-//				parameters.add(initPR);
+//				parameters.add(initPM);
 //		
-//				ArrayList<Double> alphaIncPR = new ArrayList<Double>();
+//				ArrayList<Double> alphaIncPM = new ArrayList<Double>();
 //				for(double val = -.01; val <= .011; val += .001) {
-//					alphaIncPR.add(val);
+//					alphaIncPM.add(val);
 //				}
-//				parameters.add(alphaIncPR);
+//				parameters.add(alphaIncPM);
 //		
-//				ArrayList<Double> betaIncPR = new ArrayList<Double>();
+//				ArrayList<Double> betaIncPM = new ArrayList<Double>();
 //				for(double val = -.3; val <= .31; val += .033333) {
-//					betaIncPR.add(val);
+//					betaIncPM.add(val);
 //				}
-//				parameters.add(betaIncPR);
+//				parameters.add(betaIncPM);
 //		
-//				ArrayList<Double> alphaDecPR = new ArrayList<Double>();
+//				ArrayList<Double> alphaDecPM = new ArrayList<Double>();
 //				for(double val = -.01; val <= .011; val += .001) {
-//					alphaDecPR.add(val);
+//					alphaDecPM.add(val);
 //				}
-//				parameters.add(alphaDecPR);
+//				parameters.add(alphaDecPM);
 //		
-//				ArrayList<Double> betaDecPR = new ArrayList<Double>();
+//				ArrayList<Double> betaDecPM = new ArrayList<Double>();
 //				for(double val = -.3; val <= .31; val += .033333) {
-//					betaDecPR.add(val);
+//					betaDecPM.add(val);
 //				}
-//				parameters.add(betaDecPR);
+//				parameters.add(betaDecPM);
 //		
-//				AgentTuner tuner = new AgentTuner(adjustPR,parameters);
-//				tuner.solveWithGA(10, 2, 50, 16);	
+//				AgentTuner tuner = new AgentTuner(adjustPM,parameters);
+//				tuner.solveWithGA(25, 10, 100, 20);
+
+
+
+
+//								AbstractAgent adjustPR = new AdjustPR(0, 0, 0, 0, 0, 0, 0, 0, 0);
+//								ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//						
+//								ArrayList<Double> alphaIncTS = new ArrayList<Double>();
+//								for(double val = -.01; val <= .011; val += .001) {
+//									alphaIncTS.add(val);
+//								}
+//								parameters.add(alphaIncTS);
+//						
+//								ArrayList<Double> betaIncTS = new ArrayList<Double>();
+//								for(double val = -.3; val <= .31; val += .033333) {
+//									betaIncTS.add(val);
+//								}
+//								parameters.add(betaIncTS);
+//						
+//								ArrayList<Double> alphaDecTS = new ArrayList<Double>();
+//								for(double val = -.01; val <= .011; val += .001) {
+//									alphaDecTS.add(val);
+//								}
+//								parameters.add(alphaDecTS);
+//						
+//								ArrayList<Double> betaDecTS = new ArrayList<Double>();
+//								for(double val = -.3; val <= .31; val += .033333) {
+//									betaDecTS.add(val);
+//								}
+//								parameters.add(betaDecTS);
+//						
+//								ArrayList<Double> initPR = new ArrayList<Double>();
+//								for(double val = 1.5; val < 3.5; val += .2) {
+//									initPR.add(val);
+//								}
+//								parameters.add(initPR);
+//						
+//								ArrayList<Double> alphaIncPR = new ArrayList<Double>();
+//								for(double val = -.01; val <= .011; val += .001) {
+//									alphaIncPR.add(val);
+//								}
+//								parameters.add(alphaIncPR);
+//						
+//								ArrayList<Double> betaIncPR = new ArrayList<Double>();
+//								for(double val = -.3; val <= .31; val += .033333) {
+//									betaIncPR.add(val);
+//								}
+//								parameters.add(betaIncPR);
+//						
+//								ArrayList<Double> alphaDecPR = new ArrayList<Double>();
+//								for(double val = -.01; val <= .011; val += .001) {
+//									alphaDecPR.add(val);
+//								}
+//								parameters.add(alphaDecPR);
+//						
+//								ArrayList<Double> betaDecPR = new ArrayList<Double>();
+//								for(double val = -.3; val <= .31; val += .033333) {
+//									betaDecPR.add(val);
+//								}
+//								parameters.add(betaDecPR);
+//						
+//								AgentTuner tuner = new AgentTuner(adjustPR,parameters);
+//								tuner.solveWithGA(25, 10, 100, 20);
 
 
 
 
 
-		AbstractAgent adjustPPS = new AdjustPPS(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-
-		ArrayList<Double> alphaIncTS = new ArrayList<Double>();
-		for(double val = -.01; val <= .011; val += .001) {
-			alphaIncTS.add(val);
-		}
-		parameters.add(alphaIncTS);
-
-		ArrayList<Double> betaIncTS = new ArrayList<Double>();
-		for(double val = -.3; val <= .31; val += .033333) {
-			betaIncTS.add(val);
-		}
-		parameters.add(betaIncTS);
-
-		ArrayList<Double> alphaDecTS = new ArrayList<Double>();
-		for(double val = -.01; val <= .011; val += .001) {
-			alphaDecTS.add(val);
-		}
-		parameters.add(alphaDecTS);
-
-		ArrayList<Double> betaDecTS = new ArrayList<Double>();
-		for(double val = -.3; val <= .31; val += .033333) {
-			betaDecTS.add(val);
-		}
-		parameters.add(betaDecTS);
-
-		ArrayList<Double> initPPS = new ArrayList<Double>();
-		for(double val = 5; val <= 12; val += .5) {
-			initPPS.add(val);
-		}
-		parameters.add(initPPS);
-
-		ArrayList<Double> alphaIncPPS = new ArrayList<Double>();
-		for(double val = -.01; val <= .011; val += .001) {
-			alphaIncPPS.add(val);
-		}
-		parameters.add(alphaIncPPS);
-
-		ArrayList<Double> betaIncPPS = new ArrayList<Double>();
-		for(double val = -.3; val <= .31; val += .033333) {
-			betaIncPPS.add(val);
-		}
-		parameters.add(betaIncPPS);
-
-		ArrayList<Double> alphaDecPPS = new ArrayList<Double>();
-		for(double val = -.01; val <= .011; val += .001) {
-			alphaDecPPS.add(val);
-		}
-		parameters.add(alphaDecPPS);
-
-		ArrayList<Double> betaDecPPS = new ArrayList<Double>();
-		for(double val = -.3; val <= .31; val += .033333) {
-			betaDecPPS.add(val);
-		}
-		parameters.add(betaDecPPS);
-
-		AgentTuner tuner = new AgentTuner(adjustPPS,parameters);
-		tuner.solveWithGA(10, 2, 50, 16);	
-
-
+//						AbstractAgent adjustPPS = new AdjustPPS(0, 0, 0, 0, 0, 0, 0, 0, 0);
+//						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//				
+//						ArrayList<Double> alphaIncTS = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaIncTS.add(val);
+//						}
+//						parameters.add(alphaIncTS);
+//				
+//						ArrayList<Double> betaIncTS = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaIncTS.add(val);
+//						}
+//						parameters.add(betaIncTS);
+//				
+//						ArrayList<Double> alphaDecTS = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaDecTS.add(val);
+//						}
+//						parameters.add(alphaDecTS);
+//				
+//						ArrayList<Double> betaDecTS = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaDecTS.add(val);
+//						}
+//						parameters.add(betaDecTS);
+//				
+//						ArrayList<Double> initPPS = new ArrayList<Double>();
+//						for(double val = 5; val <= 12; val += .5) {
+//							initPPS.add(val);
+//						}
+//						parameters.add(initPPS);
+//				
+//						ArrayList<Double> alphaIncPPS = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaIncPPS.add(val);
+//						}
+//						parameters.add(alphaIncPPS);
+//				
+//						ArrayList<Double> betaIncPPS = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaIncPPS.add(val);
+//						}
+//						parameters.add(betaIncPPS);
+//				
+//						ArrayList<Double> alphaDecPPS = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaDecPPS.add(val);
+//						}
+//						parameters.add(alphaDecPPS);
+//				
+//						ArrayList<Double> betaDecPPS = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaDecPPS.add(val);
+//						}
+//						parameters.add(betaDecPPS);
+//				
+//						AgentTuner tuner = new AgentTuner(adjustPPS,parameters);
+//						tuner.solveWithGA(25, 10, 100, 20);	
 
 
 
-		//		AbstractAgent adjustROI = new AdjustROI(0, 0, 0, 0, 0, 0, 0, 0, 0);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> alphaIncTS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncTS.add(val);
-		//		}
-		//		parameters.add(alphaIncTS);
-		//
-		//		ArrayList<Double> betaIncTS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncTS.add(val);
-		//		}
-		//		parameters.add(betaIncTS);
-		//
-		//		ArrayList<Double> alphaDecTS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecTS.add(val);
-		//		}
-		//		parameters.add(alphaDecTS);
-		//
-		//		ArrayList<Double> betaDecTS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecTS.add(val);
-		//		}
-		//		parameters.add(betaDecTS);
-		//
-		//		ArrayList<Double> initROI = new ArrayList<Double>();
-		//		for(double val = 1.5; val < 3.5; val += .2) {
-		//			initROI.add(val);
-		//		}
-		//		parameters.add(initROI);
-		//
-		//		ArrayList<Double> alphaIncROI = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncROI.add(val);
-		//		}
-		//		parameters.add(alphaIncROI);
-		//
-		//		ArrayList<Double> betaIncROI = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncROI.add(val);
-		//		}
-		//		parameters.add(betaIncROI);
-		//
-		//		ArrayList<Double> alphaDecROI = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecROI.add(val);
-		//		}
-		//		parameters.add(alphaDecROI);
-		//
-		//		ArrayList<Double> betaDecROI = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecROI.add(val);
-		//		}
-		//		parameters.add(betaDecROI);
-		//
-		//		AgentTuner tuner = new AgentTuner(adjustROI,parameters);
-		//		tuner.solveWithGA(10, 2, 50, 16);
 
 
-		//				AbstractAgent equatePM = new EquatePM(0,0,0,0,0);
+		//				AbstractAgent adjustROI = new AdjustROI(0, 0, 0, 0, 0, 0, 0, 0, 0);
 		//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
 		//		
-		//				ArrayList<Double> initPM = new ArrayList<Double>();
-		//				for(double val = .1; val < .91; val += .05) {
-		//					initPM.add(val);
-		//				}
-		//				parameters.add(initPM);
-		//		
-		//				ArrayList<Double> alphaIncPM = new ArrayList<Double>();
+		//				ArrayList<Double> alphaIncTS = new ArrayList<Double>();
 		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaIncPM.add(val);
+		//					alphaIncTS.add(val);
 		//				}
-		//				parameters.add(alphaIncPM);
+		//				parameters.add(alphaIncTS);
 		//		
-		//				ArrayList<Double> betaIncPM = new ArrayList<Double>();
+		//				ArrayList<Double> betaIncTS = new ArrayList<Double>();
 		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaIncPM.add(val);
+		//					betaIncTS.add(val);
 		//				}
-		//				parameters.add(betaIncPM);
+		//				parameters.add(betaIncTS);
 		//		
-		//				ArrayList<Double> alphaDecPM = new ArrayList<Double>();
+		//				ArrayList<Double> alphaDecTS = new ArrayList<Double>();
 		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaDecPM.add(val);
+		//					alphaDecTS.add(val);
 		//				}
-		//				parameters.add(alphaDecPM);
+		//				parameters.add(alphaDecTS);
 		//		
-		//				ArrayList<Double> betaDecPM = new ArrayList<Double>();
+		//				ArrayList<Double> betaDecTS = new ArrayList<Double>();
 		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaDecPM.add(val);
+		//					betaDecTS.add(val);
 		//				}
-		//				parameters.add(betaDecPM);
+		//				parameters.add(betaDecTS);
 		//		
-		//				AgentTuner tuner = new AgentTuner(equatePM,parameters);
-		//				tuner.solveWithGA(10, 2, 50, 16);
-
-
-
-
-		//				AbstractAgent equatePR = new EquatePR(0,0,0,0,0);
-		//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//		
-		//				ArrayList<Double> initPR = new ArrayList<Double>();
+		//				ArrayList<Double> initROI = new ArrayList<Double>();
 		//				for(double val = 1.5; val < 3.5; val += .2) {
-		//					initPR.add(val);
+		//					initROI.add(val);
 		//				}
-		//				parameters.add(initPR);
+		//				parameters.add(initROI);
 		//		
-		//				ArrayList<Double> alphaIncPR = new ArrayList<Double>();
+		//				ArrayList<Double> alphaIncROI = new ArrayList<Double>();
 		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaIncPR.add(val);
+		//					alphaIncROI.add(val);
 		//				}
-		//				parameters.add(alphaIncPR);
+		//				parameters.add(alphaIncROI);
 		//		
-		//				ArrayList<Double> betaIncPR = new ArrayList<Double>();
+		//				ArrayList<Double> betaIncROI = new ArrayList<Double>();
 		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaIncPR.add(val);
+		//					betaIncROI.add(val);
 		//				}
-		//				parameters.add(betaIncPR);
+		//				parameters.add(betaIncROI);
 		//		
-		//				ArrayList<Double> alphaDecPR = new ArrayList<Double>();
+		//				ArrayList<Double> alphaDecROI = new ArrayList<Double>();
 		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaDecPR.add(val);
+		//					alphaDecROI.add(val);
 		//				}
-		//				parameters.add(alphaDecPR);
+		//				parameters.add(alphaDecROI);
 		//		
-		//				ArrayList<Double> betaDecPR = new ArrayList<Double>();
+		//				ArrayList<Double> betaDecROI = new ArrayList<Double>();
 		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaDecPR.add(val);
+		//					betaDecROI.add(val);
 		//				}
-		//				parameters.add(betaDecPR);
+		//				parameters.add(betaDecROI);
 		//		
-		//				AgentTuner tuner = new AgentTuner(equatePR,parameters);
-		//				tuner.solveWithGA(10, 2, 50, 16);
+		//				AgentTuner tuner = new AgentTuner(adjustROI,parameters);
+		//				tuner.solveWithGA(25, 10, 100, 20);
+
+
+//						AbstractAgent equatePM = new EquatePM(0,0,0,0,0);
+//						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//				
+//						ArrayList<Double> initPM = new ArrayList<Double>();
+//						for(double val = .1; val < .91; val += .05) {
+//							initPM.add(val);
+//						}
+//						parameters.add(initPM);
+//				
+//						ArrayList<Double> alphaIncPM = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaIncPM.add(val);
+//						}
+//						parameters.add(alphaIncPM);
+//				
+//						ArrayList<Double> betaIncPM = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaIncPM.add(val);
+//						}
+//						parameters.add(betaIncPM);
+//				
+//						ArrayList<Double> alphaDecPM = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaDecPM.add(val);
+//						}
+//						parameters.add(alphaDecPM);
+//				
+//						ArrayList<Double> betaDecPM = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaDecPM.add(val);
+//						}
+//						parameters.add(betaDecPM);
+//				
+//						AgentTuner tuner = new AgentTuner(equatePM,parameters);
+//						tuner.solveWithGA(25, 10, 100, 20);
+
+
+
+//
+//						AbstractAgent equatePR = new EquatePR(0,0,0,0,0);
+//						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//				
+//						ArrayList<Double> initPR = new ArrayList<Double>();
+//						for(double val = 1.5; val < 3.5; val += .2) {
+//							initPR.add(val);
+//						}
+//						parameters.add(initPR);
+//				
+//						ArrayList<Double> alphaIncPR = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaIncPR.add(val);
+//						}
+//						parameters.add(alphaIncPR);
+//				
+//						ArrayList<Double> betaIncPR = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaIncPR.add(val);
+//						}
+//						parameters.add(betaIncPR);
+//				
+//						ArrayList<Double> alphaDecPR = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaDecPR.add(val);
+//						}
+//						parameters.add(alphaDecPR);
+//				
+//						ArrayList<Double> betaDecPR = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaDecPR.add(val);
+//						}
+//						parameters.add(betaDecPR);
+//				
+//						AgentTuner tuner = new AgentTuner(equatePR,parameters);
+//						tuner.solveWithGA(25, 10, 100, 20);
 
 
 
 
 
 
-		//		AbstractAgent equatePPS = new EquatePPS(0,0,0,0,0);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> initPPS = new ArrayList<Double>();
-		//		for(double val = 5; val <= 12; val += .5) {
-		//			initPPS.add(val);
-		//		}
-		//		parameters.add(initPPS);
-		//
-		//		ArrayList<Double> alphaIncPPS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncPPS.add(val);
-		//		}
-		//		parameters.add(alphaIncPPS);
-		//
-		//		ArrayList<Double> betaIncPPS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncPPS.add(val);
-		//		}
-		//		parameters.add(betaIncPPS);
-		//
-		//		ArrayList<Double> alphaDecPPS = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecPPS.add(val);
-		//		}
-		//		parameters.add(alphaDecPPS);
-		//
-		//		ArrayList<Double> betaDecPPS = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecPPS.add(val);
-		//		}
-		//		parameters.add(betaDecPPS);
-		//
-		//		AgentTuner tuner = new AgentTuner(equatePPS,parameters);
-		//		tuner.solveWithGA(10, 2, 50, 16);
+//				AbstractAgent equatePPS = new EquatePPS(0,0,0,0,0);
+//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//		
+//				ArrayList<Double> initPPS = new ArrayList<Double>();
+//				for(double val = 5; val <= 12; val += .5) {
+//					initPPS.add(val);
+//				}
+//				parameters.add(initPPS);
+//		
+//				ArrayList<Double> alphaIncPPS = new ArrayList<Double>();
+//				for(double val = -.01; val <= .011; val += .001) {
+//					alphaIncPPS.add(val);
+//				}
+//				parameters.add(alphaIncPPS);
+//		
+//				ArrayList<Double> betaIncPPS = new ArrayList<Double>();
+//				for(double val = -.3; val <= .31; val += .033333) {
+//					betaIncPPS.add(val);
+//				}
+//				parameters.add(betaIncPPS);
+//		
+//				ArrayList<Double> alphaDecPPS = new ArrayList<Double>();
+//				for(double val = -.01; val <= .011; val += .001) {
+//					alphaDecPPS.add(val);
+//				}
+//				parameters.add(alphaDecPPS);
+//		
+//				ArrayList<Double> betaDecPPS = new ArrayList<Double>();
+//				for(double val = -.3; val <= .31; val += .033333) {
+//					betaDecPPS.add(val);
+//				}
+//				parameters.add(betaDecPPS);
+//		
+//				AgentTuner tuner = new AgentTuner(equatePPS,parameters);
+//				tuner.solveWithGA(25, 10, 100, 20);
 
 
-		//		AbstractAgent equateROI = new EquateROI(0,0,0,0,0);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> initROI = new ArrayList<Double>();
-		//		for(double val = 1.5; val < 3.5; val += .2) {
-		//			initROI.add(val);
-		//		}
-		//		parameters.add(initROI);
-		//
-		//		ArrayList<Double> alphaIncROI = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaIncROI.add(val);
-		//		}
-		//		parameters.add(alphaIncROI);
-		//
-		//		ArrayList<Double> betaIncROI = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaIncROI.add(val);
-		//		}
-		//		parameters.add(betaIncROI);
-		//
-		//		ArrayList<Double> alphaDecROI = new ArrayList<Double>();
-		//		for(double val = -.01; val <= .011; val += .001) {
-		//			alphaDecROI.add(val);
-		//		}
-		//		parameters.add(alphaDecROI);
-		//
-		//		ArrayList<Double> betaDecROI = new ArrayList<Double>();
-		//		for(double val = -.3; val <= .31; val += .033333) {
-		//			betaDecROI.add(val);
-		//		}
-		//		parameters.add(betaDecROI);
-		//
-		//		AgentTuner tuner = new AgentTuner(equateROI,parameters);
-		//		tuner.solveWithGA(10, 2, 50, 16);
+		//				AbstractAgent equateROI = new EquateROI(0,0,0,0,0);
+		//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+		//		
+		//				ArrayList<Double> initROI = new ArrayList<Double>();
+		//				for(double val = 1.5; val < 3.5; val += .2) {
+		//					initROI.add(val);
+		//				}
+		//				parameters.add(initROI);
+		//		
+		//				ArrayList<Double> alphaIncROI = new ArrayList<Double>();
+		//				for(double val = -.01; val <= .011; val += .001) {
+		//					alphaIncROI.add(val);
+		//				}
+		//				parameters.add(alphaIncROI);
+		//		
+		//				ArrayList<Double> betaIncROI = new ArrayList<Double>();
+		//				for(double val = -.3; val <= .31; val += .033333) {
+		//					betaIncROI.add(val);
+		//				}
+		//				parameters.add(betaIncROI);
+		//		
+		//				ArrayList<Double> alphaDecROI = new ArrayList<Double>();
+		//				for(double val = -.01; val <= .011; val += .001) {
+		//					alphaDecROI.add(val);
+		//				}
+		//				parameters.add(alphaDecROI);
+		//		
+		//				ArrayList<Double> betaDecROI = new ArrayList<Double>();
+		//				for(double val = -.3; val <= .31; val += .033333) {
+		//					betaDecROI.add(val);
+		//				}
+		//				parameters.add(betaDecROI);
+		//		
+		//				AgentTuner tuner = new AgentTuner(equateROI,parameters);
+		//				tuner.solveWithGA(25, 10, 100, 20);
 	}
 
 }

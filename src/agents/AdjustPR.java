@@ -101,11 +101,6 @@ public class AdjustPR extends RuleBasedAgent {
 					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR)  +  _betaIncTS));
 				}
 			}
-			else {
-				if(_dailyCapacity != 0) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(((1+_alphaIncTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR)  +  _betaIncTS)+1)/2.0));
-				}
-			}
 			totDesiredSales += _salesDistribution.get(q);
 		}
 

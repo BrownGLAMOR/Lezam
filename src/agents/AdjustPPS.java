@@ -105,9 +105,6 @@ public class AdjustPPS extends RuleBasedAgent {
 					}
 				}
 			}
-			else {
-				_salesDistribution.put(q, _salesDistribution.get(q)*(((1+_alphaIncTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q) - avgPPS)  +  _betaIncTS)+1)/2.0));
-			}
 			totDesiredSales += _salesDistribution.get(q);
 		}
 
@@ -149,7 +146,6 @@ public class AdjustPPS extends RuleBasedAgent {
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
-
 		return _bidBundle;
 	}
 	
