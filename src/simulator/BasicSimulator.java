@@ -55,6 +55,7 @@ import agents.AdjustPM;
 import agents.ClickProfitC;
 import agents.EquatePM;
 import agents.EquatePR;
+import agents.EquateROI;
 import agents.G3Agent;
 import agents.AdjustPPS;
 import agents.PortfolioOpt;
@@ -1867,7 +1868,9 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new EquatePPS(5, .001,.1, .001, .1);
+		AbstractAgent agent = new AdjustPM(.001,.1, .001, .1, .4, .001,.1, .001, .1);
+		AbstractAgent agent2 = new AdjustPR(.001,.1, .001, .1, .4, .001,.1, .001, .1);
+		AbstractAgent agent3 = new AdjustPPS(.001,.1, .001, .1, .4, .001,.1, .001, .1);
 //		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12);
 //		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0);
 //		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9);
@@ -1875,10 +1878,12 @@ public class BasicSimulator {
 //		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9);
 //		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8);
 		agentList.add(agent);
+		agentList.add(agent2);
+		agentList.add(agent3);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent a : agentList) {
-			sim.runSimulations(baseFile,1425,1429,0,0, a);
+			sim.runSimulations(baseFile,1425,1426,0,0, a);
 		}
 
 		double stop = System.currentTimeMillis();

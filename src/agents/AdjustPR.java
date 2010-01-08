@@ -16,7 +16,7 @@ public class AdjustPR extends RuleBasedAgent {
 	protected HashMap<Query, Double> _salesDistribution;
 	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
-	protected final boolean DAILYBUDGET = true;
+	protected final boolean DAILYBUDGET = false;
 	protected double _alphaIncTS;
 	protected double _betaIncTS;
 	protected double _alphaDecTS;
