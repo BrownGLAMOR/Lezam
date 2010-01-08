@@ -227,6 +227,9 @@ public class AgentTuner {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
+		if(Double.isNaN(val) || val < 0) {
+			return 0.0;
+		}
 		return val;
 	}
 
@@ -255,7 +258,7 @@ public class AgentTuner {
 	}
 
 	public static void main(String[] args) {
-						AbstractAgent adjustPM = new AdjustPR(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+						AbstractAgent adjustPM = new AdjustPR(0, 0, 0, 0, 0, 0, 0, 0, 0);
 //						AbstractAgent adjustPM = new AdjustPM(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 //						AbstractAgent adjustPM = new AdjustPPS(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
@@ -314,12 +317,6 @@ public class AgentTuner {
 						}
 						parameters.add(betaDecPM);
 						
-						ArrayList<Double> budgetModifier = new ArrayList<Double>();
-						for(double val = .9; val < 1.5; val += .1) {
-							budgetModifier.add(val);
-						}
-						parameters.add(budgetModifier);
-				
 						AgentTuner tuner = new AgentTuner(adjustPM,parameters);
 						tuner.solveWithGA(10, 2, 50, 16);
 
