@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -9,10 +10,49 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class AdjustPM extends Goldilocks {
+public class AdjustPM extends RuleBasedAgent {
 
-	public AdjustPM(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
-		super(alphaIncTS, betaIncTS, alphaDecTS, betaDecTS,initPM,alphaIncPM,betaIncPM,alphaDecPM,betaDecPM,budgetModifier);
+	protected BidBundle _bidBundle;
+	protected HashMap<Query, Double> _salesDistribution;
+	protected final boolean TARGET = false;
+	protected final boolean BUDGET = false;
+	protected final boolean DAILYBUDGET = true;
+	protected double _alphaIncTS;
+	protected double _betaIncTS;
+	protected double _alphaDecTS;
+	protected double _betaDecTS;
+	protected double _alphaIncPM;
+	protected double _betaIncPM;
+	protected double _alphaDecPM;
+	protected double _betaDecPM;
+	protected double _initPM;
+	protected HashMap<Query, Double> _PM;
+	
+	public AdjustPM(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
+		_alphaIncTS = alphaIncTS;
+		_betaIncTS = betaIncTS;
+		_alphaDecTS = alphaDecTS;
+		_betaDecTS = betaDecTS;
+		_alphaIncPM = alphaIncPM;
+		_betaIncPM = betaIncPM;
+		_alphaDecPM = alphaDecPM;
+		_betaDecPM = betaDecPM;
+		_initPM = initPM;
+	}
+	
+	@Override
+	public void initBidder() {
+		super.initBidder();
+		
+		_PM = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_PM.put(q, _initPM);
+		}
+		
+		_salesDistribution = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_salesDistribution.put(q, 1.0/_querySpace.size());
+		}
 	}
 
 	@Override
@@ -33,15 +73,16 @@ public class AdjustPM extends Goldilocks {
 		 * Calculate Average PM
 		 */
 		double avgPM = 0.0;
-		int numPM = 0;
+		double totWeight = 0;
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				avgPM += (_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q);
-				numPM++;
+				double weight = _salesDistribution.get(q);
+				avgPM += ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getRevenue(q)) * weight;
+				totWeight+=weight;
 			}
 		}
-		avgPM /= numPM;
+		avgPM /= totWeight;
 		if(Double.isNaN(avgPM)) {
 			avgPM = _initPM;
 		}
@@ -116,7 +157,31 @@ public class AdjustPM extends Goldilocks {
 			conversion = _baselineConversion.get(q);
 		else
 			conversion = _conversionPrModel.getPrediction(q);
-		return _salesPrices.get(q)*(1 - _PM.get(q))*conversion;
+		double CPC = _salesPrices.get(q)*(1 - _PM.get(q))*conversion;
+		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		return CPC;
+	}
+	
+	protected void adjustPM() {
+		for(Query q : _querySpace) {
+			double tmp = _PM.get(q);
+			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
+				tmp *= (1+_alphaIncPM * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPM);
+			} else {
+				tmp *= (1-(_alphaDecPM * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPM));
+			}
+			_PM.put(q, tmp);
+		}
+	}
+	
+	@Override
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
+		if(_day >= 6 && _conversionPrModel != null) {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
+		}
+		else {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
+		}
 	}
 
 	@Override
@@ -126,7 +191,6 @@ public class AdjustPM extends Goldilocks {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPM(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM, _budgetModifier);
+		return new AdjustPM(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM);
 	}
-
 }

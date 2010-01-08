@@ -5,23 +5,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
-
 import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.bidtocpc.EnsembleBidToCPC;
-import newmodels.cpctobid.AbstractCPCToBid;
-import newmodels.cpctobid.BidToCPCInverter;
 import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.unitssold.BasicUnitsSoldLambdaModel;
-import newmodels.unitssold.BasicUnitsSoldModel;
-import newmodels.unitssold.UnitsSoldMovingAvg;
-
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -31,7 +20,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public abstract class RuleBasedAgent extends AbstractAgent {
 	protected double _dailyCapacity;
 	protected double _dailyQueryCapacity;
-	protected double _dailyCapacityLambda;
 	protected final int HIGH_CAPACITY = 500;
 	protected final int MEDIUM_CAPACITY = 400;
 	protected final int LOW_CAPACITY = 300;
@@ -43,7 +31,6 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected HashMap<Query, Double> _baseClickProbs;
 	protected HashMap<Query, Double> _salesPrices;
 	protected Random _R;
-	protected double _budgetModifier = 1.2;
 
 	@Override
 	public void initBidder() {
@@ -115,7 +102,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	public Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
 		setDailyQueryCapacity();
-		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,_dailyCapacityLambda);
+		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,1.0);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
 
@@ -157,51 +144,45 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	}
 
 	protected void setDailyQueryCapacity(){
-		_dailyCapacityLambda = 1.0;
-		//		if(_capacity >= HIGH_CAPACITY) {
-		//			_dailyCapacityLambda = 1.15;
-		//		}
-		//		else if(_capacity >= MEDIUM_CAPACITY) {
-		//			_dailyCapacityLambda = 1.25;
-		//		}
-		//		else {
-		//			_dailyCapacityLambda = 1.35;
-		//		}
 		if(_day < 5 ){
-			_dailyCapacity = _dailyCapacityLambda * (_capacity/((double)_capWindow));
+			_dailyCapacity = (_capacity/((double)_capWindow));
 		}
 		else {
 			//We do the max to ensure some degree of smoothness
-//			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (1/5.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
-			_dailyCapacity = Math.max(0.0,_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
+			//			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (1/5.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
+			_dailyCapacity = Math.max(0.0,_capacity - _unitsSoldModel.getWindowSold());
 		}
 		_dailyQueryCapacity = _dailyCapacity / _querySpace.size();
 	}
 
 	protected double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {
-			return _budgetModifier*targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
+			return targetCPC * _dailyQueryCapacity / _conversionPrModel.getPrediction(q);
 		}
 		else {
-			return _budgetModifier*targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
+			return targetCPC * _dailyQueryCapacity / _baselineConversion.get(q);
 		}
 	}
 
 	protected double getTotalSpendingLimit(BidBundle bundle) {
 		double targetCPC = 0;
 		double convPr = 0;
+		int numQueries = 0;
 		for(Query q : _querySpace) { 
-			targetCPC += bundle.getBid(q);
-			if(_day >= 6 && _conversionPrModel != null) {
-				convPr += _conversionPrModel.getPrediction(q);
-			}
-			else {
-				convPr += _baselineConversion.get(q);
+			if(bundle.getBid(q) > 0) {
+				targetCPC += bundle.getBid(q);
+				if(_day >= 6 && _conversionPrModel != null) {
+					convPr += _conversionPrModel.getPrediction(q);
+				}
+				else {
+					convPr += _baselineConversion.get(q);
+				}
+				numQueries++;
 			}
 		}
-		targetCPC /= _querySpace.size();
-		convPr /= _querySpace.size();
-		return _budgetModifier*targetCPC*_dailyCapacity/convPr;
+		targetCPC /= numQueries;
+		convPr /= numQueries;
+		return targetCPC*_dailyCapacity/convPr;
 	}
 
 	protected double getRandomBid(Query q) {

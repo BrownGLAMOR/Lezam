@@ -1867,17 +1867,18 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
+		AbstractAgent agent = new EquatePPS(5, .001,.1, .001, .1, 1.4);
 //		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12, 1.4);
 //		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0, 1.4);
 //		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9, 1.4);
 //		AbstractAgent agent = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8, 1.2);
 //		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9, 1.4);
 //		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8, 1.3);
-//		agentList.add(agent);
+		agentList.add(agent);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent a : agentList) {
-			sim.runSimulations(baseFile,1425,1465,0,0, a);
+			sim.runSimulations(baseFile,1425,1429,0,0, a);
 		}
 
 		double stop = System.currentTimeMillis();

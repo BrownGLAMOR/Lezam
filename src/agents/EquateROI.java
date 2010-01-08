@@ -3,7 +3,6 @@ package agents;
 
 import java.util.HashMap;
 import java.util.Set;
-
 import newmodels.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -13,25 +12,24 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EquatePM extends RuleBasedAgent{
+public class EquateROI extends RuleBasedAgent{
 	protected HashMap<Query, Double> _prClick;
 	protected BidBundle _bidBundle;
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
-	protected double _PM;
-	protected double _alphaIncPM;
-	protected double _betaIncPM;
-	protected double _alphaDecPM;
-	protected double _betaDecPM;
-	protected double _initPM;
+	protected double _ROI;
+	protected double _alphaIncROI;
+	protected double _betaIncROI;
+	protected double _alphaDecROI;
+	protected double _betaDecROI;
+	protected double _initROI;
 
-
-	public EquatePM(double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
-		_alphaIncPM = alphaIncPM;
-		_betaIncPM = betaIncPM;
-		_alphaDecPM = alphaDecPM;
-		_betaDecPM = betaDecPM;
-		_initPM = initPM;
+	public EquateROI(double initROI,double alphaIncROI,double betaIncROI,double alphaDecROI,double betaDecROI) {
+		_alphaIncROI = alphaIncROI;
+		_betaIncROI = betaIncROI;
+		_alphaDecROI = alphaDecROI;
+		_betaDecROI = betaDecROI;
+		_initROI = initROI;
 	}
 
 
@@ -57,17 +55,14 @@ public class EquatePM extends RuleBasedAgent{
 			}
 
 			if(sum <= _dailyCapacity) {
-				_PM *=  (1-(_alphaDecPM*Math.abs(sum - _dailyCapacity)  +  _betaDecPM));
+				_ROI *=  (1-(_alphaDecROI*Math.abs(sum - _dailyCapacity)  +  _betaDecROI));
 			}
 			else {
-				_PM *=  (1+_alphaIncPM*Math.abs(sum - _dailyCapacity)  +  _betaIncPM);
+				_ROI *=  (1+_alphaIncROI*Math.abs(sum - _dailyCapacity)  +  _betaIncROI);
 			}
 			
-			if(Double.isNaN(_PM) || _PM <= 0) {
-				_PM = _initPM;
-			}
-			if(_PM > 1.0) {
-				_PM = 1.0;
+			if(Double.isNaN(_ROI) || _ROI <= 0.0) {
+				_ROI = _initROI;
 			}
 		}
 
@@ -99,7 +94,7 @@ public class EquatePM extends RuleBasedAgent{
 		super.initBidder();
 		setDailyQueryCapacity();
 
-		_PM = _initPM;
+		_ROI = _initROI;
 
 		_prClick = new HashMap<Query, Double>();
 		for (Query query: _querySpace) {
@@ -134,7 +129,7 @@ public class EquatePM extends RuleBasedAgent{
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
 
-		double CPC = (1 - _PM)*rev* prConv;
+		double CPC = (rev * prConv)/(_ROI+1.0);
 		
 		CPC = Math.max(0.0, Math.min(3.5, CPC));
 		
@@ -143,12 +138,12 @@ public class EquatePM extends RuleBasedAgent{
 
 	@Override
 	public String toString() {
-		return "EquatePM";
+		return "EquateROI";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePM(_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM);
+		return new EquateROI(_initROI, _alphaIncROI, _betaIncROI, _alphaDecROI, _betaDecROI);
 	}
 
 }

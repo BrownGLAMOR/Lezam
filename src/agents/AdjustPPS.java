@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -9,10 +10,49 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class AdjustPPS extends Goldilocks {
+public class AdjustPPS extends RuleBasedAgent {
+	
+	protected BidBundle _bidBundle;
+	protected HashMap<Query, Double> _salesDistribution;
+	protected final boolean TARGET = false;
+	protected final boolean BUDGET = false;
+	protected final boolean DAILYBUDGET = true;
+	protected double _alphaIncTS;
+	protected double _betaIncTS;
+	protected double _alphaDecTS;
+	protected double _betaDecTS;
+	protected double _alphaIncPPS;
+	protected double _betaIncPPS;
+	protected double _alphaDecPPS;
+	protected double _betaDecPPS;
+	protected double _initPPS;
+	protected HashMap<Query, Double> _PPS;
 
-	public AdjustPPS(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
-		super(alphaIncTS, betaIncTS, alphaDecTS, betaDecTS,initPM,alphaIncPM,betaIncPM,alphaDecPM,betaDecPM,budgetModifier);
+	public AdjustPPS(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
+		_alphaIncTS = alphaIncTS;
+		_betaIncTS = betaIncTS;
+		_alphaDecTS = alphaDecTS;
+		_betaDecTS = betaDecTS;
+		_alphaIncPPS = alphaIncPPS;
+		_betaIncPPS = betaIncPPS;
+		_alphaDecPPS = alphaDecPPS;
+		_betaDecPPS = betaDecPPS;
+		_initPPS = initPPS;
+	}
+	
+	@Override
+	public void initBidder() {
+		super.initBidder();
+		
+		_PPS = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_PPS.put(q, _initPPS);
+		}
+		
+		_salesDistribution = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_salesDistribution.put(q, 1.0/_querySpace.size());
+		}
 	}
 
 	@Override
@@ -33,18 +73,19 @@ public class AdjustPPS extends Goldilocks {
 		 * Calculate Average PPS
 		 */
 		double avgPPS = 0.0;
-		int numPPS = 0;
+		double totWeight = 0;
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0 &&
 					_salesReport.getConversions(q) != 0) { //the last check is unnecessary, but safe
-				avgPPS += (_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q);
-				numPPS++;
+				double weight = _salesDistribution.get(q);
+				avgPPS += ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q))*weight;
+				totWeight+=weight;
 			}
 		}
-		avgPPS /= numPPS;
+		avgPPS /= totWeight;
 		if(Double.isNaN(avgPPS)) {
-			avgPPS = 7.5;
+			avgPPS = _initPPS;
 		}
 
 		/*
@@ -79,10 +120,10 @@ public class AdjustPPS extends Goldilocks {
 		}
 
 		/*
-		 * Adjust PM
+		 * Adjust PPS
 		 */
 		if(_day > 1) {
-			adjustPM();
+			adjustPPS();
 		}
 
 		for (Query query : _querySpace) {
@@ -111,14 +152,39 @@ public class AdjustPPS extends Goldilocks {
 
 		return _bidBundle;
 	}
-
-	protected double getTargetCPC(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
+	
+	protected double getTargetCPC(Query q){		
+		double prConv;
+		if(_day <= 6)
+			prConv = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
-		return _salesPrices.get(q)*(1 - _PM.get(q))*conversion;
+			prConv = _conversionPrModel.getPrediction(q);
+		double rev = _salesPrices.get(q);
+		double CPC = (rev - _PPS.get(q))* prConv;
+		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		return CPC;
+	}
+
+	protected void adjustPPS() {
+		for(Query q : _querySpace) {
+			double tmp = _PPS.get(q);
+			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
+				tmp *= (1+_alphaIncPPS * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPPS);
+			} else {
+				tmp *= (1-(_alphaDecPPS * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPPS));
+			}
+			_PPS.put(q, tmp);
+		}
+	}
+	
+	@Override
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
+		if(_day >= 6 && _conversionPrModel != null) {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
+		}
+		else {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
+		}
 	}
 
 	@Override
@@ -128,6 +194,6 @@ public class AdjustPPS extends Goldilocks {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPPS(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM, _budgetModifier);
+		return new AdjustPPS(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPPS, _alphaIncPPS, _betaIncPPS, _alphaDecPPS, _betaDecPPS);
 	}
 }

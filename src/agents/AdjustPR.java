@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import newmodels.AbstractModel;
@@ -9,10 +10,49 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class AdjustPR extends Goldilocks {
+public class AdjustPR extends RuleBasedAgent {
+	
+	protected BidBundle _bidBundle;
+	protected HashMap<Query, Double> _salesDistribution;
+	protected final boolean TARGET = false;
+	protected final boolean BUDGET = false;
+	protected final boolean DAILYBUDGET = true;
+	protected double _alphaIncTS;
+	protected double _betaIncTS;
+	protected double _alphaDecTS;
+	protected double _betaDecTS;
+	protected double _alphaIncPR;
+	protected double _betaIncPR;
+	protected double _alphaDecPR;
+	protected double _betaDecPR;
+	protected double _initPR;
+	protected HashMap<Query, Double> _PR;
 
-	public AdjustPR(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM, double budgetModifier) {
-		super(alphaIncTS, betaIncTS, alphaDecTS, betaDecTS,initPM,alphaIncPM,betaIncPM,alphaDecPM,betaDecPM,budgetModifier);
+	public AdjustPR(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
+		_alphaIncTS = alphaIncTS;
+		_betaIncTS = betaIncTS;
+		_alphaDecTS = alphaDecTS;
+		_betaDecTS = betaDecTS;
+		_alphaIncPR = alphaIncPR;
+		_betaIncPR = betaIncPR;
+		_alphaDecPR = alphaDecPR;
+		_betaDecPR = betaDecPR;
+		_initPR = initPR;
+	}
+	
+	@Override
+	public void initBidder() {
+		super.initBidder();
+		
+		_PR = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_PR.put(q, _initPR);
+		}
+		
+		_salesDistribution = new HashMap<Query, Double>();
+		for (Query q : _querySpace) {
+			_salesDistribution.put(q, 1.0/_querySpace.size());
+		}
 	}
 
 	@Override
@@ -33,16 +73,19 @@ public class AdjustPR extends Goldilocks {
 		 * Calculate Average PR
 		 */
 		double avgPR = 0.0;
+		double totWeight = 0;
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				avgPR += _salesReport.getRevenue(q)/_queryReport.getCost(q);
-			}
-			else {
-				avgPR += 1;
+				double weight = _salesDistribution.get(q);
+				avgPR += (_salesReport.getRevenue(q)/_queryReport.getCost(q))*weight;
+				totWeight+=weight;
 			}
 		}
-		avgPR /= _querySpace.size();
+		avgPR /= totWeight;
+		if(Double.isNaN(avgPR)) {
+			avgPR = _initPR;
+		}
 
 		/*
 		 * Adjust Target Sales
@@ -78,7 +121,7 @@ public class AdjustPR extends Goldilocks {
 		 * Adjust PM
 		 */
 		if(_day > 1) {
-			adjustPM();
+			adjustPR();
 		}
 
 		for (Query query : _querySpace) {
@@ -107,14 +150,39 @@ public class AdjustPR extends Goldilocks {
 
 		return _bidBundle;
 	}
-
-	protected double getTargetCPC(Query q) {
-		double conversion;
-		if (_day <= 6)
-			conversion = _baselineConversion.get(q);
+	
+	protected double getTargetCPC(Query q){		
+		double prConv;
+		if(_day <= 6)
+			prConv = _baselineConversion.get(q);
 		else
-			conversion = _conversionPrModel.getPrediction(q);
-		return _salesPrices.get(q)*(1 - _PM.get(q))*conversion;
+			prConv = _conversionPrModel.getPrediction(q);
+		double rev = _salesPrices.get(q);
+		double CPC = (rev * prConv)/_PR.get(q);
+		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		return CPC;
+	}
+
+	protected void adjustPR() {
+		for(Query q : _querySpace) {
+			double tmp = _PR.get(q);
+			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
+				tmp *= (1+_alphaIncPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPR);
+			} else {
+				tmp *= (1-(_alphaDecPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPR));
+			}
+			_PR.put(q, tmp);
+		}
+	}
+	
+	@Override
+	protected double getDailySpendingLimit(Query q, double targetCPC) {
+		if(_day >= 6 && _conversionPrModel != null) {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
+		}
+		else {
+			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
+		}
 	}
 
 	@Override
@@ -124,7 +192,7 @@ public class AdjustPR extends Goldilocks {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPR(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM, _budgetModifier);
+		return new AdjustPR(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPR, _alphaIncPR, _betaIncPR, _alphaDecPR, _betaDecPR);
 	}
 
 }

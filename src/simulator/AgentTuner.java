@@ -19,9 +19,9 @@ import agents.EquatePR;
 
 public class AgentTuner {
 
-	String baseFile = "/Users/jordanberg/Desktop/finalsday1/server1/game";
-	int _min = 1299;
-	int _max = 1300;
+	String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+	int _min = 1430;
+	int _max = 172;
 	private AbstractAgent _agent;
 	private ArrayList<ArrayList<Double>> _parameters;
 	private Random _random;
@@ -255,157 +255,157 @@ public class AgentTuner {
 	}
 
 	public static void main(String[] args) {
-		//		AbstractAgent adjustPM = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8, 1.2);
-		//		AbstractAgent adjustPM = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9, 1.4);
-		//		AbstractAgent adjustPM = new AdjustPPS(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> alphaIncTS = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaIncTS.add(val);
-		//		}
-		//		parameters.add(alphaIncTS);
-		//
-		//		ArrayList<Double> betaIncTS = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaIncTS.add(val);
-		//		}
-		//		parameters.add(betaIncTS);
-		//
-		//		ArrayList<Double> alphaDecTS = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaDecTS.add(val);
-		//		}
-		//		parameters.add(alphaDecTS);
-		//
-		//		ArrayList<Double> betaDecTS = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaDecTS.add(val);
-		//		}
-		//		parameters.add(betaDecTS);
-		//
-		//		ArrayList<Double> initPM = new ArrayList<Double>();
-		//		for(double val = .4; val < .71; val += .1) {
-		//			initPM.add(val);
-		//		}
-		//		parameters.add(initPM);
-		//		
-		//		ArrayList<Double> alphaIncPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaIncPM.add(val);
-		//		}
-		//		parameters.add(alphaIncPM);
-		//
-		//		ArrayList<Double> betaIncPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaIncPM.add(val);
-		//		}
-		//		parameters.add(betaIncPM);
-		//
-		//		ArrayList<Double> alphaDecPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaDecPM.add(val);
-		//		}
-		//		parameters.add(alphaDecPM);
-		//
-		//		ArrayList<Double> betaDecPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaDecPM.add(val);
-		//		}
-		//		parameters.add(betaDecPM);
-		//		
-		//		ArrayList<Double> budgetModifier = new ArrayList<Double>();
-		//		for(double val = .9; val < 1.5; val += .1) {
-		//			budgetModifier.add(val);
-		//		}
-		//		parameters.add(budgetModifier);
-		//
-		//		AgentTuner tuner = new AgentTuner(adjustPM,parameters);
-		//		tuner.solveWithGA(8, 2, 50, 16);
+						AbstractAgent adjustPM = new AdjustPR(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//						AbstractAgent adjustPM = new AdjustPM(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//						AbstractAgent adjustPM = new AdjustPPS(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+				
+						ArrayList<Double> alphaIncTS = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							alphaIncTS.add(val);
+						}
+						parameters.add(alphaIncTS);
+				
+						ArrayList<Double> betaIncTS = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							betaIncTS.add(val);
+						}
+						parameters.add(betaIncTS);
+				
+						ArrayList<Double> alphaDecTS = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							alphaDecTS.add(val);
+						}
+						parameters.add(alphaDecTS);
+				
+						ArrayList<Double> betaDecTS = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							betaDecTS.add(val);
+						}
+						parameters.add(betaDecTS);
+				
+						ArrayList<Double> initPM = new ArrayList<Double>();
+						for(double val = .4; val < .71; val += .1) {
+							initPM.add(val);
+						}
+						parameters.add(initPM);
+						
+						ArrayList<Double> alphaIncPM = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							alphaIncPM.add(val);
+						}
+						parameters.add(alphaIncPM);
+				
+						ArrayList<Double> betaIncPM = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							betaIncPM.add(val);
+						}
+						parameters.add(betaIncPM);
+				
+						ArrayList<Double> alphaDecPM = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							alphaDecPM.add(val);
+						}
+						parameters.add(alphaDecPM);
+				
+						ArrayList<Double> betaDecPM = new ArrayList<Double>();
+						for(double val = 0; val <= 2.0; val += .1) {
+							betaDecPM.add(val);
+						}
+						parameters.add(betaDecPM);
+						
+						ArrayList<Double> budgetModifier = new ArrayList<Double>();
+						for(double val = .9; val < 1.5; val += .1) {
+							budgetModifier.add(val);
+						}
+						parameters.add(budgetModifier);
+				
+						AgentTuner tuner = new AgentTuner(adjustPM,parameters);
+						tuner.solveWithGA(10, 2, 50, 16);
 
-		//		AbstractAgent equatePM = new EquatePM(.4, .9, 1.2, .4, .9, 1.4);
-		//		ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//
-		//		ArrayList<Double> initPM = new ArrayList<Double>();
-		//		for(double val = .4; val < .71; val += .1) {
-		//			initPM.add(val);
-		//		}
-		//		parameters.add(initPM);
-		//
-		//		ArrayList<Double> alphaIncPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaIncPM.add(val);
-		//		}
-		//		parameters.add(alphaIncPM);
-		//
-		//		ArrayList<Double> betaIncPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaIncPM.add(val);
-		//		}
-		//		parameters.add(betaIncPM);
-		//
-		//		ArrayList<Double> alphaDecPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			alphaDecPM.add(val);
-		//		}
-		//		parameters.add(alphaDecPM);
-		//
-		//		ArrayList<Double> betaDecPM = new ArrayList<Double>();
-		//		for(double val = -2; val <= 2.0; val += .2) {
-		//			betaDecPM.add(val);
-		//		}
-		//		parameters.add(betaDecPM);
-		//		
-		//		ArrayList<Double> budgetModifier = new ArrayList<Double>();
-		//		for(double val = .9; val < 1.5; val += .1) {
-		//			budgetModifier.add(val);
-		//		}
-		//		parameters.add(budgetModifier);
-		//
-		//		AgentTuner tuner = new AgentTuner(equatePM,parameters);
-		//		tuner.solveWithGA(8, 2, 50, 16);
+//						AbstractAgent equatePM = new EquatePM(.4, .9, 1.2, .4, .9, 1.4);
+//						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//				
+//						ArrayList<Double> initPM = new ArrayList<Double>();
+//						for(double val = .4; val < .71; val += .1) {
+//							initPM.add(val);
+//						}
+//						parameters.add(initPM);
+//				
+//						ArrayList<Double> alphaIncPM = new ArrayList<Double>();
+//						for(double val = 0; val <= 2.0; val += .1) {
+//							alphaIncPM.add(val);
+//						}
+//						parameters.add(alphaIncPM);
+//				
+//						ArrayList<Double> betaIncPM = new ArrayList<Double>();
+//						for(double val = 0; val <= 2.0; val += .1) {
+//							betaIncPM.add(val);
+//						}
+//						parameters.add(betaIncPM);
+//				
+//						ArrayList<Double> alphaDecPM = new ArrayList<Double>();
+//						for(double val = 0; val <= 2.0; val += .1) {
+//							alphaDecPM.add(val);
+//						}
+//						parameters.add(alphaDecPM);
+//				
+//						ArrayList<Double> betaDecPM = new ArrayList<Double>();
+//						for(double val = 0; val <= 2.0; val += .1) {
+//							betaDecPM.add(val);
+//						}
+//						parameters.add(betaDecPM);
+//						
+//						ArrayList<Double> budgetModifier = new ArrayList<Double>();
+//						for(double val = .9; val < 1.5; val += .1) {
+//							budgetModifier.add(val);
+//						}
+//						parameters.add(budgetModifier);
+//				
+//						AgentTuner tuner = new AgentTuner(equatePM,parameters);
+//						tuner.solveWithGA(10, 2, 50, 16);
 
-		//				AbstractAgent equatePR = new EquatePR(2.0, .95, 1.25, 1.0, 10.0, 1.4);
-		//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//		
-		//				ArrayList<Double> initPR = new ArrayList<Double>();
-		//				for(double val = 1.2; val < 2.8; val += .2) {
-		//					initPR.add(val);
-		//				}
-		//				parameters.add(initPR);
-		//		
-		//				ArrayList<Double> alphaIncPR = new ArrayList<Double>();
-		//				for(double val = -2; val <= 2.0; val += .2) {
-		//					alphaIncPR.add(val);
-		//				}
-		//				parameters.add(alphaIncPR);
-		//
-		//				ArrayList<Double> betaIncPR = new ArrayList<Double>();
-		//				for(double val = -2; val <= 2.0; val += .2) {
-		//					betaIncPR.add(val);
-		//				}
-		//				parameters.add(betaIncPR);
-		//
-		//				ArrayList<Double> alphaDecPR = new ArrayList<Double>();
-		//				for(double val = -2; val <= 2.0; val += .2) {
-		//					alphaDecPR.add(val);
-		//				}
-		//				parameters.add(alphaDecPR);
-		//
-		//				ArrayList<Double> betaDecPR = new ArrayList<Double>();
-		//				for(double val = -2; val <= 2.0; val += .2) {
-		//					betaDecPR.add(val);
-		//				}
-		//				parameters.add(betaDecPR);
-		//		
-		//				ArrayList<Double> budgetModifier = new ArrayList<Double>();
-		//				for(double val = .9; val < 1.5; val += .1) {
-		//					budgetModifier.add(val);
-		//				}
-		//				parameters.add(budgetModifier);
-		//		
-		//				AgentTuner tuner = new AgentTuner(equatePR,parameters);
-		//				tuner.solveWithGA(8, 2, 50, 16);
+//								AbstractAgent equatePR = new EquatePR(2.0, .95, 1.25, 1.0, 10.0, 1.4);
+//								ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//						
+//								ArrayList<Double> initPR = new ArrayList<Double>();
+//								for(double val = 1.2; val < 2.8; val += .2) {
+//									initPR.add(val);
+//								}
+//								parameters.add(initPR);
+//						
+//								ArrayList<Double> alphaIncPR = new ArrayList<Double>();
+//								for(double val = 0; val <= 2.0; val += .1) {
+//									alphaIncPR.add(val);
+//								}
+//								parameters.add(alphaIncPR);
+//				
+//								ArrayList<Double> betaIncPR = new ArrayList<Double>();
+//								for(double val = 0; val <= 2.0; val += .1) {
+//									betaIncPR.add(val);
+//								}
+//								parameters.add(betaIncPR);
+//				
+//								ArrayList<Double> alphaDecPR = new ArrayList<Double>();
+//								for(double val = 0; val <= 2.0; val += .1) {
+//									alphaDecPR.add(val);
+//								}
+//								parameters.add(alphaDecPR);
+//				
+//								ArrayList<Double> betaDecPR = new ArrayList<Double>();
+//								for(double val = 0; val <= 2.0; val += .1) {
+//									betaDecPR.add(val);
+//								}
+//								parameters.add(betaDecPR);
+//						
+//								ArrayList<Double> budgetModifier = new ArrayList<Double>();
+//								for(double val = .9; val < 1.5; val += .1) {
+//									budgetModifier.add(val);
+//								}
+//								parameters.add(budgetModifier);
+//						
+//								AgentTuner tuner = new AgentTuner(equatePR,parameters);
+//								tuner.solveWithGA(10, 2, 50, 16);
 
 
 //		AbstractAgent equatePPS = new EquatePPS(5, .95, 1.2, 8, 12, 1.4);
@@ -418,25 +418,25 @@ public class AgentTuner {
 //		parameters.add(initPPS);
 //
 //		ArrayList<Double> alphaIncPPS = new ArrayList<Double>();
-//		for(double val = -2; val <= 2.0; val += .2) {
+//		for(double val = 0; val <= 2.0; val += .1) {
 //			alphaIncPPS.add(val);
 //		}
 //		parameters.add(alphaIncPPS);
 //
 //		ArrayList<Double> betaIncPPS = new ArrayList<Double>();
-//		for(double val = -2; val <= 2.0; val += .2) {
+//		for(double val = 0; val <= 2.0; val += .1) {
 //			betaIncPPS.add(val);
 //		}
 //		parameters.add(betaIncPPS);
 //
 //		ArrayList<Double> alphaDecPPS = new ArrayList<Double>();
-//		for(double val = -2; val <= 2.0; val += .2) {
+//		for(double val = 0; val <= 2.0; val += .1) {
 //			alphaDecPPS.add(val);
 //		}
 //		parameters.add(alphaDecPPS);
 //
 //		ArrayList<Double> betaDecPPS = new ArrayList<Double>();
-//		for(double val = -2; val <= 2.0; val += .2) {
+//		for(double val = 0; val <= 2.0; val += .1) {
 //			betaDecPPS.add(val);
 //		}
 //		parameters.add(betaDecPPS);
@@ -448,7 +448,7 @@ public class AgentTuner {
 //		parameters.add(budgetModifier);
 //
 //		AgentTuner tuner = new AgentTuner(equatePPS,parameters);
-//		tuner.solveWithGA(8, 2, 50, 16);
+//		tuner.solveWithGA(10, 2, 50, 16);
 	}
 
 }

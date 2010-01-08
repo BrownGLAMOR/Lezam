@@ -29,7 +29,6 @@ public class GoodSlot extends RuleBasedAgent {
 	protected double initPM = .4;
 	
 	public GoodSlot() {
-		_budgetModifier = 1.5;
 	}
 
 	@Override
