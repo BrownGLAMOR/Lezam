@@ -385,7 +385,7 @@ public class MCKPPos extends AbstractAgent {
 					int isID = _queryId.get(q);
 					double w = numClicks*convProb;				//weight = numClciks * convProv
 					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,pos,false,isID));
+					itemList.add(new Item(q,w,v,pos,false,isID,i));
 
 					if(TARGET) {
 						/*
@@ -402,7 +402,7 @@ public class MCKPPos extends AbstractAgent {
 						w = numClicks*convProb;				//weight = numClciks * convProv
 						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
-						itemList.add(new Item(q,w,v,pos,true,isID));
+						itemList.add(new Item(q,w,v,pos,true,isID,i));
 					}
 				}
 				debug("Items for " + q);
@@ -674,7 +674,7 @@ public class MCKPPos extends AbstractAgent {
 						minBid = bid;
 					}
 				}
-				Item newItem = new Item(item.q(), item.w(), item.v(), (maxBid+minBid)/2.0, item.targ(), item.isID());
+				Item newItem = new Item(item.q(), item.w(), item.v(), (maxBid+minBid)/2.0, item.targ(), item.isID(),item.idx());
 				betterTemp.add(newItem);
 			}
 		}
@@ -685,7 +685,7 @@ public class MCKPPos extends AbstractAgent {
 
 		//remove lp-dominated items
 		LinkedList<Item> q = new LinkedList<Item>();
-		q.add(new Item(new Query(),0,0,-1,false,1));//add item with zero weight and value
+		q.add(new Item(new Query(),0,0,-1,false,1,0));//add item with zero weight and value
 
 		for(int i=0; i<items.length; i++) {
 			q.add(items[i]);//has at least 2 items now

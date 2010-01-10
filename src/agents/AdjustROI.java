@@ -94,7 +94,7 @@ public class AdjustROI extends RuleBasedAgent {
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				if (_salesReport.getRevenue(q)/_queryReport.getCost(q) < avgROI) {
+				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_queryReport.getCost(q) < avgROI) {
 					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgROI) +  _betaDecTS)));
 				}
 				else {
@@ -165,6 +165,9 @@ public class AdjustROI extends RuleBasedAgent {
 				tmp *= (1+_alphaIncROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncROI);
 			} else {
 				tmp *= (1-(_alphaDecROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecROI));
+			}
+			if(Double.isNaN(tmp) || tmp <= 0.0) {
+				tmp = _initROI;
 			}
 			_ROI.put(q, tmp);
 		}

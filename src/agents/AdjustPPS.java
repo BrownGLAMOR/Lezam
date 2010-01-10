@@ -169,6 +169,12 @@ public class AdjustPPS extends RuleBasedAgent {
 			} else {
 				tmp *= (1-(_alphaDecPPS * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPPS));
 			}
+			if(Double.isNaN(tmp) || tmp <= 0) {
+				tmp = _initPPS;
+			}
+			if(tmp > 15.0) {
+				tmp = 15.0;
+			}
 			_PPS.put(q, tmp);
 		}
 	}

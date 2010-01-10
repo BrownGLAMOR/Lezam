@@ -166,6 +166,12 @@ public class AdjustPR extends RuleBasedAgent {
 			} else {
 				tmp *= (1-(_alphaDecPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPR));
 			}
+			if(Double.isNaN(tmp)) {
+				tmp = _initPR;
+			}
+			if(tmp <= 1.0) {
+				tmp = 1.0;
+			}
 			_PR.put(q, tmp);
 		}
 	}

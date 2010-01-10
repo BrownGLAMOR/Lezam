@@ -46,7 +46,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPBid extends AbstractAgent {
+public class MCKPBidNoDomElim extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
@@ -79,7 +79,7 @@ public class MCKPBid extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
-	public MCKPBid() {
+	public MCKPBidNoDomElim() {
 		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
@@ -651,8 +651,9 @@ public class MCKPBid extends AbstractAgent {
 			debug("\t" + items[i]);
 		}
 
-		Item[] uItems = getUndominated(items);
-
+//		Item[] uItems = getUndominated(items);
+		Item[] uItems = items;
+		
 		debug("UNDOMINATED");
 		for(int i = 0; i < uItems.length; i++) {
 			debug("\t" + uItems[i]);
@@ -693,7 +694,7 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid();
+		return new MCKPBidNoDomElim();
 	}
 
 }
