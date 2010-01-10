@@ -636,41 +636,41 @@ public class AgentTuner {
 		//						tuner.solveWithGA(25, 10, 100, 12);
 
 
-		//				AbstractAgent equateROI = new EquateROI(0,0,0,0,0);
-		//				ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
-		//		
-		//				ArrayList<Double> initROI = new ArrayList<Double>();
-		//				for(double val = 1.5; val < 3.5; val += .2) {
-		//					initROI.add(val);
-		//				}
-		//				parameters.add(initROI);
-		//		
-		//				ArrayList<Double> alphaIncROI = new ArrayList<Double>();
-		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaIncROI.add(val);
-		//				}
-		//				parameters.add(alphaIncROI);
-		//		
-		//				ArrayList<Double> betaIncROI = new ArrayList<Double>();
-		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaIncROI.add(val);
-		//				}
-		//				parameters.add(betaIncROI);
-		//		
-		//				ArrayList<Double> alphaDecROI = new ArrayList<Double>();
-		//				for(double val = -.01; val <= .011; val += .001) {
-		//					alphaDecROI.add(val);
-		//				}
-		//				parameters.add(alphaDecROI);
-		//		
-		//				ArrayList<Double> betaDecROI = new ArrayList<Double>();
-		//				for(double val = -.3; val <= .31; val += .033333) {
-		//					betaDecROI.add(val);
-		//				}
-		//				parameters.add(betaDecROI);
-		//		
-		//				AgentTuner tuner = new AgentTuner(equateROI,parameters);
-		//				tuner.solveWithGA(25, 10, 100, 12);
+//						AbstractAgent equateROI = new EquateROI(0,0,0,0,0);
+//						ArrayList<ArrayList<Double>> parameters = new ArrayList<ArrayList<Double>>();
+//				
+//						ArrayList<Double> initROI = new ArrayList<Double>();
+//						for(double val = 1.5; val < 3.5; val += .2) {
+//							initROI.add(val);
+//						}
+//						parameters.add(initROI);
+//				
+//						ArrayList<Double> alphaIncROI = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaIncROI.add(val);
+//						}
+//						parameters.add(alphaIncROI);
+//				
+//						ArrayList<Double> betaIncROI = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaIncROI.add(val);
+//						}
+//						parameters.add(betaIncROI);
+//				
+//						ArrayList<Double> alphaDecROI = new ArrayList<Double>();
+//						for(double val = -.01; val <= .011; val += .001) {
+//							alphaDecROI.add(val);
+//						}
+//						parameters.add(alphaDecROI);
+//				
+//						ArrayList<Double> betaDecROI = new ArrayList<Double>();
+//						for(double val = -.3; val <= .31; val += .033333) {
+//							betaDecROI.add(val);
+//						}
+//						parameters.add(betaDecROI);
+//				
+//						AgentTuner tuner = new AgentTuner(equateROI,parameters);
+//						tuner.solveWithGA(25, 10, 100, 12);
 	}
 
 }

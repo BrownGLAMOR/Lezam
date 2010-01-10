@@ -76,12 +76,11 @@ public class MCKPBid extends AbstractAgent {
 	private BasicTargetModel _targModel;
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> bidList;
-	private int _capacityInc = 10;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
-//		_R.setSeed(124962748);
+		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
@@ -490,48 +489,26 @@ public class MCKPBid extends AbstractAgent {
 		return solution;
 	}
 
+	/*
+	 *TODO
+	 *change incItems to an ArrayList
+	 */
 	private HashMap<Integer,Item> fillKnapsackWithCapExt(LinkedList<IncItem> incItems, double budget){
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
-		LinkedList<IncItem> temp = new LinkedList<IncItem>();
 
-		boolean incremented = false;
-		double valueLost = 0;
-		double valueGained = 0;
-		int knapSackIter = 0;
+		int expectedConvs = 0;
+		double numOverCap = 0;
 
-		for(IncItem ii: incItems) {
-			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
-			//set replace lighter items as we want
-			//			if(budget >= ii.w()) {
-			if(budget >= 0) {
-				if (incremented) {
-					temp.addLast(ii);
-					budget -= ii.w();
-					debug("Temporarily adding: " + ii);
-					valueGained += ii.v(); //amount gained as a result of extending capacity
-				}
-				else {
-					//					debug("adding item" + ii.item());
-					solution.put(ii.item().isID(), ii.item());
-					budget -= ii.w();
-				}
+		for(int i =0; i < incItems.size(); i++) {
+			IncItem ii = incItems.get(i);
+			if(budget >= expectedConvs + ii.w()) {
+				solution.put(ii.item().isID(), ii.item());
+				expectedConvs += ii.w();
 			}
-			else{
-				if (incremented) {
-					if (valueGained >= valueLost) { //checks to see if it was worth extending our capacity
-						while (!temp.isEmpty()){
-							IncItem inc = temp.poll();
-							//							debug("adding item over capacity " + inc.item());
-							solution.put(inc.item().isID(), inc.item());
-						}
-						valueLost = 0;
-						valueGained = 0;
-					}
-					else {
-						debug("Not worth overselling anymore");
-						break;
-					}
-				}
+			else {
+				double min = numOverCap;
+				numOverCap = expectedConvs + ii.w() - budget;
+				double max = numOverCap;
 
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
@@ -554,16 +531,20 @@ public class MCKPBid extends AbstractAgent {
 				}
 
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
-				for (int i = _capacityInc*knapSackIter+1; i <= _capacityInc*(knapSackIter+1); i++){
-					double iD = Math.pow(LAMBDA, i);
+				double valueLost = 0;
+				for (double j = min+1; j <= max; j++){
+					double iD = Math.pow(LAMBDA, j);
 					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 					valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
-					debug("Adding " + ((avgConvProb - worseConvProb)*avgUSP*valueLostWindow) + " to value lost");
 				}
-				debug("Total value lost: " + valueLost);
-				budget+=_capacityInc;
-				incremented = true;
-				knapSackIter++;
+
+				if(ii.v() > valueLost) {
+					solution.put(ii.item().isID(), ii.item());
+					expectedConvs += ii.w();
+				}
+				else {
+					break;
+				}
 			}
 		}
 		return solution;
@@ -706,7 +687,7 @@ public class MCKPBid extends AbstractAgent {
 	public String toString() {
 		return "MCKPBid";
 	}
-	
+
 	@Override
 	public AbstractAgent getCopy() {
 		return new MCKPBid();

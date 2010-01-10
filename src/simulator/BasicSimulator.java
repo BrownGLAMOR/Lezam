@@ -50,6 +50,7 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import usermodel.UserState;
 import agents.AdjustPR;
+import agents.AdjustROI;
 import agents.Cheap;
 import agents.AdjustPM;
 import agents.ClickProfitC;
@@ -1874,22 +1875,22 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new AdjustPM(.001,.1, .001, .1, .4, .001,.1, .001, .1);
-		AbstractAgent agent2 = new AdjustPR(.001,.1, .001, .1, .4, .001,.1, .001, .1);
-		AbstractAgent agent3 = new AdjustPPS(.001,.1, .001, .1, .4, .001,.1, .001, .1);
-		//		AbstractAgent agent = new EquatePPS(5, .95, 1.2, 8, 12);
-		//		AbstractAgent agent = new EquatePR(2.0, .95, 1.25, 1.0, 10.0);
-		//		AbstractAgent agent = new EquatePM(.4, .9, 1.2, .4, .9);
-		//		AbstractAgent agent = new AdjustPR(1.2, .8, .6, .85, 1.05, .2, .8);
-		//		AbstractAgent agent = new AdjustPM(1.15, .9, .4, .9, 1.2, .4, .9);
-		//		AbstractAgent agent = new AdjustPPS(1.2, .75, .7, .9, 1.1, .2, .8);
+		AbstractAgent agent = new MCKPBid();
+//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+		
+//		AbstractAgent agent = new AdjustPM(-0.0060,-0.20000099999999998,0.0020,-0.13333499999999998,0.9000000000000002,0.0,0.29999400000000004,-0.0020,0.13332900000000003);
+//		AbstractAgent agent = new AdjustPR(0.0070,0.29999400000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0050,0.09999600000000003,0.0070,-0.23333399999999999);
+//		AbstractAgent agent = new AdjustPPS(-0.01,-0.20000099999999998,-0.01,-0.23333399999999999,10.5,-0.0060,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+//		AbstractAgent agent = new AdjustROI(-0.009000000000000001,-0.3,-0.0010,-0.03333599999999998,3.100000000000001,-0.0010,0.033330000000000026,-0.0040,-0.06666899999999998);
+//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0030,0.06666300000000003,0.009000000000000001,-0.266667);
+//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.23333399999999999);
+//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
+//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
 		agentList.add(agent);
-		agentList.add(agent2);
-		agentList.add(agent3);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
-		for(AbstractAgent a : agentList) {
-			sim.runSimulations(baseFile,1425,1426,0,0, a);
+		for(AbstractAgent agentItr : agentList) {
+			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();
