@@ -285,8 +285,6 @@ public class MCKPBid extends AbstractAgent {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
 
-		System.out.println("Day: " + _day);
-
 		if(_day > 1) {
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
