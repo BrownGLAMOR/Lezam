@@ -1,18 +1,27 @@
 package agents.mckp;
 
 public class IncItem implements Comparable<IncItem>{
-	Item _item;
+	Item _itemHigh,_itemLow;
 	double _w;
 	double _v;
 	
-	public IncItem(double w, double v, Item item) {
-		_item = item;
+	public IncItem(double w, double v, Item itemHigh, Item itemLow) {
+		_itemHigh = itemHigh;
+		_itemLow = itemLow;
 		_w = w;
 		_v = v;
 	}
 	
 	public Item item() {
-		return _item;
+		return _itemHigh;
+	}
+	
+	public Item itemHigh() {
+		return _itemHigh;
+	}
+	
+	public Item itemLow() {
+		return _itemLow;
 	}
 	
 	public double w() {
@@ -44,7 +53,7 @@ public class IncItem implements Comparable<IncItem>{
 	}
 	
 	public String toString() {
-		return _item.q()+" [W: " + _w + ", V: " + _v + ", B: " + _item.b() + "]";
+		return _itemHigh.q()+" [W: " + _w + ", V: " + _v + ", E: " + (_v/_w) + ", B: " + _itemHigh.b() + "]";
 	}
 
 }

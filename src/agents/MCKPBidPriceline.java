@@ -287,7 +287,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
 
-//		System.out.println("Day: " + _day);
+		//		System.out.println("Day: " + _day);
 
 		if(_day > 1) {
 			if(!salesDistFlag) {
@@ -504,7 +504,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 		int expectedConvs = 0;
 		double numOverCap = 0;
 
-		for(int i =0; i < incItems.size(); i++) {
+		for(int i = 0; i < incItems.size(); i++) {
 			IncItem ii = incItems.get(i);
 			if(budget >= expectedConvs + ii.w()) {
 				solution.put(ii.item().isID(), ii.item());
@@ -546,24 +546,24 @@ public class MCKPBidPriceline extends AbstractAgent {
 				if(ii.v() > valueLost) {
 					solution.put(ii.item().isID(), ii.item());
 					expectedConvs += ii.w();
-//					System.out.println("Incrementing capacity, resorting above index: " + i);
+					//					System.out.println("Incrementing capacity, resorting above index: " + i);
 					double overCap = expectedConvs-budget;
 					double penalty = Math.pow(LAMBDA, overCap);
 					List<IncItem> restOfItems = incItems.subList(i+1,incItems.size());
 					LinkedList<IncItem> priceLinedItems = new LinkedList<IncItem>();
 					for(int j = 0; j < restOfItems.size(); j++) {
-//						System.out.println("Adjusting Item: " + j);
+						//						System.out.println("Adjusting Item: " + j);
 						IncItem incItem = restOfItems.get(j);
 						Item item = incItem.item();
 						Query q = item.q();
 						double salesPrice = _salesPrices.get(q);
-						double convProb = _convPrModel.getPrediction(q) * penalty;
+						double convProb = _convPrModel.getPrediction(q)*penalty;
 						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 						int isID = _queryId.get(q);
 						if(Double.isNaN(convProb)) {
 							convProb = 0.0;
 						}
-						
+
 						int idx = item.idx();
 						double bid1 = bidList.get(idx);
 						double clickPr1 = _bidToPrClick.getPrediction(q, bid1, new Ad());
@@ -580,12 +580,14 @@ public class MCKPBidPriceline extends AbstractAgent {
 
 						double w1 = numClicks1*convProb;				//weight = numClciks * convProv
 						double v1 = numClicks1*convProb*salesPrice - numClicks1*CPC1;	//value = revenue - cost	[profit]
-						
-						if(idx == 0) {
-							priceLinedItems.add(new IncItem(w1,v1,new Item(q,w1,v1,bid1,false,isID,idx)));
+
+						if(incItem.itemLow() == null) {
+							priceLinedItems.add(new IncItem(w1,v1,new Item(q,w1,v1,bid1,false,isID,idx), null));
 						}
 						else {
-							double bid2 = bidList.get(idx-1);
+							Item item2 = incItem.itemLow();
+							int idx2 = item2.idx();
+							double bid2 = bidList.get(idx2);
 							double clickPr2 = _bidToPrClick.getPrediction(q, bid2, new Ad());
 							int numClicks2 = (int) (clickPr2 * numImps);
 							double CPC2 = _bidToCPC.getPrediction(q, bid2);
@@ -600,14 +602,21 @@ public class MCKPBidPriceline extends AbstractAgent {
 
 							double w2 = numClicks2*convProb;				//weight = numClciks * convProv
 							double v2 = numClicks2*convProb*salesPrice - numClicks2*CPC2;	//value = revenue - cost	[profit]
-							priceLinedItems.add(new IncItem(w1-w2,v1-v2,new Item(q,w1,v1,bid1,false,isID,idx)));
+							IncItem newItem = new IncItem(w1-w2,v1-v2,new Item(q,w1,v1,bid1,false,isID,idx), item2);
+//							System.out.println("OldItem: " + incItem + "New Item: " + newItem);
+							priceLinedItems.add(newItem);
 						}
 					}
 					Collections.sort(priceLinedItems);
-					while(incItems.size() > i) {
+//					System.out.println("Pricelines: " + priceLinedItems);
+					while(incItems.size() > i+1) {
 						incItems.remove(incItems.size()-1);
 					}
-					incItems.addAll(priceLinedItems);
+//					System.out.println("IncItems: " + incItems);
+					for(IncItem priceLineItem : priceLinedItems) {
+						incItems.add(incItems.size(),priceLineItem);
+					}
+//					System.out.println("IncItems+Pricelines: " + incItems);
 				}
 				else {
 					break;
@@ -725,11 +734,11 @@ public class MCKPBidPriceline extends AbstractAgent {
 		IncItem[] ii = new IncItem[uItems.length];
 
 		if (uItems.length != 0){ //getUndominated can return an empty array
-			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
+			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0], null);
 			for(int item=1; item<uItems.length; item++) {
 				Item prev = uItems[item-1];
 				Item cur = uItems[item];
-				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
+				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur, prev);
 			}
 		}
 		debug("INCREMENTAL");

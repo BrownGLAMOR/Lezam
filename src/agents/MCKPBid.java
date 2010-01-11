@@ -500,7 +500,7 @@ public class MCKPBid extends AbstractAgent {
 		int expectedConvs = 0;
 		double numOverCap = 0;
 
-		for(int i =0; i < incItems.size(); i++) {
+		for(int i = 0; i < incItems.size(); i++) {
 			IncItem ii = incItems.get(i);
 			if(budget >= expectedConvs + ii.w()) {
 				solution.put(ii.item().isID(), ii.item());
@@ -659,11 +659,11 @@ public class MCKPBid extends AbstractAgent {
 		IncItem[] ii = new IncItem[uItems.length];
 
 		if (uItems.length != 0){ //getUndominated can return an empty array
-			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0]);
+			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0], null);
 			for(int item=1; item<uItems.length; item++) {
 				Item prev = uItems[item-1];
 				Item cur = uItems[item];
-				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur);
+				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur, prev);
 			}
 		}
 		debug("INCREMENTAL");

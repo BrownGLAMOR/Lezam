@@ -353,6 +353,7 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 			}
 
 			HashMap<Query,Double> lastEffDiff = new HashMap<Query, Double>();
+			double numOverCap = 0;
 			while(true) {
 				Query bestQ = null;
 				double bestEffDiff = 0;
@@ -364,13 +365,11 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 							HashMap<Integer, WeightValuePair> wvQueryMap = wvMap.get(query);
 							WeightValuePair wvLow = wvQueryMap.get(currentSol);
 							WeightValuePair wvHigh = wvQueryMap.get(currentSol+1);
-							double lowEff = wvLow.getValue()/wvLow.getWeight();
-							double highEff = wvHigh.getValue()/wvHigh.getWeight();
-							if(highEff <= 0 || (highEff-lowEff) <= 0) {
-								effDiff = 0.0;
+							if(wvHigh.getValue() > 0) {
+								effDiff = (wvHigh.getValue()-wvLow.getValue())/(wvHigh.getWeight() - wvLow.getWeight());
 							}
 							else {
-								effDiff = (highEff-lowEff);
+								effDiff = 0.0;
 							}
 							lastEffDiff.put(query, effDiff);
 						}
@@ -383,14 +382,54 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 				if(bestQ == null) {
 					break;
 				}
-				solution.put(bestQ, solution.get(bestQ)+1);
-				lastEffDiff.put(bestQ, null);
 				double totCapUsed = 0;
 				for(Query q : _querySpace) {
 					totCapUsed += wvMap.get(q).get(solution.get(q)).getWeight();
 				}
 				if(totCapUsed > budget) {
-					break;
+					double min = numOverCap;
+					numOverCap = totCapUsed + wvMap.get(bestQ).get(solution.get(bestQ)).getWeight() - budget;
+					double max = numOverCap;
+
+					double avgConvProb = 0; //the average probability of conversion;
+					for(Query q : _querySpace) {
+						if(_day < 2) {
+							avgConvProb += _baseConvProbs.get(q) / 16.0;
+						}
+						else {
+							avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+						}
+					}
+
+					double avgUSP = 0;
+					for(Query q : _querySpace) {
+						if(_day < 2) {
+							avgUSP += _salesPrices.get(q) / 16.0;
+						}
+						else {
+							avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+						}
+					}
+
+					double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+					double valueLost = 0;
+					for (double j = min+1; j <= max; j++){
+						double iD = Math.pow(LAMBDA, j);
+						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+						valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+					}
+
+					if(wvMap.get(bestQ).get(solution.get(bestQ)).getValue() > valueLost) {
+						solution.put(bestQ, solution.get(bestQ)+1);
+						lastEffDiff.put(bestQ, null);
+					}
+					else {
+						break;
+					}
+				}
+				else {
+					solution.put(bestQ, solution.get(bestQ)+1);
+					lastEffDiff.put(bestQ, null);
 				}
 			}
 
