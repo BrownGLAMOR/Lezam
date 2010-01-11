@@ -50,12 +50,12 @@ import edu.umich.eecs.tac.props.SalesReport;
  */
 public class MCKPBidPriceline extends AbstractAgent {
 
-	private static final int MAX_TIME_HORIZON = 5;
-	private static final boolean TARGET = false;
-	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
-	private static final boolean RESORTING = false;
-	private static final boolean BOOST = false;
+	private int MAX_TIME_HORIZON = 5;
+	private boolean TARGET = false;
+	private boolean BUDGET = false;
+	private boolean SAFETYBUDGET = true;
+	private boolean RESORTING = false;
+	private boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 
@@ -82,8 +82,9 @@ public class MCKPBidPriceline extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
-	public MCKPBidPriceline() {
+	public MCKPBidPriceline(boolean resorting) {
 		_R.setSeed(124962748);
+		RESORTING = resorting;
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
@@ -298,15 +299,39 @@ public class MCKPBidPriceline extends AbstractAgent {
 			}
 			_salesDist.updateModel(_salesReport);
 		}
-
+		
 		if(_day > lagDays){
 			buildMaps(models);
+			double budget = _capacity/_capWindow;
+			if(_day < 4) {
+				//do nothing
+			}
+			else {
+				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
+				budget = _capacity - _unitsSold.getWindowSold();
+				debug("Unit Sold Model Budget "  +budget);
+			}
+
+			if(BOOST) {
+				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
+					debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
+					lastBoost = -1;
+					budget *= boostCoeff;
+				}
+				lastBoost++;
+			}
+
+			debug("Budget: "+ budget);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
 			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
 
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
+			double penalty = 1.0;
+			if(budget < 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(budget));
+			}
 			for(Query q : _querySpace) {
 				LinkedList<Item> itemList = new LinkedList<Item>();
 				debug("Query: " + q);
@@ -317,7 +342,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
+					double convProb = _convPrModel.getPrediction(q)*penalty;
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
@@ -366,26 +391,6 @@ public class MCKPBidPriceline extends AbstractAgent {
 				IncItem[] iItems = getIncremental(items);
 				allIncItems.addAll(Arrays.asList(iItems));
 			}
-			double budget = _capacity/_capWindow;
-			if(_day < 4) {
-				//do nothing
-			}
-			else {
-				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = _capacity - _unitsSold.getWindowSold();
-				debug("Unit Sold Model Budget "  +budget);
-			}
-
-			if(BOOST) {
-				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
-					debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
-					lastBoost = -1;
-					budget *= boostCoeff;
-				}
-				lastBoost++;
-			}
-
-			debug("Budget: "+ budget);
 
 			Collections.sort(allIncItems);
 			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
@@ -550,7 +555,11 @@ public class MCKPBidPriceline extends AbstractAgent {
 					if(RESORTING) {
 						//System.out.println("Incrementing capacity, resorting above index: " + i);
 						double overCap = expectedConvs-budget;
-						double penalty = Math.pow(LAMBDA, overCap);
+						double penalty = budget;
+						for(int j = 1; j <= overCap; j++) {
+							penalty += Math.pow(LAMBDA, j);
+						}
+						penalty /= expectedConvs;
 						List<IncItem> restOfItems = incItems.subList(i+1,incItems.size());
 						LinkedList<IncItem> priceLinedItems = new LinkedList<IncItem>();
 						for(int j = 0; j < restOfItems.size(); j++) {
@@ -622,7 +631,11 @@ public class MCKPBidPriceline extends AbstractAgent {
 					}
 					else {
 						double overCap = expectedConvs-budget;
-						double penalty = Math.pow(LAMBDA, overCap);
+						double penalty = budget;
+						for(int j = 1; j <= overCap; j++) {
+							penalty += Math.pow(LAMBDA, j);
+						}
+						penalty /= expectedConvs;
 						if(i+1 < incItems.size()) {
 							IncItem incItem = incItems.get(i+1);
 							Item item = incItem.item();
@@ -824,12 +837,12 @@ public class MCKPBidPriceline extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBidPriceline";
+		return "MCKPBidPriceline(Resorting=" + RESORTING + ")";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBidPriceline();
+		return new MCKPBidPriceline(RESORTING);
 	}
 
 }

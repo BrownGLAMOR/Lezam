@@ -97,7 +97,7 @@ public class BasicSimulator {
 
 	private int NUM_PERF_ITERS = 1000;
 	private int _numSplits = 3; //How many bids to consider between slots
-	private boolean PERFECTMODELS = true;
+	private boolean PERFECTMODELS = false;
 	private boolean SOMEREGMODELS = true;
 	private boolean _killBudgets = false;
 
@@ -1046,18 +1046,18 @@ public class BasicSimulator {
 			regModels.add(userModel);
 			regModels.add(queryToNumImp);
 
-//			//add perfect models we want
-//			for(AbstractModel model : perfectModels) {
-//				//				if(model instanceof AbstractQueryToNumImp) {
-//				//					regModels.add(model);
-//				//				}
-//				if(model instanceof AbstractBidToPrClick) {
-//					regModels.add(model);
-//				}
-//				if(model instanceof AbstractPosToPrClick) {
-//					regModels.add(model);
-//				}
-//			}
+			//			//add perfect models we want
+			//			for(AbstractModel model : perfectModels) {
+			//				//				if(model instanceof AbstractQueryToNumImp) {
+			//				//					regModels.add(model);
+			//				//				}
+			//				if(model instanceof AbstractBidToPrClick) {
+			//					regModels.add(model);
+			//				}
+			//				if(model instanceof AbstractPosToPrClick) {
+			//					regModels.add(model);
+			//				}
+			//			}
 			agentToRun.setModels(regModels);
 
 
@@ -1564,8 +1564,10 @@ public class BasicSimulator {
 		double totDays = 0;
 		double totOverCap = 0;
 		double percOverCap = 0;
+		System.out.println("Generating Reports");
 		String profits = "";
 		for(String filename : reportsListMegaMap.keySet()) {
+			System.out.println(filename);
 			HashMap<String, LinkedList<Reports>> map = reportsListMegaMap.get(filename);
 			LinkedList<Reports> reports = map.get(_agents[_ourAdvIdx]);
 			totDays = reportsListMegaMap.size() * reports.size();
@@ -1885,11 +1887,12 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-				AbstractAgent agent = new MCKPBid();
-//				AbstractAgent agent = new MCKPBidPriceline();
-//				AbstractAgent agent = new MCKPBidNoDomElim();
-//		AbstractAgent agent = new MCKPBidSearch();
-		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+		AbstractAgent agent = new MCKPBid();
+		//				AbstractAgent agent = new MCKPBidPriceline(true);
+		//				AbstractAgent agent = new MCKPBidPriceline(false);
+		//						AbstractAgent agent = new MCKPBidNoDomElim();
+		//						AbstractAgent agent = new MCKPBidSearch();
+		//				AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
 
 		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
 		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
@@ -1913,7 +1916,7 @@ public class BasicSimulator {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1428,1429,0,0, agentItr);
+			sim.runSimulations(baseFile,1425,1426,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();

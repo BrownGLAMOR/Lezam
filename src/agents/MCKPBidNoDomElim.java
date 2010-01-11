@@ -297,37 +297,6 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 
 		if(_day > lagDays){
 			buildMaps(models);
-			//NEED TO USE THE MODELS WE ARE PASSED!!!
-			HashMap<Query,HashMap<Integer,WeightValuePair>> wvMap = new HashMap<Query, HashMap<Integer,WeightValuePair>>();
-			for(Query q : _querySpace) {
-				HashMap<Integer,WeightValuePair> wvQueryMap = new HashMap<Integer, WeightValuePair>();
-				debug("Query: " + q);
-				for(int i = 0; i < bidList.size(); i++) {
-					double salesPrice = _salesPrices.get(q);
-					double bid = bidList.get(i);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
-
-					if(Double.isNaN(CPC)) {
-						CPC = 0.0;
-					}
-
-					if(Double.isNaN(clickPr)) {
-						clickPr = 0.0;
-					}
-
-					if(Double.isNaN(convProb)) {
-						convProb = 0.0;
-					}
-					double w = numClicks*convProb;				//weight = numClciks * convProv
-					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					wvQueryMap.put(i, new WeightValuePair(w,v));
-				}
-				wvMap.put(q, wvQueryMap);
-			}
 			double budget;
 			if(_day < 4) {
 				budget = _capacity/_capWindow;
@@ -345,6 +314,41 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 					budget *= boostCoeff;
 				}
 				lastBoost++;
+			}
+			double penalty = 1.0;
+			if(budget < 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(budget));
+			}
+			//NEED TO USE THE MODELS WE ARE PASSED!!!
+			HashMap<Query,HashMap<Integer,WeightValuePair>> wvMap = new HashMap<Query, HashMap<Integer,WeightValuePair>>();
+			for(Query q : _querySpace) {
+				HashMap<Integer,WeightValuePair> wvQueryMap = new HashMap<Integer, WeightValuePair>();
+				debug("Query: " + q);
+				for(int i = 0; i < bidList.size(); i++) {
+					double salesPrice = _salesPrices.get(q);
+					double bid = bidList.get(i);
+					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+					int numClicks = (int) (clickPr * numImps);
+					double CPC = _bidToCPC.getPrediction(q, bid);
+					double convProb = _convPrModel.getPrediction(q)*penalty;
+
+					if(Double.isNaN(CPC)) {
+						CPC = 0.0;
+					}
+
+					if(Double.isNaN(clickPr)) {
+						clickPr = 0.0;
+					}
+
+					if(Double.isNaN(convProb)) {
+						convProb = 0.0;
+					}
+					double w = numClicks*convProb;				//weight = numClciks * convProv
+					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					wvQueryMap.put(i, new WeightValuePair(w,v));
+				}
+				wvMap.put(q, wvQueryMap);
 			}
 
 			HashMap<Query,Integer> solution = new HashMap<Query, Integer>();

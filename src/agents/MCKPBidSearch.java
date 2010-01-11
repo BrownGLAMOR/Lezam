@@ -78,7 +78,7 @@ public class MCKPBidSearch extends AbstractAgent {
 	private ArrayList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
-	private int numCapacities = 90;
+	private int numCapacities = 15;
 	ArrayList<Double> capList;
 
 	public MCKPBidSearch() {
@@ -331,10 +331,10 @@ public class MCKPBidSearch extends AbstractAgent {
 
 			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 
-			HashMap<Integer,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(0), budget);
+			HashMap<Integer,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(budget,0), budget);
 			double bestSolVal = solutionValue(bestSolution);
 			for(int i = 0; i < capList.size(); i++) {
-				HashMap<Integer,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(capList.get(i)), budget+capList.get(i));
+				HashMap<Integer,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(budget,capList.get(i)), budget+capList.get(i));
 				double solVal = solutionValue(solution);
 				if(solVal > bestSolVal) {
 					bestSolVal = solVal;
@@ -435,11 +435,32 @@ public class MCKPBidSearch extends AbstractAgent {
 
 
 
-	private ArrayList<IncItem> getIncItemsForOverCapLevel(double overCap) {
+	private ArrayList<IncItem> getIncItemsForOverCapLevel(double initBudget, double overCap) {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
 		//want the queries to be in a guaranteed order - put them in an array
 		//index will be used as the id of the query
-		double penalty = Math.pow(LAMBDA, overCap);
+		System.out.println("InitBudget: " + initBudget);
+		double penalty;
+		if(initBudget < 0) {
+			penalty = 0.0;
+			int num = 0;
+			for(double j = Math.abs(initBudget)+1; j <= overCap; j++) {
+				penalty += Math.pow(LAMBDA, j);
+				num++;
+			}
+			penalty /= (num);
+		}
+		else {
+			penalty = initBudget;
+			for(int j = 1; j <= overCap; j++) {
+				penalty += Math.pow(LAMBDA, j);
+			}
+			penalty /= (initBudget + overCap);
+		}
+		if(Double.isNaN(penalty)) {
+			penalty = 1.0;
+		}
+		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
 		for(Query q : _querySpace) {
 			ArrayList<Item> itemList = new ArrayList<Item>();
 			debug("Query: " + q);
