@@ -52,7 +52,7 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 

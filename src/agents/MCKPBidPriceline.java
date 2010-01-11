@@ -54,7 +54,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 
@@ -371,7 +371,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 			}
 			else {
 				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
+				budget = _capacity - _unitsSold.getWindowSold();
 				debug("Unit Sold Model Budget "  +budget);
 			}
 
@@ -761,7 +761,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid";
+		return "MCKPBidPriceline";
 	}
 
 	@Override

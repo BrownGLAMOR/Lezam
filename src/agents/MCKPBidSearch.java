@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.Set;
 
@@ -46,7 +46,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPBid extends AbstractAgent {
+public class MCKPBidSearch extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
@@ -75,13 +75,15 @@ public class MCKPBid extends AbstractAgent {
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
 	private Hashtable<Query, Integer> _queryId;
-	private LinkedList<Double> bidList;
+	private ArrayList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
+	private int numCapacities = 8;
+	ArrayList<Double> capList;
 
-	public MCKPBid() {
+	public MCKPBidSearch() {
 		_R.setSeed(124962748);
-		bidList = new LinkedList<Double>();
+		bidList = new ArrayList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
 		double min = .04;
@@ -218,6 +220,12 @@ public class MCKPBid extends AbstractAgent {
 			}
 		}
 
+		capList = new ArrayList<Double>();
+		double maxCap = _capacity*1.25;
+		for(int i = 1; i <= numCapacities; i++) {
+			capList.add((maxCap/numCapacities)*i);
+		}
+
 		_queryId = new Hashtable<Query,Integer>();
 		int i = 0;
 		for(Query q : _querySpace){
@@ -298,69 +306,6 @@ public class MCKPBid extends AbstractAgent {
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
-
-			//want the queries to be in a guaranteed order - put them in an array
-			//index will be used as the id of the query
-			for(Query q : _querySpace) {
-				LinkedList<Item> itemList = new LinkedList<Item>();
-				debug("Query: " + q);
-				for(int i = 0; i < bidList.size(); i++) {
-					double salesPrice = _salesPrices.get(q);
-					double bid = bidList.get(i);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
-
-					if(Double.isNaN(CPC)) {
-						CPC = 0.0;
-					}
-
-					if(Double.isNaN(clickPr)) {
-						clickPr = 0.0;
-					}
-
-					if(Double.isNaN(convProb)) {
-						convProb = 0.0;
-					}
-
-					debug("\tBid: " + bid);
-					debug("\tCPC: " + CPC);
-					debug("\tNumImps: " + numImps);
-					debug("\tNumClicks: " + numClicks);
-					debug("\tClickPr: " + clickPr);
-					debug("\tConv Prob: " + convProb + "\n\n");
-
-					int isID = _queryId.get(q);
-					double w = numClicks*convProb;				//weight = numClciks * convProv
-					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,bid,false,isID,i));
-
-					if(TARGET) {
-						/*
-						 * add a targeted version of our bid as well
-						 */
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-							if(convProb != 0) {
-								convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
-							}
-							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
-						}
-
-						w = numClicks*convProb;				//weight = numClciks * convProv
-						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-
-						itemList.add(new Item(q,w,v,bid,true,isID,i));
-					}
-				}
-				debug("Items for " + q);
-				Item[] items = itemList.toArray(new Item[0]);
-				IncItem[] iItems = getIncremental(items);
-				allIncItems.addAll(Arrays.asList(iItems));
-			}
 			double budget = _capacity/_capWindow;
 			if(_day < 4) {
 				//do nothing
@@ -382,11 +327,20 @@ public class MCKPBid extends AbstractAgent {
 
 			debug("Budget: "+ budget);
 
-			Collections.sort(allIncItems);
 			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
 			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
-			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, budget);
+
+			HashMap<Integer,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(0), budget);
+			double bestSolVal = solutionValue(bestSolution);
+			for(int i = 0; i < capList.size(); i++) {
+				HashMap<Integer,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(capList.get(i)), budget+capList.get(i));
+				double solVal = solutionValue(solution);
+				if(solVal > bestSolVal) {
+					bestSolVal = solVal;
+					bestSolution = solution;
+				}
+			}
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -394,8 +348,8 @@ public class MCKPBid extends AbstractAgent {
 				Integer isID = _queryId.get(q);
 				double bid;
 
-				if(solution.containsKey(isID)) {
-					bid = solution.get(isID).b();
+				if(bestSolution.containsKey(isID)) {
+					bid = bestSolution.get(isID).b();
 					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
@@ -403,7 +357,7 @@ public class MCKPBid extends AbstractAgent {
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
 
-					if(solution.get(isID).targ()) {
+					if(bestSolution.get(isID).targ()) {
 
 						if(clickPr != 0) {
 							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
@@ -467,13 +421,93 @@ public class MCKPBid extends AbstractAgent {
 	}
 
 
+	private double solutionValue(HashMap<Integer, Item> solution) {
+		double totalValue = 0;
+		for(Query q : _querySpace) {
+			Integer isID = _queryId.get(q);
+			if(solution.containsKey(isID)) {
+				Item item = solution.get(isID);
+				totalValue += item.v();
+			}
+		}
+		return totalValue;
+	}
+
+
+
+	private ArrayList<IncItem> getIncItemsForOverCapLevel(double overCap) {
+		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
+		//want the queries to be in a guaranteed order - put them in an array
+		//index will be used as the id of the query
+		double penalty = Math.pow(LAMBDA, overCap);
+		for(Query q : _querySpace) {
+			ArrayList<Item> itemList = new ArrayList<Item>();
+			debug("Query: " + q);
+			for(int i = 0; i < bidList.size(); i++) {
+				double salesPrice = _salesPrices.get(q);
+				double bid = bidList.get(i);
+				double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+				double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+				int numClicks = (int) (clickPr * numImps);
+				double CPC = _bidToCPC.getPrediction(q, bid);
+				double convProb = _convPrModel.getPrediction(q)*penalty;
+
+				if(Double.isNaN(CPC)) {
+					CPC = 0.0;
+				}
+
+				if(Double.isNaN(clickPr)) {
+					clickPr = 0.0;
+				}
+
+				if(Double.isNaN(convProb)) {
+					convProb = 0.0;
+				}
+
+				int isID = _queryId.get(q);
+				double w = numClicks*convProb;				//weight = numClciks * convProv
+				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+				itemList.add(new Item(q,w,v,bid,false,isID,i));
+
+				if(TARGET) {
+					/*
+					 * add a targeted version of our bid as well
+					 */
+					if(clickPr != 0) {
+						numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+						if(convProb != 0) {
+							convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
+						}
+						salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
+					}
+
+					w = numClicks*convProb;				//weight = numClciks * convProv
+					v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+
+					itemList.add(new Item(q,w,v,bid,true,isID,i));
+				}
+			}
+			debug("Items for " + q);
+			Item[] items = itemList.toArray(new Item[0]);
+			IncItem[] iItems = getIncremental(items);
+			allIncItems.addAll(Arrays.asList(iItems));
+		}
+		Collections.sort(allIncItems);
+		return allIncItems;
+	}
+
+
+
 	/**
 	 * Greedily fill the knapsack by selecting incremental items
 	 * @param incItems
 	 * @param budget
 	 * @return
 	 */
-	private HashMap<Integer,Item> fillKnapsack(LinkedList<IncItem> incItems, double budget){
+	private HashMap<Integer,Item> fillKnapsack(ArrayList<IncItem> incItems, double budget) {
+		if(budget < 0) {
+			return new HashMap<Integer,Item>();
+		}
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
 		for(IncItem ii: incItems) {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
@@ -494,9 +528,8 @@ public class MCKPBid extends AbstractAgent {
 	 *TODO
 	 *change incItems to an ArrayList
 	 */
-	private HashMap<Integer,Item> fillKnapsackWithCapExt(LinkedList<IncItem> incItems, double budget){
+	private HashMap<Integer,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget){
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
-
 		int expectedConvs = 0;
 		double numOverCap = 0;
 
@@ -559,7 +592,7 @@ public class MCKPBid extends AbstractAgent {
 	public static Item[] getUndominated(Item[] items) {
 		Arrays.sort(items,new ItemComparatorByWeight());
 		//remove dominated items (higher weight, lower value)		
-		LinkedList<Item> temp = new LinkedList<Item>();
+		ArrayList<Item> temp = new ArrayList<Item>();
 		temp.add(items[0]);
 		for(int i=1; i<items.length; i++) {
 			Item lastUndominated = temp.get(temp.size()-1); 
@@ -569,10 +602,10 @@ public class MCKPBid extends AbstractAgent {
 		}
 
 
-		LinkedList<Item> betterTemp = new LinkedList<Item>();
+		ArrayList<Item> betterTemp = new ArrayList<Item>();
 		betterTemp.addAll(temp);
 		for(int i = 0; i < temp.size(); i++) {
-			LinkedList<Item> duplicates = new LinkedList<Item>();
+			ArrayList<Item> duplicates = new ArrayList<Item>();
 			Item item = temp.get(i);
 			duplicates.add(item);
 			for(int j = i + 1; j < temp.size(); j++) {
@@ -604,7 +637,7 @@ public class MCKPBid extends AbstractAgent {
 		Arrays.sort(items,new ItemComparatorByWeight());
 
 		//remove lp-dominated items
-		LinkedList<Item> q = new LinkedList<Item>();
+		ArrayList<Item> q = new ArrayList<Item>();
 		q.add(new Item(new Query(),0,0,-1,false,1,0));//add item with zero weight and value
 
 		for(int i=0; i<items.length; i++) {
@@ -686,12 +719,12 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid";
+		return "MCKPBidSearch(numCaps=" + numCapacities + ")";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid();
+		return new MCKPBidSearch();
 	}
 
 }
