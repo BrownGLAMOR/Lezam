@@ -78,7 +78,7 @@ public class MCKPBidSearch extends AbstractAgent {
 	private ArrayList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
-	private int numCapacities = 8;
+	private int numCapacities = 90;
 	ArrayList<Double> capList;
 
 	public MCKPBidSearch() {

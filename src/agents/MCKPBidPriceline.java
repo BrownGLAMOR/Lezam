@@ -54,6 +54,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = true;
+	private static final boolean RESORTING = false;
 	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
@@ -546,77 +547,139 @@ public class MCKPBidPriceline extends AbstractAgent {
 				if(ii.v() > valueLost) {
 					solution.put(ii.item().isID(), ii.item());
 					expectedConvs += ii.w();
-					//					System.out.println("Incrementing capacity, resorting above index: " + i);
-					double overCap = expectedConvs-budget;
-					double penalty = Math.pow(LAMBDA, overCap);
-					List<IncItem> restOfItems = incItems.subList(i+1,incItems.size());
-					LinkedList<IncItem> priceLinedItems = new LinkedList<IncItem>();
-					for(int j = 0; j < restOfItems.size(); j++) {
-						//						System.out.println("Adjusting Item: " + j);
-						IncItem incItem = restOfItems.get(j);
-						Item item = incItem.item();
-						Query q = item.q();
-						double salesPrice = _salesPrices.get(q);
-						double convProb = _convPrModel.getPrediction(q)*penalty;
-						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-						int isID = _queryId.get(q);
-						if(Double.isNaN(convProb)) {
-							convProb = 0.0;
-						}
-
-						int idx = item.idx();
-						double bid1 = bidList.get(idx);
-						double clickPr1 = _bidToPrClick.getPrediction(q, bid1, new Ad());
-						int numClicks1 = (int) (clickPr1 * numImps);
-						double CPC1 = _bidToCPC.getPrediction(q, bid1);
-
-						if(Double.isNaN(CPC1)) {
-							CPC1 = 0.0;
-						}
-
-						if(Double.isNaN(clickPr1)) {
-							clickPr1 = 0.0;
-						}
-
-						double w1 = numClicks1*convProb;				//weight = numClciks * convProv
-						double v1 = numClicks1*convProb*salesPrice - numClicks1*CPC1;	//value = revenue - cost	[profit]
-
-						if(incItem.itemLow() == null) {
-							priceLinedItems.add(new IncItem(w1,v1,new Item(q,w1,v1,bid1,false,isID,idx), null));
-						}
-						else {
-							Item item2 = incItem.itemLow();
-							int idx2 = item2.idx();
-							double bid2 = bidList.get(idx2);
-							double clickPr2 = _bidToPrClick.getPrediction(q, bid2, new Ad());
-							int numClicks2 = (int) (clickPr2 * numImps);
-							double CPC2 = _bidToCPC.getPrediction(q, bid2);
-
-							if(Double.isNaN(CPC2)) {
-								CPC2 = 0.0;
+					if(RESORTING) {
+						//System.out.println("Incrementing capacity, resorting above index: " + i);
+						double overCap = expectedConvs-budget;
+						double penalty = Math.pow(LAMBDA, overCap);
+						List<IncItem> restOfItems = incItems.subList(i+1,incItems.size());
+						LinkedList<IncItem> priceLinedItems = new LinkedList<IncItem>();
+						for(int j = 0; j < restOfItems.size(); j++) {
+							//						System.out.println("Adjusting Item: " + j);
+							IncItem incItem = restOfItems.get(j);
+							Item item = incItem.item();
+							Query q = item.q();
+							double salesPrice = _salesPrices.get(q);
+							double convProb = _convPrModel.getPrediction(q)*penalty;
+							double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+							int isID = _queryId.get(q);
+							if(Double.isNaN(convProb)) {
+								convProb = 0.0;
 							}
 
-							if(Double.isNaN(clickPr2)) {
-								clickPr2 = 0.0;
+							int idx = item.idx();
+							double bid1 = bidList.get(idx);
+							double clickPr1 = _bidToPrClick.getPrediction(q, bid1, new Ad());
+							int numClicks1 = (int) (clickPr1 * numImps);
+							double CPC1 = _bidToCPC.getPrediction(q, bid1);
+
+							if(Double.isNaN(CPC1)) {
+								CPC1 = 0.0;
 							}
 
-							double w2 = numClicks2*convProb;				//weight = numClciks * convProv
-							double v2 = numClicks2*convProb*salesPrice - numClicks2*CPC2;	//value = revenue - cost	[profit]
-							IncItem newItem = new IncItem(w1-w2,v1-v2,new Item(q,w1,v1,bid1,false,isID,idx), item2);
-//							System.out.println("OldItem: " + incItem + "New Item: " + newItem);
-							priceLinedItems.add(newItem);
+							if(Double.isNaN(clickPr1)) {
+								clickPr1 = 0.0;
+							}
+
+							double w1 = numClicks1*convProb;				//weight = numClciks * convProv
+							double v1 = numClicks1*convProb*salesPrice - numClicks1*CPC1;	//value = revenue - cost	[profit]
+
+							if(incItem.itemLow() == null) {
+								priceLinedItems.add(new IncItem(w1,v1,new Item(q,w1,v1,bid1,false,isID,idx), null));
+							}
+							else {
+								Item item2 = incItem.itemLow();
+								int idx2 = item2.idx();
+								double bid2 = bidList.get(idx2);
+								double clickPr2 = _bidToPrClick.getPrediction(q, bid2, new Ad());
+								int numClicks2 = (int) (clickPr2 * numImps);
+								double CPC2 = _bidToCPC.getPrediction(q, bid2);
+
+								if(Double.isNaN(CPC2)) {
+									CPC2 = 0.0;
+								}
+
+								if(Double.isNaN(clickPr2)) {
+									clickPr2 = 0.0;
+								}
+
+								double w2 = numClicks2*convProb;				//weight = numClciks * convProv
+								double v2 = numClicks2*convProb*salesPrice - numClicks2*CPC2;	//value = revenue - cost	[profit]
+								IncItem newItem = new IncItem(w1-w2,v1-v2,new Item(q,w1,v1,bid1,false,isID,idx), item2);
+								//							System.out.println("OldItem: " + incItem + "New Item: " + newItem);
+								priceLinedItems.add(newItem);
+							}
+						}
+						Collections.sort(priceLinedItems);
+						//					System.out.println("Pricelines: " + priceLinedItems);
+						while(incItems.size() > i+1) {
+							incItems.remove(incItems.size()-1);
+						}
+						//					System.out.println("IncItems: " + incItems);
+						for(IncItem priceLineItem : priceLinedItems) {
+							incItems.add(incItems.size(),priceLineItem);
+						}
+						//					System.out.println("IncItems+Pricelines: " + incItems);
+					}
+					else {
+						double overCap = expectedConvs-budget;
+						double penalty = Math.pow(LAMBDA, overCap);
+						if(i+1 < incItems.size()) {
+							IncItem incItem = incItems.get(i+1);
+							Item item = incItem.item();
+							IncItem priceLineItem;
+							Query q = item.q();
+							double salesPrice = _salesPrices.get(q);
+							double convProb = _convPrModel.getPrediction(q)*penalty;
+							double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+							int isID = _queryId.get(q);
+							if(Double.isNaN(convProb)) {
+								convProb = 0.0;
+							}
+
+							int idx = item.idx();
+							double bid1 = bidList.get(idx);
+							double clickPr1 = _bidToPrClick.getPrediction(q, bid1, new Ad());
+							int numClicks1 = (int) (clickPr1 * numImps);
+							double CPC1 = _bidToCPC.getPrediction(q, bid1);
+
+							if(Double.isNaN(CPC1)) {
+								CPC1 = 0.0;
+							}
+
+							if(Double.isNaN(clickPr1)) {
+								clickPr1 = 0.0;
+							}
+
+							double w1 = numClicks1*convProb;				//weight = numClciks * convProv
+							double v1 = numClicks1*convProb*salesPrice - numClicks1*CPC1;	//value = revenue - cost	[profit]
+
+							if(incItem.itemLow() == null) {
+								priceLineItem = new IncItem(w1,v1,new Item(q,w1,v1,bid1,false,isID,idx), null);
+							}
+							else {
+								Item item2 = incItem.itemLow();
+								int idx2 = item2.idx();
+								double bid2 = bidList.get(idx2);
+								double clickPr2 = _bidToPrClick.getPrediction(q, bid2, new Ad());
+								int numClicks2 = (int) (clickPr2 * numImps);
+								double CPC2 = _bidToCPC.getPrediction(q, bid2);
+
+								if(Double.isNaN(CPC2)) {
+									CPC2 = 0.0;
+								}
+
+								if(Double.isNaN(clickPr2)) {
+									clickPr2 = 0.0;
+								}
+
+								double w2 = numClicks2*convProb;				//weight = numClciks * convProv
+								double v2 = numClicks2*convProb*salesPrice - numClicks2*CPC2;	//value = revenue - cost	[profit]
+								priceLineItem = new IncItem(w1-w2,v1-v2,new Item(q,w1,v1,bid1,false,isID,idx), item2);
+							}
+							incItems.remove(i+1);
+							incItems.add(i+1,priceLineItem);
 						}
 					}
-					Collections.sort(priceLinedItems);
-//					System.out.println("Pricelines: " + priceLinedItems);
-					while(incItems.size() > i+1) {
-						incItems.remove(incItems.size()-1);
-					}
-//					System.out.println("IncItems: " + incItems);
-					for(IncItem priceLineItem : priceLinedItems) {
-						incItems.add(incItems.size(),priceLineItem);
-					}
-//					System.out.println("IncItems+Pricelines: " + incItems);
 				}
 				else {
 					break;

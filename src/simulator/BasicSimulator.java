@@ -32,9 +32,11 @@ import newmodels.prconv.AbstractConversionModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
+import newmodels.querytonumimp.BasicQueryToNumImp;
 import newmodels.targeting.BasicTargetModel;
 import newmodels.unitssold.AbstractUnitsSoldModel;
 import newmodels.usermodel.AbstractUserModel;
+import newmodels.usermodel.BasicUserModel;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToPos;
@@ -93,9 +95,10 @@ import edu.umich.eecs.tac.props.UserClickModel;
  */
 public class BasicSimulator {
 
-	private static final int NUM_PERF_ITERS = 1000;
+	private int NUM_PERF_ITERS = 1000;
 	private int _numSplits = 3; //How many bids to consider between slots
-	private static final boolean PERFECTMODELS = false;
+	private boolean PERFECTMODELS = true;
+	private boolean SOMEREGMODELS = true;
 	private boolean _killBudgets = false;
 
 	/*
@@ -251,7 +254,7 @@ public class BasicSimulator {
 				QueryReport queryReport = reports.getQueryReport();
 				agent.handleQueryReport(queryReport);
 				agent.handleSalesReport(salesReport);
-				if(!PERFECTMODELS) {
+				if(!PERFECTMODELS || SOMEREGMODELS) {
 					agent.updateModels(salesReport, queryReport);
 				}
 			}
@@ -985,8 +988,8 @@ public class BasicSimulator {
 	 */
 	public BidBundle getBids(AbstractAgent agentToRun) {
 		if(PERFECTMODELS) {
-			Set<AbstractModel> perfectModels = generatePerfectModels();
-			//			Set<AbstractModel> regModels = agentToRun.getModels();
+			//			Set<AbstractModel> perfectModels = generatePerfectModels();
+			Set<AbstractModel> regModels = agentToRun.getModels();
 
 			//			//OPTION 1 (MOSTLY PERF MODELS)
 			//
@@ -1022,40 +1025,44 @@ public class BasicSimulator {
 
 
 
-			//			//OPTION 2 (MOSTLY REG MODELs)
-			//
-			//			//Remove models we want perfect in reg models:
-			//			ArrayList<AbstractModel> modelsToRemove = new ArrayList<AbstractModel>();
-			//			for(AbstractModel model : regModels) {
-			//				//				if(model instanceof AbstractQueryToNumImp) {
-			//				//					modelsToRemove.add(model);
-			//				//				}
-			//				if(model instanceof AbstractBidToPrClick) {
-			//					modelsToRemove.add(model);
-			//				}
-			//				if(model instanceof AbstractPosToPrClick) {
-			//					modelsToRemove.add(model);
-			//				}
-			//			}
-			//			regModels.removeAll(modelsToRemove);
-			//
-			//			//add perfect models we want
-			//			for(AbstractModel model : perfectModels) {
-			//				//				if(model instanceof AbstractQueryToNumImp) {
-			//				//					regModels.add(model);
-			//				//				}
-			//				if(model instanceof AbstractBidToPrClick) {
-			//					regModels.add(model);
-			//				}
-			//				if(model instanceof AbstractPosToPrClick) {
-			//					regModels.add(model);
-			//				}
-			//			}
-			//			agentToRun.setModels(regModels);
+			//OPTION 2 (MOSTLY REG MODELs)
+
+			//Remove models we want perfect in reg models:
+			ArrayList<AbstractModel> modelsToRemove = new ArrayList<AbstractModel>();
+			for(AbstractModel model : regModels) {
+				//				if(model instanceof AbstractQueryToNumImp) {
+				//					modelsToRemove.add(model);
+				//				}
+				if(model instanceof AbstractUserModel) {
+					modelsToRemove.add(model);
+				}
+				if(model instanceof AbstractQueryToNumImp) {
+					modelsToRemove.add(model);
+				}
+			}
+			regModels.removeAll(modelsToRemove);
+			PerfectUserModel userModel = new PerfectUserModel(_numUsers,_usersMap);
+			AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
+			regModels.add(userModel);
+			regModels.add(queryToNumImp);
+
+//			//add perfect models we want
+//			for(AbstractModel model : perfectModels) {
+//				//				if(model instanceof AbstractQueryToNumImp) {
+//				//					regModels.add(model);
+//				//				}
+//				if(model instanceof AbstractBidToPrClick) {
+//					regModels.add(model);
+//				}
+//				if(model instanceof AbstractPosToPrClick) {
+//					regModels.add(model);
+//				}
+//			}
+			agentToRun.setModels(regModels);
 
 
 			//OPTION 3 (ALL PERF MODELS)
-			agentToRun.setModels(perfectModels);
+			//			agentToRun.setModels(perfectModels);
 
 		}
 		BidBundle bidBundle = agentToRun.getBidBundle(agentToRun.getModels());
@@ -1878,42 +1885,42 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-//		AbstractAgent agent = new MCKPBid();
-//		AbstractAgent agent = new MCKPBidPriceline();
-//		AbstractAgent agent = new MCKPBidNoDomElim();
-		AbstractAgent agent = new MCKPBidSearch();
-//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
-		
-//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
-//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
-//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
-//		AbstractAgent agent = new EquateROI(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
-//		AbstractAgent agent = new AdjustROI(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
-//		AbstractAgent agent = new AdjustPR(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
-//		AbstractAgent agent = new AdjustPPS(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
-//		AbstractAgent agent = new AdjustPM(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
-		
-		
-//		AbstractAgent agent = new AdjustPM(-0.0060,-0.20000099999999998,0.0020,-0.13333499999999998,0.9000000000000002,0.0,0.29999400000000004,-0.0020,0.13332900000000003);
-//		AbstractAgent agent = new AdjustPR(0.0070,0.29999400000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0050,0.09999600000000003,0.0070,-0.23333399999999999);
-//		AbstractAgent agent = new AdjustPPS(-0.01,-0.20000099999999998,-0.01,-0.23333399999999999,10.5,-0.0060,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
-//		AbstractAgent agent = new AdjustROI(-0.009000000000000001,-0.3,-0.0010,-0.03333599999999998,3.100000000000001,-0.0010,0.033330000000000026,-0.0040,-0.06666899999999998);
-//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0030,0.06666300000000003,0.009000000000000001,-0.266667);
-//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.23333399999999999);
-//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
-//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
+				AbstractAgent agent = new MCKPBid();
+//				AbstractAgent agent = new MCKPBidPriceline();
+//				AbstractAgent agent = new MCKPBidNoDomElim();
+//		AbstractAgent agent = new MCKPBidSearch();
+		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+
+		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
+		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+		//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
+		//		AbstractAgent agent = new EquateROI(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
+		//		AbstractAgent agent = new AdjustROI(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
+		//		AbstractAgent agent = new AdjustPR(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
+		//		AbstractAgent agent = new AdjustPPS(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+		//		AbstractAgent agent = new AdjustPM(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
+
+
+		//		AbstractAgent agent = new AdjustPM(-0.0060,-0.20000099999999998,0.0020,-0.13333499999999998,0.9000000000000002,0.0,0.29999400000000004,-0.0020,0.13332900000000003);
+		//		AbstractAgent agent = new AdjustPR(0.0070,0.29999400000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0050,0.09999600000000003,0.0070,-0.23333399999999999);
+		//		AbstractAgent agent = new AdjustPPS(-0.01,-0.20000099999999998,-0.01,-0.23333399999999999,10.5,-0.0060,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+		//		AbstractAgent agent = new AdjustROI(-0.009000000000000001,-0.3,-0.0010,-0.03333599999999998,3.100000000000001,-0.0010,0.033330000000000026,-0.0040,-0.06666899999999998);
+		//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0030,0.06666300000000003,0.009000000000000001,-0.266667);
+		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.23333399999999999);
+		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
+		//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
 		agentList.add(agent);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
+			sim.runSimulations(baseFile,1428,1429,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
-	
+
 	public void emptyFunction() {}
 
 }
