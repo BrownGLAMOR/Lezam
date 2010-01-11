@@ -378,12 +378,20 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 							bestEffDiff = effDiff;
 							bestQ = query;
 						}
+					}
 				}
 				if(bestQ == null) {
 					break;
 				}
 				solution.put(bestQ, solution.get(bestQ)+1);
 				lastEffDiff.put(bestQ, null);
+				double totCapUsed = 0;
+				for(Query q : _querySpace) {
+					totCapUsed += wvMap.get(q).get(solution.get(q)).getWeight();
+				}
+				if(totCapUsed > budget) {
+					break;
+				}
 			}
 
 			//set bids
