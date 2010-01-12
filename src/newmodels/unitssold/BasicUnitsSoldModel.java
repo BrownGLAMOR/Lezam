@@ -10,13 +10,13 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
-	
+
 	protected Set<Query> _querySpace;
 	protected int _capacity;
 	protected int _window;
 	protected List<Integer> _sold;
 	protected Integer expectedConvsForMissingDay;
-	
+
 	public BasicUnitsSoldModel(Set<Query> querySpace, int distributionCapacity, int distributionWindow) {
 		_querySpace = querySpace;
 		_capacity = distributionCapacity;
@@ -51,11 +51,13 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 			total += (total + _capacity/((double) _window)) / 4.0;
 		}
 		else {
-			total += expectedConvsForMissingDay;
+			if(expectedConvsForMissingDay != 0) {
+				total += expectedConvsForMissingDay * 2/3.0 + ((total + _capacity/((double) _window)) / 4.0)*1/3.0;
+			}
 		}
 		return total;
 	}
-	
+
 	public double getThreeDaysSold() {
 		double total = 0;
 		for (int i = 0; i < _window - 2; i++) {
@@ -78,7 +80,7 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 		}
 		_sold.add(conversions);
 	}
-	
+
 	public void expectedConvsTomorrow(int expectedConvs) {
 		expectedConvsForMissingDay = expectedConvs;
 	}

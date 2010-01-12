@@ -531,11 +531,16 @@ public class MCKPBidSearch extends AbstractAgent {
 			penalty /= (num);
 		}
 		else {
-			penalty = initBudget;
-			for(int j = 1; j <= overCap; j++) {
-				penalty += Math.pow(LAMBDA, j);
+			if(overCap <= 0) {
+				penalty = 1.0;
 			}
-			penalty /= (initBudget + overCap);
+			else {
+				penalty = initBudget;
+				for(int j = 1; j <= overCap; j++) {
+					penalty += Math.pow(LAMBDA, j);
+				}
+				penalty /= (initBudget + overCap);
+			}
 		}
 		if(Double.isNaN(penalty)) {
 			penalty = 1.0;

@@ -1916,7 +1916,7 @@ public class BasicSimulator {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1425,1426,0,0, agentItr);
+			sim.runSimulations(baseFile,1425,1429,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();

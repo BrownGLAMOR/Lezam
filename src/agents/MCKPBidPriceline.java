@@ -299,7 +299,7 @@ public class MCKPBidPriceline extends AbstractAgent {
 			}
 			_salesDist.updateModel(_salesReport);
 		}
-		
+
 		if(_day > lagDays){
 			buildMaps(models);
 			double budget = _capacity/_capWindow;
@@ -599,11 +599,16 @@ public class MCKPBidPriceline extends AbstractAgent {
 						penalty = penalty/oldPenalty;
 					}
 					else {
-						penalty = budget;
-						for(int j = 1; j <= numOverCap; j++) {
-							penalty += Math.pow(LAMBDA, j);
+						if(numOverCap <= 0) {
+							penalty = 1.0;
 						}
-						penalty /= (budget + numOverCap);
+						else {
+							penalty = budget;
+							for(int j = 1; j <= numOverCap; j++) {
+								penalty += Math.pow(LAMBDA, j);
+							}
+							penalty /= (budget + numOverCap);
+						}
 					}
 					if(Double.isNaN(penalty)) {
 						penalty = 1.0;
