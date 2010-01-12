@@ -78,7 +78,7 @@ public class MCKPBidSearch extends AbstractAgent {
 	private ArrayList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
-	private int numCapacities = 15;
+	private int _capIncrement = 15;
 	ArrayList<Double> capList;
 
 	public MCKPBidSearch() {
@@ -221,9 +221,9 @@ public class MCKPBidSearch extends AbstractAgent {
 		}
 
 		capList = new ArrayList<Double>();
-		double maxCap = _capacity*1.25;
-		for(int i = 1; i <= numCapacities; i++) {
-			capList.add((maxCap/numCapacities)*i);
+		double maxCap = _capacity;
+		for(int i = 1; i <= maxCap; i+= _capIncrement) {
+			capList.add(1.0*i);
 		}
 
 		_queryId = new Hashtable<Query,Integer>();
@@ -332,14 +332,23 @@ public class MCKPBidSearch extends AbstractAgent {
 			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
 
 			HashMap<Integer,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(budget,0), budget);
-			double bestSolVal = solutionValue(bestSolution);
+			double bestSolVal = solutionValue(bestSolution,budget,0);
+			int bestIdx = -1;
+			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < capList.size(); i++) {
 				HashMap<Integer,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(budget,capList.get(i)), budget+capList.get(i));
-				double solVal = solutionValue(solution);
+				double solVal = solutionValue(solution,budget,capList.get(i));
 				if(solVal > bestSolVal) {
 					bestSolVal = solVal;
 					bestSolution = solution;
+					bestIdx = i;
 				}
+				//				System.out.println("OverCap By: " + capList.get(i) + ", val: " + solVal);
+			}
+			//			System.out.println("Best Index: " + bestIdx + ", Best val: " + bestSolVal);
+
+			if(bestSolVal < 0) {
+				bestSolution = new HashMap<Integer,Item>();
 			}
 
 			//set bids
@@ -421,7 +430,7 @@ public class MCKPBidSearch extends AbstractAgent {
 	}
 
 
-	private double solutionValue(HashMap<Integer, Item> solution) {
+	private double solutionValue(HashMap<Integer, Item> solution, double budget, double overCap) {
 		double totalValue = 0;
 		for(Query q : _querySpace) {
 			Integer isID = _queryId.get(q);
@@ -430,7 +439,44 @@ public class MCKPBidSearch extends AbstractAgent {
 				totalValue += item.v();
 			}
 		}
-		return totalValue;
+		double avgConvProb = 0; //the average probability of conversion;
+		for(Query q : _querySpace) {
+			if(_day < 2) {
+				avgConvProb += _baseConvProbs.get(q) / 16.0;
+			}
+			else {
+				avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+			}
+		}
+
+		double avgUSP = 0;
+		for(Query q : _querySpace) {
+			if(_day < 2) {
+				avgUSP += _salesPrices.get(q) / 16.0;
+			}
+			else {
+				avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+			}
+		}
+
+		double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+		double valueLost = 0;
+		if(budget < 0) {
+			for (double i = Math.abs(budget)+1; i <= overCap; i++){
+				double iD = Math.pow(LAMBDA, i);
+				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+			}
+		}
+		else {
+			for (double i = 1; i <= overCap; i++){
+				double iD = Math.pow(LAMBDA, i);
+				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+			}
+		}
+
+		return totalValue-valueLost;
 	}
 
 
@@ -439,7 +485,7 @@ public class MCKPBidSearch extends AbstractAgent {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
 		//want the queries to be in a guaranteed order - put them in an array
 		//index will be used as the id of the query
-		System.out.println("InitBudget: " + initBudget);
+		//		System.out.println("InitBudget: " + initBudget);
 		double penalty;
 		if(initBudget < 0) {
 			penalty = 0.0;
@@ -460,7 +506,7 @@ public class MCKPBidSearch extends AbstractAgent {
 		if(Double.isNaN(penalty)) {
 			penalty = 1.0;
 		}
-		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
+		//		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
 		for(Query q : _querySpace) {
 			ArrayList<Item> itemList = new ArrayList<Item>();
 			debug("Query: " + q);
@@ -740,7 +786,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBidSearch(numCaps=" + numCapacities + ")";
+		return "MCKPBidSearch(capIncrement=" + _capIncrement + ")";
 	}
 
 	@Override

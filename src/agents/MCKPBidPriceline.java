@@ -552,14 +552,31 @@ public class MCKPBidPriceline extends AbstractAgent {
 				if(ii.v() > valueLost) {
 					solution.put(ii.item().isID(), ii.item());
 					expectedConvs += ii.w();
+					double penalty;
+					if(budget < 0) {
+						penalty = 0.0;
+						int num = 0;
+						for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
+							penalty += Math.pow(LAMBDA, j);
+							num++;
+						}
+						penalty /= (num);
+						double oldPenalty = Math.pow(LAMBDA, Math.abs(budget));
+						penalty = penalty/oldPenalty;
+					}
+					else {
+						penalty = budget;
+						for(int j = 1; j <= numOverCap; j++) {
+							penalty += Math.pow(LAMBDA, j);
+						}
+						penalty /= (budget + numOverCap);
+					}
+					if(Double.isNaN(penalty)) {
+						penalty = 1.0;
+					}
 					if(RESORTING) {
 						//System.out.println("Incrementing capacity, resorting above index: " + i);
 						double overCap = expectedConvs-budget;
-						double penalty = budget;
-						for(int j = 1; j <= overCap; j++) {
-							penalty += Math.pow(LAMBDA, j);
-						}
-						penalty /= expectedConvs;
 						List<IncItem> restOfItems = incItems.subList(i+1,incItems.size());
 						LinkedList<IncItem> priceLinedItems = new LinkedList<IncItem>();
 						for(int j = 0; j < restOfItems.size(); j++) {
@@ -631,11 +648,6 @@ public class MCKPBidPriceline extends AbstractAgent {
 					}
 					else {
 						double overCap = expectedConvs-budget;
-						double penalty = budget;
-						for(int j = 1; j <= overCap; j++) {
-							penalty += Math.pow(LAMBDA, j);
-						}
-						penalty /= expectedConvs;
 						if(i+1 < incItems.size()) {
 							IncItem incItem = incItems.get(i+1);
 							Item item = incItem.item();

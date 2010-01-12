@@ -1888,10 +1888,10 @@ public class BasicSimulator {
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
 		AbstractAgent agent = new MCKPBid();
-		//				AbstractAgent agent = new MCKPBidPriceline(true);
-		//				AbstractAgent agent = new MCKPBidPriceline(false);
-		//						AbstractAgent agent = new MCKPBidNoDomElim();
-		//						AbstractAgent agent = new MCKPBidSearch();
+//		AbstractAgent agent = new MCKPBidPriceline(true);
+//		AbstractAgent agent = new MCKPBidPriceline(false);
+//		AbstractAgent agent = new MCKPBidNoDomElim();
+//		AbstractAgent agent = new MCKPBidSearch();
 		//				AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
 
 		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
