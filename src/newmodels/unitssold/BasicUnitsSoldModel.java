@@ -15,12 +15,14 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 	protected int _capacity;
 	protected int _window;
 	protected List<Integer> _sold;
+	protected Integer expectedConvsForMissingDay;
 	
 	public BasicUnitsSoldModel(Set<Query> querySpace, int distributionCapacity, int distributionWindow) {
 		_querySpace = querySpace;
 		_capacity = distributionCapacity;
 		_window = distributionWindow;
 		_sold = new ArrayList<Integer>();
+		expectedConvsForMissingDay = null;
 	}
 
 	@Override
@@ -45,7 +47,12 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 				total += _capacity/((double) _window);
 			}
 		}
-		total = (total + _capacity/((double) _window)) / 4.0 + total;
+		if(expectedConvsForMissingDay == null) {
+			total += (total + _capacity/((double) _window)) / 4.0;
+		}
+		else {
+			total += expectedConvsForMissingDay;
+		}
 		return total;
 	}
 	
@@ -70,6 +77,10 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 			conversions += salesReport.getConversions(q);
 		}
 		_sold.add(conversions);
+	}
+	
+	public void expectedConvsTomorrow(int expectedConvs) {
+		expectedConvsForMissingDay = expectedConvs;
 	}
 
 	@Override

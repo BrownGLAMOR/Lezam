@@ -455,6 +455,40 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 					bidBundle.addQuery(q, bid, new Ad(), bid*5);
 				}
 			}
+			/*
+			 * Pass expected conversions to unit sales model
+			 */
+			double solutionWeight = 0.0;
+			for(Query q : _querySpace) {
+				double bid = bidBundle.getBid(q);
+				double dailyLimit = bidBundle.getDailyLimit(q);
+				double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+				double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+				int numClicks = (int) (clickPr * numImps);
+				double CPC = _bidToCPC.getPrediction(q, bid);
+				double convProb = _convPrModel.getPrediction(q)*penalty;
+
+				if(Double.isNaN(CPC)) {
+					CPC = 0.0;
+				}
+
+				if(Double.isNaN(clickPr)) {
+					clickPr = 0.0;
+				}
+
+				if(Double.isNaN(convProb)) {
+					convProb = 0.0;
+				}
+
+				if(!Double.isNaN(dailyLimit)) {
+					if(numClicks*CPC > dailyLimit) {
+						numClicks = (int) (dailyLimit/CPC);
+					}
+				}
+
+				solutionWeight += numClicks*convProb;
+			}
+			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){
