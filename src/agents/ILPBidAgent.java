@@ -618,43 +618,80 @@ public class ILPBidAgent extends AbstractAgent {
 						bidBundle.addQuery(q, bid, new Ad(), bid*10);
 					}
 				}
+				/*
+				 * Pass expected conversions to unit sales model
+				 */
+				double threshold = 2;
+				double lastSolWeight = 0.0;
+				double solutionWeight = threshold+1;
+				int numIters = 0;
+				while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
+					numIters++;
+					lastSolWeight = solutionWeight;
+					solutionWeight = 0;
+					double newPenalty;
+					double numOverCap = lastSolWeight - capacity;
+					if(capacity < 0) {
+						newPenalty = 0.0;
+						int num = 0;
+						for(double j = Math.abs(capacity)+1; j <= numOverCap; j++) {
+							newPenalty += Math.pow(LAMBDA, j);
+							num++;
+						}
+						newPenalty /= (num);
+						double oldPenalty = Math.pow(LAMBDA, Math.abs(capacity));
+						newPenalty = newPenalty/oldPenalty;
+					}
+					else {
+						if(numOverCap <= 0) {
+							newPenalty = 1.0;
+						}
+						else {
+							newPenalty = capacity;
+							for(int j = 1; j <= numOverCap; j++) {
+								newPenalty += Math.pow(LAMBDA, j);
+							}
+							newPenalty /= (capacity + numOverCap);
+						}
+					}
+					if(Double.isNaN(newPenalty)) {
+						newPenalty = 1.0;
+					}
+					for(Query q : _querySpace) {
+						double bid = bidBundle.getBid(q);
+						double dailyLimit = bidBundle.getDailyLimit(q);
+						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+						int numClicks = (int) (clickPr * numImps);
+						double CPC = _bidToCPC.getPrediction(q, bid);
+						double convProb = _convPrModel.getPrediction(q)*newPenalty;
+
+						if(Double.isNaN(CPC)) {
+							CPC = 0.0;
+						}
+
+						if(Double.isNaN(clickPr)) {
+							clickPr = 0.0;
+						}
+
+						if(Double.isNaN(convProb)) {
+							convProb = 0.0;
+						}
+
+						if(!Double.isNaN(dailyLimit)) {
+							if(numClicks*CPC > dailyLimit) {
+								numClicks = (int) (dailyLimit/CPC);
+							}
+						}
+
+						solutionWeight += numClicks*convProb;
+					}
+				}
+//				System.out.println(numIters);
+				((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 			} catch (IloException e) {
 				e.printStackTrace();
 			}
-			/*
-			 * Pass expected conversions to unit sales model
-			 */
-			double solutionWeight = 0.0;
-			for(Query q : _querySpace) {
-				double bid = bidBundle.getBid(q);
-				double dailyLimit = bidBundle.getDailyLimit(q);
-				double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-				double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-				int numClicks = (int) (clickPr * numImps);
-				double CPC = _bidToCPC.getPrediction(q, bid);
-				double convProb = _convPrModel.getPrediction(q)*penalty;
-
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
-				}
-
-				if(Double.isNaN(clickPr)) {
-					clickPr = 0.0;
-				}
-
-				if(Double.isNaN(convProb)) {
-					convProb = 0.0;
-				}
-
-				if(!Double.isNaN(dailyLimit)) {
-					if(numClicks*CPC > dailyLimit) {
-						numClicks = (int) (dailyLimit/CPC);
-					}
-				}
-
-				solutionWeight += numClicks*convProb;
-			}
-			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){

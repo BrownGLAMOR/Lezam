@@ -455,7 +455,7 @@ public class MCKPBid extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double threshold = 1;
+			double threshold = 2;
 			double lastSolWeight = 0.0;
 			double solutionWeight = threshold+1;
 			int numIters = 0;
@@ -521,7 +521,7 @@ public class MCKPBid extends AbstractAgent {
 					solutionWeight += numClicks*convProb;
 				}
 			}
-			System.out.println(numIters);
+//			System.out.println(numIters);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {

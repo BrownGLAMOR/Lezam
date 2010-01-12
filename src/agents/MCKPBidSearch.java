@@ -413,36 +413,73 @@ public class MCKPBidSearch extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double solutionWeight = 0.0;
-			for(Query q : _querySpace) {
-				double bid = bidBundle.getBid(q);
-				double dailyLimit = bidBundle.getDailyLimit(q);
-				double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-				double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-				int numClicks = (int) (clickPr * numImps);
-				double CPC = _bidToCPC.getPrediction(q, bid);
-				double convProb = _convPrModel.getPrediction(q);//TODO put penalty back in
-
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
+			double threshold = 2;
+			double lastSolWeight = 0.0;
+			double solutionWeight = threshold+1;
+			int numIters = 0;
+			while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
+				numIters++;
+				lastSolWeight = solutionWeight;
+				solutionWeight = 0;
+				double newPenalty;
+				double numOverCap = lastSolWeight - budget;
+				if(budget < 0) {
+					newPenalty = 0.0;
+					int num = 0;
+					for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
+						newPenalty += Math.pow(LAMBDA, j);
+						num++;
+					}
+					newPenalty /= (num);
+					double oldPenalty = Math.pow(LAMBDA, Math.abs(budget));
+					newPenalty = newPenalty/oldPenalty;
 				}
-
-				if(Double.isNaN(clickPr)) {
-					clickPr = 0.0;
-				}
-
-				if(Double.isNaN(convProb)) {
-					convProb = 0.0;
-				}
-
-				if(!Double.isNaN(dailyLimit)) {
-					if(numClicks*CPC > dailyLimit) {
-						numClicks = (int) (dailyLimit/CPC);
+				else {
+					if(numOverCap <= 0) {
+						newPenalty = 1.0;
+					}
+					else {
+						newPenalty = budget;
+						for(int j = 1; j <= numOverCap; j++) {
+							newPenalty += Math.pow(LAMBDA, j);
+						}
+						newPenalty /= (budget + numOverCap);
 					}
 				}
+				if(Double.isNaN(newPenalty)) {
+					newPenalty = 1.0;
+				}
+				for(Query q : _querySpace) {
+					double bid = bidBundle.getBid(q);
+					double dailyLimit = bidBundle.getDailyLimit(q);
+					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+					int numClicks = (int) (clickPr * numImps);
+					double CPC = _bidToCPC.getPrediction(q, bid);
+					double convProb = _convPrModel.getPrediction(q)*newPenalty;
 
-				solutionWeight += numClicks*convProb;
+					if(Double.isNaN(CPC)) {
+						CPC = 0.0;
+					}
+
+					if(Double.isNaN(clickPr)) {
+						clickPr = 0.0;
+					}
+
+					if(Double.isNaN(convProb)) {
+						convProb = 0.0;
+					}
+
+					if(!Double.isNaN(dailyLimit)) {
+						if(numClicks*CPC > dailyLimit) {
+							numClicks = (int) (dailyLimit/CPC);
+						}
+					}
+
+					solutionWeight += numClicks*convProb;
+				}
 			}
+//			System.out.println(numIters);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
