@@ -1,5 +1,6 @@
 package agents;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +32,8 @@ import newmodels.unitssold.BasicUnitsSoldModel;
 import newmodels.unitssold.UnitsSoldMovingAvg;
 import newmodels.usermodel.AbstractUserModel;
 import newmodels.usermodel.BasicUserModel;
+import agents.mckp.DrIncItem;
+import agents.mckp.DrItem;
 import agents.mckp.IncItem;
 import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;
@@ -46,19 +49,14 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPBid extends AbstractAgent {
+public class DrMCKPBid extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
-
-	//Days since Last Boost
-	private double lastBoost;
-	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -78,8 +76,9 @@ public class MCKPBid extends AbstractAgent {
 	private LinkedList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
+	private int _numMultiday;
 
-	public MCKPBid() {
+	public DrMCKPBid(int numMultiday) {
 		_R.setSeed(124962748);
 		bidList = new LinkedList<Double>();
 		//		double increment = .25;
@@ -90,8 +89,8 @@ public class MCKPBid extends AbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			bidList.add(min+(i*increment));
 		}
-
 		salesDistFlag = false;
+		_numMultiday = numMultiday;
 	}
 
 
@@ -224,8 +223,6 @@ public class MCKPBid extends AbstractAgent {
 			i++;
 			_queryId.put(q, i);
 		}
-
-		lastBoost = 5;
 	}
 
 
@@ -305,92 +302,105 @@ public class MCKPBid extends AbstractAgent {
 				budget = _capacity - _unitsSold.getWindowSold();
 				debug("Unit Sold Model Budget "  +budget);
 			}
-
-			if(BOOST) {
-				if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
-					debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
-					lastBoost = -1;
-					budget *= boostCoeff;
-				}
-				lastBoost++;
-			}
-
-			debug("Budget: "+ budget);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			LinkedList<IncItem> allIncItems = new LinkedList<IncItem>();
-
-			//want the queries to be in a guaranteed order - put them in an array
-			//index will be used as the id of the query
-			double penalty = 1.0;
-			if(budget < 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(budget));
+			ArrayList<Double> clickPrTrend = new ArrayList<Double>();
+			ArrayList<Double> numImpsTrend = new ArrayList<Double>();
+			ArrayList<Double> CPCTrend = new ArrayList<Double>();
+			ArrayList<Double> convPrTrend = new ArrayList<Double>();
+			for(int i = 0; i < _numMultiday; i++) {
+				clickPrTrend.add(1.0 - i * (1/100.0));
+				numImpsTrend.add(1.0 - i * (1/100.0));
+				CPCTrend.add(1.0 - i * (1/100.0));
+				convPrTrend.add(1.0 - i * (1/100.0));
 			}
-			for(Query q : _querySpace) {
-				LinkedList<Item> itemList = new LinkedList<Item>();
-				debug("Query: " + q);
-				for(int i = 0; i < bidList.size(); i++) {
-					double salesPrice = _salesPrices.get(q);
-					double bid = bidList.get(i);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q)*penalty;
 
-					if(Double.isNaN(CPC)) {
-						CPC = 0.0;
-					}
+			//MULTIDAY
+			LinkedList<DrIncItem> allIncItems = new LinkedList<DrIncItem>();
+			ArrayList<Integer> salesArray = new ArrayList<Integer>(((BasicUnitsSoldModel)_unitsSold).getSalesArray());
+			Integer missingConvs = ((BasicUnitsSoldModel)_unitsSold).getExpectedConvsTomorrow();
+			if(missingConvs == null) {
+				salesArray.add((int) (_unitsSold.getWindowSold()-_unitsSold.getThreeDaysSold()));
+			}
+			else {
+				salesArray.add(missingConvs);
+			}
+			double[] budgets = new double[_numMultiday];
+			for(int multiDay = 1; multiDay <= _numMultiday; multiDay++) {
+				double multiDayBudget = _capacity;
+				for(int i = 0; i < _capWindow-1; i++) {
+					multiDayBudget -= salesArray.get(salesArray.size()-1-i);
+				}
+				multiDayBudget = _capacity - _unitsSold.getWindowSold();
 
-					if(Double.isNaN(clickPr)) {
-						clickPr = 0.0;
-					}
+				budgets[multiDay-1] = multiDayBudget;
 
-					if(Double.isNaN(convProb)) {
-						convProb = 0.0;
-					}
+				double penalty = 1.0;
+				if(multiDayBudget < 0) {
+					penalty = Math.pow(LAMBDA, Math.abs(multiDayBudget));
+				}
+				for(Query q : _querySpace) {
+					LinkedList<Item> itemList = new LinkedList<Item>();
+					debug("Query: " + q);
+					for(int i = 0; i < bidList.size(); i++) {
+						double salesPrice = _salesPrices.get(q);
+						double bid = bidList.get(i);
+						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad()) * clickPrTrend.get(multiDay-1);
+						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1)) * numImpsTrend.get(multiDay-1);
+						int numClicks = (int) (clickPr * numImps);
+						double CPC = _bidToCPC.getPrediction(q, bid) * CPCTrend.get(multiDay-1);
+						double convProb = _convPrModel.getPrediction(q)*penalty * convPrTrend.get(multiDay-1);
 
-					debug("\tBid: " + bid);
-					debug("\tCPC: " + CPC);
-					debug("\tNumImps: " + numImps);
-					debug("\tNumClicks: " + numClicks);
-					debug("\tClickPr: " + clickPr);
-					debug("\tConv Prob: " + convProb + "\n\n");
-
-					int isID = _queryId.get(q);
-					double w = numClicks*convProb;				//weight = numClciks * convProv
-					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,bid,false,isID,i));
-
-					if(TARGET) {
-						/*
-						 * add a targeted version of our bid as well
-						 */
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-							if(convProb != 0) {
-								convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
-							}
-							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
+						if(Double.isNaN(CPC)) {
+							CPC = 0.0;
 						}
 
-						w = numClicks*convProb;				//weight = numClciks * convProv
-						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+						if(Double.isNaN(clickPr)) {
+							clickPr = 0.0;
+						}
 
-						itemList.add(new Item(q,w,v,bid,true,isID,i));
+						if(Double.isNaN(convProb)) {
+							convProb = 0.0;
+						}
+
+						int isID = _queryId.get(q);
+						double w = numClicks*convProb;				//weight = numClciks * convProv
+						double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+						itemList.add(new DrItem(q,w,v,bid,false,isID,i,multiDay));
+
+						if(TARGET) {
+							/*
+							 * add a targeted version of our bid as well
+							 */
+							if(clickPr != 0) {
+								numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
+								if(convProb != 0) {
+									convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
+								}
+								salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
+							}
+
+							w = numClicks*convProb;				//weight = numClciks * convProv
+							v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+
+							itemList.add(new DrItem(q,w,v,bid,true,isID,i,multiDay));
+						}
 					}
+					DrItem[] items = itemList.toArray(new DrItem[itemList.size()]);
+					DrIncItem[] iItems = getIncremental(items);
+					allIncItems.addAll(Arrays.asList(iItems));
 				}
-				debug("Items for " + q);
-				Item[] items = itemList.toArray(new Item[0]);
-				IncItem[] iItems = getIncremental(items);
-				allIncItems.addAll(Arrays.asList(iItems));
+				salesArray.add((int) (_capacity/((double)_capWindow)));
+			}
+
+			for(int multiDay = 1; multiDay <= _numMultiday; multiDay++) {
+				salesArray.remove((int) (salesArray.size()-1));
 			}
 
 			Collections.sort(allIncItems);
-			//			Misc.printList(allIncItems,"\n", Output.OPTIMAL);
 
-			//			HashMap<Integer,Item> solution = fillKnapsack(allIncItems, budget);
-			HashMap<Integer,Item> solution = fillKnapsackWithCapExt(allIncItems, budget);
+
+			HashMap<Integer,Item> solution = fillMultiDayKnapsack(allIncItems, budgets);
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -521,7 +531,7 @@ public class MCKPBid extends AbstractAgent {
 					solutionWeight += numClicks*convProb;
 				}
 			}
-//			System.out.println(numIters);
+			//			System.out.println(numIters);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -542,51 +552,45 @@ public class MCKPBid extends AbstractAgent {
 		return bidBundle;
 	}
 
-
-	/**
-	 * Greedily fill the knapsack by selecting incremental items
-	 * @param incItems
-	 * @param budget
-	 * @return
-	 */
-	private HashMap<Integer,Item> fillKnapsack(LinkedList<IncItem> incItems, double budget){
-		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
-		for(IncItem ii: incItems) {
-			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
-			//set replace lighter items as we want
-			if(budget >= 0) {
-				//				debug("adding item " + ii);
-				solution.put(ii.item().isID(), ii.item());
-				budget -= ii.w();
-			}
-			else {
-				break;
-			}
-		}
-		return solution;
-	}
-
-	/*
-	 *TODO
-	 *change incItems to an ArrayList
-	 */
-	private HashMap<Integer,Item> fillKnapsackWithCapExt(LinkedList<IncItem> incItems, double budget){
+	private HashMap<Integer,Item> fillMultiDayKnapsack(LinkedList<DrIncItem> incItems, double[] budgets){
 		HashMap<Integer,Item> solution = new HashMap<Integer, Item>();
 
-		int expectedConvs = 0;
-		double numOverCap = 0;
+		int[] expectedConvs = new int[budgets.length];
 
 		for(int i = 0; i < incItems.size(); i++) {
-			IncItem ii = incItems.get(i);
-			if(budget >= expectedConvs + ii.w()) {
-				solution.put(ii.item().isID(), ii.item());
-				expectedConvs += ii.w();
+			DrIncItem ii = incItems.get(i);
+			int itemDay = ii.day();
+			boolean capacityViolated = false;
+
+			for(int d = 1; d <= budgets.length; d++) {
+				double budget = budgets[d-1];
+				int expectedConv = expectedConvs[d-1];
+				double overCap = budget-expectedConv;
+				if(overCap > 0) {
+					capacityViolated = true;
+					break;
+				}
+				if (itemDay >= d && itemDay < d+5) {
+					if(expectedConv + ii.w() > budget) {
+						capacityViolated = true;
+						break;
+					}
+				}
+				else {
+					if(expectedConv > budget) {
+						capacityViolated = true;
+						break;
+					}
+				}
+			}
+
+			if(!capacityViolated) {
+				if(itemDay == 1) {
+					solution.put(ii.item().isID(), ii.item());
+				}
+				expectedConvs[itemDay-1] += ii.w();
 			}
 			else {
-				double min = numOverCap;
-				numOverCap = expectedConvs + ii.w() - budget;
-				double max = numOverCap;
-
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
 					if(_day < 2) {
@@ -596,9 +600,7 @@ public class MCKPBid extends AbstractAgent {
 						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
 					}
 				}
-				
-//				avgConvProb *= Math.pow(LAMBDA, min);
-				
+
 				double avgUSP = 0;
 				for(Query q : _querySpace) {
 					if(_day < 2) {
@@ -609,17 +611,35 @@ public class MCKPBid extends AbstractAgent {
 					}
 				}
 
-				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
 				double valueLost = 0;
-				for (double j = min+1; j <= max; j++){
-					double iD = Math.pow(LAMBDA, j);
-					double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-					valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+
+				/*
+				 * The item cannot change the value on days before it occurs, or more
+				 * than 4 days later
+				 */
+				for(int d = itemDay; d < itemDay+5 && d < budgets.length; d++) {
+					if(d >= itemDay) {
+						double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - (_day+d-1)));
+						double budget = budgets[d-1];
+						int expectedConv = expectedConvs[d-1];
+						double min = budget-expectedConv;
+						double max = min + ii.w();
+						min = Math.max(min, 0);
+						if(max > 0) {
+							for (double j = min+1; j <= max; j++){
+								double iD = Math.pow(LAMBDA, j);
+								double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+								valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
+							}
+						}
+					}
 				}
 
 				if(ii.v() > valueLost) {
-					solution.put(ii.item().isID(), ii.item());
-					expectedConvs += ii.w();
+					if(itemDay == 1) {
+						solution.put(ii.item().isID(), ii.item());
+					}
+					expectedConvs[itemDay-1] += ii.w();
 				}
 				else {
 					break;
@@ -634,7 +654,7 @@ public class MCKPBid extends AbstractAgent {
 	 * @param items
 	 * @return
 	 */
-	public static Item[] getUndominated(Item[] items) {
+	public static DrItem[] getUndominated(DrItem[] items) {
 		Arrays.sort(items,new ItemComparatorByWeight());
 		//remove dominated items (higher weight, lower value)		
 		LinkedList<Item> temp = new LinkedList<Item>();
@@ -678,7 +698,7 @@ public class MCKPBid extends AbstractAgent {
 		}
 
 		//items now contain only undominated items
-		items = betterTemp.toArray(new Item[0]);
+		items = betterTemp.toArray(new DrItem[0]);
 		Arrays.sort(items,new ItemComparatorByWeight());
 
 		//remove lp-dominated items
@@ -711,7 +731,7 @@ public class MCKPBid extends AbstractAgent {
 			q.remove(0);
 		}
 
-		Item[] uItems = (Item[]) q.toArray(new Item[0]);
+		DrItem[] uItems = (DrItem[]) q.toArray(new DrItem[0]);
 		return uItems;
 	}
 
@@ -721,27 +741,27 @@ public class MCKPBid extends AbstractAgent {
 	 * @param items
 	 * @return
 	 */
-	public IncItem[] getIncremental(Item[] items) {
+	public DrIncItem[] getIncremental(DrItem[] items) {
 		debug("PRE INCREMENTAL");
 		for(int i = 0; i < items.length; i++) {
 			debug("\t" + items[i]);
 		}
 
-		Item[] uItems = getUndominated(items);
+		DrItem[] uItems = getUndominated(items);
 
 		debug("UNDOMINATED");
 		for(int i = 0; i < uItems.length; i++) {
 			debug("\t" + uItems[i]);
 		}
 
-		IncItem[] ii = new IncItem[uItems.length];
+		DrIncItem[] ii = new DrIncItem[uItems.length];
 
 		if (uItems.length != 0){ //getUndominated can return an empty array
-			ii[0] = new IncItem(uItems[0].w(), uItems[0].v(), uItems[0], null);
+			ii[0] = new DrIncItem(uItems[0].w(), uItems[0].v(), uItems[0], null,uItems[0].day());
 			for(int item=1; item<uItems.length; item++) {
-				Item prev = uItems[item-1];
-				Item cur = uItems[item];
-				ii[item] = new IncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur, prev);
+				DrItem prev = uItems[item-1];
+				DrItem cur = uItems[item];
+				ii[item] = new DrIncItem(cur.w() - prev.w(), cur.v() - prev.v(), cur, prev,cur.day());
 			}
 		}
 		debug("INCREMENTAL");
@@ -764,12 +784,12 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid";
+		return "DrMCKPBid(" + _numMultiday + ")";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid();
+		return new DrMCKPBid(_numMultiday);
 	}
 
 }
