@@ -64,7 +64,6 @@ import agents.G3Agent;
 import agents.AdjustPPS;
 import agents.MCKPBidNoDomElim;
 import agents.MCKPBidSearch;
-import agents.MCKPBidTrueOneDay;
 import agents.PortfolioOpt;
 import agents.ConstantPM;
 import agents.EquateProfitC;
@@ -1919,7 +1918,7 @@ public class BasicSimulator {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1425,1429,0,0, agentItr);
+			sim.runSimulations(baseFile,1425,1445,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();

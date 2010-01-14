@@ -51,13 +51,9 @@ public class MCKPBid extends AbstractAgent {
 	private boolean BUDGET = false;
 	private boolean BACKWARDUPDATING = true;
 	private boolean FORWARDUPDATING = false;
-	private boolean RESORTING = true;
+	private boolean PRICELINES = true;
 
 	private double _safetyBudget = 800;
-
-	//Days since Last Boost
-	private double lastBoost;
-	private double boostCoeff = 1.2;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -223,8 +219,6 @@ public class MCKPBid extends AbstractAgent {
 			i++;
 			_queryId.put(q, i);
 		}
-
-		lastBoost = 5;
 	}
 
 
@@ -328,7 +322,7 @@ public class MCKPBid extends AbstractAgent {
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q)*penalty;
+					double convProb = _convPrModel.getPrediction(q);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
@@ -350,8 +344,8 @@ public class MCKPBid extends AbstractAgent {
 					debug("\tConv Prob: " + convProb + "\n\n");
 
 					int isID = _queryId.get(q);
-					double w = numClicks*convProb;				//weight = numClciks * convProv
-					double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+					double w = numClicks*convProb*penalty;				//weight = numClciks * convProv
+					double v = numClicks*convProb*penalty*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 					itemList.add(new Item(q,w,v,bid,false,isID,i));
 
 					if(TARGET) {
@@ -366,8 +360,8 @@ public class MCKPBid extends AbstractAgent {
 							salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
 						}
 
-						w = numClicks*convProb;				//weight = numClciks * convProv
-						v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+						w = numClicks*convProb*penalty;				//weight = numClciks * convProv
+						v = numClicks*convProb*penalty*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
 						itemList.add(new Item(q,w,v,bid,true,isID,i));
 					}
@@ -645,7 +639,7 @@ public class MCKPBid extends AbstractAgent {
 				if(Double.isNaN(penalty)) {
 					penalty = 1.0;
 				}
-				if(FORWARDUPDATING && !RESORTING) {
+				if(FORWARDUPDATING && !PRICELINES) {
 					if(ii.itemLow() != null) {
 						Predictions prediction1 = allPredictionsMap.get(ii.item().q()).get(ii.itemLow().idx());
 						Predictions prediction2 = allPredictionsMap.get(ii.item().q()).get(ii.itemHigh().idx());
@@ -660,7 +654,7 @@ public class MCKPBid extends AbstractAgent {
 						itemWeight = prediction.getClickPr()*prediction.getNumImp()*prediction.getConvPr()*penalty;
 					}
 				}
-				else if(RESORTING) {
+				else if(PRICELINES) {
 					ArrayList<IncItem> updatedItems = new ArrayList<IncItem>();
 					for(int j = i+1; j < incItems.size(); j++) {
 						IncItem incItem = incItems.get(j);
@@ -874,7 +868,7 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid(Budget: " + BUDGET + ", backward: " + BACKWARDUPDATING + ", WV: " + FORWARDUPDATING;
+		return "MCKPBid(Budget: " + BUDGET + ", ForwardUpdate: " + BACKWARDUPDATING + ", Backward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES;
 	}
 
 	@Override
