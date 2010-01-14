@@ -48,10 +48,10 @@ public class MCKPBid extends AbstractAgent {
 	private int MAX_TIME_HORIZON = 5;
 	private boolean SAFETYBUDGET = true;
 	private boolean TARGET = false;
-	private boolean BUDGET = false;
+	private boolean BUDGET = true;
 	private boolean BACKWARDUPDATING = true;
 	private boolean FORWARDUPDATING = false;
-	private boolean PRICELINES = true;
+	private boolean PRICELINES = false;
 
 	private double _safetyBudget = 800;
 
@@ -438,7 +438,7 @@ public class MCKPBid extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double solutionWeight = getSoltuionWeight(budget,solution,allPredictionsMap);
+			double solutionWeight = solutionWeight(budget,solution,allPredictionsMap);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -459,7 +459,7 @@ public class MCKPBid extends AbstractAgent {
 		return bidBundle;
 	}
 
-	private double getSoltuionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
 		double threshold = 2;
 		int maxIters = 10;
 		double lastSolWeight = Double.MAX_VALUE;
@@ -582,8 +582,8 @@ public class MCKPBid extends AbstractAgent {
 		return solutionWeight;
 	}
 
-	private double getSoltuionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
-		return getSoltuionWeight(budget, solution, allPredictionsMap, null);
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+		return solutionWeight(budget, solution, allPredictionsMap, null);
 	}
 
 
@@ -607,7 +607,7 @@ public class MCKPBid extends AbstractAgent {
 				 * If backwards updating we update our solution weight now
 				 */
 				if(BACKWARDUPDATING) {
-					expectedConvs = (int) getSoltuionWeight(budget, solution, allPredictionsMap);
+					expectedConvs = (int) solutionWeight(budget, solution, allPredictionsMap);
 				}
 				numOverCap = expectedConvs - budget;
 
@@ -868,7 +868,7 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid(Budget: " + BUDGET + ", ForwardUpdate: " + BACKWARDUPDATING + ", Backward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES;
+		return "MCKPBid(Budget: " + BUDGET + ", Backward Update: " + BACKWARDUPDATING + ", Forward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES;
 	}
 
 	@Override

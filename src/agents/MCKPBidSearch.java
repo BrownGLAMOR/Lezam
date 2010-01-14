@@ -424,73 +424,7 @@ public class MCKPBidSearch extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double threshold = 2;
-			double lastSolWeight = 0.0;
-			double solutionWeight = threshold+1;
-			int numIters = 0;
-			while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
-				numIters++;
-				lastSolWeight = solutionWeight;
-				solutionWeight = 0;
-				double newPenalty;
-				double numOverCap = lastSolWeight - budget;
-				if(budget < 0) {
-					newPenalty = 0.0;
-					int num = 0;
-					for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-						newPenalty += Math.pow(LAMBDA, j);
-						num++;
-					}
-					newPenalty /= (num);
-					double oldPenalty = Math.pow(LAMBDA, Math.abs(budget));
-					newPenalty = newPenalty/oldPenalty;
-				}
-				else {
-					if(numOverCap <= 0) {
-						newPenalty = 1.0;
-					}
-					else {
-						newPenalty = budget;
-						for(int j = 1; j <= numOverCap; j++) {
-							newPenalty += Math.pow(LAMBDA, j);
-						}
-						newPenalty /= (budget + numOverCap);
-					}
-				}
-				if(Double.isNaN(newPenalty)) {
-					newPenalty = 1.0;
-				}
-				for(Query q : _querySpace) {
-					double bid = bidBundle.getBid(q);
-					double dailyLimit = bidBundle.getDailyLimit(q);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q)*newPenalty;
-
-					if(Double.isNaN(CPC)) {
-						CPC = 0.0;
-					}
-
-					if(Double.isNaN(clickPr)) {
-						clickPr = 0.0;
-					}
-
-					if(Double.isNaN(convProb)) {
-						convProb = 0.0;
-					}
-
-					if(!Double.isNaN(dailyLimit)) {
-						if(numClicks*CPC > dailyLimit) {
-							numClicks = (int) (dailyLimit/CPC);
-						}
-					}
-
-					solutionWeight += numClicks*convProb;
-				}
-			}
-			//			System.out.println(numIters);
+			double solutionWeight = solutionWeight(budget,bestSolution,allPredictionsMap);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -513,7 +447,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 
 	private double solutionValue(HashMap<Query, Item> solution, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-		double totalWeight = getSoltuionWeight(budget, solution, allPredictionsMap);
+		double totalWeight = solutionWeight(budget, solution, allPredictionsMap);
 		double overCap = totalWeight - budget;
 		overCap = Math.max(overCap, 0);
 
@@ -591,7 +525,7 @@ public class MCKPBidSearch extends AbstractAgent {
 		return totalValue-valueLost;
 	}
 
-	private double getSoltuionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
 		double threshold = 2;
 		int maxIters = 10;
 		double lastSolWeight = Double.MAX_VALUE;
@@ -714,8 +648,8 @@ public class MCKPBidSearch extends AbstractAgent {
 		return solutionWeight;
 	}
 
-	private double getSoltuionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
-		return getSoltuionWeight(budget, solution, allPredictionsMap, null);
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+		return solutionWeight(budget, solution, allPredictionsMap, null);
 	}
 
 
