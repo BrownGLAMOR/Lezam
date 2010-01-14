@@ -555,9 +555,6 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	private ArrayList<IncItem> getIncItemsForOverCapLevel(double initBudget, double overCap) {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-		//want the queries to be in a guaranteed order - put them in an array
-		//index will be used as the id of the query
-		//		System.out.println("InitBudget: " + initBudget);
 		double penalty;
 		if(initBudget < 0) {
 			penalty = 0.0;

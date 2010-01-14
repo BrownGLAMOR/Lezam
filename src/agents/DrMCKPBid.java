@@ -302,17 +302,21 @@ public class DrMCKPBid extends AbstractAgent {
 				budget = _capacity - _unitsSold.getWindowSold();
 				debug("Unit Sold Model Budget "  +budget);
 			}
-			//NEED TO USE THE MODELS WE ARE PASSED!!!
+
+			int realNumDays = (int) Math.max(1,Math.min(59 - _day, _numMultiday));
 
 			ArrayList<Double> clickPrTrend = new ArrayList<Double>();
 			ArrayList<Double> numImpsTrend = new ArrayList<Double>();
 			ArrayList<Double> CPCTrend = new ArrayList<Double>();
 			ArrayList<Double> convPrTrend = new ArrayList<Double>();
-			for(int i = 0; i < _numMultiday; i++) {
-				clickPrTrend.add(1.0 - i * (1/100.0));
-				numImpsTrend.add(1.0 - i * (1/100.0));
-				CPCTrend.add(1.0 - i * (1/100.0));
-				convPrTrend.add(1.0 - i * (1/100.0));
+			for(int i = 0; i < realNumDays; i++) {
+				/*
+				 * This trend says the future is always worse
+				 */
+				clickPrTrend.add(1.0 - i * .01);
+				numImpsTrend.add(1.0 - i * .01);
+				CPCTrend.add(1.0 + i * .01);
+				convPrTrend.add(1.0 - i * .01);
 			}
 
 			//MULTIDAY
@@ -325,8 +329,8 @@ public class DrMCKPBid extends AbstractAgent {
 			else {
 				salesArray.add(missingConvs);
 			}
-			double[] budgets = new double[_numMultiday];
-			for(int multiDay = 1; multiDay <= _numMultiday; multiDay++) {
+			double[] budgets = new double[realNumDays];
+			for(int multiDay = 1; multiDay <= budgets.length; multiDay++) {
 				double multiDayBudget = _capacity;
 				for(int i = 0; i < _capWindow-1; i++) {
 					multiDayBudget -= salesArray.get(salesArray.size()-1-i);
@@ -393,12 +397,11 @@ public class DrMCKPBid extends AbstractAgent {
 				salesArray.add((int) (_capacity/((double)_capWindow)));
 			}
 
-			for(int multiDay = 1; multiDay <= _numMultiday; multiDay++) {
+			for(int multiDay = 1; multiDay <= budgets.length; multiDay++) {
 				salesArray.remove((int) (salesArray.size()-1));
 			}
 
 			Collections.sort(allIncItems);
-
 
 			HashMap<Integer,Item> solution = fillMultiDayKnapsack(allIncItems, budgets);
 
@@ -565,7 +568,7 @@ public class DrMCKPBid extends AbstractAgent {
 			for(int d = 1; d <= budgets.length; d++) {
 				double budget = budgets[d-1];
 				int expectedConv = expectedConvs[d-1];
-				double overCap = budget-expectedConv;
+				double overCap = expectedConv-budget;
 				if(overCap > 0) {
 					capacityViolated = true;
 					break;
@@ -617,12 +620,12 @@ public class DrMCKPBid extends AbstractAgent {
 				 * The item cannot change the value on days before it occurs, or more
 				 * than 4 days later
 				 */
-				for(int d = itemDay; d < itemDay+5 && d < budgets.length; d++) {
+				for(int d = itemDay; d < itemDay+_capWindow && d <= budgets.length; d++) {
 					if(d >= itemDay) {
-						double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - (_day+d-1)));
+						double valueLostWindow = Math.max(1, Math.min(_capWindow - (budgets.length-d),Math.min(_capWindow, 59 - (_day+d-1))));
 						double budget = budgets[d-1];
 						int expectedConv = expectedConvs[d-1];
-						double min = budget-expectedConv;
+						double min = expectedConv-budget;
 						double max = min + ii.w();
 						min = Math.max(min, 0);
 						if(max > 0) {
@@ -642,7 +645,19 @@ public class DrMCKPBid extends AbstractAgent {
 					expectedConvs[itemDay-1] += ii.w();
 				}
 				else {
-					break;
+					if(itemDay != 1 && itemDay > _capWindow+1) {
+						for(int j = i; j < incItems.size(); j++) {
+							DrIncItem itemToRemove = incItems.get(j);
+							if(itemToRemove.day() <= itemDay &&
+									itemToRemove.day() > itemDay - _capWindow) {
+								incItems.remove(j);
+								j--;
+							}
+						}
+					}
+					else {
+						break;
+					}
 				}
 			}
 		}

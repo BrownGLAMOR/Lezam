@@ -321,6 +321,7 @@ public abstract class AbstractAgent extends Agent {
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		System.gc();  System.gc();  System.gc();
     }
 
     /**
@@ -492,6 +493,54 @@ public abstract class AbstractAgent extends Agent {
 	}
 	
 	public abstract AbstractAgent getCopy();
+	
+	public class Predictions {
+		
+		private double _clickPr;
+		private double _CPC;
+		private double _convPr;
+		private double _numImp;
+
+		public Predictions(double clickPr, double CPC, double convPr, double numImp) {
+			_clickPr = clickPr;
+			_CPC = CPC;
+			_convPr = convPr;
+			_numImp = numImp;
+		}
+
+		public void setClickPr(double clickPr) {
+			this._clickPr = clickPr;
+		}
+
+		public double getClickPr() {
+			return _clickPr;
+		}
+
+		public void setCPC(double CPC) {
+			this._CPC = CPC;
+		}
+
+		public double getCPC() {
+			return _CPC;
+		}
+
+		public void setConvPr(double convPr) {
+			this._convPr = convPr;
+		}
+
+		public double getConvPr() {
+			return _convPr;
+		}
+
+		public void setNumImp(double numImp) {
+			this._numImp = numImp;
+		}
+
+		public double getNumImp() {
+			return _numImp;
+		}
+		
+	}
 
 
 }
