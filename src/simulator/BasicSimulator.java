@@ -62,6 +62,7 @@ import agents.EquatePR;
 import agents.EquateROI;
 import agents.G3Agent;
 import agents.AdjustPPS;
+import agents.G4;
 import agents.MCKPBidNoDomElim;
 import agents.MCKPBidSearch;
 import agents.MCKPPosSearch;
@@ -1891,7 +1892,10 @@ public class BasicSimulator {
 //		AbstractAgent agent = new MCKPBid(false,false,false,false);
 //		AbstractAgent agent = new MCKPPos(false,false,false,false);
 //		AbstractAgent agent = new MCKPBidSearch(10);
-		AbstractAgent agent = new MCKPPosSearch(10);
+//		AbstractAgent agent = new MCKPPosSearch(10);
+		
+		AbstractAgent agent = new G4();
+		
 		//		AbstractAgent agent = new MCKPBidTrueOneDay();
 		//		AbstractAgent agent = new MCKPBidPriceline(true);
 		//		AbstractAgent agent = new MCKPBidPriceline(false);
@@ -1921,7 +1925,7 @@ public class BasicSimulator {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1425,1437,0,0, agentItr);
+			sim.runSimulations(baseFile,1425,1426,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();

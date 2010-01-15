@@ -707,7 +707,7 @@ public class ILPPosAgent extends AbstractAgent {
 					for(Query q : _querySpace) {
 						double bid = bidBundle.getBid(q);
 						double dailyLimit = bidBundle.getDailyLimit(q);
-						double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
+						double clickPr = _posToPrClick.getPrediction(q, bid, new Ad());
 						double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 						int numClicks = (int) (clickPr * numImps);
 						double CPC = _bidToCPC.getPrediction(q, bid);

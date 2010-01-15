@@ -437,8 +437,6 @@ public class MCKPPos extends AbstractAgent {
 
 					if(Double.isNaN(bid)) {
 
-						System.out.println("DOOOOKIE");
-
 						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 							bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 						else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
