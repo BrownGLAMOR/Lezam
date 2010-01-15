@@ -291,60 +291,69 @@ public class G4 extends AbstractAgent {
 				//do nothing
 			}
 			else {
-				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = _capacity - _unitsSold.getWindowSold();
+				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
+				//				budget = _capacity - _unitsSold.getWindowSold();
 				debug("Unit Sold Model Budget "  +budget);
 			}
 
-			HashMap<Query,Double> convPr = new HashMap<Query, Double>();
-			for(Query query : _querySpace) {
-				convPr.put(query, _convPrModel.getPrediction(query));
-			}
+			if(budget > 0) {
 
-			HashMap<Query,Integer> numImps = new HashMap<Query, Integer>();
-			for(Query query : _querySpace) {
-				numImps.put(query, _queryToNumImpModel.getPrediction(query, (int)_day));
-			}
-
-			HashMap<Query,Double> targCPCs = new HashMap<Query, Double>();
-			double initPPS = 1.0;
-			double incrementPPS = .1;
-			double PPS = initPPS;
-			double threshold = 5;
-			while(true) {
-				double targetSales = 0.0;
-				for(Query q : _querySpace) {
-					double targCPC = (_salesPrices.get(q)-PPS)*convPr.get(q);
-					targCPCs.put(q, targCPC);
-					targetSales += Math.max(0,numImps.get(q)*_bidToPrClick.getPrediction(q, targCPC, null)*convPr.get(q));
-				}
-				
-				System.out.println(PPS + ", " + targetSales + ", " + budget);
-
-				if(Math.abs(targetSales-budget) < threshold) {
-					break;
+				HashMap<Query,Double> convPr = new HashMap<Query, Double>();
+				for(Query query : _querySpace) {
+					convPr.put(query, _convPrModel.getPrediction(query));
 				}
 
-				PPS += incrementPPS;
-			}
-			
-			if(BUDGET) {
-				for(Query q : _querySpace) {
-					double bid = targCPCs.get(q);
-					bidBundle.addQuery(q, bid,null,numImps.get(q)*_bidToPrClick.getPrediction(q, bid, null)*targCPCs.get(q));
+				HashMap<Query,Integer> numImps = new HashMap<Query, Integer>();
+				for(Query query : _querySpace) {
+					numImps.put(query, _queryToNumImpModel.getPrediction(query, (int)_day));
 				}
-			}
-			else {
-				for(Query q : _querySpace) {
-					bidBundle.addQuery(q, targCPCs.get(q), null);
+
+				HashMap<Query,Double> targCPCs = new HashMap<Query, Double>();
+				double initPPS = 8.0;
+				double incrementPPS = .05;
+				double PPS = initPPS;
+				double threshold = 2;
+				int numIter = 0;
+				while(true) {
+					double targetSales = 0.0;
+					for(Query q : _querySpace) {
+						double targCPC = (_salesPrices.get(q)-PPS)*convPr.get(q);
+						targCPCs.put(q, targCPC);
+						targetSales += Math.max(0,numImps.get(q)*_bidToPrClick.getPrediction(q, targCPC, null)*convPr.get(q));
+					}
+
+					if(Math.abs(targetSales-budget) < threshold) {
+						break;
+					}
+
+					if(PPS > 15) {
+						numIter = -1;
+						threshold += 1;
+						incrementPPS *= .5;
+					}
+
+					PPS += incrementPPS;
+					numIter++;
 				}
+
+				if(BUDGET) {
+					for(Query q : _querySpace) {
+						double bid = targCPCs.get(q);
+						bidBundle.addQuery(q, bid,null,numImps.get(q)*_bidToPrClick.getPrediction(q, bid, null)*targCPCs.get(q));
+					}
+				}
+				else {
+					for(Query q : _querySpace) {
+						bidBundle.addQuery(q, targCPCs.get(q), null);
+					}
+				}
+
+				/*
+				 * Pass expected conversions to unit sales model
+				 */
+				//			double solutionWeight = solutionWeight(budget,solution,allPredictionsMap);
+				//			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 			}
-			
-			/*
-			 * Pass expected conversions to unit sales model
-			 */
-			//			double solutionWeight = solutionWeight(budget,solution,allPredictionsMap);
-			//			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){
