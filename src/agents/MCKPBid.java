@@ -48,7 +48,7 @@ public class MCKPBid extends AbstractAgent {
 	private int MAX_TIME_HORIZON = 5;
 	private boolean SAFETYBUDGET = true;
 	private boolean TARGET = false;
-	private boolean BUDGET = true;
+	private boolean BUDGET = false;
 	private boolean BACKWARDUPDATING = true;
 	private boolean FORWARDUPDATING = false;
 	private boolean PRICELINES = false;
@@ -391,10 +391,6 @@ public class MCKPBid extends AbstractAgent {
 					double CPC = predictions.getCPC();
 
 					if(solution.get(q).targ()) {
-
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-						}
 
 						bidBundle.setBid(q, bidList.get(bidIdx));
 
