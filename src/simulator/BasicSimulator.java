@@ -64,6 +64,7 @@ import agents.G3Agent;
 import agents.AdjustPPS;
 import agents.MCKPBidNoDomElim;
 import agents.MCKPBidSearch;
+import agents.MCKPPosSearch;
 import agents.PortfolioOpt;
 import agents.ConstantPM;
 import agents.EquateProfitC;
@@ -1425,7 +1426,7 @@ public class BasicSimulator {
 
 	public AbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPBid();
+			return new MCKPBid(false,false,false,false);
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -1440,7 +1441,7 @@ public class BasicSimulator {
 			return null;
 		}
 		else {
-			return new MCKPBid();
+			return new MCKPBid(false,false,false,false);
 		}
 	}
 
@@ -1887,12 +1888,14 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-						AbstractAgent agent = new MCKPBid();
+//		AbstractAgent agent = new MCKPBid(false,false,false,false);
+//		AbstractAgent agent = new MCKPPos(false,false,false,false);
+//		AbstractAgent agent = new MCKPBidSearch(10);
+		AbstractAgent agent = new MCKPPosSearch(10);
 		//		AbstractAgent agent = new MCKPBidTrueOneDay();
 		//		AbstractAgent agent = new MCKPBidPriceline(true);
 		//		AbstractAgent agent = new MCKPBidPriceline(false);
 		//		AbstractAgent agent = new MCKPBidNoDomElim();
-//		AbstractAgent agent = new MCKPBidSearch(5);
 		//		AbstractAgent agent = new DrMCKPBid(30);
 		//				AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
 

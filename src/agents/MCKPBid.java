@@ -74,7 +74,11 @@ public class MCKPBid extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
-	public MCKPBid() {
+	public MCKPBid(boolean backward, boolean forward, boolean pricelines, boolean budget) {
+		BUDGET = budget;
+		BACKWARDUPDATING = backward;
+		FORWARDUPDATING = forward;
+		PRICELINES = pricelines;
 		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
@@ -869,6 +873,6 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid();
+		return new MCKPBid(BACKWARDUPDATING,FORWARDUPDATING,PRICELINES,BUDGET);
 	}
 }
