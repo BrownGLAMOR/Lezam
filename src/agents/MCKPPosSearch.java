@@ -957,7 +957,7 @@ public class MCKPPosSearch extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBidSearch(capIncrement=" + _capIncrement + ")";
+		return "MCKPPosSearch(capIncrement=" + _capIncrement + ")";
 	}
 
 	@Override

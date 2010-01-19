@@ -17,6 +17,7 @@ import newmodels.bidtocpc.WEKAEnsembleBidToCPC;
 import newmodels.bidtoprclick.AbstractBidToPrClick;
 import newmodels.bidtoprclick.WEKAEnsembleBidToPrClick;
 import newmodels.prconv.AbstractConversionModel;
+import newmodels.prconv.BasicConvPrModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.querytonumimp.AbstractQueryToNumImp;
@@ -101,6 +102,7 @@ public class MCKPBid extends AbstractAgent {
 		 * Order is important because some of our models use other models
 		 * so we use a LinkedHashSet
 		 */
+		initBidder();
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
@@ -108,7 +110,7 @@ public class MCKPBid extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 10, true, false);
 		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
-		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		BasicConvPrModel convPrModel = new BasicConvPrModel(userModel, _querySpace, _baseConvProbs);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
