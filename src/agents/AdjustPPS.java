@@ -27,6 +27,10 @@ public class AdjustPPS extends RuleBasedAgent {
 	protected double _betaDecPPS;
 	protected double _initPPS;
 	protected HashMap<Query, Double> _PPS;
+	
+	public AdjustPPS() {
+		this(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+	}
 
 	public AdjustPPS(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
 		_alphaIncTS = alphaIncTS;

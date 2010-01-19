@@ -23,6 +23,10 @@ public class EquatePR extends RuleBasedAgent{
 	protected double _alphaDecPR;
 	protected double _betaDecPR;
 	protected double _initPR;
+	
+	public EquatePR() {
+		this(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
+	}
 
 	public EquatePR(double initPR,double alphaIncPR,double betaIncPR,double alphaDecPR,double betaDecPR) {
 		_alphaIncPR = alphaIncPR;

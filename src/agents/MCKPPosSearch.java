@@ -89,6 +89,10 @@ public class MCKPPosSearch extends AbstractAgent {
 	private double _outOfAuction = 6.0;
 	private int _capIncrement = 15;
 	ArrayList<Double> capList;
+	
+	public MCKPPosSearch() {
+		this(30);
+	}
 
 	public MCKPPosSearch(int capIncrement) {
 		_R.setSeed(124962748);

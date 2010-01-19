@@ -27,6 +27,10 @@ public class AdjustPM extends RuleBasedAgent {
 	protected double _betaDecPM;
 	protected double _initPM;
 	protected HashMap<Query, Double> _PM;
+	
+	public AdjustPM() {
+		this(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
+	}
 
 	public AdjustPM(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
 		_alphaIncTS = alphaIncTS;

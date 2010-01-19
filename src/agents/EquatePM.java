@@ -24,6 +24,10 @@ public class EquatePM extends RuleBasedAgent{
 	protected double _alphaDecPM;
 	protected double _betaDecPM;
 	protected double _initPM;
+	
+	public EquatePM() {
+		this(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
+	}
 
 
 	public EquatePM(double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {

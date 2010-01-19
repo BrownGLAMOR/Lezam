@@ -27,6 +27,10 @@ public class AdjustPR extends RuleBasedAgent {
 	protected double _betaDecPR;
 	protected double _initPR;
 	protected HashMap<Query, Double> _PR;
+	
+	public AdjustPR() {
+		this(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
+	}
 
 	public AdjustPR(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
 		_alphaIncTS = alphaIncTS;

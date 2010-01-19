@@ -75,6 +75,10 @@ public class MCKPBid extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
+	public MCKPBid() {
+		this(false,false,false,false);
+	}
+	
 	public MCKPBid(boolean backward, boolean forward, boolean pricelines, boolean budget) {
 		BUDGET = budget;
 		BACKWARDUPDATING = backward;

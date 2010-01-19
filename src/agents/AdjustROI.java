@@ -27,6 +27,10 @@ public class AdjustROI extends RuleBasedAgent {
 	protected double _betaDecROI;
 	protected double _initROI;
 	protected HashMap<Query, Double> _ROI;
+	
+	public AdjustROI() {
+		this(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
+	}
 
 	public AdjustROI(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
 		_alphaIncTS = alphaIncTS;

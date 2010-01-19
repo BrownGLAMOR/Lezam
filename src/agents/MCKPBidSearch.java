@@ -19,6 +19,7 @@ import newmodels.bidtoprclick.EnsembleBidToPrClick;
 import newmodels.bidtoprclick.RegressionBidToPrClick;
 import newmodels.bidtoprclick.WEKAEnsembleBidToPrClick;
 import newmodels.postoprclick.RegressionPosToPrClick;
+import newmodels.prconv.BasicConvPrModel;
 import newmodels.prconv.GoodConversionPrModel;
 import newmodels.prconv.HistoricPrConversionModel;
 import newmodels.prconv.AbstractConversionModel;
@@ -75,6 +76,10 @@ public class MCKPBidSearch extends AbstractAgent {
 	private boolean salesDistFlag;
 	private int _capIncrement = 15;
 	ArrayList<Double> capList;
+	
+	public MCKPBidSearch() {
+		this(30);
+	}
 
 	public MCKPBidSearch(int capIncrement) {
 		_R.setSeed(124962748);
@@ -96,6 +101,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
+		initBidder();
 		/*
 		 * Order is important because some of our models use other models
 		 * so we use a LinkedHashSet
@@ -107,7 +113,8 @@ public class MCKPBidSearch extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 10, true, false);
 		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
-		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+//		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		BasicConvPrModel convPrModel = new BasicConvPrModel(userModel, _querySpace, _baseConvProbs);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);

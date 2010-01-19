@@ -97,6 +97,10 @@ public class MCKPPos extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 	private double _outOfAuction = 6.0;
+	
+	public MCKPPos() {
+		this(false,false,false,false);
+	}
 
 	public MCKPPos(boolean backward, boolean forward, boolean pricelines, boolean budget) {
 		BUDGET = budget;

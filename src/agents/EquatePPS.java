@@ -23,6 +23,10 @@ public class EquatePPS extends RuleBasedAgent{
 	protected double _alphaDecPPS;
 	protected double _betaDecPPS;
 	protected double _initPPS;
+	
+	public EquatePPS() {
+		this(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+	}
 
 	public EquatePPS(double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
 		_alphaIncPPS = alphaIncPPS;
