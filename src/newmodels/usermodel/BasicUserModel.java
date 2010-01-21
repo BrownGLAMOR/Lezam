@@ -8,8 +8,8 @@ package newmodels.usermodel;
 import java.util.Random;
 
 import newmodels.AbstractModel;
+import newmodels.oldusermodel.UserState;
 
-import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;

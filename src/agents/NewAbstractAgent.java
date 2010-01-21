@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.oldusermodel.UserState;
 import simulator.BasicSimulator;
 import simulator.parser.GameStatus;
 import se.sics.isl.transport.Transportable;
@@ -19,7 +20,6 @@ import se.sics.tasim.aw.Agent;
 import se.sics.tasim.aw.Message;
 import se.sics.tasim.props.SimulationStatus;
 import se.sics.tasim.props.StartInfo;
-import usermodel.UserState;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;

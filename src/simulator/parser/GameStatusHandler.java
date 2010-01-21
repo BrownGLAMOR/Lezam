@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import newmodels.oldusermodel.UserState;
+
 import org.omg.CORBA._PolicyStub;
 
 import se.sics.isl.transport.Transportable;
@@ -17,7 +19,6 @@ import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
-import usermodel.UserState;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;

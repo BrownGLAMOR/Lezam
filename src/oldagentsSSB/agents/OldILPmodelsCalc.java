@@ -4,7 +4,8 @@ import java.util.Hashtable;
 import java.util.Queue;
 import java.util.Vector;
 
-import usermodel.UserState;
+import newmodels.oldusermodel.UserState;
+
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

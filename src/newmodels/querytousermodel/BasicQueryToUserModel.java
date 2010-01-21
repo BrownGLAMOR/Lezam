@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import newmodels.AbstractModel;
+import newmodels.oldusermodel.UserState;
 import newmodels.usermodel.AbstractUserModel;
-import usermodel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

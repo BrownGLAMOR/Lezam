@@ -1,12 +1,13 @@
-package usermodel;
+package newmodels.oldusermodel;
 
 import java.util.HashMap;
 import java.util.Set;
 
+import newmodels.oldusermodel.UserStateTransitionModel.UserState;
+
 import oldagentsSSB.agents.rules.Constants;
 
 
-import usermodel.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;

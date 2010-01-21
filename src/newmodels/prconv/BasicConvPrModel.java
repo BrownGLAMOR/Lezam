@@ -3,9 +3,9 @@ package newmodels.prconv;
 import java.util.HashMap;
 import java.util.Set;
 
-import usermodel.UserState;
 
 import newmodels.AbstractModel;
+import newmodels.oldusermodel.UserState;
 import newmodels.usermodel.AbstractUserModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
