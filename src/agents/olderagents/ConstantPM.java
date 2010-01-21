@@ -2,11 +2,14 @@
  * Used to be BraddMaxx
  * Used to be Crest
  */
-package agents;
+package agents.olderagents;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
+import agents.AbstractAgent;
+import agents.rulebased.RuleBasedAgent;
 
 import models.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;

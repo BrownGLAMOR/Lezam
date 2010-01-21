@@ -1,4 +1,4 @@
-package agents;
+package agents.modelbased;
 
 import ilog.concert.IloException;
 import ilog.concert.IloIntVar;
@@ -53,6 +53,7 @@ import models.unitssold.BasicUnitsSoldModel;
 import models.unitssold.UnitsSoldMovingAvg;
 import models.usermodel.AbstractUserModel;
 import models.usermodel.BasicUserModel;
+import agents.AbstractAgent;
 import agents.mckp.IncItem;
 import agents.mckp.Item;
 import agents.mckp.ItemComparatorByWeight;

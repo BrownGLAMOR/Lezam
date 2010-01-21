@@ -1,10 +1,12 @@
-package agents;
+package agents.rulebased;
 
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+
+import agents.AbstractAgent;
 
 import models.AbstractModel;
 import models.prconv.AbstractConversionModel;

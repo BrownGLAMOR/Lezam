@@ -1,8 +1,10 @@
-package agents;
+package agents.rulebased;
 
 
 import java.util.HashMap;
 import java.util.Set;
+
+import agents.AbstractAgent;
 
 import models.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -13,29 +15,28 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class EquatePM extends RuleBasedAgent{
+public class EquatePPS extends RuleBasedAgent{
 	protected HashMap<Query, Double> _prClick;
 	protected BidBundle _bidBundle;
 	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
-	protected double _PM;
-	protected double _alphaIncPM;
-	protected double _betaIncPM;
-	protected double _alphaDecPM;
-	protected double _betaDecPM;
-	protected double _initPM;
+	protected double _PPS;
+	protected double _alphaIncPPS;
+	protected double _betaIncPPS;
+	protected double _alphaDecPPS;
+	protected double _betaDecPPS;
+	protected double _initPPS;
 	
-	public EquatePM() {
-		this(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
+	public EquatePPS() {
+		this(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
 	}
 
-
-	public EquatePM(double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
-		_alphaIncPM = alphaIncPM;
-		_betaIncPM = betaIncPM;
-		_alphaDecPM = alphaDecPM;
-		_betaDecPM = betaDecPM;
-		_initPM = initPM;
+	public EquatePPS(double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
+		_alphaIncPPS = alphaIncPPS;
+		_betaIncPPS = betaIncPPS;
+		_alphaDecPPS = alphaDecPPS;
+		_betaDecPPS = betaDecPPS;
+		_initPPS = initPPS;
 	}
 
 
@@ -53,7 +54,7 @@ public class EquatePM extends RuleBasedAgent{
 
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			/*
-			 * Equate PMs
+			 * Equate PPS
 			 */
 			double sum = 0.0;
 			for(Query query:_querySpace){
@@ -61,17 +62,17 @@ public class EquatePM extends RuleBasedAgent{
 			}
 
 			if(sum <= _dailyCapacity) {
-				_PM *=  (1-(_alphaDecPM*Math.abs(sum - _dailyCapacity)  +  _betaDecPM));
+				_PPS *=  (1-(_alphaDecPPS*Math.abs(sum - _dailyCapacity)  +  _betaDecPPS));
 			}
 			else {
-				_PM *=  (1+_alphaIncPM*Math.abs(sum - _dailyCapacity)  +  _betaIncPM);
+				_PPS *=  (1+_alphaIncPPS*Math.abs(sum - _dailyCapacity)  +  _betaIncPPS);
 			}
 			
-			if(Double.isNaN(_PM) || _PM <= 0) {
-				_PM = _initPM;
+			if(Double.isNaN(_PPS) || _PPS <= 0) {
+				_PPS = _initPPS;
 			}
-			if(_PM > 1.0) {
-				_PM = 1.0;
+			if(_PPS > 15.0) {
+				_PPS = 15.0;
 			}
 		}
 
@@ -103,7 +104,7 @@ public class EquatePM extends RuleBasedAgent{
 		super.initBidder();
 		setDailyQueryCapacity();
 
-		_PM = _initPM;
+		_PPS = _initPPS;
 
 		_prClick = new HashMap<Query, Double>();
 		for (Query query: _querySpace) {
@@ -138,7 +139,7 @@ public class EquatePM extends RuleBasedAgent{
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
 		}
 
-		double CPC = (1 - _PM)*rev* prConv;
+		double CPC = (rev - _PPS)* prConv;
 		
 		CPC = Math.max(0.0, Math.min(3.5, CPC));
 		
@@ -147,12 +148,12 @@ public class EquatePM extends RuleBasedAgent{
 
 	@Override
 	public String toString() {
-		return "EquatePM";
+		return "EquatePPS";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePM(_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM);
+		return new EquatePPS(_initPPS, _alphaIncPPS, _betaIncPPS, _alphaDecPPS, _betaDecPPS);
 	}
 
 }

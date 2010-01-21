@@ -1,4 +1,4 @@
-package agents;
+package agents.olderagents;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,25 +9,15 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
+import agents.AbstractAgent;
 
 import models.AbstractModel;
-import models.avgpostoposdist.AvgPosToPosDist;
 import models.bidtocpc.AbstractBidToCPC;
 import models.bidtocpc.EnsembleBidToCPC;
 import models.bidtocpc.RegressionBidToCPC;
-import models.bidtopos.AbstractBidToPos;
-import models.bidtopos.EnsembleBidToPos;
 import models.bidtoprclick.AbstractBidToPrClick;
 import models.bidtoprclick.EnsembleBidToPrClick;
 import models.bidtoprclick.RegressionBidToPrClick;
-import models.postobid.BidToPosInverter;
-import models.postocpc.AbstractPosToCPC;
-import models.postocpc.EnsemblePosToCPC;
-import models.postoprclick.AbstractPosToPrClick;
-import models.postoprclick.BasicPosToPrClick;
-import models.postoprclick.EnsemblePosToPrClick;
 import models.prconv.AbstractConversionModel;
 import models.prconv.GoodConversionPrModel;
 import models.prconv.HistoricPrConversionModel;
@@ -48,16 +38,13 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class DPPosAgent extends AbstractAgent {
+public class DPBidAgent extends AbstractAgent {
 
 	// models
 	protected AbstractConversionModel prConversionModel;
-	private AbstractPosToCPC posToCPCModel;
+	private AbstractBidToCPC bidToCPCModel;
 	private AbstractQueryToNumImp queryToNumImpModel;
-	private AbstractPosToPrClick posToPrClickModel;
-	private AbstractBidToPos _bidToPos;
-	private AvgPosToPosDist _avgPosDist;
-	private BidToPosInverter _bidToPosInverter;
+	private AbstractBidToPrClick bidToPrClickModel;
 	private AbstractUserModel userModel;
 	protected BasicTargetModel targetModel;
 
@@ -86,7 +73,6 @@ public class DPPosAgent extends AbstractAgent {
 	
 	// for debug
 	protected PrintStream output;
-	private double _outOfAuction = 6.0;
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
@@ -140,25 +126,25 @@ public class DPPosAgent extends AbstractAgent {
 			unitsSold += _salesReport.getConversions(query);
 		}
 
-		int targetCapacity = (int) (2*dailyCapacity);
+		int targetCapacity = (int) (1.25*dailyCapacity);
 
 		HashMap<Query, HashMap<Double, Integer>> item = new HashMap<Query, HashMap<Double, Integer>>();
 
 		for (Query query : _querySpace) {
-			HashMap<Double, Integer> posToClicks = new HashMap<Double, Integer>();
+			HashMap<Double, Integer> bidToClicks = new HashMap<Double, Integer>();
 
-			double minPos = 1.0;
-			double maxPos = _outOfAuction;
-			double increment = .25;
+			double minBid = .04;
+			double maxBid = 3.0;
 			
 			if (ADJUSTMENT) {
-				minPos = Math.max(minPos, _bidBundles.getLast().getBid(query) - 2);
-				maxPos = Math.min(_bidBundles.getLast().getBid(query) + 2, maxPos);
+				minBid = Math.max(minBid, _bidBundles.getLast().getBid(query) - .5);
+				maxBid = Math.min(_bidBundles.getLast().getBid(query) + .5, maxBid);
 			}
 			
-			double pos = minPos;
-			while (pos <= maxPos) {
-				double prClicks = posToPrClickModel.getPrediction(query, pos, null);
+			double bid = minBid;
+			while (bid <= maxBid) {
+				double prClicks = bidToPrClickModel.getPrediction(query, bid,
+						null);
 				if (TARGET) prClicks = targetModel.getClickPrPrediction(query, prClicks, false);
 				double imp = queryToNumImpModel.getPrediction(query,(int) (_day+1));
 				
@@ -166,11 +152,11 @@ public class DPPosAgent extends AbstractAgent {
 				
 				if (ADJUSTMENT) maxClicks = Math.min((_queryReport.getClicks(query)+1)*5, prClicks * imp);
 				
-				posToClicks.put(pos, (int) (maxClicks));
-				pos += increment;
+				bidToClicks.put(bid, (int) (maxClicks));
+				bid += .2;
 			}
 
-			item.put(query, posToClicks);
+			item.put(query, bidToClicks);
 		}
 
 		// dp algorithm
@@ -178,7 +164,7 @@ public class DPPosAgent extends AbstractAgent {
 		System.out.println("targetCapacity : " + targetCapacity);
 		double[][] profit = new double[_querySpace.size()][];
 		Query[] queries = new Query[_querySpace.size()];
-		double[][] positions = new double[_querySpace.size()][];
+		double[][] bids = new double[_querySpace.size()][];
 		int[][] sales = new int[_querySpace.size()][];
 
 		int i = 0;
@@ -187,13 +173,13 @@ public class DPPosAgent extends AbstractAgent {
 			profit[i] = new double[targetCapacity];
 			for (int j = 0; j < targetCapacity; j++)
 				profit[i][j] = 0;
-			positions[i] = new double[targetCapacity];
+			bids[i] = new double[targetCapacity];
 			sales[i] = new int[targetCapacity];
 
 			for (int j = 0; j < targetCapacity; j++) {
-				for (double pos : item.get(query).keySet()) {
+				for (double bid : item.get(query).keySet()) {
 
-					int maxClick = item.get(query).get(pos);
+					int maxClick = item.get(query).get(bid);
 					double prConv = prConversionModel.getPrediction(query);
 
 					for (int capacity = 0; capacity / prConv <= maxClick; capacity++) {
@@ -201,10 +187,10 @@ public class DPPosAgent extends AbstractAgent {
 						double tmp = 0;
 						if (i > 0) tmp = profit[i - 1][j - capacity];
 						double rev = revenues.get(query);
-						double cpc = posToCPCModel.getPrediction(query, pos);
+						double cpc = bidToCPCModel.getPrediction(query, bid);
 						
 						if (TARGET) {
-							double clickPr = posToPrClickModel.getPrediction(query, pos, null);
+							double clickPr = bidToPrClickModel.getPrediction(query, bid, null);
 							if (clickPr <=0 || clickPr >= 1) clickPr = .2;
 							prConv = targetModel.getConvPrPrediction(query, clickPr, prConv, 0);
 							rev = targetModel.getUSPPrediction(query, clickPr, 0);
@@ -214,7 +200,7 @@ public class DPPosAgent extends AbstractAgent {
 
 						if (tmp >= profit[i][j]) {
 							profit[i][j] = tmp;
-							positions[i][j] = pos;
+							bids[i][j] = bid;
 							sales[i][j] = capacity;
 						}
 					}
@@ -246,16 +232,7 @@ public class DPPosAgent extends AbstractAgent {
 			double bid = Double.NaN;
 			double dailyLimit = Double.NaN;
 			if (sales[i][capacity] > 0) {
-				double pos = positions[i][capacity];
-				bid = _bidToPosInverter.getPrediction(queries[i], pos);
-				if(Double.isNaN(bid)) {
-					if (queries[i].getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.1, .6);
-					else if (queries[i].getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.25, .75);
-					else
-						bid = randDouble(.35, 1.0);
-				}
+				bid = bids[i][capacity];
 				double prConv = prConversionModel.getPrediction(queries[i]);
 				if (Double.isNaN(prConv) || prConv == 0) prConv = _baselineConv.get(queries[i]);
 				double clicks = sales[i][capacity] * 1.0/ prConv;
@@ -304,7 +281,7 @@ public class DPPosAgent extends AbstractAgent {
 
 			}
 		
-		System.out.printf("********************\n");
+//		System.out.printf("********************\n");
 		this.printInfo();
 
 		bidBundleList.add(bidBundle);
@@ -363,24 +340,12 @@ public class DPPosAgent extends AbstractAgent {
 		models.add(userModel);
 		queryToNumImpModel = new BasicQueryToNumImp(userModel);
 		models.add(queryToNumImpModel);
-		posToCPCModel = new EnsemblePosToCPC(_querySpace, 8, 5, true, true);
-		models.add(posToCPCModel);
+		bidToCPCModel = new EnsembleBidToCPC(_querySpace, 8, 25, true, true);
+		models.add(bidToCPCModel);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		models.add(basicTargModel);
-		posToPrClickModel = new EnsemblePosToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
-		models.add(posToPrClickModel);
-		BasicPosToPrClick basicPosToPrClickModel = new BasicPosToPrClick(_numPS);
-		AvgPosToPosDist avgPosToDistModel = new AvgPosToPosDist(40, _numPS, basicPosToPrClickModel);
-		AbstractBidToPos bidToPos = new EnsembleBidToPos(_querySpace,avgPosToDistModel,5,15,true,true);
-		BidToPosInverter bidToPosInverter;
-		try {
-			bidToPosInverter = new BidToPosInverter(new RConnection(), _querySpace, bidToPos, .1, 0.0, 3.0);
-		} catch (RserveException e) {
-			throw new RuntimeException("Cannot Access Rserve");
-		}
-		models.add(bidToPos);
-		models.add(avgPosToDistModel);
-		models.add(bidToPosInverter);
+		bidToPrClickModel = new EnsembleBidToPrClick(_querySpace, 8, 25, basicTargModel, true, true);
+		models.add(bidToPrClickModel);
 
 		revenues = new HashMap<Query, Double>();
 		for(Query query:_querySpace){
@@ -411,14 +376,10 @@ public class DPPosAgent extends AbstractAgent {
 			userModel.updateModel(queryReport, salesReport);
 			queryToNumImpModel.updateModel(queryReport, salesReport);
 			if (bidBundleList.size() > 1) {
-				posToCPCModel.updateModel(queryReport, salesReport, bidBundleList
+				bidToCPCModel.updateModel(queryReport, salesReport, bidBundleList
 						.get(bidBundleList.size() - 2));
-				posToPrClickModel.updateModel(queryReport, salesReport, bidBundleList
+				bidToPrClickModel.updateModel(queryReport, salesReport, bidBundleList
 						.get(bidBundleList.size() - 2));
-				
-				_bidToPos.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-				
-				_bidToPosInverter.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 			}
 
 			int timeHorizon = (int) Math.min(Math.max(1, _day - 1),
@@ -443,26 +404,13 @@ public class DPPosAgent extends AbstractAgent {
 			} else if (model instanceof AbstractQueryToNumImp) {
 				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 				this.queryToNumImpModel = queryToNumImp;
-			} else if (model instanceof AbstractPosToCPC) {
-				AbstractPosToCPC posToCPC = (AbstractPosToCPC) model;
-				this.posToCPCModel = posToCPC;
-			} else if (model instanceof AbstractPosToPrClick) {
-				AbstractPosToPrClick posToPrClick = (AbstractPosToPrClick) model;
-				this.posToPrClickModel = posToPrClick;
-			}
-			else if(model instanceof AbstractBidToPos) {
-				AbstractBidToPos bidToPos = (AbstractBidToPos) model;
-				_bidToPos = bidToPos;
-			}
-			else if(model instanceof AvgPosToPosDist) {
-				AvgPosToPosDist avgPosDist = (AvgPosToPosDist) model;
-				_avgPosDist = avgPosDist;
-			}
-			else if(model instanceof BidToPosInverter) {
-				BidToPosInverter bidToPosInverter = (BidToPosInverter) model;
-				_bidToPosInverter = bidToPosInverter;
-			}
-			else {
+			} else if (model instanceof AbstractBidToCPC) {
+				AbstractBidToCPC bidToCPC = (AbstractBidToCPC) model;
+				this.bidToCPCModel = bidToCPC;
+			} else if (model instanceof AbstractBidToPrClick) {
+				AbstractBidToPrClick bidToPrClick = (AbstractBidToPrClick) model;
+				this.bidToPrClickModel = bidToPrClick;
+			} else {
 				//TODO conversion pr model????
 				// throw new
 				// RuntimeException("Unhandled Model (you probably would have gotten a null pointer later)"+model);
@@ -514,20 +462,19 @@ public class DPPosAgent extends AbstractAgent {
 			buff.append("****************\n");
 		}
 
-		System.out.println(buff);
+//		System.out.println(buff);
 		output.append(buff);
 		output.flush();
 
 	}
-	
 	@Override
 	public String toString() {
-		return "DPPos";
+		return "DPBid";
 	}
 	
 	@Override
 	public AbstractAgent getCopy() {
-		return new DPPosAgent();
+		return new DPBidAgent();
 	}
-
+	
 }

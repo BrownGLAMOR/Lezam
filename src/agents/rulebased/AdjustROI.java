@@ -1,7 +1,9 @@
-package agents;
+package agents.rulebased;
 
 import java.util.HashMap;
 import java.util.Set;
+
+import agents.AbstractAgent;
 
 import models.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
@@ -10,7 +12,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class AdjustPR extends RuleBasedAgent {
+public class AdjustROI extends RuleBasedAgent {
 	
 	protected BidBundle _bidBundle;
 	protected HashMap<Query, Double> _salesDistribution;
@@ -21,36 +23,36 @@ public class AdjustPR extends RuleBasedAgent {
 	protected double _betaIncTS;
 	protected double _alphaDecTS;
 	protected double _betaDecTS;
-	protected double _alphaIncPR;
-	protected double _betaIncPR;
-	protected double _alphaDecPR;
-	protected double _betaDecPR;
-	protected double _initPR;
-	protected HashMap<Query, Double> _PR;
+	protected double _alphaIncROI;
+	protected double _betaIncROI;
+	protected double _alphaDecROI;
+	protected double _betaDecROI;
+	protected double _initROI;
+	protected HashMap<Query, Double> _ROI;
 	
-	public AdjustPR() {
-		this(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
+	public AdjustROI() {
+		this(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
 	}
 
-	public AdjustPR(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
+	public AdjustROI(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
 		_alphaIncTS = alphaIncTS;
 		_betaIncTS = betaIncTS;
 		_alphaDecTS = alphaDecTS;
 		_betaDecTS = betaDecTS;
-		_alphaIncPR = alphaIncPR;
-		_betaIncPR = betaIncPR;
-		_alphaDecPR = alphaDecPR;
-		_betaDecPR = betaDecPR;
-		_initPR = initPR;
+		_alphaIncROI = alphaIncPR;
+		_betaIncROI = betaIncPR;
+		_alphaDecROI = alphaDecPR;
+		_betaDecROI = betaDecPR;
+		_initROI = initPR;
 	}
 	
 	@Override
 	public void initBidder() {
 		super.initBidder();
 		
-		_PR = new HashMap<Query, Double>();
+		_ROI = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
-			_PR.put(q, _initPR);
+			_ROI.put(q, _initROI);
 		}
 		
 		_salesDistribution = new HashMap<Query, Double>();
@@ -74,21 +76,21 @@ public class AdjustPR extends RuleBasedAgent {
 		}
 
 		/*
-		 * Calculate Average PR
+		 * Calculate Average ROI
 		 */
-		double avgPR = 0.0;
+		double avgROI = 0.0;
 		double totWeight = 0;
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
 				double weight = _salesDistribution.get(q);
-				avgPR += (_salesReport.getRevenue(q)/_queryReport.getCost(q))*weight;
+				avgROI += ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_queryReport.getCost(q)) * weight;
 				totWeight+=weight;
 			}
 		}
-		avgPR /= totWeight;
-		if(Double.isNaN(avgPR)) {
-			avgPR = _initPR;
+		avgROI /= totWeight;
+		if(Double.isNaN(avgROI)) {
+			avgROI = _initROI;
 		}
 
 		/*
@@ -98,11 +100,11 @@ public class AdjustPR extends RuleBasedAgent {
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				if (_salesReport.getRevenue(q)/_queryReport.getCost(q) < avgPR) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR) +  _betaDecTS)));
+				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_queryReport.getCost(q) < avgROI) {
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgROI) +  _betaDecTS)));
 				}
 				else {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR)  +  _betaIncTS));
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgROI)  +  _betaIncTS));
 				}
 			}
 			totDesiredSales += _salesDistribution.get(q);
@@ -157,26 +159,23 @@ public class AdjustPR extends RuleBasedAgent {
 		else
 			prConv = _conversionPrModel.getPrediction(q);
 		double rev = _salesPrices.get(q);
-		double CPC = (rev * prConv)/_PR.get(q);
+		double CPC = (rev * prConv)/(_ROI.get(q)+1);
 		CPC = Math.max(0.0, Math.min(3.5, CPC));
 		return CPC;
 	}
 
 	protected void adjustPR() {
 		for(Query q : _querySpace) {
-			double tmp = _PR.get(q);
+			double tmp = _ROI.get(q);
 			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
-				tmp *= (1+_alphaIncPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPR);
+				tmp *= (1+_alphaIncROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncROI);
 			} else {
-				tmp *= (1-(_alphaDecPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPR));
+				tmp *= (1-(_alphaDecROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecROI));
 			}
-			if(Double.isNaN(tmp)) {
-				tmp = _initPR;
+			if(Double.isNaN(tmp) || tmp <= 0.0) {
+				tmp = _initROI;
 			}
-			if(tmp <= 1.0) {
-				tmp = 1.0;
-			}
-			_PR.put(q, tmp);
+			_ROI.put(q, tmp);
 		}
 	}
 	
@@ -192,12 +191,12 @@ public class AdjustPR extends RuleBasedAgent {
 
 	@Override
 	public String toString() {
-		return "AdjustPR";
+		return "AdjustROI";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPR(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPR, _alphaIncPR, _betaIncPR, _alphaDecPR, _betaDecPR);
+		return new AdjustROI(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initROI, _alphaIncROI, _betaIncROI, _alphaDecROI, _betaDecROI);
 	}
 
 }

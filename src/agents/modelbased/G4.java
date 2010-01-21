@@ -1,4 +1,4 @@
-package agents;
+package agents.modelbased;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +32,7 @@ import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.AbstractUserModel;
 import models.usermodel.BasicUserModel;
+import agents.AbstractAgent;
 import agents.AbstractAgent.Predictions;
 import agents.mckp.IncItem;
 import agents.mckp.Item;

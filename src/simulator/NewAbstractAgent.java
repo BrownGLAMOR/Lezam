@@ -1,7 +1,7 @@
 /**
  * Abstract agent class for agents that can be run in the simulator
  */
-package agents;
+package simulator;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -13,7 +13,6 @@ import java.util.Set;
 
 import models.AbstractModel;
 import models.oldusermodel.UserState;
-import simulator.BasicSimulator;
 import simulator.parser.GameStatus;
 import se.sics.isl.transport.Transportable;
 import se.sics.tasim.aw.Agent;

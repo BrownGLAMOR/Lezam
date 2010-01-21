@@ -2,12 +2,15 @@
  * Used to be NewG4
  */
 
-package agents;
+package agents.olderagents;
 
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
+
+import agents.AbstractAgent;
+import agents.rulebased.RuleBasedAgent;
 
 import models.AbstractModel;
 import models.targeting.BasicTargetModel;

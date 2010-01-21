@@ -2,7 +2,7 @@
  * Used to be NewG3
  */
 
-package agents;
+package agents.olderagents;
 
 
 import java.io.File;
@@ -14,6 +14,8 @@ import java.util.Set;
 
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
+
+import agents.AbstractAgent;
 
 import models.AbstractModel;
 import models.bidtocpc.AbstractBidToCPC;

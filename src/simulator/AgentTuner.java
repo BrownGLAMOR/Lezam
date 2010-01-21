@@ -10,14 +10,14 @@ import java.util.HashMap;
 import java.util.Random;
 
 import agents.AbstractAgent;
-import agents.AdjustPM;
-import agents.AdjustPPS;
-import agents.AdjustPR;
-import agents.AdjustROI;
-import agents.EquatePM;
-import agents.EquatePPS;
-import agents.EquatePR;
-import agents.EquateROI;
+import agents.rulebased.AdjustPM;
+import agents.rulebased.AdjustPPS;
+import agents.rulebased.AdjustPR;
+import agents.rulebased.AdjustROI;
+import agents.rulebased.EquatePM;
+import agents.rulebased.EquatePPS;
+import agents.rulebased.EquatePR;
+import agents.rulebased.EquateROI;
 
 public class AgentTuner {
 

@@ -1,7 +1,10 @@
-package agents;
+package agents.olderagents;
 
 import java.util.HashMap;
 import java.util.Set;
+
+import agents.AbstractAgent;
+import agents.rulebased.RuleBasedAgent;
 
 import models.AbstractModel;
 import models.prconv.AbstractConversionModel;

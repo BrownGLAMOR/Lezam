@@ -1,7 +1,9 @@
-package agents;
+package agents.olderagents;
 
 import java.util.Random;
 import java.util.Set;
+
+import agents.AbstractAgent;
 
 import models.AbstractModel;
 import edu.umich.eecs.tac.props.BidBundle;
