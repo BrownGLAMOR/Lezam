@@ -1,7 +1,7 @@
 package carleton.agents.rules;
 
+import carleton.oldmodels.conversionprob.ConversionPrModel;
 import carleton.strategies.GenericBidStrategy;
-import modelers.conversionprob.ConversionPrModel;
 import edu.umich.eecs.tac.props.Query;
 
 public class AdjustConversionPr extends StrategyTransformation{	

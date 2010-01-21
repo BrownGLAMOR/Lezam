@@ -1,9 +1,10 @@
-package modelers.conversionprob;
+package carleton.oldmodels.conversionprob;
 
 import java.util.Hashtable;
 import java.util.Set;
 
-import modelers.unitssold.UnitsSoldModel;
+import carleton.oldmodels.unitssold.UnitsSoldModel;
+
 import edu.umich.eecs.tac.props.Query;
 
 public class ConversionPrModelNoIS implements ConversionPrModel {

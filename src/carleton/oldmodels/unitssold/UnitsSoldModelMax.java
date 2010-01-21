@@ -1,4 +1,4 @@
-package modelers.unitssold;
+package carleton.oldmodels.unitssold;
 
 public class UnitsSoldModelMax extends UnitsSoldModelBasic {
 

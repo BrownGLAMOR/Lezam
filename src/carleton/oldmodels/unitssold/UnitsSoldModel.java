@@ -1,4 +1,4 @@
-package modelers.unitssold;
+package carleton.oldmodels.unitssold;
 
 import edu.umich.eecs.tac.props.SalesReport;
 

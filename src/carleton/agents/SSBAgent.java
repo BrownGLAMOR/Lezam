@@ -38,12 +38,12 @@ import carleton.agents.rules.ReinvestmentCap;
 import carleton.agents.rules.Targeted;
 import carleton.agents.rules.TopPosition;
 import carleton.agents.rules.Walking;
+import carleton.oldmodels.conversionprob.ConversionPrModel;
+import carleton.oldmodels.conversionprob.ConversionPrModelNoIS;
+import carleton.oldmodels.unitssold.UnitsSoldModel;
+import carleton.oldmodels.unitssold.UnitsSoldModelMean;
 import carleton.strategies.SSBBidStrategy;
 
-import modelers.conversionprob.ConversionPrModel;
-import modelers.conversionprob.ConversionPrModelNoIS;
-import modelers.unitssold.UnitsSoldModel;
-import modelers.unitssold.UnitsSoldModelMean;
 
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;

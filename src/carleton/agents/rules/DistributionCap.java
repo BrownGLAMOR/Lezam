@@ -1,7 +1,7 @@
 package carleton.agents.rules;
 
+import carleton.oldmodels.unitssold.UnitsSoldModel;
 import carleton.strategies.GenericBidStrategy;
-import modelers.unitssold.UnitsSoldModel;
 import edu.umich.eecs.tac.props.Query;
 
 public class DistributionCap extends StrategyTransformation{	

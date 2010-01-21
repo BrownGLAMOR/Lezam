@@ -1,4 +1,4 @@
-package modelers.conversionprob;
+package carleton.oldmodels.conversionprob;
 
 import edu.umich.eecs.tac.props.Query;
 

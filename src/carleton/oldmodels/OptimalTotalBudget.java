@@ -1,4 +1,4 @@
-package modelers;
+package carleton.oldmodels;
 
 public class OptimalTotalBudget {
 

@@ -1,4 +1,4 @@
-package modelers.conversionprob;
+package carleton.oldmodels.conversionprob;
 
 import carleton.agents.rules.Constants;
 import usermodel.UserModel;
