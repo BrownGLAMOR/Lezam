@@ -3,7 +3,8 @@ package usermodel;
 import java.util.HashMap;
 import java.util.Set;
 
-import carleton.agents.rules.Constants;
+import oldagentsSSB.agents.rules.Constants;
+
 
 import usermodel.UserStateTransitionModel.UserState;
 import edu.umich.eecs.tac.props.Query;
