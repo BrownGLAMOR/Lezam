@@ -1,12 +1,13 @@
 /**
  * Used to be CHAgent
  */
-package agents;
+package agents.olderagents;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import agents.AbstractAgent;
 import agents.rulebased.RuleBasedAgent;
 
 import models.AbstractModel;
