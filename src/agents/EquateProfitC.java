@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.targeting.BasicTargetModel;
+import models.AbstractModel;
+import models.targeting.BasicTargetModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;

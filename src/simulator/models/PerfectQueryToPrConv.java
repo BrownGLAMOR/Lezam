@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.prconv.AbstractConversionModel;
+import models.AbstractModel;
+import models.prconv.AbstractConversionModel;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;

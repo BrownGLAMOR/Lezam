@@ -1,7 +1,7 @@
 package oldagentsSSB.oldmodels.conversionprob;
 
-import newmodels.oldusermodel.UserModel;
-import newmodels.oldusermodel.UserStateTransitionModel.UserState;
+import models.oldusermodel.UserModel;
+import models.oldusermodel.UserStateTransitionModel.UserState;
 import oldagentsSSB.agents.rules.Constants;
 
 public class ConversionModel {

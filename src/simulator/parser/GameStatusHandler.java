@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import newmodels.oldusermodel.UserState;
+import models.oldusermodel.UserState;
 
 import org.omg.CORBA._PolicyStub;
 

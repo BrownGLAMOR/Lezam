@@ -4,7 +4,7 @@ package agents;
 import java.util.HashMap;
 import java.util.Set;
 
-import newmodels.AbstractModel;
+import models.AbstractModel;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;

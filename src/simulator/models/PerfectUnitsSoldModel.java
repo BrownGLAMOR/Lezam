@@ -1,7 +1,7 @@
 package simulator.models;
 
-import newmodels.AbstractModel;
-import newmodels.unitssold.AbstractUnitsSoldModel;
+import models.AbstractModel;
+import models.unitssold.AbstractUnitsSoldModel;
 import edu.umich.eecs.tac.props.SalesReport;
 
 

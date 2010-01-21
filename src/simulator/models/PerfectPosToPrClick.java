@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.bidtoprclick.AbstractBidToPrClick;
-import newmodels.postoprclick.AbstractPosToPrClick;
+import models.AbstractModel;
+import models.bidtoprclick.AbstractBidToPrClick;
+import models.postoprclick.AbstractPosToPrClick;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.Ad;

@@ -9,9 +9,9 @@ import simulator.Reports;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
-import newmodels.AbstractModel;
-import newmodels.querytonumimp.AbstractQueryToNumImp;
-import newmodels.querytonumimp.BasicQueryToNumImp;
+import models.AbstractModel;
+import models.querytonumimp.AbstractQueryToNumImp;
+import models.querytonumimp.BasicQueryToNumImp;
 
 public class PerfectQueryToNumImp extends AbstractQueryToNumImp {
 

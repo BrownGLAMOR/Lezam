@@ -2,7 +2,7 @@ package simulator;
 
 import java.util.Random;
 
-import newmodels.oldusermodel.UserState;
+import models.oldusermodel.UserState;
 
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;

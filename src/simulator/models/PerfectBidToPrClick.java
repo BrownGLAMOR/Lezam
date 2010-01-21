@@ -3,8 +3,8 @@ package simulator.models;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import newmodels.AbstractModel;
-import newmodels.bidtoprclick.AbstractBidToPrClick;
+import models.AbstractModel;
+import models.bidtoprclick.AbstractBidToPrClick;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.Ad;

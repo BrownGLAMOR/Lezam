@@ -8,9 +8,9 @@ import java.util.Set;
 
 import org.omg.CORBA._PolicyStub;
 
-import newmodels.AbstractModel;
-import newmodels.bidtocpc.AbstractBidToCPC;
-import newmodels.postocpc.AbstractPosToCPC;
+import models.AbstractModel;
+import models.bidtocpc.AbstractBidToCPC;
+import models.postocpc.AbstractPosToCPC;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;

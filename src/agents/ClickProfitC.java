@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.revenue.RevenueMovingAvg;
+import models.AbstractModel;
+import models.revenue.RevenueMovingAvg;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;

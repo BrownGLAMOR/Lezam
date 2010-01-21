@@ -11,8 +11,8 @@ import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.oldusermodel.UserState;
+import models.AbstractModel;
+import models.oldusermodel.UserState;
 import simulator.BasicSimulator;
 import simulator.parser.GameStatus;
 import se.sics.isl.transport.Transportable;

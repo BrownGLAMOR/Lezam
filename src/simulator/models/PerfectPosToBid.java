@@ -11,10 +11,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 
-import newmodels.AbstractModel;
-import newmodels.bidtopos.AbstractBidToPos;
-import newmodels.bidtopos.SpatialBidToPos;
-import newmodels.postobid.AbstractPosToBid;
+import models.AbstractModel;
+import models.bidtopos.AbstractBidToPos;
+import models.bidtopos.SpatialBidToPos;
+import models.postobid.AbstractPosToBid;
 import simulator.BasicSimulator;
 import simulator.Reports;
 import edu.umich.eecs.tac.props.BidBundle;

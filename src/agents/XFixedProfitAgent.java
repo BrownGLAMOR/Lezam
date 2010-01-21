@@ -3,7 +3,7 @@ package agents;
 import java.util.HashMap;
 import java.util.Set;
 
-import newmodels.AbstractModel;
+import models.AbstractModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

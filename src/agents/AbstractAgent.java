@@ -10,7 +10,7 @@ import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Set;
 
-import newmodels.AbstractModel;
+import models.AbstractModel;
 import se.sics.isl.transport.Transportable;
 import se.sics.tasim.aw.Agent;
 import se.sics.tasim.aw.Message;
