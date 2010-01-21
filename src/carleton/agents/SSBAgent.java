@@ -29,6 +29,15 @@ package carleton.agents;
 import java.util.Hashtable;
 import java.util.Set;
 
+import carleton.agents.rules.AdjustConversionPr;
+import carleton.agents.rules.ConversionPr;
+import carleton.agents.rules.DistributionCap;
+import carleton.agents.rules.ManufacurerBonus;
+import carleton.agents.rules.NoImpressions;
+import carleton.agents.rules.ReinvestmentCap;
+import carleton.agents.rules.Targeted;
+import carleton.agents.rules.TopPosition;
+import carleton.agents.rules.Walking;
 import carleton.strategies.SSBBidStrategy;
 
 import modelers.conversionprob.ConversionPrModel;
@@ -36,15 +45,6 @@ import modelers.conversionprob.ConversionPrModelNoIS;
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMean;
 
-import agents.rules.AdjustConversionPr;
-import agents.rules.ConversionPr;
-import agents.rules.DistributionCap;
-import agents.rules.ManufacurerBonus;
-import agents.rules.NoImpressions;
-import agents.rules.ReinvestmentCap;
-import agents.rules.Targeted;
-import agents.rules.TopPosition;
-import agents.rules.Walking;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

@@ -1,4 +1,4 @@
-package agents.rules;
+package carleton.agents.rules;
 
 import carleton.strategies.GenericBidStrategy;
 import modelers.unitssold.UnitsSoldModel;

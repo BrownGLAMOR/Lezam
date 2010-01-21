@@ -3,12 +3,12 @@ package carleton.agents;
 import java.util.HashMap;
 import java.util.Map;
 
+import carleton.agents.rules.DistributionCap;
+import carleton.agents.rules.NoImpressions;
+import carleton.agents.rules.ReinvestmentCap;
+import carleton.agents.rules.TopPosition;
 import carleton.strategies.PosXBidStrategy;
 
-import agents.rules.DistributionCap;
-import agents.rules.NoImpressions;
-import agents.rules.ReinvestmentCap;
-import agents.rules.TopPosition;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

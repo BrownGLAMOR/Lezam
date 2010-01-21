@@ -84,7 +84,7 @@ public class MCKPBid extends AbstractAgent {
 		BACKWARDUPDATING = backward;
 		FORWARDUPDATING = forward;
 		PRICELINES = pricelines;
-		_R.setSeed(124962748);
+//		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
 		double increment  = .04;
@@ -461,7 +461,7 @@ public class MCKPBid extends AbstractAgent {
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
+//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return bidBundle;
 	}
 

@@ -3,16 +3,16 @@ package carleton.agents;
 import java.util.Hashtable;
 import java.util.Set;
 
+import carleton.agents.rules.ConversionPr;
+import carleton.agents.rules.DistributionCap;
+import carleton.agents.rules.ManufacurerBonus;
+import carleton.agents.rules.SetProperty;
+import carleton.agents.rules.Targeted;
 import carleton.strategies.JESOM2BidStrategy;
 
 import modelers.unitssold.UnitsSoldModel;
 import modelers.unitssold.UnitsSoldModelMean;
 
-import agents.rules.ConversionPr;
-import agents.rules.DistributionCap;
-import agents.rules.ManufacurerBonus;
-import agents.rules.SetProperty;
-import agents.rules.Targeted;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

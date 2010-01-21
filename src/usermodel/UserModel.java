@@ -3,8 +3,9 @@ package usermodel;
 import java.util.HashMap;
 import java.util.Set;
 
+import carleton.agents.rules.Constants;
+
 import usermodel.UserStateTransitionModel.UserState;
-import agents.rules.Constants;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;

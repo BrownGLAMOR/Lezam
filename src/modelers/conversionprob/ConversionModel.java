@@ -1,8 +1,8 @@
 package modelers.conversionprob;
 
+import carleton.agents.rules.Constants;
 import usermodel.UserModel;
 import usermodel.UserStateTransitionModel.UserState;
-import agents.rules.Constants;
 
 public class ConversionModel {
 

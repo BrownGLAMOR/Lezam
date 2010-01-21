@@ -1,4 +1,4 @@
-package agents.rules;
+package carleton.agents.rules;
 
 public class Constants {
 	
