@@ -1,4 +1,4 @@
-package agents.mckp;
+package agents.modelbased.mckputil;
 
 import edu.umich.eecs.tac.props.Query;
 

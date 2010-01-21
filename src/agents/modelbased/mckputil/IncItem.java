@@ -1,4 +1,4 @@
-package agents.mckp;
+package agents.modelbased.mckputil;
 
 public class IncItem implements Comparable<IncItem>{
 	Item _itemHigh,_itemLow;
