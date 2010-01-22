@@ -209,11 +209,11 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		return targetCPC*(_dailyCapacity/convPr);
 	}
 
-	protected double getRandomBid(Query q) {
+	protected final double getRandomBid(Query q) {
 		return randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
 	}
 
-	private double randDouble(double a, double b) {
+	private final double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
 	}
