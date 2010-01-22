@@ -22,7 +22,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class PortfolioOpt extends RuleBasedAgent {
 	protected HashMap<Query, Double> _revenue;
 	protected HashMap<Query, Double> _honestFactor;
-	protected HashMap<Query, Double> _wantedSales;
 
 	protected BidBundle _bidBundle;
 
@@ -105,16 +104,6 @@ public class PortfolioOpt extends RuleBasedAgent {
 			_honestFactor.put(q, initPM);
 		}
 
-		double slice = _dailyCapacity / 20.0;
-		_wantedSales = new HashMap<Query, Double>();
-		for (Query q : _querySpace) {
-			if (_manSpecialty.equals(q.getManufacturer()))
-				_wantedSales.put(q, 2 * slice);
-			else
-				_wantedSales.put(q, slice);
-
-		}
-
 		_revenue = new HashMap<Query, Double>();
 		for (Query query : _querySpace) {
 			if (query.getManufacturer() == _manSpecialty)
@@ -135,26 +124,16 @@ public class PortfolioOpt extends RuleBasedAgent {
 		return _revenue.get(q) * _honestFactor.get(q) * prConv;
 	}
 
-	@Override
-	protected double getDailySpendingLimit(Query q, double targetCPC) {
-		double prConv;
-		if (_day <= 6) prConv = _baselineConversion.get(q);
-		else prConv = _conversionPrModel.getPrediction(q);
-		double dailySalesLimit = Math.max(_wantedSales.get(q)/prConv,1);
-
-		return targetCPC * dailySalesLimit;
-	}
-
 	protected void adjustHonestFactor(Query q) {
 		double newHonest;
 
 		double tmp = _honestFactor.get(q);
 		// if we does not get enough clicks (and bad position), then decrease PM
 		// (increase bids, and hence slot)
-		if (_salesReport.getConversions(q) >= _wantedSales.get(q) && _queryReport.getPosition(q) < goodslot) {
+		if (_salesReport.getConversions(q) >= _salesDistribution.get(q) && _queryReport.getPosition(q) < goodslot) {
 			tmp = _honestFactor.get(q) * incPM;
 			tmp = Math.min(maxPM, tmp);
-		} else if(_salesReport.getConversions(q) < _wantedSales.get(q) && _queryReport.getPosition(q) >= badslot) {
+		} else if(_salesReport.getConversions(q) < _salesDistribution.get(q) && _queryReport.getPosition(q) >= badslot) {
 			// if we get too many clicks (and good position), increase
 			// PM(decrease bids and hence slot)
 			tmp = _honestFactor.get(q) * decPM;
@@ -166,15 +145,15 @@ public class PortfolioOpt extends RuleBasedAgent {
 
 	protected void adjustWantedSales() {
 		HashMap<Query, Double> relatives = getRelatives(_queryReport, _salesReport);
-		normalizeWeights(_wantedSales);
-		HashMap<Query, Double> weights = EGUpdate(_wantedSales,relatives);
+		normalizeWeights(_salesDistribution);
+		HashMap<Query, Double> weights = EGUpdate(_salesDistribution,relatives);
 		normalizeWeights(weights);
 		for(Query query : _querySpace) {
-			_wantedSales.put(query, weights.get(query)*_dailyCapacity);
+			_salesDistribution.put(query, weights.get(query)*_dailyCapacity);
 		}
 		System.out.println("New Wanted Sales");
 		for(Query query : _querySpace) {
-			System.out.println(query + "  " + _wantedSales.get(query));
+			System.out.println(query + "  " + _salesDistribution.get(query));
 		}
 	}
 	

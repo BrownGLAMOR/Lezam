@@ -24,9 +24,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class ClickProfitC extends RuleBasedAgent {
 	protected BidBundle _bidBundle;
-
-	protected HashMap<Query, RevenueMovingAvg> _revenueModels;
-
 	protected double _avgProfit;
 	protected double _oldAvgProfit;
 
@@ -59,16 +56,10 @@ public class ClickProfitC extends RuleBasedAgent {
 			_desiredSales.put(query, 1.0*_capacity/_querySpace.size());
 		}
 
-		// initialize models
-
-		_revenueModels = new HashMap<Query, RevenueMovingAvg>(); 
-		for (Query query : _querySpace) {
-			_revenueModels.put(query, new RevenueMovingAvg(query, _retailCatalog));
-		}
 
 		_avgProfit = 0;
 		for (Query query: _querySpace) {
-			double profit = _baselineConversion.get(query)*_revenueModels.get(query).getRevenue()*_profitMargins.get(query);
+			double profit = _baselineConversion.get(query)*_salesPrices.get(query)*_profitMargins.get(query);
 			_avgProfit += profit;
 		}
 		_avgProfit /= _querySpace.size();
@@ -171,24 +162,13 @@ public class ClickProfitC extends RuleBasedAgent {
 		return _bidBundle;
 	}
 
-	@Override
-	protected double getDailySpendingLimit(Query q, double targetCPC) {
-		double conversion;
-		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
-			conversion = _baselineConversion.get(q);
-		else conversion= _conversionPrModel.getPrediction(q);
-
-		double dailySalesLimit = Math.max(_desiredSales.get(q)/conversion,3);
-		return targetCPC * dailySalesLimit * 1.1;
-	}
-
 	protected double getTargetCPC(Query q) {
 		double conversion;
 		if (_day <= 6 || !(_conversionPrModel.getPrediction(q) > 0))
 			conversion = _baselineConversion.get(q);
 		else conversion= _conversionPrModel.getPrediction(q);
 
-		return conversion *_revenueModels.get(q).getRevenue()*(1 - _profitMargins.get(q));
+		return conversion *_salesPrices.get(q)*(1 - _profitMargins.get(q));
 	}
 
 	protected void setAvgProfit() {
@@ -209,19 +189,6 @@ public class ClickProfitC extends RuleBasedAgent {
 		return _avgProfit;
 	}
 
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		super.updateModels(salesReport, queryReport);
-
-		if (_day > 1 && salesReport != null && queryReport != null) {
-
-			for (Query query : _querySpace) {
-				if (salesReport.getRevenue(query) > 0) 
-					_revenueModels.get(query).update(salesReport.getRevenue(query)/salesReport.getConversions(query));
-			}
-		}
-
-	}
 	@Override
 	public String toString() {
 		return "ClickProfC";

@@ -15,7 +15,6 @@ import edu.umich.eecs.tac.props.QueryType;
 public class AdjustPPS extends RuleBasedAgent {
 	
 	protected BidBundle _bidBundle;
-	protected HashMap<Query, Double> _salesDistribution;
 	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = false;
@@ -53,11 +52,6 @@ public class AdjustPPS extends RuleBasedAgent {
 		_PPS = new HashMap<Query, Double>();
 		for (Query q : _querySpace) {
 			_PPS.put(q, _initPPS);
-		}
-		
-		_salesDistribution = new HashMap<Query, Double>();
-		for (Query q : _querySpace) {
-			_salesDistribution.put(q, 1.0/_querySpace.size());
 		}
 	}
 
@@ -157,10 +151,12 @@ public class AdjustPPS extends RuleBasedAgent {
 	
 	protected double getTargetCPC(Query q){		
 		double prConv;
-		if(_day <= 6)
+		if(_day <= 6) {
 			prConv = _baselineConversion.get(q);
-		else
+		}
+		else {
 			prConv = _conversionPrModel.getPrediction(q);
+		}
 		double rev = _salesPrices.get(q);
 		double CPC = (rev - _PPS.get(q))* prConv;
 		CPC = Math.max(0.0, Math.min(3.5, CPC));
@@ -182,16 +178,6 @@ public class AdjustPPS extends RuleBasedAgent {
 				tmp = 15.0;
 			}
 			_PPS.put(q, tmp);
-		}
-	}
-	
-	@Override
-	protected double getDailySpendingLimit(Query q, double targetCPC) {
-		if(_day >= 6 && _conversionPrModel != null) {
-			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
-		}
-		else {
-			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
 		}
 	}
 

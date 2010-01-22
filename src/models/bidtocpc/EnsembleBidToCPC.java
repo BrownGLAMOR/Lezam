@@ -769,12 +769,12 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 
 		private String _name;
 		private AbstractModel _model;
-		private double _bordaCount;
+		private double _count;
 
 		public ModelBordaPair(String name, AbstractModel model, double bordaCount) {
 			_name = name;
 			_model = model;
-			_bordaCount = bordaCount;
+			_count = bordaCount;
 		}
 
 		public String getName() {
@@ -794,15 +794,15 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		}
 
 		public double getCount() {
-			return _bordaCount;
+			return _count;
 		}
 
 		public void setError(double error) {
-			_bordaCount = error;
+			_count = error;
 		}
 
 		public int compareTo(ModelBordaPair modelBordaPair) {
-			double thisBorda = this._bordaCount;
+			double thisBorda = this._count;
 			double otherBorda = modelBordaPair.getCount();
 			if(thisBorda < otherBorda) {
 				return 1;
@@ -816,7 +816,7 @@ public class EnsembleBidToCPC extends AbstractBidToCPC {
 		}
 
 		public String toString() {
-			return _name + ": " + _bordaCount;
+			return _name + ": " + _count;
 		}
 	}
 	

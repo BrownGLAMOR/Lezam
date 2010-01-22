@@ -16,9 +16,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquatePM extends RuleBasedAgent{
-	protected HashMap<Query, Double> _prClick;
 	protected BidBundle _bidBundle;
-	protected boolean TARGET = false;
 	protected boolean BUDGET = false;
 	protected double _PM;
 	protected double _alphaIncPM;
@@ -80,17 +78,6 @@ public class EquatePM extends RuleBasedAgent{
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
 			_bidBundle.setBid(query, targetCPC+.01);
-
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
 		}
 
 		if(BUDGET) {
@@ -103,42 +90,20 @@ public class EquatePM extends RuleBasedAgent{
 	@Override
 	public void initBidder() {
 		super.initBidder();
-		setDailyQueryCapacity();
-
 		_PM = _initPM;
-
-		_prClick = new HashMap<Query, Double>();
-		for (Query query: _querySpace) {
-			_prClick.put(query, .01);
-		}
-
-	}
-
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		super.updateModels(salesReport, queryReport);
-		if (_day > 1 && salesReport != null && queryReport != null) {	
-			for (Query query: _querySpace) {
-				if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
-			}
-
-		}
 	}
 
 	protected double getTargetCPC(Query q){		
 
 		double prConv;
-		if(_day <= 6) prConv = _baselineConversion.get(q);
-		else prConv = _conversionPrModel.getPrediction(q);
+		if(_day <= 6) {
+			prConv = _baselineConversion.get(q);
+		}
+		else {
+			prConv = _conversionPrModel.getPrediction(q);
+		}
 
 		double rev = _salesPrices.get(q);
-
-		if (TARGET) {
-			double clickPr = _prClick.get(q);
-			if (clickPr <=0 || clickPr >= 1) clickPr = .5;
-			prConv = _targetModel.getConvPrPrediction(q, clickPr, prConv, 0);
-			rev = _targetModel.getUSPPrediction(q, clickPr, 0);
-		}
 
 		double CPC = (1 - _PM)*rev* prConv;
 		

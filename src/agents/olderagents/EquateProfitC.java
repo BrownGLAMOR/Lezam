@@ -24,7 +24,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquateProfitC extends RuleBasedAgent{
 	protected HashMap<Query,Double> _estimatedPrice;
-	protected HashMap<Query, Double> _prClick;
 	
 	//k is a constant that equates EPPC across queries
 	protected double k;
@@ -100,25 +99,6 @@ public class EquateProfitC extends RuleBasedAgent{
 				else _estimatedPrice.put(query, 10.0);
 			}
 		}
-
-        _prClick = new HashMap<Query, Double>();
-        for (Query query: _querySpace) {
-        	_prClick.put(query, .01);
-        }
-		
-	}
-
-
-	@Override
-	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-		super.updateModels(salesReport, queryReport);
-		
-		if (_day > 1 && _salesReport != null && _queryReport != null) {
-		  
-			for (Query query: _querySpace) {
-				if (queryReport.getImpressions(query) > 0) _prClick.put(query, queryReport.getClicks(query)*1.0/queryReport.getImpressions(query)); 
-			}
-		}
 	}
 
 	protected double updateK(){
@@ -148,7 +128,7 @@ public class EquateProfitC extends RuleBasedAgent{
 		double rev = _estimatedPrice.get(q);
 		
 		if (TARGET) {
-			double clickPr = _prClick.get(q);
+			double clickPr = _baseClickProbs.get(q);
 			if (clickPr <=0 || clickPr >= 1) clickPr = .5;
 			prConv = _targetModel.getConvPrPrediction(q, clickPr, prConv, 0);
 			rev = _targetModel.getUSPPrediction(q, clickPr, 0);

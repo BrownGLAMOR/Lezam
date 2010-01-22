@@ -10,7 +10,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class RevenueMovingAvg extends AbstractRevenueModel {
 	protected final double _alpha = .75;
-	protected Query _query;
+	protected Query query;
 	protected double _revenue;
 	protected double _latestSample;
 	
@@ -63,7 +63,7 @@ public class RevenueMovingAvg extends AbstractRevenueModel {
 	}
 
 	public Query getQuery() {
-		return _query;
+		return query;
 	}
 	
 	public double getRevenue() {

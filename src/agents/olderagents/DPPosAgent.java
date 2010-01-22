@@ -60,7 +60,7 @@ public class DPPosAgent extends AbstractAgent {
 	private AbstractBidToPos _bidToPos;
 	private AvgPosToPosDist _avgPosDist;
 	private BidToPosInverter _bidToPosInverter;
-	private AbstractUserModel userModel;
+	private AbstractUserModel _userModel;
 	protected BasicTargetModel targetModel;
 
 	// model, strategy related variables
@@ -361,9 +361,9 @@ public class DPPosAgent extends AbstractAgent {
 
 		prConversionModel = new HistoricPrConversionModel(_querySpace, targetModel);
 		models.add(prConversionModel);
-		userModel = new BasicUserModel();
-		models.add(userModel);
-		queryToNumImpModel = new BasicQueryToNumImp(userModel);
+		_userModel = new BasicUserModel();
+		models.add(_userModel);
+		queryToNumImpModel = new BasicQueryToNumImp(_userModel);
 		models.add(queryToNumImpModel);
 		posToCPCModel = new EnsemblePosToCPC(_querySpace, 8, 5, true, true);
 		models.add(posToCPCModel);
@@ -410,7 +410,7 @@ public class DPPosAgent extends AbstractAgent {
 
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 
-			userModel.updateModel(queryReport, salesReport);
+			_userModel.updateModel(queryReport, salesReport);
 			queryToNumImpModel.updateModel(queryReport, salesReport);
 			if (bidBundleList.size() > 1) {
 				posToCPCModel.updateModel(queryReport, salesReport, bidBundleList
@@ -441,7 +441,7 @@ public class DPPosAgent extends AbstractAgent {
 		for (AbstractModel model : models) {
 			if (model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
-				this.userModel = userModel;
+				this._userModel = userModel;
 			} else if (model instanceof AbstractQueryToNumImp) {
 				AbstractQueryToNumImp queryToNumImp = (AbstractQueryToNumImp) model;
 				this.queryToNumImpModel = queryToNumImp;

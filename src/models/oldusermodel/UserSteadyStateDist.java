@@ -49,7 +49,7 @@ public class UserSteadyStateDist {
 
 	Random _R = new Random();
 
-	protected double epsilon =  10;
+	protected double _epsilon =  10;
 	protected double burstprobability =  0.1;
 
 	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
