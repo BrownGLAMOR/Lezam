@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# Usage
+# From the "Client" directory type:
+# ./run-these-agents AgentName1 AgentName2 ...
+#
+trap killsubs INT
+killsubs()
+{
+  echo
+  echo "CTRL+C was pressed"
+  echo "The following agents were killed!"
+  jobs -p | while read pid;do ps -p $pid -oargs | perl -pe 's/.*?config\/(.*?).conf/$1/';done | grep -v COMMAND
+  jobs -p|xargs kill
+  exit
+}
+
+TAC_AGENT_HOME=`pwd`
+LIB=${TAC_AGENT_HOME}/lib
+CLASSPATH=.
+CLASSPATH=${CLASSPATH}:${TAC_AGENT_HOME}/bin
+for i in $( ls ${LIB}/*.jar ); do
+  CLASSPATH=${CLASSPATH}:$i
+done
+
+for i in "$@"
+do
+  java -server -Xmx1024M -Xms512M -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config "config/$i.conf" &
+done
+wait
