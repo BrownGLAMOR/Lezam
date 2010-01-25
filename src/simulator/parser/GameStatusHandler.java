@@ -1,9 +1,13 @@
 package simulator.parser;
 
+import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,9 +15,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import models.oldusermodel.UserState;
-
-import org.omg.CORBA._PolicyStub;
-
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
@@ -300,6 +301,7 @@ public class GameStatusHandler {
 		return _gameStatus;
 	}
 
+	@SuppressWarnings("unused")
 	private static double[] getStdDevAndMean(ArrayList<Double> list) {
 		double n = list.size();
 		double sum = 0.0;
@@ -321,93 +323,157 @@ public class GameStatusHandler {
 		stdDev[1] = Math.sqrt(variance);
 		return stdDev;
 	}
-
-	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
+	
+	public static String generateWEKADataSet() throws IOException, ParseException {
 		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String output = "";
 		int min = 1425;
-		int max = 1465;
-		HashMap<String,Double> results = new HashMap<String, Double>();
-		ArrayList<Double> tots = new ArrayList<Double>();
+		int max = 1426;
 		for(int i = min; i < max; i++) {
 			String file = filename + i + ".slg";
 			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
 			GameStatus gameStatus = gameStatusHandler.getGameStatus();
-			String[] advertisers = gameStatus.getAdvertisers();
-			HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
 			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
 			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
 			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-			HashMap<String, AdvertiserInfo> advertiserInfos = gameStatus.getAdvertiserInfos();
-			for(String statusStr : bankStatuses.keySet()) {
-				LinkedList<BankStatus> bankStatus = bankStatuses.get(statusStr);
-				if(bankStatus != null) {
-					double tot = bankStatus.get(bankStatus.size()-1).getAccountBalance();
-					tots.add(tot);
+			output += "%" + "\n";
+			output += "%" + "\n";
+			output += "@RELATION TACAA" + "\n";
+			output += "" + "\n";
+			output += "@ATTRIBUTE bid NUMERIC" + "\n";
+			output += "@ATTRIBUTE position NUMERIC" + "\n";
+			output += "@ATTRIBUTE cpc NUMERIC" + "\n";
+			output += "@ATTRIBUTE prclick NUMERIC" + "\n";
+			output += "@ATTRIBUTE prconv NUMERIC" + "\n";
+			output += "@ATTRIBUTE query {null-null,lioneer-null,null-tv,lioneer-tv,null-audio,lioneer-audio,null-dvd,lioneer-dvd,pg-null,pg-tv,pg-audio,pg-dvd,flat-null,flat-tv,flat-audio,flat-dvd}" + "\n";
+			output += "" + "\n";
+			output += "@DATA" + "\n";
+			for(int j = 0; j < 59; j++) {
+				Iterator<Query> iter = bidBundles.get("Schlemazl").get(j).iterator();
+				while(iter.hasNext()) {
+					Query query = (Query) iter.next();
+					String adv = "Schlemazl";
+					BidBundle bundle = bidBundles.get(adv).get(j);
+					QueryReport qreport = queryReports.get(adv).get(j);
+					SalesReport sreport = salesReports.get(adv).get(j);
+					//bid
+					output += bundle.getBid(query);
+					//position
+					if(Double.isNaN(qreport.getPosition(query))) {
+						output += ",6.0";
+					}
+					else {
+						output += "," + qreport.getPosition(query);
+					}
+					//CPC
+					if(Double.isNaN(qreport.getCPC(query))) {
+						output += ",0.0";
+					}
+					else {
+						output += "," + qreport.getCPC(query);
+					}
+					//clickpr
+					if(qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
+						output += ",0.0";
+					}
+					else {
+						output += "," + (qreport.getClicks(query)/((double) qreport.getImpressions(query)));
+					}
+					//convPr
+					if(qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
+						output += ",0.0";
+					}
+					else {
+						output += "," + (sreport.getConversions(query)/((double) qreport.getClicks(query)));
+					}
+					output += "," + query.getManufacturer() +"-" + query.getComponent() + "\n";
 				}
 			}
-			//			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> usersDists = gameStatus.getUserDistributions();
-			//			SlotInfo slotInfo = gameStatus.getSlotInfo();
-			//			ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-			PublisherInfo pubInfo = gameStatus.getPubInfo();
-			//			RetailCatalog retailCatalog = gameStatus.getRetailCatalog();
-			//			System.out.println("%");
-			//			System.out.println("%  TAC AA Dataset");
-			//			System.out.println("%");
-			//			System.out.println("@RELATION TACAA");
-			//			System.out.println("");
-			//			System.out.println("@ATTRIBUTE bid NUMERIC");
-			//			System.out.println("@ATTRIBUTE position NUMERIC");
-			//			System.out.println("@ATTRIBUTE cpc NUMERIC");
-			//			System.out.println("@ATTRIBUTE prclick NUMERIC");
-			//			System.out.println("@ATTRIBUTE bid NUMERIC");
-			//			System.out.println("@ATTRIBUTE prconv NUMERIC");
-			//			System.out.println("@ATTRIBUTE query {null-null,lioneer-null,null-tv,lioneer-tv,null-audio,lioneer-audio,null-dvd,lioneer-dvd,pg-null,pg-tv,pg-audio,pg-dvd,flat-null,flat-tv,flat-audio,flat-dvd}");
-			//			System.out.println("");
-			//			System.out.println("@DATA");
-			//			for(int j = 0; j < 59; j++) {
-			//				Iterator iter = bidBundles.get("Schlemazl").get(j).iterator();
-			//				while(iter.hasNext()) {
-			//					Query query = (Query) iter.next();
-			//					String adv = "Schlemazl";
-			//					BidBundle bundle = bidBundles.get(adv).get(j);
-			//					QueryReport qreport = queryReports.get(adv).get(j);
-			//					SalesReport sreport = salesReports.get(adv).get(j);
-			//					//bid
-			//					System.out.print(bundle.getBid(query));
-			//					//					//position
-			//					//					if(Double.isNaN(qreport.getPosition(query))) {
-			//					//						System.out.print(",6.0");
-			//					//					}
-			//					//					else {
-			//					//						System.out.print("," + qreport.getPosition(query));
-			//					//					}
-			//					//CPC
-			//					if(Double.isNaN(qreport.getCPC(query))) {
-			//						System.out.print(",0.0");
-			//					}
-			//					else {
-			//						System.out.print("," + qreport.getCPC(query));
-			//					}
-			//					//					//clickpr
-			//					//					if(qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
-			//					//						System.out.print(",0.0");
-			//					//					}
-			//					//					else {
-			//					//						System.out.print("," + (qreport.getClicks(query)/((double) qreport.getImpressions(query))));
-			//					//					}
-			//					//					//convPr
-			//					//					if(qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
-			//					//						System.out.print(",0.0");
-			//					//					}
-			//					//					else {
-			//					//						System.out.print("," + (sreport.getConversions(query)/((double) qreport.getClicks(query))));
-			//					//					}
-			//					System.out.println("," + query.getManufacturer() +"-" + query.getComponent());
-			//				}
-			//			}
 		}
-		double[] stdDev = getStdDevAndMean(tots);
-		System.out.println(stdDev[0] + "," + stdDev[1]);
+		return output;
+	}
+	
+	public static String generateRDataSet() throws IOException, ParseException {
+		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String output = "";
+		int min = 1425;
+		int max = 1426;
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			output += "bid pos cpc prclick prconv query \n";
+			for(int j = 0; j < 59; j++) {
+				Iterator<Query> iter = bidBundles.get("Schlemazl").get(j).iterator();
+				while(iter.hasNext()) {
+					Query query = (Query) iter.next();
+					String adv = "Schlemazl";
+					BidBundle bundle = bidBundles.get(adv).get(j);
+					QueryReport qreport = queryReports.get(adv).get(j);
+					SalesReport sreport = salesReports.get(adv).get(j);
+					//bid
+					output += bundle.getBid(query);
+					//position
+					if(Double.isNaN(qreport.getPosition(query))) {
+						output += " 6.0";
+					}
+					else {
+						output += " " + qreport.getPosition(query);
+					}
+					//CPC
+					if(Double.isNaN(qreport.getCPC(query))) {
+						output += " 0.0";
+					}
+					else {
+						output += " " + qreport.getCPC(query);
+					}
+					//clickpr
+					if(qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
+						output += " 0.0";
+					}
+					else {
+						output += " " + (qreport.getClicks(query)/((double) qreport.getImpressions(query)));
+					}
+					//convPr
+					if(qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
+						output += " 0.0";
+					}
+					else {
+						output += " " + (sreport.getConversions(query)/((double) qreport.getClicks(query)));
+					}
+					output += " " + query.getManufacturer() +"-" + query.getComponent() + "\n";
+				}
+			}
+		}
+		output = output.substring(0, output.length()-1);
+		return output;
+	}
+
+	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
+		String Rdata = generateRDataSet();
+		// Stream to write file
+		FileOutputStream fout;		
+
+		try
+		{
+		    // Open an output stream
+		    fout = new FileOutputStream ("Rdata.data");
+
+		    // Print a line of text
+		    new PrintStream(fout).println (Rdata);
+
+		    // Close our output stream
+		    fout.close();		
+		}
+		// Catches any error conditions
+		catch (IOException e)
+		{
+			System.err.println ("Unable to write to file");
+			System.exit(-1);
+		}
 	}
 
 

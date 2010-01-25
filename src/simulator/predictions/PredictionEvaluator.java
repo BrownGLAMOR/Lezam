@@ -88,9 +88,14 @@ public class PredictionEvaluator {
 		//		int max = 455;
 		//		int max = 496;
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1425;
-		int max = 1430;
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		int min = 1425;
+		//		int max = 1430;
+
+		String baseFile = "/Users/jordanberg/Desktop/LATESTMCKP/localhost_sim";
+		int min = 2;
+		int max = 3;
+
 		//						int max = 9;
 
 		//				String baseFile = "/pro/aa/finals/day-2/server-1/game";
@@ -2025,6 +2030,9 @@ public class PredictionEvaluator {
 			}
 
 			for(int agent = 0; agent < agents.length; agent++) {
+				if("MCKPBid".equals(agents[agent])) {
+					continue;
+				}
 				HashMap<String, AdvertiserInfo> advertiserInfos = status.getAdvertiserInfos();
 				AdvertiserInfo advInfo = advertiserInfos.get(agents[agent]);
 				AbstractBidToPos model = (AbstractBidToPos) baseModel.getCopy();
@@ -2487,16 +2495,16 @@ public class PredictionEvaluator {
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,1,20, true,0.84, false, false, true, false, false, false));
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,40, true,0.915, false, false, false, false, false, false));
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,4,60, true,0.915, false, false, false, false, false, false));
-			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, false, false, false, false));
-			//						for(double weight = 1.0; weight > .89; weight -= .1) {
-			//							for(int i = 1; i < 8; i++) {
-			//								evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i,weight));
-			//							}
-			//						}
-			//			
-			//						for(int i = 1; i < 20; i++) {
-			//							evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
-			//						}
+			//			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, false, false, false, false));
+			//									for(double weight = 1.0; weight > .89; weight -= .1) {
+			//										for(int i = 1; i < 8; i++) {
+			//											evaluator.bidToCPCPredictionChallenge(new WEKABidToCPC(i,weight));
+			//										}
+			//									}
+			//						
+			//									for(int i = 1; i < 20; i++) {
+			//										evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
+			//									}
 			//						evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,12,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new KitchenSinkEnsembleBidToCPC(_querySpace,10,20,true,false));
@@ -2756,25 +2764,27 @@ public class PredictionEvaluator {
 			//						evaluator.posToClickPrPredictionChallenge(new EnsemblePosToPrClick(_querySpace,5,30,_targModel,true,true));
 
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,true));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,false));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,true));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,false));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,30,true,true));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,20,true,true));
-			//						evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,30,true,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,true,false));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null, 10, 20,false,false));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,30,true,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,20,true,true));
+			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace, null,5,30,true,true));
 
 			//						evaluator.bidToPosToClickPrPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
 
 			//						evaluator.posToBidToCPCPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true), new EnsembleBidToCPC(_querySpace,10,20,true,true));
 
 
-			//						evaluator.posToBidPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true));
+			//			evaluator.posToBidPredictionChallenge(new EnsembleBidToPos(_querySpace, null,10,20,true,true));
 			//			double stop = System.currentTimeMillis();
 			//			double elapsed = stop - start;
 			//			System.out.println("This took " + (elapsed / 1000) + " seconds");
 
-			//			evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
+			//						evaluator.posToCPCToBidPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false), new EnsemblePosToCPC(_querySpace,10,20,true,true));
 			//			evaluator.posToClickPrToBidPredictionChallenge(new EnsembleBidToPrClick(_querySpace,10,20,_targModel,true,true), new EnsemblePosToPrClick(_querySpace,10,20,_targModel,true,true));
+
+
 			//			evaluator.bidToPosPredictionChallenge(new EnsembleBidToPos(_querySpace,null, 10,20,true,true));
 
 			//			evaluator.bidToCPCPredictionChallenge(new RegressionBidToCPC(_rConnection, _querySpace, false, 3, 30, true, .85, false, false, false, false,false,false));
