@@ -1,20 +1,37 @@
 #!/bin/bash
 #
-# Usage
-# From the "Client" directory type:
-# ./run-these-agents AgentName1 AgentName2 ...
-#
+# *** Usage ***
+# [i] To run the agents, from the "Client" directory type:
+# sh ./run-these-agents AgentName1 AgentName2 ...
+# [ii] To kill the agents, press CTRL+C on the command line
+# 
+# *** Authors (alphabetically, by last name) ***
+# [1] Patrick Jordan et al. (The University of Michigan TAC/AA Team)
+# [2] Karthik Pattabiraman
+# [3] Scrutinizer
+# [4] Vinit Shah
+
+# Call the killsubs routine when CTRL+C is pressed
 trap killsubs INT
 killsubs()
 {
+  # Print the following output to the screen to inform the user that CTRL+C was pressed and that
+  # all the agents that were started up were indeed killed
   echo
   echo "CTRL+C was pressed"
   echo "The following agents were killed!"
+  
+  # Extract the names of the agents that were killed and display them
   jobs -p | while read pid;do ps -p $pid -oargs | perl -pe 's/.*?config\/(.*?).conf/$1/';done | grep -v COMMAND
+  
+  # Get the PID of each agent and kill it
   jobs -p|xargs kill
+  
+  # Exit the script cleanly
   exit
 }
 
+# Set the classpath for the agents to run
 TAC_AGENT_HOME=`pwd`
 LIB=${TAC_AGENT_HOME}/lib
 CLASSPATH=.
@@ -23,6 +40,7 @@ for i in $( ls ${LIB}/*.jar ); do
   CLASSPATH=${CLASSPATH}:$i
 done
 
+# Run each of the agents specified on the command line in the background
 for i in "$@"
 do
   java -server -Xmx1024M -Xms512M -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config "config/$i.conf" &
