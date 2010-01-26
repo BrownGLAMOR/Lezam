@@ -565,7 +565,7 @@ public class MCKPPosSearch extends AbstractAgent {
 			}
 		}
 
-		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
+		double valueLostWindow = Math.max(1, Math.min(_capWindow-1, 58 - _day));
 		double valueLost = 0;
 		if(budget < 0) {
 			for (double i = Math.abs(budget)+1; i <= overCap; i++){

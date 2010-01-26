@@ -449,41 +449,56 @@ public class MCKPBidSearch extends AbstractAgent {
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
+//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return bidBundle;
 	}
 
 
-	private double solutionValue(HashMap<Query, Item> solution, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-		double totalWeight = solutionWeight(budget, solution, allPredictionsMap);
-		double overCap = totalWeight - budget;
-		overCap = Math.max(overCap, 0);
-
+	private double getPenalty(double remainingCap, double solutionWeight) {
 		double penalty;
-		if(budget < 0) {
-			penalty = 0.0;
-			int num = 0;
-			for(double j = Math.abs(budget)+1; j <= overCap; j++) {
-				penalty += Math.pow(LAMBDA, j);
-				num++;
+		solutionWeight = Math.max(0,solutionWeight);
+		if(remainingCap < 0) {
+			if(solutionWeight == 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
 			}
-			penalty /= (num);
+			else {
+				penalty = 0.0;
+				int num = 0;
+				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
+					penalty += Math.pow(LAMBDA, j);
+					num++;
+				}
+				penalty /= (num);
+			}
 		}
 		else {
-			if(overCap <= 0) {
+			if(solutionWeight == 0) {
 				penalty = 1.0;
 			}
 			else {
-				penalty = budget;
-				for(int j = 1; j <= overCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+				if(solutionWeight > remainingCap) {
+					penalty = remainingCap;
+					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
+						penalty += Math.pow(LAMBDA, j);
+					}
+					penalty /= (solutionWeight);
 				}
-				penalty /= (budget + overCap);
+				else {
+					penalty = 1.0;
+				}
 			}
 		}
 		if(Double.isNaN(penalty)) {
 			penalty = 1.0;
 		}
+		return penalty;
+	}
+
+	private double solutionValue(HashMap<Query, Item> solution, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalWeight = solutionWeight(budget, solution, allPredictionsMap);
+
+		double penalty = getPenalty(budget, totalWeight);
+
 		double totalValue = 0;
 		for(Query q : _querySpace) {
 			if(solution.containsKey(q)) {
@@ -492,44 +507,72 @@ public class MCKPBidSearch extends AbstractAgent {
 				totalValue += prediction.getClickPr()*prediction.getNumImp()*(prediction.getConvPr()*penalty*_salesPrices.get(item.q()) - prediction.getCPC());
 			}
 		}
-		
-		double avgConvProb = 0; //the average probability of conversion;
-		for(Query q : _querySpace) {
-			if(_day < 2) {
-				avgConvProb += _convPrModel.getPrediction(q) / 16.0;
-			}
-			else {
-				avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
-			}
-		}
 
-		double avgUSP = 0;
-		for(Query q : _querySpace) {
-			if(_day < 2) {
-				avgUSP += _salesPrices.get(q) / 16.0;
-			}
-			else {
-				avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
-			}
-		}
-
-		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
+		double valueLostWindow = Math.max(0, Math.min(_capWindow-1, 58 - _day));
+		//		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 		double valueLost = 0;
-		if(budget < 0) {
-			for (double i = Math.abs(budget)+1; i <= overCap; i++){
-				double iD = Math.pow(LAMBDA, i);
-				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
-			}
-		}
-		else {
-			for (double i = 1; i <= overCap; i++){
-				double iD = Math.pow(LAMBDA, i);
-				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
-			}
-		}
+		if(totalWeight > 0 && totalWeight > budget && valueLostWindow > 0) {
 
+			double avgConvProb = 0; //the average probability of conversion;
+			for(Query q : _querySpace) {
+				if(_day < 2) {
+					avgConvProb += _convPrModel.getPrediction(q) / 16.0;
+				}
+				else {
+					avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
+				}
+			}
+
+			double avgUSP = 0;
+			for(Query q : _querySpace) {
+				if(_day < 2) {
+					avgUSP += _salesPrices.get(q) / 16.0;
+				}
+				else {
+					avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+				}
+			}
+
+			ArrayList<Integer> soldArray = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+
+			double numConvsFuture = _capacity/_capWindow;
+//						double historicConvs = 0;
+//						int counter = 0;
+//						for(int i = 0; i < 5 && i < soldArray.size(); i++) {
+//							historicConvs += soldArray.get(soldArray.size()-1-i);
+//							counter++;
+//						}
+//						double numConvsFuture = historicConvs/counter;
+
+			for(int i = 0; i < valueLostWindow; i++) {
+				double expectedBudget = _capacity;
+
+				for(int j = 0; j < 2-i; j++) {
+					expectedBudget -= soldArray.get(soldArray.size()-1-j);
+				}
+				if(i < 3) {
+					Integer expectedConvsTom = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+					if(expectedConvsTom == null) {
+						expectedConvsTom = 0;
+						int counter2 = 0;
+						for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+							expectedConvsTom += soldArray.get(soldArray.size()-1-j);
+							counter2++;
+						}
+						expectedConvsTom /= (double)counter2;
+					}
+					expectedBudget -= expectedConvsTom;
+				}
+				expectedBudget -= numConvsFuture*(i);
+
+				double penalty1 = getPenalty(expectedBudget-Math.max(0,budget), numConvsFuture);	
+				double penalty2 = getPenalty(expectedBudget-totalWeight, numConvsFuture);	
+
+				if(penalty2 > penalty1) {
+					valueLost += (penalty1 - penalty2)*avgUSP*numConvsFuture/penalty2;
+				}
+			}
+		}
 		return totalValue-valueLost;
 	}
 
@@ -591,32 +634,7 @@ public class MCKPBidSearch extends AbstractAgent {
 			}
 			lastSolWeight = solutionWeight;
 			solutionWeight = 0;
-			double penalty;
-			double numOverCap = lastSolWeight - budget;
-			if(budget < 0) {
-				penalty = 0.0;
-				int num = 0;
-				for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
-					num++;
-				}
-				penalty /= (num);
-			}
-			else {
-				if(numOverCap <= 0) {
-					penalty = 1.0;
-				}
-				else {
-					penalty = budget;
-					for(int j = 1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
-					}
-					penalty /= (budget + numOverCap);
-				}
-			}
-			if(Double.isNaN(penalty)) {
-				penalty = 1.0;
-			}
+			double penalty = getPenalty(budget,lastSolWeight);
 			for(Query q : _querySpace) {
 				if(solution.get(q) == null) {
 					continue;
@@ -663,31 +681,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	private ArrayList<IncItem> getIncItemsForOverCapLevel(double initBudget, double overCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-		double penalty;
-		if(initBudget < 0) {
-			penalty = 0.0;
-			int num = 0;
-			for(double j = Math.abs(initBudget)+1; j <= overCap; j++) {
-				penalty += Math.pow(LAMBDA, j);
-				num++;
-			}
-			penalty /= (num);
-		}
-		else {
-			if(overCap <= 0) {
-				penalty = 1.0;
-			}
-			else {
-				penalty = initBudget;
-				for(int j = 1; j <= overCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
-				}
-				penalty /= (initBudget + overCap);
-			}
-		}
-		if(Double.isNaN(penalty)) {
-			penalty = 1.0;
-		}
+		double penalty = getPenalty(initBudget,initBudget+overCap);
 		//		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
 		for(Query q : _querySpace) {
 			ArrayList<Item> itemList = new ArrayList<Item>();

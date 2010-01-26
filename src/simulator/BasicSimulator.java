@@ -1427,7 +1427,7 @@ public class BasicSimulator {
 
 	public AbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPBid(false,false,false,false);
+			return new MCKPBid(false,false,false);
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -1442,7 +1442,7 @@ public class BasicSimulator {
 			return null;
 		}
 		else {
-			return new MCKPBid(false,false,false,false);
+			return new MCKPBid(false,false,false);
 		}
 	}
 
@@ -1889,18 +1889,16 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new MCKPBid(false,false,false,false);
-		//		AbstractAgent agent1 = new MCKPBid(true,false,false,false);
-		//		AbstractAgent agent2 = new MCKPBid(false,true,false,false);
-		//		AbstractAgent agent3 = new MCKPBid(false,false,true,false);
-		//		AbstractAgent agent4 = new MCKPBid(true,true,false,false);
-		//		AbstractAgent agent5 = new MCKPBid(true,false,true,false);
+		//		AbstractAgent agent = new MCKPBid(false,false,false);
+		//		AbstractAgent agent1 = new MCKPBid(false,false,true);
+		//		AbstractAgent agent2 = new MCKPBid(false,true,false);
+		//		AbstractAgent agent3 = new MCKPBid(false,true,true);
 		//		AbstractAgent agent = new MCKPPos(false,false,false,false);
-		//				AbstractAgent agent = new MCKPBidSearch(30);
-		//		AbstractAgent agent1 = new MCKPBidSearch(10);
-		//		AbstractAgent agent2 = new MCKPBidSearch(10);
-		//		AbstractAgent agent3 = new MCKPBidSearch(10);
-		//		AbstractAgent agent4 = new MCKPBidSearch(10);
+		//		AbstractAgent agent = new MCKPBidSearch(7);
+		AbstractAgent agent1 = new MCKPBidSearch(30);
+		AbstractAgent agent2 = new MCKPBidSearch(20);
+		AbstractAgent agent3 = new MCKPBidSearch(10);
+		AbstractAgent agent4 = new MCKPBidSearch(5);
 		//		AbstractAgent agent5 = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPPosSearch(10);
 
@@ -1928,18 +1926,18 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.23333399999999999);
 		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
 		//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
-		agentList.add(agent);
-		//		agentList.add(agent1);
-		//		agentList.add(agent2);
-		//		agentList.add(agent3);
-		//		agentList.add(agent4);
+		//		agentList.add(agent);
+		agentList.add(agent1);
+		agentList.add(agent2);
+		agentList.add(agent3);
+		agentList.add(agent4);
 		//		agentList.add(agent5);
 		//		agentList.add(agent6);
 		//		agentList.add(agent7);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 
 		for(AbstractAgent agentItr : agentList) {
-			sim.runSimulations(baseFile,1425,1437,0,0, agentItr);
+			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
 		}
 
 		double stop = System.currentTimeMillis();

@@ -48,10 +48,9 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class MCKPBid extends AbstractAgent {
 
 	private int MAX_TIME_HORIZON = 5;
-	private boolean SAFETYBUDGET = true;
+	private boolean SAFETYBUDGET = false;
 	private boolean TARGET = false;
 	private boolean BUDGET = false;
-	private boolean BACKWARDUPDATING = true;
 	private boolean FORWARDUPDATING = false;
 	private boolean PRICELINES = false;
 
@@ -76,16 +75,15 @@ public class MCKPBid extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public MCKPBid() {
-		this(false,false,false,false);
+		this(false,false,false);
 	}
-	
-	
-	public MCKPBid(boolean backward, boolean forward, boolean pricelines, boolean budget) {
+
+
+	public MCKPBid(boolean forward, boolean pricelines, boolean budget) {
 		BUDGET = budget;
-		BACKWARDUPDATING = backward;
 		FORWARDUPDATING = forward;
 		PRICELINES = pricelines;
-//		_R.setSeed(124962748);
+		//		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
 		double increment  = .05;
@@ -293,17 +291,17 @@ public class MCKPBid extends AbstractAgent {
 
 		if(_day > lagDays){
 			buildMaps(models);
-			double budget = _capacity/_capWindow;
+			double remainingCap;
 			if(_day < 4) {
-				//do nothing
+				remainingCap = _capacity/_capWindow;
 			}
 			else {
 				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = _capacity - _unitsSold.getWindowSold();
-				debug("Unit Sold Model Budget "  +budget);
+				remainingCap = _capacity - _unitsSold.getWindowSold();
+				debug("Unit Sold Model Budget "  +remainingCap);
 			}
 
-			debug("Budget: "+ budget);
+			debug("Budget: "+ remainingCap);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
 			ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
@@ -311,8 +309,8 @@ public class MCKPBid extends AbstractAgent {
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
 			double penalty = 1.0;
-			if(budget < 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(budget));
+			if(remainingCap < 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
 			}
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
@@ -378,7 +376,7 @@ public class MCKPBid extends AbstractAgent {
 			}
 
 			Collections.sort(allIncItems);
-			HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, budget, allPredictionsMap);
+			HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap);
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -437,7 +435,7 @@ public class MCKPBid extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double solutionWeight = solutionWeight(budget,solution,allPredictionsMap);
+			double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -454,8 +452,130 @@ public class MCKPBid extends AbstractAgent {
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-//		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return bidBundle;
+	}
+
+	private double getPenalty(double remainingCap, double solutionWeight) {
+		double penalty;
+		solutionWeight = Math.max(0,solutionWeight);
+		if(remainingCap < 0) {
+			if(solutionWeight == 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+			}
+			else {
+				penalty = 0.0;
+				int num = 0;
+				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
+					penalty += Math.pow(LAMBDA, j);
+					num++;
+				}
+				penalty /= (num);
+			}
+		}
+		else {
+			if(solutionWeight == 0) {
+				penalty = 1.0;
+			}
+			else {
+				if(solutionWeight > remainingCap) {
+					penalty = remainingCap;
+					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
+						penalty += Math.pow(LAMBDA, j);
+					}
+					penalty /= (solutionWeight);
+				}
+				else {
+					penalty = 1.0;
+				}
+			}
+		}
+		if(Double.isNaN(penalty)) {
+			penalty = 1.0;
+		}
+		return penalty;
+	}
+
+	private double solutionValue(HashMap<Query, Item> solution, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalWeight = solutionWeight(budget, solution, allPredictionsMap);
+
+		double penalty = getPenalty(budget, totalWeight);
+
+		double totalValue = 0;
+		for(Query q : _querySpace) {
+			if(solution.containsKey(q)) {
+				Item item = solution.get(q);
+				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(prediction.getConvPr()*penalty*_salesPrices.get(item.q()) - prediction.getCPC());
+			}
+		}
+
+		double valueLostWindow = Math.max(0, Math.min(_capWindow-1, 58 - _day));
+		//		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
+		double valueLost = 0;
+		if(totalWeight > 0 && totalWeight > budget && valueLostWindow > 0) {
+
+			double avgConvProb = 0; //the average probability of conversion;
+			for(Query q : _querySpace) {
+				if(_day < 2) {
+					avgConvProb += _convPrModel.getPrediction(q) / 16.0;
+				}
+				else {
+					avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
+				}
+			}
+
+			double avgUSP = 0;
+			for(Query q : _querySpace) {
+				if(_day < 2) {
+					avgUSP += _salesPrices.get(q) / 16.0;
+				}
+				else {
+					avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
+				}
+			}
+
+			ArrayList<Integer> soldArray = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+
+						double numConvsFuture = _capacity/_capWindow;
+//			double historicConvs = 0;
+//			int counter = 0;
+//			for(int i = 0; i < 5 && i < soldArray.size(); i++) {
+//				historicConvs += soldArray.get(soldArray.size()-1-i);
+//				counter++;
+//			}
+//			double numConvsFuture = historicConvs/counter;
+
+			for(int i = 0; i < valueLostWindow; i++) {
+				double expectedBudget = _capacity;
+
+				for(int j = 0; j < 2-i; j++) {
+					expectedBudget -= soldArray.get(soldArray.size()-1-j);
+				}
+				if(i < 3) {
+					Integer expectedConvsTom = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+					if(expectedConvsTom == null) {
+						expectedConvsTom = 0;
+						int counter2 = 0;
+						for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+							expectedConvsTom += soldArray.get(soldArray.size()-1-j);
+							counter2++;
+						}
+						expectedConvsTom /= (double)counter2;
+					}
+					expectedBudget -= expectedConvsTom;
+				}
+				expectedBudget -= numConvsFuture*(i);
+
+				double penalty1 = getPenalty(expectedBudget-Math.max(0,budget), numConvsFuture);	
+				double penalty2 = getPenalty(expectedBudget-totalWeight, numConvsFuture);	
+
+				if(penalty2 > penalty1) {
+					valueLost += (penalty1 - penalty2)*avgUSP*numConvsFuture/penalty2;
+				}
+			}
+		}
+		return totalValue-valueLost;
 	}
 
 	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
@@ -516,32 +636,7 @@ public class MCKPBid extends AbstractAgent {
 			}
 			lastSolWeight = solutionWeight;
 			solutionWeight = 0;
-			double penalty;
-			double numOverCap = lastSolWeight - budget;
-			if(budget < 0) {
-				penalty = 0.0;
-				int num = 0;
-				for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
-					num++;
-				}
-				penalty /= (num);
-			}
-			else {
-				if(numOverCap <= 0) {
-					penalty = 1.0;
-				}
-				else {
-					penalty = budget;
-					for(int j = 1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
-					}
-					penalty /= (budget + numOverCap);
-				}
-			}
-			if(Double.isNaN(penalty)) {
-				penalty = 1.0;
-			}
+			double penalty = getPenalty(budget, lastSolWeight);
 			for(Query q : _querySpace) {
 				if(solution.get(q) == null) {
 					continue;
@@ -591,55 +686,23 @@ public class MCKPBid extends AbstractAgent {
 		HashMap<Query,Item> solution = new HashMap<Query, Item>();
 
 		int expectedConvs = 0;
-		double numOverCap = 0;
 
 		for(int i = 0; i < incItems.size(); i++) {
 			IncItem ii = incItems.get(i);
 			double itemWeight = ii.w();
 			double itemValue = ii.v();
-			if(numOverCap == 0 && budget >= expectedConvs + itemWeight) {
+			if(budget >= expectedConvs + itemWeight) {
 				solution.put(ii.item().q(), ii.item());
 				expectedConvs += itemWeight;
 			}
 			else {
-				/*
-				 * If backwards updating we update our solution weight now
-				 */
-				if(BACKWARDUPDATING) {
-					expectedConvs = (int) solutionWeight(budget, solution, allPredictionsMap);
-				}
-				numOverCap = expectedConvs - budget;
+				expectedConvs = (int) solutionWeight(budget, solution, allPredictionsMap);
 
 				/*
 				 * Discount the item based on the current penalty level
 				 */
-				double penalty;
-				if(budget < 0) {
-					penalty = 0.0;
-					int num = 0;
-					for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
-						num++;
-					}
-					penalty /= (num);
-				}
-				else {
-					if(numOverCap <= 0) {
-						penalty = 1.0;
-					}
-					else {
-						penalty = budget;
-						for(int j = 1; j <= numOverCap; j++) {
-							penalty += Math.pow(LAMBDA, j);
-						}
-						penalty /= (budget + numOverCap);
-					}
-				}
-				
-				if(Double.isNaN(penalty)) {
-					penalty = 1.0;
-				}
-				
+				double penalty = getPenalty(budget, expectedConvs);
+
 				if(FORWARDUPDATING && !PRICELINES) {
 					if(ii.itemLow() != null) {
 						Predictions prediction1 = allPredictionsMap.get(ii.item().q()).get(ii.itemLow().idx());
@@ -691,58 +754,17 @@ public class MCKPBid extends AbstractAgent {
 					}
 				}
 
-				double min = numOverCap;
-				double max = numOverCap + itemWeight;
+				double currSolVal = solutionValue(solution, budget, allPredictionsMap);
 
-				double avgConvProb = 0; //the average probability of conversion;
-				for(Query q : _querySpace) {
-					if(_day < 2) {
-						avgConvProb += _convPrModel.getPrediction(q) / 16.0;
-					}
-					else {
-						avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
-					}
-				}
+				HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>) solution.clone();
+				solutionCopy.put(ii.item().q(), ii.item());
+				double newSolVal = solutionValue(solutionCopy, budget, allPredictionsMap);
 
-				double avgUSP = 0;
-				for(Query q : _querySpace) {
-					if(_day < 2) {
-						avgUSP += _salesPrices.get(q) / 16.0;
-					}
-					else {
-						avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
-					}
-				}
-
-				
-				/*
-				 * CHANGE TO DIRECT COMPARISON BETWEEN TWO SOLUTIONS
-				 * TODO
-				 */
-				
-				double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
-				double valueLost = 0;
-				for (double j = min+1; j <= max; j++){
-					double iD = Math.pow(LAMBDA, j);
-					double worseConvProb = avgConvProb*iD;
-					valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
-				}
-
-				if(itemValue > valueLost) {
+				if(newSolVal > currSolVal) {
 					solution.put(ii.item().q(), ii.item());
 					expectedConvs += itemWeight;
 				}
 				else {
-					/*
-					 * TODO
-					 * 
-					 * WE CAN ALSO CONSIDER ADDING THE LAST ITEM ANYWAY
-					 * it may be that it is too big and we would like to take a large fraction of it
-					 * 
-					 * i.e. valueLost may be greater than value gained, but we still do better
-					 * taking the last item than not
-					 * 
-					 */
 					break;
 				}
 			}
@@ -885,11 +907,11 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid(Budget: " + BUDGET + ", Backward Update: " + BACKWARDUPDATING + ", Forward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES;
+		return "MCKPBid(Budget: " + BUDGET + ", Forward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES;
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid(BACKWARDUPDATING,FORWARDUPDATING,PRICELINES,BUDGET);
+		return new MCKPBid(FORWARDUPDATING,PRICELINES,BUDGET);
 	}
 }
