@@ -1506,10 +1506,17 @@ public class BasicSimulator {
 			_noisePrClick = noisePrClick;
 		}
 
-		String[] filenames = new String[max-min];
-		System.out.println("Min: " + min + "  Max: " + max);
-		for(int i = min; i < max; i++) { 
-			filenames[i-min] = baseFile + i + ".slg";
+		String[] filenames;
+		if(min == max) {
+			filenames = new String[1];
+			filenames[0] = baseFile;
+		}
+		else {
+			filenames = new String[max-min];
+			System.out.println("Min: " + min + "  Max: " + max);
+			for(int i = min; i < max; i++) { 
+				filenames[i-min] = baseFile + i + ".slg";
+			}
 		}
 		for(int fileIdx = 0; fileIdx < filenames.length; fileIdx++) {
 
