@@ -61,10 +61,11 @@ public class GGAAgentTuner {
 
 	public static void main(String[] args) {
 		ArrayList<Double> params = new ArrayList<Double>();
-		String baseFile = args[0];
-		for(int i = 1; i < args.length; i++) {
+		for(int i = 0; i < args.length-2; i++) {
 			params.add(Double.parseDouble(args[i]));
 		}
+		String baseFile = args[args.length-2];
+		//LAST ARG IS THE SEED WHICH WE IGNORE
 		System.out.println(evaluateAgent(createCopy(params), baseFile));
 	}
 
