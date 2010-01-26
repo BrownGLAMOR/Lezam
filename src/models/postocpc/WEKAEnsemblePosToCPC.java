@@ -54,8 +54,6 @@ public class WEKAEnsemblePosToCPC extends AbstractPosToCPC {
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
-	private RConnection _rConnection;
-
 	private double _outOfAuction = 6.0;
 
 	public WEKAEnsemblePosToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
@@ -100,12 +98,6 @@ public class WEKAEnsemblePosToCPC extends AbstractPosToCPC {
 		for(Query query : _querySpace) {
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			_ensembleWeights.put(query, ensembleWeights);
-		}
-
-		try {
-			_rConnection = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
 		}
 
 		initializeEnsemble();

@@ -56,8 +56,6 @@ public class WEKAEnsembleBidToPrClick extends AbstractBidToPrClick {
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
-	private RConnection _rConnection;
-
 	private BasicTargetModel _targModel;
 
 	public WEKAEnsembleBidToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
@@ -109,12 +107,6 @@ public class WEKAEnsembleBidToPrClick extends AbstractBidToPrClick {
 		for(Query query : _querySpace) {
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			_ensembleWeights.put(query, ensembleWeights);
-		}
-
-		try {
-			_rConnection = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
 		}
 
 		initializeEnsemble();

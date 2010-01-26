@@ -64,8 +64,6 @@ public class WEKAEnsembleBidToCPC extends AbstractBidToCPC {
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
-	private RConnection _rConnection;
-
 	public WEKAEnsembleBidToCPC(Set<Query> querySpace, int numPastDays, int ensembleSize, boolean borda, boolean ignoreNaN) {
 		_bidBundles = new ArrayList<BidBundle>();
 
@@ -121,12 +119,6 @@ public class WEKAEnsembleBidToCPC extends AbstractBidToCPC {
 		for(Query query : _querySpace) {
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			_ensembleWeights.put(query, ensembleWeights);
-		}
-
-		try {
-			_rConnection = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
 		}
 
 		initializeEnsemble();

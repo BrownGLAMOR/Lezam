@@ -56,8 +56,6 @@ public class WEKAEnsemblePosToPrClick extends AbstractPosToPrClick {
 	private boolean _borda;
 	private boolean _ignoreNaN;
 
-	private RConnection _rConnection;
-
 	private BasicTargetModel _targModel;
 
 	public WEKAEnsemblePosToPrClick(Set<Query> querySpace, int numPastDays, int ensembleSize, BasicTargetModel targModel, boolean borda, boolean ignoreNaN) {
@@ -109,12 +107,6 @@ public class WEKAEnsemblePosToPrClick extends AbstractPosToPrClick {
 		for(Query query : _querySpace) {
 			HashMap<String,Double> ensembleWeights = new HashMap<String, Double>();
 			_ensembleWeights.put(query, ensembleWeights);
-		}
-
-		try {
-			_rConnection = new RConnection();
-		} catch (RserveException e) {
-			e.printStackTrace();
 		}
 
 		initializeEnsemble();

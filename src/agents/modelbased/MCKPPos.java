@@ -767,10 +767,10 @@ public class MCKPPos extends AbstractAgent {
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
 					if(_day < 2) {
-						avgConvProb += _baseConvProbs.get(q) / 16.0;
+						avgConvProb += _convPrModel.getPrediction(q) / 16.0;
 					}
 					else {
-						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+						avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
 					}
 				}
 
@@ -784,7 +784,7 @@ public class MCKPPos extends AbstractAgent {
 					}
 				}
 
-				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 				double valueLost = 0;
 				for (double j = min+1; j <= max; j++){
 					double iD = Math.pow(LAMBDA, j);

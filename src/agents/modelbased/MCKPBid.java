@@ -71,7 +71,6 @@ public class MCKPBid extends AbstractAgent {
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
-	private Hashtable<Query, Integer> _queryId;
 	private ArrayList<Double> bidList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
@@ -79,6 +78,7 @@ public class MCKPBid extends AbstractAgent {
 	public MCKPBid() {
 		this(false,false,false,false);
 	}
+	
 	
 	public MCKPBid(boolean backward, boolean forward, boolean pricelines, boolean budget) {
 		BUDGET = budget;
@@ -88,7 +88,7 @@ public class MCKPBid extends AbstractAgent {
 //		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
-		double increment  = .04;
+		double increment  = .05;
 		double min = .04;
 		double max = 1.65;
 		int tot = (int) Math.ceil((max-min) / increment);
@@ -196,6 +196,14 @@ public class MCKPBid extends AbstractAgent {
 				throw new RuntimeException("Malformed query");
 			}
 
+			String component = q.getComponent();
+			if(_compSpecialty.equals(component)) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
+			}
+			else if(component == null) {
+				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
+			}
+
 			/*
 			 * These are the MAX e_q^a (they are randomly generated), which is our clickPr for being in slot 1!
 			 * 
@@ -214,21 +222,6 @@ public class MCKPBid extends AbstractAgent {
 			else {
 				throw new RuntimeException("Malformed query");
 			}
-
-			String component = q.getComponent();
-			if(_compSpecialty.equals(component)) {
-				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
-			}
-			else if(component == null) {
-				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
-			}
-		}
-
-		_queryId = new Hashtable<Query,Integer>();
-		int i = 0;
-		for(Query q : _querySpace){
-			i++;
-			_queryId.put(q, i);
 		}
 	}
 
@@ -354,10 +347,9 @@ public class MCKPBid extends AbstractAgent {
 					debug("\tClickPr: " + clickPr);
 					debug("\tConv Prob: " + convProb + "\n\n");
 
-					int isID = _queryId.get(q);
 					double w = numClicks*convProb*penalty;				//weight = numClciks * convProv
 					double v = numClicks*convProb*penalty*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,bid,false,isID,i));
+					itemList.add(new Item(q,w,v,bid,false,0,i));
 
 					if(TARGET) {
 						/*
@@ -374,7 +366,7 @@ public class MCKPBid extends AbstractAgent {
 						w = numClicks*convProb*penalty;				//weight = numClciks * convProv
 						v = numClicks*convProb*penalty*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 
-						itemList.add(new Item(q,w,v,bid,true,isID,i));
+						itemList.add(new Item(q,w,v,bid,true,0,i));
 					}
 					queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
 				}
@@ -468,7 +460,7 @@ public class MCKPBid extends AbstractAgent {
 
 	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
 		double threshold = 2;
-		int maxIters = 10;
+		int maxIters = 20;
 		double lastSolWeight = Double.MAX_VALUE;
 		double solutionWeight = 0.0;
 
@@ -643,9 +635,11 @@ public class MCKPBid extends AbstractAgent {
 						penalty /= (budget + numOverCap);
 					}
 				}
+				
 				if(Double.isNaN(penalty)) {
 					penalty = 1.0;
 				}
+				
 				if(FORWARDUPDATING && !PRICELINES) {
 					if(ii.itemLow() != null) {
 						Predictions prediction1 = allPredictionsMap.get(ii.item().q()).get(ii.itemLow().idx());
@@ -703,10 +697,10 @@ public class MCKPBid extends AbstractAgent {
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
 					if(_day < 2) {
-						avgConvProb += _baseConvProbs.get(q) / 16.0;
+						avgConvProb += _convPrModel.getPrediction(q) / 16.0;
 					}
 					else {
-						avgConvProb += _baseConvProbs.get(q) * _salesDist.getPrediction(q);
+						avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
 					}
 				}
 
@@ -720,7 +714,13 @@ public class MCKPBid extends AbstractAgent {
 					}
 				}
 
-				double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
+				
+				/*
+				 * CHANGE TO DIRECT COMPARISON BETWEEN TWO SOLUTIONS
+				 * TODO
+				 */
+				
+				double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 				double valueLost = 0;
 				for (double j = min+1; j <= max; j++){
 					double iD = Math.pow(LAMBDA, j);
@@ -733,6 +733,16 @@ public class MCKPBid extends AbstractAgent {
 					expectedConvs += itemWeight;
 				}
 				else {
+					/*
+					 * TODO
+					 * 
+					 * WE CAN ALSO CONSIDER ADDING THE LAST ITEM ANYWAY
+					 * it may be that it is too big and we would like to take a large fraction of it
+					 * 
+					 * i.e. valueLost may be greater than value gained, but we still do better
+					 * taking the last item than not
+					 * 
+					 */
 					break;
 				}
 			}

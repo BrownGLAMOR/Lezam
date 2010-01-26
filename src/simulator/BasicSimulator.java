@@ -1889,7 +1889,7 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		//		AbstractAgent agent = new MCKPBid(false,false,false,false);
+		AbstractAgent agent = new MCKPBid(false,false,false,false);
 		//		AbstractAgent agent1 = new MCKPBid(true,false,false,false);
 		//		AbstractAgent agent2 = new MCKPBid(false,true,false,false);
 		//		AbstractAgent agent3 = new MCKPBid(false,false,true,false);
@@ -1909,7 +1909,7 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new MCKPBidPriceline(false);
 		//		AbstractAgent agent = new MCKPBidNoDomElim();
 		//		AbstractAgent agent = new DrMCKPBid(30);
-		AbstractAgent agent = new AdjustPPS();
+		//		AbstractAgent agent = new AdjustPPS();
 		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
 		//		AbstractAgent agent1 = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
 		//		AbstractAgent agent2 = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
