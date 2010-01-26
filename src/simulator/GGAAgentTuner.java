@@ -60,6 +60,7 @@ public class GGAAgentTuner {
 	}
 
 	public static void main(String[] args) {
+		_agent = new AdjustPPS();
 		ArrayList<Double> params = new ArrayList<Double>();
 		for(int i = 0; i < args.length-2; i++) {
 			params.add(Double.parseDouble(args[i]));
