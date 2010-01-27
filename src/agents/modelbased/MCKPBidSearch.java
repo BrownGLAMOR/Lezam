@@ -352,12 +352,12 @@ public class MCKPBidSearch extends AbstractAgent {
 
 
 			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(budget,0,allPredictionsMap), budget);
-			double bestSolVal = solutionValue(bestSolution,budget,allPredictionsMap);
+			double bestSolVal = solutionValue(bestSolution,budget,allPredictionsMap,true);
 			int bestIdx = -1;
 			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < capList.size(); i++) {
-				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(budget,capList.get(i),allPredictionsMap), budget+capList.get(i));
-				double solVal = solutionValue(solution,budget,allPredictionsMap);
+				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(budget, Math.max(0,budget)+capList.get(i),allPredictionsMap), Math.max(0,budget)+capList.get(i));
+				double solVal = solutionValue(solution,budget,allPredictionsMap,true);
 				if(solVal > bestSolVal) {
 					bestSolVal = solVal;
 					bestSolution = solution;
@@ -494,10 +494,10 @@ public class MCKPBidSearch extends AbstractAgent {
 		return penalty;
 	}
 
-	private double solutionValue(HashMap<Query, Item> solution, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-		double totalWeight = solutionWeight(budget, solution, allPredictionsMap);
+	private double solutionValue(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, boolean firstCall) {
+		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
 
-		double penalty = getPenalty(budget, totalWeight);
+		double penalty = getPenalty(remainingCap, totalWeight);
 
 		double totalValue = 0;
 		for(Query q : _querySpace) {
@@ -510,39 +510,18 @@ public class MCKPBidSearch extends AbstractAgent {
 
 		double valueLostWindow = Math.max(0, Math.min(_capWindow-1, 58 - _day));
 		//		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
-		double valueLost = 0;
-		if(totalWeight > 0 && totalWeight > budget && valueLostWindow > 0) {
-
-			double avgConvProb = 0; //the average probability of conversion;
-			for(Query q : _querySpace) {
-				if(_day < 2) {
-					avgConvProb += _convPrModel.getPrediction(q) / 16.0;
-				}
-				else {
-					avgConvProb += _convPrModel.getPrediction(q) * _salesDist.getPrediction(q);
-				}
-			}
-
-			double avgUSP = 0;
-			for(Query q : _querySpace) {
-				if(_day < 2) {
-					avgUSP += _salesPrices.get(q) / 16.0;
-				}
-				else {
-					avgUSP += _salesPrices.get(q) * _salesDist.getPrediction(q);
-				}
-			}
-
+		double multiDayVal = 0;
+		if(firstCall && valueLostWindow > 0) {
 			ArrayList<Integer> soldArray = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
 
 			double numConvsFuture = _capacity/_capWindow;
-//						double historicConvs = 0;
-//						int counter = 0;
-//						for(int i = 0; i < 5 && i < soldArray.size(); i++) {
-//							historicConvs += soldArray.get(soldArray.size()-1-i);
-//							counter++;
-//						}
-//						double numConvsFuture = historicConvs/counter;
+			//			double historicConvs = 0;
+			//			int counter = 0;
+			//			for(int i = 0; i < 5 && i < soldArray.size(); i++) {
+			//				historicConvs += soldArray.get(soldArray.size()-1-i);
+			//				counter++;
+			//			}
+			//			double numConvsFuture = historicConvs/counter;
 
 			for(int i = 0; i < valueLostWindow; i++) {
 				double expectedBudget = _capacity;
@@ -565,15 +544,15 @@ public class MCKPBidSearch extends AbstractAgent {
 				}
 				expectedBudget -= numConvsFuture*(i);
 
-				double penalty1 = getPenalty(expectedBudget-Math.max(0,budget), numConvsFuture);	
-				double penalty2 = getPenalty(expectedBudget-totalWeight, numConvsFuture);	
+				double budget2 = expectedBudget-totalWeight;
 
-				if(penalty2 > penalty1) {
-					valueLost += (penalty1 - penalty2)*avgUSP*numConvsFuture/penalty2;
-				}
+				HashMap<Query,Item> solution2 = fillKnapsack(getIncItemsForOverCapLevel(budget2,numConvsFuture,allPredictionsMap), numConvsFuture);
+				double solVal2 = solutionValue(solution2,budget2,allPredictionsMap,false);
+
+				multiDayVal += solVal2;
 			}
 		}
-		return totalValue-valueLost;
+		return totalValue+multiDayVal;
 	}
 
 	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
@@ -679,9 +658,9 @@ public class MCKPBidSearch extends AbstractAgent {
 	}
 
 
-	private ArrayList<IncItem> getIncItemsForOverCapLevel(double initBudget, double overCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+	private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-		double penalty = getPenalty(initBudget,initBudget+overCap);
+		double penalty = getPenalty(remainingCap,desiredSales);
 		//		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
 		for(Query q : _querySpace) {
 			ArrayList<Item> itemList = new ArrayList<Item>();
