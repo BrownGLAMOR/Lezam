@@ -27,10 +27,12 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	Classifier _predictor;
 	int _idx;
 	double _weight;
+	private int _maxDays;
 
-	public WEKABidToCPC(int idx,double weight) {
+	public WEKABidToCPC(int idx,double weight, int maxDays) {
 		_idx = idx;
 		_weight = weight;
+		_maxDays = maxDays;
 		Attribute bidAttribute = new Attribute("bid");
 		Attribute cpcAttribute = new Attribute("cpc");
 		FastVector fvQuery = new FastVector(16);
@@ -208,6 +210,10 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	@Override
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
+		
+		while(_data.numInstances() > _maxDays*16) {
+			_data.delete(0);
+		}
 
 		if(_weight > 0.0 && _weight != 0) {
 			/*
@@ -260,6 +266,6 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKABidToCPC(_idx,_weight);
+		return new WEKABidToCPC(_idx,_weight,_maxDays);
 	}
 }

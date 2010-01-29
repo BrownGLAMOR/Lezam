@@ -184,7 +184,7 @@ public class KitchenSinkEnsembleBidToCPC extends AbstractBidToCPC {
 		addModel( new RegressionBidToCPC(_rConnection, _querySpace, false,3,20, true,0.915, false, false, false, false, false, false));
 		for(double weight = 1.0; weight > .89; weight -= .1) {
 			for(int i = 1; i < 8; i++) {
-				addModel(new WEKABidToCPC(i,weight));
+				addModel(new WEKABidToCPC(i,weight,60));
 			}
 		}
 

@@ -94,7 +94,7 @@ public class PredictionEvaluator {
 
 		String baseFile = "/Users/jordanberg/Desktop/LATESTMCKP/localhost_sim";
 		int min = 2;
-		int max = 3;
+		int max = 22;
 
 		//						int max = 9;
 
@@ -2436,16 +2436,16 @@ public class PredictionEvaluator {
 			//			model = new RegressionBidToPrClick(new RConnection(),_querySpace,false,2,20,new BasicTargetModel("flat", "tv"),true,false,false,false,false);
 			//			model = new EnsembleBidToPrClick(_querySpace, 30, 3, new BasicTargetModel("flat", "tv"), false, true);
 			//			evaluator.clickPrPredictionChallenge(model);
-			RConnection _rConnection = new RConnection();
-			BasicTargetModel _targModel = new BasicTargetModel(null, null);
-
-			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
-			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
-			for(double weight = 1.0; weight > .89; weight -= .1) {
-				for(int i = 1; i < 8; i++) {
-					evaluator.queryToPrConv(new WEKAPrConv(i,weight));
-				}
-			}
+//			RConnection _rConnection = new RConnection();
+//			BasicTargetModel _targModel = new BasicTargetModel(null, null);
+//
+//			evaluator.queryToPrConv(new GoodConversionPrModel(_querySpace, _targModel));
+//			evaluator.queryToPrConv(new HistoricPrConversionModel(_querySpace, _targModel));
+//			for(double weight = 1.0; weight > .89; weight -= .1) {
+//				for(int i = 1; i < 8; i++) {
+//					evaluator.queryToPrConv(new WEKAPrConv(i,weight));
+//				}
+//			}
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2505,7 +2505,7 @@ public class PredictionEvaluator {
 			//									for(int i = 1; i < 20; i++) {
 			//										evaluator.bidToCPCPredictionChallenge(new WEKAClassifBidToCPC(i));
 			//									}
-			//						evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,12,true,false));
+			evaluator.bidToCPCPredictionChallenge(new WEKAEnsembleBidToCPC(_querySpace,10,12,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new EnsembleBidToCPC(_querySpace,10,20,true,false));
 			//						evaluator.bidToCPCPredictionChallenge(new KitchenSinkEnsembleBidToCPC(_querySpace,10,20,true,false));
 

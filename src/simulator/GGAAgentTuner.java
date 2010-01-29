@@ -46,7 +46,7 @@ public class GGAAgentTuner {
 		AbstractAgent agentCopy = null;
 
 		try {
-			agentCopy = (AbstractAgent)(constr[0].newInstance(args));
+			agentCopy = (AbstractAgent)(constr[1].newInstance(args));
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (InstantiationException e) {
@@ -67,7 +67,7 @@ public class GGAAgentTuner {
 		}
 		String baseFile = args[args.length-2];
 		//LAST ARG IS THE SEED WHICH WE IGNORE
-		System.out.println(evaluateAgent(createCopy(params), baseFile));
+		System.out.println((-1.0*evaluateAgent(createCopy(params), baseFile)));
 	}
 
 }

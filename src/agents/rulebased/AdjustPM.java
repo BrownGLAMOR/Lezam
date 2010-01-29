@@ -15,7 +15,6 @@ import edu.umich.eecs.tac.props.QueryType;
 public class AdjustPM extends RuleBasedAgent {
 
 	protected BidBundle _bidBundle;
-	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = false;
 	protected double _alphaIncTS;
@@ -122,17 +121,6 @@ public class AdjustPM extends RuleBasedAgent {
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
 			_bidBundle.setBid(query, targetCPC+.01);
-
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
 
 			if(DAILYBUDGET) {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query,targetCPC));

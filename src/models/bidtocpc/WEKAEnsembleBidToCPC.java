@@ -128,15 +128,18 @@ public class WEKAEnsembleBidToCPC extends AbstractBidToCPC {
 		/*
 		 * Add Models
 		 */
-		for(double weight = 1.0; weight > .89; weight -= .1) {
-			for(int i = 1; i < 8; i++) {
-				addModel(new WEKABidToCPC(i,weight));
+		for(int numDays = 20; numDays <= 60; numDays += 20) {
+			for(double weight = 1.0; weight > .89; weight -= .1) {
+				for(int i = 1; i < 8; i++) {
+					addModel(new WEKABidToCPC(i,weight,numDays));
+					addModel(new WEKABidToCPCPerQuery(_querySpace,i,weight,numDays));
+				}
 			}
 		}
-
-		for(int i = 1; i < 20; i++) {
-			addModel(new WEKAClassifBidToCPC(i));
-		}
+			
+//				for(int i = 1; i < 20; i++) {
+//					addModel(new WEKAClassifBidToCPC(i));
+//				}
 	}
 
 	@Override
