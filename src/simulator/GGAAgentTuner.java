@@ -7,11 +7,18 @@ import java.text.ParseException;
 import java.util.ArrayList;
 
 import agents.AbstractAgent;
+import agents.rulebased.AdjustPM;
 import agents.rulebased.AdjustPPS;
+import agents.rulebased.AdjustPR;
+import agents.rulebased.AdjustROI;
+import agents.rulebased.EquatePM;
+import agents.rulebased.EquatePPS;
+import agents.rulebased.EquatePR;
+import agents.rulebased.EquateROI;
 
 public class GGAAgentTuner {
 
-	private static AdjustPPS _agent;
+	private static AbstractAgent _agent;
 
 	public static double evaluateAgent(AbstractAgent agent, String file) {
 		BasicSimulator sim = new BasicSimulator();
@@ -61,6 +68,13 @@ public class GGAAgentTuner {
 
 	public static void main(String[] args) {
 		_agent = new AdjustPPS();
+//		_agent = new AdjustPR();
+//		_agent = new AdjustPM();
+//		_agent = new AdjustROI();
+//		_agent = new EquatePPS();
+//		_agent = new EquatePR();
+//		_agent = new EquatePM();
+//		_agent = new EquateROI();
 		ArrayList<Double> params = new ArrayList<Double>();
 		for(int i = 0; i < args.length-2; i++) {
 			params.add(Double.parseDouble(args[i]));
