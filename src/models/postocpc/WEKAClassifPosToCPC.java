@@ -222,7 +222,7 @@ public class WEKAClassifPosToCPC extends AbstractPosToCPC {
 
 	@Override
 	public double getPrediction(Query query, double pos) {
-		if(Double.isNaN(pos) || pos > 5) {
+		if(Double.isNaN(pos) || pos >= 6) {
 			return 0;
 		}
 		Enumeration enumer = _filteredData.attribute(0).enumerateValues();

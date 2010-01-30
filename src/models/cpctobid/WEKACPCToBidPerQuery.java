@@ -1,4 +1,4 @@
-package models.bidtocpc;
+package models.cpctobid;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -22,7 +22,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
+public class WEKACPCToBidPerQuery extends AbstractCPCToBid {
 
 	FastVector _allAttributes;
 	HashMap<Query,Instances> _data;
@@ -32,7 +32,7 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 	int _maxDays;
 	Set<Query> _querySpace;
 
-	public WEKABidToCPCPerQuery(Set<Query> querySpace, int idx,double weight, int maxDays) {
+	public WEKACPCToBidPerQuery(Set<Query> querySpace, int idx,double weight, int maxDays) {
 		_querySpace = querySpace;
 		_idx = idx;
 		_weight = weight;
@@ -47,7 +47,7 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 		Random random = new Random();
 		for(Query query : _querySpace) {
 			Instances data = new Instances("data"+random.nextLong(),_allAttributes,100);
-			data.setClassIndex(1);
+			data.setClassIndex(0);
 
 			Instance query1 = new Instance(3);
 			query1.setValue((Attribute)_allAttributes.elementAt(0),0.0);
@@ -144,15 +144,15 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid) {
-		if(bid == 0) { 
+	public double getPrediction(Query query, double cpc) {
+		if(cpc == 0) { 
 			return 0;
 		}
 		Instances data = _data.get(query);
 		Instance pred = new Instance(2);
-		pred.setValue((Attribute)_allAttributes.elementAt(0),bid);
+		pred.setValue((Attribute)_allAttributes.elementAt(1),cpc);
 		pred.setDataset(data);
-		double prediction = bid;
+		double prediction = cpc;
 		Classifier predictor = _predictor.get(query);
 		try {
 			prediction = predictor.classifyInstance(pred);
@@ -163,8 +163,8 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
-		if(prediction >= bid) {
-			return bid*.8;
+		if(cpc > prediction) {
+			return cpc;
 		}
 
 		if(prediction < 0.0) {
@@ -177,14 +177,14 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 	@Override
 	public String toString() {
 		switch (_idx) {
-		case 1:  return "WEKABidToCPCPerQuery(LinearRegression), weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 2:  return "WEKABidToCPCPerQuery(IBk):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 3:  return "WEKABidToCPCPerQuery(KStar):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 4: return "WEKABidToCPCPerQuery(LWL):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 5: return "WEKABidToCPCPerQuery(AdditiveRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 6:  return "WEKABidToCPCPerQuery(REPTree):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		case 7:  return "WEKABidToCPCPerQuery(RegressionByDiscretization):weight: " + _weight + ", maxDays: " + _maxDays + ")";
-		default: return "WEKABidToCPCPerQuery(LinearRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 1:  return "WEKACPCToBidPerQuery(LinearRegression), weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 2:  return "WEKACPCToBidPerQuery(IBk):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 3:  return "WEKACPCToBidPerQuery(KStar):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 4: return "WEKACPCToBidPerQuery(LWL):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 5: return "WEKACPCToBidPerQuery(AdditiveRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 6:  return "WEKACPCToBidPerQuery(REPTree):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 7:  return "WEKACPCToBidPerQuery(RegressionByDiscretization):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		default: return "WEKACPCToBidPerQuery(LinearRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
 		}
 	}
 
@@ -245,7 +245,7 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 		case 3:  classifier = (Classifier)new KStar(); break;
 		case 4: classifier = (Classifier)new LWL(); break;
 		case 5: classifier = (Classifier)new AdditiveRegression(); break;
-		case 6:  classifier = (Classifier)new REPTree(); break;
+//		case 6:  classifier = (Classifier)new REPTree(); break;
 		case 7:  classifier = (Classifier)new RegressionByDiscretization(); break;
 		default: classifier = (Classifier)new LinearRegression(); break;
 		}
@@ -254,6 +254,6 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKABidToCPCPerQuery(_querySpace, _idx,_weight,_maxDays);
+		return new WEKACPCToBidPerQuery(_querySpace, _idx,_weight,_maxDays);
 	}
 }

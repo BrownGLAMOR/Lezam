@@ -1,4 +1,4 @@
-package models.bidtocpc;
+package models.cpctobid;
 
 import java.util.Random;
 
@@ -20,7 +20,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class WEKABidToCPC extends AbstractBidToCPC {
+public class WEKACPCToBid extends AbstractCPCToBid {
 
 	FastVector _allAttributes;
 	Instances _data;
@@ -29,7 +29,7 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	double _weight;
 	private int _maxDays;
 
-	public WEKABidToCPC(int idx,double weight, int maxDays) {
+	public WEKACPCToBid(int idx,double weight, int maxDays) {
 		_idx = idx;
 		_weight = weight;
 		_maxDays = maxDays;
@@ -59,7 +59,7 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 		_allAttributes.addElement(queryAttribute);
 		Random random = new Random();
 		_data = new Instances("data"+random.nextLong(),_allAttributes,100);
-		_data.setClassIndex(1);
+		_data.setClassIndex(0);
 
 		Instance query1 = new Instance(3);
 		query1.setValue((Attribute)_allAttributes.elementAt(0),0.0);
@@ -167,15 +167,15 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	}
 
 	@Override
-	public double getPrediction(Query query, double bid) {
-		if(bid == 0) { 
+	public double getPrediction(Query query, double cpc) {
+		if(cpc == 0) { 
 			return 0;
 		}
 		Instance pred = new Instance(3);
-		pred.setValue((Attribute)_allAttributes.elementAt(0),bid);
+		pred.setValue((Attribute)_allAttributes.elementAt(1),cpc);
 		pred.setValue((Attribute)_allAttributes.elementAt(2),query.getManufacturer() + "-" + query.getComponent());
 		pred.setDataset(_data);
-		double prediction = bid;
+		double prediction = cpc;
 		try {
 			prediction = _predictor.classifyInstance(pred);
 		} catch (Exception e) {
@@ -185,8 +185,8 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 		/*
 		 * Our CPC can never be higher than our bid
 		 */
-		if(prediction >= bid) {
-			return bid*.8;
+		if(cpc > prediction) {
+			return cpc;
 		}
 
 		if(prediction < 0.0) {
@@ -199,14 +199,14 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 	@Override
 	public String toString() {
 		switch (_idx) {
-		case 1:  return "WEKABidToCPC(LinearRegression), weight: " + _weight + ")";
-		case 2:  return "WEKABidToCPC(IBk): " + _weight + ")";
-		case 3:  return "WEKABidToCPC(KStar): " + _weight + ")";
-		case 4: return "WEKABidToCPC(LWL): " + _weight + ")";
-		case 5: return "WEKABidToCPC(AdditiveRegression): " + _weight + ")";
-		case 6:  return "WEKABidToCPC(REPTree): " + _weight + ")";
-		case 7:  return "WEKABidToCPC(RegressionByDiscretization): " + _weight + ")";
-		default: return "WEKABidToCPC(LinearRegression): " + _weight + ")";
+		case 1:  return "WEKACPCToBid(LinearRegression), weight: " + _weight + ")";
+		case 2:  return "WEKACPCToBid(IBk): " + _weight + ")";
+		case 3:  return "WEKACPCToBid(KStar): " + _weight + ")";
+		case 4: return "WEKACPCToBid(LWL): " + _weight + ")";
+		case 5: return "WEKACPCToBid(AdditiveRegression): " + _weight + ")";
+		case 6:  return "WEKACPCToBid(REPTree): " + _weight + ")";
+		case 7:  return "WEKACPCToBid(RegressionByDiscretization): " + _weight + ")";
+		default: return "WEKACPCToBid(LinearRegression): " + _weight + ")";
 		}
 	}
 
@@ -260,7 +260,7 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 		case 3:  classifier = (Classifier)new KStar(); break;
 		case 4: classifier = (Classifier)new LWL(); break;
 		case 5: classifier = (Classifier)new AdditiveRegression(); break;
-		case 6:  classifier = (Classifier)new REPTree(); break;
+//		case 6:  classifier = (Classifier)new REPTree(); break;
 		case 7:  classifier = (Classifier)new RegressionByDiscretization(); break;
 		default: classifier = (Classifier)new LinearRegression(); break;
 		}
@@ -269,6 +269,6 @@ public class WEKABidToCPC extends AbstractBidToCPC {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKABidToCPC(_idx,_weight,_maxDays);
+		return new WEKACPCToBid(_idx,_weight,_maxDays);
 	}
 }

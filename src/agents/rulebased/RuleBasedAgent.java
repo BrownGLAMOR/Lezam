@@ -9,6 +9,8 @@ import java.util.Set;
 import agents.AbstractAgent;
 
 import models.AbstractModel;
+import models.cpctobid.AbstractCPCToBid;
+import models.cpctobid.WEKACPCToBid;
 import models.prconv.AbstractConversionModel;
 import models.prconv.HistoricPrConversionModel;
 import models.targeting.BasicTargetModel;
@@ -29,15 +31,16 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected AbstractConversionModel _conversionPrModel;
 	protected BasicTargetModel _targetModel;
+	protected AbstractCPCToBid _CPCToBid;
 	protected Random _R;
 	protected long seed = 12452748;
 	protected boolean SEEDED = false;
-	
+
 	protected HashMap<Query, Double> _baselineConversion;
 	protected HashMap<Query, Double> _baseClickProbs;
 	protected HashMap<Query, Double> _salesPrices;
 	protected HashMap<Query, Double> _salesDistribution;
-	
+
 	protected double _lambdaCapLow;
 	protected double _lambdaCapMed;
 	protected double _lambdaCapHigh;
@@ -48,7 +51,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected double _lambdaBudgetModifier;
 	protected double _dailyCapMin;
 	protected double _dailyCapMax;
-	
+
 	/*
 	 * 1/21/10
 	 * 
@@ -72,7 +75,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		_baselineConversion = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
 		_salesDistribution = new HashMap<Query, Double>();
-		
+
 		if(_capacity == 300) {
 			_lambdaCapModifier = _lambdaCapLow;
 			_lambdaBudgetModifier = _lambdaBudgetLow;
@@ -140,11 +143,11 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			else if(component == null) {
 				_baselineConversion.put(q,eta(_baselineConversion.get(q),1+_CSB)*(1/3.0) + _baselineConversion.get(q)*(2/3.0));
 			}
-			
-			
+
+
 			_salesDistribution.put(q, 1.0/_querySpace.size());
 		}
-		
+
 		setDailyQueryCapacity();
 	}
 
@@ -154,10 +157,12 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,1.0);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
+		_CPCToBid = new WEKACPCToBid(3,1,20);
 
 		models.add(_unitsSoldModel);
 		models.add(_conversionPrModel);
 		models.add(_targetModel);
+		models.add(_CPCToBid);
 		return models;
 	}
 
@@ -172,6 +177,7 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_unitsSoldModel.update(salesReport);
 			setDailyQueryCapacity();
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
+			_CPCToBid.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 
@@ -188,6 +194,10 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			if(model instanceof BasicTargetModel) {
 				BasicTargetModel targModel = (BasicTargetModel) model;
 				_targetModel = targModel; 
+			}
+			if(model instanceof AbstractCPCToBid) {
+				AbstractCPCToBid CPCToBid = (AbstractCPCToBid) model;
+				_CPCToBid = CPCToBid; 
 			}
 		}
 	}
@@ -233,9 +243,14 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		convPr /= numQueries;
 		return (targetCPC*(_dailyCapacity/convPr))*_lambdaBudgetModifier;
 	}
-	
+
 	protected final double getBidFromCPC(Query query, double cpc) {
-		return cpc + .01;
+		if(_day >= 6) {
+			return _CPCToBid.getPrediction(query, cpc);
+		}
+		else {
+			return cpc + .01;
+		}
 	}
 
 	protected final double getRandomBid(Query q) {

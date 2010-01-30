@@ -181,6 +181,9 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public double getPrediction(Query query, double bid, Ad currentAd) {
+		if(bid == 0) { 
+			return 0;
+		}
 		Instance pred = new Instance(3);
 		pred.setValue((Attribute)_allAttributes.elementAt(0),bid);
 		pred.setValue((Attribute)_allAttributes.elementAt(2),query.getManufacturer() + "-" + query.getComponent());

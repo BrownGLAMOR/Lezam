@@ -224,6 +224,9 @@ public class WEKAClassifBidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public double getPrediction(Query query, double bid, Ad currentAd) {
+		if(bid == 0) { 
+			return 0;
+		}
 		Enumeration enumer = _filteredData.attribute(0).enumerateValues();
 		String[] enumStrings = new String[_filteredData.attribute(0).numValues()];
 		int count = 0;
