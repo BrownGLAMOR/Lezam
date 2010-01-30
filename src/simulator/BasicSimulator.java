@@ -208,8 +208,8 @@ public class BasicSimulator {
 		agent.sendSimMessage(new Message("doesn't","matter",_retailCatalog));
 		agent.sendSimMessage(new Message("doesn't","matter",_slotInfo));
 		agent.sendSimMessage(new Message("doesn't","matter",_ourAdvInfo));
-		Set<AbstractModel> models = agent.initModels();
 		agent.initBidder();
+		Set<AbstractModel> models = agent.initModels();
 		agent.setModels(models);
 		for(int i = 0; i < _agents.length; i++) {
 			LinkedList<Reports> reports = new LinkedList<Reports>();
@@ -1896,7 +1896,7 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-//		AbstractAgent agent = new MCKPBid(false,true,false);
+		AbstractAgent agent = new MCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,false,true);
 		//				AbstractAgent agent = new MCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,true,true);
@@ -1908,8 +1908,8 @@ public class BasicSimulator {
 		//		AbstractAgent agent4 = new MCKPBidSearch(5);
 		//		AbstractAgent agent5 = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPPosSearch(10);
-		
-		AbstractAgent agent = new AdjustPPS(0.00172288, 0.226223, 0.00332627, 0.04596, 8.39066, -0.00883926, 0.133004, 0.00961367, -0.183135);
+
+		//		AbstractAgent agent = new AdjustPPS(0.00172288, 0.260363, 0.00792021, -0.0682618, 9.85474, -0.00840323, 0.179635, 0.00969242, -0.0208566);
 
 		//		AbstractAgent agent = new MCKPBidTrueOneDay();
 		//		AbstractAgent agent = new MCKPBidPriceline(true);

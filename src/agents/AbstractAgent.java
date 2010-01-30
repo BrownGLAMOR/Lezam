@@ -305,8 +305,8 @@ public abstract class AbstractAgent extends Agent {
     protected void sendBidAndAds() {
     	double start = System.currentTimeMillis();
     	if(_day == 0) {
-    		_models = initModels();
     		initBidder();
+    		_models = initModels();
     	}
     	if(_day >= 2) {
     		updateModels(_salesReport, _queryReport);

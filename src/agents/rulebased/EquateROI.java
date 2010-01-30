@@ -1,19 +1,12 @@
 package agents.rulebased;
 
 
-import java.util.HashMap;
 import java.util.Set;
-
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquateROI extends RuleBasedAgent{
 	protected BidBundle _bidBundle;
@@ -21,20 +14,55 @@ public class EquateROI extends RuleBasedAgent{
 	protected double _ROI;
 	protected double _alphaIncROI;
 	protected double _betaIncROI;
+	protected double _gammaIncROI;
+	protected double _deltaIncROI;
 	protected double _alphaDecROI;
 	protected double _betaDecROI;
+	protected double _gammaDecROI;
+	protected double _deltaDecROI;
 	protected double _initROI;
+	protected double _threshTS;
 	
 	public EquateROI() {
-		this(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public EquateROI(double initROI,double alphaIncROI,double betaIncROI,double alphaDecROI,double betaDecROI) {
+	public EquateROI(double initROI,
+			double alphaIncROI,
+			double betaIncROI,
+			double gammaIncROI,
+			double deltaIncROI,
+			double alphaDecROI,
+			double betaDecROI,
+			double gammaDecROI,
+			double deltaDecROI,
+			double threshTS,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initROI = initROI;
 		_alphaIncROI = alphaIncROI;
 		_betaIncROI = betaIncROI;
+		_gammaIncROI = gammaIncROI;
+		_deltaIncROI = deltaIncROI;
 		_alphaDecROI = alphaDecROI;
 		_betaDecROI = betaDecROI;
-		_initROI = initROI;
+		_gammaDecROI = gammaDecROI;
+		_deltaDecROI = deltaDecROI;
+		_threshTS = threshTS;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 
 
@@ -59,11 +87,14 @@ public class EquateROI extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity) {
-				_ROI *=  (1-(_alphaDecROI*Math.abs(sum - _dailyCapacity)  +  _betaDecROI));
+			if(Math.abs(sum - _dailyCapacity) <= _threshTS) {
+				//Do Nothing
+			}
+			else if(sum <= _dailyCapacity) {
+				_ROI *=  (1-(_alphaDecROI*Math.abs(sum - _dailyCapacity)  +  _betaDecROI) * Math.pow(_gammaDecROI, _day*_deltaDecROI));
 			}
 			else {
-				_ROI *=  (1+_alphaIncROI*Math.abs(sum - _dailyCapacity)  +  _betaIncROI);
+				_ROI *=  (1+(_alphaIncROI*Math.abs(sum - _dailyCapacity)  +  _betaIncROI) * Math.pow(_gammaIncROI, _day*_deltaIncROI));
 			}
 			
 			if(Double.isNaN(_ROI) || _ROI <= 0.0) {
@@ -102,7 +133,7 @@ public class EquateROI extends RuleBasedAgent{
 
 		double rev = _salesPrices.get(q);
 		double CPC = (rev * prConv)/(_ROI+1.0);
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		
 		return CPC;
 	}
@@ -114,7 +145,7 @@ public class EquateROI extends RuleBasedAgent{
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquateROI(_initROI, _alphaIncROI, _betaIncROI, _alphaDecROI, _betaDecROI);
+		return new EquateROI(_initROI, _alphaIncROI, _betaIncROI,_gammaIncROI,_deltaIncROI, _alphaDecROI, _betaDecROI, _gammaDecROI, _deltaDecROI, _threshTS, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
 
 }

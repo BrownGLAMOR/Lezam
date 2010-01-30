@@ -174,14 +174,14 @@ public class WEKABidToCPCPerQuery extends AbstractBidToCPC {
 	@Override
 	public String toString() {
 		switch (_idx) {
-		case 1:  return "WEKABidToCPC(LinearRegression), weight: " + _weight + ")";
-		case 2:  return "WEKABidToCPC(IBk): " + _weight + ")";
-		case 3:  return "WEKABidToCPC(KStar): " + _weight + ")";
-		case 4: return "WEKABidToCPC(LWL): " + _weight + ")";
-		case 5: return "WEKABidToCPC(AdditiveRegression): " + _weight + ")";
-		case 6:  return "WEKABidToCPC(REPTree): " + _weight + ")";
-		case 7:  return "WEKABidToCPC(RegressionByDiscretization): " + _weight + ")";
-		default: return "WEKABidToCPC(LinearRegression): " + _weight + ")";
+		case 1:  return "WEKABidToCPCPerQuery(LinearRegression), weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 2:  return "WEKABidToCPCPerQuery(IBk):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 3:  return "WEKABidToCPCPerQuery(KStar):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 4: return "WEKABidToCPCPerQuery(LWL):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 5: return "WEKABidToCPCPerQuery(AdditiveRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 6:  return "WEKABidToCPCPerQuery(REPTree):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		case 7:  return "WEKABidToCPCPerQuery(RegressionByDiscretization):weight: " + _weight + ", maxDays: " + _maxDays + ")";
+		default: return "WEKABidToCPCPerQuery(LinearRegression):weight: " + _weight + ", maxDays: " + _maxDays + ")";
 		}
 	}
 

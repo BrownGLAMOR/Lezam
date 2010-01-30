@@ -102,7 +102,6 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public Set<AbstractModel> initModels() {
-		initBidder();
 		/*
 		 * Order is important because some of our models use other models
 		 * so we use a LinkedHashSet

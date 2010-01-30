@@ -1,19 +1,12 @@
 package agents.rulebased;
 
 
-import java.util.HashMap;
 import java.util.Set;
-
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquatePR extends RuleBasedAgent{
 	
@@ -22,20 +15,55 @@ public class EquatePR extends RuleBasedAgent{
 	protected double _PR;
 	protected double _alphaIncPR;
 	protected double _betaIncPR;
+	protected double _gammaIncPR;
+	protected double _deltaIncPR;
 	protected double _alphaDecPR;
 	protected double _betaDecPR;
+	protected double _gammaDecPR;
+	protected double _deltaDecPR;
 	protected double _initPR;
+	protected double _threshTS;
 	
 	public EquatePR() {
-		this(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public EquatePR(double initPR,double alphaIncPR,double betaIncPR,double alphaDecPR,double betaDecPR) {
+	public EquatePR(double initPR,
+			double alphaIncPR,
+			double betaIncPR,
+			double gammaIncPR,
+			double deltaIncPR,
+			double alphaDecPR,
+			double betaDecPR,
+			double gammaDecPR,
+			double deltaDecPR,
+			double threshTS,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initPR = initPR;
 		_alphaIncPR = alphaIncPR;
 		_betaIncPR = betaIncPR;
+		_gammaIncPR = gammaIncPR;
+		_deltaIncPR = deltaIncPR;
 		_alphaDecPR = alphaDecPR;
 		_betaDecPR = betaDecPR;
-		_initPR = initPR;
+		_gammaDecPR = gammaDecPR;
+		_deltaDecPR = deltaDecPR;
+		_threshTS = threshTS;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 
 
@@ -60,11 +88,14 @@ public class EquatePR extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity) {
-				_PR *=  (1-(_alphaDecPR*Math.abs(sum - _dailyCapacity)  +  _betaDecPR));
+			if(Math.abs(sum - _dailyCapacity) <= _threshTS) {
+				//Do Nothing
+			}
+			else if(sum <= _dailyCapacity) {
+				_PR *=  (1-(_alphaDecPR*Math.abs(sum - _dailyCapacity)  +  _betaDecPR) * Math.pow(_gammaDecPR, _day*_deltaDecPR));
 			}
 			else {
-				_PR *=  (1+_alphaIncPR*Math.abs(sum - _dailyCapacity)  +  _betaIncPR);
+				_PR *=  (1+(_alphaIncPR*Math.abs(sum - _dailyCapacity)  +  _betaIncPR) * Math.pow(_gammaIncPR, _day*_deltaIncPR));
 			}
 			
 			if(Double.isNaN(_PR)) {
@@ -77,7 +108,7 @@ public class EquatePR extends RuleBasedAgent{
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 		}
 
 		if(BUDGET) {
@@ -107,7 +138,7 @@ public class EquatePR extends RuleBasedAgent{
 
 		double rev = _salesPrices.get(q);
 		double CPC = (rev * prConv)/_PR;
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		
 		return CPC;
 	}
@@ -119,7 +150,7 @@ public class EquatePR extends RuleBasedAgent{
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePR(_initPR, _alphaIncPR, _betaIncPR, _alphaDecPR, _betaDecPR);
+		return new EquatePR(_initPR, _alphaIncPR, _betaIncPR,_gammaIncPR,_deltaIncPR, _alphaDecPR, _betaDecPR, _gammaDecPR, _deltaDecPR, _threshTS, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
 
 }

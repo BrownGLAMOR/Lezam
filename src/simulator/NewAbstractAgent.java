@@ -411,8 +411,8 @@ public abstract class NewAbstractAgent extends Agent {
 			e.printStackTrace();
 		}
 		if(_day == 0) {
-			_models = initModels();
 			initBidder();
+			_models = initModels();
 //			String[] advertisers = _advertiserInfos.keySet().toArray(new String[0]);
 //			int ourAdvIdx = 0;
 //			for(int i = 0; i < advertisers.length; i++) {

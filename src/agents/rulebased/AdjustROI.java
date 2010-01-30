@@ -2,47 +2,96 @@ package agents.rulebased;
 
 import java.util.HashMap;
 import java.util.Set;
-
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryType;
 
 public class AdjustROI extends RuleBasedAgent {
 	
 	protected BidBundle _bidBundle;
-	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = false;
+	protected double _initROI;
 	protected double _alphaIncTS;
 	protected double _betaIncTS;
+	protected double _gammaIncTS;
+	protected double _deltaIncTS;
 	protected double _alphaDecTS;
 	protected double _betaDecTS;
+	protected double _gammaDecTS;
+	protected double _deltaDecTS;
 	protected double _alphaIncROI;
 	protected double _betaIncROI;
+	protected double _gammaIncROI;
+	protected double _deltaIncROI;
 	protected double _alphaDecROI;
 	protected double _betaDecROI;
-	protected double _initROI;
+	protected double _gammaDecROI;
+	protected double _deltaDecROI;
+	protected double _threshTS;
+	protected double _threshROI;
 	protected HashMap<Query, Double> _ROI;
 	
 	public AdjustROI() {
-		this(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public AdjustROI(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
+	public AdjustROI(double initROI,
+			double alphaIncTS,
+			double betaIncTS,
+			double gammaIncTS,
+			double deltaIncTS,
+			double alphaDecTS,
+			double betaDecTS,
+			double gammaDecTS,
+			double deltaDecTS,
+			double alphaIncROI,
+			double betaIncROI,
+			double gammaIncROI,
+			double deltaIncROI,
+			double alphaDecROI,
+			double betaDecROI,
+			double gammaDecROI,
+			double deltaDecROI,
+			double threshTS,
+			double threshROI,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initROI = initROI;
 		_alphaIncTS = alphaIncTS;
 		_betaIncTS = betaIncTS;
+		_gammaIncTS = gammaIncTS;
+		_deltaIncTS = deltaIncTS;
 		_alphaDecTS = alphaDecTS;
 		_betaDecTS = betaDecTS;
-		_alphaIncROI = alphaIncPR;
-		_betaIncROI = betaIncPR;
-		_alphaDecROI = alphaDecPR;
-		_betaDecROI = betaDecPR;
-		_initROI = initPR;
+		_gammaDecTS = gammaDecTS;
+		_deltaDecTS = deltaDecTS;
+		_alphaIncROI = alphaIncROI;
+		_betaIncROI = betaIncROI;
+		_gammaIncROI = gammaIncROI;
+		_deltaIncROI = deltaIncROI;
+		_alphaDecROI = alphaDecROI;
+		_betaDecROI = betaDecROI;
+		_gammaDecROI = gammaDecROI;
+		_deltaDecROI = deltaDecROI;
+		_threshTS = threshTS;
+		_threshROI = threshROI;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 	
 	@Override
@@ -94,11 +143,15 @@ public class AdjustROI extends RuleBasedAgent {
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_queryReport.getCost(q) < avgROI) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgROI) +  _betaDecTS)));
+				double ROIq = (_salesReport.getRevenue(q) - _queryReport.getCost(q))/_queryReport.getCost(q);
+				if(Math.abs(ROIq - avgROI) <= _threshROI) {
+					//Do Nothing
+				}
+				else if (ROIq < avgROI) {
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(ROIq - avgROI) +  _betaDecTS)* Math.pow(_gammaDecTS, _day*_deltaDecTS)));
 				}
 				else {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgROI)  +  _betaIncTS));
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1+(_alphaIncTS *Math.abs(ROIq - avgROI)  +  _betaIncTS)* Math.pow(_gammaIncTS, _day*_deltaIncTS)));
 				}
 			}
 			totDesiredSales += _salesDistribution.get(q);
@@ -116,23 +169,12 @@ public class AdjustROI extends RuleBasedAgent {
 		 * Adjust PM
 		 */
 		if(_day > 1) {
-			adjustPR();
+			adjustROI();
 		}
 
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
-
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 
 			if(DAILYBUDGET) {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query,targetCPC));
@@ -156,17 +198,22 @@ public class AdjustROI extends RuleBasedAgent {
 		}
 		double rev = _salesPrices.get(q);
 		double CPC = (rev * prConv)/(_ROI.get(q)+1);
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		return CPC;
 	}
 
-	protected void adjustPR() {
+	protected void adjustROI() {
 		for(Query q : _querySpace) {
 			double tmp = _ROI.get(q);
-			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
-				tmp *= (1+_alphaIncROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncROI);
+			double sales = _salesReport.getConversions(q);
+			double dailyCap = _salesDistribution.get(q)*_dailyCapacity;
+			if(Math.abs(sales - dailyCap) <= _threshTS) {
+				//Do Nothing
+			}
+			else if (sales >= dailyCap) {
+				tmp *= (1+(_alphaIncROI * Math.abs(sales - dailyCap) +  _betaIncROI) * Math.pow(_gammaIncROI, _day*_deltaIncROI));
 			} else {
-				tmp *= (1-(_alphaDecROI * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecROI));
+				tmp *= (1-(_alphaDecROI * Math.abs(sales - dailyCap) +  _betaDecROI) * Math.pow(_gammaDecROI, _day*_deltaDecROI));
 			}
 			if(Double.isNaN(tmp) || tmp <= 0.0) {
 				tmp = _initROI;
@@ -182,7 +229,6 @@ public class AdjustROI extends RuleBasedAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustROI(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initROI, _alphaIncROI, _betaIncROI, _alphaDecROI, _betaDecROI);
+		return new AdjustROI(_initROI,_alphaIncTS,_betaIncTS,_gammaIncTS,_deltaIncTS,_alphaDecTS,_betaDecTS,_gammaDecTS,_deltaDecTS, _alphaIncROI, _betaIncROI,_gammaIncROI,_deltaIncROI, _alphaDecROI, _betaDecROI, _gammaDecROI, _deltaDecROI, _threshTS,_threshROI, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
-
 }

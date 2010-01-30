@@ -105,7 +105,6 @@ public class MCKPBid extends AbstractAgent {
 		 * Order is important because some of our models use other models
 		 * so we use a LinkedHashSet
 		 */
-		initBidder();
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		AbstractUserModel userModel = new BasicUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);

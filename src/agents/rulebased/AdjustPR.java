@@ -3,46 +3,96 @@ package agents.rulebased;
 import java.util.HashMap;
 import java.util.Set;
 
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryType;
 
 public class AdjustPR extends RuleBasedAgent {
 	
 	protected BidBundle _bidBundle;
-	protected final boolean TARGET = false;
 	protected final boolean BUDGET = false;
 	protected final boolean DAILYBUDGET = false;
+	protected double _initPR;
 	protected double _alphaIncTS;
 	protected double _betaIncTS;
+	protected double _gammaIncTS;
+	protected double _deltaIncTS;
 	protected double _alphaDecTS;
 	protected double _betaDecTS;
+	protected double _gammaDecTS;
+	protected double _deltaDecTS;
 	protected double _alphaIncPR;
 	protected double _betaIncPR;
+	protected double _gammaIncPR;
+	protected double _deltaIncPR;
 	protected double _alphaDecPR;
 	protected double _betaDecPR;
-	protected double _initPR;
+	protected double _gammaDecPR;
+	protected double _deltaDecPR;
+	protected double _threshTS;
+	protected double _threshPR;
 	protected HashMap<Query, Double> _PR;
 	
 	public AdjustPR() {
-		this(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public AdjustPR(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPR,double alphaIncPR, double betaIncPR, double alphaDecPR, double betaDecPR) {
+	public AdjustPR(double initPR,
+			double alphaIncTS,
+			double betaIncTS,
+			double gammaIncTS,
+			double deltaIncTS,
+			double alphaDecTS,
+			double betaDecTS,
+			double gammaDecTS,
+			double deltaDecTS,
+			double alphaIncPR,
+			double betaIncPR,
+			double gammaIncPR,
+			double deltaIncPR,
+			double alphaDecPR,
+			double betaDecPR,
+			double gammaDecPR,
+			double deltaDecPR,
+			double threshTS,
+			double threshPR,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initPR = initPR;
 		_alphaIncTS = alphaIncTS;
 		_betaIncTS = betaIncTS;
+		_gammaIncTS = gammaIncTS;
+		_deltaIncTS = deltaIncTS;
 		_alphaDecTS = alphaDecTS;
 		_betaDecTS = betaDecTS;
+		_gammaDecTS = gammaDecTS;
+		_deltaDecTS = deltaDecTS;
 		_alphaIncPR = alphaIncPR;
 		_betaIncPR = betaIncPR;
+		_gammaIncPR = gammaIncPR;
+		_deltaIncPR = deltaIncPR;
 		_alphaDecPR = alphaDecPR;
 		_betaDecPR = betaDecPR;
-		_initPR = initPR;
+		_gammaDecPR = gammaDecPR;
+		_deltaDecPR = deltaDecPR;
+		_threshTS = threshTS;
+		_threshPR = threshPR;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 	
 	@Override
@@ -94,11 +144,15 @@ public class AdjustPR extends RuleBasedAgent {
 		for(Query q : _querySpace) {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0) {
-				if (_salesReport.getRevenue(q)/_queryReport.getCost(q) < avgPR) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR) +  _betaDecTS)));
+				double PRq = _salesReport.getRevenue(q)/_queryReport.getCost(q);
+				if(Math.abs(PRq - avgPR) <= _threshPR) {
+					//Do Nothing
+				}
+				else if (PRq < avgPR) {
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(PRq - avgPR) +  _betaDecTS)* Math.pow(_gammaDecTS, _day*_deltaDecTS)));
 				}
 				else {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs(_salesReport.getRevenue(q)/_queryReport.getCost(q) - avgPR)  +  _betaIncTS));
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1+(_alphaIncTS * Math.abs(PRq - avgPR) +  _betaIncTS)* Math.pow(_gammaIncTS, _day*_deltaIncTS)));
 				}
 			}
 			totDesiredSales += _salesDistribution.get(q);
@@ -121,18 +175,7 @@ public class AdjustPR extends RuleBasedAgent {
 
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
-
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 
 			if(DAILYBUDGET) {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query,targetCPC));
@@ -156,17 +199,22 @@ public class AdjustPR extends RuleBasedAgent {
 		}
 		double rev = _salesPrices.get(q);
 		double CPC = (rev * prConv)/_PR.get(q);
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		return CPC;
 	}
 
 	protected void adjustPR() {
 		for(Query q : _querySpace) {
 			double tmp = _PR.get(q);
-			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
-				tmp *= (1+_alphaIncPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPR);
+			double sales = _salesReport.getConversions(q);
+			double dailyCap = _salesDistribution.get(q)*_dailyCapacity;
+			if(Math.abs(sales - dailyCap) <= _threshTS) {
+				//Do Nothing
+			}
+			else if (sales >= dailyCap) {
+				tmp *= (1+(_alphaIncPR * Math.abs(sales - dailyCap) +  _betaIncPR) * Math.pow(_gammaIncPR, _day*_deltaIncPR));
 			} else {
-				tmp *= (1-(_alphaDecPR * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPR));
+				tmp *= (1-(_alphaDecPR * Math.abs(sales - dailyCap) +  _betaDecPR) * Math.pow(_gammaDecPR, _day*_deltaDecPR));
 			}
 			if(Double.isNaN(tmp)) {
 				tmp = _initPR;
@@ -185,7 +233,6 @@ public class AdjustPR extends RuleBasedAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPR(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPR, _alphaIncPR, _betaIncPR, _alphaDecPR, _betaDecPR);
+		return new AdjustPR(_initPR,_alphaIncTS,_betaIncTS,_gammaIncTS,_deltaIncTS,_alphaDecTS,_betaDecTS,_gammaDecTS,_deltaDecTS, _alphaIncPR, _betaIncPR,_gammaIncPR,_deltaIncPR, _alphaDecPR, _betaDecPR, _gammaDecPR, _deltaDecPR, _threshTS,_threshPR, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
-
 }

@@ -3,46 +3,96 @@ package agents.rulebased;
 import java.util.HashMap;
 import java.util.Set;
 
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryType;
 
 public class AdjustPPS extends RuleBasedAgent {
 	
 	protected BidBundle _bidBundle;
-	protected final boolean TARGET = false;
-	protected final boolean BUDGET = false;
-	protected final boolean DAILYBUDGET = false;
+	protected final boolean BUDGET = true;
+	protected final boolean DAILYBUDGET = true;
+	protected double _initPPS;
 	protected double _alphaIncTS;
 	protected double _betaIncTS;
+	protected double _gammaIncTS;
+	protected double _deltaIncTS;
 	protected double _alphaDecTS;
 	protected double _betaDecTS;
+	protected double _gammaDecTS;
+	protected double _deltaDecTS;
 	protected double _alphaIncPPS;
 	protected double _betaIncPPS;
+	protected double _gammaIncPPS;
+	protected double _deltaIncPPS;
 	protected double _alphaDecPPS;
 	protected double _betaDecPPS;
-	protected double _initPPS;
+	protected double _gammaDecPPS;
+	protected double _deltaDecPPS;
+	protected double _threshTS;
+	protected double _threshPPS;
 	protected HashMap<Query, Double> _PPS;
 	
 	public AdjustPPS() {
-		this(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public AdjustPPS(double alphaIncTS, double betaIncTS, double alphaDecTS, double betaDecTS, double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
+	public AdjustPPS(double initPPS,
+			double alphaIncTS,
+			double betaIncTS,
+			double gammaIncTS,
+			double deltaIncTS,
+			double alphaDecTS,
+			double betaDecTS,
+			double gammaDecTS,
+			double deltaDecTS,
+			double alphaIncPPS,
+			double betaIncPPS,
+			double gammaIncPPS,
+			double deltaIncPPS,
+			double alphaDecPPS,
+			double betaDecPPS,
+			double gammaDecPPS,
+			double deltaDecPPS,
+			double threshTS,
+			double threshPPS,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initPPS = initPPS;
 		_alphaIncTS = alphaIncTS;
 		_betaIncTS = betaIncTS;
+		_gammaIncTS = gammaIncTS;
+		_deltaIncTS = deltaIncTS;
 		_alphaDecTS = alphaDecTS;
 		_betaDecTS = betaDecTS;
+		_gammaDecTS = gammaDecTS;
+		_deltaDecTS = deltaDecTS;
 		_alphaIncPPS = alphaIncPPS;
 		_betaIncPPS = betaIncPPS;
+		_gammaIncPPS = gammaIncPPS;
+		_deltaIncPPS = deltaIncPPS;
 		_alphaDecPPS = alphaDecPPS;
 		_betaDecPPS = betaDecPPS;
-		_initPPS = initPPS;
+		_gammaDecPPS = gammaDecPPS;
+		_deltaDecPPS = deltaDecPPS;
+		_threshTS = threshTS;
+		_threshPPS = threshPPS;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 	
 	@Override
@@ -96,12 +146,16 @@ public class AdjustPPS extends RuleBasedAgent {
 			if(_queryReport.getCost(q) != 0 &&
 					_salesReport.getRevenue(q) !=0 &&
 					_salesReport.getConversions(q) != 0) { //the last check is unnecessary, but safe
-				if ((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q) < avgPPS) {
-					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q) - avgPPS) +  _betaDecTS)));
+				double PPSq = (_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q);
+				if(Math.abs(PPSq - avgPPS) <= _threshPPS) {
+					//Do Nothing
+				}
+				else if (PPSq < avgPPS) {
+					_salesDistribution.put(q, _salesDistribution.get(q)*(1-(_alphaDecTS * Math.abs(PPSq - avgPPS) +  _betaDecTS)* Math.pow(_gammaDecTS, _day*_deltaDecTS)));
 				}
 				else {
 					if(_dailyCapacity != 0) {
-						_salesDistribution.put(q, _salesDistribution.get(q)*(1+_alphaIncTS *Math.abs((_salesReport.getRevenue(q) - _queryReport.getCost(q))/_salesReport.getConversions(q) - avgPPS)  +  _betaIncTS));
+						_salesDistribution.put(q, _salesDistribution.get(q)*(1+(_alphaIncTS *Math.abs(PPSq - avgPPS)  +  _betaIncTS)* Math.pow(_gammaIncTS, _day*_deltaIncTS)));
 					}
 				}
 			}
@@ -125,18 +179,7 @@ public class AdjustPPS extends RuleBasedAgent {
 
 		for (Query query : _querySpace) {
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
-
-			if (TARGET) {
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getComponent() == null)
-					_bidBundle.setAd(query, new Ad(new Product(query.getManufacturer(), _compSpecialty)));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_ONE) && query.getManufacturer() == null)
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-				if (query.getType().equals(QueryType.FOCUS_LEVEL_TWO) && query.getManufacturer().equals(_manSpecialty)) 
-					_bidBundle.setAd(query, new Ad(new Product(_manSpecialty, query.getComponent())));
-			}
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 
 			if(DAILYBUDGET) {
 				_bidBundle.setDailyLimit(query, getDailySpendingLimit(query,targetCPC));
@@ -159,17 +202,22 @@ public class AdjustPPS extends RuleBasedAgent {
 		}
 		double rev = _salesPrices.get(q);
 		double CPC = (rev - _PPS.get(q))* prConv;
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		return CPC;
 	}
 
 	protected void adjustPPS() {
 		for(Query q : _querySpace) {
 			double tmp = _PPS.get(q);
-			if (_salesReport.getConversions(q) >= _salesDistribution.get(q)*_dailyCapacity) {
-				tmp *= (1+_alphaIncPPS * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaIncPPS);
+			double sales = _salesReport.getConversions(q);
+			double dailyCap = _salesDistribution.get(q)*_dailyCapacity;
+			if(Math.abs(sales - dailyCap) <= _threshTS) {
+				//Do Nothing
+			}
+			else if (sales >= dailyCap) {
+				tmp *= (1+(_alphaIncPPS * Math.abs(sales - dailyCap) +  _betaIncPPS) * Math.pow(_gammaIncPPS, _day*_deltaIncPPS));
 			} else {
-				tmp *= (1-(_alphaDecPPS * Math.abs(_salesReport.getConversions(q) - _salesDistribution.get(q)*_dailyCapacity) +  _betaDecPPS));
+				tmp *= (1-(_alphaDecPPS * Math.abs(sales - dailyCap) +  _betaDecPPS) * Math.pow(_gammaDecPPS, _day*_deltaDecPPS));
 			}
 			if(Double.isNaN(tmp) || tmp <= 0) {
 				tmp = _initPPS;
@@ -188,6 +236,6 @@ public class AdjustPPS extends RuleBasedAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AdjustPPS(_alphaIncTS,_betaIncTS,_alphaDecTS,_betaDecTS,_initPPS, _alphaIncPPS, _betaIncPPS, _alphaDecPPS, _betaDecPPS);
+		return new AdjustPPS(_initPPS,_alphaIncTS,_betaIncTS,_gammaIncTS,_deltaIncTS,_alphaDecTS,_betaDecTS,_gammaDecTS,_deltaDecTS, _alphaIncPPS, _betaIncPPS,_gammaIncPPS,_deltaIncPPS, _alphaDecPPS, _betaDecPPS, _gammaDecPPS, _deltaDecPPS, _threshTS,_threshPPS, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
 }

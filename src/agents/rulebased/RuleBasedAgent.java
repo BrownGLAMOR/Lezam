@@ -38,6 +38,17 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected HashMap<Query, Double> _salesPrices;
 	protected HashMap<Query, Double> _salesDistribution;
 	
+	protected double _lambdaCapLow;
+	protected double _lambdaCapMed;
+	protected double _lambdaCapHigh;
+	protected double _lambdaCapModifier;
+	protected double _lambdaBudgetLow;
+	protected double _lambdaBudgetMed;
+	protected double _lambdaBudgetHigh;
+	protected double _lambdaBudgetModifier;
+	protected double _dailyCapMin;
+	protected double _dailyCapMax;
+	
 	/*
 	 * 1/21/10
 	 * 
@@ -61,6 +72,19 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		_baselineConversion = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
 		_salesDistribution = new HashMap<Query, Double>();
+		
+		if(_capacity == 300) {
+			_lambdaCapModifier = _lambdaCapLow;
+			_lambdaBudgetModifier = _lambdaBudgetLow;
+		}
+		else if(_capacity == 400) {
+			_lambdaCapModifier = _lambdaCapMed;
+			_lambdaBudgetModifier = _lambdaBudgetMed;
+		}
+		else {
+			_lambdaCapModifier = _lambdaCapHigh;
+			_lambdaBudgetModifier = _lambdaBudgetHigh;
+		}
 
 		// set revenue prices
 		_salesPrices = new HashMap<Query,Double>();
@@ -121,12 +145,12 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_salesDistribution.put(q, 1.0/_querySpace.size());
 		}
 		
+		setDailyQueryCapacity();
 	}
 
 	@Override
 	public final Set<AbstractModel> initModels() {
 		HashSet<AbstractModel> models = new HashSet<AbstractModel>();
-		setDailyQueryCapacity();
 		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,1.0);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
@@ -175,16 +199,17 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		else {
 			//We do the max to ensure some degree of smoothness
 			//			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (1/5.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
-			_dailyCapacity = Math.max(0.0,_capacity - _unitsSoldModel.getWindowSold());
+			double avgCap = (_capacity/((double)_capWindow));
+			_dailyCapacity = Math.max(avgCap*_dailyCapMin,Math.min(avgCap*_dailyCapMax, _capacity - _unitsSoldModel.getWindowSold())) * _lambdaCapModifier;
 		}
 	}
 
 	protected final double getDailySpendingLimit(Query q, double targetCPC) {
 		if(_day >= 6 && _conversionPrModel != null) {
-			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q);
+			return ((targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _conversionPrModel.getPrediction(q))*_lambdaBudgetModifier;
 		}
 		else {
-			return (targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q);
+			return ((targetCPC * _salesDistribution.get(q)*_dailyCapacity) / _baselineConversion.get(q))*_lambdaBudgetModifier;
 		}
 	}
 
@@ -206,7 +231,11 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 		}
 		targetCPC /= numQueries;
 		convPr /= numQueries;
-		return targetCPC*(_dailyCapacity/convPr);
+		return (targetCPC*(_dailyCapacity/convPr))*_lambdaBudgetModifier;
+	}
+	
+	protected final double getBidFromCPC(Query query, double cpc) {
+		return cpc + .01;
 	}
 
 	protected final double getRandomBid(Query q) {

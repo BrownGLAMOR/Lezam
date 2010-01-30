@@ -1,41 +1,69 @@
 package agents.rulebased;
 
 
-import java.util.HashMap;
 import java.util.Set;
-
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquatePM extends RuleBasedAgent{
 	protected BidBundle _bidBundle;
-	protected boolean BUDGET = false;
+	protected boolean BUDGET = true;
 	protected double _PM;
 	protected double _alphaIncPM;
 	protected double _betaIncPM;
+	protected double _gammaIncPM;
+	protected double _deltaIncPM;
 	protected double _alphaDecPM;
 	protected double _betaDecPM;
+	protected double _gammaDecPM;
+	protected double _deltaDecPM;
 	protected double _initPM;
-	
+	protected double _threshTS;
+
 	public EquatePM() {
-		this(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
 
-	public EquatePM(double initPM,double alphaIncPM, double betaIncPM, double alphaDecPM, double betaDecPM) {
+	public EquatePM(double initPM,
+			double alphaIncPM,
+			double betaIncPM,
+			double gammaIncPM,
+			double deltaIncPM,
+			double alphaDecPM,
+			double betaDecPM,
+			double gammaDecPM,
+			double deltaDecPM,
+			double threshTS,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initPM = initPM;
 		_alphaIncPM = alphaIncPM;
 		_betaIncPM = betaIncPM;
+		_gammaIncPM = gammaIncPM;
+		_deltaIncPM = deltaIncPM;
 		_alphaDecPM = alphaDecPM;
 		_betaDecPM = betaDecPM;
-		_initPM = initPM;
+		_gammaDecPM = gammaDecPM;
+		_deltaDecPM = deltaDecPM;
+		_threshTS = threshTS;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
 
 
@@ -60,13 +88,16 @@ public class EquatePM extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity) {
-				_PM *=  (1-(_alphaDecPM*Math.abs(sum - _dailyCapacity)  +  _betaDecPM));
+			if(Math.abs(sum - _dailyCapacity) <= _threshTS) {
+				//Do Nothing
+			}
+			else if(sum <= _dailyCapacity) {
+				_PM *=  (1-(_alphaDecPM*Math.abs(sum - _dailyCapacity)  +  _betaDecPM) * Math.pow(_gammaDecPM, _day*_deltaDecPM));
 			}
 			else {
-				_PM *=  (1+_alphaIncPM*Math.abs(sum - _dailyCapacity)  +  _betaIncPM);
+				_PM *=  (1+(_alphaIncPM*Math.abs(sum - _dailyCapacity)  +  _betaIncPM) * Math.pow(_gammaIncPM, _day*_deltaIncPM));
 			}
-			
+
 			if(Double.isNaN(_PM) || _PM <= 0) {
 				_PM = _initPM;
 			}
@@ -77,7 +108,7 @@ public class EquatePM extends RuleBasedAgent{
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 		}
 
 		if(BUDGET) {
@@ -106,9 +137,9 @@ public class EquatePM extends RuleBasedAgent{
 		double rev = _salesPrices.get(q);
 
 		double CPC = (1 - _PM)*rev* prConv;
-		
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
-		
+
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
+
 		return CPC;
 	}
 
@@ -119,7 +150,7 @@ public class EquatePM extends RuleBasedAgent{
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePM(_initPM, _alphaIncPM, _betaIncPM, _alphaDecPM, _betaDecPM);
+		return new EquatePM(_initPM, _alphaIncPM, _betaIncPM,_gammaIncPM,_deltaIncPM, _alphaDecPM, _betaDecPM, _gammaDecPM, _deltaDecPM, _threshTS, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
 
 }

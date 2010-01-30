@@ -1,19 +1,12 @@
 package agents.rulebased;
 
 
-import java.util.HashMap;
 import java.util.Set;
-
-import agents.AbstractAgent;
-
 import models.AbstractModel;
+import agents.AbstractAgent;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class EquatePPS extends RuleBasedAgent{
 	protected BidBundle _bidBundle;
@@ -21,21 +14,57 @@ public class EquatePPS extends RuleBasedAgent{
 	protected double _PPS;
 	protected double _alphaIncPPS;
 	protected double _betaIncPPS;
+	protected double _gammaIncPPS;
+	protected double _deltaIncPPS;
 	protected double _alphaDecPPS;
 	protected double _betaDecPPS;
+	protected double _gammaDecPPS;
+	protected double _deltaDecPPS;
 	protected double _initPPS;
+	protected double _threshTS;
 	
 	public EquatePPS() {
-		this(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
 
-	public EquatePPS(double initPPS,double alphaIncPPS, double betaIncPPS, double alphaDecPPS, double betaDecPPS) {
+	public EquatePPS(double initPPS,
+			double alphaIncPPS,
+			double betaIncPPS,
+			double gammaIncPPS,
+			double deltaIncPPS,
+			double alphaDecPPS,
+			double betaDecPPS,
+			double gammaDecPPS,
+			double deltaDecPPS,
+			double threshTS,
+			double lambdaCapLow,
+			double lambdaCapMed,
+			double lambdaCapHigh,
+			double lambdaBudgetLow,
+			double lambdaBudgetMed,
+			double lambdaBudgetHigh,
+			double dailyCapMin,
+			double dailyCapMax) {
+		_initPPS = initPPS;
 		_alphaIncPPS = alphaIncPPS;
 		_betaIncPPS = betaIncPPS;
+		_gammaIncPPS = gammaIncPPS;
+		_deltaIncPPS = deltaIncPPS;
 		_alphaDecPPS = alphaDecPPS;
 		_betaDecPPS = betaDecPPS;
-		_initPPS = initPPS;
+		_gammaDecPPS = gammaDecPPS;
+		_deltaDecPPS = deltaDecPPS;
+		_threshTS = threshTS;
+		_lambdaCapLow = lambdaCapLow;
+		_lambdaCapMed = lambdaCapMed;
+		_lambdaCapHigh = lambdaCapHigh;
+		_lambdaBudgetLow = lambdaBudgetLow;
+		_lambdaBudgetMed = lambdaBudgetMed;
+		_lambdaBudgetHigh = lambdaBudgetHigh;
+		_dailyCapMin = dailyCapMin;
+		_dailyCapMax = dailyCapMax;
 	}
+
 
 
 	@Override
@@ -59,11 +88,14 @@ public class EquatePPS extends RuleBasedAgent{
 				sum+= _salesReport.getConversions(query);
 			}
 
-			if(sum <= _dailyCapacity) {
-				_PPS *=  (1-(_alphaDecPPS*Math.abs(sum - _dailyCapacity)  +  _betaDecPPS));
+			if(Math.abs(sum - _dailyCapacity) <= _threshTS) {
+				//Do Nothing
+			}
+			else if(sum <= _dailyCapacity) {
+				_PPS *=  (1-(_alphaDecPPS*Math.abs(sum - _dailyCapacity)  +  _betaDecPPS) * Math.pow(_gammaDecPPS, _day*_deltaDecPPS));
 			}
 			else {
-				_PPS *=  (1+_alphaIncPPS*Math.abs(sum - _dailyCapacity)  +  _betaIncPPS);
+				_PPS *=  (1+(_alphaIncPPS*Math.abs(sum - _dailyCapacity)  +  _betaIncPPS) * Math.pow(_gammaIncPPS, _day*_deltaIncPPS));
 			}
 			
 			if(Double.isNaN(_PPS) || _PPS <= 0) {
@@ -76,7 +108,7 @@ public class EquatePPS extends RuleBasedAgent{
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, targetCPC+.01);
+			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
 		}
 
 		if(BUDGET) {
@@ -106,7 +138,7 @@ public class EquatePPS extends RuleBasedAgent{
 
 		double rev = _salesPrices.get(q);
 		double CPC = (rev - _PPS)* prConv;
-		CPC = Math.max(0.0, Math.min(3.5, CPC));
+		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 		
 		return CPC;
 	}
@@ -118,7 +150,7 @@ public class EquatePPS extends RuleBasedAgent{
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new EquatePPS(_initPPS, _alphaIncPPS, _betaIncPPS, _alphaDecPPS, _betaDecPPS);
+		return new EquatePPS(_initPPS, _alphaIncPPS, _betaIncPPS,_gammaIncPPS,_deltaIncPPS, _alphaDecPPS, _betaDecPPS, _gammaDecPPS, _deltaDecPPS, _threshTS, _lambdaCapLow, _lambdaCapMed, _lambdaCapHigh, _lambdaBudgetLow, _lambdaBudgetMed,_lambdaBudgetHigh, _dailyCapMin, _dailyCapMax);
 	}
 
 }
