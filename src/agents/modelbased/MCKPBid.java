@@ -74,6 +74,16 @@ public class MCKPBid extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
+	
+	
+	
+	
+	
+	
+	//------------------------------------------------
+	// CONSTRUCTORS
+	//------------------------------------------------
+
 	public MCKPBid() {
 		this(false,false,false);
 	}
@@ -99,6 +109,13 @@ public class MCKPBid extends AbstractAgent {
 
 
 
+	
+	
+	
+	//------------------------------------------------
+	// INITIALIZATION METHODS
+	//------------------------------------------------
+	
 	@Override
 	public Set<AbstractModel> initModels() {
 		/*
@@ -223,6 +240,12 @@ public class MCKPBid extends AbstractAgent {
 	}
 
 
+	
+	
+	//------------------------------------------------
+	// DAILY ACTIONS (UPDATING MODELS, GETTING BIDS)
+	//------------------------------------------------
+	
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
@@ -275,10 +298,15 @@ public class MCKPBid extends AbstractAgent {
 		double start = System.currentTimeMillis();
 		BidBundle bidBundle = new BidBundle();
 
+		//Set safety budget if we have one
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
 
+
+		//After 1st day, update model: what percentage of conversions have come from each query? 
+		//(is this really what we want?)
+		//(is salesDist even being used? it doesn't appear to be.)
 		if(_day > 1) {
 			if(!salesDistFlag) {
 				SalesDistributionModel salesDist = new SalesDistributionModel(_querySpace);
@@ -288,10 +316,21 @@ public class MCKPBid extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
+		
+		//If we have some number of days behind us...
+		//TODO: What is lagDays? Is this just some number of days where we're going to bid randomly?
+		//   (I might have thought it was the number of days we go without sales reports, but it is currently set to 5.)
 		if(_day > lagDays){
 			buildMaps(models);
+			
+			
+			//Determine how much capacity is remaining before we hit the penalty.
 			double remainingCap;
 			if(_day < 4) {
+				//FIXME: Is this the correct interpretation of the AA specification?
+				//  I would have thought that it was the same as below, but with _unitsSold.getWindowSold() 
+				//  adding MaxCap/Window to its amount sold for days in the window that occurred before the game started.
+				//NOTE: It's not getting here anyway, since lagDays = 5
 				remainingCap = _capacity/_capWindow;
 			}
 			else {
@@ -300,17 +339,25 @@ public class MCKPBid extends AbstractAgent {
 				debug("Unit Sold Model Budget "  +remainingCap);
 			}
 
-			debug("Budget: "+ remainingCap);
+			debug("Capacity budget: "+ remainingCap);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-
-			//want the queries to be in a guaranteed order - put them in an array
-			//index will be used as the id of the query
+			
+			
+			// Compute penalty, given remaining capacity
 			double penalty = 1.0;
 			if(remainingCap < 0) {
 				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
 			}
+			
+		
+			
+			
+			//want the queries to be in a guaranteed order - put them in an array
+			//index will be used as the id of the query			
+			ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
+
+			
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
 				ArrayList<Item> itemList = new ArrayList<Item>();
@@ -438,6 +485,10 @@ public class MCKPBid extends AbstractAgent {
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
+			
+			//We do not yet have the full window behind us. 
+			//Make random bids.
+			
 			for(Query q : _querySpace){
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
@@ -454,6 +505,13 @@ public class MCKPBid extends AbstractAgent {
 		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return bidBundle;
 	}
+
+	
+	
+	
+	//------------------------------------------------
+	// HELPER METHODS FOR OVER-CAPACITY VALUATIONS
+	//------------------------------------------------
 
 	private double getPenalty(double remainingCap, double solutionWeight) {
 		double penalty;
@@ -495,6 +553,7 @@ public class MCKPBid extends AbstractAgent {
 		return penalty;
 	}
 
+	
 	private double[] solutionValue(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, boolean firstCall) {
 		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
 
@@ -730,6 +789,12 @@ public class MCKPBid extends AbstractAgent {
 
 
 
+	
+	//------------------------------------------------
+	// METHODS FOR FILLING KNAPSACK
+	//------------------------------------------------
+
+	
 	/**
 	 * Greedily fill the knapsack by selecting incremental items
 	 * @param incItems
@@ -971,6 +1036,15 @@ public class MCKPBid extends AbstractAgent {
 		return ii;
 	}
 
+	
+	
+	
+	
+	//------------------------------------------------
+	// MISCELLANEOUS METHODS
+	//------------------------------------------------
+
+	
 	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
