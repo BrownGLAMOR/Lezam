@@ -67,14 +67,14 @@ public class GGAAgentTuner {
 	}
 
 	public static void main(String[] args) {
-		_agent = new AdjustPPS();
+//		_agent = new AdjustPPS();
 //		_agent = new AdjustPR();
 //		_agent = new AdjustPM();
 //		_agent = new AdjustROI();
 //		_agent = new EquatePPS();
 //		_agent = new EquatePR();
 //		_agent = new EquatePM();
-//		_agent = new EquateROI();
+		_agent = new EquateROI();
 		ArrayList<Double> params = new ArrayList<Double>();
 		for(int i = 0; i < args.length-2; i++) {
 			params.add(Double.parseDouble(args[i]));

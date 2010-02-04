@@ -454,6 +454,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 * Setup Maximization
 				 */
 				IloLinearNumExpr linearNumExpr = _cplex.linearNumExpr();
+				//IloIntVar[] binVars = _cplex.boolVarArray(profit.length + capList.length);
 				IloIntVar[] binVars = _cplex.intVarArray(profit.length + capList.length, 0, 1);
 				for(Query q : _querySpace) {
 					for(int i = 0; i < _bidList.size(); i++) {
@@ -521,7 +522,6 @@ public class ILPBidAgent extends AbstractAgent {
 				}
 
 				debug("Budget: "+ capacity);
-
 				linearNumExpr = _cplex.linearNumExpr();
 				for(Query q : _querySpace) {
 					for(int i = 0; i < _bidList.size(); i++) {
