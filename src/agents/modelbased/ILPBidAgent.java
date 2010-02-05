@@ -26,6 +26,7 @@ import models.bidtoprclick.RegressionBidToPrClick;
 import models.bidtoprclick.WEKAEnsembleBidToPrClick;
 import models.postoprclick.RegressionPosToPrClick;
 import models.prconv.AbstractConversionModel;
+import models.prconv.BasicConvPrModel;
 import models.prconv.GoodConversionPrModel;
 import models.prconv.HistoricPrConversionModel;
 import models.querytonumimp.AbstractQueryToNumImp;
@@ -58,8 +59,8 @@ public class ILPBidAgent extends AbstractAgent {
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
-	private static final boolean BOOST = true;
+	private static final boolean SAFETYBUDGET = false;
+	private static final boolean BOOST = false;
 
 	private double _safetyBudget = 800;
 
@@ -100,7 +101,7 @@ public class ILPBidAgent extends AbstractAgent {
 
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .02;
+		double bidIncrement  = .05;
 		double bidMin = .04;
 		double bidMax = 1.65;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -111,7 +112,7 @@ public class ILPBidAgent extends AbstractAgent {
 		_capList = new LinkedList<Integer>();
 		int increment = 10;
 		int min = 10;
-		int max = 150;
+		int max = _capacity;
 		for(int i = min; i <= max; i+= increment) {
 			_capList.add(i);
 		}
@@ -134,7 +135,7 @@ public class ILPBidAgent extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 10, true, false);
 		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
-		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
+		BasicConvPrModel convPrModel = new BasicConvPrModel(userModel, _querySpace, _baseConvProbs);
 		models.add(userModel);
 		models.add(queryToNumImp);
 		models.add(bidToCPC);
@@ -340,11 +341,26 @@ public class ILPBidAgent extends AbstractAgent {
 				double[] conversions = new double[_bidList.size()*_querySpace.size()];
 				double[] penalty = new double[_capList.size()];
 				int[] capList = new int[_capList.size()];
+				
+				double remainingCap;
+				if(_day < 4) {
+					remainingCap = _capacity/((double)_capWindow);
+				}
+				else {
+//					capacity = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
+					remainingCap = _capacity - _unitsSold.getWindowSold();
+					debug("Unit Sold Model Budget "  +remainingCap);
+				}
+
+				debug("Budget: "+ remainingCap);
 
 				/*
 				 * Fill in profit and conversion arrays
 				 */
-
+				double convPrPenalty = 1.0;
+				if(remainingCap < 0) {
+					convPrPenalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+				}
 				for(Query q : _querySpace) {
 					debug("Query: " + q);
 					for(int i = 0; i < _bidList.size(); i++) {
@@ -391,8 +407,8 @@ public class ILPBidAgent extends AbstractAgent {
 								salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
 							}
 
-							w = numClicks*convProb;				//weight = numClciks * convProv
-							v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+							w = numClicks*convProb*convPrPenalty;				//weight = numClciks * convProv
+							v = numClicks*convProb*salesPrice*convPrPenalty - numClicks*CPC;	//value = revenue - cost	[profit]
 						}
 
 						int idx = isID*_bidList.size() + i;
@@ -503,25 +519,6 @@ public class ILPBidAgent extends AbstractAgent {
 				 * Capacity constraint II
 				 *  -Cannot sell more items than our capacity + overcap
 				 */
-				double capacity = _capacity/((double)_capWindow);
-				if(_day < 4) {
-					//do nothing
-				}
-				else {
-					capacity = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
-					debug("Unit Sold Model Budget "  +capacity);
-				}
-
-				if(BOOST) {
-					if(lastBoost >= 3 && (_unitsSold.getThreeDaysSold() < (_capacity * (3.0/5.0)))) {
-						debug("\n\nBOOOOOOOOOOOOOOOOOOOST\n\n");
-						lastBoost = -1;
-						capacity *= boostCoeff;
-					}
-					lastBoost++;
-				}
-
-				debug("Budget: "+ capacity);
 				linearNumExpr = _cplex.linearNumExpr();
 				for(Query q : _querySpace) {
 					for(int i = 0; i < _bidList.size(); i++) {
@@ -535,7 +532,7 @@ public class ILPBidAgent extends AbstractAgent {
 					linearNumExpr.addTerm(-1.0 * capList[i], binVars[profit.length + i]);
 				}
 
-				_cplex.addLe(linearNumExpr, capacity);
+				_cplex.addLe(linearNumExpr, remainingCap);
 
 				double start = System.currentTimeMillis();
 				_cplex.solve();
@@ -631,16 +628,16 @@ public class ILPBidAgent extends AbstractAgent {
 					lastSolWeight = solutionWeight;
 					solutionWeight = 0;
 					double newPenalty;
-					double numOverCap = lastSolWeight - capacity;
-					if(capacity < 0) {
+					double numOverCap = lastSolWeight - remainingCap;
+					if(remainingCap < 0) {
 						newPenalty = 0.0;
 						int num = 0;
-						for(double j = Math.abs(capacity)+1; j <= numOverCap; j++) {
+						for(double j = Math.abs(remainingCap)+1; j <= numOverCap; j++) {
 							newPenalty += Math.pow(LAMBDA, j);
 							num++;
 						}
 						newPenalty /= (num);
-						double oldPenalty = Math.pow(LAMBDA, Math.abs(capacity));
+						double oldPenalty = Math.pow(LAMBDA, Math.abs(remainingCap));
 						newPenalty = newPenalty/oldPenalty;
 					}
 					else {
@@ -648,11 +645,11 @@ public class ILPBidAgent extends AbstractAgent {
 							newPenalty = 1.0;
 						}
 						else {
-							newPenalty = capacity;
+							newPenalty = remainingCap;
 							for(int j = 1; j <= numOverCap; j++) {
 								newPenalty += Math.pow(LAMBDA, j);
 							}
-							newPenalty /= (capacity + numOverCap);
+							newPenalty /= (remainingCap + numOverCap);
 						}
 					}
 					if(Double.isNaN(newPenalty)) {
