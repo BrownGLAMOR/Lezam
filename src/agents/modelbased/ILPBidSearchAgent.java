@@ -5,26 +5,17 @@ import ilog.concert.IloIntVar;
 import ilog.concert.IloLinearIntExpr;
 import ilog.concert.IloLinearNumExpr;
 import ilog.cplex.IloCplex;
-
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
-
 import models.AbstractModel;
 import models.bidtocpc.AbstractBidToCPC;
-import models.bidtocpc.EnsembleBidToCPC;
-import models.bidtocpc.RegressionBidToCPC;
 import models.bidtocpc.WEKAEnsembleBidToCPC;
 import models.bidtoprclick.AbstractBidToPrClick;
-import models.bidtoprclick.EnsembleBidToPrClick;
-import models.bidtoprclick.RegressionBidToPrClick;
 import models.bidtoprclick.WEKAEnsembleBidToPrClick;
-import models.postoprclick.RegressionPosToPrClick;
 import models.prconv.AbstractConversionModel;
 import models.prconv.BasicConvPrModel;
 import models.prconv.GoodConversionPrModel;
@@ -35,16 +26,11 @@ import models.sales.SalesDistributionModel;
 import models.targeting.BasicTargetModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
-import models.unitssold.UnitsSoldMovingAvg;
 import models.usermodel.AbstractUserModel;
 import models.usermodel.BasicUserModel;
 import agents.AbstractAgent;
-import agents.modelbased.mckputil.IncItem;
-import agents.modelbased.mckputil.Item;
-import agents.modelbased.mckputil.ItemComparatorByWeight;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
@@ -54,7 +40,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public class ILPBidAgent extends AbstractAgent {
+public class ILPBidSearchAgent extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean TARGET = false;
@@ -84,7 +70,7 @@ public class ILPBidAgent extends AbstractAgent {
 	private boolean salesDistFlag;
 	private IloCplex _cplex;
 
-	public ILPBidAgent() {
+	public ILPBidSearchAgent() {
 
 		try {
 			IloCplex cplex = new IloCplex();
@@ -717,6 +703,6 @@ public class ILPBidAgent extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new ILPBidAgent();
+		return new ILPBidSearchAgent();
 	}
 }
