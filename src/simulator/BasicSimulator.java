@@ -1896,7 +1896,7 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new MCKPBid(false,true,false);
+		AbstractAgent agent = new MCKPBid(false,false,false);
 		//				AbstractAgent agent = new MCKPBid(false,false,true);
 		//				AbstractAgent agent = new MCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,true,true);
