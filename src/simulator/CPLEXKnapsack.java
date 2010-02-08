@@ -22,6 +22,7 @@ public class CPLEXKnapsack {
 			IloCplex _cplex = new IloCplex();
 			_cplex.setOut(null);
 
+			double start = System.nanoTime();
 			BufferedReader input =  new BufferedReader(new FileReader(filename));
 
 			String firstLine = input.readLine();
@@ -65,7 +66,6 @@ public class CPLEXKnapsack {
 
 			_cplex.addLe(capacityConstraint, capacity);
 
-			double start = System.nanoTime();
 			_cplex.solve();
 			double stop = System.nanoTime();
 			double elapsed = stop - start;

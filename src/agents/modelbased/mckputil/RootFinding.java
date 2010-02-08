@@ -1,8 +1,6 @@
 package agents.modelbased.mckputil;
 
-import java.util.ArrayList;
 import java.util.Random;
-
 import org.apache.commons.math.complex.Complex;
 
 public class RootFinding {
@@ -61,7 +59,7 @@ public class RootFinding {
 		T4 = new Complex((-A*A*A + 4*A*B - 8*C)/32.0,0);
 		T5 = new Complex((3*A*A*A - 8*B)/48.0,0);
 		Complex R1,R2,R3,R4,R5,R6;
-		R1 = T3.multiply(T3).subtract(T2.multiply(T2));
+		R1 = T3.multiply(T3).subtract(T2.multiply(T2).multiply(T2));
 		R1 = R1.sqrt();
 		R2 = T3.add(R1);
 		R2 = R2.pow(new Complex(1.0/3.0,0));
@@ -120,16 +118,16 @@ public class RootFinding {
 			 * with checking the complex roots and we wouldn't use them anyhow.  If the
 			 * real roots are correct I can't imagine the compex ones are wrong anyhow
 			 */
-			if(roots[i][1] != 0) {
-				continue;
-			}
-			double real = coeff[0]*roots[i][0]*roots[i][0]*roots[i][0] + 
-			coeff[1]*roots[i][0]*roots[i][0] + coeff[2]*roots[i][0] + coeff[3];
-			if(Math.abs(real) > EPSILON) {
+			Complex root = new Complex(roots[i][0],roots[i][1]);
+			Complex part1 = root.pow(new Complex(3,0)).multiply(new Complex(coeff[0],0));
+			Complex part2 = root.pow(new Complex(2,0)).multiply(new Complex(coeff[1],0));
+			Complex part3 = root.multiply(new Complex(coeff[2],0));
+			Complex part4 = new Complex(coeff[3],0);
+			Complex zero = part1.add(part2).add(part3).add(part4);
+			if(Math.abs(zero.getReal()) > EPSILON && Math.abs(zero.getImaginary()) > EPSILON) {
 				return false;
 			}
 		}
-
 		return true;
 	}
 
@@ -144,23 +142,23 @@ public class RootFinding {
 			 * with checking the complex roots and we wouldn't use them anyhow.  If the
 			 * real roots are correct I can't imagine the compex ones are wrong anyhow
 			 */
-			if(roots[i][1] != 0) {
-				continue;
-			}
-			double real = coeff[0]*roots[i][0]*roots[i][0]*roots[i][0]*roots[i][0] + 
-			coeff[1]*roots[i][0]*roots[i][0]*roots[i][0] + coeff[2]*roots[i][0]*roots[i][0] + 
-			coeff[3]*roots[i][0] + coeff[4];
-			if(Math.abs(real) > EPSILON) {
+			Complex root = new Complex(roots[i][0],roots[i][1]);
+			Complex part1 = root.pow(new Complex(4,0)).multiply(new Complex(coeff[0],0));
+			Complex part2 = root.pow(new Complex(3,0)).multiply(new Complex(coeff[1],0));
+			Complex part3 = root.pow(new Complex(2,0)).multiply(new Complex(coeff[2],0));
+			Complex part4 = root.multiply(new Complex(coeff[3],0));
+			Complex part5 = new Complex(coeff[4],0);
+			Complex zero = part1.add(part2).add(part3).add(part4).add(part5);
+			if(Math.abs(zero.getReal()) > EPSILON && Math.abs(zero.getImaginary()) > EPSILON) {
 				return false;
 			}
 		}
-
 		return true;
 	}
 
 	public static void main(String[] args) {
 		//		double topStart = System.nanoTime();
-		//		double numTrials = 50000000000.0;
+		//		double numTrials = 500000.0;
 		//		double time = 0;
 		//		int badCounter = 0;
 		//		for(int i = 0; i < numTrials; i++) {
@@ -171,16 +169,15 @@ public class RootFinding {
 		//			time += (end-start)/1000000.0;
 		//			boolean bool = checkCubicSolution(coeff, roots);
 		//			if(!bool) {badCounter++;}
-		////			System.out.println(checkCubicSolution(coeff, roots) + ", x1 = " + roots[0][0] + " i*" + roots[0][1] + ", x2 = " + roots[1][0] + " i*" + roots[1][1] + ", x3 = " + roots[2][0] + " i*" + roots[2][1]);
+		//			//			System.out.println(checkCubicSolution(coeff, roots) + ", x1 = " + roots[0][0] + " i*" + roots[0][1] + ", x2 = " + roots[1][0] + " i*" + roots[1][1] + ", x3 = " + roots[2][0] + " i*" + roots[2][1]);
 		//		}
 		//		double end = System.nanoTime();
 		//		System.out.println(time/numTrials + " ms per equation");
 		//		System.out.println("Total Time: " + (end-topStart)/1000000000.0);
 		//		System.out.println("% below threshold: " + (badCounter/numTrials)*100);
 
-
 		double topStart = System.nanoTime();
-		double numTrials = 10000.0;
+		double numTrials = 100000.0;
 		double time = 0;
 		int badCounter = 0;
 		for(int i = 0; i < numTrials; i++) {
