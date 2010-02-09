@@ -57,6 +57,7 @@ import agents.modelbased.G4;
 import agents.modelbased.ILPBidAgent;
 import agents.modelbased.ILPPosAgent;
 import agents.modelbased.MCKPBid;
+import agents.modelbased.MCKPBidDynProg;
 import agents.modelbased.MCKPBidNoDomElim;
 import agents.modelbased.MCKPBidSearch;
 import agents.modelbased.MCKPPos;
@@ -245,6 +246,11 @@ public class BasicSimulator {
 		double totalOverCapAbs = 0.0;
 
 		for(int day = firstDay; day < 59; day++) {
+			
+			/*
+			 * ENSURE GARBAGE COLLECTOR IS RUN BETWEEN ITERATIONS
+			 */
+			System.gc(); emptyFunction(); emptyFunction(); emptyFunction(); emptyFunction();
 
 			if(day >= 2) {
 				LinkedList<Reports> reportsList = reportsListMap.get(_agents[advertiseridx]);
@@ -1896,7 +1902,8 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new MCKPBid(false,false,false);
+		AbstractAgent agent = new MCKPBidDynProg(false);
+		//		AbstractAgent agent = new MCKPBid(false,false,false);
 		//				AbstractAgent agent = new MCKPBid(false,false,true);
 		//				AbstractAgent agent = new MCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,true,true);

@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -45,13 +42,11 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg, spucci, vnarodit
  *
  */
-public class MCKPBid extends AbstractAgent {
+public class MCKPBidDynProg extends AbstractAgent {
 
 	private int MAX_TIME_HORIZON = 5;
 	private boolean SAFETYBUDGET = false;
 	private boolean BUDGET = false;
-	private boolean FORWARDUPDATING = false;
-	private boolean PRICELINES = false;
 
 	private double _safetyBudget = 800;
 
@@ -73,15 +68,13 @@ public class MCKPBid extends AbstractAgent {
 	private int lagDays = 5;
 	private boolean salesDistFlag;
 
-	public MCKPBid() {
-		this(false,false,false);
+	public MCKPBidDynProg() {
+		this(false);
 	}
 
 
-	public MCKPBid(boolean forward, boolean pricelines, boolean budget) {
+	public MCKPBidDynProg(boolean budget) {
 		BUDGET = budget;
-		FORWARDUPDATING = forward;
-		PRICELINES = pricelines;
 		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
@@ -260,7 +253,6 @@ public class MCKPBid extends AbstractAgent {
 		}
 	}
 
-
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		double start = System.currentTimeMillis();
@@ -294,24 +286,15 @@ public class MCKPBid extends AbstractAgent {
 			debug("Budget: "+ remainingCap);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-
-			//want the queries to be in a guaranteed order - put them in an array
-			//index will be used as the id of the query
-			double penalty = getPenalty(remainingCap, 0);
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
-				ArrayList<Item> itemList = new ArrayList<Item>();
 				ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
-				debug("Query: " + q);
 				for(int i = 0; i < bidList.size(); i++) {
-					double salesPrice = _salesPrices.get(q);
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
+					double convProb = getConversionPrWithPenalty(q, 1.0);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
@@ -325,29 +308,12 @@ public class MCKPBid extends AbstractAgent {
 						convProb = 0.0;
 					}
 
-					debug("\tBid: " + bid);
-					debug("\tCPC: " + CPC);
-					debug("\tNumImps: " + numImps);
-					debug("\tNumClicks: " + numClicks);
-					debug("\tClickPr: " + clickPr);
-					debug("\tConv Prob: " + convProb + "\n\n");
-
-					double convProbWithPen = getConversionPrWithPenalty(q, penalty);
-
-					double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
-					double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-					itemList.add(new Item(q,w,v,bid,false,0,i));
 					queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
 				}
-				debug("Items for " + q);
-				Item[] items = itemList.toArray(new Item[0]);
-				IncItem[] iItems = getIncremental(items);
-				allIncItems.addAll(Arrays.asList(iItems));
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			Collections.sort(allIncItems);
-			HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap);
+			HashMap<Query,Item> solution = multiDayDynProg(remainingCap, allPredictionsMap);
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -421,6 +387,7 @@ public class MCKPBid extends AbstractAgent {
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
@@ -465,6 +432,25 @@ public class MCKPBid extends AbstractAgent {
 			penalty = 1.0;
 		}
 		return penalty;
+	}
+
+	private double[] solutionValue(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+		double penalty = getPenalty(remainingCap, totalWeight);
+
+		double totalValue = 0;
+		for(Query q : _querySpace) {
+			if(solution.containsKey(q)) {
+				Item item = solution.get(q);
+				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
+			}
+		}
+
+		double[] output = new double[2];
+		output[0] = totalValue;
+		output[1] = totalWeight;
+		return output;
 	}
 
 	private double[] solutionValueMultiDay2(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, int numDays) {
@@ -726,101 +712,199 @@ public class MCKPBid extends AbstractAgent {
 		return solutionWeight(budget, solution, allPredictionsMap, null);
 	}
 
-	private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
-		HashMap<Query,Item> solution = new HashMap<Query, Item>();
-
-		int expectedConvs = 0;
-
-		for(int i = 0; i < incItems.size(); i++) {
-			IncItem ii = incItems.get(i);
-			double itemWeight = ii.w();
-			double itemValue = ii.v();
-			if(budget >= expectedConvs + itemWeight) {
-				solution.put(ii.item().q(), ii.item());
-				expectedConvs += itemWeight;
+	private HashMap<Query, Item> multiDayDynProg(double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+		/*
+		 * Setup the data
+		 */
+		double start = System.currentTimeMillis();
+		int numFutureDays = Math.max(0, Math.min(_capWindow-1, 58 - (int)_day));
+		int N = 50; //Number of capacities to consider between 0 and capacity (we will solve (N+1)^2 knapsacks)
+		ArrayList<ArrayList<HashMap<Query,Item>>> allSolutions = new ArrayList<ArrayList<HashMap<Query,Item>>>(N+1);
+		ArrayList<Integer> overCapLevels = new ArrayList<Integer>(N+1);
+		ArrayList<ArrayList<double[]>> allSolutionValues = new ArrayList<ArrayList<double[]>>(N+1);
+		ArrayList<ArrayList<double[]>> allMultiDaySolutionValues = new ArrayList<ArrayList<double[]>>(N+1);
+		for(int overCap = 0; overCap <= _capacity; overCap += _capacity/((double)N)) {
+			overCapLevels.add(overCap);
+			ArrayList<HashMap<Query,Item>> allSolsPerOverCap = new ArrayList<HashMap<Query,Item>>(N+1);
+			ArrayList<double[]> solutionValues = new ArrayList<double[]>();
+			ArrayList<double[]> multiDaySolutionValues = new ArrayList<double[]>();
+			for(int sales = 0; sales <= _capacity; sales += _capacity/((double) N)) {
+				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(-1*overCap,sales,allPredictionsMap), sales);
+				allSolsPerOverCap.add(solution);
+				if(numFutureDays > 0) {
+					solutionValues.add(solutionValue(solution, -1*overCap, allPredictionsMap));
+				}
+				multiDaySolutionValues.add(solutionValueMultiDay2(solution, -1*overCap, allPredictionsMap,5));
 			}
-			else {
-				//				double[] currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap);
-				double[] currSolVal = solutionValueMultiDay2(solution, budget, allPredictionsMap,30);
+			allSolutions.add(allSolsPerOverCap);
+			allSolutionValues.add(solutionValues);
+			allMultiDaySolutionValues.add(multiDaySolutionValues);
+		}
 
-				HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>) solution.clone();
-				solutionCopy.put(ii.item().q(), ii.item());
-				//				double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap);
-				double[] newSolVal = solutionValueMultiDay2(solutionCopy, budget, allPredictionsMap,30);
+		double[] DPtable = new double[overCapLevels.size()];
+		int[] DPsols = new int[overCapLevels.size()];
+		for(int i = 0; i < DPtable.length; i++) {
+			double maxVal = -Double.MAX_VALUE;
+			int bestIdx = 0;
+			ArrayList<double[]> solutionValues = allMultiDaySolutionValues.get(i);
+			for(int j = 0; j < DPtable.length; j++) {
+				double[] value = solutionValues.get(j);
+				if(value[0] > maxVal) {
+					maxVal = value[0];
+					bestIdx = j;
+				}
+			}
+			DPtable[i] = maxVal;
+			DPsols[i] = bestIdx;
+		}
 
-				//				System.out.println("[" + _day +"] CurrSolVal: " + currSolVal[0] + ", NewSolVal: " + newSolVal[0]);
+		ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+		ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
 
-				if(newSolVal[0] > currSolVal[0]) {
-					solution.put(ii.item().q(), ii.item());
-					expectedConvs += itemWeight;
+		Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+		if(expectedConvsYesterday == null) {
+			expectedConvsYesterday = 0;
+			int counter2 = 0;
+			for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+				expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
+				counter2++;
+			}
+			expectedConvsYesterday /= (double)counter2;
+		}
+		soldArray.add(expectedConvsYesterday);
 
-					if(i != incItems.size() - 1) {
-						/*
-						 * Discount the item based on the current penalty level
-						 */
-						double penalty = getPenalty(budget, newSolVal[1]);
+		for(int day = 1; day < numFutureDays; day++) {
+			int windowEdgeSales = soldArray.get(soldArray.size()-day);
+			double[] DPtableCopy = new double[overCapLevels.size()];
+			int[] DPsolsCopy = new int[overCapLevels.size()];
+			for(int i = 0; i < DPtable.length; i++) {
+				DPtableCopy[i] = DPtable[i];
+				DPsolsCopy[i] = DPsols[i];
+			}
 
-						if(FORWARDUPDATING && !PRICELINES) {
-							//Update next item
-							IncItem nextItem  = incItems.get(i+1);
-							double v,w;
-							if(nextItem.itemLow() != null) {
-								Predictions prediction1 = allPredictionsMap.get(nextItem.item().q()).get(nextItem.itemLow().idx());
-								Predictions prediction2 = allPredictionsMap.get(nextItem.item().q()).get(nextItem.itemHigh().idx());
-								v = prediction2.getClickPr()*prediction2.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction2.getCPC()) - 
-								(prediction1.getClickPr()*prediction1.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction1.getCPC())) ;
-								w = prediction2.getClickPr()*prediction2.getNumImp()*getConversionPrWithPenalty(nextItem.item().q(), penalty) - 
-								(prediction1.getClickPr()*prediction1.getNumImp()*getConversionPrWithPenalty(nextItem.item().q(), penalty));
-							}
-							else {
-								Predictions prediction = allPredictionsMap.get(nextItem.item().q()).get(nextItem.itemHigh().idx());
-								v = prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction.getCPC());
-								w = prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(nextItem.item().q(), penalty);
-							}
-							IncItem newNextItem = new IncItem(w, v, nextItem.itemHigh(), nextItem.itemLow());
-							incItems.remove(i+1);
-							incItems.add(i+1, newNextItem);
-						}
-						else if(PRICELINES) {
-							ArrayList<IncItem> updatedItems = new ArrayList<IncItem>();
-							for(int j = i+1; j < incItems.size(); j++) {
-								IncItem incItem = incItems.get(j);
-								Item itemLow = incItem.itemLow();
-								Item itemHigh = incItem.itemHigh();
-
-								double newWeight,newValue;
-
-								if(itemLow != null) {
-									Predictions prediction1 = allPredictionsMap.get(itemHigh.q()).get(itemLow.idx());
-									Predictions prediction2 = allPredictionsMap.get(itemHigh.q()).get(itemHigh.idx());
-									newValue = prediction2.getClickPr()*prediction2.getNumImp()*(getConversionPrWithPenalty(incItem.item().q(), penalty)*_salesPrices.get(itemHigh.q()) - prediction2.getCPC()) - 
-									(prediction1.getClickPr()*prediction1.getNumImp()*(getConversionPrWithPenalty(incItem.item().q(), penalty)*_salesPrices.get(itemHigh.q()) - prediction1.getCPC())) ;
-									newWeight = prediction2.getClickPr()*prediction2.getNumImp()*getConversionPrWithPenalty(incItem.item().q(), penalty) - 
-									(prediction1.getClickPr()*prediction1.getNumImp()*getConversionPrWithPenalty(incItem.item().q(), penalty));
-								}
-								else {
-									Predictions prediction = allPredictionsMap.get(itemHigh.q()).get(itemHigh.idx());
-									newValue = prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(incItem.item().q(), penalty)*_salesPrices.get(itemHigh.q()) - prediction.getCPC());
-									newWeight = prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(incItem.item().q(), penalty);
-								}
-								IncItem newItem = new IncItem(newWeight,newValue,itemHigh, itemLow);
-								updatedItems.add(newItem);
-							}
-
-							Collections.sort(updatedItems);
-
-							while(incItems.size() > i+1) {
-								incItems.remove(incItems.size()-1);
-							}
-							for(IncItem priceLineItem : updatedItems) {
-								incItems.add(incItems.size(),priceLineItem);
-							}
-						}
+			for(int i = 0; i < DPtable.length; i++) {
+				int threeDaySales = overCapLevels.get(i)-windowEdgeSales;
+				double maxVal = -Double.MAX_VALUE;
+				int bestIdx = 0;
+				ArrayList<double[]> solutionValues = allSolutionValues.get(i);
+				for(int j = 0; j < DPtable.length; j++) {
+					double[] solVal = solutionValues.get(j);
+					double overCapTom = threeDaySales + solVal[1];
+					int prevIdx = closestGreaterIdx(overCapLevels,overCapTom);
+					double value = solVal[0] + DPtableCopy[prevIdx];
+					if(value > maxVal) {
+						maxVal = value;
+						bestIdx = j;
 					}
 				}
-				else {
-					break;
+				DPtable[i] = maxVal;
+				DPsols[i] = bestIdx;
+			}
+		}
+		
+		HashMap<Query,Item> todaysSolution;
+		int prevIdx = closestGreaterIdx(overCapLevels,remainingCap*-1);
+		if(numFutureDays >= 1) {
+			int windowEdgeSales = soldArray.get(soldArray.size()-5+numFutureDays);
+			int threeDaySales = overCapLevels.get(prevIdx)-windowEdgeSales;
+			ArrayList<double[]> solutionValues = allSolutionValues.get(prevIdx);
+			double maxVal = -Double.MAX_VALUE;
+			int bestIdx = 0;
+			for(int j = 0; j < DPtable.length; j++) {
+				double[] solVal = solutionValues.get(j);
+				double overCapTom = threeDaySales + solVal[1];
+				int prevIdx2 = closestGreaterIdx(overCapLevels,overCapTom);
+				double value = solVal[0] + DPtable[prevIdx2];
+				if(value > maxVal) {
+					maxVal = value;
+					bestIdx = j;
 				}
+			}
+			todaysSolution = allSolutions.get(prevIdx).get(bestIdx);
+		}
+		else {
+			todaysSolution = allSolutions.get(prevIdx).get(DPsols[prevIdx]);
+		}
+
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		return todaysSolution;
+	}
+
+	private int closestGreaterIdx(ArrayList<Integer> overCapLevels,
+			double overCapTom) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+
+	private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
+		double penalty = getPenalty(remainingCap,desiredSales);
+		//		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
+		for(Query q : _querySpace) {
+			ArrayList<Item> itemList = new ArrayList<Item>();
+			debug("Query: " + q);
+			ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
+			for(int i = 0; i < bidList.size(); i++) {
+				Predictions predictions = queryPredictions.get(i);
+				double salesPrice = _salesPrices.get(q);
+				double clickPr = predictions.getClickPr();
+				double numImps = predictions.getNumImp();
+				int numClicks = (int) (clickPr * numImps);
+				double CPC = predictions.getCPC();
+				double convProb = getConversionPrWithPenalty(q, penalty);
+
+				if(Double.isNaN(CPC)) {
+					CPC = 0.0;
+				}
+
+				if(Double.isNaN(clickPr)) {
+					clickPr = 0.0;
+				}
+
+				if(Double.isNaN(convProb)) {
+					convProb = 0.0;
+				}
+
+				double w = numClicks*convProb;				//weight = numClciks * convProv
+				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+				itemList.add(new Item(q,w,v,bidList.get(i),false,0,i));
+			}
+			debug("Items for " + q);
+			Item[] items = itemList.toArray(new Item[0]);
+			IncItem[] iItems = getIncremental(items);
+			allIncItems.addAll(Arrays.asList(iItems));
+		}
+		Collections.sort(allIncItems);
+		return allIncItems;
+	}
+
+
+
+	/**
+	 * Greedily fill the knapsack by selecting incremental items
+	 * @param incItems
+	 * @param budget
+	 * @return
+	 */
+	private HashMap<Query,Item> fillKnapsack(ArrayList<IncItem> incItems, double budget) {
+		if(budget < 0) {
+			return new HashMap<Query,Item>();
+		}
+		HashMap<Query,Item> solution = new HashMap<Query, Item>();
+		for(IncItem ii: incItems) {
+			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
+			//set replace lighter items as we want
+			//TODO this can be >= ii.w() OR 0
+			if(budget >= ii.w()) {
+				//				debug("adding item " + ii);
+				solution.put(ii.item().q(), ii.item());
+				budget -= ii.w();
+			}
+			else {
+				break;
 			}
 		}
 		return solution;
@@ -976,11 +1060,11 @@ public class MCKPBid extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBid(Budget: " + BUDGET + ", Forward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES + ")";
+		return "MCKPBidDynProg(Budget: " + BUDGET + ")";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new MCKPBid(FORWARDUPDATING,PRICELINES,BUDGET);
+		return new MCKPBidDynProg(BUDGET);
 	}
 }
