@@ -718,7 +718,7 @@ public class MCKPBidDynProg extends AbstractAgent {
 		 */
 		double start = System.currentTimeMillis();
 		int numFutureDays = Math.max(0, Math.min(_capWindow-1, 58 - (int)_day));
-		int N = 50; //Number of capacities to consider between 0 and capacity (we will solve (N+1)^2 knapsacks)
+		int N = 20; //Number of capacities to consider between 0 and capacity (we will solve (N+1)^2 knapsacks)
 		ArrayList<ArrayList<HashMap<Query,Item>>> allSolutions = new ArrayList<ArrayList<HashMap<Query,Item>>>(N+1);
 		ArrayList<Integer> overCapLevels = new ArrayList<Integer>(N+1);
 		ArrayList<ArrayList<double[]>> allSolutionValues = new ArrayList<ArrayList<double[]>>(N+1);
@@ -741,6 +741,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 			allMultiDaySolutionValues.add(multiDaySolutionValues);
 		}
 
+		/*
+		 * Initialize the table with values from the starting day
+		 */
 		double[] DPtable = new double[overCapLevels.size()];
 		int[] DPsols = new int[overCapLevels.size()];
 		for(int i = 0; i < DPtable.length; i++) {
@@ -773,6 +776,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 		}
 		soldArray.add(expectedConvsYesterday);
 
+		/*
+		 * Update table for all days between first and last
+		 */
 		for(int day = 1; day < numFutureDays; day++) {
 			int windowEdgeSales = soldArray.get(soldArray.size()-day);
 			double[] DPtableCopy = new double[overCapLevels.size()];
@@ -802,6 +808,10 @@ public class MCKPBidDynProg extends AbstractAgent {
 			}
 		}
 		
+		/*
+		 * Calculate the final solution by either adding the first day
+		 * or if there is only one day left just return the best solution
+		 */
 		HashMap<Query,Item> todaysSolution;
 		int prevIdx = closestGreaterIdx(overCapLevels,remainingCap*-1);
 		if(numFutureDays >= 1) {
