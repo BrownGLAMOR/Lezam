@@ -832,10 +832,16 @@ public class MCKPBidDynProg extends AbstractAgent {
 		return todaysSolution;
 	}
 
-	private int closestGreaterIdx(ArrayList<Integer> overCapLevels,
-			double overCapTom) {
-		// TODO Auto-generated method stub
-		return 0;
+	private int closestGreaterIdx(ArrayList<Integer> overCapLevels, double overCapTom) {
+		if(overCapTom <= 0) {
+			return 0;
+		}
+		for(int i = 0; i < overCapLevels.size()-1; i++) {
+			if (overCapLevels.get(i) > overCapTom) {
+				return i;
+			}
+		}
+		return overCapLevels.size()-1;
 	}
 
 
