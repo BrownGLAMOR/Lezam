@@ -1,11 +1,12 @@
 package agents.modelbased;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
@@ -46,15 +47,14 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 /**
- * @author jberg, spucci, vnarodit
+ * @author jberg
  *
  */
 public class MCKPBidSearch extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
-	private static final boolean TARGET = false;
 	private static final boolean BUDGET = false;
-	private static final boolean SAFETYBUDGET = true;
+	private static final boolean SAFETYBUDGET = false;
 
 	private double _safetyBudget = 800;
 
@@ -72,30 +72,27 @@ public class MCKPBidSearch extends AbstractAgent {
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
-	private ArrayList<Double> bidList;
+	private Hashtable<Query, Integer> _queryId;
+	private LinkedList<Double> _bidList;
+	private ArrayList<Double> _capList;
 	private int lagDays = 5;
 	private boolean salesDistFlag;
-	private int _capIncrement = 15;
-	ArrayList<Double> capList;
-	
-	public MCKPBidSearch() {
-		this(30);
-	}
+	private int _capIncrement;
 
 	public MCKPBidSearch(int capIncrement) {
-		_R.setSeed(124962748);
-		_capIncrement = capIncrement;
-		bidList = new ArrayList<Double>();
+		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double increment  = .05;
-		double min = .04;
-		double max = 1.65;
-		int tot = (int) Math.ceil((max-min) / increment);
+		double bidIncrement  = .05;
+		double bidMin = .04;
+		double bidMax = 1.65;
+		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
 		for(int i = 0; i < tot; i++) {
-			bidList.add(min+(i*increment));
+			_bidList.add(bidMin+(i*bidIncrement));
 		}
 
 		salesDistFlag = false;
+
+		_capIncrement = capIncrement;
 	}
 
 
@@ -113,7 +110,6 @@ public class MCKPBidSearch extends AbstractAgent {
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
 		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 10, true, false);
 		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
-//		GoodConversionPrModel convPrModel = new GoodConversionPrModel(_querySpace,basicTargModel);
 		BasicConvPrModel convPrModel = new BasicConvPrModel(userModel, _querySpace, _baseConvProbs);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -214,19 +210,19 @@ public class MCKPBidSearch extends AbstractAgent {
 				throw new RuntimeException("Malformed query");
 			}
 
-			String component = q.getComponent();
-			if(_compSpecialty.equals(component)) {
-				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB));
-			}
-			else if(component == null) {
-				_baseConvProbs.put(q,eta(_baseConvProbs.get(q),1+_CSB)*(1/3.0) + _baseConvProbs.get(q)*(2/3.0));
-			}
 		}
 
-		capList = new ArrayList<Double>();
+		_queryId = new Hashtable<Query,Integer>();
+		int i = 0;
+		for(Query q : _querySpace){
+			_queryId.put(q, i);
+			i++;
+		}
+
+		_capList = new ArrayList<Double>();
 		double maxCap = _capacity;
-		for(int i = 1; i <= maxCap; i+= _capIncrement) {
-			capList.add(1.0*i);
+		for(i = 1; i <= maxCap; i+= 10) {
+			_capList.add(1.0*i);
 		}
 	}
 
@@ -280,12 +276,13 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
-		double start = System.currentTimeMillis();
 		BidBundle bidBundle = new BidBundle();
 
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
+
+		//		System.out.println("Day: " + _day);
 
 		if(_day > 1) {
 			if(!salesDistFlag) {
@@ -296,28 +293,35 @@ public class MCKPBidSearch extends AbstractAgent {
 			_salesDist.updateModel(_salesReport);
 		}
 
+
 		if(_day > lagDays){
 			buildMaps(models);
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 
-			double budget = _capacity/_capWindow;
+			/*
+			 * Setting up CPLEX
+			 */
+
+			double remainingCap;
 			if(_day < 4) {
-				//do nothing
+				remainingCap = _capacity/((double)_capWindow);
 			}
 			else {
-				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
-				budget = _capacity - _unitsSold.getWindowSold();
-				debug("Unit Sold Model Budget "  +budget);
+				//					capacity = Math.max(_capacity/((double)_capWindow)*(1/3.0),_capacity - _unitsSold.getWindowSold());
+				remainingCap = _capacity - _unitsSold.getWindowSold();
+				debug("Unit Sold Model Budget "  +remainingCap);
 			}
+
+			debug("Budget: "+ remainingCap);
 
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
+				debug("Query: " + q);
 				ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
-				for(int i = 0; i < bidList.size(); i++) {
-					double bid = bidList.get(i);
+				for(int i = 0; i < _bidList.size(); i++) {
+					double bid = _bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
 					double convProb = _convPrModel.getPrediction(q);
 
@@ -332,33 +336,20 @@ public class MCKPBidSearch extends AbstractAgent {
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
 					}
-
-					if(TARGET) {
-						/*
-						 * add a targeted version of our bid as well
-						 */
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-							if(convProb != 0) {
-								convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
-							}
-						}
-					}
 					queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
 				}
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-
-			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(budget,0,allPredictionsMap), budget);
-			double bestSolVal = solutionValue(bestSolution,budget,allPredictionsMap,true);
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
+			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,5);
 			int bestIdx = -1;
 			//			System.out.println("Init val: " + bestSolVal);
-			for(int i = 0; i < capList.size(); i++) {
-				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(budget, Math.max(0,budget)+capList.get(i),allPredictionsMap), Math.max(0,budget)+capList.get(i));
-				double solVal = solutionValue(solution,budget,allPredictionsMap,true);
-				if(solVal > bestSolVal) {
-					bestSolVal = solVal;
+			for(int i = 0; i < _capList.size(); i++) {
+				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
+				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,5);
+				if(solVal[0] > bestSolVal[0]) {
+					bestSolVal[0] = solVal[0];
 					bestSolution = solution;
 					bestIdx = i;
 				}
@@ -366,31 +357,26 @@ public class MCKPBidSearch extends AbstractAgent {
 			}
 			//			System.out.println("Best Index: " + bestIdx + ", Best val: " + bestSolVal);
 
-			if(bestSolVal < 0) {
+			if(bestSolVal[0] < 0) {
 				bestSolution = new HashMap<Query,Item>();
 			}
 
 			//set bids
 			for(Query q : _querySpace) {
-
+				ArrayList<Predictions> queryPrediction = allPredictionsMap.get(q);
 				double bid;
 
 				if(bestSolution.containsKey(q)) {
-					bid = bestSolution.get(q).b();
-					//					bid *= randDouble(.97,1.03);  //Mult by rand to avoid users learning patterns.
-					//					System.out.println("Bidding " + bid + "   for query: " + q);
-					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
-					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
+					int bidIdx = bestSolution.get(q).idx();
+					Predictions predictions = queryPrediction.get(bidIdx);
+					double clickPr = predictions.getClickPr();
+					double numImps = predictions.getNumImp();
 					int numClicks = (int) (clickPr * numImps);
-					double CPC = _bidToCPC.getPrediction(q, bid);
+					double CPC = predictions.getCPC();
 
 					if(bestSolution.get(q).targ()) {
 
-						if(clickPr != 0) {
-							numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-						}
-
-						bidBundle.setBid(q, bid);
+						bidBundle.setBid(q, _bidList.get(bidIdx));
 
 						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
 							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, _compSpecialty)));
@@ -402,11 +388,11 @@ public class MCKPBidSearch extends AbstractAgent {
 							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
 					}
 					else {
-						bidBundle.addQuery(q, bid, new Ad());
+						bidBundle.addQuery(q, _bidList.get(bidIdx), new Ad());
 					}
 
 					if(BUDGET) {
-						bidBundle.setDailyLimit(q, numClicks*CPC*1.3);
+						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
 				}
 				else {
@@ -428,74 +414,32 @@ public class MCKPBidSearch extends AbstractAgent {
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
+
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
-			double solutionWeight = solutionWeight(budget,bestSolution,allPredictionsMap);
+			double solutionWeight = solutionWeight(remainingCap,bestSolution,allPredictionsMap);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){
 				double bid = 0.0;
 				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 			}
 		}
-		double stop = System.currentTimeMillis();
-		double elapsed = stop - start;
-//		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		//		System.out.println(bidBundle);
 		return bidBundle;
 	}
 
 
-	private double getPenalty(double remainingCap, double solutionWeight) {
-		double penalty;
-		solutionWeight = Math.max(0,solutionWeight);
-		if(remainingCap < 0) {
-			if(solutionWeight == 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
-			}
-			else {
-				penalty = 0.0;
-				int num = 0;
-				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
-					penalty += Math.pow(LAMBDA, j);
-					num++;
-				}
-				penalty /= (num);
-			}
-		}
-		else {
-			if(solutionWeight == 0) {
-				penalty = 1.0;
-			}
-			else {
-				if(solutionWeight > remainingCap) {
-					penalty = remainingCap;
-					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
-					}
-					penalty /= (solutionWeight);
-				}
-				else {
-					penalty = 1.0;
-				}
-			}
-		}
-		if(Double.isNaN(penalty)) {
-			penalty = 1.0;
-		}
-		return penalty;
-	}
-
-	private double solutionValue(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, boolean firstCall) {
+	private double[] solutionValueMultiDay2(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, int numDays) {
 		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
-
 		double penalty = getPenalty(remainingCap, totalWeight);
 
 		double totalValue = 0;
@@ -503,159 +447,151 @@ public class MCKPBidSearch extends AbstractAgent {
 			if(solution.containsKey(q)) {
 				Item item = solution.get(q);
 				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
-				totalValue += prediction.getClickPr()*prediction.getNumImp()*(prediction.getConvPr()*penalty*_salesPrices.get(item.q()) - prediction.getCPC());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
+			}
+		}
+
+		double daysLookahead = Math.max(0, Math.min(numDays, 58 - _day));
+		if(daysLookahead > 0 && totalWeight > 0) {
+			ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+			ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
+
+			Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+			if(expectedConvsYesterday == null) {
+				expectedConvsYesterday = 0;
+				int counter2 = 0;
+				for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
+					counter2++;
+				}
+				expectedConvsYesterday /= (double)counter2;
+			}
+			soldArray.add(expectedConvsYesterday);
+			soldArray.add((int) totalWeight);
+
+			for(int i = 0; i < daysLookahead; i++) {
+				double expectedBudget = _capacity;
+				for(int j = 0; j < _capWindow-1; j++) {
+					expectedBudget -= soldArray.get(soldArray.size()-1-j);
+				}
+
+				double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap);
+				soldArray.add((int) numSales);
+
+				double penaltyNew = getPenalty(expectedBudget, numSales);
+				for(Query q : _querySpace) {
+					if(solution.containsKey(q)) {
+						Item item = solution.get(q);
+						Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+						totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penaltyNew)*_salesPrices.get(item.q()) - prediction.getCPC());
+					}
+				}
+			}
+		}
+		double[] output = new double[2];
+		output[0] = totalValue;
+		output[1] = totalWeight;
+		return output;
+	}
+
+	private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+
+		double penalty = getPenalty(remainingCap, totalWeight);
+
+		double totalValue = 0;
+		double solWeight = 0;
+		HashMap<Query, Double> currentSalesDist = new HashMap<Query,Double>();
+		for(Query q : _querySpace) {
+			if(solution.containsKey(q)) {
+				Item item = solution.get(q);
+				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
+				double tmpWeight = prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
+				solWeight += tmpWeight;
+				currentSalesDist.put(q, tmpWeight);
+			}
+		}
+
+		for(Query q : _querySpace) {
+			if(currentSalesDist.containsKey(q)) {
+				currentSalesDist.put(q, currentSalesDist.get(q)/solWeight);
+			}
+			else {
+				currentSalesDist.put(q, 0.0);
 			}
 		}
 
 		double valueLostWindow = Math.max(0, Math.min(_capWindow-1, 58 - _day));
 		//		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
-		double multiDayVal = 0;
-		if(firstCall && valueLostWindow > 0) {
-			ArrayList<Integer> soldArray = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+		double multiDayLoss = 0;
+		if(valueLostWindow > 0 && solWeight > 0) {
+			ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+			ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
 
-			double numConvsFuture = _capacity/_capWindow;
-			//			double historicConvs = 0;
-			//			int counter = 0;
-			//			for(int i = 0; i < 5 && i < soldArray.size(); i++) {
-			//				historicConvs += soldArray.get(soldArray.size()-1-i);
-			//				counter++;
-			//			}
-			//			double numConvsFuture = historicConvs/counter;
+			Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+			if(expectedConvsYesterday == null) {
+				expectedConvsYesterday = 0;
+				int counter2 = 0;
+				for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
+					counter2++;
+				}
+				expectedConvsYesterday /= (double)counter2;
+			}
+			soldArray.add(expectedConvsYesterday);
+			soldArray.add((int) solWeight);
 
 			for(int i = 0; i < valueLostWindow; i++) {
 				double expectedBudget = _capacity;
 
-				for(int j = 0; j < 2-i; j++) {
+				for(int j = 0; j < _capWindow-1; j++) {
 					expectedBudget -= soldArray.get(soldArray.size()-1-j);
 				}
-				if(i < 3) {
-					Integer expectedConvsTom = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
-					if(expectedConvsTom == null) {
-						expectedConvsTom = 0;
-						int counter2 = 0;
-						for(int j = 0; j < 5 && j < soldArray.size(); j++) {
-							expectedConvsTom += soldArray.get(soldArray.size()-1-j);
-							counter2++;
-						}
-						expectedConvsTom /= (double)counter2;
-					}
-					expectedBudget -= expectedConvsTom;
-				}
-				expectedBudget -= numConvsFuture*(i);
 
-				double budget2 = expectedBudget-totalWeight;
+				double valueLost = 0;
 
-				HashMap<Query,Item> solution2 = fillKnapsack(getIncItemsForOverCapLevel(budget2,numConvsFuture,allPredictionsMap), numConvsFuture);
-				double solVal2 = solutionValue(solution2,budget2,allPredictionsMap,false);
+				double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap);
+				soldArray.add((int) numSales);
 
-				multiDayVal += solVal2;
-			}
-		}
-		return totalValue+multiDayVal;
-	}
-
-	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
-		double threshold = 2;
-		int maxIters = 10;
-		double lastSolWeight = Double.MAX_VALUE;
-		double solutionWeight = 0.0;
-
-		/*
-		 * As a first estimate use the weight of the solution
-		 * with no penalty
-		 */
-		for(Query q : _querySpace) {
-			if(solution.get(q) == null) {
-				continue;
-			}
-			Predictions predictions = allPredictionsMap.get(q).get(solution.get(q).idx());
-			double dailyLimit = Double.NaN;
-			if(bidBundle != null) {
-				dailyLimit  = bidBundle.getDailyLimit(q);
-			}
-			double clickPr = predictions.getClickPr();
-			double numImps = predictions.getNumImp();
-			int numClicks = (int) (clickPr * numImps);
-			double CPC = predictions.getCPC();
-			double convProb = predictions.getConvPr();
-
-			if(Double.isNaN(CPC)) {
-				CPC = 0.0;
-			}
-
-			if(Double.isNaN(clickPr)) {
-				clickPr = 0.0;
-			}
-
-			if(Double.isNaN(convProb)) {
-				convProb = 0.0;
-			}
-
-			if(!Double.isNaN(dailyLimit)) {
-				if(numClicks*CPC > dailyLimit) {
-					numClicks = (int) (dailyLimit/CPC);
-				}
-			}
-
-			solutionWeight += numClicks*convProb;
-		}
-
-		double originalSolWeight = solutionWeight;
-
-		int numIters = 0;
-		while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
-			numIters++;
-			if(numIters > maxIters) {
-				numIters = 0;
-				solutionWeight = (_R.nextDouble() + .5) * originalSolWeight; //restart the search
-				threshold += 1; //increase the threshold
-			}
-			lastSolWeight = solutionWeight;
-			solutionWeight = 0;
-			double penalty = getPenalty(budget,lastSolWeight);
-			for(Query q : _querySpace) {
-				if(solution.get(q) == null) {
-					continue;
-				}
-				Predictions predictions = allPredictionsMap.get(q).get(solution.get(q).idx());
-				double dailyLimit = Double.NaN;
-				if(bidBundle != null) {
-					dailyLimit  = bidBundle.getDailyLimit(q);
-				}
-				double clickPr = predictions.getClickPr();
-				double numImps = predictions.getNumImp();
-				int numClicks = (int) (clickPr * numImps);
-				double CPC = predictions.getCPC();
-				double convProb = predictions.getConvPr() * penalty;
-
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
-				}
-
-				if(Double.isNaN(clickPr)) {
-					clickPr = 0.0;
-				}
-
-				if(Double.isNaN(convProb)) {
-					convProb = 0.0;
-				}
-
-				if(!Double.isNaN(dailyLimit)) {
-					if(numClicks*CPC > dailyLimit) {
-						numClicks = (int) (dailyLimit/CPC);
+				for(int j = 1; j <= numSales; j++) {
+					if(expectedBudget - j <= 0) {
+						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
 					}
 				}
 
-				solutionWeight += numClicks*convProb;
+				double avgConvProb = 0; //the average probability of conversion;
+				for(Query q : _querySpace) {
+					avgConvProb += getConversionPrWithPenalty(q, getPenalty(expectedBudget, numSales)) * currentSalesDist.get(q);
+				}
+
+				double avgCPC = 0;
+				for(Query q : _querySpace) {
+					if(solution.containsKey(q)) {
+						Item item = solution.get(q);
+						Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+						avgCPC += prediction.getCPC() * currentSalesDist.get(q);
+					}
+				}
+
+				double avgCPA = avgCPC/avgConvProb;
+
+				multiDayLoss += Math.max(valueLost*avgCPA,0);
 			}
 		}
-		return solutionWeight;
+		double[] output = new double[2];
+		output[0] = totalValue-multiDayLoss;
+		output[1] = solWeight;
+		return output;
 	}
 
-	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
-		return solutionWeight(budget, solution, allPredictionsMap, null);
+	private ArrayList<Integer> getCopy(ArrayList<Integer> soldArrayTMP) {
+		ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP.size());
+		for(int i = 0; i < soldArrayTMP.size(); i++) {
+			soldArray.add(soldArrayTMP.get(i));
+		}
+		return soldArray;
 	}
-
 
 	private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
@@ -665,7 +601,7 @@ public class MCKPBidSearch extends AbstractAgent {
 			ArrayList<Item> itemList = new ArrayList<Item>();
 			debug("Query: " + q);
 			ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
-			for(int i = 0; i < bidList.size(); i++) {
+			for(int i = 0; i < _bidList.size(); i++) {
 				Predictions predictions = queryPredictions.get(i);
 				double salesPrice = _salesPrices.get(q);
 				double clickPr = predictions.getClickPr();
@@ -688,25 +624,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 				double w = numClicks*convProb;				//weight = numClciks * convProv
 				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-				itemList.add(new Item(q,w,v,bidList.get(i),false,0,i));
-
-				if(TARGET) {
-					/*
-					 * add a targeted version of our bid as well
-					 */
-					if(clickPr != 0) {
-						numClicks *= _targModel.getClickPrPredictionMultiplier(q, clickPr, false);
-						if(convProb != 0) {
-							convProb *= _targModel.getConvPrPredictionMultiplier(q, clickPr, convProb, false);
-						}
-						salesPrice = _targModel.getUSPPrediction(q, clickPr, false);
-					}
-
-					w = numClicks*convProb;				//weight = numClciks * convProv
-					v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-
-					itemList.add(new Item(q,w,v,bidList.get(i),true,0,i));
-				}
+				itemList.add(new Item(q,w,v,_bidList.get(i),false,0,i));
 			}
 			debug("Items for " + q);
 			Item[] items = itemList.toArray(new Item[0]);
@@ -745,7 +663,6 @@ public class MCKPBidSearch extends AbstractAgent {
 		}
 		return solution;
 	}
-
 
 	/**
 	 * Get undominated items
@@ -869,6 +786,164 @@ public class MCKPBidSearch extends AbstractAgent {
 		return ii;
 	}
 
+	private double getPenalty(double remainingCap, double solutionWeight) {
+		double penalty;
+		solutionWeight = Math.max(0,solutionWeight);
+		if(remainingCap < 0) {
+			if(solutionWeight <= 0) {
+				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+			}
+			else {
+				penalty = 0.0;
+				int num = 0;
+				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
+					penalty += Math.pow(LAMBDA, j);
+					num++;
+				}
+				penalty /= (num);
+			}
+		}
+		else {
+			if(solutionWeight <= 0) {
+				penalty = 1.0;
+			}
+			else {
+				if(solutionWeight > remainingCap) {
+					penalty = remainingCap;
+					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
+						penalty += Math.pow(LAMBDA, j);
+					}
+					penalty /= (solutionWeight);
+				}
+				else {
+					penalty = 1.0;
+				}
+			}
+		}
+		if(Double.isNaN(penalty)) {
+			penalty = 1.0;
+		}
+		return penalty;
+	}
+
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
+		double threshold = .5;
+		int maxIters = 40;
+		double lastSolWeight = Double.MAX_VALUE;
+		double solutionWeight = 0.0;
+
+		/*
+		 * As a first estimate use the weight of the solution
+		 * with no penalty
+		 */
+		for(Query q : _querySpace) {
+			if(solution.get(q) == null) {
+				continue;
+			}
+			Predictions predictions = allPredictionsMap.get(q).get(solution.get(q).idx());
+			double dailyLimit = Double.NaN;
+			if(bidBundle != null) {
+				dailyLimit  = bidBundle.getDailyLimit(q);
+			}
+			double clickPr = predictions.getClickPr();
+			double numImps = predictions.getNumImp();
+			int numClicks = (int) (clickPr * numImps);
+			double CPC = predictions.getCPC();
+			double convProb = getConversionPrWithPenalty(q, 1.0);
+
+			if(Double.isNaN(CPC)) {
+				CPC = 0.0;
+			}
+
+			if(Double.isNaN(clickPr)) {
+				clickPr = 0.0;
+			}
+
+			if(Double.isNaN(convProb)) {
+				convProb = 0.0;
+			}
+
+			if(!Double.isNaN(dailyLimit)) {
+				if(numClicks*CPC > dailyLimit) {
+					numClicks = (int) (dailyLimit/CPC);
+				}
+			}
+
+			solutionWeight += numClicks*convProb;
+		}
+
+		double originalSolWeight = solutionWeight;
+
+		int numIters = 0;
+		while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
+			numIters++;
+			if(numIters > maxIters) {
+				numIters = 0;
+				solutionWeight = (_R.nextDouble() + .5) * originalSolWeight; //restart the search
+				threshold *= 1.5; //increase the threshold
+				maxIters *= 1.25;
+			}
+			lastSolWeight = solutionWeight;
+			solutionWeight = 0;
+			double penalty = getPenalty(budget, lastSolWeight);
+			for(Query q : _querySpace) {
+				if(solution.get(q) == null) {
+					continue;
+				}
+				Predictions predictions = allPredictionsMap.get(q).get(solution.get(q).idx());
+				double dailyLimit = Double.NaN;
+				if(bidBundle != null) {
+					dailyLimit  = bidBundle.getDailyLimit(q);
+				}
+				double clickPr = predictions.getClickPr();
+				double numImps = predictions.getNumImp();
+				int numClicks = (int) (clickPr * numImps);
+				double CPC = predictions.getCPC();
+				double convProb = getConversionPrWithPenalty(q, penalty);
+
+				if(Double.isNaN(CPC)) {
+					CPC = 0.0;
+				}
+
+				if(Double.isNaN(clickPr)) {
+					clickPr = 0.0;
+				}
+
+				if(Double.isNaN(convProb)) {
+					convProb = 0.0;
+				}
+
+				if(!Double.isNaN(dailyLimit)) {
+					if(numClicks*CPC > dailyLimit) {
+						numClicks = (int) (dailyLimit/CPC);
+					}
+				}
+
+				solutionWeight += numClicks*convProb;
+			}
+		}
+		return solutionWeight;
+	}
+
+	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+		return solutionWeight(budget, solution, allPredictionsMap, null);
+	}
+
+	public double getConversionPrWithPenalty(Query q, double penalty) {
+		double convPr;
+		String component = q.getComponent();
+		if(_compSpecialty.equals(component)) {
+			convPr = eta(_convPrModel.getPrediction(q)*penalty,1+_CSB);
+		}
+		else if(component == null) {
+			convPr = eta(_convPrModel.getPrediction(q)*penalty,1+_CSB) * (1/3.0) + _convPrModel.getPrediction(q)*penalty*(2/3.0);
+		}
+		else {
+			convPr = _convPrModel.getPrediction(q)*penalty;
+		}
+		return convPr;
+	}
+
 	private double randDouble(double a, double b) {
 		double rand = _R.nextDouble();
 		return rand * (b - a) + a;
@@ -882,12 +957,11 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBidSearch(capIncrement=" + _capIncrement + ")";
+		return "MCKPBidSearch";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
 		return new MCKPBidSearch(_capIncrement);
 	}
-
 }

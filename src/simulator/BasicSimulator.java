@@ -55,6 +55,7 @@ import agents.AbstractAgent;
 import agents.modelbased.DrMCKPBid;
 import agents.modelbased.G4;
 import agents.modelbased.ILPBidAgent;
+import agents.modelbased.ILPBidSearchAgent;
 import agents.modelbased.ILPPosAgent;
 import agents.modelbased.MCKPBid;
 import agents.modelbased.MCKPBidDynProg;
@@ -246,7 +247,7 @@ public class BasicSimulator {
 		double totalOverCapAbs = 0.0;
 
 		for(int day = firstDay; day < 59; day++) {
-			
+
 			/*
 			 * ENSURE GARBAGE COLLECTOR IS RUN BETWEEN ITERATIONS
 			 */
@@ -1902,7 +1903,9 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		AbstractAgent agent = new MCKPBidDynProg(false);
+		//		AbstractAgent agent = new ILPBidSearchAgent(10);
+		AbstractAgent agent = new MCKPBidSearch(10);
+		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//		AbstractAgent agent = new MCKPBid(false,false,false);
 		//				AbstractAgent agent = new MCKPBid(false,false,true);
 		//				AbstractAgent agent = new MCKPBid(false,true,false);
@@ -1951,6 +1954,7 @@ public class BasicSimulator {
 		//		agentList.add(agent6);
 		//		agentList.add(agent7);
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
 		for(AbstractAgent agentItr : agentList) {
 			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
