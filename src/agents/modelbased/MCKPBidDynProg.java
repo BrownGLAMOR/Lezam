@@ -714,24 +714,50 @@ public class MCKPBidDynProg extends AbstractAgent {
 
 	private HashMap<Query, Item> multiDayDynProg(double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
 		/*
-		 * Setup the data
+		 * Setup the data.
+		 * For each capacity level (amount over capacity?), create lists of:
+		 * 	1. "all solutions per over cap":
+		 *  2. "solution values": 
+		 *  3. "multi-day solution values":
 		 */
 		double start = System.currentTimeMillis();
 		int numFutureDays = Math.max(0, Math.min(_capWindow-1, 58 - (int)_day));
 		int N = 20; //Number of capacities to consider between 0 and capacity (we will solve (N+1)^2 knapsacks)
-		ArrayList<ArrayList<HashMap<Query,Item>>> allSolutions = new ArrayList<ArrayList<HashMap<Query,Item>>>(N+1);
+		
+		//For every amount over capacity, and for every number of conversions, this stores the greedy solution.
+		ArrayList<ArrayList<HashMap<Query,Item>>> allSolutions = new ArrayList<ArrayList<HashMap<Query,Item>>>(N+1);		
 		ArrayList<Integer> overCapLevels = new ArrayList<Integer>(N+1);
+
+		//For every amount over capacity, and for every number of conversions, this stores the VALUE of the greedy solution.
 		ArrayList<ArrayList<double[]>> allSolutionValues = new ArrayList<ArrayList<double[]>>(N+1);
+
+		//For every amount over capacity, and for every number of conversions, this stores the greedy solution BUT
+		//modified: an additional heuristic is added to account for how taking these items affects future days.	
+		//(this will be used by the DP on the last day).
 		ArrayList<ArrayList<double[]>> allMultiDaySolutionValues = new ArrayList<ArrayList<double[]>>(N+1);
+
+		
+		// For each capacity we are considering,
+		// sodomka 2/10/10: why is it called overcap if we only consider capacities between 0 and the max capacity? 
+		// (Maybe this is because we're only considering going over by at most 2*capacity??) 
 		for(int overCap = 0; overCap <= _capacity; overCap += _capacity/((double)N)) {
 			overCapLevels.add(overCap);
 			ArrayList<HashMap<Query,Item>> allSolsPerOverCap = new ArrayList<HashMap<Query,Item>>(N+1);
 			ArrayList<double[]> solutionValues = new ArrayList<double[]>();
 			ArrayList<double[]> multiDaySolutionValues = new ArrayList<double[]>();
+			
+			//For each possible number of conversions,
 			for(int sales = 0; sales <= _capacity; sales += _capacity/((double) N)) {
+				
+				//Compute incremental items given this level above capacity and number of conversions, 
+				//  and then fill the knapsack with these incremental items (limited by #conversions).
+				//Add the knapsack solution to the list of solutions (which contains solutions for each level of sales??).
+				//TODO: check this incItems method and make sure the input is correct.
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(-1*overCap,sales,allPredictionsMap), sales);
 				allSolsPerOverCap.add(solution);
 				if(numFutureDays > 0) {
+					
+					//TODO: check this solutionValue method and make sure the input is correct.
 					solutionValues.add(solutionValue(solution, -1*overCap, allPredictionsMap));
 				}
 				multiDaySolutionValues.add(solutionValueMultiDay2(solution, -1*overCap, allPredictionsMap,5));
@@ -741,15 +767,26 @@ public class MCKPBidDynProg extends AbstractAgent {
 			allMultiDaySolutionValues.add(multiDaySolutionValues);
 		}
 
+		
+		
+		
 		/*
 		 * Initialize the table with values from the starting day
 		 */
 		double[] DPtable = new double[overCapLevels.size()];
 		int[] DPsols = new int[overCapLevels.size()];
+
+		//For each amount over capacity (given sales in the window?)
 		for(int i = 0; i < DPtable.length; i++) {
 			double maxVal = -Double.MAX_VALUE;
 			int bestIdx = 0;
+			
+			//Get the set of (multi-day heuristic) solution values for this amount of window capacity.
+			//(There are many solution values here: 1 for each amount we could have sold today)
 			ArrayList<double[]> solutionValues = allMultiDaySolutionValues.get(i);
+			
+			//For this amount of windowed capacity, find the amount of today's sales that give
+			//the best solution value. 
 			for(int j = 0; j < DPtable.length; j++) {
 				double[] value = solutionValues.get(j);
 				if(value[0] > maxVal) {
@@ -757,6 +794,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 					bestIdx = j;
 				}
 			}
+			
+			//Store the best solution value (and the amount that was sold today) 
+			//for this level of windowed capacity.
 			DPtable[i] = maxVal;
 			DPsols[i] = bestIdx;
 		}
@@ -776,6 +816,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 		}
 		soldArray.add(expectedConvsYesterday);
 
+		
+		
+		
 		/*
 		 * Update table for all days between first and last
 		 */
@@ -807,6 +850,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 				DPsols[i] = bestIdx;
 			}
 		}
+		
+		
+		
 		
 		/*
 		 * Calculate the final solution by either adding the first day
@@ -841,6 +887,9 @@ public class MCKPBidDynProg extends AbstractAgent {
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
 		return todaysSolution;
 	}
+	
+	
+	
 
 	private int closestGreaterIdx(ArrayList<Integer> overCapLevels, double overCapTom) {
 		if(overCapTom <= 0) {
