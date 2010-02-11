@@ -730,7 +730,7 @@ public class MCKPBid extends AbstractAgent {
 		HashMap<Query,Item> solution = new HashMap<Query, Item>();
 
 		int expectedConvs = 0;
-
+		
 		for(int i = 0; i < incItems.size(); i++) {
 			IncItem ii = incItems.get(i);
 			double itemWeight = ii.w();
@@ -740,13 +740,13 @@ public class MCKPBid extends AbstractAgent {
 				expectedConvs += itemWeight;
 			}
 			else {
-				double[] currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap);
-				//				double[] currSolVal = solutionValueMultiDay2(solution, budget, allPredictionsMap,30);
+				//				double[] currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap);
+				double[] currSolVal = solutionValueMultiDay2(solution, budget, allPredictionsMap,30);
 
 				HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>) solution.clone();
 				solutionCopy.put(ii.item().q(), ii.item());
-				double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap);
-				//				double[] newSolVal = solutionValueMultiDay2(solutionCopy, budget, allPredictionsMap,30);
+				//				double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap);
+				double[] newSolVal = solutionValueMultiDay2(solutionCopy, budget, allPredictionsMap,30);
 
 				//				System.out.println("[" + _day +"] CurrSolVal: " + currSolVal[0] + ", NewSolVal: " + newSolVal[0]);
 
