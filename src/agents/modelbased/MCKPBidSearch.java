@@ -419,6 +419,10 @@ public class MCKPBidSearch extends AbstractAgent {
 			 * Pass expected conversions to unit sales model
 			 */
 			double solutionWeight = solutionWeight(remainingCap,bestSolution,allPredictionsMap);
+			int numConvs = 0;
+			for(Query q : _querySpace) {
+				numConvs += _salesReport.getConversions(q);
+			}
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -957,7 +961,7 @@ public class MCKPBidSearch extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "MCKPBidSearch";
+		return "MCKPBidSearch(" + _capIncrement + ")";
 	}
 
 	@Override

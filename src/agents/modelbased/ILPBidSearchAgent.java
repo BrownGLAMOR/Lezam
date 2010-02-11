@@ -865,7 +865,7 @@ public class ILPBidSearchAgent extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "ILPBid";
+		return "ILPBidSearch(" + _capIncrement + ")";
 	}
 
 	@Override
