@@ -57,10 +57,10 @@ import agents.modelbased.G4;
 import agents.modelbased.ILPBidAgent;
 import agents.modelbased.ILPBidSearchAgent;
 import agents.modelbased.ILPPosAgent;
-import agents.modelbased.MCKPBid;
+import agents.modelbased.SemiEndoMCKPBid;
 import agents.modelbased.MCKPBidDynProg;
 import agents.modelbased.MCKPBidNoDomElim;
-import agents.modelbased.MCKPBidSearch;
+import agents.modelbased.SemiMCKPBidExhaustive;
 import agents.modelbased.MCKPPos;
 import agents.modelbased.MCKPPosSearch;
 import agents.olderagents.Cheap;
@@ -767,7 +767,7 @@ public class BasicSimulator {
 			}
 			_salesOverWindow.put(_agents[i], sales);
 			if(i == _ourAdvIdx) {
-				System.out.println("Our capacity" + adInfo.getDistributionCapacity());
+//				System.out.println("Our capacity" + adInfo.getDistributionCapacity());
 			}
 			_capacities.put(_agents[i],adInfo.getDistributionCapacity());
 		}
@@ -1434,7 +1434,7 @@ public class BasicSimulator {
 
 	public AbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new MCKPBid(false,false,false);
+			return new SemiEndoMCKPBid(false,false,false);
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -1449,7 +1449,7 @@ public class BasicSimulator {
 			return null;
 		}
 		else {
-			return new MCKPBid(false,false,false);
+			return new SemiEndoMCKPBid(false,false,false);
 		}
 	}
 
@@ -1520,7 +1520,7 @@ public class BasicSimulator {
 		}
 		else {
 			filenames = new String[max-min];
-			System.out.println("Min: " + min + "  Max: " + max);
+//			System.out.println("Min: " + min + "  Max: " + max);
 			for(int i = min; i < max; i++) { 
 				filenames[i-min] = baseFile + i + ".slg";
 			}
@@ -1556,7 +1556,7 @@ public class BasicSimulator {
 				LinkedList<Reports> reportsList = new LinkedList<Reports>();
 				reportsListMap.put(agents[i], reportsList);
 			}
-			System.out.println(filename);
+//			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
 			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agent.getCopy(), advId);
 			for(int j = 0; j < agents.length; j++) {
@@ -1906,7 +1906,7 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-		AbstractAgent agent = new MCKPBid(false,true,false);
+		AbstractAgent agent = new SemiEndoMCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,false,true);
 		//				AbstractAgent agent = new MCKPBid(false,true,false);
 		//				AbstractAgent agent = new MCKPBid(false,true,true);

@@ -24,7 +24,7 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 		_sold = new ArrayList<Integer>();
 		expectedConvsForMissingDay = null;
 	}
-	
+
 	public ArrayList<Integer> getSalesArray() {
 		return _sold;
 	}
@@ -55,9 +55,7 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 			total += (total + _capacity/((double) _window)) / 4.0;
 		}
 		else {
-			if(expectedConvsForMissingDay != 0) {
-				total += expectedConvsForMissingDay;
-			}
+			total += expectedConvsForMissingDay;
 		}
 		return total;
 	}
@@ -88,7 +86,7 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
 	public void expectedConvsTomorrow(int expectedConvs) {
 		expectedConvsForMissingDay = expectedConvs;
 	}
-	
+
 	public Integer getExpectedConvsTomorrow() {
 		return expectedConvsForMissingDay;
 	}

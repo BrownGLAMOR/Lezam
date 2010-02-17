@@ -30,7 +30,7 @@ public class GGAAgentTuner {
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-		if(Double.isNaN(val) || val < 0) {
+		if(Double.isNaN(val)) {
 			return 0.0;
 		}
 
@@ -53,7 +53,7 @@ public class GGAAgentTuner {
 		AbstractAgent agentCopy = null;
 
 		try {
-			agentCopy = (AbstractAgent)(constr[1].newInstance(args));
+			agentCopy = (AbstractAgent)(constr[0].newInstance(args));
 		} catch (IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (InstantiationException e) {
@@ -67,14 +67,15 @@ public class GGAAgentTuner {
 	}
 
 	public static void main(String[] args) {
-//		_agent = new AdjustPPS();
-//		_agent = new AdjustPR();
-//		_agent = new AdjustPM();
-//		_agent = new AdjustROI();
-//		_agent = new EquatePPS();
-//		_agent = new EquatePR();
-//		_agent = new EquatePM();
-		_agent = new EquateROI();
+		double dummy = 0.0;
+		_agent = new AdjustPPS(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new AdjustPR(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new AdjustPM(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new AdjustROI(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new EquatePPS(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new EquatePR(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new EquatePM(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
+//				_agent = new EquateROI(dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy);
 		ArrayList<Double> params = new ArrayList<Double>();
 		for(int i = 0; i < args.length-2; i++) {
 			params.add(Double.parseDouble(args[i]));
