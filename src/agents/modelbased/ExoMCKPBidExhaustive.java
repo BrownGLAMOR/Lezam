@@ -506,29 +506,38 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				 * Calculate remaining capacity for given day
 				 */
 				double expectedBudget = _capacity;
-
 				for(int j = 0; j < _capWindow-1; j++) {
 					expectedBudget -= soldArray.get(soldArray.size()-1-j);
 				}
-
-				double valueLost = 0;
-
 				soldArray.add((int)totalWeight);
-
-				for(int j = 1; j <= totalWeight; j++) {
-					if(expectedBudget - j <= 0) {
-						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-					}
-				}
-
+				
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
-					avgConvProb += getConversionPrWithPenalty(q, getPenalty(expectedBudget, totalWeight)) * _salesDist.getPrediction(q);
+					avgConvProb += getConversionPrWithPenalty(q, 1.0) * _salesDist.getPrediction(q);
 				}
 
-				double avgCPA = avgCPC/avgConvProb;
-
-				multiDayLoss += Math.max(valueLost*avgCPA,0);
+				double valueLost = 0;
+//				for(int j = 1; j <= totalWeight; j++) {
+//					if(expectedBudget - j <= 0) {
+//						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
+//					}
+//				}
+//				multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
+				double baseConvProb;
+				if(expectedBudget < 0) {
+					baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
+				}
+				else {
+					baseConvProb= avgConvProb;
+				}
+				for (int j = 1; j <= totalWeight; j++){
+					if(expectedBudget - j < 0) {
+						double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j-1));
+						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+						valueLost += (baseConvProb - worseConvProb)*avgUSP;
+					}
+				}
+				multiDayLoss += Math.max(valueLost,0);
 			}
 		}
 		double[] output = new double[2];
@@ -602,7 +611,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			//TODO this can be >= ii.w() OR 0
-			if(budget >= ii.w()) {
+			if(budget >= 0) {
 				//				debug("adding item " + ii);
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();

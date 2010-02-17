@@ -23,10 +23,6 @@ public class EquateROI extends RuleBasedAgent{
 	protected double _initROI;
 	protected double _threshTS;
 	
-	public EquateROI() {
-		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-	}
-
 	public EquateROI(double initROI,
 			double alphaIncROI,
 			double betaIncROI,

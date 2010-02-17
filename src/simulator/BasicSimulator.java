@@ -53,6 +53,8 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import agents.AbstractAgent;
 import agents.modelbased.DrMCKPBid;
+import agents.modelbased.ExoMCKPBid;
+import agents.modelbased.ExoMCKPBidExhaustive;
 import agents.modelbased.G4;
 import agents.modelbased.ILPBidAgent;
 import agents.modelbased.ILPBidSearchAgent;
@@ -60,7 +62,7 @@ import agents.modelbased.ILPPosAgent;
 import agents.modelbased.SemiEndoMCKPBid;
 import agents.modelbased.MCKPBidDynProg;
 import agents.modelbased.MCKPBidNoDomElim;
-import agents.modelbased.SemiMCKPBidExhaustive;
+import agents.modelbased.SemiEndoMCKPBidExhaustive;
 import agents.modelbased.MCKPPos;
 import agents.modelbased.MCKPPosSearch;
 import agents.olderagents.Cheap;
@@ -1906,19 +1908,17 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-		AbstractAgent agent = new SemiEndoMCKPBid(false,true,false);
-		//				AbstractAgent agent = new MCKPBid(false,false,true);
-		//				AbstractAgent agent = new MCKPBid(false,true,false);
-		//				AbstractAgent agent = new MCKPBid(false,true,true);
-		//		AbstractAgent agent = new MCKPPos(false,false,false,false);
-		//				AbstractAgent agent = new MCKPBidSearch(30);
-		//		AbstractAgent agent1 = new MCKPBidSearch(30);
-		//		AbstractAgent agent2 = new MCKPBidSearch(20);
-		//		AbstractAgent agent3 = new MCKPBidSearch(10);
-		//		AbstractAgent agent4 = new MCKPBidSearch(5);
-		//		AbstractAgent agent5 = new MCKPBidSearch(10);
-		//		AbstractAgent agent = new MCKPPosSearch(10);
+//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
+//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
+//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+//		AbstractAgent agent = new ExoMCKPBid(false,false,false);
+//		AbstractAgent agent = new ExoMCKPBidExhaustive(5);
+		AbstractAgent agent = new ExoMCKPBidExhaustive(10);
+//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
 
+		
+		
 		//		AbstractAgent agent = new AdjustPPS(0.00172288, 0.260363, 0.00792021, -0.0682618, 9.85474, -0.00840323, 0.179635, 0.00969242, -0.0208566);
 
 		//		AbstractAgent agent = new MCKPBidTrueOneDay();

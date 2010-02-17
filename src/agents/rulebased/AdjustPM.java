@@ -34,9 +34,6 @@ public class AdjustPM extends RuleBasedAgent {
 	protected double _threshPM;
 	protected HashMap<Query, Double> _PM;
 	
-	public AdjustPM() {
-		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-	}
 
 	public AdjustPM(double initPM,
 			double alphaIncTS,

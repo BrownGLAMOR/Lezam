@@ -31,7 +31,7 @@ public class AlgTuneParser {
 	}
 
 	private static void runAllParams(String[] args) throws IOException, ParseException {
-		int numPastGenerations = 4;
+		int numPastGenerations = 10;
 		ArrayList<String> paramStrings = new ArrayList<String>();
 		String firstFilename = null;
 		for(String filename : args) {
@@ -117,7 +117,7 @@ public class AlgTuneParser {
 					e.printStackTrace();
 				}
 				
-				double val = sim.runSimulations("/Users/jordanberg/Desktop/finalsgames/server1/game",1425,1426,0,0, agentCopy);
+				double val = sim.runSimulations("/Users/jordanberg/Desktop/finalsgames/server1/game",1425,1465,0,0, agentCopy);
 				paramVals.put(params,val);
 				paramVals = sortHashMap(paramVals);
 				System.out.println("Best Params:");
@@ -145,6 +145,7 @@ public class AlgTuneParser {
 	}
 
 	private static ArrayList<String> generatePotentialParamsList(String filename) throws IOException {
+		System.out.println(filename);
 		ArrayList<String> paramStrings = new ArrayList<String>();
 		BufferedReader input =  new BufferedReader(new FileReader(filename));
 
@@ -158,8 +159,17 @@ public class AlgTuneParser {
 		String line;
 		while ((line = input.readLine()) != null) {
 			StringTokenizer st = new StringTokenizer(line,"]");
+			if(!st.hasMoreElements()) {
+				continue;
+			}
 			st.nextToken();
+			if(!st.hasMoreElements()) {
+				continue;
+			}
 			st.nextToken();
+			if(!st.hasMoreElements()) {
+				continue;
+			}
 			String token = st.nextToken();
 			if(token.length() >= 11) {
 				if(" Generation".equals(token.substring(0, 11))) {

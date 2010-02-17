@@ -34,10 +34,6 @@ public class AdjustPR extends RuleBasedAgent {
 	protected double _threshTS;
 	protected double _threshPR;
 	protected HashMap<Query, Double> _PR;
-	
-	public AdjustPR() {
-		this(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-	}
 
 	public AdjustPR(double initPR,
 			double alphaIncTS,

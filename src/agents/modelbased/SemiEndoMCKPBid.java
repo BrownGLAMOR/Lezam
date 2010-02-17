@@ -741,12 +741,12 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 			}
 			else {
 				//				double[] currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap);
-				double[] currSolVal = solutionValueMultiDay2(solution, budget, allPredictionsMap,30);
+				double[] currSolVal = solutionValueMultiDay2(solution, budget, allPredictionsMap,10);
 
 				HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>) solution.clone();
 				solutionCopy.put(ii.item().q(), ii.item());
 				//				double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap);
-				double[] newSolVal = solutionValueMultiDay2(solutionCopy, budget, allPredictionsMap,30);
+				double[] newSolVal = solutionValueMultiDay2(solutionCopy, budget, allPredictionsMap,10);
 
 				//				System.out.println("[" + _day +"] CurrSolVal: " + currSolVal[0] + ", NewSolVal: " + newSolVal[0]);
 
@@ -819,6 +819,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					}
 				}
 				else {
+					solution.put(ii.item().q(), ii.item());
 					break;
 				}
 			}

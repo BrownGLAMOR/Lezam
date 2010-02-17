@@ -50,7 +50,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public class SemiMCKPBidExhaustive extends AbstractAgent {
+public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean BUDGET = false;
@@ -79,7 +79,7 @@ public class SemiMCKPBidExhaustive extends AbstractAgent {
 	private boolean salesDistFlag;
 	private int _capIncrement;
 
-	public SemiMCKPBidExhaustive(int capIncrement) {
+	public SemiEndoMCKPBidExhaustive(int capIncrement) {
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;
@@ -342,12 +342,12 @@ public class SemiMCKPBidExhaustive extends AbstractAgent {
 			}
 
 			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
-			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,5);
+			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
 			int bestIdx = -1;
 			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < _capList.size(); i++) {
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
-				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,5);
+				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
 				if(solVal[0] > bestSolVal[0]) {
 					bestSolVal[0] = solVal[0];
 					bestSolution = solution;
@@ -656,7 +656,7 @@ public class SemiMCKPBidExhaustive extends AbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			//TODO this can be >= ii.w() OR 0
-			if(budget >= ii.w()) {
+			if(budget >= 0) {
 				//				debug("adding item " + ii);
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();
@@ -966,6 +966,6 @@ public class SemiMCKPBidExhaustive extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new SemiMCKPBidExhaustive(_capIncrement);
+		return new SemiEndoMCKPBidExhaustive(_capIncrement);
 	}
 }
