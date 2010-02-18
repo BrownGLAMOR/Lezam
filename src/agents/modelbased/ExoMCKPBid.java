@@ -664,15 +664,15 @@ public class ExoMCKPBid extends AbstractAgent {
 						//						}
 						//						multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
 						double baseConvProb;
-						if(expectedBudget < 0) {
-							baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
-						}
-						else {
-							baseConvProb= avgConvProb;
-						}
+						//						if(expectedBudget < 0) {
+						//							baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
+						//						}
+						//						else {
+						baseConvProb= avgConvProb;
+						//						}
 						for (int j = expectedConvs+1; j <= expectedConvs+itemWeight; j++){
 							if(expectedBudget - j < 0) {
-								double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j-1));
+								double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
 								double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 								valueLost += (baseConvProb - worseConvProb)*avgUSP;
 							}
@@ -685,7 +685,7 @@ public class ExoMCKPBid extends AbstractAgent {
 					expectedConvs += itemWeight;
 				}
 				else {
-					solution.put(ii.item().q(), ii.item());
+					//					solution.put(ii.item().q(), ii.item());
 					break;
 				}
 			}

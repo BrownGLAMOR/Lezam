@@ -341,12 +341,13 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
+			ArrayList<IncItem> incItems = getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap);
+			HashMap<Query,Item> bestSolution = fillKnapsack(incItems, remainingCap);
 			double[] bestSolVal = solutionValueMultiDay(bestSolution,remainingCap,allPredictionsMap);
 			int bestIdx = -1;
 			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < _capList.size(); i++) {
-				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
+				HashMap<Query,Item> solution = fillKnapsack(incItems, Math.max(0,remainingCap)+_capList.get(i));
 				double[] solVal = solutionValueMultiDay(solution,remainingCap,allPredictionsMap);
 				if(solVal[0] > bestSolVal[0]) {
 					bestSolVal[0] = solVal[0];
@@ -524,15 +525,15 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 //				}
 //				multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
 				double baseConvProb;
-				if(expectedBudget < 0) {
-					baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
-				}
-				else {
+//				if(expectedBudget < 0) {
+//					baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
+//				}
+//				else {
 					baseConvProb= avgConvProb;
-				}
+//				}
 				for (int j = 1; j <= totalWeight; j++){
 					if(expectedBudget - j < 0) {
-						double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j-1));
+						double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
 						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 						valueLost += (baseConvProb - worseConvProb)*avgUSP;
 					}

@@ -7,6 +7,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -83,6 +84,8 @@ public class AlgTuneParser {
 				System.out.println(str);
 			}
 
+			Collections.shuffle(paramStrings);
+			
 			HashMap<String,Double> noDupesParams = new HashMap<String, Double>();
 			for(String params : paramStrings) {
 				noDupesParams.put(params, 0.0);
