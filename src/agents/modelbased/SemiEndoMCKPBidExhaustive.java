@@ -459,6 +459,10 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 				//				}
+				//				else {
+				//					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+				//					bidBundle.addQuery(q, bid, new Ad(), bid*5);
+				//				}
 			}
 		}
 		//		System.out.println(bidBundle);
