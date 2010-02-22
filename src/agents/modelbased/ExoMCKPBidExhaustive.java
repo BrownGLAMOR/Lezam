@@ -75,7 +75,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 	private Hashtable<Query, Integer> _queryId;
 	private LinkedList<Double> _bidList;
 	private ArrayList<Double> _capList;
-	private int lagDays = 5;
+	private int lagDays = 4;
 	private boolean salesDistFlag;
 	private int _capIncrement;
 
@@ -281,6 +281,9 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
+		else {
+			bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
+		}
 
 		//		System.out.println("Day: " + _day);
 
@@ -389,6 +392,9 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 					if(BUDGET) {
 						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
+					else {
+						bidBundle.setDailyLimit(q, Integer.MAX_VALUE);
+					}
 				}
 				else {
 					/*
@@ -399,14 +405,14 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					bidBundle.addQuery(q, bid, new Ad(), bid*5);
 				}
 			}
 
@@ -418,15 +424,16 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 		}
 		else {
 			for(Query q : _querySpace){
-				double bid = 0.0;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
+					double bid = randDouble(_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				}
+				else {
+					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+				}
 			}
+			bidBundle.setCampaignDailySpendLimit(800);
 		}
 		//		System.out.println(bidBundle);
 		return bidBundle;

@@ -70,7 +70,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
 	private ArrayList<Double> bidList;
-	private int lagDays = 5;
+	private int lagDays = 4;
 	private boolean salesDistFlag;
 
 	public SemiEndoMCKPBid() {
@@ -269,6 +269,9 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
 		}
+		else {
+			bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
+		}
 
 		if(_day > 1) {
 			if(!salesDistFlag) {
@@ -382,6 +385,9 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					if(BUDGET) {
 						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
+					else {
+						bidBundle.setDailyLimit(q, Integer.MAX_VALUE);
+					}
 				}
 				else {
 					/*
@@ -392,14 +398,14 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
 					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
+						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					bidBundle.addQuery(q, bid, new Ad(), bid*5);
 				}
 			}
 
@@ -411,15 +417,16 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		}
 		else {
 			for(Query q : _querySpace){
-				double bid = 0.0;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .8);
-				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
+					double bid = randDouble(_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				}
+				else {
+					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+				}
 			}
+			bidBundle.setCampaignDailySpendLimit(800);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
