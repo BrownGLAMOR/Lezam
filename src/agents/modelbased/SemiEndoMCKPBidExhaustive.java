@@ -784,13 +784,25 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					return false;
 				}
 			}
-			else if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
+			else {
 				//if this item has smaller value than next item AND
 				//this item's efficiency is less than the efficiency of the next increment,
 				//it is dominated
-				return true;
-			}
-			else {
+				for(int i = 1; i < predictions.size()-currIndex; i++) {
+					nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
+					if(currVW[1] == nextVW[1]) {
+						if(currVW[0] < nextVW[0]) {
+							return true;
+						}
+						else {
+							continue;
+						}
+					}
+
+					if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
+						return true;
+					}
+				}
 				return false;
 			}
 		}
