@@ -1908,9 +1908,10 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
+		System.out.println("Basic Version + first 5 only spec");
+				AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
 		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
-		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
 		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
 		//		AbstractAgent agent = new ExoMCKPBid(false,false,false);
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(5);

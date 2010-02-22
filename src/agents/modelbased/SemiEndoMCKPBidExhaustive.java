@@ -80,6 +80,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	private int _capIncrement;
 
 	public SemiEndoMCKPBidExhaustive(int capIncrement) {
+		_R.setSeed(124962748);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;
@@ -332,15 +333,15 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 						clickPr = 0.0;
 					}
 
-					/*
-					 * Click probability should always be increasing
-					 * with our current models
-					 */
-					if(i > 0) {
-						if(clickPr < queryPredictions.get(i-1).getClickPr()) {
-							clickPr = queryPredictions.get(i-1).getClickPr();
-						}
-					}
+					//										/*
+					//										 * Click probability should always be increasing
+					//										 * with our current models
+					//										 */
+					//										if(i > 0) {
+					//											if(clickPr < queryPredictions.get(i-1).getClickPr()) {
+					//												clickPr = queryPredictions.get(i-1).getClickPr();
+					//											}
+					//										}
 
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
@@ -351,7 +352,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
 			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
 			for(int i = 0; i < _capList.size(); i++) {
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
@@ -447,22 +448,14 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			 * Pass expected conversions to unit sales model
 			 */
 			double solutionWeight = solutionWeight(remainingCap,bestSolution,allPredictionsMap);
-			int numConvs = 0;
-			for(Query q : _querySpace) {
-				numConvs += _salesReport.getConversions(q);
-			}
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){
-				double bid = 0.0;
-				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-				else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
-				else
-					bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
+				//				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
+				double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .9);
 				bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+				//				}
 			}
 		}
 		//		System.out.println(bidBundle);
@@ -778,7 +771,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		if(currVW[0] < lastVW[0]) {
 			return true;
 		}
-		
+
 		if(currVW[1] == lastVW[1]) {
 			return false;
 		}
@@ -800,7 +793,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					continue;
 				}
 			}
-			
+
 			if(currVW[0] < nextVW[0] && (currVW[0] - lastVW[0])/(currVW[1] - lastVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
 				return true;
 			}

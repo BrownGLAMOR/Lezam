@@ -475,6 +475,15 @@ public class ExoMCKPBid extends AbstractAgent {
 		return soldArray;
 	}
 
+	private double exoWeightPenalty(double remCap, double expectedConvs) {
+		double oldConvPrPenalty = getPenalty(remCap, 0);
+		double convPrPenalty = getPenalty(remCap, expectedConvs);
+		double newPenalty = 0;
+		for(Query q : _querySpace) {
+			newPenalty += (getConversionPrWithPenalty(q, convPrPenalty)/getConversionPrWithPenalty(q, oldConvPrPenalty)) * _salesDist.getPrediction(q);
+		}
+		return expectedConvs*newPenalty;
+	}
 
 	private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
 		double threshold = .5;
@@ -641,6 +650,8 @@ public class ExoMCKPBid extends AbstractAgent {
 					}
 					soldArray.add(expectedConvsYesterday);
 
+					int adjustedConvs = (int)exoWeightPenalty(remainingCap, expectedConvs);
+					
 					for(int day = 0; day < valueLostWindow; day++) {
 						/*
 						 * Calculate remaining capacity for given day
@@ -649,7 +660,7 @@ public class ExoMCKPBid extends AbstractAgent {
 						for(int j = 0; j < _capWindow-1; j++) {
 							expectedBudget -= soldArray.get(soldArray.size()-1-j);
 						}
-						soldArray.add(expectedConvs);
+						soldArray.add(adjustedConvs);
 
 						double avgConvProb = 0; //the average probability of conversion;
 						for(Query q : _querySpace) {
@@ -670,7 +681,7 @@ public class ExoMCKPBid extends AbstractAgent {
 						//						else {
 						baseConvProb= avgConvProb;
 						//						}
-						for (int j = expectedConvs+1; j <= expectedConvs+itemWeight; j++){
+						for (int j = adjustedConvs+1; j <= adjustedConvs+itemWeight; j++){
 							if(expectedBudget - j < 0) {
 								double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
 								double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail

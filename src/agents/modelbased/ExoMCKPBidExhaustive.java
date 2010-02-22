@@ -341,7 +341,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
 			double[] bestSolVal = solutionValueMultiDay(bestSolution,remainingCap,allPredictionsMap);
 			for(int i = 0; i < _capList.size(); i++) {
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
@@ -434,16 +434,18 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 
 
 	private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+		double penalty = getPenalty(remainingCap, totalWeight);
+
 		double totalValue = 0;
-		double totalWeight = 0;
 		for(Query q : _querySpace) {
 			if(solution.containsKey(q)) {
 				Item item = solution.get(q);
-				totalWeight += item.w();
-				totalValue += item.v();
+				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
 			}
 		}
-
+		
 		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 		double multiDayLoss = 0;
 		if(valueLostWindow > 0 && totalWeight > 0) {
