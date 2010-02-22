@@ -706,19 +706,27 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				break;
 			}
 
+			double incrementalWeight;
 			double[] bestVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(nextUndomIndex.get(bestQ)), penalty, bestQ);
-
+			if(solution.get(bestQ) >= 0) {
+				double[] lastBestQVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(solution.get(bestQ)), penalty, bestQ);
+				incrementalWeight = bestVW[1] - lastBestQVW[1];
+			}
+			else {
+				incrementalWeight = bestVW[1];
+			}
+			
 			/*
 			 * Can't take item if we would be overCap
 			 */
-			if(totalSales + bestVW[1] > desiredSales) {
+			if(totalSales + incrementalWeight > desiredSales) {
 				//Once we find an item that would put us over we are done
 				break;
 			}
 
 			solution.put(bestQ, nextUndomIndex.get(bestQ));
 			nextUndomIndex.put(bestQ,nextUndomIndex.get(bestQ)+1);
-			totalSales += bestVW[1];
+			totalSales += incrementalWeight;
 
 			/*
 			 * Check if there are any items left
