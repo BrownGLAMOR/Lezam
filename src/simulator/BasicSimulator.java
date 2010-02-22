@@ -1905,11 +1905,11 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
+		//		System.out.println("CPA");
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-//		System.out.println("Basic Version + first 5 only spec");
-//				AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
+		//				AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
 		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
 		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
 		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
