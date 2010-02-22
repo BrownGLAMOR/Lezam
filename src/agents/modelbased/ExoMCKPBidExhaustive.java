@@ -341,22 +341,16 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			ArrayList<IncItem> incItems = getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap);
-			HashMap<Query,Item> bestSolution = fillKnapsack(incItems, remainingCap);
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
 			double[] bestSolVal = solutionValueMultiDay(bestSolution,remainingCap,allPredictionsMap);
-			int bestIdx = -1;
-			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < _capList.size(); i++) {
-				HashMap<Query,Item> solution = fillKnapsack(incItems, Math.max(0,remainingCap)+_capList.get(i));
+				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
 				double[] solVal = solutionValueMultiDay(solution,remainingCap,allPredictionsMap);
 				if(solVal[0] > bestSolVal[0]) {
 					bestSolVal[0] = solVal[0];
 					bestSolution = solution;
-					bestIdx = i;
 				}
-				//				System.out.println("OverCap By: " + capList.get(i) + ", val: " + solVal);
 			}
-			//			System.out.println("Best Index: " + bestIdx + ", Best val: " + bestSolVal);
 
 			if(bestSolVal[0] < 0) {
 				bestSolution = new HashMap<Query,Item>();
@@ -420,10 +414,6 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 			 * Pass expected conversions to unit sales model
 			 */
 			double solutionWeight = solutionWeight(remainingCap,bestSolution,allPredictionsMap);
-			int numConvs = 0;
-			for(Query q : _querySpace) {
-				numConvs += _salesReport.getConversions(q);
-			}
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
@@ -570,7 +560,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				double numImps = predictions.getNumImp();
 				int numClicks = (int) (clickPr * numImps);
 				double CPC = predictions.getCPC();
-				double convProb = predictions.getConvPr()*penalty;
+				double convProb = getConversionPrWithPenalty(q, penalty);
 
 				if(Double.isNaN(CPC)) {
 					CPC = 0.0;

@@ -23,6 +23,10 @@ public class EquatePPS extends RuleBasedAgent{
 	protected double _initPPS;
 	protected double _threshTS;
 
+	public EquatePPS() {
+		this(11.4635, 0.0020563, -0.140335, 0.954242, 0.986738, 0.00216053, 0.0283649, 0.952448, 0.703051, 2.37485, 1.1427, 0.944878, 1.33054, 1.89365, 0.838944, 1.40315, 0.383182, 1.23569);
+	}
+	
 	public EquatePPS(double initPPS,
 			double alphaIncPPS,
 			double betaIncPPS,
@@ -104,11 +108,14 @@ public class EquatePPS extends RuleBasedAgent{
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
+			_bidBundle.addQuery(query, getBidFromCPC(query, targetCPC), new Ad(), Double.MAX_VALUE);
 		}
 
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
+		}
+		else {
+			_bidBundle.setCampaignDailySpendLimit(Double.MAX_VALUE);
 		}
 
 		return _bidBundle;

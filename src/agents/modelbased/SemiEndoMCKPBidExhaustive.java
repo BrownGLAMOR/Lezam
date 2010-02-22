@@ -316,7 +316,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
-				debug("Query: " + q);
 				ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
 				for(int i = 0; i < _bidList.size(); i++) {
 					double bid = _bidList.get(i);
@@ -333,9 +332,20 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 						clickPr = 0.0;
 					}
 
+					/*
+					 * Click probability should always be increasing
+					 * with our current models
+					 */
+					if(i > 0) {
+						if(clickPr < queryPredictions.get(i-1).getClickPr()) {
+							clickPr = queryPredictions.get(i-1).getClickPr();
+						}
+					}
+
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
 					}
+
 					queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
 				}
 				allPredictionsMap.put(q, queryPredictions);
@@ -343,19 +353,37 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), remainingCap);
 			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
-			int bestIdx = -1;
-			//			System.out.println("Init val: " + bestSolVal);
 			for(int i = 0; i < _capList.size(); i++) {
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
+				HashMap<Query,Integer> sol2 = dynFillKnapsack(allPredictionsMap, remainingCap, Math.max(0,remainingCap)+_capList.get(i));
+				boolean theSame = true;
+				for(Query q : _querySpace) {
+					if(solution.containsKey(q)) {
+						if(sol2.get(q) >= 0) {
+							if(Math.abs(solution.get(q).b() - _bidList.get(sol2.get(q))) > .01) {
+								theSame = false;
+								break;
+							}
+						}
+						else {
+							theSame = false;
+							break;
+						}
+					}
+					else {
+						if(sol2.get(q) >= 0) {
+							theSame = false;
+							break;
+						}
+					}
+				}
+				System.out.println("theSame: " + theSame);
 				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
 				if(solVal[0] > bestSolVal[0]) {
 					bestSolVal[0] = solVal[0];
 					bestSolution = solution;
-					bestIdx = i;
 				}
-				//				System.out.println("OverCap By: " + capList.get(i) + ", val: " + solVal);
 			}
-			//			System.out.println("Best Index: " + bestIdx + ", Best val: " + bestSolVal);
 
 			if(bestSolVal[0] < 0) {
 				bestSolution = new HashMap<Query,Item>();
@@ -612,7 +640,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				double numImps = predictions.getNumImp();
 				int numClicks = (int) (clickPr * numImps);
 				double CPC = predictions.getCPC();
-				double convProb = predictions.getConvPr()*penalty;
+				double convProb = getConversionPrWithPenalty(q, penalty);
 
 				if(Double.isNaN(CPC)) {
 					CPC = 0.0;
@@ -640,6 +668,155 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	}
 
 
+	private HashMap<Query,Integer> dynFillKnapsack(HashMap<Query, ArrayList<Predictions>> allPredictionsMap, double remCap, double desiredSales) {
+		HashMap<Query,Integer> solution = new HashMap<Query,Integer>();
+		HashMap<Query,Integer> nextUndomIndex = new HashMap<Query,Integer>();
+		for(Query q : _querySpace) {
+			solution.put(q, -1);
+			nextUndomIndex.put(q, 0);
+		}
+		double penalty = getPenalty(remCap, desiredSales);
+		double totalSales = 0;
+		while(true) {
+			double bestEff = 0;
+			Query bestQ = null;
+			for(Query q : _querySpace) {
+				ArrayList<Predictions> predictions = allPredictionsMap.get(q);
+				if(solution.get(q) == predictions.size()-1 || nextUndomIndex.get(q) >= predictions.size()) {
+					continue; //we are done with this query
+				}
+
+				while(isDominated(predictions, solution.get(q), nextUndomIndex.get(q), penalty, q)) {
+					nextUndomIndex.put(q, nextUndomIndex.get(q)+1);
+				}
+
+				if(nextUndomIndex.get(q) >= predictions.size()) {
+					continue;
+				}
+
+				double eff;
+				if(solution.get(q) > -1) {
+					double[] currVW = getValueAndWeight(predictions.get(solution.get(q)),penalty,q);
+					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
+					eff = (nextVW[0] - currVW[0])/(nextVW[1]-currVW[1]);
+				}
+				else {
+					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
+					eff = nextVW[0]/nextVW[1];
+				}
+				if(eff > bestEff) {
+					bestEff = eff;
+					bestQ = q;
+				}
+			}
+			if(bestQ == null) {
+				break;
+			}
+
+			double[] bestVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(nextUndomIndex.get(bestQ)), penalty, bestQ);
+
+			/*
+			 * Can't take item if we would be overCap
+			 */
+			if(totalSales + bestVW[1] > desiredSales) {
+				//Once we find an item that would put us over we are done
+				break;
+			}
+
+			solution.put(bestQ, nextUndomIndex.get(bestQ));
+			nextUndomIndex.put(bestQ,nextUndomIndex.get(bestQ)+1);
+			totalSales += bestVW[1];
+
+			/*
+			 * Check if there are any items left
+			 */
+			boolean itemsLeft = false;
+			for(Query q : _querySpace) {
+				if(nextUndomIndex.get(q) <= allPredictionsMap.get(q).size()-1) {
+					itemsLeft = true;
+					break;
+				}
+			}
+
+			if(!itemsLeft) {
+				break;
+			}
+		}
+		return solution;
+	}
+
+	private boolean isDominated(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
+		if(currIndex > predictions.size()-1) {
+			return false;
+		}
+
+		if(lastIndex < 0) {
+			//Check if it is LP dominated with (0,0)
+			double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
+			double[] nextVW = getValueAndWeight(predictions.get(currIndex+1),penalty,q);
+			if(currVW[1] == nextVW[1]) {
+				if(currVW[0] < nextVW[0]) {
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+			else if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		/*
+		 * Check if it is dominated
+		 */
+		double[] lastVW = getValueAndWeight(predictions.get(lastIndex),penalty,q);
+		double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
+		if(currVW[0] < lastVW[0]) {
+			return true;
+		}
+		
+		if(currVW[1] == lastVW[1]) {
+			return false;
+		}
+
+		if(currIndex == predictions.size()-1) {
+			return false;
+		}
+
+		/*
+		 * Check if it is LP-dominated
+		 */
+		for(int i = 1; i < predictions.size()-currIndex; i++) {
+			double[] nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
+			if(currVW[1] == nextVW[1]) {
+				if(currVW[0] < nextVW[0]) {
+					return true;
+				}
+				else {
+					continue;
+				}
+			}
+			
+			if(currVW[0] < nextVW[0] && (currVW[0] - lastVW[0])/(currVW[1] - lastVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private double[] getValueAndWeight(Predictions prediction, double penalty, Query q) {
+		double[] preds = new double[2];
+		preds[0] =  prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(q) - prediction.getCPC());
+		preds[1] =  prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
+		return preds;
+	}
+
+
 
 	/**
 	 * Greedily fill the knapsack by selecting incremental items
@@ -656,7 +833,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
 			//set replace lighter items as we want
 			//TODO this can be >= ii.w() OR 0
-			if(budget >= 0) {
+			if(budget >= ii.w()) {
 				//				debug("adding item " + ii);
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();

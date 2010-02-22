@@ -769,7 +769,7 @@ public class BasicSimulator {
 			}
 			_salesOverWindow.put(_agents[i], sales);
 			if(i == _ourAdvIdx) {
-//				System.out.println("Our capacity" + adInfo.getDistributionCapacity());
+				//				System.out.println("Our capacity" + adInfo.getDistributionCapacity());
 			}
 			_capacities.put(_agents[i],adInfo.getDistributionCapacity());
 		}
@@ -1522,7 +1522,7 @@ public class BasicSimulator {
 		}
 		else {
 			filenames = new String[max-min];
-//			System.out.println("Min: " + min + "  Max: " + max);
+			//			System.out.println("Min: " + min + "  Max: " + max);
 			for(int i = min; i < max; i++) { 
 				filenames[i-min] = baseFile + i + ".slg";
 			}
@@ -1558,7 +1558,7 @@ public class BasicSimulator {
 				LinkedList<Reports> reportsList = new LinkedList<Reports>();
 				reportsListMap.put(agents[i], reportsList);
 			}
-//			System.out.println(filename);
+			//			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
 			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agent.getCopy(), advId);
 			for(int j = 0; j < agents.length; j++) {
@@ -1908,33 +1908,32 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
-//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
-//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
-//		AbstractAgent agent = new ExoMCKPBid(false,false,false);
-//		AbstractAgent agent = new ExoMCKPBidExhaustive(5);
-		AbstractAgent agent = new ExoMCKPBidExhaustive(10);
-//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
+		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
+		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+		//		AbstractAgent agent = new ExoMCKPBid(false,false,false);
+		//		AbstractAgent agent = new ExoMCKPBidExhaustive(5);
+		//		AbstractAgent agent = new ExoMCKPBidExhaustive(10);
+		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
 
-		
-		
+
+
 		//		AbstractAgent agent = new AdjustPPS(0.00172288, 0.260363, 0.00792021, -0.0682618, 9.85474, -0.00840323, 0.179635, 0.00969242, -0.0208566);
-
 		//		AbstractAgent agent = new MCKPBidTrueOneDay();
 		//		AbstractAgent agent = new MCKPBidPriceline(true);
 		//		AbstractAgent agent = new MCKPBidPriceline(false);
 		//		AbstractAgent agent = new MCKPBidNoDomElim();
 		//		AbstractAgent agent = new DrMCKPBid(30);
 		//		AbstractAgent agent = new AdjustPPS();
-		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
-		//		AbstractAgent agent1 = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
-		//		AbstractAgent agent2 = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
-		//		AbstractAgent agent3 = new EquateROI(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
-		//		AbstractAgent agent4 = new AdjustROI(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
-		//		AbstractAgent agent5 = new AdjustPR(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
-		//		AbstractAgent agent6 = new AdjustPPS(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
-		//		AbstractAgent agent7 = new AdjustPM(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
+		//				AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
+		//				AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
+		//				AbstractAgent agent = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
+		//				AbstractAgent agent = new EquateROI(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
+		//				AbstractAgent agent = new AdjustROI(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
+		//				AbstractAgent agent = new AdjustPR(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
+		//				AbstractAgent agent = new AdjustPPS(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
+		//				AbstractAgent agent = new AdjustPM(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
 
 
 		//		AbstractAgent agent = new AdjustPM(-0.0060,-0.20000099999999998,0.0020,-0.13333499999999998,0.9000000000000002,0.0,0.29999400000000004,-0.0020,0.13332900000000003);
