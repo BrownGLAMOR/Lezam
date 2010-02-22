@@ -690,7 +690,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				//TODO: Why is this taking solution.get(q) as input? (i.e. the most recently incremented item)
 				//Is it only checking if dominated starting from that point??
 				//Is that all you need to check??
-				while(isDominated(predictions, solution.get(q), nextUndomIndex.get(q), penalty, q)) {
+				while(isDominatedEric(predictions, solution.get(q), nextUndomIndex.get(q), penalty, q)) {
 					nextUndomIndex.put(q, nextUndomIndex.get(q)+1);
 				}
 
@@ -764,6 +764,102 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return solution;
 	}
 
+	
+	
+
+	private boolean isDominatedEric(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
+				
+		//If we are currently considering an item that's out of bounds, return false
+		int numPredictions = predictions.size();
+		if(currIndex >= numPredictions) {
+			return false;
+		}
+		
+		
+		//---
+		//Check for dominated items
+		//---
+		
+		//Make sure there's no item with <= weight but >= value
+		//if there is such a thing, this item is dominated.
+		double[] item_i = getValueAndWeight(predictions.get(currIndex),penalty,q);
+		double v_i = item_i[0];
+		double w_i = item_i[1];
+
+		//Check all items with <= weight.
+		//NOTE: this would be only items that come before this one,
+		// but items that come after could have the same weight and higher value.
+		//Split this up into 2 cases.
+		
+		//Case 1: items with <= weight, and potentially higher value
+		for (int j=currIndex-1; j>=0; j--) {
+			double[] item_j = getValueAndWeight(predictions.get(j),penalty,q);
+			double v_j = item_j[0];
+			double w_j = item_j[1];
+			
+			// See if item j dominates item i.
+			//(we already know w_i >= w_j, but I'm being redundant...)
+			if (w_i >= w_j && v_i < v_j) {
+				return true;
+			}
+		}
+		
+
+		//Case 2: items with == weight, and potentially higher value
+		for (int j=currIndex+1; j<numPredictions; j++) {
+			double[] item_j = getValueAndWeight(predictions.get(j),penalty,q);
+			double v_j = item_j[0];
+			double w_j = item_j[1];
+			
+			//Slight speedup: we can stop checking if we find a w_i < w_j.
+			if (w_i < w_j) break;
+			
+			if (w_i >= w_j && v_i < v_j) {
+				return true;
+			}
+		}
+		
+		
+		
+		//---
+		//Check for LP dominated items
+		//TODO: This is not nearly as efficient as it could be.
+		//---
+
+		//Get item j where w_j < w_i
+		for (int j=currIndex-1; j>=0; j--) {
+			double[] item_j = getValueAndWeight(predictions.get(j),penalty,q);
+			double v_j = item_j[0];
+			double w_j = item_j[1];
+			
+			//Get item k where w_k > w_i	
+			for (int k=currIndex+1; k<numPredictions; k++) {
+				double[] item_k = getValueAndWeight(predictions.get(k),penalty,q);
+				double v_k = item_k[0];
+				double w_k = item_k[1];
+				
+				//Check to see if LP dominated.
+				if (w_j < w_i && w_i < w_k) {
+					if (v_j < v_i && v_i < v_k) {
+						double efficiency1 = (v_k - v_i)/(w_k-w_i);
+						double efficiency2 = (v_i - v_j)/(w_i-w_j);
+						if (efficiency1 >= efficiency2) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		
+		
+		//If you get here, item is not dominated or LP dominated.
+		return false;
+	}
+		
+		
+	
+	
+	
 	//asdf
 	private boolean isDominated(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
 		if(currIndex > predictions.size()-1) {
