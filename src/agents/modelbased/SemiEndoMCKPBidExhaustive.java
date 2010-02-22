@@ -53,7 +53,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 	
-	public int ITERATION=0;
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean BUDGET = false;
 	private static final boolean SAFETYBUDGET = false;
@@ -355,23 +354,25 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			}
 
 			
-			System.out.println("ITERATION " + ITERATION);
-			ITERATION++;
 			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
 			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
 			for(int i = 0; i < _capList.size(); i++) {
-				
-				
-//				//DEBUG!!!
-//				//For the love of god erase this.
-//				if (i==8) System.exit(0);
-//				if (i==7) System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-				System.out.println("CAPACITY: " + i);
-//				//DEBUG!!!
-				
+								
 				
 				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
 				HashMap<Query,Integer> sol2 = dynFillKnapsack(allPredictionsMap, remainingCap, Math.max(0,remainingCap)+_capList.get(i));
+				//Turn into same form as solution
+				HashMap<Query,Item> newSol2 = new HashMap<Query,Item>();
+				for(Query q : _querySpace) {
+					if(sol2.containsKey(q) && sol2.get(q) >= 0) {
+						newSol2.put(q, new Item(q, 0, 0,_bidList.get(sol2.get(q)), 0,  sol2.get(q)));
+					}
+				}
+				
+				
+				
+				
+				
 				boolean theSame = true;
 				for(Query q : _querySpace) {
 					if(solution.containsKey(q)) {
@@ -398,15 +399,19 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				}
 				System.out.println("theSame: " + theSame);
 				
-				//DEBUG!!!
-				if (!theSame) {
-					System.out.println("found case where solutions weren't the same. shutting down.");
-					System.exit(0);
-				}
-				//END DEBUG!!!
+		
 				
 				
 				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
+				//double[] solVal2 = solutionValueMultiDay2(sol2,remainingCap,allPredictionsMap,10);
+				
+				double solVal1[] = basicVal(solution, remainingCap, allPredictionsMap);
+				double solVal2[] = basicVal(newSol2, remainingCap, allPredictionsMap);
+				
+				System.out.println("Static: V=" + solVal1[0] + "\tW=" + solVal1[1]);
+				System.out.println("Dynamic: V=" + solVal2[0] + "\tW=" + solVal2[1]);
+				
+				
 				if(solVal[0] > bestSolVal[0]) {
 					bestSolVal[0] = solVal[0];
 					bestSolution = solution;
@@ -494,6 +499,41 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	}
 
 
+	
+	
+	private double[] basicVal(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+		double totalValue = 0;
+		for(Query q : _querySpace) {
+			if(solution.containsKey(q)) {
+				Item item = solution.get(q);
+				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, 1.0)*_salesPrices.get(item.q()) - prediction.getCPC());
+			}
+		}
+                double[] retVal = new double[2];
+                retVal[0] = totalValue;  retVal[1] = 0; return retVal;
+	}
+	
+	
+//	private double[] basicVal(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+//		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+//		double penalty = getPenalty(remainingCap, totalWeight);
+//
+//		double totalValue = 0;
+//		for(Query q : _querySpace) {
+//			if(solution.containsKey(q)) {
+//				Item item = solution.get(q);
+//				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
+//				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
+//			}
+//		}
+//                double[] retVal = new double[2];
+//                retVal[0] = totalValue;  retVal[1] = totalWeight; return retVal;
+//	}
+	
+	
+	
+	
 	private double[] solutionValueMultiDay2(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, int numDays) {
 		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
 		double penalty = getPenalty(remainingCap, totalWeight);
@@ -750,13 +790,16 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			}
 
 			double incrementalWeight;
+			double incrementalValue; //just for debugging
 			double[] bestVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(nextUndomIndex.get(bestQ)), penalty, bestQ);
 			if(solution.get(bestQ) >= 0) {
 				double[] lastBestQVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(solution.get(bestQ)), penalty, bestQ);
 				incrementalWeight = bestVW[1] - lastBestQVW[1];
+				incrementalValue = bestVW[0] - lastBestQVW[0];
 			}
 			else {
 				incrementalWeight = bestVW[1];
+				incrementalValue = bestVW[0];
 			}
 
 			/*
@@ -772,8 +815,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			solution.put(bestQ, nextUndomIndex.get(bestQ));
 			nextUndomIndex.put(bestQ,nextUndomIndex.get(bestQ)+1);
 			totalSales += incrementalWeight;
-			System.out.println("item taken. budget remaining = " + (desiredSales-totalSales));
-			System.out.println("    item: q=" + bestQ + " \tv=" + bestVW[0] + "\tw=" + bestVW[1]);
+
 			
 			/*
 			 * Check if there are any items left
@@ -797,38 +839,12 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	
 
 	private boolean isDominatedEric(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
-		
-		
-		//--------------------
-		//DEBUG
-		boolean debug = false;
-		if (q!=null && "audio".equals(q.getComponent()) && "lioneer".equals(q.getManufacturer())) {
-			debug=true;
-			
-			if (currIndex==0) {
-			System.out.println("VALUES AND WEIGHTS:");
-			for (int i=0; i<predictions.size(); i++) {
-				double[] item_i = getValueAndWeight(predictions.get(i),penalty,q);
-				double v_i = item_i[0];
-				double w_i = item_i[1];
-				System.out.println("  v_"+i+"="+ v_i + "\tw_"+i + "=" + w_i + "\tbid=" + _bidList.get(i));
-			}
-			}
-			
-			System.out.print("lastIdx=" + lastIndex +"\tcurrIndex=" + currIndex + "\tpenalty="+penalty + "\tdominated=");
-		}
-
-		
-		//END DEBUG
-		//--------------------
-
 
 		
 		
 		//If we are currently considering an item that's out of bounds, return false
 		int numPredictions = predictions.size();
 		if(currIndex >= numPredictions) {
-			if(debug) System.out.println("false (because we are at the end of list");
 			return false;
 		}
 		
@@ -856,8 +872,9 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			
 			// See if item j dominates item i.
 			//(we already know w_i >= w_j, but I'm being redundant...)
-			if (w_i >= w_j && v_i < v_j) {
-				if(debug) System.out.println("true (dominated by item " + j);
+			//v_i<=v_j instead of strictly < to handle duplicate items. 
+			//  (assume the higher-bid item is dominated)
+			if (w_i >= w_j && v_i <= v_j) {
 				return true;
 			}
 		}
@@ -873,7 +890,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			if (w_i < w_j) break;
 			
 			if (w_i >= w_j && v_i < v_j) {
-				if(debug) System.out.println("true (dominated by item " + j);
 				return true;
 			}
 		}
@@ -913,7 +929,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 						double efficiency1 = (v_k - v_i)/(w_k-w_i);
 						double efficiency2 = (v_i - v_j)/(w_i-w_j);
 						if (efficiency1 >= efficiency2) {
-							if(debug) System.out.println("true (lp-dominated by items " + j + " and " + k);
 							return true;
 						}
 					}
@@ -929,7 +944,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		
 		
 		//If you get here, item is not dominated or LP dominated.
-		if(debug) System.out.println("false");
 		return false;
 	}
 		
@@ -1026,10 +1040,40 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return false;
 	}
 
+	
+	
+
+	//FIXME: There is similar code between this and getIncItemsForOverCapLevel. Abstract this out.
 	private double[] getValueAndWeight(Predictions prediction, double penalty, Query q) {
+		double salesPrice = _salesPrices.get(q);
+		double clickPr = prediction.getClickPr();
+		double numImps = prediction.getNumImp();
+		//int numClicks = (int) (clickPr * numImps);
+		double numClicks = clickPr * numImps;
+		double CPC = prediction.getCPC();
+		double convProb = getConversionPrWithPenalty(q, penalty);
+		if(Double.isNaN(CPC)) {
+			CPC = 0.0;
+		}
+
+		if(Double.isNaN(clickPr)) {
+			clickPr = 0.0;
+		}
+
+		if(Double.isNaN(convProb)) {
+			convProb = 0.0;
+		}
+		
+		double w = numClicks*convProb;				//weight = numClciks * convProv
+		double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+
+		
 		double[] preds = new double[2];
-		preds[0] =  prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(q) - prediction.getCPC());
-		preds[1] =  prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
+		preds[0] = v;
+		preds[1] = w;
+		
+//		preds[0] =  prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(q) - prediction.getCPC());
+//		preds[1] =  prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
 		return preds;
 	}
 
@@ -1042,7 +1086,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	 * @return
 	 */
 	private HashMap<Query,Item> fillKnapsack(ArrayList<IncItem> incItems, double budget) {
-		System.out.println("budget=" + budget);
 		if(budget < 0) {
 			return new HashMap<Query,Item>();
 		}
@@ -1055,8 +1098,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				//				debug("adding item " + ii);
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();
-				System.out.println("KP item taken. budget remaining = " + budget);
-				System.out.println("   item: " + ii);
 			}
 			else {
 				break;
@@ -1065,7 +1106,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return solution;
 	}
 
-	//asdf
 	/**
 	 * Get undominated items
 	 * @param items
@@ -1167,18 +1207,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 		Item[] uItems = getUndominated(items);
 
-		
-		
-		
-		//DEBUG
-		Query q = items[0].q();
-		if (q!=null && "audio".equals(q.getComponent()) && "lioneer".equals(q.getManufacturer())) {
-		System.out.println("UNDOMINATED");
-		for(int i = 0; i < uItems.length; i++) {
-			System.out.println("\t" + uItems[i]);
-		}
-		}
-		//END DEBUG
 		
 		
 		
