@@ -333,15 +333,15 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 						clickPr = 0.0;
 					}
 
-					//										/*
-					//										 * Click probability should always be increasing
-					//										 * with our current models
-					//										 */
-					//										if(i > 0) {
-					//											if(clickPr < queryPredictions.get(i-1).getClickPr()) {
-					//												clickPr = queryPredictions.get(i-1).getClickPr();
-					//											}
-					//										}
+					/*
+					 * Click probability should always be increasing
+					 * with our current models
+					 */
+					if(i > 0) {
+						if(clickPr < queryPredictions.get(i-1).getClickPr()) {
+							clickPr = queryPredictions.get(i-1).getClickPr();
+						}
+					}
 
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
@@ -361,20 +361,23 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				for(Query q : _querySpace) {
 					if(solution.containsKey(q)) {
 						if(sol2.get(q) >= 0) {
+							System.out.println(q  + ", " + solution.get(q).b() + ", " + _bidList.get(sol2.get(q)));
 							if(Math.abs(solution.get(q).b() - _bidList.get(sol2.get(q))) > .01) {
 								theSame = false;
-								break;
 							}
 						}
 						else {
 							theSame = false;
-							break;
+							System.out.println(q  + ", " + solution.get(q).b() + ", 0");
 						}
 					}
 					else {
 						if(sol2.get(q) >= 0) {
 							theSame = false;
-							break;
+							System.out.println(q  + ", 0, " + _bidList.get(sol2.get(q)));
+						}
+						else {
+							System.out.println(q  + ", 0, 0");
 						}
 					}
 				}
@@ -701,13 +704,16 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
 					eff = nextVW[0]/nextVW[1];
 				}
-				
+
 				//TODO: This will prefer a query that appears earlier in _querySpace,
 				//assuming effiencies are equal.
 				//Is this the case in the non-dynamic version?
 				if(eff > bestEff) {
 					bestEff = eff;
 					bestQ = q;
+				}
+				else if(eff == bestEff) {
+					System.out.println("Equality is happening and we aren't handling it!");
 				}
 			}
 			if(bestQ == null) {
@@ -723,7 +729,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			else {
 				incrementalWeight = bestVW[1];
 			}
-			
+
 			/*
 			 * Can't take item if we would be overCap
 			 */
