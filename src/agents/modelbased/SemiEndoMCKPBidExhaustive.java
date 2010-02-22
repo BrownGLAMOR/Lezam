@@ -827,11 +827,21 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		//---
 
 		//Get item j where w_j < w_i
-		for (int j=currIndex-1; j>=0; j--) {
-			double[] item_j = getValueAndWeight(predictions.get(j),penalty,q);
-			double v_j = item_j[0];
-			double w_j = item_j[1];
-			
+		for (int j=currIndex-1; j>=-1; j--) {			
+			double v_j;
+			double w_j;
+
+			//NOTE: When j=-1, this is the "0" item: w_j = v_j = 0.
+			//Check to see if this results in a dominated item as well.
+			if (j==-1) {
+				v_j = 0;
+				w_j = 0;
+			} else {
+				double[] item_j = getValueAndWeight(predictions.get(j),penalty,q);
+				v_j = item_j[0];
+				w_j = item_j[1];
+			}
+				
 			//Get item k where w_k > w_i	
 			for (int k=currIndex+1; k<numPredictions; k++) {
 				double[] item_k = getValueAndWeight(predictions.get(k),penalty,q);
@@ -850,6 +860,12 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				}
 			}
 		}
+		
+		
+
+		
+		
+		
 		
 		
 		//If you get here, item is not dominated or LP dominated.
