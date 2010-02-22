@@ -419,7 +419,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
 					double bid = randDouble(_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
-					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
+					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
 					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
