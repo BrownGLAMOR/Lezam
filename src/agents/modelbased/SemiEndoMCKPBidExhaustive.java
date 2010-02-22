@@ -760,6 +760,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return solution;
 	}
 
+	//asdf
 	private boolean isDominated(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
 		if(currIndex > predictions.size()-1) {
 			return false;
@@ -771,13 +772,18 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			double[] nextVW = getValueAndWeight(predictions.get(currIndex+1),penalty,q);
 			if(currVW[1] == nextVW[1]) {
 				if(currVW[0] < nextVW[0]) {
+					//if this item has the same weight but lower value than the next item, it is dominated.
 					return true;
 				}
 				else {
+					//if this item has the same weight but a larger value than the next item, it is not dominated
 					return false;
 				}
 			}
 			else if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
+				//if this item has smaller value than next item AND
+				//this item's efficiency is less than the efficiency of the next increment,
+				//it is dominated
 				return true;
 			}
 			else {
@@ -785,20 +791,27 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			}
 		}
 
+		//asdf
 		/*
 		 * Check if it is dominated
 		 */
 		double[] lastVW = getValueAndWeight(predictions.get(lastIndex),penalty,q);
 		double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
 		if(currVW[0] < lastVW[0]) {
+			//is this item less valuable than something of equal or less weight? dominated.
 			return true;
 		}
 
-		if(currVW[1] == lastVW[1]) {
+		if(currVW[1] == lastVW[1]) { 
+			//it is more valuable than the last item. (or the same)
+			//is the weight the same as the last item?
+			//if so, it can't be dominated, or else the last thing we took was dominated, too.
 			return false;
 		}
 
 		if(currIndex == predictions.size()-1) {
+			//it is more valuable than the last item (or the same)
+			//If there are no heavier items, it's not dominated??
 			return false;
 		}
 
@@ -860,6 +873,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return solution;
 	}
 
+	//asdf
 	/**
 	 * Get undominated items
 	 * @param items
@@ -873,6 +887,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		for(int i=1; i<items.length; i++) {
 			Item lastUndominated = temp.get(temp.size()-1); 
 			if(lastUndominated.v() < items[i].v()) {
+				//TODO: What if item has the same value? currently it is removed!
 				temp.add(items[i]);
 			}
 		}
