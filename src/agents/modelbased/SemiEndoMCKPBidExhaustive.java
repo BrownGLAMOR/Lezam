@@ -668,6 +668,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			solution.put(q, -1);
 			nextUndomIndex.put(q, 0);
 		}
+		//TODO: Is the static version handling the penalty in exactly the same way?
 		double penalty = getPenalty(remCap, desiredSales);
 		double totalSales = 0;
 		while(true) {
@@ -679,6 +680,9 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					continue; //we are done with this query
 				}
 
+				//TODO: Why is this taking solution.get(q) as input? (i.e. the most recently incremented item)
+				//Is it only checking if dominated starting from that point??
+				//Is that all you need to check??
 				while(isDominated(predictions, solution.get(q), nextUndomIndex.get(q), penalty, q)) {
 					nextUndomIndex.put(q, nextUndomIndex.get(q)+1);
 				}
@@ -697,6 +701,10 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
 					eff = nextVW[0]/nextVW[1];
 				}
+				
+				//TODO: This will prefer a query that appears earlier in _querySpace,
+				//assuming effiencies are equal.
+				//Is this the case in the non-dynamic version?
 				if(eff > bestEff) {
 					bestEff = eff;
 					bestQ = q;
