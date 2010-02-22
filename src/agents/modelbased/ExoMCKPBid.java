@@ -651,7 +651,7 @@ public class ExoMCKPBid extends AbstractAgent {
 					soldArray.add(expectedConvsYesterday);
 
 					int adjustedConvs = (int)exoWeightPenalty(remainingCap, expectedConvs);
-					
+
 					for(int day = 0; day < valueLostWindow; day++) {
 						/*
 						 * Calculate remaining capacity for given day
@@ -668,27 +668,27 @@ public class ExoMCKPBid extends AbstractAgent {
 						}
 
 						double valueLost = 0;
-						//						for(int j = expectedConvs+1; j <= expectedConvs+itemWeight; j++) {
-						//							if(expectedBudget - j <= 0) {
-						//								valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-						//							}
-						//						}
-						//						multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
-						double baseConvProb;
-						//						if(expectedBudget < 0) {
+						for(int j = expectedConvs+1; j <= expectedConvs+itemWeight; j++) {
+							if(expectedBudget - j <= 0) {
+								valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
+							}
+						}
+						multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
+						//						double baseConvProb;
+						//						if(adjustedConvs < 0) {
 						//							baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
 						//						}
 						//						else {
-						baseConvProb= avgConvProb;
+						//							baseConvProb= avgConvProb;
 						//						}
-						for (int j = adjustedConvs+1; j <= adjustedConvs+itemWeight; j++){
-							if(expectedBudget - j < 0) {
-								double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-								double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-								valueLost += (baseConvProb - worseConvProb)*avgUSP;
-							}
-						}
-						multiDayLoss += Math.max(valueLost,0);
+						//						for (int j = adjustedConvs+1; j <= adjustedConvs+itemWeight; j++){
+						//							if(expectedBudget - j < 0) {
+						//								double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
+						//								double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+						//								valueLost += (baseConvProb - worseConvProb)*avgUSP;
+						//							}
+						//						}
+//						multiDayLoss += Math.max(valueLost,0);
 					}
 				}
 				if(itemValue > multiDayLoss) {

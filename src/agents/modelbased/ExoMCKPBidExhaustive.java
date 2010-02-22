@@ -445,7 +445,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
 			}
 		}
-		
+
 		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 		double multiDayLoss = 0;
 		if(valueLostWindow > 0 && totalWeight > 0) {
@@ -503,34 +503,34 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 					expectedBudget -= soldArray.get(soldArray.size()-1-j);
 				}
 				soldArray.add((int)totalWeight);
-				
+
 				double avgConvProb = 0; //the average probability of conversion;
 				for(Query q : _querySpace) {
 					avgConvProb += getConversionPrWithPenalty(q, 1.0) * _salesDist.getPrediction(q);
 				}
 
 				double valueLost = 0;
-//				for(int j = 1; j <= totalWeight; j++) {
-//					if(expectedBudget - j <= 0) {
-//						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-//					}
-//				}
-//				multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
-				double baseConvProb;
-//				if(expectedBudget < 0) {
-//					baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
-//				}
-//				else {
-					baseConvProb= avgConvProb;
-//				}
-				for (int j = 1; j <= totalWeight; j++){
-					if(expectedBudget - j < 0) {
-						double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
-						valueLost += (baseConvProb - worseConvProb)*avgUSP;
+				for(int j = 1; j <= totalWeight; j++) {
+					if(expectedBudget - j <= 0) {
+						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
 					}
 				}
-				multiDayLoss += Math.max(valueLost,0);
+				multiDayLoss += Math.max(valueLost*avgCPC/avgConvProb,0);
+				//				double baseConvProb;
+				//				if(expectedBudget < 0) {
+				//					baseConvProb = avgConvProb * Math.pow(LAMBDA, Math.abs(expectedBudget));
+				//				}
+				//				else {
+				//					baseConvProb= avgConvProb;
+				//				}
+				//				for (int j = 1; j <= totalWeight; j++){
+				//					if(expectedBudget - j < 0) {
+				//						double iD = Math.pow(LAMBDA, Math.abs(expectedBudget-j));
+				//						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
+				//						valueLost += (baseConvProb - worseConvProb)*avgUSP;
+				//					}
+				//				}
+				//				multiDayLoss += Math.max(valueLost,0);
 			}
 		}
 		double[] output = new double[2];
