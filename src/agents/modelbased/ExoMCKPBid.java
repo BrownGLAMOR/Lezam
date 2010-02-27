@@ -82,7 +82,7 @@ public class ExoMCKPBid extends AbstractAgent {
 		BUDGET = budget;
 		FORWARDUPDATING = forward;
 		PRICELINES = pricelines;
-		_R.setSeed(124962748);
+//		_R.setSeed(124962748);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
 		double increment  = .05;

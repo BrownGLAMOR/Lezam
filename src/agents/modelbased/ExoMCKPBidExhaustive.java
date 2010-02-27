@@ -80,6 +80,7 @@ public class ExoMCKPBidExhaustive extends AbstractAgent {
 	private int _capIncrement;
 
 	public ExoMCKPBidExhaustive(int capIncrement) {
+//		_R.setSeed(124962748);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;

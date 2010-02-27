@@ -1558,7 +1558,7 @@ public class BasicSimulator {
 				LinkedList<Reports> reportsList = new LinkedList<Reports>();
 				reportsListMap.put(agents[i], reportsList);
 			}
-			//			System.out.println(filename);
+			System.out.println(filename);
 			//			System.out.println(status.getAdvertiserInfos().get(agents[advId]).getDistributionCapacity());
 			HashMap<String, LinkedList<Reports>> maps = runFullSimulation(status, agent.getCopy(), advId);
 			for(int j = 0; j < agents.length; j++) {
@@ -1845,6 +1845,10 @@ public class BasicSimulator {
 		return error;
 	}
 
+	public void setSeed(long seed) {
+		lastSeed = seed;
+	}
+
 	public static void main(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
@@ -1905,16 +1909,15 @@ public class BasicSimulator {
 		//		sim.runSimulations(min,max,0,0);
 
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		//		System.out.println("CPA");
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//				AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
+		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
 		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
-		//		AbstractAgent agent = new ExoMCKPBid(false,false,false);
-		//		AbstractAgent agent = new ExoMCKPBidExhaustive(5);
+		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+		//						AbstractAgent agent = new ExoMCKPBid(false,false,false);
+		//				AbstractAgent agent = new ExoMCKPBidExhaustive(5);
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(10);
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
 
@@ -1946,6 +1949,9 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
 		//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
 		agentList.add(agent);
+		agentList.add(agent);
+		agentList.add(agent);
+		agentList.add(agent);
 		//		agentList.add(agent1);
 		//		agentList.add(agent2);
 		//		agentList.add(agent3);
@@ -1953,10 +1959,12 @@ public class BasicSimulator {
 		//		agentList.add(agent5);
 		//		agentList.add(agent6);
 		//		agentList.add(agent7);
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
+		Random r = new Random();
 		for(AbstractAgent agentItr : agentList) {
+			sim.setSeed(r.nextLong());
 			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
 		}
 
