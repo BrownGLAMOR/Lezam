@@ -10,8 +10,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import models.AbstractModel;
-import models.oldusermodel.UserState;
 import models.usermodel.AbstractUserModel;
+import models.usermodel.TacTexAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;

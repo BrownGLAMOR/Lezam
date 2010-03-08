@@ -1,7 +1,7 @@
 package models.querytousermodel;
 
 import models.AbstractModel;
-import models.oldusermodel.UserState;
+import models.usermodel.TacTexAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;

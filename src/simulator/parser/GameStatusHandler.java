@@ -10,16 +10,20 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import models.oldusermodel.UserState;
+import models.usermodel.TacTexAbstractUserModel.UserState;
+
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.tasim.logtool.ParticipantInfo;
 import se.sics.tasim.props.SimulationStatus;
+import simulator.AgentBidPair;
+import simulator.SimAgent;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -323,7 +327,7 @@ public class GameStatusHandler {
 		stdDev[1] = Math.sqrt(variance);
 		return stdDev;
 	}
-	
+
 	public static String generateWEKADataSet() throws IOException, ParseException {
 		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		String output = "";
@@ -392,7 +396,7 @@ public class GameStatusHandler {
 		}
 		return output;
 	}
-	
+
 	public static String generateRDataSet() throws IOException, ParseException {
 		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		String output = "";
@@ -452,28 +456,275 @@ public class GameStatusHandler {
 		return output;
 	}
 
+	public static void generateCarletonDataSet() throws IOException, ParseException {
+		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1425;
+		int max = 1426;
+		int numSlots = 5;
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			String[] advertisers = gameStatus.getAdvertisers();
+			int numAdvs = advertisers.length;
+			ReserveInfo reserveInfo = gameStatus.getReserveInfo();
+			double reserve = reserveInfo.getRegularReserve();
+			PublisherInfo pubInfo = gameStatus.getPubInfo();
+			double squashing = pubInfo.getSquashingParameter();
+			UserClickModel clickModel = gameStatus.getUserClickModel();
+			for(int j = 0; j < 59; j++) {
+				for(int ourAdvId = 0; ourAdvId < advertisers.length; ourAdvId++) {
+					Iterator<Query> iter = bidBundles.get(advertisers[0]).get(j).iterator();
+					while(iter.hasNext()) {
+						Query query = (Query) iter.next();
+						String output = "";
+						output += numAdvs + " " + numSlots + "\n";
+						output += (ourAdvId + 1) + " " + queryReports.get(advertisers[ourAdvId]).get(j).getImpressions(query) + "\n";
+						ArrayList<AdvBidPair> bidPairListAdvSort = new ArrayList<AdvBidPair>();
+						ArrayList<AdvBidPair> bidPairListBidSort = new ArrayList<AdvBidPair>();
+						for(int k = 0; k < advertisers.length; k++) {
+							String adv = advertisers[k];
+							BidBundle bundle = bidBundles.get(adv).get(j);
+							QueryReport qreport = queryReports.get(adv).get(j);
+							double avgPos = Double.isNaN(qreport.getPosition(query)) ? -1 : qreport.getPosition(query);
+							double squashedBid = bundle.getBid(query) * Math.pow(clickModel.getAdvertiserEffect(clickModel.queryIndex(query), k), squashing);
+							if(Double.isNaN(squashedBid)) {
+								throw new RuntimeException();
+							}
+							int numImps = qreport.getImpressions(query);
+							output += avgPos + " ";
+
+							AdvBidPair bidPair = new AdvBidPair(k, squashedBid, numImps,avgPos);
+							bidPairListBidSort.add(bidPair);
+							bidPairListAdvSort.add(bidPair);
+						}
+						output = output.substring(0, output.length()-1);
+						output += "\n\n";
+
+						Collections.sort(bidPairListBidSort);
+						int[][][] startEndImpArr = new int[numAdvs][numSlots][2];
+
+						/*
+						 * Determine Time Spent in each position
+						 */
+						int nextSlot = 0;
+						for(int k = 0; k < advertisers.length; k++) {
+							AdvBidPair bidPair = bidPairListAdvSort.get(k);
+							int numImps = bidPair.getNumImps();
+							if(numImps > 0) {
+								if(nextSlot == 0) {
+									startEndImpArr[k][nextSlot][0] = 1;
+									startEndImpArr[k][nextSlot++][1] = numImps+1;
+								}
+								else {
+									/*
+									 * We need to check 2 things, one if the person
+									 * above us moved up in position, or if we
+									 * had more impressions than them.  If either of these
+									 * are true the impressions will be spread over multiple
+									 * slots, otherwise all impressions were in the current
+									 * start slot
+									 */
+									int numSkips = 0;
+									boolean moveUp = false;
+									int currSlot = nextSlot < numSlots ? nextSlot : numSlots;
+									int currImp = 1;
+									int impsUsed = 0;
+									for(int l = 0; l < nextSlot; l++) {
+										int idx = k - (l + numSkips + 1);
+										boolean spread = false;
+										int numImpsOther = 0;
+										for(int m = 0; m < startEndImpArr[idx].length; m++) {
+											int newImps = startEndImpArr[idx][m][1]-startEndImpArr[idx][m][0];
+											if(numImpsOther > 0 && newImps > 0) {
+												spread = true;
+											}
+											numImpsOther += newImps;
+										}
+
+										if(numImpsOther == 0) {
+											numSkips++; //we need to skip this advertiser
+										}
+										else {
+											if(spread) {
+												moveUp = true;
+												
+												
+												if(numImps > numImpsOther) {
+													
+												}
+												else {
+													break;
+												}
+											}
+											else if(numImps > numImpsOther) {
+												
+											}
+											else if(impsUsed >= numImps) {
+												break;
+											}
+											else {
+												startEndImpArr[k][currSlot][0] = currImp + 1;
+												startEndImpArr[k][currSlot][1] = (numImps - impsUsed) + currImp + 1;
+												break;
+											}
+										}
+									}
+
+									if(moveUp) {
+										if(nextSlot >= numSlots) {
+
+										}
+										else {
+											int idx = k - (numSkips + 1);
+											startEndImpArr[k][nextSlot][0] = 1;
+											startEndImpArr[k][nextSlot][1] = startEndImpArr[idx][nextSlot][1];
+											for(int l = 0; l < nextSlot; l++) {
+												idx = k - (l + numSkips + 1);
+												startEndImpArr[k][nextSlot-l][0] = startEndImpArr[k][nextSlot][1] + 1;
+												startEndImpArr[k][nextSlot][1] = startEndImpArr[idx][nextSlot][1];
+											}
+											nextSlot++;
+										}
+									}
+									else {
+										startEndImpArr[k][nextSlot][0] = 1;
+										startEndImpArr[k][nextSlot++][1] = numImps+1;
+									}
+								}
+							}
+						}
+
+
+						for(int x = 0; x < startEndImpArr.length; x++) {
+							for(int y = 0; y < startEndImpArr[x].length; y++) {
+								for(int z = 0; z < startEndImpArr[x][y].length; z++) {
+									output += startEndImpArr[x][y][z] + " ";
+								}
+								output = output.substring(0, output.length()-1);
+								output += "\n";
+							}
+							output += "\n";
+						}
+						output = output.substring(0, output.length()-2);
+						System.out.println(output);
+
+						//check validity
+						for(int x = 0; x < startEndImpArr.length; x++) {
+							double posSum = 0;
+							for(int y = 0; y < startEndImpArr[x].length; y++) {
+								posSum += (y+1) * (startEndImpArr[x][y][1]-startEndImpArr[x][y][0]);
+							}
+
+							double avgPos = posSum / numSlots;
+							if(avgPos == 0) {
+								avgPos = -1;
+							}
+
+							if(Math.abs(avgPos - bidPairListAdvSort.get(x).getAvgPos()) < .0001) {
+								System.out.println("TRUE");
+							}
+							else {
+								System.out.println("FALSE");
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public static class AdvBidPair implements Comparable<AdvBidPair> {
+
+		private int _advIdx;
+		private double _bid;
+		private int _numImps;
+		private double _avgPos;
+
+		public AdvBidPair(int advIdx, double bid, int numImps, double avgPos) {
+			_advIdx = advIdx;
+			_bid = bid;
+			_numImps = numImps;
+			_avgPos = avgPos;
+		}
+
+		public int getID() {
+			return _advIdx;
+		}
+
+		public void setID(int advIdx) {
+			_advIdx = advIdx;
+		}
+
+		public double getBid() {
+			return _bid;
+		}
+
+		public void setBid(double bid) {
+			_bid = bid;
+		}
+
+		public int getNumImps() {
+			return _numImps;
+		}
+
+		public void setNumImps(int numImps) {
+			_numImps = numImps;
+		}
+
+		public double getAvgPos() {
+			return _avgPos;
+		}
+
+		public void setAvgPos(double avgPos) {
+			_avgPos = avgPos;
+		}
+
+		public int compareTo(AdvBidPair agentBidPair) {
+			double ourBid = this._bid;
+			double otherBid = agentBidPair.getBid();
+			if(ourBid < otherBid) {
+				return 1;
+			}
+			if(otherBid < ourBid) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}
+
+		public String toString() {
+			return _bid + ", " + _avgPos + ", " + _advIdx + ", " + _numImps + "\n";
+		}
+
+	}
+
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		String Rdata = generateRDataSet();
-		// Stream to write file
-		FileOutputStream fout;		
-
-		try
-		{
-		    // Open an output stream
-		    fout = new FileOutputStream ("Rdata.data");
-
-		    // Print a line of text
-		    new PrintStream(fout).println (Rdata);
-
-		    // Close our output stream
-		    fout.close();		
-		}
-		// Catches any error conditions
-		catch (IOException e)
-		{
-			System.err.println ("Unable to write to file");
-			System.exit(-1);
-		}
+		generateCarletonDataSet();
+		//		// Stream to write file
+		//		FileOutputStream fout;		
+		//
+		//		try
+		//		{
+		//			// Open an output stream
+		//			fout = new FileOutputStream ("Rdata.data");
+		//
+		//			// Print a line of text
+		//			new PrintStream(fout).println(Rdata);
+		//
+		//			// Close our output stream
+		//			fout.close();		
+		//		}
+		//		// Catches any error conditions
+		//		catch (IOException e)
+		//		{
+		//			System.err.println ("Unable to write to file");
+		//			System.exit(-1);
+		//		}
 	}
 
 

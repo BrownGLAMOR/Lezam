@@ -10,10 +10,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.Random;
 import java.util.StringTokenizer;
-
 import models.AbstractModel;
-import models.oldusermodel.UserState;
-
+import models.usermodel.TacTexAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;

@@ -8,8 +8,8 @@ package simulator.models;
 import java.util.HashMap;
 
 import models.AbstractModel;
-import models.oldusermodel.UserState;
 import models.usermodel.AbstractUserModel;
+import models.usermodel.TacTexAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
