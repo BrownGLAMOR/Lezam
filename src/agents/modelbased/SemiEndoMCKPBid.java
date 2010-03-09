@@ -265,6 +265,8 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		double start = System.currentTimeMillis();
 		BidBundle bidBundle = new BidBundle();
+		
+		buildMaps(models);
 
 		if(SAFETYBUDGET) {
 			bidBundle.setCampaignDailySpendLimit(_safetyBudget);
@@ -283,7 +285,6 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		}
 
 		if(_day > lagDays){
-			buildMaps(models);
 			double remainingCap;
 			if(_day < 4) {
 				remainingCap = _capacity/_capWindow;
@@ -959,14 +960,15 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	public double getConversionPrWithPenalty(Query q, double penalty) {
 		double convPr;
 		String component = q.getComponent();
+		double pred = _convPrModel.getPrediction(q);
 		if(_compSpecialty.equals(component)) {
-			convPr = eta(_convPrModel.getPrediction(q)*penalty,1+_CSB);
+			convPr = eta(pred*penalty,1+_CSB);
 		}
 		else if(component == null) {
-			convPr = eta(_convPrModel.getPrediction(q)*penalty,1+_CSB) * (1/3.0) + _convPrModel.getPrediction(q)*penalty*(2/3.0);
+			convPr = eta(pred*penalty,1+_CSB) * (1/3.0) + pred*penalty*(2/3.0);
 		}
 		else {
-			convPr = _convPrModel.getPrediction(q)*penalty;
+			convPr = pred*penalty;
 		}
 		return convPr;
 	}
