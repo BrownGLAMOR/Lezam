@@ -371,60 +371,38 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			//			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
-			//			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
-			//			for(int i = 0; i < _capList.size(); i++) {
-			//				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
-			//				HashMap<Query,Integer> sol2 = dynFillKnapsack(allPredictionsMap, remainingCap, Math.max(0,remainingCap)+_capList.get(i));
-			//				boolean theSame = true;
-			//				for(Query q : _querySpace) {
-			//					if(solution.containsKey(q)) {
-			//						if(sol2.get(q) >= 0) {
-			//							System.out.println(q  + ", " + solution.get(q).b() + ", " + _bidList.get(sol2.get(q)));
-			//							if(Math.abs(solution.get(q).b() - _bidList.get(sol2.get(q))) > .01) {
-			//								theSame = false;
-			//							}
-			//						}
-			//						else {
-			//							theSame = false;
-			//							System.out.println(q  + ", " + solution.get(q).b() + ", 0");
-			//						}
-			//					}
-			//					else {
-			//						if(sol2.get(q) >= 0) {
-			//							theSame = false;
-			//							System.out.println(q  + ", 0, " + _bidList.get(sol2.get(q)));
-			//						}
-			//						else {
-			//							System.out.println(q  + ", 0, 0");
-			//						}
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
+			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
+			for(int i = 0; i < _capList.size(); i++) {
+				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
+				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
+				if(solVal[0] > bestSolVal[0]) {
+					bestSolVal[0] = solVal[0];
+					bestSolution = solution;
+				}
+			}
+			//			HashMap<Query, Item> bestSolution = new HashMap<Query, Item>();
+			//			double[] bestSolVal = new double[2];
+			//			try {
+			//				bestSolution = solveWithCPLEX(remainingCap,0,allPredictionsMap);
+			//				bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,5);
+			//				int bestIdx = -1;
+			//				//			System.out.println("Init val: " + bestSolVal);
+			//				for(int i = 0; i < _capList.size(); i++) {
+			//					HashMap<Query,Item> solution = solveWithCPLEX(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap);
+			//					double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,5);
+			//
+			//
+			//
+			//					if(solVal[0] > bestSolVal[0]) {
+			//						bestSolVal[0] = solVal[0];
+			//						bestSolution = solution;
 			//					}
 			//				}
-			//				System.out.println("theSame: " + theSame);
-			//				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
-
-			HashMap<Query, Item> bestSolution = new HashMap<Query, Item>();
-			double[] bestSolVal = new double[2];
-			try {
-				bestSolution = solveWithCPLEX(remainingCap,0,allPredictionsMap);
-				bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,5);
-				int bestIdx = -1;
-				//			System.out.println("Init val: " + bestSolVal);
-				for(int i = 0; i < _capList.size(); i++) {
-					HashMap<Query,Item> solution = solveWithCPLEX(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap);
-					double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,5);
-
-
-
-					if(solVal[0] > bestSolVal[0]) {
-						bestSolVal[0] = solVal[0];
-						bestSolution = solution;
-					}
-				}
-			} catch (IloException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			//			} catch (IloException e) {
+			//				// TODO Auto-generated catch block
+			//				e.printStackTrace();
+			//			}
 
 			if(bestSolVal[0] < 0) {
 				bestSolution = new HashMap<Query,Item>();
@@ -510,84 +488,84 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return bidBundle;
 	}
 
-	public HashMap<Query,Item> solveWithCPLEX(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) throws IloException {
-		_cplex.clearModel();
-
-		if(remainingCap <= 0 && desiredSales <= 0) {
-			return new HashMap<Query,Item>();
-		}
-
-		/*
-		 * Setup Maximization
-		 */
-		IloLinearNumExpr profitExpr = _cplex.linearNumExpr();
-		IloLinearNumExpr conversionExpr = _cplex.linearNumExpr();
-		IloIntVar[] binVars = _cplex.boolVarArray(_bidList.size()*_querySpace.size());
-		double penalty = getPenalty(remainingCap,desiredSales);
-		for(Query q : _querySpace) {
-			ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
-			IloLinearIntExpr bidOnceExpr = _cplex.linearIntExpr();
-			for(int i = 0; i < _bidList.size(); i++) {
-				Predictions predictions = queryPredictions.get(i);
-				double salesPrice = _salesPrices.get(q);
-				double clickPr = predictions.getClickPr();
-				double numImps = predictions.getNumImp();
-				int numClicks = (int) (clickPr * numImps);
-				double CPC = predictions.getCPC();
-				double convProb = getConversionPrWithPenalty(q, penalty);
-
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
-				}
-
-				if(Double.isNaN(clickPr)) {
-					clickPr = 0.0;
-				}
-
-				if(Double.isNaN(convProb)) {
-					convProb = 0.0;
-				}
-
-				int isID = _queryId.get(q);
-				double w = numClicks*convProb;				//weight = numClciks * convProv
-				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-				int idx = isID*_bidList.size() + i;
-				profitExpr.addTerm(v, binVars[idx]);
-				conversionExpr.addTerm(w, binVars[idx]);
-				bidOnceExpr.addTerm(1, binVars[idx]);
-			}
-			_cplex.addLe(bidOnceExpr, 1);
-		}
-
-		_cplex.addMaximize(profitExpr);
-		_cplex.addLe(conversionExpr, desiredSales);
-
-		double start = System.currentTimeMillis();
-		_cplex.solve();
-		double stop = System.currentTimeMillis();
-		double elapsed = stop - start;
-		//		System.out.println("CPLEX took " + (elapsed / 1000) + " seconds");
-
-		//		System.out.println("Expected Profit: " + _cplex.getObjValue());
-
-		double[] bidVal = _cplex.getValues(binVars);
-
-		HashMap<Query,Item> solution = new HashMap<Query,Item>();
-		for(Query q : _querySpace) {
-			Integer isID = _queryId.get(q);
-			double bid = 0.0;
-			for(int i = 0; i < _bidList.size(); i++) {
-				int idx = isID*_bidList.size() + i;
-				if(bidVal[idx] == 1) {
-					bid = _bidList.get(i);
-					Item item = new Item(q, 0, 0, bid, false, isID, i);
-					solution.put(q,item);
-					break;
-				}
-			}
-		}
-		return solution;
-	}
+	//	public HashMap<Query,Item> solveWithCPLEX(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) throws IloException {
+	//		_cplex.clearModel();
+	//
+	//		if(remainingCap <= 0 && desiredSales <= 0) {
+	//			return new HashMap<Query,Item>();
+	//		}
+	//
+	//		/*
+	//		 * Setup Maximization
+	//		 */
+	//		IloLinearNumExpr profitExpr = _cplex.linearNumExpr();
+	//		IloLinearNumExpr conversionExpr = _cplex.linearNumExpr();
+	//		IloIntVar[] binVars = _cplex.boolVarArray(_bidList.size()*_querySpace.size());
+	//		double penalty = getPenalty(remainingCap,desiredSales);
+	//		for(Query q : _querySpace) {
+	//			ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
+	//			IloLinearIntExpr bidOnceExpr = _cplex.linearIntExpr();
+	//			for(int i = 0; i < _bidList.size(); i++) {
+	//				Predictions predictions = queryPredictions.get(i);
+	//				double salesPrice = _salesPrices.get(q);
+	//				double clickPr = predictions.getClickPr();
+	//				double numImps = predictions.getNumImp();
+	//				int numClicks = (int) (clickPr * numImps);
+	//				double CPC = predictions.getCPC();
+	//				double convProb = getConversionPrWithPenalty(q, penalty);
+	//
+	//				if(Double.isNaN(CPC)) {
+	//					CPC = 0.0;
+	//				}
+	//
+	//				if(Double.isNaN(clickPr)) {
+	//					clickPr = 0.0;
+	//				}
+	//
+	//				if(Double.isNaN(convProb)) {
+	//					convProb = 0.0;
+	//				}
+	//
+	//				int isID = _queryId.get(q);
+	//				double w = numClicks*convProb;				//weight = numClciks * convProv
+	//				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+	//				int idx = isID*_bidList.size() + i;
+	//				profitExpr.addTerm(v, binVars[idx]);
+	//				conversionExpr.addTerm(w, binVars[idx]);
+	//				bidOnceExpr.addTerm(1, binVars[idx]);
+	//			}
+	//			_cplex.addLe(bidOnceExpr, 1);
+	//		}
+	//
+	//		_cplex.addMaximize(profitExpr);
+	//		_cplex.addLe(conversionExpr, desiredSales);
+	//
+	//		double start = System.currentTimeMillis();
+	//		_cplex.solve();
+	//		double stop = System.currentTimeMillis();
+	//		double elapsed = stop - start;
+	//		//		System.out.println("CPLEX took " + (elapsed / 1000) + " seconds");
+	//
+	//		//		System.out.println("Expected Profit: " + _cplex.getObjValue());
+	//
+	//		double[] bidVal = _cplex.getValues(binVars);
+	//
+	//		HashMap<Query,Item> solution = new HashMap<Query,Item>();
+	//		for(Query q : _querySpace) {
+	//			Integer isID = _queryId.get(q);
+	//			double bid = 0.0;
+	//			for(int i = 0; i < _bidList.size(); i++) {
+	//				int idx = isID*_bidList.size() + i;
+	//				if(bidVal[idx] == 1) {
+	//					bid = _bidList.get(i);
+	//					Item item = new Item(q, 0, 0, bid, false, isID, i);
+	//					solution.put(q,item);
+	//					break;
+	//				}
+	//			}
+	//		}
+	//		return solution;
+	//	}
 
 
 	private double[] solutionValueMultiDay2(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, int numDays) {
@@ -786,201 +764,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		Collections.sort(allIncItems);
 		return allIncItems;
 	}
-
-
-	private HashMap<Query,Integer> dynFillKnapsack(HashMap<Query, ArrayList<Predictions>> allPredictionsMap, double remCap, double desiredSales) {
-		HashMap<Query,Integer> solution = new HashMap<Query,Integer>();
-		HashMap<Query,Integer> nextUndomIndex = new HashMap<Query,Integer>();
-		for(Query q : _querySpace) {
-			solution.put(q, -1);
-			nextUndomIndex.put(q, 0);
-		}
-		//TODO: Is the static version handling the penalty in exactly the same way?
-		double penalty = getPenalty(remCap, desiredSales);
-		double totalSales = 0;
-		while(true) {
-			double bestEff = 0;
-			Query bestQ = null;
-			for(Query q : _querySpace) {
-				ArrayList<Predictions> predictions = allPredictionsMap.get(q);
-				if(solution.get(q) == predictions.size()-1 || nextUndomIndex.get(q) >= predictions.size()) {
-					continue; //we are done with this query
-				}
-
-				//TODO: Why is this taking solution.get(q) as input? (i.e. the most recently incremented item)
-				//Is it only checking if dominated starting from that point??
-				//Is that all you need to check??
-				while(isDominated(predictions, solution.get(q), nextUndomIndex.get(q), penalty, q)) {
-					nextUndomIndex.put(q, nextUndomIndex.get(q)+1);
-				}
-
-				if(nextUndomIndex.get(q) >= predictions.size()) {
-					continue;
-				}
-
-				double eff;
-				if(solution.get(q) > -1) {
-					double[] currVW = getValueAndWeight(predictions.get(solution.get(q)),penalty,q);
-					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
-					eff = (nextVW[0] - currVW[0])/(nextVW[1]-currVW[1]);
-				}
-				else {
-					double[] nextVW = getValueAndWeight(predictions.get(nextUndomIndex.get(q)),penalty,q);
-					eff = nextVW[0]/nextVW[1];
-				}
-
-				//TODO: This will prefer a query that appears earlier in _querySpace,
-				//assuming effiencies are equal.
-				//Is this the case in the non-dynamic version?
-				if(eff > bestEff) {
-					bestEff = eff;
-					bestQ = q;
-				}
-				else if(eff == bestEff) {
-					System.out.println("Equality is happening and we aren't handling it!");
-				}
-			}
-			if(bestQ == null) {
-				break;
-			}
-
-			double incrementalWeight;
-			double[] bestVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(nextUndomIndex.get(bestQ)), penalty, bestQ);
-			if(solution.get(bestQ) >= 0) {
-				double[] lastBestQVW = getValueAndWeight(allPredictionsMap.get(bestQ).get(solution.get(bestQ)), penalty, bestQ);
-				incrementalWeight = bestVW[1] - lastBestQVW[1];
-			}
-			else {
-				incrementalWeight = bestVW[1];
-			}
-
-			/*
-			 * Can't take item if we would be overCap
-			 */
-			if(totalSales + incrementalWeight > desiredSales) {
-				//Once we find an item that would put us over we are done
-				break;
-			}
-
-			solution.put(bestQ, nextUndomIndex.get(bestQ));
-			nextUndomIndex.put(bestQ,nextUndomIndex.get(bestQ)+1);
-			totalSales += incrementalWeight;
-
-			/*
-			 * Check if there are any items left
-			 */
-			boolean itemsLeft = false;
-			for(Query q : _querySpace) {
-				if(nextUndomIndex.get(q) <= allPredictionsMap.get(q).size()-1) {
-					itemsLeft = true;
-					break;
-				}
-			}
-
-			if(!itemsLeft) {
-				break;
-			}
-		}
-		return solution;
-	}
-
-	//asdf
-	private boolean isDominated(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
-		if(currIndex > predictions.size()-1) {
-			return false;
-		}
-
-		if(lastIndex < 0) {
-			//Check if it is LP dominated with (0,0)
-			double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
-			double[] nextVW = getValueAndWeight(predictions.get(currIndex+1),penalty,q);
-			if(currVW[1] == nextVW[1]) {
-				if(currVW[0] < nextVW[0]) {
-					//if this item has the same weight but lower value than the next item, it is dominated.
-					return true;
-				}
-				else {
-					//if this item has the same weight but a larger value than the next item, it is not dominated
-					return false;
-				}
-			}
-			else {
-				//if this item has smaller value than next item AND
-				//this item's efficiency is less than the efficiency of the next increment,
-				//it is dominated
-				for(int i = 1; i < predictions.size()-currIndex; i++) {
-					nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
-					if(currVW[1] == nextVW[1]) {
-						if(currVW[0] < nextVW[0]) {
-							return true;
-						}
-						else {
-							continue;
-						}
-					}
-
-					if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		//asdf
-		/*
-		 * Check if it is dominated
-		 */
-		double[] lastVW = getValueAndWeight(predictions.get(lastIndex),penalty,q);
-		double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
-		if(currVW[0] < lastVW[0]) {
-			//is this item less valuable than something of equal or less weight? dominated.
-			return true;
-		}
-
-		if(currVW[1] == lastVW[1]) { 
-			//it is more valuable than the last item. (or the same)
-			//is the weight the same as the last item?
-			//if so, it can't be dominated, or else the last thing we took was dominated, too.
-			return false;
-		}
-
-		if(currIndex == predictions.size()-1) {
-			//it is more valuable than the last item (or the same)
-			//If there are no heavier items, it's not dominated??
-			return false;
-		}
-
-		/*
-		 * Check if it is LP-dominated
-		 */
-		for(int i = 1; i < predictions.size()-currIndex; i++) {
-			double[] nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
-			if(currVW[1] == nextVW[1]) {
-				if(currVW[0] < nextVW[0]) {
-					return true;
-				}
-				else {
-					continue;
-				}
-			}
-
-			if(currVW[0] < nextVW[0] && (currVW[0] - lastVW[0])/(currVW[1] - lastVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private double[] getValueAndWeight(Predictions prediction, double penalty, Query q) {
-		double[] preds = new double[2];
-		preds[0] =  prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(q) - prediction.getCPC());
-		preds[1] =  prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
-		return preds;
-	}
-
-
 
 	/**
 	 * Greedily fill the knapsack by selecting incremental items
