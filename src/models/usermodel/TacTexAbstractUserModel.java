@@ -59,6 +59,12 @@ public abstract class TacTexAbstractUserModel extends AbstractModel {
 	 * is one day of lag
 	 */
 	public abstract int getPrediction(Product product, UserState userState);
+	
+	/**
+	 * This method should return the current estimate for this
+	 * (product,state) combination given the particles
+	 */
+	public abstract int getCurrentEstimate(Product product, UserState userState);
 
 	
 	/**
@@ -167,4 +173,6 @@ public abstract class TacTexAbstractUserModel extends AbstractModel {
 		}
 		
 	}
+
+
 }
