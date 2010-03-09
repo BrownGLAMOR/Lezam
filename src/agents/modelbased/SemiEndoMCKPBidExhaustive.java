@@ -1,11 +1,5 @@
 package agents.modelbased;
 
-import ilog.concert.IloException;
-import ilog.concert.IloIntVar;
-import ilog.concert.IloLinearIntExpr;
-import ilog.concert.IloLinearNumExpr;
-import ilog.cplex.IloCplex;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,19 +78,19 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	private int lagDays = 4;
 	private boolean salesDistFlag;
 	private int _capIncrement;
-	private IloCplex _cplex;
+//	private IloCplex _cplex;
 
 
 	public SemiEndoMCKPBidExhaustive(int capIncrement) {
-		try {
-			IloCplex cplex = new IloCplex();
-			cplex.setOut(null);
-			_cplex = cplex;
-		} catch (IloException e) {
-			throw new RuntimeException("Could not initialize CPLEX");
-		}
+//		try {
+//			IloCplex cplex = new IloCplex();
+//			cplex.setOut(null);
+//			_cplex = cplex;
+//		} catch (IloException e) {
+//			throw new RuntimeException("Could not initialize CPLEX");
+//		}
 
-		//		_R.setSeed(124962748);
+		_R.setSeed(124962748);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;
@@ -453,12 +447,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
+						bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0)* _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*5);
@@ -474,11 +463,11 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		else {
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-					double bid = randDouble(_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}

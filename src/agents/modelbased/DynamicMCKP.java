@@ -78,9 +78,8 @@ public class DynamicMCKP extends AbstractAgent {
 	private ArrayList<Double> _capList;
 	private int lagDays = 4;
 	private boolean salesDistFlag;
-	private int _capIncrement;
 
-	public DynamicMCKP(int capIncrement) {
+	public DynamicMCKP() {
 		_R.setSeed(124962748);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
@@ -91,8 +90,6 @@ public class DynamicMCKP extends AbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
-
-		_capIncrement = capIncrement;
 	}
 
 
@@ -355,7 +352,7 @@ public class DynamicMCKP extends AbstractAgent {
 					solution.put(q, new Item(q, 0, 0,_bidList.get(intSolution.get(q)), 0,  intSolution.get(q)));
 				}
 			}
-			
+
 			//set bids
 			for(Query q : _querySpace) {
 				ArrayList<Predictions> queryPrediction = allPredictionsMap.get(q);
@@ -398,12 +395,7 @@ public class DynamicMCKP extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
-					else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE))
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
-					else
-						bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .7);
+					bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*5);
@@ -419,11 +411,11 @@ public class DynamicMCKP extends AbstractAgent {
 		else {
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-					double bid = randDouble(_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0)* _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(.04,_salesPrices.get(q) * _baseConvProbs.get(q) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
@@ -679,10 +671,10 @@ public class DynamicMCKP extends AbstractAgent {
 					itemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)), 0,  solution.get(q)));
 				}
 			}
-			
+
 			double[] solVal = solutionValueMultiDay2(itemSolution, remCap, allPredictionsMap, 10);
 			double penalty = getPenalty(remCap, solVal[1]);
-			
+
 			double bestEff = 0;
 			Query bestQ = null;
 			for(Query q : _querySpace) {
@@ -715,25 +707,25 @@ public class DynamicMCKP extends AbstractAgent {
 					bestQ = q;
 				}
 				else if(eff == bestEff) {
-//					System.out.println("Equality is happening and we aren't handling it!");
+					//					System.out.println("Equality is happening and we aren't handling it!");
 				}
 			}
 			if(bestQ == null) {
 				break;
 			}
-			
+
 			solution.put(bestQ, nextUndomIndex.get(bestQ));
 			nextUndomIndex.put(bestQ,nextUndomIndex.get(bestQ)+1);
-			
+
 			HashMap<Query,Item> newItemSolution = new HashMap<Query,Item>();
 			for(Query q : _querySpace) {
 				if(solution.containsKey(q) && solution.get(q) >= 0) {
 					newItemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)), 0,  solution.get(q)));
 				}
 			}
-			
+
 			double[] newSolVal = solutionValueMultiDay2(newItemSolution, remCap, allPredictionsMap, 10);
-//			System.out.println("(" + newSolVal[0] + ", " + newSolVal[1] + ")");
+			//			System.out.println("(" + newSolVal[0] + ", " + newSolVal[1] + ")");
 
 			if(newSolVal[0] < solVal[0]) {
 				break;
@@ -1298,11 +1290,11 @@ public class DynamicMCKP extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "DynamicMCKPBid(" + _capIncrement + ")";
+		return "DynamicMCKPBid";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new DynamicMCKP(_capIncrement);
+		return new DynamicMCKP();
 	}
 }
