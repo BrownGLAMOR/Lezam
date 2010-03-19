@@ -43,7 +43,7 @@ public abstract class TacTexAbstractUserModel extends AbstractModel {
 	 * representation you want.  You could just as easily store all the particle
 	 * states in a multidimensional array and the weights in an array.
 	 */
-	HashMap<Product,Particle[]> _particles;
+	public HashMap<Product,Particle[]> _particles;
 	
 	/**
 	 * This will be called everyday and pass you the correct number of 
@@ -70,7 +70,7 @@ public abstract class TacTexAbstractUserModel extends AbstractModel {
 	/**
 	 * This class represents a particle (i.e. state and weight)
 	 */
-	static class Particle {
+	public static class Particle {
 		/**
 		 * This array represents the state of the particle.
 		 * The state vector has as many indices as
