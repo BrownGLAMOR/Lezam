@@ -100,6 +100,11 @@ public class MyParticleFilter extends TacTexAbstractUserModel {
 		 */
 		return 0;
 	}
+	
+	@Override
+	public int getCurrentEstimate(Product product, UserState userState) {
+		return 0;
+	}
 
 	@Override
 	public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
