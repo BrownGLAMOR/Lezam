@@ -46,7 +46,8 @@ public class DavidLParticleFilter extends TacTexAbstractUserModel {
 		_products.add(new Product("lioneer", "tv"));
 		_products.add(new Product("lioneer", "audio"));
 		
-		initializeParticlesDefault();
+		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
+//		initializeParticlesDefault();
 	}
 	
 	/*
@@ -314,7 +315,7 @@ public class DavidLParticleFilter extends TacTexAbstractUserModel {
 				}
 				count++;
 			}
-			if(count != NUM_PARTICLES-1) {
+			if(count != NUM_PARTICLES) {
 				throw new RuntimeException("Problem reading particle file");
 			}
 		} catch (FileNotFoundException e) {

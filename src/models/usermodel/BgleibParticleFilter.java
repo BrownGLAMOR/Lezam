@@ -40,12 +40,6 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     private Map<Product, Double> _burstProbs;
 	private ConcurrentHashMap<Product, Particle[]> _concurrentParticles;
 
-    public static void main(String[] args)
-    {
-        BgleibParticleFilter filter = new BgleibParticleFilter();
-    }
-
-
     public BgleibParticleFilter()
     {
             _R = new Random(_seed);

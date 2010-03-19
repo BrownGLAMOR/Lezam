@@ -71,7 +71,7 @@ public class DavidandVinitParticleFilter extends TacTexAbstractUserModel {
 		_products.add(new Product("lioneer", "tv"));
 		_products.add(new Product("lioneer", "audio"));
 
-		initializeParticlesFromFile("initParticles-5806165191807168463");
+		initializeParticlesFromFile("initUserParticles");
 	}
 
 	public void initializeParticlesFromFile(String filename) {
