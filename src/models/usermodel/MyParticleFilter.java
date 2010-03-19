@@ -62,7 +62,7 @@ public class MyParticleFilter extends TacTexAbstractUserModel {
 				}
 				count++;
 			}
-			if(count != NUM_PARTICLES-1) {
+			if(count != NUM_PARTICLES) {
 				throw new RuntimeException("Problem reading particle file");
 			}
 		} catch (FileNotFoundException e) {
