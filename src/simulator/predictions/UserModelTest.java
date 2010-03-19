@@ -7,8 +7,12 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
-import models.usermodel.MyParticleFilter;
+import models.usermodel.BgleibParticleFilter;
+import models.usermodel.DavidLParticleFilter;
+import models.usermodel.DavidandVinitParticleFilter;
+import models.usermodel.JakeParticleFilter;
 import models.usermodel.TacTexAbstractUserModel;
+import models.usermodel.jbergParticleFilter;
 import models.usermodel.TacTexAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -19,9 +23,10 @@ import edu.umich.eecs.tac.props.QueryType;
 public class UserModelTest {
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		int min = 1426;
-		int max = 1427;
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		int min = 1440;
+		int max = 1441;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -30,7 +35,8 @@ public class UserModelTest {
 		return filenames;
 	}
 
-	public void userStatePredictionChallenge(TacTexAbstractUserModel baseModel) throws IOException, ParseException {
+	public double[] userStatePredictionChallenge(TacTexAbstractUserModel baseModel) throws IOException, ParseException {
+		double time = 0;
 		HashMap<String,Double> ourTotErrorCurrMegaMap = new HashMap<String,Double>();
 		HashMap<String,Double> ourTotActualCurrMegaMap = new HashMap<String,Double>();
 		HashMap<String,Integer> ourTotErrorCounterCurrMegaMap = new HashMap<String,Integer>();
@@ -38,21 +44,27 @@ public class UserModelTest {
 		HashMap<String,Double> ourTotActualPredMegaMap = new HashMap<String,Double>();
 		HashMap<String,Integer> ourTotErrorCounterPredMegaMap = new HashMap<String,Integer>();
 		
-		HashMap<String,Double> ourTotErrorCurrMegaMapLin = new HashMap<String,Double>();
-		HashMap<String,Double> ourTotActualCurrMegaMapLin = new HashMap<String,Double>();
-		HashMap<String,Integer> ourTotErrorCounterCurrMegaMapLin = new HashMap<String,Integer>();
-		HashMap<String,Double> ourTotErrorPredMegaMapLin = new HashMap<String,Double>();
-		HashMap<String,Double> ourTotActualPredMegaMapLin = new HashMap<String,Double>();
-		HashMap<String,Integer> ourTotErrorCounterPredMegaMapLin = new HashMap<String,Integer>();
+		HashMap<String,Double> ourTotErrorCurrMegaMapMAE = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterCurrMegaMapMAE = new HashMap<String,Integer>();
+		HashMap<String,Double> ourTotErrorPredMegaMapMAE = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterPredMegaMapMAE = new HashMap<String,Integer>();
+		
+		HashMap<String,Double> ourTotErrorCurrMegaMapLinf = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterCurrMegaMapLinf = new HashMap<String,Integer>();
+		HashMap<String,Double> ourTotErrorPredMegaMapLinf = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterPredMegaMapLinf = new HashMap<String,Integer>();
 		
 		ArrayList<String> filenames = getGameStrings();
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
-			System.out.println("getting copy");
+			
+			double start = System.currentTimeMillis();
 			TacTexAbstractUserModel model = (TacTexAbstractUserModel) baseModel.getCopy();
-			System.out.println("done getting copy");
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			time += (elapsed / 1000.0);		
 			
 			double ourTotErrorCurr = 0;
 			double ourTotActualCurr = 0;
@@ -62,13 +74,17 @@ public class UserModelTest {
 			double ourTotActualPred = 0;
 			int ourTotErrorCounterPred = 0;
 			
-			double ourTotErrorCurrLin = 0;
-			double ourTotActualCurrLin = 0;
-			int ourTotErrorCounterCurrLin = 0;
+			double ourTotErrorCurrMAE = 0;
+			int ourTotErrorCounterCurrMAE = 0;
 
-			double ourTotErrorPredLin = 0;
-			double ourTotActualPredLin = 0;
-			int ourTotErrorCounterPredLin = 0;
+			double ourTotErrorPredMAE = 0;
+			int ourTotErrorCounterPredMAE = 0;
+			
+			double ourTotErrorCurrLinf = 0;
+			int ourTotErrorCounterCurrLinf = 0;
+
+			double ourTotErrorPredLinf = 0;
+			int ourTotErrorCounterPredLinf = 0;
 
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
 
@@ -115,8 +131,11 @@ public class UserModelTest {
 					}
 					totalImpressions.put(q, imps);
 				}
+				start = System.currentTimeMillis();
 				model.updateModel(totalImpressions);
-				
+				stop = System.currentTimeMillis();
+				elapsed = stop - start;
+				time += (elapsed / 1000.0);				
 				//System.out.print("Current - ");
 				//System.out.print("Future - ");
 				for(Product product : status.getRetailCatalog()) {
@@ -125,20 +144,32 @@ public class UserModelTest {
 					}*/
 					HashMap<UserState, Integer> userDist = userDists.get(product);
 					HashMap<UserState, Integer> userDistFuture = userDistsFuture.get(product);
+					double maxDiffCurr = 0;
+					double maxDiffPred = 0;
 					for(UserState state : UserState.values()) {
 						double users = userDist.get(state);
 						double usersFuture = userDistFuture.get(state);
+						
+						start = System.currentTimeMillis();
 						double userCurr = model.getCurrentEstimate(product,state);
 						double userPred = model.getPrediction(product,state);
+						stop = System.currentTimeMillis();
+						elapsed = stop - start;
+						time += (elapsed / 1000.0);		
+						
+						
 						//System.out.print("(" + state + ")" + "-" + users + ", " + userCurr+ " \t");
 						/*if(product.getManufacturer().equals("lioneer")&&product.getComponent().equals("tv")){
 							System.out.print("(" + state + ")" + users + ", " + userCurr+ " -- " + usersFuture + ", " + userPred+ "     \t");
 						}*/
 						//System.out.println("Future - (" + product + ", " + state + "): " + usersFuture + ", " + userPred);
+						
 						userCurr -= users;
-						ourTotActualCurrLin += users;
-						ourTotErrorCurrLin += Math.abs(userCurr);
-						ourTotErrorCounterCurrLin++;
+						if(Math.abs(userCurr) > maxDiffCurr) {
+							maxDiffCurr = Math.abs(userCurr);
+						}
+						ourTotErrorCurrMAE += Math.abs(userCurr);
+						ourTotErrorCounterCurrMAE++;
 						
 						userCurr = userCurr*userCurr;
 						ourTotActualCurr += users;
@@ -146,19 +177,23 @@ public class UserModelTest {
 						ourTotErrorCounterCurr++;
 
 						userPred -= usersFuture;
-						ourTotActualPredLin += usersFuture;
-						ourTotErrorPredLin += Math.abs(userPred);
-						ourTotErrorCounterPredLin++;
+						if(Math.abs(userPred) > maxDiffPred) {
+							maxDiffPred = Math.abs(userPred);
+						}
+						ourTotErrorPredMAE += Math.abs(userPred);
+						ourTotErrorCounterPredMAE++;
 						
 						userPred = userPred*userPred;
 						ourTotActualPred += usersFuture;
 						ourTotErrorPred += userPred;
 						ourTotErrorCounterPred++;
 					}
-				}
-				//System.out.println();
+					ourTotErrorCurrLinf += maxDiffCurr;
+					ourTotErrorCounterCurrLinf++;
 
-				
+					ourTotErrorPredLinf += maxDiffPred;
+					ourTotErrorCounterPredLinf++;
+				}
 			}
 
 			ourTotErrorCurrMegaMap.put(filename,ourTotErrorCurr);
@@ -169,21 +204,27 @@ public class UserModelTest {
 			ourTotActualPredMegaMap.put(filename,ourTotActualPred);
 			ourTotErrorCounterPredMegaMap.put(filename,ourTotErrorCounterPred);
 			
-			
-			ourTotErrorCurrMegaMapLin.put(filename,ourTotErrorCurrLin);
-			ourTotActualCurrMegaMapLin.put(filename,ourTotActualCurrLin);
-			ourTotErrorCounterCurrMegaMapLin.put(filename,ourTotErrorCounterCurrLin);
+			ourTotErrorCurrMegaMapMAE.put(filename,ourTotErrorCurrMAE);
+			ourTotErrorCounterCurrMegaMapMAE.put(filename,ourTotErrorCounterCurrMAE);
 
-			ourTotErrorPredMegaMapLin.put(filename,ourTotErrorPredLin);
-			ourTotActualPredMegaMapLin.put(filename,ourTotActualPredLin);
-			ourTotErrorCounterPredMegaMapLin.put(filename,ourTotErrorCounterPredLin);
+			ourTotErrorPredMegaMapMAE.put(filename,ourTotErrorPredMAE);
+			ourTotErrorCounterPredMegaMapMAE.put(filename,ourTotErrorCounterPredMAE);
+			
+			ourTotErrorCurrMegaMapLinf.put(filename,ourTotErrorCurrLinf);
+			ourTotErrorCounterCurrMegaMapLinf.put(filename,ourTotErrorCounterCurrLinf);
+
+			ourTotErrorPredMegaMapLinf.put(filename,ourTotErrorPredLinf);
+			ourTotErrorCounterPredMegaMapLinf.put(filename,ourTotErrorCounterPredLinf);
 			
 		}
 		ArrayList<Double> RMSEListCurr = new ArrayList<Double>();
 		ArrayList<Double> RMSEListPred = new ArrayList<Double>();
 		
-		ArrayList<Double> RMSEListCurrLin = new ArrayList<Double>();
-		ArrayList<Double> RMSEListPredLin = new ArrayList<Double>();
+		ArrayList<Double> RMSEListCurrMAE = new ArrayList<Double>();
+		ArrayList<Double> RMSEListPredMAE = new ArrayList<Double>();
+		
+		ArrayList<Double> RMSEListCurrLinf = new ArrayList<Double>();
+		ArrayList<Double> RMSEListPredLinf = new ArrayList<Double>();
 		for(String file : filenames) {
 			double totError = ourTotErrorCurrMegaMap.get(file);
 			int totErrorCounter = ourTotErrorCounterCurrMegaMap.get(file);
@@ -198,26 +239,50 @@ public class UserModelTest {
 			RMSEListPred.add(RMSEPred);
 			
 			
-			double totErrorLin = ourTotErrorCurrMegaMapLin.get(file);
-			int totErrorCounterLin = ourTotErrorCounterCurrMegaMapLin.get(file);
-			double MSELin = (totErrorLin/totErrorCounterLin);
-			double RMSELin = MSELin;
-			RMSEListCurrLin.add(RMSELin);
+			double totErrorMAE = ourTotErrorCurrMegaMapMAE.get(file);
+			int totErrorCounterMAE = ourTotErrorCounterCurrMegaMapMAE.get(file);
+			double MSEMAE = (totErrorMAE/totErrorCounterMAE);
+			double RMSEMAE = MSEMAE;
+			RMSEListCurrMAE.add(RMSEMAE);
 
-			double totErrorPredLin = ourTotErrorPredMegaMapLin.get(file);
-			int totErrorCounterPredLin = ourTotErrorCounterPredMegaMapLin.get(file);
-			double MSEPredLin = (totErrorPredLin/totErrorCounterPredLin);
-			double RMSEPredLin = MSEPredLin;
-			RMSEListPredLin.add(RMSEPredLin);
+			double totErrorPredMAE = ourTotErrorPredMegaMapMAE.get(file);
+			int totErrorCounterPredMAE = ourTotErrorCounterPredMegaMapMAE.get(file);
+			double MSEPredMAE = (totErrorPredMAE/totErrorCounterPredMAE);
+			double RMSEPredMAE = MSEPredMAE;
+			RMSEListPredMAE.add(RMSEPredMAE);
 			
-			
+			double totErrorLinf = ourTotErrorCurrMegaMapLinf.get(file);
+			int totErrorCounterLinf = ourTotErrorCounterCurrMegaMapLinf.get(file);
+			double MSELinf = (totErrorLinf/totErrorCounterLinf);
+			double RMSELinf = MSELinf;
+			RMSEListCurrLinf.add(RMSELinf);
+
+			double totErrorPredLinf = ourTotErrorPredMegaMapLinf.get(file);
+			int totErrorCounterPredLinf = ourTotErrorCounterPredMegaMapLinf.get(file);
+			double MSEPredLinf = (totErrorPredLinf/totErrorCounterPredLinf);
+			double RMSEPredLinf = MSEPredLinf;
+			RMSEListPredLinf.add(RMSEPredLinf);
 		}
 		double[] rmseStd = getStdDevAndMean(RMSEListCurr);
 		double[] rmseStdPred = getStdDevAndMean(RMSEListPred);
 		
-		double[] rmseStdLin = getStdDevAndMean(RMSEListCurrLin);
-		double[] rmseStdPredLin = getStdDevAndMean(RMSEListPredLin);
-		System.out.println(baseModel + ", \nRMSE: " + rmseStd[0] + ", " + rmseStdPred[0] +", \nAbsolute Error: "+ rmseStdLin[0] + ", " + rmseStdPredLin[0]);
+		double[] rmseStdMAE = getStdDevAndMean(RMSEListCurrMAE);
+		double[] rmseStdPredMAE = getStdDevAndMean(RMSEListPredMAE);
+		
+		double[] rmseStdLinf = getStdDevAndMean(RMSEListCurrLinf);
+		double[] rmseStdPredLinf = getStdDevAndMean(RMSEListPredLinf);
+		
+		time /= (57.0*filenames.size());
+		
+		System.out.println(baseModel + ", \nL2: " + rmseStd[0] + ", " + rmseStdPred[0] +", \nL1: "+ rmseStdMAE[0] + ", " + rmseStdPredMAE[0]
+		                   + ", \nLinf: "+ rmseStdLinf[0] + ", " + rmseStdPredLinf[0] +"\ntime: " + time);
+		double[] output = new double[4]; //time,L1,L2,Linf
+		output[0] = time;
+		output[1] = rmseStd[0];
+		output[2] = rmseStdMAE[0];
+		output[3] = rmseStdLinf[0];
+		
+		return rmseStdPredLinf;
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
@@ -246,9 +311,12 @@ public class UserModelTest {
 		UserModelTest evaluator = new UserModelTest();
 
 		double start = System.currentTimeMillis();
-		TacTexAbstractUserModel userModel = new MyParticleFilter(); //YOUR FILTER HERE
-		evaluator.userStatePredictionChallenge(userModel);
-
+//		evaluator.userStatePredictionChallenge(new jbergParticleFilter());
+//		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
+//		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
+//		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
+		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
