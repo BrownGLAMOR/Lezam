@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 
 import models.usermodel.TacTexAbstractUserModel.UserState;
 
@@ -456,6 +457,75 @@ public class GameStatusHandler {
 		return output;
 	}
 
+	public static void generateCarletonDataSet2() throws IOException, ParseException {
+		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1425;
+		int max = 1430;
+		int numSlots = 5;
+		System.out.println("Num Advertisers\tNum slots");
+		System.out.println("AgentID\tAvgPos\t#Imps\tBids\tBudgets\n");
+		Random R = new Random();
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			String[] advertisers = gameStatus.getAdvertisers();
+			int numAdvs = advertisers.length;
+			ReserveInfo reserveInfo = gameStatus.getReserveInfo();
+			double reserve = reserveInfo.getRegularReserve();
+			PublisherInfo pubInfo = gameStatus.getPubInfo();
+			double squashing = pubInfo.getSquashingParameter();
+			UserClickModel clickModel = gameStatus.getUserClickModel();
+			for(int j = 0; j < 59; j++) {
+				Iterator<Query> iter = bidBundles.get(advertisers[0]).get(j).iterator();
+				while(iter.hasNext()) {
+					Query query = (Query) iter.next();
+					String output = "";
+					output += numAdvs + " " + numSlots + "\n";
+					ArrayList<AdvBidPair> bidPairListAdvSort = new ArrayList<AdvBidPair>();
+					ArrayList<AdvBidPair> bidPairListBidSort = new ArrayList<AdvBidPair>();
+					for(int k = 0; k < advertisers.length; k++) {
+						String adv = advertisers[k];
+						BidBundle bundle = bidBundles.get(adv).get(j);
+						QueryReport qreport = queryReports.get(adv).get(j);
+						double avgPos = Double.isNaN(qreport.getPosition(query)) ? -1 : qreport.getPosition(query);
+						double squashedBid = bundle.getBid(query) * Math.pow(clickModel.getAdvertiserEffect(clickModel.queryIndex(query), k), squashing);
+						double budget = Double.isNaN(bundle.getDailyLimit(query)) ? -1 : bundle.getDailyLimit(query);
+						if(Double.isNaN(squashedBid)) {
+							throw new RuntimeException();
+						}
+						int numImps = qreport.getImpressions(query);
+						output += (k + 1) + " " + avgPos + " " + numImps + " " + squashedBid + " " + budget + "\n";
+					}
+					output = output.substring(0, output.length()-1);
+					// Stream to write file
+					FileOutputStream fout;		
+
+					try
+					{
+						// Open an output stream
+						fout = new FileOutputStream ("carleton" + R .nextDouble() + ".o");
+
+						// Print a line of text
+						new PrintStream(fout).print(output);
+
+						// Close our output stream
+						fout.close();		
+					}
+					// Catches any error conditions
+					catch (IOException e)
+					{
+						System.err.println ("Unable to write to file");
+						System.exit(-1);
+					}
+				}
+			}
+		}
+	}
+
 	public static void generateCarletonDataSet() throws IOException, ParseException {
 		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		int min = 1425;
@@ -551,17 +621,17 @@ public class GameStatusHandler {
 										else {
 											if(spread) {
 												moveUp = true;
-												
-												
+
+
 												if(numImps > numImpsOther) {
-													
+
 												}
 												else {
 													break;
 												}
 											}
 											else if(numImps > numImpsOther) {
-												
+
 											}
 											else if(impsUsed >= numImps) {
 												break;
@@ -704,7 +774,7 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		generateCarletonDataSet();
+		generateCarletonDataSet2();
 		//		// Stream to write file
 		//		FileOutputStream fout;		
 		//
