@@ -25,10 +25,10 @@ import edu.umich.eecs.tac.props.QueryType;
 public class UserModelTest {
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
-		int max = 1441;
+		int max = 1444;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -106,7 +106,6 @@ public class UserModelTest {
 
 			//				System.out.println(agents[agent]);
 			for(int i = 0; i < 57; i++) {
-				System.out.println(i);
 				HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
 				HashMap<Product, HashMap<UserState, Integer>> userDistsFuture = allUserDists.get(i+2);
 				
@@ -314,13 +313,13 @@ public class UserModelTest {
 		UserModelTest evaluator = new UserModelTest();
 
 		double start = System.currentTimeMillis();
-//		evaluator.userStatePredictionChallenge(new jbergParticleFilter());
-//		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
+		evaluator.userStatePredictionChallenge(new jbergParticleFilter());
+		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
 		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
-//		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
-//		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
-//		evaluator.userStatePredictionChallenge(new GregFilter());
-//		evaluator.userStatePredictionChallenge(new OldUserModel());
+		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
+		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
+		evaluator.userStatePredictionChallenge(new GregFilter());
+		evaluator.userStatePredictionChallenge(new OldUserModel());
 		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
