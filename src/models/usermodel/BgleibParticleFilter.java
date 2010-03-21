@@ -1,19 +1,12 @@
 package models.usermodel;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 import models.AbstractModel;
-import models.usermodel.TacTexAbstractUserModel.Particle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 import java.util.*;
-import java.util.concurrent.*;
 
 import jsc.distributions.Binomial;
 import jsc.distributions.Normal;
@@ -38,12 +31,11 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     private BgleibParticleFilter _prediction;
     private BgleibParticleFilter _previous;
     private Map<Product, Double> _burstProbs;
-	private ConcurrentHashMap<Product, Particle[]> _concurrentParticles;
 
     public BgleibParticleFilter()
     {
             _R = new Random(_seed);
-            _concurrentParticles = new ConcurrentHashMap<Product,Particle[]>();
+            _particles = new HashMap<Product,Particle[]>();
             _products = new ArrayList<Product>();
             _burstProbs = new HashMap<Product, Double>();
 
@@ -63,7 +55,7 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
                 Particle[] particles = new Particle[NUM_PARTICLES];
                 for (int i = 0; i < NUM_PARTICLES; i++)
                     particles[i] = new Particle();
-                _concurrentParticles.put(product, particles);
+                _particles.put(product, particles);
             }
             initializeStandardTransitionProbs();
             initializeBurstTransitionProbs();
@@ -77,10 +69,10 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
             _previous = null;
     }
 
-    public BgleibParticleFilter(ConcurrentHashMap<Product, Particle[]> oldParticles, BgleibParticleFilter prediction, BgleibParticleFilter previous)
+    public BgleibParticleFilter(HashMap<Product, Particle[]> oldParticles, BgleibParticleFilter prediction, BgleibParticleFilter previous)
     {
             _R = new Random(_seed);
-            _concurrentParticles = new ConcurrentHashMap<Product,Particle[]>();
+            _particles = new HashMap<Product,Particle[]>();
             _products = new ArrayList<Product>();
             _burstProbs = new HashMap<Product, Double>();
 
@@ -101,7 +93,7 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
                 Particle[] particles = new Particle[NUM_PARTICLES];
                 for (int i = 0; i < NUM_PARTICLES; i++)
                     particles[i] = new Particle(oldParticleArr[i].getState());
-                _concurrentParticles.put(product, particles);
+                _particles.put(product, particles);
             }
             _prediction = prediction;	
             _previous = previous;
@@ -213,12 +205,12 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
                             Particle particle = new Particle(allStates[i]);
                             particles[i] = particle;
                     }
-                    _concurrentParticles.put(prod, particles);
+                    _particles.put(prod, particles);
             }
     }
 
     public void saveParticlesToFile(Product product) throws IOException {
-            Particle[] particles = _concurrentParticles.get(product);
+            Particle[] particles = _particles.get(product);
             FileWriter fstream = new FileWriter("initParticles.txt");
             BufferedWriter out = new BufferedWriter(fstream);
             String output = "";
@@ -250,9 +242,9 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     {
         List<WorkerThread> threads = new LinkedList<WorkerThread>();
         WorkerThread w;
-        for (Product product : _concurrentParticles.keySet())
+        for (Product product : _particles.keySet())
         {
-            w = new WorkerThread(_concurrentParticles.get(product), doTransactions);
+            w = new WorkerThread(_particles.get(product), doTransactions);
             threads.add(w);
             w.start();
         }
@@ -278,19 +270,19 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
 
     private class WorkerThread extends Thread
     {
-        private Particle[] _workerParticles;
+        private Particle[] _particles;
         private boolean _doTransactions;
 
         public WorkerThread(Particle[] particles, boolean doTransactions)
         {
-            _workerParticles = particles;
+            _particles = particles;
             _doTransactions = doTransactions;
         }
 
         @Override
         public void run()
         {
-            for (Particle particle : _workerParticles)
+            for (Particle particle : _particles)
             {
             	if (USE_MATRIX)
             		simulateParticleDayMatrix(particle, _doTransactions);
@@ -446,18 +438,18 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
         {
         	Query q = new Query(product.getManufacturer(), product.getComponent());
             sum = 0;
-            for (Particle p : _concurrentParticles.get(product))
+            for (Particle p : _particles.get(product))
             {
                 val = getParticleWeight(totalImpressions.get(q), p);
                 p.setWeight(val);
                 sum += val;
             }
-            for (Particle p : _concurrentParticles.get(product))
+            for (Particle p : _particles.get(product))
             {
                 p.setWeight(p.getWeight() / sum);
             }
         }
-        for (Product p : _concurrentParticles.keySet())
+        for (Product p : _particles.keySet())
             resample(p);
         setCurrentBurstProbs();
 //        simulateDay(true);
@@ -475,7 +467,7 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
         for (int i = 0; i < NUM_PARTICLES; i++)
         {
             rand = _R.nextDouble();
-            for (Particle p : _concurrentParticles.get(product))
+            for (Particle p : _particles.get(product))
             {
                 if (rand < p.getWeight())
                 {
@@ -486,7 +478,7 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
                     rand -= p.getWeight();
             }
         }
-        _concurrentParticles.put(product, newParticles);
+        _particles.put(product, newParticles);
     }
 
 
@@ -497,12 +489,12 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     
     public BgleibParticleFilter makeCopy()
     {
-    	return new BgleibParticleFilter(_concurrentParticles, _prediction, _previous);
+    	return new BgleibParticleFilter(_particles, _prediction, _previous);
     }
     
     public int getThisFiltersEstimate(Product product, UserState userState)
     {
-    	Particle[] particles = _concurrentParticles.get(product);
+    	Particle[] particles = _particles.get(product);
         int sum = 0;
         int burst = 0;
         int burstSum = 0;
@@ -540,7 +532,7 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     	for (Product product : _products)
     	{
 	        int burst = 0;
-	        for (Particle p : _concurrentParticles.get(product))
+	        for (Particle p : _particles.get(product))
 	        {
 	        	if (isBurst(p)) burst++;
 	        }
@@ -569,3 +561,4 @@ public class BgleibParticleFilter extends TacTexAbstractUserModel {
     	return "le particle filter de chez leib";
     }
 }
+
