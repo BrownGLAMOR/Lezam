@@ -10,7 +10,9 @@ import java.util.LinkedList;
 import models.usermodel.BgleibParticleFilter;
 import models.usermodel.DavidLParticleFilter;
 import models.usermodel.DavidandVinitParticleFilter;
+import models.usermodel.GregFilter;
 import models.usermodel.JakeParticleFilter;
+import models.usermodel.OldUserModel;
 import models.usermodel.TacTexAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import models.usermodel.TacTexAbstractUserModel.UserState;
@@ -104,6 +106,7 @@ public class UserModelTest {
 
 			//				System.out.println(agents[agent]);
 			for(int i = 0; i < 57; i++) {
+				System.out.println(i);
 				HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
 				HashMap<Product, HashMap<UserState, Integer>> userDistsFuture = allUserDists.get(i+2);
 				
@@ -313,9 +316,11 @@ public class UserModelTest {
 		double start = System.currentTimeMillis();
 //		evaluator.userStatePredictionChallenge(new jbergParticleFilter());
 //		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
-//		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
+		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
 //		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
-		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
+//		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
+//		evaluator.userStatePredictionChallenge(new GregFilter());
+//		evaluator.userStatePredictionChallenge(new OldUserModel());
 		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

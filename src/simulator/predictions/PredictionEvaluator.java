@@ -13,7 +13,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
 import models.AbstractModel;
-import models.usermodel.JBERGParticleFilter;
+import models.usermodel.jbergParticleFilter;
 import models.avgpostoposdist.AvgPosToPosDist;
 import models.bidtocpc.AbstractBidToCPC;
 import models.bidtocpc.ConstantBidToCPC;
@@ -68,6 +68,7 @@ import models.querytonumimp.BasicQueryToNumImp;
 import models.querytousermodel.BasicQueryToUserModel;
 import models.targeting.BasicTargetModel;
 import models.usermodel.BasicUserModel;
+import models.usermodel.OldUserModel;
 import models.usermodel.HistoricalDailyAverageUserModel;
 import models.usermodel.TacTexAbstractUserModel;
 import models.usermodel.TacTexAbstractUserModel.UserState;
@@ -94,10 +95,10 @@ public class PredictionEvaluator {
 		//		int max = 455;
 		//		int max = 496;
 
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1440;
-		int max = 1444;
+//		String baseFile = "/pro/aa/finals/day-2/server-1/game";
+				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		int min = 1425;
+		int max = 1465;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/LATESTMCKP/localhost_sim";
 		//		int min = 2;
@@ -309,9 +310,12 @@ public class PredictionEvaluator {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
-		HashMap<String,Double> ourTotErrorMegaMap = new HashMap<String,Double>();
-		HashMap<String,Double> ourTotActualMegaMap = new HashMap<String,Double>();
-		HashMap<String,Integer> ourTotErrorCounterMegaMap = new HashMap<String,Integer>();
+		HashMap<String,Double> ourTotErrorCurrMegaMap = new HashMap<String,Double>();
+		HashMap<String,Double> ourTotActualCurrMegaMap = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterCurrMegaMap = new HashMap<String,Integer>();
+		HashMap<String,Double> ourTotErrorPredMegaMap = new HashMap<String,Double>();
+		HashMap<String,Double> ourTotActualPredMegaMap = new HashMap<String,Double>();
+		HashMap<String,Integer> ourTotErrorCounterPredMegaMap = new HashMap<String,Integer>();
 		ArrayList<String> filenames = getGameStrings();
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
@@ -320,9 +324,13 @@ public class PredictionEvaluator {
 
 			TacTexAbstractUserModel model = (TacTexAbstractUserModel) baseModel.getCopy();
 
-			double ourTotError = 0;
-			double ourTotActual = 0;
-			int ourTotErrorCounter = 0;
+			double ourTotErrorCurr = 0;
+			double ourTotActualCurr = 0;
+			int ourTotErrorCounterCurr = 0;
+
+			double ourTotErrorPred = 0;
+			double ourTotActualPred = 0;
+			int ourTotErrorCounterPred = 0;
 
 			HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
@@ -344,17 +352,27 @@ public class PredictionEvaluator {
 			//				System.out.println(agents[agent]);
 			for(int i = 0; i < 57; i++) {
 				HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
+				HashMap<Product, HashMap<UserState, Integer>> userDistsFuture = allUserDists.get(i+2);
 				for(Product product : status.getRetailCatalog()) {
 					HashMap<UserState, Integer> userDist = userDists.get(product);
+					HashMap<UserState, Integer> userDistFuture = userDistsFuture.get(product);
 					for(UserState state : UserState.values()) {
 						double users = userDist.get(state);
+						double usersFuture = userDistFuture.get(state);
+						double userCurr = model.getCurrentEstimate(product,state);
 						double userPred = model.getPrediction(product,state);
 						//						System.out.println("(" + product + ", " + state + "): " + users + ", " + userPred);
-						userPred -= users;
+						userCurr -= users;
+						userCurr = userCurr*userCurr;
+						ourTotActualCurr += users;
+						ourTotErrorCurr += userCurr;
+						ourTotErrorCounterCurr++;
+
+						userPred -= usersFuture;
 						userPred = userPred*userPred;
-						ourTotActual += users;
-						ourTotError += userPred;
-						ourTotErrorCounter++;
+						ourTotActualPred += usersFuture;
+						ourTotErrorPred += userPred;
+						ourTotErrorCounterPred++;
 					}
 				}
 				//				System.out.println("");
@@ -362,9 +380,8 @@ public class PredictionEvaluator {
 				HashMap<Query, Integer> totalImpressions = new HashMap<Query,Integer>();
 				for(Query q : querySpace) {
 					int imps = 0;
-					HashMap<Product, HashMap<UserState, Integer>> userDistsUpdate = allUserDists.get(i);
 					for(Product product : status.getRetailCatalog()) {
-						HashMap<UserState, Integer> userDist = userDistsUpdate.get(product);
+						HashMap<UserState, Integer> userDist = userDists.get(product);
 						if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 							imps += userDist.get(UserState.F0);
 							imps += (1.0/3.0)*userDist.get(UserState.IS);
@@ -387,20 +404,32 @@ public class PredictionEvaluator {
 				model.updateModel(totalImpressions);
 			}
 
-			ourTotErrorMegaMap.put(filename,ourTotError);
-			ourTotActualMegaMap.put(filename,ourTotActual);
-			ourTotErrorCounterMegaMap.put(filename,ourTotErrorCounter);
+			ourTotErrorCurrMegaMap.put(filename,ourTotErrorCurr);
+			ourTotActualCurrMegaMap.put(filename,ourTotActualCurr);
+			ourTotErrorCounterCurrMegaMap.put(filename,ourTotErrorCounterCurr);
+
+			ourTotErrorPredMegaMap.put(filename,ourTotErrorPred);
+			ourTotActualPredMegaMap.put(filename,ourTotActualPred);
+			ourTotErrorCounterPredMegaMap.put(filename,ourTotErrorCounterPred);
 		}
-		ArrayList<Double> RMSEList = new ArrayList<Double>();
+		ArrayList<Double> RMSEListCurr = new ArrayList<Double>();
+		ArrayList<Double> RMSEListPred = new ArrayList<Double>();
 		for(String file : filenames) {
-			double totError = ourTotErrorMegaMap.get(file);
-			int totErrorCounter = ourTotErrorCounterMegaMap.get(file);
+			double totError = ourTotErrorCurrMegaMap.get(file);
+			int totErrorCounter = ourTotErrorCounterCurrMegaMap.get(file);
 			double MSE = (totError/totErrorCounter);
 			double RMSE = Math.sqrt(MSE);
-			RMSEList.add(RMSE);
+			RMSEListCurr.add(RMSE);
+
+			double totErrorPred = ourTotErrorPredMegaMap.get(file);
+			int totErrorCounterPred = ourTotErrorCounterPredMegaMap.get(file);
+			double MSEPred = (totErrorPred/totErrorCounterPred);
+			double RMSEPred = Math.sqrt(MSEPred);
+			RMSEListPred.add(RMSEPred);
 		}
-		double[] rmseStd = getStdDevAndMean(RMSEList);
-		System.out.println(baseModel + ", " + rmseStd[0]);
+		double[] rmseStd = getStdDevAndMean(RMSEListCurr);
+		double[] rmseStdPred = getStdDevAndMean(RMSEListPred);
+		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStdPred[0]);
 	}
 
 	public void queryToNumImpPredictionChallenge(AbstractQueryToNumImp baseModel) throws IOException, ParseException {
@@ -2745,9 +2774,10 @@ public class PredictionEvaluator {
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			JBERGParticleFilter userModel = new JBERGParticleFilter(Double.parseDouble(args[0]),Double.parseDouble(args[1]));
+			jbergParticleFilter userModel = new jbergParticleFilter();
 			evaluator.userStatePredictionChallenge(userModel);
-
+			evaluator.userStatePredictionChallenge(new OldUserModel());
+			
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
 			//						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,40, true,0.84, false, false, false, false, false, false));
