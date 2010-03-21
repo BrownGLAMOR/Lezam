@@ -116,15 +116,17 @@ public class WEKAEnsembleBidToPrClick extends AbstractBidToPrClick {
 		/*
 		 * Add Models
 		 */
-		for(double weight = 1.0; weight > .89; weight -= .1) {
-			for(int i = 1; i < 8; i++) {
-				addModel(new WEKABidToPrClick(i,weight));
+		for(int numDays = 20; numDays < 60; numDays += 20) {
+			for(double weight = 1.0; weight > .89; weight -= .1) {
+				for(int i = 1; i < 8; i++) {
+					addModel(new WEKABidToPrClick(i,weight,numDays));
+				}
 			}
 		}
 
-		for(int i = 1; i < 20; i++) {
-			addModel(new WEKAClassifBidToPrClick(i));
-		}
+		//		for(int i = 1; i < 20; i++) {
+		//			addModel(new WEKAClassifBidToPrClick(i));
+		//		}
 	}
 
 	@Override

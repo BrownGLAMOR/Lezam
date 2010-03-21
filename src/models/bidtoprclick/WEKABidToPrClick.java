@@ -42,10 +42,12 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 	Classifier _predictor;
 	int _idx;
 	double _weight;
+	private int _maxDays;
 
-	public WEKABidToPrClick(int idx,double weight) {
+	public WEKABidToPrClick(int idx,double weight, int maxDays) {
 		_idx = idx;
 		_weight = weight;
+		_maxDays = maxDays;
 		Attribute bidAttribute = new Attribute("bid");
 		Attribute prClickAttribute = new Attribute("prclick");
 		FastVector fvQuery = new FastVector(16);
@@ -235,6 +237,10 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, BidBundle bidBundle) {
 
+		while(_data.numInstances() > _maxDays*16) {
+			_data.delete(0);
+		}
+		
 		if(_weight > 0.0 && _weight != 0) {
 			/*
 			 * Reweight old data
@@ -289,7 +295,7 @@ public class WEKABidToPrClick extends AbstractBidToPrClick {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new WEKABidToPrClick(_idx,_weight);
+		return new WEKABidToPrClick(_idx,_weight,_maxDays);
 	}
 
 	@Override

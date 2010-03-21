@@ -172,7 +172,7 @@ public class KitchenSinkEnsembleBidToPrClick extends AbstractBidToPrClick {
 		addModel(new RegressionBidToPrClick(_rConnection, _querySpace, false,4,20, _targModel, true,0.99, false, false, false, false));
 		for(double weight = 1.0; weight > .89; weight -= .1) {
 			for(int i = 1; i < 8; i++) {
-				addModel(new WEKABidToPrClick(i,weight));
+				addModel(new WEKABidToPrClick(i,weight,60));
 			}
 		}
 
