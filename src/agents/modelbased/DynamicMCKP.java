@@ -59,7 +59,7 @@ public class DynamicMCKP extends AbstractAgent {
 
 	private double _safetyBudget = 800;
 
-	private Random _R = new Random();
+	private Random _R;
 	private boolean DEBUG = false;
 	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
@@ -80,7 +80,8 @@ public class DynamicMCKP extends AbstractAgent {
 	private boolean salesDistFlag;
 
 	public DynamicMCKP() {
-		_R.setSeed(124962748);
+//		_R.setSeed(124962748);
+		_R = new Random();
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;
