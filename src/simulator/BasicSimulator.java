@@ -53,6 +53,7 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import agents.AbstractAgent;
 import agents.modelbased.DrMCKPBid;
+import agents.modelbased.DynamicMCKP;
 import agents.modelbased.ExoMCKPBid;
 import agents.modelbased.ExoMCKPBidExhaustive;
 import agents.modelbased.G4;
@@ -249,7 +250,7 @@ public class BasicSimulator {
 		double totalOverCapAbs = 0.0;
 
 		for(int day = firstDay; day < 59; day++) {
-
+			double start = System.currentTimeMillis();
 			/*
 			 * ENSURE GARBAGE COLLECTOR IS RUN BETWEEN ITERATIONS
 			 */
@@ -275,8 +276,18 @@ public class BasicSimulator {
 
 			_pregenUsers = null;
 
+			double stop = System.currentTimeMillis();
+			double elapsed = stop - start;
+			System.out.println("(" + day + ") time spent updating models  " + (elapsed / 1000) + " seconds");
+
+			start = System.currentTimeMillis();
 
 			HashMap<String, Reports> maps = runSimulation(agent);
+			stop = System.currentTimeMillis();
+			elapsed = stop - start;
+			System.out.println("(" + day + ") time spent bidding  " + (elapsed / 1000) + " seconds");
+
+			start = System.currentTimeMillis();
 
 			//			/*
 			//			 * TEST PERFECT MODEL ERROR
@@ -578,78 +589,81 @@ public class BasicSimulator {
 				reportsListMap.put(_agents[i],reports);
 			}
 
-			/*
-			 * TESTING
-			 */
-			LinkedList<Reports> reports = reportsListMap.get(_agents[_ourAdvIdx]);
-			double totalRevenue = 0.0;
-			double totalCost = 0.0;
-			double totalImp = 0.0;
-			double totalClick = 0.0;
-			double totalConv = 0.0;
-			double totalNoneConv = 0.0;
-			double totalCompConv = 0.0;
-			double totalManConv = 0.0;
-			double totalPerfConv = 0.0;
-			double totalPos = 0.0;
-			for(Reports report : reports) {
-				QueryReport queryReport = report.getQueryReport();
-				SalesReport salesReport = report.getSalesReport();
-				for(Query query : _querySpace) {
-					totalRevenue += salesReport.getRevenue(query);
-					totalCost += queryReport.getCost(query);
-					totalImp += queryReport.getImpressions(query);
-					totalClick += queryReport.getClicks(query);
-					totalConv += salesReport.getConversions(query);
-					if(Double.isNaN(queryReport.getPosition(query))) {
-						totalPos += 6.0;
-					}
-					else {
-						totalPos += queryReport.getPosition(query);
-					}
-					if(_ourManSpecialty.equals(query.getManufacturer())) {
-						totalManConv += salesReport.getConversions(query);
-					}
-					if(_ourCompSpecialty.equals(query.getComponent())) {
-						totalCompConv += salesReport.getConversions(query);
-					}
-					if(_ourManSpecialty.equals(query.getManufacturer()) && _ourCompSpecialty.equals(query.getComponent())) {
-						totalPerfConv += salesReport.getConversions(query);
-					}
-					if(!(_ourManSpecialty.equals(query.getManufacturer()) || _ourCompSpecialty.equals(query.getComponent()))) {
-						totalNoneConv += salesReport.getConversions(query);
-					}
-				}
-			}
-
-			double totSales = 0.0;
-			Integer[] salesOverWindow = _salesOverWindow.get(_agents[_ourAdvIdx]);
-			for(int i = 0; i < salesOverWindow.length; i++) {
-				totSales += salesOverWindow[i];
-			}
-			double capacity = _capacities.get(_agents[_ourAdvIdx]);
-
-			if(capacity != 0) {
-				totalOverCapPerc += (totSales/capacity);
-			}
-			if(totSales - capacity > 0) {
-				totalOverCapAbs += (totSales - capacity);
-			}
-
-			String output = agent + ", ";
-			output += totalRevenue + ", ";
-			output += totalCost + ", ";
-			output += totalImp + ", ";
-			output += totalClick + ", ";
-			output += totalConv + ", ";
-			output += totalNoneConv/totalConv + ", ";
-			output += totalManConv/totalConv + ", ";
-			output += totalCompConv/totalConv + ", ";
-			output += totalPerfConv/totalConv + ", ";
-			output += totalPos/(reports.size()*16) + ", ";
-			output += totalOverCapPerc/(reports.size()) + ", ";
-			output += totalOverCapAbs/(reports.size()) + ", ";
-			//			System.out.println(output);
+			//			/*
+			//			 * TESTING
+			//			 */
+			//			LinkedList<Reports> reports = reportsListMap.get(_agents[_ourAdvIdx]);
+			//			double totalRevenue = 0.0;
+			//			double totalCost = 0.0;
+			//			double totalImp = 0.0;
+			//			double totalClick = 0.0;
+			//			double totalConv = 0.0;
+			//			double totalNoneConv = 0.0;
+			//			double totalCompConv = 0.0;
+			//			double totalManConv = 0.0;
+			//			double totalPerfConv = 0.0;
+			//			double totalPos = 0.0;
+			//			for(Reports report : reports) {
+			//				QueryReport queryReport = report.getQueryReport();
+			//				SalesReport salesReport = report.getSalesReport();
+			//				for(Query query : _querySpace) {
+			//					totalRevenue += salesReport.getRevenue(query);
+			//					totalCost += queryReport.getCost(query);
+			//					totalImp += queryReport.getImpressions(query);
+			//					totalClick += queryReport.getClicks(query);
+			//					totalConv += salesReport.getConversions(query);
+			//					if(Double.isNaN(queryReport.getPosition(query))) {
+			//						totalPos += 6.0;
+			//					}
+			//					else {
+			//						totalPos += queryReport.getPosition(query);
+			//					}
+			//					if(_ourManSpecialty.equals(query.getManufacturer())) {
+			//						totalManConv += salesReport.getConversions(query);
+			//					}
+			//					if(_ourCompSpecialty.equals(query.getComponent())) {
+			//						totalCompConv += salesReport.getConversions(query);
+			//					}
+			//					if(_ourManSpecialty.equals(query.getManufacturer()) && _ourCompSpecialty.equals(query.getComponent())) {
+			//						totalPerfConv += salesReport.getConversions(query);
+			//					}
+			//					if(!(_ourManSpecialty.equals(query.getManufacturer()) || _ourCompSpecialty.equals(query.getComponent()))) {
+			//						totalNoneConv += salesReport.getConversions(query);
+			//					}
+			//				}
+			//			}
+			//
+			//			double totSales = 0.0;
+			//			Integer[] salesOverWindow = _salesOverWindow.get(_agents[_ourAdvIdx]);
+			//			for(int i = 0; i < salesOverWindow.length; i++) {
+			//				totSales += salesOverWindow[i];
+			//			}
+			//			double capacity = _capacities.get(_agents[_ourAdvIdx]);
+			//
+			//			if(capacity != 0) {
+			//				totalOverCapPerc += (totSales/capacity);
+			//			}
+			//			if(totSales - capacity > 0) {
+			//				totalOverCapAbs += (totSales - capacity);
+			//			}
+			//
+			//			String output = agent + ", ";
+			//			output += totalRevenue + ", ";
+			//			output += totalCost + ", ";
+			//			output += totalImp + ", ";
+			//			output += totalClick + ", ";
+			//			output += totalConv + ", ";
+			//			output += totalNoneConv/totalConv + ", ";
+			//			output += totalManConv/totalConv + ", ";
+			//			output += totalCompConv/totalConv + ", ";
+			//			output += totalPerfConv/totalConv + ", ";
+			//			output += totalPos/(reports.size()*16) + ", ";
+			//			output += totalOverCapPerc/(reports.size()) + ", ";
+			//			output += totalOverCapAbs/(reports.size()) + ", ";
+			//			//			System.out.println(output);
+			stop = System.currentTimeMillis();
+			elapsed = stop - start;
+			System.out.println("(" + day + ") time spent doing bullshit  " + (elapsed / 1000) + " seconds");
 		}
 		return reportsListMap;
 	}
@@ -1912,13 +1926,13 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new ILPBidSearchAgent(10);
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
-		//				AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
-		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
+		AbstractAgent agent = new DynamicMCKP();
 		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
-		//						AbstractAgent agent = new ExoMCKPBid(false,false,false);
-		//				AbstractAgent agent = new ExoMCKPBidExhaustive(5);
-		//		AbstractAgent agent = new ExoMCKPBidExhaustive(10);
+		//								AbstractAgent agent = new ExoMCKPBid(false,false,false);
+		//						AbstractAgent agent = new ExoMCKPBidExhaustive(5);
+		//				AbstractAgent agent = new ExoMCKPBidExhaustive(10);
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
 
 
@@ -1949,9 +1963,9 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
 		//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
 		agentList.add(agent);
-		agentList.add(agent);
-		agentList.add(agent);
-		agentList.add(agent);
+		//		agentList.add(agent);
+		//		agentList.add(agent);
+		//		agentList.add(agent);
 		//		agentList.add(agent1);
 		//		agentList.add(agent2);
 		//		agentList.add(agent3);
@@ -1959,14 +1973,17 @@ public class BasicSimulator {
 		//		agentList.add(agent5);
 		//		agentList.add(agent6);
 		//		agentList.add(agent7);
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/u/jberg/finals/day-2/server-1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
 		Random r = new Random();
-		for(AbstractAgent agentItr : agentList) {
+		int numSims = 40;
+		double val = 0;
+		for(int i = 0; i < numSims; i++) {
 			sim.setSeed(r.nextLong());
-			sim.runSimulations(baseFile,1425,1465,0,0, agentItr);
+			val += sim.runSimulations(baseFile,1425+i,1425+i+1,0,0, agent);
 		}
+		System.out.println("AVERAGE VALUE: " + val/numSims);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
