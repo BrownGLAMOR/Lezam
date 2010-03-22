@@ -1,3 +1,0 @@
-#
-#Sun Jul 05 16:14:00 EDT 2009
-num_games=130
