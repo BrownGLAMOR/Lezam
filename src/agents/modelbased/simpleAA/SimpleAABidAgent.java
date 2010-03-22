@@ -313,6 +313,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 			for(Query q : _querySpace) {
 				ArrayList<Item> items = new ArrayList<Item>();
 				double minClickPr = 0;
+				int setID = 0;
 				for(int i = 0; i < _bidList.size(); i++) {
 					double bid = _bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
@@ -359,10 +360,11 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, LAMBDA, specialty, _CSB);
 					TACProfitFunction profitFunc = new TACProfitFunction(_salesPrices.get(q), numClicks, CPC, weightFunc);
-					Item item = new Item(profitFunc,weightFunc,i);
+					Item item = new Item(profitFunc,weightFunc,i,setID);
 					items.add(item);
 				}
-				itemSets.add(new ItemSet(items));
+				itemSets.add(new ItemSet(items,setID));
+				setID++;
 			}
 
 			MCKProblem problem = new MCKProblem(itemSets, remainingCap);
