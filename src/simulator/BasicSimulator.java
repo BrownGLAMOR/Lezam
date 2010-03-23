@@ -1985,7 +1985,7 @@ public class BasicSimulator {
 		double val = 0;
 		for(int i = 0; i < numSims; i++) {
 			sim.setSeed(r.nextLong());
-			val += sim.runSimulations(baseFile,1434+i,1434+i+1,0,0, agent);
+			val += sim.runSimulations(baseFile,1425+i,1425+i+1,0,0, agent);
 		}
 		System.out.println("AVERAGE VALUE: " + val/numSims);
 
