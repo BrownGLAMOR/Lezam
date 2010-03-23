@@ -66,6 +66,7 @@ import agents.modelbased.MCKPBidNoDomElim;
 import agents.modelbased.SemiEndoMCKPBidExhaustive;
 import agents.modelbased.MCKPPos;
 import agents.modelbased.MCKPPosSearch;
+import agents.modelbased.simpleAA.SimpleAABidAgent;
 import agents.olderagents.Cheap;
 import agents.olderagents.ClickProfitC;
 import agents.olderagents.ConstantPM;
@@ -1928,7 +1929,8 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
 		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
-		AbstractAgent agent = new DynamicMCKP();
+		//		AbstractAgent agent = new DynamicMCKP();
+		AbstractAgent agent = new SimpleAABidAgent();
 		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
 		//								AbstractAgent agent = new ExoMCKPBid(false,false,false);
 		//						AbstractAgent agent = new ExoMCKPBidExhaustive(5);

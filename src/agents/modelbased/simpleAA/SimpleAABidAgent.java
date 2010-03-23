@@ -45,8 +45,8 @@ import edu.brown.cs.aa.algorithms.mck.MCKSolver;
 import edu.brown.cs.aa.problem.Function;
 import edu.brown.cs.aa.problem.Item;
 import edu.brown.cs.aa.problem.ItemSet;
-import edu.brown.cs.aa.problem.TACProfitFunction;
-import edu.brown.cs.aa.problem.TACWeightFunction;
+import edu.brown.cs.aa.problem.TAC.TACProfitFunction;
+import edu.brown.cs.aa.problem.TAC.TACWeightFunction;
 import edu.brown.cs.aa.problem.mck.MCKProblem;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -309,17 +309,43 @@ public class SimpleAABidAgent extends AbstractAgent {
 				remainingCap = _capacity - _unitsSold.getWindowSold();
 			}
 
-			Set<ItemSet> itemSets = new HashSet<ItemSet>();
+			Set<ItemSet> itemSets = new LinkedHashSet<ItemSet>();
+			String output = "";
+			output += remainingCap + "\n";
+			output += _querySpace.size() + "\n\n";
+			
+			output += LAMBDA + "\n";
+			output += _CSB + "\n\n";
+			int setID = 0;
 			for(Query q : _querySpace) {
+				output += _bidList.size() + "\n";
 				ArrayList<Item> items = new ArrayList<Item>();
 				double minClickPr = 0;
-				int setID = 0;
+				double minCPC = 0;
+				
+				double specialty;
+				String component = q.getComponent();
+				if(_compSpecialty.equals(component)) {
+					specialty = 1.0;
+				}
+				else if(component == null) {
+					specialty = 1.0/3.0;
+				}
+				else {
+					specialty = 0.0;
+				}
+				
+				double convProb = _convPrModel.getPrediction(q);
+				if(Double.isNaN(convProb)) {
+					convProb = 0.0;
+				}
+				
+				output += convProb + " " + _salesPrices.get(q) + " " + specialty + "\n";
 				for(int i = 0; i < _bidList.size(); i++) {
 					double bid = _bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
 					double CPC = _bidToCPC.getPrediction(q, bid);
-					double convProb = _convPrModel.getPrediction(q);
 
 					if(Double.isNaN(CPC)) {
 						CPC = 0.0;
@@ -327,10 +353,6 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 					if(Double.isNaN(clickPr)) {
 						clickPr = 0.0;
-					}
-
-					if(Double.isNaN(convProb)) {
-						convProb = 0.0;
 					}
 
 					/*
@@ -343,31 +365,35 @@ public class SimpleAABidAgent extends AbstractAgent {
 					else {
 						minClickPr = clickPr;
 					}
+					
+					/*
+					 * CPC should always be increasing
+					 * with our current models
+					 */
+					if(CPC < minCPC) {
+						CPC = minCPC;
+					}
+					else {
+						minCPC = CPC;
+					}
 
 					double numClicks = clickPr*numImps;
 
-					double specialty;
-					String component = q.getComponent();
-					if(_compSpecialty.equals(component)) {
-						specialty = 1.0;
-					}
-					else if(component == null) {
-						specialty = 1.0/3.0;
-					}
-					else {
-						specialty = 0.0;
-					}
-
 					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, LAMBDA, specialty, _CSB);
 					TACProfitFunction profitFunc = new TACProfitFunction(_salesPrices.get(q), numClicks, CPC, weightFunc);
+					output += numClicks + " " + CPC + "\n";
 					Item item = new Item(profitFunc,weightFunc,i,setID);
 					items.add(item);
 				}
 				itemSets.add(new ItemSet(items,setID));
 				setID++;
+				output += "\n";
 			}
+			
+			System.out.println(output);
 
 			MCKProblem problem = new MCKProblem(itemSets, remainingCap);
+			System.out.println(problem);
 
 			MCKSolver solver = new AllDeltasMCKSolver();
 
