@@ -180,7 +180,7 @@ public class BasicSimulator {
 
 	private HashMap<Query,HashMap<Double,LinkedList<Reports>>> _singleQueryReports;
 
-	private long lastSeed = 848361943;
+	private long lastSeed = 68616;
 
 	private ArrayList<SimUser> _pregenUsers;
 
@@ -250,6 +250,8 @@ public class BasicSimulator {
 		double totalOverCapPerc = 0.0;
 		double totalOverCapAbs = 0.0;
 
+		System.out.println(_agents[_ourAdvIdx]);
+		
 		for(int day = firstDay; day < 59; day++) {
 			double start = System.currentTimeMillis();
 			/*
@@ -282,7 +284,7 @@ public class BasicSimulator {
 			System.out.println("(" + day + ") time spent updating models  " + (elapsed / 1000) + " seconds");
 
 			start = System.currentTimeMillis();
-
+			
 			HashMap<String, Reports> maps = runSimulation(agent);
 			stop = System.currentTimeMillis();
 			elapsed = stop - start;
@@ -1979,11 +1981,11 @@ public class BasicSimulator {
 		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
 		Random r = new Random();
-		int numSims = 40;
+		int numSims = 1;
 		double val = 0;
 		for(int i = 0; i < numSims; i++) {
 			sim.setSeed(r.nextLong());
-			val += sim.runSimulations(baseFile,1425+i,1425+i+1,0,0, agent);
+			val += sim.runSimulations(baseFile,1434+i,1434+i+1,0,0, agent);
 		}
 		System.out.println("AVERAGE VALUE: " + val/numSims);
 

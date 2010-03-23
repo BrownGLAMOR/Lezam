@@ -1,5 +1,8 @@
 package agents.modelbased.simpleAA;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,9 +94,9 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 	public SimpleAABidAgent() {
 		//		_R.setSeed(124962748);
-		_R = new Random();
+		_R = new Random(61686);
 		_bidList = new LinkedList<Double>();
-		double bidIncrement  = .05;
+		double bidIncrement  = .04;
 		double bidMin = .04;
 		double bidMax = 1.65;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -313,7 +316,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 			String output = "";
 			output += remainingCap + "\n";
 			output += _querySpace.size() + "\n\n";
-			
+
 			output += LAMBDA + "\n";
 			output += _CSB + "\n\n";
 			int setID = 0;
@@ -322,7 +325,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 				ArrayList<Item> items = new ArrayList<Item>();
 				double minClickPr = 0;
 				double minCPC = 0;
-				
+
 				double specialty;
 				String component = q.getComponent();
 				if(_compSpecialty.equals(component)) {
@@ -334,12 +337,12 @@ public class SimpleAABidAgent extends AbstractAgent {
 				else {
 					specialty = 0.0;
 				}
-				
+
 				double convProb = _convPrModel.getPrediction(q);
 				if(Double.isNaN(convProb)) {
 					convProb = 0.0;
 				}
-				
+
 				output += convProb + " " + _salesPrices.get(q) + " " + specialty + "\n";
 				for(int i = 0; i < _bidList.size(); i++) {
 					double bid = _bidList.get(i);
@@ -365,7 +368,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 					else {
 						minClickPr = clickPr;
 					}
-					
+
 					/*
 					 * CPC should always be increasing
 					 * with our current models
@@ -389,11 +392,12 @@ public class SimpleAABidAgent extends AbstractAgent {
 				setID++;
 				output += "\n";
 			}
-			
-			System.out.println(output);
+
+			//			System.out.println(output);
+
 
 			MCKProblem problem = new MCKProblem(itemSets, remainingCap);
-			System.out.println(problem);
+			//			System.out.println(problem);
 
 			MCKSolver solver = new AllDeltasMCKSolver();
 
@@ -474,7 +478,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "DynamicMCKPBid";
+		return "SimpleAABidAgent";
 	}
 
 	@Override
