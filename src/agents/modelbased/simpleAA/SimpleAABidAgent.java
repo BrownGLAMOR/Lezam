@@ -41,14 +41,17 @@ import models.usermodel.AbstractUserModel;
 import models.usermodel.BasicUserModel;
 import agents.AbstractAgent;
 import agents.AbstractAgent.Predictions;
+import edu.brown.cs.aa.algorithms.Decisions;
 import edu.brown.cs.aa.algorithms.Solution;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.ExhaustiveMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.MCKSolver;
-import edu.brown.cs.aa.problem.Function;
+import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver.SolverProperty;
+import edu.brown.cs.aa.problem.func.Function;
 import edu.brown.cs.aa.problem.Item;
 import edu.brown.cs.aa.problem.ItemSet;
 import edu.brown.cs.aa.problem.TAC.TACProfitFunction;
+import edu.brown.cs.aa.problem.TAC.TACProfitMultiDayFuncion;
 import edu.brown.cs.aa.problem.TAC.TACWeightFunction;
 import edu.brown.cs.aa.problem.mck.MCKProblem;
 import edu.umich.eecs.tac.props.Ad;
@@ -96,7 +99,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 		//		_R.setSeed(124962748);
 		_R = new Random(61686);
 		_bidList = new LinkedList<Double>();
-		double bidIncrement  = .04;
+		double bidIncrement  = .05;
 		double bidMin = .04;
 		double bidMax = 1.65;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -304,6 +307,32 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 
 		if(_day > lagDays) {
+
+			ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+			ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
+
+			Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+			if(expectedConvsYesterday == null) {
+				expectedConvsYesterday = 0;
+				int counter2 = 0;
+				for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
+					counter2++;
+				}
+				expectedConvsYesterday /= (double)counter2;
+			}
+			soldArray.add(expectedConvsYesterday);
+			/*
+			 * We only want the last 4 days
+			 */
+			while (soldArray.size() < 4) {
+				soldArray.add(0,(int) (_capacity/((double)_capWindow)));
+			}
+
+			while(soldArray.size() > 4) {
+				soldArray.remove(0);
+			}
+
 			double remainingCap;
 			if(_day < 4) {
 				remainingCap = _capacity/((double)_capWindow);
@@ -314,6 +343,9 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 			Set<ItemSet> itemSets = new LinkedHashSet<ItemSet>();
 			String output = "";
+			output += ((int) _day) + "\n";
+			output += soldArray + "\n";
+			output += _capacity + "\n";
 			output += remainingCap + "\n";
 			output += _querySpace.size() + "\n\n";
 
@@ -392,16 +424,38 @@ public class SimpleAABidAgent extends AbstractAgent {
 				setID++;
 				output += "\n";
 			}
+			
+//			System.out.println(output);
+			
 
-			//			System.out.println(output);
+//			FileOutputStream fout;		
+//
+//			try
+//			{
+//				// Open an output stream
+//				fout = new FileOutputStream ("TAC.68616.61686.1425." +_day + ".inst");
+//
+//				// Print a line of text
+//				new PrintStream(fout).print(output);
+//
+//				// Close our output stream
+//				fout.close();		
+//			}
+//			// Catches any error conditions
+//			catch (IOException e)
+//			{
+//				System.err.println ("Unable to write to file");
+//				System.exit(-1);
+//			}
 
-
-			MCKProblem problem = new MCKProblem(itemSets, remainingCap);
+			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,5);
+			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
 			MCKSolver solver = new AllDeltasMCKSolver();
 
-			Solution solution = solver.solve(problem);
+			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,SolverProperty.INCREMENT,5);
+			Decisions decisions = solution.getDecisions();
 
 			Iterator<ItemSet> iterator = itemSets.iterator();
 			for(Query q : _querySpace) {
@@ -410,7 +464,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 				int bidIdx = -1;
 				int counter = 0;
 				for(Item item : itemSet) {
-					if(solution.isTakingItem(item)) {
+					if(solution.isTakingItem(item) && 1 - decisions.getAmountTaken(item) < .05) { //take the item if we took at least 95% of it
 						bidIdx = counter;
 						break;
 					}
@@ -445,8 +499,16 @@ public class SimpleAABidAgent extends AbstractAgent {
 			}
 			bidBundle.setCampaignDailySpendLimit(800);
 		}
-		//		System.out.println(bidBundle);
+		System.out.println(bidBundle);
 		return bidBundle;
+	}
+	
+	private ArrayList<Integer> getCopy(ArrayList<Integer> soldArrayTMP) {
+		ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP.size());
+		for(int i = 0; i < soldArrayTMP.size(); i++) {
+			soldArray.add(soldArrayTMP.get(i));
+		}
+		return soldArray;
 	}
 
 	public double getConversionPrWithPenalty(Query q, double penalty) {
