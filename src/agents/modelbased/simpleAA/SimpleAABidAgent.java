@@ -44,6 +44,7 @@ import agents.AbstractAgent.Predictions;
 import edu.brown.cs.aa.algorithms.Decisions;
 import edu.brown.cs.aa.algorithms.Solution;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver;
+import edu.brown.cs.aa.algorithms.mck.DynamicMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.ExhaustiveMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.MCKSolver;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver.SolverProperty;
@@ -448,13 +449,16 @@ public class SimpleAABidAgent extends AbstractAgent {
 //				System.exit(-1);
 //			}
 
-			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,5);
+			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,15);
 			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
-			MCKSolver solver = new AllDeltasMCKSolver();
+//			MCKSolver solver = new AllDeltasMCKSolver();
+//			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,_capacity,10);
 
-			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,SolverProperty.INCREMENT,5);
+			MCKSolver solver = new DynamicMCKSolver();
+			Solution solution = solver.solve(problem);
+			
 			Decisions decisions = solution.getDecisions();
 
 			Iterator<ItemSet> iterator = itemSets.iterator();

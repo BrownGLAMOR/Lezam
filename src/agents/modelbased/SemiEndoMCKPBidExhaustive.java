@@ -90,7 +90,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 //			throw new RuntimeException("Could not initialize CPLEX");
 //		}
 
-		_R.setSeed(124962748);
+		_R.setSeed(61686);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
 		double bidIncrement  = .05;
@@ -474,7 +474,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 			}
 			bidBundle.setCampaignDailySpendLimit(800);
 		}
-		//		System.out.println(bidBundle);
+				System.out.println(bidBundle);
 		return bidBundle;
 	}
 
@@ -782,7 +782,6 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 		return solution;
 	}
 
-	//asdf
 	/**
 	 * Get undominated items
 	 * @param items

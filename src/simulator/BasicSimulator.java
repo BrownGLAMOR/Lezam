@@ -251,7 +251,7 @@ public class BasicSimulator {
 		double totalOverCapAbs = 0.0;
 
 		System.out.println(_agents[_ourAdvIdx]);
-		
+
 		for(int day = firstDay; day < 59; day++) {
 			double start = System.currentTimeMillis();
 			/*
@@ -284,7 +284,7 @@ public class BasicSimulator {
 			System.out.println("(" + day + ") time spent updating models  " + (elapsed / 1000) + " seconds");
 
 			start = System.currentTimeMillis();
-			
+
 			HashMap<String, Reports> maps = runSimulation(agent);
 			stop = System.currentTimeMillis();
 			elapsed = stop - start;
@@ -1930,64 +1930,42 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(5);
+		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
 		//		AbstractAgent agent = new DynamicMCKP();
-		AbstractAgent agent = new SimpleAABidAgent();
-		//				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
-		//								AbstractAgent agent = new ExoMCKPBid(false,false,false);
-		//						AbstractAgent agent = new ExoMCKPBidExhaustive(5);
-		//				AbstractAgent agent = new ExoMCKPBidExhaustive(10);
+		//		AbstractAgent agent = new SimpleAABidAgent();
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
 
-
-
-		//		AbstractAgent agent = new AdjustPPS(0.00172288, 0.260363, 0.00792021, -0.0682618, 9.85474, -0.00840323, 0.179635, 0.00969242, -0.0208566);
-		//		AbstractAgent agent = new MCKPBidTrueOneDay();
-		//		AbstractAgent agent = new MCKPBidPriceline(true);
-		//		AbstractAgent agent = new MCKPBidPriceline(false);
-		//		AbstractAgent agent = new MCKPBidNoDomElim();
-		//		AbstractAgent agent = new DrMCKPBid(30);
-		//		AbstractAgent agent = new AdjustPPS();
-		//				AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.266667);
-		//				AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.23333399999999999,0.0,0.09999600000000003);
-		//				AbstractAgent agent = new EquatePM(0.7500000000000001,0.0080,-0.10000199999999998,0.010000000000000002,-0.266667);
-		//				AbstractAgent agent = new EquateROI(3.100000000000001,0.0040,-0.03333599999999998,0.010000000000000002,-0.266667);
-		//				AbstractAgent agent = new AdjustROI(0.0060,-0.3,-0.0010,0.09999600000000003,3.300000000000001,-0.0010,0.033330000000000026,0.0010,-0.06666899999999998);
-		//				AbstractAgent agent = new AdjustPR(0.0020,0.26666100000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0030,0.09999600000000003,0.0070,0.033330000000000026);
-		//				AbstractAgent agent = new AdjustPPS(0.0050,-0.06666899999999998,-0.0080,0.29999400000000004,10.5,-0.0030,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
-		//				AbstractAgent agent = new AdjustPM(-0.0060,-0.3,0.0070,-0.13333499999999998,0.9000000000000002,0.0,0.23332800000000004,-0.0010,0.13332900000000003);
-
-
-		//		AbstractAgent agent = new AdjustPM(-0.0060,-0.20000099999999998,0.0020,-0.13333499999999998,0.9000000000000002,0.0,0.29999400000000004,-0.0020,0.13332900000000003);
-		//		AbstractAgent agent = new AdjustPR(0.0070,0.29999400000000004,0.0050,0.23332800000000004,3.100000000000001,-0.0050,0.09999600000000003,0.0070,-0.23333399999999999);
-		//		AbstractAgent agent = new AdjustPPS(-0.01,-0.20000099999999998,-0.01,-0.23333399999999999,10.5,-0.0060,0.033330000000000026,-0.009000000000000001,-2.9999999999752447E-6);
-		//		AbstractAgent agent = new AdjustROI(-0.009000000000000001,-0.3,-0.0010,-0.03333599999999998,3.100000000000001,-0.0010,0.033330000000000026,-0.0040,-0.06666899999999998);
-		//		AbstractAgent agent = new EquatePM(0.7500000000000001,0.0030,0.06666300000000003,0.009000000000000001,-0.266667);
-		//		AbstractAgent agent = new EquatePR(3.300000000000001,0.0010,-0.13333499999999998,0.0020,-0.23333399999999999);
-		//		AbstractAgent agent = new EquatePPS(12.0,0.0050,-0.20000099999999998,0.0,0.09999600000000003);
-		//		AbstractAgent agent = new EquateROI(2.900000000000001,0.0070,-0.03333599999999998,0.010000000000000002,-0.13333499999999998);
+		//				AbstractAgent agent = new AdjustPM(0.686743, -0.000353812, 0.299863, 1.01154, 1.03659, -0.0132298, 0.285105, 0.973766, 0.92795, -0.00170141, -0.22702, 1.01381, 0.854239, 0.0115663, -0.163355, 0.973135, 0.609952, 13.3482, 0.0843768, 1.84622, 1.43106, 1.88905, 1.43946, 1.47886, 1.16991, 0.0438713, 1.44705);
+		//				AbstractAgent agent = new AdjustPR(3.80653, -0.00701569, 0.259816, 0.999985, 1.02196, 0.0199122, 0.273483, 0.982057, 0.855329, -0.00245904, 0.262015, 0.955847, 0.802491, 0.02, -0.159907, 1.0063, 0.651212, 0.772753, 0.158466, 1.73913, 1.80407, 1.8871, 1.38626, 1.77109, 1.85207, 0.406292, 1.85928);
+		//				AbstractAgent agent = new AdjustROI(4, -0.00484405, 0.233176, 0.965432, 0.903918, -0.0102682, 0.254715, 1.02, 0.938267, 0.00130386, 0.00265896, 0.950297, 0.930434, 0.00742445, -0.281294, 0.978246, 0.655776, 4.06948, 0.403303, 1.28743, 1.20856, 1.29231, 1.06009, 0.958351, 1.74205, 0.214497, 2.42602);
+		//				AbstractAgent agent = new AdjustPPS(10.1797, 0.0105298, 0.138266, 1.00399, 0.652521, -0.00715003, 0.0772176, 1.0012, 0.745106, -0.00136519, -0.136393, 1.00045, 0.814151, 0.0161865, 0.223028, 0.976624, 0.644539, 19.2077, 0.965848, 1.74058, 1.81001, 1.63538, 1.86947, 1.85851, 2, 0.333846, 1.78334);
+		//				AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
+		//				AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
+		//				AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
+		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
 		agentList.add(agent);
-		//		agentList.add(agent);
-		//		agentList.add(agent);
-		//		agentList.add(agent);
-		//		agentList.add(agent1);
-		//		agentList.add(agent2);
-		//		agentList.add(agent3);
-		//		agentList.add(agent4);
-		//		agentList.add(agent5);
-		//		agentList.add(agent6);
-		//		agentList.add(agent7);
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
 		Random r = new Random();
-		int numSims = 1;
+
+
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
+
+		//		int min = 1425;
+		//		int max = 1465;
+
+		int min = 297;
+		int max = 337;
+
+
+
 		double val = 0;
-		for(int i = 0; i < numSims; i++) {
+		for(int i = min; i < max; i++) {
 			sim.setSeed(r.nextLong());
-			val += sim.runSimulations(baseFile,1425+i,1425+i+1,0,0, agent);
+			val += sim.runSimulations(baseFile,i,i+1,0,0, agent);
 		}
-		System.out.println("AVERAGE VALUE: " + val/numSims);
+		System.out.println("AVERAGE VALUE: " + val/((double)(max-min)));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
