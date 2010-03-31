@@ -57,6 +57,7 @@ import agents.modelbased.DynamicMCKP;
 import agents.modelbased.ExoMCKPBid;
 import agents.modelbased.ExoMCKPBidExhaustive;
 import agents.modelbased.G4;
+import agents.modelbased.HardMCKPBid;
 import agents.modelbased.ILPBidAgent;
 import agents.modelbased.ILPBidSearchAgent;
 import agents.modelbased.ILPPosAgent;
@@ -1508,7 +1509,7 @@ public class BasicSimulator {
 	}
 
 
-	public double runSimulations(String baseFile, int min, int max, double noiseImps, double noisePrClick, AbstractAgent agent) throws IOException, ParseException {
+	public ArrayList<Double> runSimulations(String baseFile, int min, int max, double noiseImps, double noisePrClick, AbstractAgent agent) throws IOException, ParseException {
 		//		String baseFile = "/Users/jordan/Downloads/aa-server-0.9.6/logs/sims/localhost_sim";
 		//		String baseFile = "/games/game";
 		//		String baseFile = "/home/jberg/mckpgames/localhost_sim";
@@ -1681,7 +1682,26 @@ public class BasicSimulator {
 		output += (percOverCap/(totDays)) + ",";
 		System.out.println(header + "\n" + output);
 
-		return ((totalRevenue-totalCost)/reportsListMegaMap.size());
+		ArrayList<Double> returnVals = new ArrayList<Double>();
+		returnVals.add(((totalRevenue-totalCost)/reportsListMegaMap.size()));
+		returnVals.add((totalRevenue/reportsListMegaMap.size()));
+		returnVals.add((totalCost/reportsListMegaMap.size()));
+		returnVals.add((totalImp/reportsListMegaMap.size()));
+		returnVals.add((totalClick/reportsListMegaMap.size()));
+		returnVals.add((totalConv/reportsListMegaMap.size()));
+		returnVals.add((totalPos/(percInAuctions)));
+		returnVals.add((percInAuctions/(totDays*16)));
+		returnVals.add((totalCost/totalClick));
+		returnVals.add((totalClick/totalImp));
+		returnVals.add((totalConv/totalClick));
+		returnVals.add((totalNoneConv/totalConv));
+		returnVals.add((totalCompConv/totalConv));
+		returnVals.add((totalManConv/totalConv));
+		returnVals.add((totalPerfConv/totalConv));
+		returnVals.add((totOverCap/(totDays)));
+		returnVals.add((percOverCap/(totDays)));
+
+		return returnVals;
 	}
 
 
@@ -1930,10 +1950,11 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
-		//		AbstractAgent agent = new DynamicMCKP();
+//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+		//				AbstractAgent agent = new DynamicMCKP();
 		//		AbstractAgent agent = new SimpleAABidAgent();
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
+		//		AbstractAgent agent = new HardMCKPBid(1.75);
 
 		//				AbstractAgent agent = new AdjustPM(0.686743, -0.000353812, 0.299863, 1.01154, 1.03659, -0.0132298, 0.285105, 0.973766, 0.92795, -0.00170141, -0.22702, 1.01381, 0.854239, 0.0115663, -0.163355, 0.973135, 0.609952, 13.3482, 0.0843768, 1.84622, 1.43106, 1.88905, 1.43946, 1.47886, 1.16991, 0.0438713, 1.44705);
 		//				AbstractAgent agent = new AdjustPR(3.80653, -0.00701569, 0.259816, 0.999985, 1.02196, 0.0199122, 0.273483, 0.982057, 0.855329, -0.00245904, 0.262015, 0.955847, 0.802491, 0.02, -0.159907, 1.0063, 0.651212, 0.772753, 0.158466, 1.73913, 1.80407, 1.8871, 1.38626, 1.77109, 1.85207, 0.406292, 1.85928);
@@ -1943,29 +1964,44 @@ public class BasicSimulator {
 		//				AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//				AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
 		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
-		agentList.add(agent);
 
 		Random r = new Random();
 
+		for(double inc = 1.12; inc < 1.28; inc += .02) {
+			AbstractAgent agent = new HardMCKPBid(1.0 + inc);
+			agentList.add(agent);
+			
+			//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+			String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+			//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
 
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-		//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
+			//		int min = 1425;
+			//		int max = 1465;
 
-		//		int min = 1425;
-		//		int max = 1465;
+			int min = 297;
+			int max = 337;
 
-		int min = 297;
-		int max = 337;
+			ArrayList<Double> returnVals = new ArrayList<Double>();
 
+			for(int i = 0; i < 17; i++) {
+				returnVals.add(0.0);
+			}
 
+			for(int i = min; i < max; i++) {
+				sim.setSeed(r.nextLong());
+				ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
+				for(int j = 0; j < 17; j++) {
+					returnVals.set(j,returnVals.get(j) + val.get(j));
+				}
+			}
 
-		double val = 0;
-		for(int i = min; i < max; i++) {
-			sim.setSeed(r.nextLong());
-			val += sim.runSimulations(baseFile,i,i+1,0,0, agent);
+			for(int i = 0; i < 17; i++) {
+				returnVals.set(i,returnVals.get(i)/((double)(max-min)));
+			}
+
+			System.out.println("FINAL VALUES: " + returnVals);
+			System.gc();
 		}
-		System.out.println("AVERAGE VALUE: " + val/((double)(max-min)));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
