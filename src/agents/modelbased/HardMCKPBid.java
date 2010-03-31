@@ -50,7 +50,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
+public class HardMCKPBid extends AbstractAgent {
 
 	private static final int MAX_TIME_HORIZON = 5;
 	private static final boolean BUDGET = false;
@@ -79,9 +79,10 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 	private boolean salesDistFlag;
 	private int _capIncrement;
 //	private IloCplex _cplex;
+	double _overCapPerc;
 
 
-	public SemiEndoMCKPBidExhaustive(int capIncrement) {
+	public HardMCKPBid(double overCapPerc) {
 //		try {
 //			IloCplex cplex = new IloCplex();
 //			cplex.setOut(null);
@@ -103,7 +104,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 		salesDistFlag = false;
 
-		_capIncrement = capIncrement;
+		_overCapPerc = overCapPerc;
 	}
 
 
@@ -232,7 +233,7 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 		_capList = new ArrayList<Double>();
 		double maxCap = _capacity;
-		for(i = 1; i <= maxCap; i+= _capIncrement) {
+		for(i = 1; i <= maxCap; i+= 10) {
 			_capList.add(1.0*i);
 		}
 	}
@@ -366,39 +367,10 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 				allPredictionsMap.put(q, queryPredictions);
 			}
 
-			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,0,allPredictionsMap), Math.max(0,remainingCap));
+			double remAdjustedCap = _capacity*_overCapPerc - _unitsSold.getWindowSold();
+			HashMap<Query,Item> bestSolution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap,Math.max(0,remAdjustedCap),allPredictionsMap), Math.max(0,remAdjustedCap));
 			double[] bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,10);
-			for(int i = 0; i < _capList.size(); i++) {
-				HashMap<Query,Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap), Math.max(0,remainingCap)+_capList.get(i));
-				double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,10);
-				if(solVal[0] > bestSolVal[0]) {
-					bestSolVal[0] = solVal[0];
-					bestSolution = solution;
-				}
-			}
-			//			HashMap<Query, Item> bestSolution = new HashMap<Query, Item>();
-			//			double[] bestSolVal = new double[2];
-			//			try {
-			//				bestSolution = solveWithCPLEX(remainingCap,0,allPredictionsMap);
-			//				bestSolVal = solutionValueMultiDay2(bestSolution,remainingCap,allPredictionsMap,5);
-			//				int bestIdx = -1;
-			//				//			System.out.println("Init val: " + bestSolVal);
-			//				for(int i = 0; i < _capList.size(); i++) {
-			//					HashMap<Query,Item> solution = solveWithCPLEX(remainingCap, Math.max(0,remainingCap)+_capList.get(i),allPredictionsMap);
-			//					double[] solVal = solutionValueMultiDay2(solution,remainingCap,allPredictionsMap,5);
-			//
-			//
-			//
-			//					if(solVal[0] > bestSolVal[0]) {
-			//						bestSolVal[0] = solVal[0];
-			//						bestSolution = solution;
-			//					}
-			//				}
-			//			} catch (IloException e) {
-			//				// TODO Auto-generated catch block
-			//				e.printStackTrace();
-			//			}
-
+			
 			if(bestSolVal[0] < 0) {
 				bestSolution = new HashMap<Query,Item>();
 			}
@@ -1077,11 +1049,11 @@ public class SemiEndoMCKPBidExhaustive extends AbstractAgent {
 
 	@Override
 	public String toString() {
-		return "SemiEndoMCKPBidExhaustive(" + _capIncrement + ")";
+		return "HardMCKPBid(" + _overCapPerc + ")";
 	}
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new SemiEndoMCKPBidExhaustive(_capIncrement);
+		return new HardMCKPBid(_overCapPerc);
 	}
 }

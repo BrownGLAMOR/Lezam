@@ -33,8 +33,8 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 	protected BasicTargetModel _targetModel;
 	protected AbstractCPCToBid _CPCToBid;
 	protected Random _R;
-	protected long seed = 12452748;
-	protected boolean SEEDED = false;
+	protected long seed = 61686;
+	protected boolean SEEDED = true;
 
 	protected HashMap<Query, Double> _baselineConversion;
 	protected HashMap<Query, Double> _baseClickProbs;
