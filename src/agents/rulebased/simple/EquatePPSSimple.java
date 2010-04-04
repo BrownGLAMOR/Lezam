@@ -16,8 +16,7 @@ public class EquatePPSSimple extends RuleBasedAgentSimple {
 	protected double _decPPS;
 	
 	public EquatePPSSimple() {
-		this(9.9684375, 1.02, 1.35);
-//		this(10.1797, 1.02, 1.35);
+		this(9.9684,1.03,1.375);
 	}
 	
 	public EquatePPSSimple(double initPPS,

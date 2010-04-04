@@ -16,7 +16,7 @@ public class EquatePMSimple extends RuleBasedAgentSimple {
 	protected double _decPM;
 	
 	public EquatePMSimple() {
-		this(0.797475, 1.08, 1.35);
+		this(0.797475,1.02,1.525);
 	}
 
 	public EquatePMSimple(double initPM,
