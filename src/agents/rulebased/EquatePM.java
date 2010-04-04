@@ -110,6 +110,9 @@ public class EquatePM extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
+		
+		System.out.println(_PM);
+		System.out.println(_bidBundle);
 
 		return _bidBundle;
 	}
@@ -117,6 +120,7 @@ public class EquatePM extends RuleBasedAgent{
 	@Override
 	public void initBidder() {
 		super.initBidder();
+		setDailyQueryCapacity();
 		_PM = _initPM;
 	}
 
@@ -131,9 +135,7 @@ public class EquatePM extends RuleBasedAgent{
 		}
 
 		double rev = _salesPrices.get(q);
-
 		double CPC = (1 - _PM)*rev* prConv;
-
 		CPC = Math.max(0.0, Math.min(_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9, CPC));
 
 		return CPC;

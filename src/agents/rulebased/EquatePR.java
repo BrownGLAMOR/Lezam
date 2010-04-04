@@ -67,14 +67,6 @@ public class EquatePR extends RuleBasedAgent{
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		buildMaps(models);
 		_bidBundle = new BidBundle();
-		if(_day < 2) { 
-			for(Query q : _querySpace) {
-				double bid = getRandomBid(q);
-				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
-			}
-			return _bidBundle;
-		}
-
 		if (_day > 1 && _salesReport != null && _queryReport != null) {
 			/*
 			 * Equate PMs
@@ -98,7 +90,13 @@ public class EquatePR extends RuleBasedAgent{
 				_PR = _initPR;
 			}
 			if(_PR <= 1.0) {
-				_PR = 1.0;
+				_PR = _initPR;
+			}
+		}
+		else { 
+			for(Query q : _querySpace) {
+				double bid = getRandomBid(q);
+				_bidBundle.addQuery(q, bid, new Ad(), getDailySpendingLimit(q, bid));
 			}
 		}
 
@@ -110,6 +108,9 @@ public class EquatePR extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
+		
+		System.out.println(_PR);
+		System.out.println(_bidBundle);
 
 		return _bidBundle;
 	}
@@ -118,7 +119,6 @@ public class EquatePR extends RuleBasedAgent{
 	public void initBidder() {
 		super.initBidder();
 		setDailyQueryCapacity();
-
 		_PR = _initPR;
 	}
 

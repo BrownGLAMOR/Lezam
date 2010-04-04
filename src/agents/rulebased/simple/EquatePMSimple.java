@@ -57,11 +57,8 @@ public class EquatePMSimple extends RuleBasedAgentSimple {
 				_PM *=  _incPM;
 			}
 
-			if(Double.isNaN(_PM) || _PM <= 0) {
+			if(Double.isNaN(_PM) || _PM <= 0 || _PM >= 1.0) {
 				_PM = _initPM;
-			}
-			if(_PM > 1.0) {
-				_PM = 1.0;
 			}
 		}
 

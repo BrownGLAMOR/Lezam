@@ -117,6 +117,8 @@ public class EquatePPS extends RuleBasedAgent{
 		else {
 			_bidBundle.setCampaignDailySpendLimit(Double.MAX_VALUE);
 		}
+		
+		System.out.println(_PPS);
 
 		return _bidBundle;
 	}

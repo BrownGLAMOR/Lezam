@@ -31,7 +31,6 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 	protected AbstractUnitsSoldModel _unitsSoldModel; 
 	protected AbstractConversionModel _conversionPrModel;
 	protected BasicTargetModel _targetModel;
-	protected AbstractCPCToBid _CPCToBid;
 	protected Random _R;
 	protected long seed = 61686;
 	protected boolean SEEDED = true;
@@ -42,7 +41,7 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 	protected HashMap<Query, Double> _salesDistribution;
 
 	protected double _lambdaCap;
-	
+
 	@Override
 	public void initBidder() {
 
@@ -111,7 +110,6 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 				_baselineConversion.put(q,eta(_baselineConversion.get(q),1+_CSB)*(1/3.0) + _baselineConversion.get(q)*(2/3.0));
 			}
 
-
 			_salesDistribution.put(q, 1.0/_querySpace.size());
 		}
 
@@ -124,12 +122,10 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 		_unitsSoldModel = new BasicUnitsSoldLambdaModel(_querySpace, _capacity, _capWindow,1.0);
 		_conversionPrModel = new HistoricPrConversionModel(_querySpace, new BasicTargetModel(_manSpecialty,_compSpecialty));
 		_targetModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
-		_CPCToBid = new WEKACPCToBid(3,1,20);
 
 		models.add(_unitsSoldModel);
 		models.add(_conversionPrModel);
 		models.add(_targetModel);
-		models.add(_CPCToBid);
 		return models;
 	}
 
@@ -144,7 +140,6 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 			_unitsSoldModel.update(salesReport);
 			setDailyQueryCapacity();
 			_conversionPrModel.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
-			_CPCToBid.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2));
 		}
 	}
 
@@ -161,10 +156,6 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 			if(model instanceof BasicTargetModel) {
 				BasicTargetModel targModel = (BasicTargetModel) model;
 				_targetModel = targModel; 
-			}
-			if(model instanceof AbstractCPCToBid) {
-				AbstractCPCToBid CPCToBid = (AbstractCPCToBid) model;
-				_CPCToBid = CPCToBid; 
 			}
 		}
 	}
@@ -209,16 +200,11 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 	}
 
 	protected final double getBidFromCPC(Query query, double cpc) {
-		if(_day >= 6) {
-			return _CPCToBid.getPrediction(query, cpc);
-		}
-		else {
-			return cpc + .01;
-		}
+		return cpc + .01;
 	}
 
 	protected final double getRandomBid(Query q) {
-		return randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .9);
+		return randDouble(.04,_salesPrices.get(q) * _baselineConversion.get(q) * _baseClickProbs.get(q) * .65);
 	}
 
 	private final double randDouble(double a, double b) {

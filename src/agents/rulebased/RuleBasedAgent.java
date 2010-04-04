@@ -207,10 +207,9 @@ public abstract class RuleBasedAgent extends AbstractAgent {
 			_dailyCapacity = (_capacity/((double)_capWindow));
 		}
 		else {
-			//We do the max to ensure some degree of smoothness
-			//			_dailyCapacity = Math.max((_capacity/((double)_capWindow)) * (1/5.0),_dailyCapacityLambda * _capacity - _unitsSoldModel.getWindowSold());
 			double avgCap = (_capacity/((double)_capWindow));
 			_dailyCapacity = Math.max(avgCap*_dailyCapMin,Math.min(avgCap*_dailyCapMax, _capacity - _unitsSoldModel.getWindowSold())) * _lambdaCapModifier;
+//			_dailyCapacity = Math.max(avgCap*_dailyCapMin,Math.min(avgCap*_dailyCapMax, _capacity * _lambdaCapModifier- _unitsSoldModel.getWindowSold()));
 		}
 	}
 

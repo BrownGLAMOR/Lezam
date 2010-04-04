@@ -106,6 +106,8 @@ public class EquateROI extends RuleBasedAgent{
 		if(BUDGET) {
 			_bidBundle.setCampaignDailySpendLimit(getTotalSpendingLimit(_bidBundle));
 		}
+		
+		System.out.println(_ROI);
 
 		return _bidBundle;
 	}

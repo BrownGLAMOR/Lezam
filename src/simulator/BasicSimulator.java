@@ -83,6 +83,10 @@ import agents.rulebased.EquatePM;
 import agents.rulebased.EquatePPS;
 import agents.rulebased.EquatePR;
 import agents.rulebased.EquateROI;
+import agents.rulebased.simple.EquatePMSimple;
+import agents.rulebased.simple.EquatePPSSimple;
+import agents.rulebased.simple.EquatePRSimple;
+import agents.rulebased.simple.EquateROISimple;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -1492,7 +1496,7 @@ public class BasicSimulator {
 	 * index 0 is the mean
 	 * index 1 is the std deviation
 	 */
-	public double[] stdDeviation(Double[] revenueErrorArr) {
+	public static double[] stdDeviation(Double[] revenueErrorArr) {
 		double[] meanAndStdDev = new double[2];
 		meanAndStdDev[0] = 0.0;
 		meanAndStdDev[1] = 0.0;
@@ -1700,6 +1704,7 @@ public class BasicSimulator {
 		returnVals.add((totalPerfConv/totalConv));
 		returnVals.add((totOverCap/(totDays)));
 		returnVals.add((percOverCap/(totDays)));
+		returnVals.add(capacity);
 
 		return returnVals;
 	}
@@ -1887,6 +1892,10 @@ public class BasicSimulator {
 	}
 
 	public static void main(String[] args) throws IOException, ParseException {
+		main2(args);
+	}
+
+	public static void main1(String[] args) throws IOException, ParseException {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
@@ -1950,7 +1959,7 @@ public class BasicSimulator {
 		//		AbstractAgent agent = new MCKPBidSearch(10);
 		//		AbstractAgent agent = new MCKPBidDynProg(false);
 		//		AbstractAgent agent = new SemiEndoMCKPBid(false,false,false);
-//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(10);
 		//				AbstractAgent agent = new DynamicMCKP();
 		//		AbstractAgent agent = new SimpleAABidAgent();
 		//		AbstractAgent agent = new ExoMCKPBidExhaustive(20);
@@ -1963,45 +1972,128 @@ public class BasicSimulator {
 		//				AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
 		//				AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//				AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
-		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
+		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.0 + Double.parseDouble(args[0]), 1.0 + Double.parseDouble(args[0]), 1.0 + Double.parseDouble(args[0]), 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
 
 		Random r = new Random();
 
-		for(double inc = 1.12; inc < 1.28; inc += .02) {
-			AbstractAgent agent = new HardMCKPBid(1.0 + inc);
-			agentList.add(agent);
-			
-			//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-			String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-			//		String baseFile = "/u/jberg/finals/day-2/server-1/game";
+		//		AbstractAgent agent = new HardMCKPBid(1.0 + Double.parseDouble(args[0]));
+		agentList.add(agent);
 
-			//		int min = 1425;
-			//		int max = 1465;
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
 
-			int min = 297;
-			int max = 337;
+		//		int min = 1425;
+		//		int max = 1465;
 
-			ArrayList<Double> returnVals = new ArrayList<Double>();
+		int min = 297;
+		int max = 337;
 
-			for(int i = 0; i < 17; i++) {
-				returnVals.add(0.0);
-			}
+		ArrayList<Double> returnVals = new ArrayList<Double>();
 
-			for(int i = min; i < max; i++) {
-				sim.setSeed(r.nextLong());
-				ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
-				for(int j = 0; j < 17; j++) {
-					returnVals.set(j,returnVals.get(j) + val.get(j));
-				}
-			}
-
-			for(int i = 0; i < 17; i++) {
-				returnVals.set(i,returnVals.get(i)/((double)(max-min)));
-			}
-
-			System.out.println("FINAL VALUES: " + returnVals);
-			System.gc();
+		for(int i = 0; i < 17; i++) {
+			returnVals.add(0.0);
 		}
+
+		for(int i = min; i < max; i++) {
+			sim.setSeed(r.nextLong());
+			ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
+			for(int j = 0; j < 17; j++) {
+				returnVals.set(j,returnVals.get(j) + val.get(j));
+			}
+		}
+
+		for(int i = 0; i < 17; i++) {
+			returnVals.set(i,returnVals.get(i)/((double)(max-min)));
+		}
+
+		System.out.println("FINAL VALUES: " + returnVals);
+		System.gc();
+
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+	}
+
+	public static void main2(String[] args) throws IOException, ParseException {
+		BasicSimulator sim = new BasicSimulator();
+		double start = System.currentTimeMillis();
+
+		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
+		Random r = new Random();
+
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+
+		//		int min = 1425;
+		//		int max = 1465;
+
+		int min = 297;
+		//		int max = 313;
+		int max = 337;
+
+//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
+//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
+//				AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
+//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
+//				AbstractAgent agent = new DynamicMCKP();
+//				AbstractAgent agent = new SemiEndoMCKPBid();
+				AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+		//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
+		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
+		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, .25, .25, .25, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
+		//		AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
+		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
+
+		agentList.add(agent);
+
+		ArrayList<Double> returnVals = new ArrayList<Double>();
+		ArrayList<Double> lowVals = new ArrayList<Double>();
+		ArrayList<Double> medVals = new ArrayList<Double>();
+		ArrayList<Double> highVals = new ArrayList<Double>();
+		ArrayList<Double> allVals = new ArrayList<Double>();
+
+		for(int i = 0; i < 17; i++) {
+			returnVals.add(0.0);
+		}
+
+		for(int i = min; i < max; i++) {
+			sim.setSeed(r.nextLong());
+			ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
+			for(int j = 0; j < 17; j++) {
+				returnVals.set(j,returnVals.get(j) + val.get(j));
+			}
+
+			if(val.get(17) == 300) {
+				lowVals.add(val.get(0));
+			}
+			else if(val.get(17) == 400) {
+				medVals.add(val.get(0));
+			}
+			else {
+				highVals.add(val.get(0));
+			}
+		}
+
+		for(int i = 0; i < 17; i++) {
+			returnVals.set(i,returnVals.get(i)/((double)(max-min)));
+		}
+
+		allVals.addAll(lowVals);
+		allVals.addAll(medVals);
+		allVals.addAll(highVals);
+
+		double[] stdDevLow = stdDeviation(lowVals.toArray(new Double[lowVals.size()]));
+		double[] stdDevMed = stdDeviation(medVals.toArray(new Double[medVals.size()]));
+		double[] stdDevHigh = stdDeviation(highVals.toArray(new Double[highVals.size()]));
+		double[] stdDevAll = stdDeviation(allVals.toArray(new Double[allVals.size()]));
+
+		System.out.println("FINAL VALUES: " + returnVals);
+		System.out.println(stdDevLow[0] + ", " + stdDevLow[1]);
+		System.out.println(stdDevMed[0] + ", " + stdDevMed[1]);
+		System.out.println(stdDevHigh[0] + ", " + stdDevHigh[1]);
+		System.out.println(stdDevAll[0] + ", " + stdDevAll[1]);
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
