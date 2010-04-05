@@ -82,7 +82,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		BUDGET = budget;
 		FORWARDUPDATING = forward;
 		PRICELINES = pricelines;
-		_R.setSeed(616866);
+//		_R.setSeed(616866);
 		bidList = new ArrayList<Double>();
 		//		double increment = .25;
 		double increment  = .05;

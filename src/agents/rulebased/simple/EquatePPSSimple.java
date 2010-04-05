@@ -15,6 +15,10 @@ public class EquatePPSSimple extends RuleBasedAgentSimple {
 	protected double _incPPS;
 	protected double _decPPS;
 	
+	public EquatePPSSimple(double lambdaCap) {
+		this(9.9684,1.03,lambdaCap);
+	}
+	
 	public EquatePPSSimple() {
 		this(9.9684,1.03,1.375);
 	}
@@ -69,6 +73,8 @@ public class EquatePPSSimple extends RuleBasedAgentSimple {
 			double targetCPC = getTargetCPC(query);
 			_bidBundle.addQuery(query, getBidFromCPC(query, targetCPC), new Ad(), Double.MAX_VALUE);
 		}
+		
+		_bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
 
 		return _bidBundle;
 	}

@@ -15,6 +15,10 @@ public class EquatePMSimple extends RuleBasedAgentSimple {
 	protected double _incPM;
 	protected double _decPM;
 	
+	public EquatePMSimple(double lambdaCap) {
+		this(0.797475,1.02,lambdaCap);
+	}
+	
 	public EquatePMSimple() {
 		this(0.797475,1.02,1.525);
 	}
@@ -64,8 +68,10 @@ public class EquatePMSimple extends RuleBasedAgentSimple {
 
 		for(Query query: _querySpace){
 			double targetCPC = getTargetCPC(query);
-			_bidBundle.setBid(query, getBidFromCPC(query, targetCPC));
+			_bidBundle.addQuery(query, getBidFromCPC(query, targetCPC), new Ad(), Double.MAX_VALUE);
 		}
+		
+		_bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
 
 		return _bidBundle;
 	}

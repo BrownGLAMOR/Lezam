@@ -33,7 +33,7 @@ public abstract class RuleBasedAgentSimple extends AbstractAgent {
 	protected BasicTargetModel _targetModel;
 	protected Random _R;
 	protected long seed = 61686;
-	protected boolean SEEDED = true;
+	protected boolean SEEDED = false;
 
 	protected HashMap<Query, Double> _baselineConversion;
 	protected HashMap<Query, Double> _baseClickProbs;
