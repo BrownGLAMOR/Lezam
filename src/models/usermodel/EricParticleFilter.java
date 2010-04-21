@@ -28,6 +28,8 @@ public class EricParticleFilter extends TacTexAbstractUserModel {
 	public static final double BURST_PROB = 0.1;
 	private static double[][] STANDARD_MARKOV_PROBS;
 	private static double[][] BURST_MARKOV_PROBS;
+	private static final double INIT_TRANS_PROB = 0.065;
+	private static final double INIT_TRANS_VAR = 0.3;
 	private HashMap<Product, Particle[]> _next_step;
 	private HashMap<Product, Particle[]> _next_step_burst;
 	private HashMap<Product, Particle[]> _two_steps;
