@@ -10,14 +10,18 @@ public class ParamParticle {
 	public Query query;
 	public double continuationProbability;
 	public double[] advertiserEffects;
+	public double weight;
 	
 	public ParamParticle(Query q, double contProb, double[] aEs){
 		query = q;
 		continuationProbability = contProb;
 		advertiserEffects = aEs;
+		weight=1.0;
 	}
 	
 	public ParamParticle(Query q){
+		query = q;
+		weight=1.0;
 		advertiserEffects = new double[8];
 		QueryType qt = q.getType();
 		if(qt==QueryType.FOCUS_LEVEL_TWO){
