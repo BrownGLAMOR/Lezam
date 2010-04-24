@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.StringTokenizer;
 import models.AbstractModel;
+import models.usermodel.TacTexAbstractUserModel.Particle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
@@ -28,9 +29,15 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 	private ArrayList<Product> _products;
 	private Particle[] initParticle;
 	private static final double _burstProb = .1;
+	private static final double _reburstProb = 0.2;
 	private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
 	private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
-	private HashMap<Product,HashMap<UserState,Double>> _predictions, _currentEstimate;
+	private HashMap<Product,HashMap<UserState,Double[][]>> _predictions;
+	private HashMap<Product,HashMap<UserState,Double>>_currentEstimate;
+	private HashMap<Product,ArrayList<Boolean>> burstHistory;
+	//Find where to find if particle bursted
+	//Take vote, add to history
+	//Add in functionality to get current and prediction (hand in probability too)
 
 //	694.9886157096605: 0.0626119 0.0251838 0.158351 0.67921 0.141542 0.160939 
 //	697.0156722415486: 0.00284918 0.172542 0.267033 0.440053 0.119098 0.893219 
@@ -215,6 +222,10 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 		_products.add(new Product("lioneer", "dvd"));
 		_products.add(new Product("lioneer", "tv"));
 		_products.add(new Product("lioneer", "audio"));
+		
+		for(Product p : _products){
+			burstHistory.put(p, new ArrayList<Boolean>());
+		}
 
 		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
 		//		initializeParticlesFromFile("/u/jberg/initUserParticles");
@@ -446,14 +457,16 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 	}
 
 	@Override
-	public int getCurrentEstimate(Product product, UserState userState) {
+	public int getCurrentEstimate(Product product, UserState userState) {//no burst, first burst, second burst, both burst// second element in each array is the probability
 		return ((int)((double)_currentEstimate.get(product).get(userState)));
 	}
 
 	@Override
 	public int getPrediction(Product product, UserState userState) {
-		return ((int)((double)_predictions.get(product).get(userState)));
+		return ((int)((double)_predictions.get(product).get(userState)[0][0]));
 	}
+	
+	
 
 	@Override
 	public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
@@ -463,6 +476,13 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 				Particle[] particles = _particles.get(prod);
 				updateParticles(totalImpressions.get(q), particles);
 				particles = resampleParticles(particles);
+				if(isBurst(particles)){
+					burstHistory.get(prod).add(true);
+				}
+				else
+				{
+					burstHistory.get(prod).add(false);
+				}
 				_particles.put(prod, particles);
 			}
 		}
@@ -477,18 +497,42 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 			Product prod = new Product(q.getManufacturer(), q.getComponent());
 			if(_products.contains(prod)) {
 				Particle[] particles = _particles.get(prod);
-				pushParticlesForward(particles);
+				pushParticlesForward(particles, prod);
 				_particles.put(prod, particles);
 			}
 		}
 		return true;
 	}
 
-	public void pushParticlesForward(Particle[] particles) {
+	private boolean isBurst(Particle[] particles) {
+		int countTrue = 0;
+		int countFalse = 0;
+		for(Particle p : particles){
+			if(p._bursted){
+				countTrue++;
+			}
+			else
+			{
+				countFalse++;
+			}
+		}
+		return countFalse<countTrue;
+	}
+
+	public void pushParticlesForward(Particle[] particles, Product prod) {
 		for(int i = 0; i < particles.length; i++) {
 			double burstRand = _R.nextDouble();
 			boolean burst;
-			if(burstRand <= _burstProb) {
+			double curBurstProb;
+			if(increasedBurstProb(0, prod)){
+				curBurstProb=_reburstProb;
+			}
+			else
+			{
+				curBurstProb = _burstProb;
+			}
+				//update model called befroe current estimate?
+			if(burstRand <= curBurstProb) {
 				burst = true;
 			}
 			else {
@@ -573,9 +617,27 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 
 
 			particle.setState(newState);
+			if(burst){
+				particle._bursted = true;
+			}
+			else
+			{
+				particle._bursted = false;
+			}
 		}
 	}
 	
+	private boolean increasedBurstProb(int i, Product prod) {
+		ArrayList<Boolean> burHist = burstHistory.get(prod);
+		int start = i + burHist.size()-4;
+		for(int j = start; j<start+3; j++){
+			if(j>=0&&j<burHist.size()&&burHist.get(j)){
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void pushParticlesForward(Particle[] particles, boolean burst) {
 		for(int i = 0; i < particles.length; i++) {
 
@@ -657,16 +719,29 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 
 
 			particle.setState(newState);
+			if(burst){
+				particle._bursted = true;
+			}
+			else
+			{
+				particle._bursted = false;
+			}
 		}
 	}
 
 	private void updatePredictionMaps() {
-		HashMap<Product,Particle[]> particlesCopy = new HashMap<Product,Particle[]>();
-		_predictions = new HashMap<Product,HashMap<UserState,Double>>();
+		HashMap<Product,Particle[]> particlesCopyOne = new HashMap<Product,Particle[]>();
+		HashMap<Product,Particle[]> particlesCopyTwo = new HashMap<Product,Particle[]>();
+		HashMap<Product,Particle[]> particlesCopyThree = new HashMap<Product,Particle[]>();
+		HashMap<Product,Particle[]> particlesCopyFour = new HashMap<Product,Particle[]>();
+		_predictions = new HashMap<Product,HashMap<UserState,Double[][]>>();
 		_currentEstimate = new HashMap<Product,HashMap<UserState,Double>>();
 		for(Product prod : _products) {
 			Particle[] particles = _particles.get(prod);
-			Particle[] particleCopy = new Particle[particles.length];
+			Particle[] particleCopyOne = new Particle[particles.length];
+			Particle[] particleCopyTwo = new Particle[particles.length];
+			Particle[] particleCopyThree = new Particle[particles.length];
+			Particle[] particleCopyFour = new Particle[particles.length];
 
 			HashMap<UserState,Double> estimates = new HashMap<UserState,Double>();
 			double[] estimate = new double[UserState.values().length];
@@ -676,7 +751,10 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 				for(UserState state : UserState.values()) {
 					estimate[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
 				}
-				particleCopy[i] = new Particle(particle.getState(), particle.getWeight());
+				particleCopyOne[i] = new Particle(particle.getState(), particle.getWeight());
+				particleCopyTwo[i] = new Particle(particle.getState(), particle.getWeight());
+				particleCopyThree[i] = new Particle(particle.getState(), particle.getWeight());
+				particleCopyFour[i] = new Particle(particle.getState(), particle.getWeight());
 			}
 
 			for(int i = 0; i < estimate.length; i++) {
@@ -684,31 +762,81 @@ public class jbergParticleFilter extends TacTexAbstractUserModel {
 			}
 
 			_currentEstimate.put(prod, estimates);
-			particlesCopy.put(prod, particleCopy);
+			particlesCopyOne.put(prod, particleCopyOne);
+			particlesCopyTwo.put(prod, particleCopyTwo);
+			particlesCopyThree.put(prod, particleCopyThree);
+			particlesCopyFour.put(prod, particleCopyFour);
 		}
 
 		for(Product prod : _products) {
-			Particle[] particles = particlesCopy.get(prod);
-			pushParticlesForward(particles,false);
-			pushParticlesForward(particles,false);
-			particlesCopy.put(prod, particles);
+			Particle[] particlesOne = particlesCopyOne.get(prod);
+			Particle[] particlesTwo = particlesCopyTwo.get(prod);
+			Particle[] particlesThree = particlesCopyThree.get(prod);
+			Particle[] particlesFour = particlesCopyFour.get(prod);
+			pushParticlesForward(particlesOne,false);
+			pushParticlesForward(particlesOne,false);
+			pushParticlesForward(particlesTwo,true);
+			pushParticlesForward(particlesTwo,false);
+			pushParticlesForward(particlesThree,false);
+			pushParticlesForward(particlesThree,true);
+			pushParticlesForward(particlesFour,true);
+			pushParticlesForward(particlesFour,true);
+			particlesCopyOne.put(prod, particlesOne);
+			particlesCopyTwo.put(prod, particlesTwo);
+			particlesCopyThree.put(prod, particlesThree);
+			particlesCopyFour.put(prod, particlesFour);
 		}
 
 		for(Product prod : _products) {
-			Particle[] particles = particlesCopy.get(prod);
+			Particle[] particlesOne = particlesCopyOne.get(prod);
+			Particle[] particlesTwo = particlesCopyTwo.get(prod);
+			Particle[] particlesThree = particlesCopyThree.get(prod);
+			Particle[] particlesFour = particlesCopyFour.get(prod);
 
-			HashMap<UserState,Double> estimates = new HashMap<UserState,Double>();
-			double[] estimate = new double[UserState.values().length];
+			HashMap<UserState,Double[][]> estimates = new HashMap<UserState,Double[][]>();
+			double[] estimateOne = new double[UserState.values().length];
+			double[] estimateTwo = new double[UserState.values().length];
+			double[] estimateThree = new double[UserState.values().length];
+			double[] estimateFour = new double[UserState.values().length];
 
-			for(int i = 0; i < particles.length; i++) {
-				Particle particle = particles[i];
+			for(int i = 0; i < particlesOne.length; i++) {
+				Particle particle = particlesOne[i];
 				for(UserState state : UserState.values()) {
-					estimate[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+					estimateOne[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+					estimateTwo[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+					estimateThree[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+					estimateFour[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
 				}
 			}
+			Double[] probs = new Double[4];
+			if(this.increasedBurstProb(2, prod)){
+				probs[0] = (1-_reburstProb)*(1-_reburstProb);
+				probs[1] = (_reburstProb)*(1-_reburstProb);
+				probs[2] = probs[1];
+				probs[3] = (_reburstProb)*_reburstProb;
+			}
+			else if(this.increasedBurstProb(1, prod)){
+				probs[0] = (1-_reburstProb)*(1-_burstProb);
+				probs[1] = (_reburstProb)*(1-_reburstProb);
+				probs[2] = (1-_reburstProb)*(_burstProb);
+				probs[3] = (_reburstProb)*_reburstProb;
+			}
+			else {
+				probs[0] = (1-_burstProb)*(1-_burstProb);
+				probs[1] = (_burstProb)*(1-_reburstProb);
+				probs[2] = (1-_burstProb)*(_burstProb);
+				probs[3] = (_burstProb)*_reburstProb;
+			}
 
-			for(int i = 0; i < estimate.length; i++) {
-				estimates.put(UserState.values()[i], estimate[i]);
+			
+			for(int i = 0; i < estimateOne.length; i++) {
+				Double[][] toPut = new Double[2][4];
+				toPut[0][0]=estimateOne[i];
+				toPut[0][1]=estimateTwo[i];
+				toPut[0][2]=estimateThree[i];
+				toPut[0][3]=estimateFour[i];
+				toPut[1]=probs;
+				estimates.put(UserState.values()[i], toPut);
 			}
 
 			_predictions.put(prod, estimates);
