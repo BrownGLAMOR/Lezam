@@ -2,7 +2,6 @@ package models.mbarrows;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Vector;
 
 import models.AbstractModel;
 import models.usermodel.TacTexAbstractUserModel.UserState;
@@ -51,7 +50,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 				}
 				//sum to get estimate for advertiser effect
 			}
-		return eq;
+			return eq;
 		}else{
 			//using probability of click for the entire user population,
 			//calculate estimate for advertiser effect
