@@ -12,6 +12,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 public abstract class AbstractBidModel extends AbstractModel {
 	protected static final double maxReasonableBid = 3.75;//TODO: CHANGE THIS TO THE APPROPRIATE NEW VALUE
 	
-	public abstract boolean updateModel(double cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks);
+	public abstract boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks);
 	public abstract double getPrediction(String player, Query q);
 }
