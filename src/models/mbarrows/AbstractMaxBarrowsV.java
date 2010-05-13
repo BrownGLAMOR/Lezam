@@ -15,7 +15,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractMaxBarrows extends AbstractModel {
+public abstract class AbstractMaxBarrowsV extends AbstractModel {
 	
 	/*
 	 * Assume you get passed this in the constructor
@@ -91,9 +91,9 @@ public abstract class AbstractMaxBarrows extends AbstractModel {
 	 */
 	public abstract boolean updateModel(QueryReport queryReport, 
 										SalesReport salesReport,
-										HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
-										HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-										HashMap<String,HashMap<Query,Ad>> ads,
-										HashMap<Product,HashMap<UserState,Integer>> userStates);
+										LinkedList<Integer> impressionsPerSlot,
+										LinkedList<LinkedList<String>> advertisersAbovePerSlot,
+										HashMap<String,Ad> ads,
+										HashMap<Product,HashMap<UserState,Double>> userStates);
 	
 }
