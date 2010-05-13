@@ -75,8 +75,8 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 
 	@Override
 	public boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
-			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
+			SalesReport salesReport, HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
+			HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
 			HashMap<String,HashMap<Query,Ad>> ads,
 			HashMap<Product, HashMap<UserState, Double>> userStates) {
 		
@@ -86,8 +86,8 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		for (Query q: _querySpace){
 			//For each slot
 			for (int slot = 0; slot < impressionsPerSlot.size(); slot++){
-				LinkedList<String> aboveme = advertisersAbovePerSlot.get(slot);
-				double impressions = impressionsPerSlot.get(slot);
+				LinkedList<String> aboveme = advertisersAbovePerSlot.get(q).get(slot);
+				double impressions = impressionsPerSlot.get(q).get(slot);
 				//If in top slot, estimate advertiser effect
 				if(aboveme.size()==0){
 					HashMap<Product, Double> userDist = estimateUserDist(userStates);
