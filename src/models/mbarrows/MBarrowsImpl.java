@@ -192,8 +192,9 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	
 	public static HashMap<Product, Double> estimateUserDist(HashMap<Product, HashMap<UserState, Double>> userStates){
 		HashMap<Product,Double> toreturn = new HashMap<Product,Double>();
-		double sum = 0;
+
 		for(Product userpref:userStates.keySet()){
+			double sum = 0;
 			for(UserState userstate:userStates.get(userpref).keySet()){
 				sum += userStates.get(userpref).get(userstate);
 			}
