@@ -21,7 +21,9 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	private HashMap<Query, Double[]> m_advertiserEffects;
 	private String m_ourname;
 	
-	public MBarrowsImpl(String us){
+	public MBarrowsImpl(String us, int numPromSlots){
+		_numPromSlots = numPromSlots;
+		
 		 m_queries.add(new Query(null, null));
 		 m_queries.add(new Query("lioneer", null));
 		 m_queries.add(new Query(null, "tv"));
