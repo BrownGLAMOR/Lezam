@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
 
 import models.AbstractModel;
 import models.usermodel.TacTexAbstractUserModel.UserState;
@@ -16,36 +17,20 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class MBarrowsImpl extends AbstractMaxBarrows {
 	
-	private ArrayList<Query> m_queries;
 	private HashMap<Query, Double> m_continuationProbs;
 	private HashMap<Query, Double[]> m_advertiserEffects;
 	private String m_ourname;
+	private Set<Query> _querySpace;
 	
-	public MBarrowsImpl(String us, int numPromSlots){
+	public MBarrowsImpl(Set<Query> querySpace, String us, int numPromSlots){
+		_querySpace = querySpace;
 		_numPromSlots = numPromSlots;
-		
-		 m_queries.add(new Query(null, null));
-		 m_queries.add(new Query("lioneer", null));
-		 m_queries.add(new Query(null, "tv"));
-		 m_queries.add(new Query("lioneer", "tv"));
-		 m_queries.add(new Query(null, "audio"));
-		 m_queries.add(new Query("lioneer", "audio"));
-		 m_queries.add(new Query(null, "dvd"));
-		 m_queries.add(new Query("lioneer", "dvd"));
-		 m_queries.add(new Query("pg", null));
-		 m_queries.add(new Query("pg", "tv"));
-		 m_queries.add(new Query("pg", "audio"));
-		 m_queries.add(new Query("pg", "dvd"));
-		 m_queries.add(new Query("flat", null));
-		 m_queries.add(new Query("flat", "tv"));
-		 m_queries.add(new Query("flat", "audio"));
-		 m_queries.add(new Query("flat", "dvd"));
 		 
 		 //This string should be equivalent to the strings in advertisersAbovePerSlot, whatever those turn out to be.
 		 //In other words, it should be a valid key for ads in the updateModel method
 		 m_ourname = us;
 		 
-		 for (Query q : m_queries){
+		 for (Query q : _querySpace){
 				QueryType qt = q.getType();
 				Double [] advertiserEffects = new Double[8];
 				if(qt==QueryType.FOCUS_LEVEL_TWO){
@@ -98,7 +83,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		assert (impressionsPerSlot.size() == advertisersAbovePerSlot.size());
 		
 		//For each query
-		for (Query q: m_queries){
+		for (Query q: _querySpace){
 			//For each slot
 			for (int slot = 0; slot < impressionsPerSlot.size(); slot++){
 				LinkedList<String> aboveme = advertisersAbovePerSlot.get(slot);
@@ -228,7 +213,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	
 	@Override
 	public AbstractModel getCopy() {
-		return new MBarrowsImpl(m_ourname, _numPromSlots);
+		return new MBarrowsImpl(_querySpace, m_ourname, _numPromSlots);
 	}
 
 }
