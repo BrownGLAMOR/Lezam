@@ -1,7 +1,9 @@
 package models.mbarrows;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 
 import models.AbstractModel;
 import models.usermodel.TacTexAbstractUserModel.UserState;
@@ -9,14 +11,74 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class MBarrowsImpl extends AbstractMaxBarrows {
+	
+	private ArrayList<Query> m_queries;
+	private HashMap<Query, Double> m_continuationProbs;
+	private HashMap<Query, Double[]> m_advertiserEffects;
+	
+	public MBarrowsImpl(){
+		 m_queries.add(new Query(null, null));
+		 m_queries.add(new Query("lioneer", null));
+		 m_queries.add(new Query(null, "tv"));
+		 m_queries.add(new Query("lioneer", "tv"));
+		 m_queries.add(new Query(null, "audio"));
+		 m_queries.add(new Query("lioneer", "audio"));
+		 m_queries.add(new Query(null, "dvd"));
+		 m_queries.add(new Query("lioneer", "dvd"));
+		 m_queries.add(new Query("pg", null));
+		 m_queries.add(new Query("pg", "tv"));
+		 m_queries.add(new Query("pg", "audio"));
+		 m_queries.add(new Query("pg", "dvd"));
+		 m_queries.add(new Query("flat", null));
+		 m_queries.add(new Query("flat", "tv"));
+		 m_queries.add(new Query("flat", "audio"));
+		 m_queries.add(new Query("flat", "dvd"));
+		 
+		 for (Query q : m_queries){
+				QueryType qt = q.getType();
+				Double [] advertiserEffects = new Double[8];
+				if(qt==QueryType.FOCUS_LEVEL_TWO){
+					 //For each query, store the average continuation probabilities
+					m_continuationProbs.put(q, 0.55);
+					 //For each query, store the average advertiser effects
+					for(int i = 0; i < advertiserEffects.length; i++){
+						advertiserEffects[i] = 0.45;
+					}
+					m_advertiserEffects.put(q, advertiserEffects);
+				}
+				if(qt==QueryType.FOCUS_LEVEL_ONE){
+					 //For each query, store the average continuation probabilities
+					m_continuationProbs.put(q, 0.45);
+					 //For each query, store the average advertiser effects
+					for(int i = 0; i < advertiserEffects.length; i++){
+						advertiserEffects[i] = 0.35;
+					}
+					m_advertiserEffects.put(q, advertiserEffects);
+				}
+				if(qt==QueryType.FOCUS_LEVEL_ZERO){
+					 //For each query, store the average continuation probabilities
+					m_continuationProbs.put(q, 0.35);
+					 //For each query, store the average advertiser effects
+					for(int i = 0; i < advertiserEffects.length; i++){
+						advertiserEffects[i] = 0.25;
+					}
+					m_advertiserEffects.put(q, advertiserEffects);
+				}
+		 }
+	}
 
 	@Override
 	public double[] getPrediction(Query q) {
-		// TODO Auto-generated method stub
-		return null;
+		Double[] toconvert = m_advertiserEffects.get(q);
+		double[] toreturn = new double[toconvert.length];
+		for (int index = 0; index < toconvert.length; index++){
+			toreturn[index]=toconvert[index];
+		}
+		return toreturn;
 	}
 
 	@Override
@@ -25,7 +87,29 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
 			HashMap<String, Ad> ads,
 			HashMap<Product, HashMap<UserState, Double>> userStates) {
-		// TODO Auto-generated method stub
+		
+		//For each query
+		for (Query q: m_queries){
+			//For each slot
+			for (LinkedList<String> aboveme : advertisersAbovePerSlot){
+				//If in top slot, estimate advertiser effect
+				if(aboveme.size()==0){
+					
+				}
+				//If not, estimate conversion probability
+				double convProb = 0.11;
+				if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+					convProb = 0.36;
+				}
+				if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+					convProb = 0.23;
+				}
+				//Pick a good value for continuation prob based on that
+				
+			}
+		}
+		
+		
 		return false;
 	}
 	
@@ -75,14 +159,22 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		}
 		return toreturn;
 	}
+	
+	public static HashMap<Product, Double> estimateUserDist(HashMap<Product, HashMap<UserState, Double>> userStates){
+		HashMap<Product,Double> toreturn = new HashMap<Product,Double>();
+		double sum = 0;
+		for(Product userpref:userStates.keySet()){
+			for(UserState userstate:userStates.get(userpref).keySet()){
+				sum += userStates.get(userpref).get(userstate);
+			}
+			toreturn.put(userpref, sum);
+		}
+		return toreturn;
+	}
 
 	@Override
 	public AbstractModel getCopy() {
 		// TODO Auto-generated method stub
-		
-		//Test
-		//Test 2
-		//Test 3
 		return null;
 	}
 
