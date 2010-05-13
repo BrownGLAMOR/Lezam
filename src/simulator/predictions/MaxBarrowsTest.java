@@ -15,6 +15,7 @@ import models.mbarrows.MBarrowsImpl;
 import models.usermodel.TacTexAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
+import simulator.predictions.BidPredModelTest.BidPair;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -49,6 +50,7 @@ public class MaxBarrowsTest {
 			String[] agents = status.getAdvertisers();
 
 			UserClickModel userClickModel = status.getUserClickModel();
+			double squashing = status.getPubInfo().getSquashingParameter();
 
 			//Make the query space
 			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
@@ -117,7 +119,10 @@ public class MaxBarrowsTest {
 							impressions[agentInner] = innerQueryReport.getImpressions(q);
 
 							BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-							bidPairs.add(new BidPair(agentInner, innerBidBundle.getBid(q)));
+							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);
+							double bid = innerBidBundle.getBid(q);
+							double squashedBid = bid * Math.pow(advEffect, squashing);
+							bidPairs.add(new BidPair(agentInner, squashedBid));
 						}
 
 						Collections.sort(bidPairs);
