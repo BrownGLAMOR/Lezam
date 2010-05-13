@@ -304,6 +304,10 @@ public class IndependentBidModel extends AbstractBidModel{
 		}
 	}
 	
+	public void setAdvertisers(Set<String> advertisers) {
+		_advertisers = advertisers;
+	}
+	
 	@Override
 	public AbstractModel getCopy() {
 		return new IndependentBidModel(_advertisers);
