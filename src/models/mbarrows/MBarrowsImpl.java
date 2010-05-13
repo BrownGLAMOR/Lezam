@@ -19,8 +19,9 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	private ArrayList<Query> m_queries;
 	private HashMap<Query, Double> m_continuationProbs;
 	private HashMap<Query, Double[]> m_advertiserEffects;
+	private String m_ourname;
 	
-	public MBarrowsImpl(){
+	public MBarrowsImpl(String us){
 		 m_queries.add(new Query(null, null));
 		 m_queries.add(new Query("lioneer", null));
 		 m_queries.add(new Query(null, "tv"));
@@ -37,6 +38,10 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		 m_queries.add(new Query("flat", "tv"));
 		 m_queries.add(new Query("flat", "audio"));
 		 m_queries.add(new Query("flat", "dvd"));
+		 
+		 //This string should be equivalent to the strings in advertisersAbovePerSlot, whatever those turn out to be.
+		 //In other words, it should be a valid key for ads in the updateModel method
+		 m_ourname = us;
 		 
 		 for (Query q : m_queries){
 				QueryType qt = q.getType();
@@ -88,24 +93,49 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 			HashMap<String, Ad> ads,
 			HashMap<Product, HashMap<UserState, Double>> userStates) {
 		
+		assert (impressionsPerSlot.size() == advertisersAbovePerSlot.size());
+		
 		//For each query
 		for (Query q: m_queries){
 			//For each slot
-			for (LinkedList<String> aboveme : advertisersAbovePerSlot){
+			for (int slot = 0; slot < impressionsPerSlot.size(); slot++){
+				LinkedList<String> aboveme = advertisersAbovePerSlot.get(slot);
+				double impressions = impressionsPerSlot.get(slot);
 				//If in top slot, estimate advertiser effect
 				if(aboveme.size()==0){
-					
-				}
-				//If not, estimate conversion probability
-				double convProb = 0.11;
-				if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
-					convProb = 0.36;
-				}
-				if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
-					convProb = 0.23;
-				}
-				//Pick a good value for continuation prob based on that
+					HashMap<Product, Double> userDist = estimateUserDist(userStates);
+					HashMap<Product, Double> impDist = estimateImpressionDist(userDist, impressions);
+					//This is a hack. Ideally we want click distributions over slots.
+					HashMap<Product, Double> clickDist = estimateImpressionDist(userDist, queryReport.getClicks(q));
+					//Click probabilities should be uniform for now due to above hack.
+					//Impressions = views in this case
+					HashMap<Product, Double> clickProb = estimateProbClick(impDist,clickDist);
+					//Note:  Need to check all divisions of ints for rounding errors
+					double averageProbClick = 1.0*(queryReport.getClicks(q)/impressions);
+					Ad ourad = ads.get(m_ourname);
+					//I don't know if this is a valid way of determining whether an ad was promoted.
+					boolean promoted = false;
+					if(queryReport.getPromotedImpressions(q)>queryReport.getRegularImpressions(q)){
+						promoted = true;
+					}
+					double eq_us = calculateAdvertiserEffect(userDist,clickProb,averageProbClick,(!ourad.isGeneric()),promoted,ourad.getProduct(),q);
+					//I'm unsure about how to order the advertisers in an array, so here I assume that we are first
+					Double [] ad_effects = m_advertiserEffects.get(q);
+					ad_effects[0]=eq_us;
+					m_advertiserEffects.put(q, ad_effects);
+				}else{
+					//If not, estimate conversion probability
+					//Hacky, hard coded values
+					double convProb = 0.11;
+					if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+						convProb = 0.36;
+					}
+					if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+						convProb = 0.23;
+					}
+					//Pick a good value for continuation prob based on that
 				
+				}
 			}
 		}
 		
@@ -168,6 +198,19 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 				sum += userStates.get(userpref).get(userstate);
 			}
 			toreturn.put(userpref, sum);
+		}
+		return toreturn;
+	}
+	
+	public static HashMap<Product, Double> estimateProbClick(HashMap<Product, Double> viewDist, HashMap<Product, Double> clickDist){
+		HashMap<Product,Double> toreturn = new HashMap<Product,Double>();
+		for(Product userpref:viewDist.keySet()){
+			double views = viewDist.get(userpref);
+			if(views!=0){
+				toreturn.put(userpref, clickDist.get(userpref)/views);
+			}else{
+				toreturn.put(userpref, 0.0);
+			}
 		}
 		return toreturn;
 	}
