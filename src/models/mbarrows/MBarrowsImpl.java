@@ -78,7 +78,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 			SalesReport salesReport, HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
 			HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
 			HashMap<String,HashMap<Query,Ad>> ads,
-			HashMap<Product, HashMap<UserState, Double>> userStates) {
+			HashMap<Product, HashMap<UserState, Integer>> userStates) {
 		
 		assert (impressionsPerSlot.size() == advertisersAbovePerSlot.size());
 		
@@ -177,7 +177,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		return toreturn;
 	}
 	
-	public static HashMap<Product, Double> estimateUserDist(HashMap<Product, HashMap<UserState, Double>> userStates){
+	public static HashMap<Product, Double> estimateUserDist(HashMap<Product, HashMap<UserState, Integer>> userStates){
 		HashMap<Product,Double> toreturn = new HashMap<Product,Double>();
 
 		for(Product userpref:userStates.keySet()){
