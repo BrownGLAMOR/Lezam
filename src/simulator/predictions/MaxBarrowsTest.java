@@ -119,7 +119,7 @@ public class MaxBarrowsTest {
 							impressions[agentInner] = innerQueryReport.getImpressions(q);
 
 							BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);
+							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
 							double bid = innerBidBundle.getBid(q);
 							double squashedBid = bid * Math.pow(advEffect, squashing);
 							bidPairs.add(new BidPair(agentInner, squashedBid));
