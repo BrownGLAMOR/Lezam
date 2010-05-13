@@ -217,11 +217,18 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		}
 		return toreturn;
 	}
-
+		
+	public void setAdvString(String ourAdv) {
+		m_ourname = ourAdv;
+	}
+	
+	public void setNumPromSlots(int numPromSlots) {
+		_numPromSlots = numPromSlots;
+	}
+	
 	@Override
 	public AbstractModel getCopy() {
-		// TODO Auto-generated method stub
-		return null;
+		return new MBarrowsImpl(m_ourname, _numPromSlots);
 	}
 
 }
