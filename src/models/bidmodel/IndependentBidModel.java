@@ -40,6 +40,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	private static final double normVar = 6; 
 	private static final int numIterations = 10;
 	private static final String ourAgent = "Schemelaz";
+	Set<String> _advertisers;
 	
 	public static void main(String[] args){
 		HashSet<String> ads = new HashSet<String>();
@@ -50,6 +51,8 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 	
 	public IndependentBidModel(Set<String> advertisers){
+		_advertisers = advertisers;
+		
 		_query = new ArrayList<Query>();
 		_query.add(new Query("flat", "dvd"));
 		_query.add(new Query("flat", "tv"));
@@ -189,20 +192,6 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 
 	@Override
-	public AbstractModel getCopy() {
-		HashSet<String> ads = new HashSet<String>();
-		ads.add("1");
-		ads.add("2");
-		ads.add("3");
-		ads.add("4");
-		ads.add("5");
-		ads.add("6");
-		ads.add("7");
-		ads.add("8");
-		return new IndependentBidModel(ads);
-	}
-
-	@Override
 	public double getPrediction(String player, Query q) {
 		ArrayList<Double> toRet = predValue.get(q).get(player);
 		return toRet.get(toRet.size()-1);
@@ -313,6 +302,11 @@ public class IndependentBidModel extends AbstractBidModel{
 				}
 			}
 		}
+	}
+	
+	@Override
+	public AbstractModel getCopy() {
+		return new IndependentBidModel(_advertisers);
 	}
 
 }
