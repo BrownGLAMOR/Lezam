@@ -77,7 +77,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	public boolean updateModel(QueryReport queryReport,
 			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
 			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
-			HashMap<String, Ad> ads,
+			HashMap<String,HashMap<Query,Ad>> ads,
 			HashMap<Product, HashMap<UserState, Double>> userStates) {
 		
 		assert (impressionsPerSlot.size() == advertisersAbovePerSlot.size());
@@ -99,7 +99,7 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 					HashMap<Product, Double> clickProb = estimateProbClick(impDist,clickDist);
 					//Note:  Need to check all divisions of ints for rounding errors
 					double averageProbClick = 1.0*(queryReport.getClicks(q)/impressions);
-					Ad ourad = ads.get(m_ourname);
+					Ad ourad = ads.get(m_ourname).get(q);
 					//I don't know if this is a valid way of determining whether an ad was promoted.
 					boolean promoted = false;
 					if(queryReport.getPromotedImpressions(q)>queryReport.getRegularImpressions(q)){

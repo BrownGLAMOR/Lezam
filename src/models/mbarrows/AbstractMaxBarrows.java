@@ -47,7 +47,7 @@ public abstract class AbstractMaxBarrows extends AbstractModel {
 										SalesReport salesReport,
 										LinkedList<Integer> impressionsPerSlot,
 										LinkedList<LinkedList<String>> advertisersAbovePerSlot,
-										HashMap<String,Ad> ads,
+										HashMap<String,HashMap<Query,Ad>> ads,
 										HashMap<Product,HashMap<UserState,Double>> userStates);
 	
 }
