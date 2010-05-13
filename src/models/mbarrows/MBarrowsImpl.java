@@ -79,6 +79,8 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 	@Override
 	public AbstractModel getCopy() {
 		// TODO Auto-generated method stub
+		
+		//Test
 		return null;
 	}
 
