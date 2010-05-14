@@ -14,4 +14,7 @@ public abstract class AbstractBidModel extends AbstractModel {
 	
 	public abstract boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks);
 	public abstract double getPrediction(String player, Query q);
+	public abstract void setAdvertiser(String ourAdvertiser);
+	
+	
 }
