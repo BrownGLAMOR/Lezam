@@ -29,6 +29,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	private static final double aStep = Math.pow(2, (1.0/25.0));
 	private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> bidDist;
 	private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> predDist;
+	private HashMap<Query, HashMap<String, ArrayList<Double>>> curValue;
 	private HashMap<Query, HashMap<String, ArrayList<Double>>> predValue;
 	private double[] transProbs;
 	private int numBidValues;
@@ -51,8 +52,6 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 	
 	public IndependentBidModel(Set<String> advertisers){
-		_advertisers = advertisers;
-		
 		_query = new ArrayList<Query>();
 		_query.add(new Query("flat", "dvd"));
 		_query.add(new Query("flat", "tv"));
@@ -63,6 +62,13 @@ public class IndependentBidModel extends AbstractBidModel{
 		_query.add(new Query("lioneer", "dvd"));
 		_query.add(new Query("lioneer", "tv"));
 		_query.add(new Query("lioneer", "audio"));
+		_query.add(new Query());
+		_query.add(new Query("flat", null));
+		_query.add(new Query("pg", null));
+		_query.add(new Query("lioneer", null));
+		_query.add(new Query(null, "dvd"));
+		_query.add(new Query(null, "tv"));
+		_query.add(new Query(null, "audio"));
 		
 		_r = new Random();
 		
@@ -85,13 +91,13 @@ public class IndependentBidModel extends AbstractBidModel{
 				curStringMapTwo.put(s, curDoubleMapTwo);
 				curStringMapThree.put(s, curDoubleALTwo);
 				numBidValues = 0;
+				ArrayList<Double> curDoubleAL = new ArrayList<Double>();
 				for(Double curKey = startVal; curKey <= maxReasonableBid+0.001; curKey = (curKey+0.25)*aStep-0.25){
-					ArrayList<Double> curDoubleAL = new ArrayList<Double>();
 					curDoubleAL.add(1.0);//TODO: initialize to more intelligent values
-					curDoubleMap.add(curDoubleAL);
 					System.out.print(""+curKey+", ");
 					numBidValues++;
 				}
+				curDoubleMap.add(curDoubleAL);
 				System.out.println();
 			}
 		}
@@ -101,10 +107,23 @@ public class IndependentBidModel extends AbstractBidModel{
 			transProbs[i] = normalDensFn(i);
 		}
 		normalize(transProbs);
-		
+		genCurEst();
 		pushForwardsPrediction();
 	}
 	
+	private void genCurEst() {
+		for(Query q:_query){
+			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
+			Set<String> curStrKey = curStrHM.keySet();
+			for(String s:curStrKey){
+				ArrayList<ArrayList<Double>> curHist = bidDist.get(q).get(s);
+				ArrayList<Double> newPred = curHist.get(curHist.size()-1);
+				curValue.get(q).get(s).add(averageAL(newPred));
+			}
+		}
+		
+	}
+
 	private void normalize(double[] transProbs2) {
 		double sum = 0.0;
 		for(int i = 0; i <transProbs2.length; i++){
@@ -158,7 +177,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					}
 					else
 					{
-						toAdd += 0.4*transProbs[Math.abs(k-j)]*arrayList.get(1).get(k);
+						toAdd += 0.4*transProbs[Math.abs(k-j)]*arrayList.get(0).get(k);
 					}
 				}
 				toRet.add(toAdd);
@@ -197,11 +216,17 @@ public class IndependentBidModel extends AbstractBidModel{
 		return toRet.get(toRet.size()-1);
 	}
 	
+	public double getCurrentEstimate(String player, Query q){
+		ArrayList<Double> toRet = curValue.get(q).get(player);
+		return toRet.get(toRet.size()-1);
+	}
+	
 	@Override
 	public boolean updateModel(double cpc, HashMap<Query, Double> ourBid,
 			HashMap<Query, HashMap<String, Integer>> ranks) {
 		pushForwardCurEst(cpc, ourBid, ranks);
 		updateProbs(cpc, ourBid, ranks);
+		genCurEst();
 		pushForwardsPrediction();
 		return true;
 	}
@@ -267,6 +292,12 @@ public class IndependentBidModel extends AbstractBidModel{
 		for(Query q:_query){
 			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
 			Set<String> curStrKey = curStrHM.keySet();
+			int nextSpot = 100;
+			for(String s:curStrKey){
+				if(s.equals(ourAgent)){
+					nextSpot = ranks.get(q).get(s).intValue()+1;
+				}
+			}
 			for(String s:curStrKey){
 				ArrayList<ArrayList<Double>> curDHM = curStrHM.get(s);
 				if(s.equals(ourAgent)){
@@ -283,7 +314,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					myALD.set(theIndex, 1.0);
 					curDHM.add(myALD);
 				}
-				else if(cpc!=0.0&&(ranks.get(q).get(ourAgent).intValue()+1)==(ranks.get(q).get(s).intValue())){
+				else if(cpc!=0.0&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
 					ArrayList<Double> myALD = new ArrayList<Double>();
 					for(int i = 0; i<numBidValues;i++){
 						myALD.add(0.0);
