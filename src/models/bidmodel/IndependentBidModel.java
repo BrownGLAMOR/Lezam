@@ -212,8 +212,9 @@ public class IndependentBidModel extends AbstractBidModel{
 
 	@Override
 	public double getPrediction(String player, Query q) {
-		ArrayList<Double> toRet = predValue.get(q).get(player);
-		return toRet.get(toRet.size()-1);
+		/*ArrayList<Double> toRet = predValue.get(q).get(player);
+		return toRet.get(toRet.size()-1);*/
+		return getCurrentEstimate(player, q);
 	}
 	
 	public double getCurrentEstimate(String player, Query q){
