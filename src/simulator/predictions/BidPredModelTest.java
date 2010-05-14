@@ -262,7 +262,7 @@ public class BidPredModelTest {
 		}
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers));
+		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,"this string gets overwritten"));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
