@@ -11,51 +11,8 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
-public class DayHandler {
-	// Target Effect
-	final double _TE = 0.5;
-	
-	// Promoted Slot Bonus
-	final double _PSB =  0.5;
-	
-	// Component Specialty Bonus
-	final double _CSB = 0.6;
-	
-	// Advertiser effect  lower bound <> upper bound
-	final double[][] _advertiserEffectsBounds = { {0.2, 0.3},
-											      {0.3, 0.4},
-											      {0.4, 0.5}
-										  };
-	
-	// Average advertiser effect  
-	final double[] _advertiserEffectsBoundsAvg = {0.25,0.35,0.45};
+public class DayHandler implements ConstantsAndFunctions {
 
-	
-	// Continuation Probability  lower bound <> upper bound
-	final double[][] _continuationProbBounds = { {0.2, 0.5},
-										         {0.3, 0.6},
-										         {0.4, 0.7}
-		  								 };
-	
-	final double[] _continuationProbBoundsAvg = {0.35,0.45,0.55};
-	
-	// Calculate the forward click probability as defined on page 14 of the spec.
-	public double forwardClickProbability(double advertiserEffect, double fTargetfPro)
-	{	
-		double temp = (advertiserEffect * fTargetfPro) / 
-			   ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
-		
-		return temp;
-	}
-	
-	// Calculate the inverse of the forward click probability
-	public double inverseClickProbability(double ProbClick, double fTargetfPro)
-	{
-		double temp = ProbClick / (ProbClick + fTargetfPro - ProbClick * fTargetfPro); 
-		
-		return temp;
-		
-	}
 	double otherAdvertiserEffects;
 	double otherAdvertiserConvProb;
 
@@ -63,7 +20,7 @@ public class DayHandler {
 	double a,b,c,d,e;
 	
 	double currentEstimate;
-
+	
 	public DayHandler(Query q, int totalClicks,
 			LinkedList<Integer> impressionsPerSlot, double ourAdvertiserEffect,
 			LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot < their slots <ad>>

@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class QueryHandler extends MBarrowsImplV {
+public class QueryHandler implements ConstantsAndFunctions {
 	final Query _query;
 	final QueryType _queryType;
 	
