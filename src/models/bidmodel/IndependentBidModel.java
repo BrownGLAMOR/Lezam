@@ -222,7 +222,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 	
 	@Override
-	public boolean updateModel(double cpc, HashMap<Query, Double> ourBid,
+	public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid,
 			HashMap<Query, HashMap<String, Integer>> ranks) {
 		pushForwardCurEst(cpc, ourBid, ranks);
 		updateProbs(cpc, ourBid, ranks);
@@ -231,7 +231,7 @@ public class IndependentBidModel extends AbstractBidModel{
 		return true;
 	}
 
-	private void updateProbs(double cpc, HashMap<Query, Double> ourBid,
+	private void updateProbs(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid,
 			HashMap<Query, HashMap<String, Integer>> ranks) {
 		for(Query q:_query){
 			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
@@ -288,7 +288,7 @@ public class IndependentBidModel extends AbstractBidModel{
 		
 	}
 
-	private void pushForwardCurEst(double cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
+	private void pushForwardCurEst(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
 		for(Query q:_query){
 			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
 			Set<String> curStrKey = curStrHM.keySet();
@@ -314,12 +314,12 @@ public class IndependentBidModel extends AbstractBidModel{
 					myALD.set(theIndex, 1.0);
 					curDHM.add(myALD);
 				}
-				else if(cpc!=0.0&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
+				else if(cpc.get(q).doubleValue()!=0.0&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
 					ArrayList<Double> myALD = new ArrayList<Double>();
 					for(int i = 0; i<numBidValues;i++){
 						myALD.add(0.0);
 					}
-					double myBid = cpc;//TODO: make sure this isn't squashed (otherwise get appropriate input for adjustment)
+					double myBid = cpc.get(q).doubleValue();//TODO: make sure this isn't squashed (otherwise get appropriate input for adjustment)
 					int theIndex = (int)(((Math.log(myBid+0.25)/Math.log(2.0))+2)*25.0-1.0);
 					if(theIndex < 0)
 						theIndex = 0;
