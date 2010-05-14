@@ -78,6 +78,7 @@ public class BidPredModelTest {
 
 			for(int agent = 0; agent < agents.length; agent++) {
 				AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
+				model.setAdvertiser(agents[agent]);
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
