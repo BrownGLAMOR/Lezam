@@ -52,10 +52,6 @@ public class BidPredModelTest {
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
-			HashSet<String> allAgents = new HashSet<String>();
-			for(int i = 0; i<agents.length; i++){
-				allAgents.add(agents[i]);
-			}
 
 			/*
 			 * One map for each advertiser
@@ -85,7 +81,8 @@ public class BidPredModelTest {
 			HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
 
 			for(int agent = 0; agent<agents.length; agent++) {
-				IndependentBidModel model = new IndependentBidModel(allAgents, agents[agent]);
+				AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
+				model.setAdvertiser(agents[agent]); 
 				//System.out.println("Testing for agent: " + agents[agent]);
 
 				double ourTotError = 0;
@@ -275,8 +272,8 @@ public class BidPredModelTest {
 		}
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "This Will Be Overwritten"));
-//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, "This Will Be Overwritten"));
+//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "This Will Be Overwritten"));
+		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, "This Will Be Overwritten"));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
