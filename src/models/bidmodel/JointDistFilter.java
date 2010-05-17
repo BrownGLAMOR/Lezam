@@ -19,19 +19,22 @@ public class JointDistFilter {
 	private double[] probDist;
 	Random r = new Random();
 	double maxReasonableBid;
+	String _ourAdvertiser;
 	
 	private class Particle {
 				
 		HashMap<String, Double> bids;		
 		
 		//Return the ranking represented by this particle for use in recomputeDistribution
+		@SuppressWarnings("unchecked")
 		public HashMap<String, Integer> getRanksHash() {
 			HashMap<String, Integer> ret = new HashMap<String, Integer>();
 			ArrayList<Pair<Double, String>> sorted = new ArrayList<Pair<Double, String>>();
 			for(String s : bids.keySet()) {
 				sorted.add( new Pair<Double, String>(bids.get(s), s));
 			}
-			Collections.sort(sorted);		
+
+			Collections.sort(sorted);
 			int i = bids.keySet().size();
 			for(Pair<Double, String> p : sorted) {			
 				ret.put(p.getSecond(), new Integer(i));				
@@ -40,25 +43,36 @@ public class JointDistFilter {
 			return ret;
 		}
 		
-		public ArrayList<Pair<Double, String>> getRanks() {		
+		@SuppressWarnings("unchecked")
+		public ArrayList<Pair<Double, String>> getSortedBids() {		
+		/*	if(bids.values().contains(Double.NaN)){
+				int i = 4; //noop
+			}*/
 			ArrayList<Pair<Double, String>> sorted = new ArrayList<Pair<Double, String>>();
 			for(String s : bids.keySet()) {
+			/*	if(!Double.isNaN(bids.get(s)) && Double.isNaN(new Pair<Double, String>(bids.get(s), s).getFirst())) {
+					System.out.println("made NANBID");
+				}*/
 				sorted.add( new Pair<Double, String>(bids.get(s), s));
 			}
-			Collections.sort(sorted);				
+			Collections.sort(sorted);	
 			return sorted;
 		}
+
 		
 		public Particle() {
 			bids = new HashMap<String, Double>();
 			for(int i = 0; i < names.size(); i++) {
 				bids.put(names.get(i), r.nextDouble() * maxReasonableBid);
+				//System.out.println(bids.get(names.get(i)));
 			}
 		}
 		
 	}
 	
-	public JointDistFilter(Set<String> snames, double maxbid) {
+	public JointDistFilter(Set<String> snames, double maxbid, String ourAdvertiser) {
+		r.setSeed(5);
+		_ourAdvertiser = ourAdvertiser;
 		maxReasonableBid = maxbid;
 		names = new ArrayList<String>(snames);
 		particles = new Particle[1000];
@@ -77,40 +91,46 @@ public class JointDistFilter {
 	private double recomputeParticleLikelihood(Particle p, HashMap<String, Integer> ranks) {
 		double ret = 1;
 		HashMap<String, Integer> particleRanks = p.getRanksHash();
-		for(String s : names) {			
+		for(String s : names) {
 			double d = Math.abs(particleRanks.get(s) - ranks.get(s));
 			d = d / 7;
 			ret = ret * Math.exp(- (d * d) / 4.9);
+			//System.out.println("particle rank: " + particleRanks.get(s) + " real rank: " + ranks.get(s));
 		}
+		//System.out.println("ret: " + ret);
 		return ret;
 	}
 	
-	private void recomputeDistribution(HashMap<String, Integer> ranks) {
+	private void recomputeDistribution(HashMap<String, Integer> ranks) {	
 		int i = 0;
 		double sum = 0;
 		for(Particle p : particles) {
+			//System.out.println(p.bids.get("Schlemazl"));
 			double t = recomputeParticleLikelihood(p, ranks);
 			probDist[i] = t;
 			sum += t;
+			i++;
 		}
+
 		for(int j = 0; j < probDist.length; j++) {
-			probDist[j] = probDist[j] / sum;
+			probDist[j] = probDist[j] / sum;						
 		}
 				
 	}
 	
 	//generate a new generation of particles by choosing random old ones weighted by the probability distribution
 	private void resample() {
-		
 		Particle[] p = new Particle[1000];
+		int index;
 		for(int i = 0; i < 1000; i++) {
-			double d = r.nextDouble() * 1000;
 			double sum = -1;
-			int index;			
+			double d = r.nextDouble();
+			
 			for(index = 0; sum < d; index++) {
-				if(sum < 0) sum = 0;				
+				if(sum < 0) sum = 0;
+				
 				sum += probDist[index];
-			}			
+			}	
 			p[i] = particles[index - 1]; 
 		}
 		particles = p;
@@ -119,20 +139,29 @@ public class JointDistFilter {
 	private void adjustParticle(Particle p, double ourBid, double cpc, HashMap<String, Integer> ranks) {
 		
 		double low_bid = 0;
-		int ourRank = ranks.get("Us"); //How to obtain actual agent name?
+		int ourRank = ranks.get(_ourAdvertiser);
 		for(int i = 0; i < ADJUST_BID_ITERATIONS; i++) {
 			for(String s : ranks.keySet()) {
 				int curplayerActualRank = ranks.get(s);
 				if(curplayerActualRank == ourRank + 1) {
-					p.bids.put(s, cpc);
+					if(!Double.isNaN(cpc)) {
+						p.bids.put(s, cpc);
+					} else {
+						p.bids.put(s, r.nextDouble() * ourBid);
+					}
+					
 				} else if (curplayerActualRank == -1) { //When does this happen?
-					p.bids.put(s, (r.nextDouble() + low_bid) * (maxReasonableBid - low_bid));
-				} else if (curplayerActualRank > ourBid + 1 && curplayerActualRank > cpc ||
-						curplayerActualRank < ourBid && p.bids.get(s) <= ourBid) {
-					ArrayList<Pair<Double, String>> particleBids = p.getRanks();
-					p.bids.put(s, (r.nextDouble() + p.bids.get(particleBids.get(curplayerActualRank + 1).getFirst())) *
-							(p.bids.get(particleBids.get(curplayerActualRank - 1).getSecond()) - 
-									p.bids.get(particleBids.get(curplayerActualRank + 1).getSecond())));					
+					p.bids.put(s, (r.nextDouble() * (maxReasonableBid - low_bid)) + low_bid) ;
+					//System.out.println("WTF SRSLY 2");
+				} else if (curplayerActualRank > ourRank + 1 && p.bids.get(s) >= cpc ||
+						curplayerActualRank < ourRank && p.bids.get(s) <= ourBid) {
+					ArrayList<Pair<Double, String>> particleBids = p.getSortedBids();
+					//System.out.println( curplayerActualRank );
+					p.bids.put(s, (r.nextDouble() * 
+							(particleBids.get(Math.max(curplayerActualRank - 1, curplayerActualRank)).getFirst() -
+							particleBids.get(Math.min(curplayerActualRank + 1, curplayerActualRank)).getFirst()))  
+							+ particleBids.get(Math.min(curplayerActualRank + 1, curplayerActualRank)).getFirst());
+					if(Double.isNaN(p.bids.get(s)))  System.out.println("YEP curplayeractual: " + curplayerActualRank + " and " + particleBids.get(Math.max(curplayerActualRank - 1, curplayerActualRank)).getFirst() + " and " + particleBids.get(Math.min(curplayerActualRank + 1, curplayerActualRank)).getFirst());
 				} 
 			}
 		}
@@ -151,6 +180,8 @@ public class JointDistFilter {
 		resample();
 		adjustBids(ourBid, cpc, ranks);
 		recomputeDistribution(ranks);
+		
+		
 		
 	}
 	
@@ -179,19 +210,23 @@ public class JointDistFilter {
 
 		double ret = 0;
 		
+		
 		for(int i = 0; i < 1000; i++) {
+		
 			ret += probDist[i] * particles[i].bids.get(player);
+				
 		}
 		
-		return ret;
+		
+		
+			return ret;
 	}
 	
 	public static void main(String[] args) {
 		
 		List name = (List) Arrays.asList("One", "Two", "Three");
-		JointDistFilter jdf = new JointDistFilter(new HashSet((Collection) name), 3.75);
-		for(double d : jdf.probDist)
-			System.out.print(d + "   ");
+		JointDistFilter jdf = new JointDistFilter(new HashSet((Collection) name), 3.75, "One");
+	
 		HashMap<String, Integer> update = new HashMap<String, Integer>();
 		update.put("One", 1);
 		update.put("Two", 3);
