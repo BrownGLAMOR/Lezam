@@ -20,18 +20,30 @@ public class Pair<T, S> implements Comparable
   {
     return second;
   }
+  
+  public void setFirst(T t) {
+	  first = t;
+  }
+  
+
+  public void setSecond(S t) {
+	  second = t;
+  }
 
   public String toString()
   { 
     return "(" + first.toString() + ", " + second.toString() + ")"; 
   }
   
-  public int compareTo(Pair<Comparable, S> p) {
-	  return p.getFirst().compareTo(getFirst());
-  }
 
   public int compareTo(Object o) {
-	  return 0;
+	  if(o instanceof Pair && ((Pair) o).getFirst() instanceof Double) {
+		  return ((Comparable) getFirst()).compareTo(((Comparable) ((Pair) o).getFirst()));
+	  } else {
+		  System.out.println("foo");
+		  return 0;
+	  }
+		
   }
   
 }
