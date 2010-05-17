@@ -5,8 +5,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
@@ -16,13 +18,14 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.UserClickModel;
 
-public class BidPredModelTest {
+public class CopyOfBidPredModelTest {
 
 	public ArrayList<String> getGameStrings() {
-				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
 		int max = 1441;
 
@@ -48,6 +51,10 @@ public class BidPredModelTest {
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
+			HashSet<String> allAgents = new HashSet<String>();
+			for(int i = 0; i<agents.length; i++){
+				allAgents.add(agents[i]);
+			}
 
 			/*
 			 * One map for each advertiser
@@ -76,9 +83,9 @@ public class BidPredModelTest {
 			HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
 			HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
 
-			for(int agent = 0; agent < agents.length; agent++) {
-				AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
-				model.setAdvertiser(agents[agent]);
+			for(int agent = 0; agent<agents.length; agent++) {
+				IndependentBidModel model = new IndependentBidModel(allAgents, agents[agent]);
+				//System.out.println("Testing for agent: " + agents[agent]);
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -88,6 +95,7 @@ public class BidPredModelTest {
 
 				for(int i = 0; i < 57; i++) {
 					QueryReport queryReport = ourQueryReports.get(i);
+					//System.out.print("Day " +(i+1) + " -- ");
 
 					HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
 					HashMap<Query, Double> cpc = new HashMap<Query,Double>();
@@ -120,6 +128,7 @@ public class BidPredModelTest {
 					model.updateModel(cpc,ourBid,ranks);
 
 					for(Query q : querySpace) {
+						//System.out.print("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
 						for(int j = 0; j < agents.length; j++) {
 							/*
 							 * You guys don't really need to worry about predicting, because
@@ -132,14 +141,17 @@ public class BidPredModelTest {
 							double squashedBid = bid * Math.pow(advEffect, squashing);
 							
 							double bidPred = model.getPrediction(agents[j],q);
-							
+							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
+								//System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
 							double error = squashedBid - bidPred;
+							
 							error = error*error;
 							ourTotActual += squashedBid;
 							ourTotError += error;
 							ourTotErrorCounter++;
 						}
 					}
+					//System.out.println();
 				}
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
@@ -247,7 +259,7 @@ public class BidPredModelTest {
 	}
 
 	public static void main(String[] args) throws IOException, ParseException  {
-		BidPredModelTest evaluator = new BidPredModelTest();
+		CopyOfBidPredModelTest evaluator = new CopyOfBidPredModelTest();
 
 		ArrayList<String> filenames = evaluator.getGameStrings();
 		String filename = filenames.get(0);
@@ -262,7 +274,7 @@ public class BidPredModelTest {
 		}
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,"this string gets overwritten"));
+		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "Schemazl"));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
