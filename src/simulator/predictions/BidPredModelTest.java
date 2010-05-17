@@ -12,6 +12,7 @@ import java.util.Set;
 
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
+import models.bidmodel.JointDistBidModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -259,7 +260,7 @@ public class BidPredModelTest {
 	}
 
 	public static void main(String[] args) throws IOException, ParseException  {
-		CopyOfBidPredModelTest evaluator = new CopyOfBidPredModelTest();
+		BidPredModelTest evaluator = new BidPredModelTest();
 
 		ArrayList<String> filenames = evaluator.getGameStrings();
 		String filename = filenames.get(0);
@@ -274,7 +275,8 @@ public class BidPredModelTest {
 		}
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "Schemazl"));
+		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "This Will Be Overwritten"));
+//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, "This Will Be Overwritten"));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
