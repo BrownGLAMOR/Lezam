@@ -21,7 +21,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.UserClickModel;
 
-public class CopyOfBidPredModelTest {
+public class BidPredModelTest {
 
 	public ArrayList<String> getGameStrings() {
 //				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
