@@ -39,8 +39,8 @@ public class IndependentBidModel extends AbstractBidModel{
 	private static final double yesterdayProb = 0.5;
 	private static final double nDaysAgoProb = 0.4;
 	private static final double normVar = 6; 
-	private static final int numIterations = 10;
-	private final String ourAgent;
+	private static final int numIterations = 9;
+	private String ourAgent;
 	Set<String> _advertisers;
 	
 	public static void main(String[] args){
@@ -102,7 +102,7 @@ public class IndependentBidModel extends AbstractBidModel{
 				curStringMapFour.put(s, curDoubleALThree);
 				numBidValues = 0;
 				ArrayList<Double> curDoubleAL = new ArrayList<Double>();
-				for(Double curKey = startVal; curKey <= maxReasonableBid+0.001; curKey = (curKey+0.25)*aStep-0.25){
+				for(Double curKey = startVal; curKey <= maxReasonableBidF2+0.001; curKey = (curKey+0.25)*aStep-0.25){
 					curDoubleAL.add(1.0);//TODO: initialize to more intelligent values
 					//System.out.print(""+curKey+", ");
 					numBidValues++;
@@ -137,12 +137,21 @@ public class IndependentBidModel extends AbstractBidModel{
 	private void normalize(double[] transProbs2) {
 		double sum = 0.0;
 		for(int i = 0; i <transProbs2.length; i++){
-			sum+= transProbs[i];
+			sum+= transProbs2[i];
 		}
 		for(int i = 0; i <transProbs2.length; i++){
-			transProbs[i] /= sum;
+			transProbs2[i] /= sum;
 		}
-		
+	}
+	
+	private void normalizeAL(ArrayList<Double> transProbs2) {
+		double sum = 0.0;
+		for(int i = 0; i <transProbs2.size(); i++){
+			sum+= transProbs2.get(i);
+		}
+		for(int i = 0; i <transProbs2.size(); i++){
+			transProbs2.set(i, transProbs2.get(i)/sum);
+		}
 	}
 
 	private double normalDensFn(double d){
@@ -253,53 +262,78 @@ public class IndependentBidModel extends AbstractBidModel{
 	private void updateProbs(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid,
 			HashMap<Query, HashMap<String, Integer>> ranks) {
 		for(Query q:_query){
+			System.out.println("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
 			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
 			Set<String> curStrKey = curStrHM.keySet();
-			HashMap<String, ArrayList<Double>> os = new HashMap<String, ArrayList<Double>>();
 			for(int n = 0; n<numIterations; n++){
+				System.out.print("Iteration: " + numIterations);
+				HashMap<String, ArrayList<Double>> os = new HashMap<String, ArrayList<Double>>();
+				for(String s:curStrKey){
+					for(int i = 0; i<numBidValues; i++){
+						if(i==0){
+							os.put(s, new ArrayList<Double>());
+						}
+						os.get(s).add(1.0);
+					}
+				}
 				//System.out.println("Running with agents: ");
 				for(String s:curStrKey){
 					//System.out.print(s+", ");
 					int numAds = curStrKey.size();
 					
-					String curAd = null;
+					/*String curAd = null;
 					while(curAd==null||curAd.equals(s)){
 						int toSelect = _r.nextInt(numAds);
 						for(java.util.Iterator<String> it = curStrKey.iterator(); it.hasNext()&&toSelect>=0; toSelect--){
 							curAd = it.next(); //TODO: change how this y advertiser is chosen
 						}
-					}
-					if(curAd == null){
-						System.out.println("PROBLEM 1 ******************************************************************************************");
-					}
-					for(int i = 0; i<numBidValues; i++){
-						if(n==0){
-							if(i==0){
-								os.put(s, new ArrayList<Double>());
-							}
-							os.get(s).add(1.0);
+					}*/
+					/*if(n!=0&&firstAd){
+						os.get(s).set(i, 1.0);
+					}*/
+					for(String curAd:curStrKey){
+						System.out.print("Updating: " + s + " with advertiser: " + curAd + " [");
+						if(curAd == null){
+							System.out.println("PROBLEM 1 ******************************************************************************************");
 						}
-						else
-						{
-							double toSet = 0.0;
-							if(ranks.get(q).get(s).intValue()<ranks.get(q).get(curAd).intValue()){
-								ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
-								for(int j = i+1; j<numBidValues; j++){
-									toSet += yDist.get(j);
+						for(int i = 0; i<numBidValues; i++){
+							/*if(n==0){
+								if(i==0){
+									os.put(s, new ArrayList<Double>());
 								}
-							}
-							else if(ranks.get(q).get(s).intValue()>ranks.get(q).get(curAd).intValue()){
-								ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
-								for(int j = i-1; j>=0; j--){
-									toSet += yDist.get(j);
-								}
+								os.get(s).add(1.0);
 							}
 							else
-							{
-								toSet = 1.0;
-							}
-							os.get(s).set(i, (1.01-toSet));
+							{*/
+								double toSet = 0.0;
+								if(!curAd.equals(s)){
+									if(ranks.get(q).get(s).intValue()>ranks.get(q).get(curAd).intValue()){
+										ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
+										for(int j = i; j<numBidValues; j++){
+											toSet = yDist.get(j);
+										}
+									}
+									else if(ranks.get(q).get(s).intValue()<ranks.get(q).get(curAd).intValue()){
+										ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
+										for(int j = i; j>=0; j--){
+											toSet = yDist.get(j);
+										}
+									}
+									else
+									{
+										toSet = 1.0;
+									}
+								}
+								else
+								{
+									toSet = 1.0;
+								}
+								os.get(s).set(i, os.get(s).get(i)*toSet);
+								System.out.print(os.get(s).get(i) +", ");
+//							}
 						}
+						System.out.println();
+						normalizeAL(os.get(s));
 					}
 					//System.out.println();
 				}
@@ -344,7 +378,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					curDHM.add(myALD);
 					
 				}
-				else if(cpc.get(q).doubleValue()!=0.0&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
+				else if(cpc.get(q).doubleValue()!=Double.NaN&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
 					ArrayList<Double> myALD = new ArrayList<Double>();
 					for(int i = 0; i<numBidValues;i++){
 						myALD.add(0.0);
@@ -366,13 +400,18 @@ public class IndependentBidModel extends AbstractBidModel{
 		}
 	}
 	
-	public void setAdvertisers(Set<String> advertisers) {
+	/*public void setAdvertisers(Set<String> advertisers) {
 		_advertisers = advertisers;
-	}
+	}*/
 	
 	@Override
 	public AbstractModel getCopy() {
-		return new IndependentBidModel(_advertisers, "Schemazl");
+		return new IndependentBidModel(_advertisers, ourAgent);
+	}
+
+	@Override
+	public void setAdvertiser(String ourAdvertiser) {
+		ourAgent = ourAdvertiser;
 	}
 
 }
