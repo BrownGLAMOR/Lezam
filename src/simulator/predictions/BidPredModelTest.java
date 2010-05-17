@@ -270,6 +270,8 @@ public class BidPredModelTest {
 		for(int i = 0; i < agents.length; i++) {
 			advertisers.add(agents[i]);
 		}
+		
+		System.out.println(advertisers);
 
 		double start = System.currentTimeMillis();
 //		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "This Will Be Overwritten"));
