@@ -52,6 +52,9 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 	
 	public IndependentBidModel(Set<String> advertisers, String me){
+		
+		_advertisers = advertisers;
+		
 		System.out.println("Reinitializing");
 		_query = new ArrayList<Query>();
 		_query.add(new Query("flat", "dvd"));
