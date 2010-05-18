@@ -25,8 +25,9 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BidPredModelTest {
 
 	public ArrayList<String> getGameStrings() {
-//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
+		//games 1425-1464
 		int min = 1440;
 		int max = 1441;
 
@@ -132,17 +133,17 @@ public class BidPredModelTest {
 							 * You guys don't really need to worry about predicting, because
 							 * that is not really the point of this particle filter.
 							 */
-//							double bid = allBidBundles.get(agents[j]).get(i+2).getBid(q);
-							
+							//							double bid = allBidBundles.get(agents[j]).get(i+2).getBid(q);
+
 							double bid = allBidBundles.get(agents[j]).get(i).getBid(q);
 							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), j);
 							double squashedBid = bid * Math.pow(advEffect, squashing);
-							
+
 							double bidPred = model.getPrediction(agents[j],q);
 							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
-								//System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
+							//System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
 							double error = squashedBid - bidPred;
-							
+
 							error = error*error;
 							ourTotActual += squashedBid;
 							ourTotError += error;
@@ -186,7 +187,7 @@ public class BidPredModelTest {
 		Collections.sort(RMSEList);
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
-//		double[] actualStd = getStdDevAndMean(actualList);
+		//		double[] actualStd = getStdDevAndMean(actualList);
 		double stop = System.currentTimeMillis();
 		double elapsed = (stop - start)/1000.0;
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
@@ -270,12 +271,12 @@ public class BidPredModelTest {
 		for(int i = 0; i < agents.length; i++) {
 			advertisers.add(agents[i]);
 		}
-		
+
 		System.out.println(advertisers);
 
 		double start = System.currentTimeMillis();
-//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, "This Will Be Overwritten"));
-		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, "This Will Be Overwritten"));
+		//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
+		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0]));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
