@@ -169,6 +169,8 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 		return false;
 	}
 	
+	
+	
 	public static double calculateAdvertiserEffect(HashMap<Product, Double> userDist, HashMap<Product, Double> probClick, double averageProbClick, boolean targeted, boolean promoted, Product target, Query q){
 		double fpro = 1.0;
 		if(promoted){
