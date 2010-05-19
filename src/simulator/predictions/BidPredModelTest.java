@@ -30,8 +30,8 @@ public class BidPredModelTest {
 //		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
 				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1440;
-		int max = 1441;
+		int min = 1425;
+		int max = 1465;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -103,7 +103,7 @@ public class BidPredModelTest {
 					HashMap<Query, Double> cpc = new HashMap<Query,Double>();
 					HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
 					for(Query q : querySpace) {
-						cpc.put(q, queryReport.getCPC(q));
+						cpc.put(q, queryReport.getCPC(q)* Math.pow(userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent), squashing)); //need to squash CPC!!!
 
 						ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
 						for(int agentInner = 0; agentInner < agents.length; agentInner++) {
@@ -282,7 +282,7 @@ public class BidPredModelTest {
 		System.out.println(advertisers);
 
 		double start = System.currentTimeMillis();
-		//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
+		//evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
 		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0]));
 
 		double stop = System.currentTimeMillis();
