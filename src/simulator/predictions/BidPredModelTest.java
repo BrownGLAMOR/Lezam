@@ -24,6 +24,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 
 public class BidPredModelTest {
 
+	public static final boolean printlns = false;
+	
 	public ArrayList<String> getGameStrings() {
 //		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
 				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
@@ -84,7 +86,8 @@ public class BidPredModelTest {
 			for(int agent = 0; agent<agents.length; agent++) {
 				AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
 				model.setAdvertiser(agents[agent]); 
-				//System.out.println("Testing for agent: " + agents[agent]);
+				if(printlns)
+				System.out.println("Testing for agent: " + agents[agent]);
 
 				double ourTotError = 0;
 				double ourTotActual = 0;
@@ -94,7 +97,7 @@ public class BidPredModelTest {
 
 				for(int i = 0; i < 57; i++) {
 					QueryReport queryReport = ourQueryReports.get(i);
-					//System.out.print("Day " +(i+1) + " -- ");
+					System.out.print(""+(i+1) + ", ");
 
 					HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
 					HashMap<Query, Double> cpc = new HashMap<Query,Double>();
@@ -127,31 +130,35 @@ public class BidPredModelTest {
 					model.updateModel(cpc,ourBid,ranks);
 
 					for(Query q : querySpace) {
-						//System.out.print("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
+						if(printlns)
+						System.out.print("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
 						for(int j = 0; j < agents.length; j++) {
 							/*
 							 * You guys don't really need to worry about predicting, because
 							 * that is not really the point of this particle filter.
 							 */
-							//							double bid = allBidBundles.get(agents[j]).get(i+2).getBid(q);
-
+//							double bid = allBidBundles.get(agents[j]).get(i+2).getBid(q);
+							
 							double bid = allBidBundles.get(agents[j]).get(i).getBid(q);
 							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), j);
 							double squashedBid = bid * Math.pow(advEffect, squashing);
-
+							
 							double bidPred = model.getPrediction(agents[j],q);
 							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
-							//System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
+							if(printlns)
+							System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
 							double error = squashedBid - bidPred;
-
+							
 							error = error*error;
 							ourTotActual += squashedBid;
 							ourTotError += error;
 							ourTotErrorCounter++;
 						}
 					}
-					//System.out.println();
+					if(printlns)
+					System.out.println();
 				}
+				System.out.println();
 				ourTotErrorMap.put(agents[agent],ourTotError);
 				ourTotActualMap.put(agents[agent],ourTotActual);
 				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
@@ -187,7 +194,7 @@ public class BidPredModelTest {
 		Collections.sort(RMSEList);
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
-		//		double[] actualStd = getStdDevAndMean(actualList);
+//		double[] actualStd = getStdDevAndMean(actualList);
 		double stop = System.currentTimeMillis();
 		double elapsed = (stop - start)/1000.0;
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
