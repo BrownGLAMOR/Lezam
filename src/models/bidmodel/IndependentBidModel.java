@@ -120,7 +120,7 @@ public class IndependentBidModel extends AbstractBidModel{
 						curDoubleAL.add(InitDistributions.initDistF2[index]);
 					}
 					
-					curDoubleAL.add(1.0);//TODO: initialize to more intelligent values
+					//curDoubleAL.add(1.0);//TODO: initialize to more intelligent values
 					//System.out.print(""+curKey+", ");
 					numBidValues++;
 					index++;
