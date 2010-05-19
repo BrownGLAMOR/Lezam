@@ -24,7 +24,7 @@ import edu.umich.eecs.tac.props.UserClickModel;
 
 public class BidPredModelTest {
 
-	public static final boolean printlns = false;
+	public static final boolean printlns = true;
 	
 	public ArrayList<String> getGameStrings() {
 //		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
