@@ -413,7 +413,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					if(printlns)
 					System.out.println("MY RANK: " + ranks.get(q).get(s).intValue()+"MY BID DISC = " + theIndex + ",  MY BID = "+myBid);
 				}
-				/*else if(cpc.get(q).doubleValue()!=Double.NaN&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
+				else if(cpc.get(q).doubleValue()!=Double.NaN&&(nextSpot)==(ranks.get(q).get(s).intValue())){//TODO: does this ever get called
 					ArrayList<Double> myALD = new ArrayList<Double>();
 					for(int i = 0; i<numBidValues;i++){
 						myALD.add(0.0);
@@ -429,7 +429,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					curDHM.add(myALD);
 					if(printlns)
 					System.out.println("BELOW RANK: " +ranks.get(q).get(s).intValue()+ "BELOW BID DISC = " + theIndex + ",  BELOW BID = "+myBid);
-				}*/
+				}
 				else
 				{
 					curDHM.add(pushForward(curDHM, 1));
