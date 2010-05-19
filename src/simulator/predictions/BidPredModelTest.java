@@ -147,9 +147,9 @@ public class BidPredModelTest {
 							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
 							if(printlns)
 							System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
-							double error = squashedBid - bidPred;
+							double error = Math.abs(squashedBid - bidPred); //MAE
 							
-							error = error*error;
+//							error = error*error;  //RMSE
 							ourTotActual += squashedBid;
 							ourTotError += error;
 							ourTotErrorCounter++;
@@ -183,10 +183,12 @@ public class BidPredModelTest {
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
-				double MSE = (totError/totErrorCounter);
-				double RMSE = Math.sqrt(MSE);
+				double MAE = (totError/totErrorCounter);
+//				double MSE = (totError/totErrorCounter);
+//				double RMSE = Math.sqrt(MSE);
 				double actual = totActual/totErrorCounter;
-				RMSEList.add(RMSE);
+//				RMSEList.add(RMSE);
+				RMSEList.add(MAE);
 				actualList.add(actual);
 			}
 		}
@@ -282,8 +284,8 @@ public class BidPredModelTest {
 		System.out.println(advertisers);
 
 		double start = System.currentTimeMillis();
-		//evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
-		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0]));
+		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
+//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0]));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
