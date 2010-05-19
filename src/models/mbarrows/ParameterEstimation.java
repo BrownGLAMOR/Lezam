@@ -17,12 +17,11 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class ParameterEstimation extends AbstractMaxBarrows {
 	
 	private ArrayList<Query> m_queries;
-	private HashMap<Query, Double> m_continuationProbs;
-	private HashMap<Query, Double[]> m_advertiserEffects;
+	private HashMap<Query, QueryHandler> m_queryHandlers;
 	
 	double _probClick;
 	
-	public MBarrowsImplV()
+	public ParameterEstimation()
 	{
 		 // Get the 16 queries
 		 m_queries.add(new Query(null, null));
@@ -42,46 +41,50 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 		 m_queries.add(new Query("flat", "audio"));
 		 m_queries.add(new Query("flat", "dvd"));
 		 
-		 for (Query q : m_queries)
-		 {
-				QueryType qt = q.getType();
-				
-				Double [] advertiserEffects = new Double[8];
-				
-				if(qt == QueryType.FOCUS_LEVEL_TWO)
-				{
-					 //For each query, store the average continuation probabilities
-					m_continuationProbs.put(q, _continuationProbBoundsAvg[2]);
-					 //For each query, store the average advertiser effects
-					for(int i = 0; i < advertiserEffects.length; i++)
-					{
-						advertiserEffects[i] = _advertiserEffectsBoundsAvg[2];
-					}
-					m_advertiserEffects.put(q, advertiserEffects);
-				}
-				
-				if(qt == QueryType.FOCUS_LEVEL_ONE)
-				{
-					 //For each query, store the average continuation probabilities
-					m_continuationProbs.put(q, _continuationProbBoundsAvg[1]);
-					 //For each query, store the average advertiser effects
-					for(int i = 0; i < advertiserEffects.length; i++){
-						advertiserEffects[i] = _advertiserEffectsBoundsAvg[1];
-					}
-					m_advertiserEffects.put(q, advertiserEffects);
-				}
-				
-				if(qt == QueryType.FOCUS_LEVEL_ZERO)
-				{
-					 //For each query, store the average continuation probabilities
-					m_continuationProbs.put(q, _continuationProbBoundsAvg[0]);
-					 //For each query, store the average advertiser effects
-					for(int i = 0; i < advertiserEffects.length; i++){
-						advertiserEffects[i] = _advertiserEffectsBoundsAvg[0];
-					}
-					m_advertiserEffects.put(q, advertiserEffects);
-				}
+		 for(Query q: m_queries){
+			 m_queryHandlers.put(q, new QueryHandler(q));
 		 }
+		 
+//		 for (Query q : m_queries)
+//		 {
+//				QueryType qt = q.getType();
+//				
+//				Double [] advertiserEffects = new Double[8];
+//				
+//				if(qt == QueryType.FOCUS_LEVEL_TWO)
+//				{
+//					 //For each query, store the average continuation probabilities
+//					m_continuationProbs.put(q, _continuationProbBoundsAvg[2]);
+//					 //For each query, store the average advertiser effects
+//					for(int i = 0; i < advertiserEffects.length; i++)
+//					{
+//						advertiserEffects[i] = _advertiserEffectsBoundsAvg[2];
+//					}
+//					m_advertiserEffects.put(q, advertiserEffects);
+//				}
+//				
+//				if(qt == QueryType.FOCUS_LEVEL_ONE)
+//				{
+//					 //For each query, store the average continuation probabilities
+//					m_continuationProbs.put(q, _continuationProbBoundsAvg[1]);
+//					 //For each query, store the average advertiser effects
+//					for(int i = 0; i < advertiserEffects.length; i++){
+//						advertiserEffects[i] = _advertiserEffectsBoundsAvg[1];
+//					}
+//					m_advertiserEffects.put(q, advertiserEffects);
+//				}
+//				
+//				if(qt == QueryType.FOCUS_LEVEL_ZERO)
+//				{
+//					 //For each query, store the average continuation probabilities
+//					m_continuationProbs.put(q, _continuationProbBoundsAvg[0]);
+//					 //For each query, store the average advertiser effects
+//					for(int i = 0; i < advertiserEffects.length; i++){
+//						advertiserEffects[i] = _advertiserEffectsBoundsAvg[0];
+//					}
+//					m_advertiserEffects.put(q, advertiserEffects);
+//				}
+//		 }
 	}
 	
 	
@@ -130,44 +133,68 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 
 	@Override
 	public double[] getPrediction(Query q) {
-		Double[] toconvert = m_advertiserEffects.get(q);
-		double[] toreturn = new double[toconvert.length];
-		for (int index = 0; index < toconvert.length; index++){
-			toreturn[index]=toconvert[index];
-		}
-		return toreturn;
+//		Double[] toconvert = m_advertiserEffects.get(q);
+//		double[] toreturn = new double[toconvert.length];
+//		for (int index = 0; index < toconvert.length; index++){
+//			toreturn[index]=toconvert[index];
+//		}
+		return m_queryHandlers.get(q).getPredictions();
 	}
-
-	public boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
-			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
-			HashMap<String, Ad> ads,
-			HashMap<Product, HashMap<UserState, Double>> userStates) {
+	
+	@Override
+	public boolean updateModel(
+			QueryReport queryReport,
+			SalesReport salesReport,
+			HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
+			HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
+			HashMap<String, HashMap<Query, Ad>> ads,
+			HashMap<Product, HashMap<UserState, Integer>> userStates) {
 		
-		//For each query
-		for (Query q: m_queries){
-			//For each slot
-			for (LinkedList<String> aboveme : advertisersAbovePerSlot){
-				//If in top slot, estimate advertiser effect
-				if(aboveme.size()==0){
-					
-				}
-				//If not, estimate conversion probability
-				double convProb = 0.11;
-				if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
-					convProb = 0.36;
-				}
-				if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
-					convProb = 0.23;
-				}
-				//Pick a good value for continuation prob based on that
-				
+		for(Query q: m_queries){
+			HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
+			for(String s : ads.keySet()){
+				query_ads.put(s, ads.get(s).get(q));
 			}
+			m_queryHandlers.get(q).update(queryReport,salesReport,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
 		}
-		
-		
+		// TODO Auto-generated method stub
 		return false;
 	}
+
+//	public boolean updateModel(QueryReport queryReport,
+//			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
+//			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
+//			HashMap<String, Ad> ads,
+//			HashMap<Product, HashMap<UserState, Double>> userStates) {
+//		
+//		for(Query q: m_queries){
+//			m_queryHandlers.get(q).update(queryReport, salesReport, impressionsPerSlot, advertisersAbovePerSlot, ads, userStates);
+//		}
+//		
+////		//For each query
+////		for (Query q: m_queries){
+////			//For each slot
+////			for (LinkedList<String> aboveme : advertisersAbovePerSlot){
+////				//If in top slot, estimate advertiser effect
+////				if(aboveme.size()==0){
+////					
+////				}
+////				//If not, estimate conversion probability
+////				double convProb = 0.11;
+////				if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+////					convProb = 0.36;
+////				}
+////				if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+////					convProb = 0.23;
+////				}
+////				//Pick a good value for continuation prob based on that
+////				
+////			}
+////		}
+//		
+//		
+//		return false;
+//	}
 	
 	
 	
@@ -235,5 +262,4 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
 }

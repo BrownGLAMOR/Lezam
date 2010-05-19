@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class QueryHandler implements ConstantsAndFunctions {
+public class QueryHandler extends ConstantsAndFunctions {
 	final Query _query;
 	final QueryType _queryType;
 	
@@ -48,7 +48,7 @@ public class QueryHandler implements ConstantsAndFunctions {
 					fTargetfPro[targeted][promoted] *= 1 + _PSB;
 				}
 				targetedPromoted[targeted][promoted][0] = forwardClickProbability(
-						_advertiserEffectsBoundsAvg[2],
+						_advertiserEffectBoundsAvg[2],
 						fTargetfPro[promoted][targeted]);
 				targetedPromoted[targeted][promoted][1] = 1;
 			}
@@ -73,6 +73,14 @@ public class QueryHandler implements ConstantsAndFunctions {
 		// TODO
 		double[] tempArr = { tempAdvertiserEffect, tempContinuationProb };
 		return tempArr;
+	}
+	
+	public boolean update(QueryReport queryReport,
+			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
+			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
+			HashMap<String, Ad> ads,
+			HashMap<Product, HashMap<UserState, Integer>> userStates){
+		return false;
 	}
 	
 	public static final double[] getQuarticCoefficients() {
@@ -184,6 +192,24 @@ public class QueryHandler implements ConstantsAndFunctions {
 		
 		
 	}
+
+//	@Override
+//	public double[] getPrediction(Query q) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//
+//	@Override
+//	public boolean updateModel(
+//			QueryReport queryReport,
+//			SalesReport salesReport,
+//			HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
+//			HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
+//			HashMap<String, HashMap<Query, Ad>> ads,
+//			HashMap<Product, HashMap<UserState, Integer>> userStates) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
 
 
 

@@ -10,8 +10,10 @@ import models.usermodel.TacTexAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 
-public class DayHandler implements ConstantsAndFunctions {
+public class DayHandler extends ConstantsAndFunctions {
 
 	double otherAdvertiserEffects;
 	double otherAdvertiserConvProb;
@@ -27,7 +29,28 @@ public class DayHandler implements ConstantsAndFunctions {
 			HashMap<Product,int[]> userStatesOfSearchingUsers) // [IS, non-IS]
 	{
 		double[] coeff = new double[5];
-		if (saw slot 5)
+		boolean sawslot5 = false;
+		boolean sawslot4 = false;
+		boolean sawslot3 = false;
+		boolean sawslot2 = false;
+		
+		//Which slots did we see?
+		for(LinkedList<Ad> ads : advertisersAdsAbovePerSlot){
+			if(ads.size()==4){
+				sawslot5=true;
+			}
+			if(ads.size()==3){
+				sawslot4=true;
+			}
+			if(ads.size()==2){
+				sawslot3=true;
+			}
+			if(ads.size()==1){
+				sawslot2=true;
+			}
+		}
+		double something = 1;
+		if (sawslot5)
 		{
 			a = something;
 		}
@@ -36,7 +59,7 @@ public class DayHandler implements ConstantsAndFunctions {
 			a = 0;
 		}
 		
-		if (saw slot 4)
+		if (sawslot4)
 		{
 			b = something;
 		}
@@ -44,7 +67,7 @@ public class DayHandler implements ConstantsAndFunctions {
 		{
 			b = 0;
 		}
-		if (saw slot 3)
+		if (sawslot3)
 		{
 			c = something;
 		}
@@ -52,7 +75,7 @@ public class DayHandler implements ConstantsAndFunctions {
 		{
 			c = 0;
 		}
-		if (saw slot 2)
+		if (sawslot2)
 		{
 			d = something;
 		}
@@ -128,5 +151,23 @@ public class DayHandler implements ConstantsAndFunctions {
 	public double getContinuationProbability() {
 		return currentEstimate;
 	}
+
+//	@Override
+//	public double[] getPrediction(Query q) {
+//		// TODO Auto-generated method stub
+//		return null;
+//	}
+//
+//	@Override
+//	public boolean updateModel(
+//			QueryReport queryReport,
+//			SalesReport salesReport,
+//			HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
+//			HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
+//			HashMap<String, HashMap<Query, Ad>> ads,
+//			HashMap<Product, HashMap<UserState, Integer>> userStates) {
+//		// TODO Auto-generated method stub
+//		return false;
+//	}
 
 }
