@@ -12,6 +12,7 @@ import org.apache.commons.math.util.OpenIntToDoubleHashMap.Iterator;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 import models.AbstractModel;
@@ -35,9 +36,9 @@ public class IndependentBidModel extends AbstractBidModel{
 	private int numBidValues;
 	private ArrayList<Query> _query;
 	private Random _r;
-	private static final double randomJumpProb = 0.1;
+	private static final double randomJumpProb = 0.0;
 	private static final double yesterdayProb = 0.5;
-	private static final double nDaysAgoProb = 0.4;
+	private static final double nDaysAgoProb = 0.5;
 	private static final double normVar = 6; 
 	private static final int numIterations = 9;
 	private String ourAgent;
@@ -107,10 +108,22 @@ public class IndependentBidModel extends AbstractBidModel{
 				curStringMapFour.put(s, curDoubleALThree);
 				numBidValues = 0;
 				ArrayList<Double> curDoubleAL = new ArrayList<Double>();
+				int index = 0;
 				for(Double curKey = startVal; curKey <= maxReasonableBidF2+0.001; curKey = (curKey+0.25)*aStep-0.25){
+					if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
+						curDoubleAL.add(InitDistributions.initDistF0[index]);
+					}
+					else if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+						curDoubleAL.add(InitDistributions.initDistF1[index]);
+					}
+					else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+						curDoubleAL.add(InitDistributions.initDistF2[index]);
+					}
+					
 					curDoubleAL.add(1.0);//TODO: initialize to more intelligent values
 					//System.out.print(""+curKey+", ");
 					numBidValues++;
+					index++;
 				}
 				curDoubleMap.add(curDoubleAL);
 				//System.out.println();
@@ -169,7 +182,7 @@ public class IndependentBidModel extends AbstractBidModel{
 			Set<String> curStrKey = curStrHM.keySet();
 			for(String s:curStrKey){
 				ArrayList<ArrayList<Double>> curHist = bidDist.get(q).get(s);
-				ArrayList<Double> newPred = pushForward(curHist, 2);
+				ArrayList<Double> newPred = pushForward(curHist, 2, q);
 				predDist.get(q).get(s).add(newPred);
 				predValue.get(q).get(s).add(averageAL(newPred));
 			}
@@ -184,23 +197,32 @@ public class IndependentBidModel extends AbstractBidModel{
 		return sum;
 	}
 
-	private ArrayList<Double> pushForward(ArrayList<ArrayList<Double>> arrayList, int iterations) {
+	private ArrayList<Double> pushForward(ArrayList<ArrayList<Double>> arrayList, int iterations, Query q) {
 		ArrayList<Double> startingList = arrayList.get(arrayList.size()-1);
 		ArrayList<Double> toRet;
 		for(int i=0; i<iterations; i++){
 			toRet = new ArrayList<Double>();
 			for(int j = 0; j < numBidValues; j++){
-				double toAdd = randomJumpProb/startingList.size();
+				double toAdd = 0.0;//randomJumpProb/startingList.size();
+				if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
+					toAdd += randomJumpProb*(InitDistributions.initDistF0[j]);
+				}
+				else if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+					toAdd +=  randomJumpProb*(InitDistributions.initDistF1[j]);
+				}
+				else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+					toAdd += randomJumpProb*(InitDistributions.initDistF2[j]);
+				}
 				for(int k = 0; k < numBidValues; k++){
-					toAdd += 0.5*transProbs[Math.abs(k-j)]*startingList.get(k);
+					toAdd += yesterdayProb*transProbs[Math.abs(k-j)]*startingList.get(k);
 				}
 				for(int k = 0; k < numBidValues; k++){
 					if(arrayList.size()>=5){
-						toAdd += 0.4*transProbs[Math.abs(k-j)]*arrayList.get(arrayList.size()-5+i).get(k);
+						toAdd += nDaysAgoProb*transProbs[Math.abs(k-j)]*arrayList.get(arrayList.size()-5+i).get(k);
 					}
 					else
 					{
-						toAdd += 0.4*transProbs[Math.abs(k-j)]*arrayList.get(0).get(k);
+						toAdd += nDaysAgoProb*transProbs[Math.abs(k-j)]*arrayList.get(0).get(k);
 					}
 				}
 				toRet.add(toAdd);
@@ -211,8 +233,10 @@ public class IndependentBidModel extends AbstractBidModel{
 	}
 
 	private void normalizeLastDay(HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> toNorm) {
-		Collection<HashMap<String, ArrayList<ArrayList<Double>>>> hms = toNorm.values();
-		for(HashMap<String, ArrayList<ArrayList<Double>>> curHM:hms){
+//		Collection<HashMap<String, ArrayList<ArrayList<Double>>>> hms = toNorm.values();
+//		for(HashMap<String, ArrayList<ArrayList<Double>>> curHM:hms){
+		for(Query q:_query){
+			HashMap<String, ArrayList<ArrayList<Double>>> curHM = toNorm.get(q);
 			Collection<ArrayList<ArrayList<Double>>> dHMs = curHM.values();
 			for(ArrayList<ArrayList<Double>> curDHM:dHMs){
 				ArrayList<Double> curAL = curDHM.get(curDHM.size()-1);
@@ -220,19 +244,27 @@ public class IndependentBidModel extends AbstractBidModel{
 				for(int i = 0; i<curAL.size(); i++){
 					sum += curAL.get(i);
 				}
-				//if(sum>0&&sum<100000){
+				if(sum>0&&sum<100000){
 					for(int i = 0; i<curAL.size(); i++){
 						curAL.set(i, curAL.get(i)/sum);
 						//System.out.print(""+curAL.get(curAL.size()-1)+", ");
 					}
-				/*}
+				}
 				else
 				{
 					for(int i = 0; i<curAL.size(); i++){
-						curAL.set(i, 1.0/curAL.size());
+						if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
+							curAL.set(i,InitDistributions.initDistF0[i]);
+						}
+						else if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+							curAL.set(i,InitDistributions.initDistF1[i]);
+						}
+						else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+							curAL.set(i,InitDistributions.initDistF2[i]);
+						}
 						//System.out.print(""+curAL.get(curAL.size()-1)+", ");
 					}
-				}*/
+				}
 			}
 		}
 		//System.out.println();
@@ -432,7 +464,7 @@ public class IndependentBidModel extends AbstractBidModel{
 				}
 				else
 				{
-					curDHM.add(pushForward(curDHM, 1));
+					curDHM.add(pushForward(curDHM, 1, q));
 				}
 			}
 		}
