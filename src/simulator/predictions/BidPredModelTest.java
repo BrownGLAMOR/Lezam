@@ -25,13 +25,14 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class BidPredModelTest {
 
 	public static final boolean printlns = true;
+	public static final boolean doRMSE = false;
 	
 	public ArrayList<String> getGameStrings() {
 //		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
 				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
 		int min = 1425;
-		int max = 1465;
+		int max = 1464;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -146,9 +147,12 @@ public class BidPredModelTest {
 							double bidPred = model.getPrediction(agents[j],q);
 							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
 							if(printlns)
-							System.out.print("  \tAgent: " +agents[j]+" Act:"+(int)(squashedBid*100)+" <-> Pred: " + (int)(bidPred*100) +" -- ");
-							double error = Math.abs(squashedBid - bidPred); //MAE
-							
+							System.out.print("  \tAgent: " +agents[j]+" Act:"+/*(int)*/(squashedBid*100)+" <-> Pred: " + /*(int)*/(bidPred*100) +" -- ");
+							double error;
+							if(!doRMSE)
+								error = Math.abs(squashedBid - bidPred); //MAE
+							else
+								error = (squashedBid - bidPred)*(squashedBid - bidPred);
 //							error = error*error;  //RMSE
 							ourTotActual += squashedBid;
 							ourTotError += error;
@@ -183,7 +187,11 @@ public class BidPredModelTest {
 				double totActual = totActualMap.get(agent);
 				double totErrorCounter = totErrorCounterMap.get(agent);
 				//				System.out.println("\t\t Predictions: " + totErrorCounter);
-				double MAE = (totError/totErrorCounter);
+				double MAE;
+				if(!doRMSE)
+					MAE = (totError/totErrorCounter);
+				else
+					MAE = Math.sqrt(totError/totErrorCounter);
 //				double MSE = (totError/totErrorCounter);
 //				double RMSE = Math.sqrt(MSE);
 				double actual = totActual/totErrorCounter;
