@@ -2,6 +2,7 @@ package models.mbarrows;
 
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Random;
 
 import org.apache.commons.math.complex.Complex;
 
@@ -17,7 +18,8 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class ConstantsAndFunctions {
+public abstract class ConstantsAndFunctions 
+{
 	
 	// Target Effect
 	final double _TE = 0.5;
@@ -29,7 +31,7 @@ public abstract class ConstantsAndFunctions {
 	final double[][] _advertiserEffectBounds = { {0.2, 0.3},
 											      {0.3, 0.4},
 											      {0.4, 0.5}
-										  };
+										       };
 	
 	// Average advertiser effect  
 	final double[] _advertiserEffectBoundsAvg = {0.25,0.35,0.45};
@@ -39,7 +41,7 @@ public abstract class ConstantsAndFunctions {
 	final double[][] _continuationProbBounds = { {0.2, 0.5},
 										         {0.3, 0.6},
 										         {0.4, 0.7}
-		  								 };
+	                   	  					   };
 	
 	final double[] _continuationProbBoundsAvg = {0.35,0.45,0.55};
 	
@@ -47,6 +49,12 @@ public abstract class ConstantsAndFunctions {
 	         {(1.0), (1.0)*(1.0+_PSB)},
 	         {(1.0)/(1.0 + _TE), (1.0)/(1.0 + _TE)*(1.0+_PSB)}
 		 };
+	
+	// Double array to store the roots for the quartic equation
+	static double[][] _quarticRoots;
+
+	// Double array to store the roots for the cubic equation
+	static double[][] _cubicRoots;
 	
 	// Calculate the forward click probability as defined on page 14 of the spec.
 	public double forwardClickProbability(double advertiserEffect, double fTargetfPro)
@@ -66,22 +74,12 @@ public abstract class ConstantsAndFunctions {
 		
 	}
 
-	public int bool2int(boolean b){
-		if (b){
-			return 1;
-		}
-		return 0;
-	}
-	
-	public int getFTargetIndex(boolean targeted, Product p, Product target){
-		if (targeted){
-			return 2-bool2int(p.equals(target));
-		}
-		return 0;
-	}
-	
-	public double[][] getQuarticRoots(double a, double b,
-			double c, double d, double e) {
+	// This function to solves a quartic equation. It returns all the roots in an array 
+	// Note: 
+	// [1] This has been directly copied from agents.modelbased.mckputil.RootFinding
+	// [2] This function is overloaded
+	public static double[][] getQuarticRoots(double a, double b, double c, double d, double e) 
+	{
 		double[][] roots = new double[4][2];
 		double A, B, C, D;
 		A = b / a;
@@ -125,10 +123,241 @@ public abstract class ConstantsAndFunctions {
 		roots[3][1] = r4.getImaginary();
 		return roots;
 	}
-
-	public double[][] getQuarticRoots(double[] coeff) {
+	
+	// This function merely returns the quartic roots
+	public static double[][] getQuarticRoots(double[] coeff) 
+	{
 		return getQuarticRoots(coeff[0], coeff[1], coeff[2], coeff[3], coeff[4]);
 	}
+	
+	// This function randomly generates coefficients to be used
+	// in the quartic solver
+	public static final double[] getQuarticCoefficients() 
+	{
+		Random R = new Random();
+		double[] coeff = new double[5];
+		for(int i = 0; i < coeff.length; i++) 
+		{
+			coeff[i] = R.nextDouble();
+		}
+		return coeff;
+	}
+	
+	// This function returns the real, quartic root only
+	// if it is nonnegative; else this function returns -1
+	public static double getRealQuarticRoot()
+	{
+		// Variable to index into the real and imaginary components
+		int m = 0;
+		
+		double realRoot = -1.0;
+		
+		// For each of the four possible real roots, print them out (if they
+		// exist)
+		for (int k = 0; k < 4; k++)
+		{
+			System.out.println("***** ROOT # "+(k+1)+"*****");
+			System.out.println("The real component is: "+_quarticRoots[k][m]);
+			System.out.println("The imaginary component is: "+_quarticRoots[k][m+1]);
+			
+			// If the real component of the root is nonzero and
+			// the imaginary component is zero return it
+			if ((_quarticRoots[k][m] >= 0) && (_quarticRoots[k][m+1]) == 0.0)
+			{
+				// Set the real root and then return it
+				realRoot = _quarticRoots[k][m];
+				
+				// Debug statement
+				System.out.println("The real root is: "+realRoot);
+				
+				return realRoot;
+			}
+		}	
+		// If no real root is found, return -1
+		return realRoot;
+		
+	}
+	
+	// This function to solves a cubic equation. It returns all the roots in an array 
+	// Note: 
+	// [1] This has been directly copied from agents.modelbased.mckputil.RootFinding
+	// [2] This function is overloaded
+	public static final double[][] getCubicRoots(double a, double b, double c, double d) 
+	{
+		double[][] roots = new double[3][2];
+		double A,B,C,Q,R,D;
+		A = b/a;
+		B = c/a;
+		C = d/a;
+		Q = (3*B-A*A)/9.0;
+		R = (9*A*B - 27*C - 2*A*A*A)/54.0;
+		D = Q*Q*Q + R*R;
+		if(D >= 0) 
+		{
+			double S,T;
+			S = Math.cbrt(R + Math.sqrt(D));
+			T = Math.cbrt(R - Math.sqrt(D));
+			roots[0][0] = -A/3.0 + (S + T); //First root real component
+			roots[0][1] = 0; //First root complex component
+			roots[1][0] = -A/3.0 - (S + T)/2.0;
+			roots[1][1] = Math.sqrt(3) * (S-T)/2.0;
+			roots[2][0] = -A/3.0 - (S + T)/2.0;
+			roots[2][1] = -Math.sqrt(3) * (S-T)/2.0;
+		}
+		else 
+		{
+			double theta;
+			theta = Math.acos(R/Math.sqrt(-Q*Q*Q));
+			roots[0][0] = 2 * Math.sqrt(-Q) * Math.cos(theta/3.0) - A/3.0;
+			roots[1][0] = 2 * Math.sqrt(-Q) * Math.cos((theta + 2*Math.PI)/3.0) - A/3.0;
+			roots[2][0] = 2 * Math.sqrt(-Q) * Math.cos((theta + 4*Math.PI)/3.0) - A/3.0;
+		}
+		return roots;
+	}
+	
+	// This function merely returns the quartic roots
+	public static final double[][] getCubicRoots(double[] coeff) 
+	{
+		return getCubicRoots(coeff[0],coeff[1],coeff[2],coeff[3]);
+	}
+	
+	// This function randomly generates coefficients to be used
+	// in the cubic solver
+	public static final double[] getCubicCoefficients() 
+	{
+		Random R = new Random(System.nanoTime());
+		double[] coeff = new double[4];
+		for(int i = 0; i < coeff.length; i++) 
+		{
+			coeff[i] = R.nextDouble();
+		}
+		return coeff;
+	}
+	
+	// This function returns the real, quartic root only
+	// if it is nonnegative; else this function returns -1
+	public static double getRealCubicRoot()
+	{
+		// Variable to index into the real and imaginary components
+		int n = 0;
+		
+		double realRoot = -1.0;
+		
+		// For each of the three possible real roots, print them out (if they
+		// exist)
+		for (int k = 0; k < 3; k++)
+		{
+			System.out.println("***** ROOT # "+(k+1)+"*****");
+			System.out.println("The real component is: "+_cubicRoots[k][n]);
+			System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);
+			
+			// If the real component of the root is nonzero and
+			// the imaginary component is zero return it
+			if ((_cubicRoots[k][n] >= 0) && (_cubicRoots[k][n+1]) == 0.0)
+			{
+				// Set the real root and then return it
+				realRoot = _quarticRoots[k][n];
+				
+				// Debug statement
+				System.out.println("The real root is: "+realRoot);
+				
+				return realRoot;
+			}
+		}	
+		// If no real root is found, return -1
+		return realRoot;
+		
+	}
+	
+	// Main to test the functionality of the cubic and quartic equation solvers
+	public static void main(String[] args) 
+	{
+		// Number of times we want to run the equation solvers 
+		int numberOfTrials = 100;
+		
+		// ***** DEBUG INFO FOR QUARTIC SOLVER*****
+//		// Loop to run the equation solver
+//		for(int i = 0; i < numberOfTrials; i++) 
+//		{
+//			double[] quarticCoefficientsArray = getQuarticCoefficients();
+//			
+//			// ***** DEBUG INFO *****
+//			// Statement to print out the coefficients
+//			/*for (int j = 0; j < 5; j++)
+//			{
+//				System.out.println("The coefficients are: "+quarticCoefficientsArray[j]);
+//			}*/
+//			
+//			_quarticRoots = getQuarticRoots(quarticCoefficientsArray);
+//			
+//			// ***** DEBUG INFO *****
+//			// Variable to index into the real and imaginary components
+//			//int m = 0;
+//			
+//			// For each of the four possible real roots, print them out (if they
+//			// exist)
+//			/*for (int k = 0; k < 4; k++)
+//			{
+//				System.out.println("***** ROOT # "+(k+1)+"*****");
+//				System.out.println("The real component is: "+roots[k][m]);
+//				System.out.println("The imaginary component is: "+roots[k][m+1]);	
+//			}*/		
+//			// Get the only real root
+//			double realQuarticRoot = getRealQuarticRoot();
+//			
+//			// If the realQuarticRoot is not -1, it must be real
+//			if (realQuarticRoot != -1.0)
+//			{
+//				System.out.println("***** REAL QUARTIC ROOT FOUND! *****");
+//				System.out.println("Real root is: "+realQuarticRoot);				
+//				break;
+//			}
+//		}
+//		
+		
+		// ***** DEBUG INFO FOR CUBIC SOLVER*****
+		// Loop to run the equation solver
+		for(int i = 0; i < numberOfTrials; i++) 
+		{
+			double[] cubicCoefficientsArray = getCubicCoefficients();
+			
+			// ***** DEBUG INFO *****
+			// Statement to print out the coefficients
+			/*for (int j = 0; j < 5; j++)
+			{
+				System.out.println("The coefficients are: "+cubicCoefficientsArray[j]);
+			}*/
+			
+			_cubicRoots = getCubicRoots(cubicCoefficientsArray);
+			
+			// ***** DEBUG INFO *****
+			// Variable to index into the real and imaginary components
+			int n = 0;
+			
+			// For each of the four possible real roots, print them out (if they
+			// exist)
+			for (int k = 0; k < 3; k++)
+			{
+				System.out.println("***** ROOT # "+(k+1)+"*****");
+				System.out.println("The real component is: "+_cubicRoots[k][n]);
+				System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);	
+			}		
+			// Get the only real root
+			double realCubicRoot = getRealCubicRoot();
+			
+			// If the realCubicRoot is not -1, it must be real
+			if (realCubicRoot != -1)
+			{
+				System.out.println("***** REAL CUBIC ROOT FOUND! *****");
+				System.out.println("Real root is: "+realCubicRoot);				
+				break;
+			}
+		}
+		
+		
+	}
+		
+	
 	
 //	/*
 //	 * Return the advertiser effect and continuation probabilities in the array
