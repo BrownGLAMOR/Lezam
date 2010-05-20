@@ -28,7 +28,6 @@ public class QueryHandler extends ConstantsAndFunctions {
 	// 2nd - targeted - 1 is targeted, 2 is targeted incorrectly
 	// 3rd - numerator, denominator
 	double targetedPromoted[][][];
-	double fTargetfPro[][];
 
 	public QueryHandler(Query q) {
 		
@@ -39,18 +38,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 		_dayHandlers = new LinkedList<DayHandler>();
 
 		targetedPromoted = new double[3][2][2];
-		fTargetfPro = new double[3][2];
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
-				fTargetfPro[targeted][promoted] = 1;
-				if (targeted == 1) {
-					fTargetfPro[targeted][promoted] *= 1 + _TE;
-				} else if (targeted == 2) {
-					fTargetfPro[targeted][promoted] /= 1 + _TE;
-				}
-				if (promoted == 1) {
-					fTargetfPro[targeted][promoted] *= 1 + _PSB;
-				}
 				targetedPromoted[targeted][promoted][0] = forwardClickProbability(
 						_advertiserEffectBoundsAvg[2],
 						fTargetfPro[promoted][targeted]);
