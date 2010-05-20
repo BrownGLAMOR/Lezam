@@ -13,6 +13,7 @@ public abstract class AbstractBidModel extends AbstractModel {
 	protected static final double maxReasonableBidF0 = .8;
 	protected static final double maxReasonableBidF1 = 1.1;
 	protected static final double maxReasonableBidF2 = 1.6;
+	protected static final double maxBid = 3.75;
 	
 	public abstract boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks);
 	public abstract double getPrediction(String player, Query q);
