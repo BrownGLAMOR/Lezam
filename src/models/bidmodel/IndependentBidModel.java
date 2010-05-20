@@ -7,13 +7,8 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.math.util.OpenIntToDoubleHashMap.Iterator;
-
-import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 import models.AbstractModel;
 
@@ -37,10 +32,10 @@ public class IndependentBidModel extends AbstractBidModel{
 	private ArrayList<Query> _query;
 	private Random _r;
 	private static final double randomJumpProb = 0.0;
-	private static final double yesterdayProb = 0.5;
-	private static final double nDaysAgoProb = 0.5;
+	private static final double yesterdayProb = 0.7;
+	private static final double nDaysAgoProb = 0.3;
 	private static final double normVar = 6; 
-	private static final int numIterations = 10;
+	private static final int numIterations = 2;
 	private String ourAgent;
 	Set<String> _advertisers;
 	private static final boolean printlns = false;
@@ -109,7 +104,7 @@ public class IndependentBidModel extends AbstractBidModel{
 				numBidValues = 0;
 				ArrayList<Double> curDoubleAL = new ArrayList<Double>();
 				int index = 0;
-				for(Double curKey = startVal; curKey <= maxReasonableBidF2+0.001; curKey = (curKey+0.25)*aStep-0.25){
+				for(Double curKey = startVal; curKey <= maxBid+0.001; curKey = (curKey+0.25)*aStep-0.25){
 					if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
 						curDoubleAL.add(InitDistributions.initDistF0[index]);
 					}
