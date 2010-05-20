@@ -45,8 +45,8 @@ public abstract class ConstantsAndFunctions
 	
 	final double[] _continuationProbBoundsAvg = {0.35,0.45,0.55};
 	
-	final double[][] fTargetfPro = { {(1.0 + _TE), (1.0 + _TE)*(1.0+_PSB)},
-	         {(1.0), (1.0)*(1.0+_PSB)},
+	final double[][] fTargetfPro = { {(1.0), (1.0)*(1.0+_PSB)},
+	         {(1.0 + _TE), (1.0 + _TE)*(1.0+_PSB)},
 	         {(1.0)/(1.0 + _TE), (1.0)/(1.0 + _TE)*(1.0+_PSB)}
 		 };
 	
