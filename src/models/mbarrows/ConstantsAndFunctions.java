@@ -289,7 +289,10 @@ public abstract class ConstantsAndFunctions
 		double realRoot = -1;
 		
 		// Debug statement
-		System.out.println("Coefficients[0] is: "+coefficientsArray[0]);
+		/*for (int i = 0; i < 5; i++)
+		{
+			System.out.println("The coefficients array is: "+coefficientsArray[i]);
+		}*/
 		
 		// Check if the first component in the array is a 0. If
 		// it is, then this a quartic equation
@@ -311,7 +314,7 @@ public abstract class ConstantsAndFunctions
 			int j = 0;
 			
 			// Copy all but the first coefficients
-			for (int i = 1; i < 4; i++)
+			for (int i = 1; i < 5; i++)
 			{
 				cubicCoefficientsArray[j] = coefficientsArray[i];
 				j++;
@@ -414,12 +417,13 @@ public abstract class ConstantsAndFunctions
 //			}
 //		}
 //		
-		  //double[] testArray = {0.0, 1.0, 5.5, 6.5, 7.3};
-		  double[] testArray = getCubicCoefficients();
-						double test = solve(testArray);
+		// ***** DEBUG INFO *****
+		//double[] testArray = {0.0, 1.2, 2.5, 6.5, 7.3};
+		double[] testArray = getQuarticCoefficients();
+		double test = solve(testArray);
 						
-						System.out.println("The real root is:"+test);
-//						
+		System.out.println("The real root is:"+test);
+						
 		
 		
 	}
