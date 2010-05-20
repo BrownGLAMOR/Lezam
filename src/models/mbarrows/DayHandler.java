@@ -25,7 +25,7 @@ public class DayHandler extends ConstantsAndFunctions {
 	double currentEstimate;
 
 	public DayHandler(Query q, int totalClicks,
-			HashMap<Query,Integer> numberPromotedSlots,
+			int numberPromotedSlots,
 			LinkedList<Integer> impressionsPerSlot, double ourAdvertiserEffect,
 			LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot
 			// < their

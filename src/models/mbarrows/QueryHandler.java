@@ -72,7 +72,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 			String ourAgent,
 			QueryReport queryReport,
 			SalesReport salesReport, 
-			HashMap<Query,Integer> numberPromotedSlots,
+			int numberPromotedSlots,
 			LinkedList<Integer> impressionsPerSlot,
 			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
 			HashMap<String, Ad> ads,

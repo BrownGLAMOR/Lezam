@@ -160,7 +160,7 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 			for(String s : ads.keySet()){
 				query_ads.put(s, ads.get(s).get(q));
 			}
-			m_queryHandlers.get(q).update(ourAgent,queryReport,salesReport,numberPromotedSlots,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
+			m_queryHandlers.get(q).update(ourAgent,queryReport,salesReport,numberPromotedSlots.get(q),impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
 		}
 		// TODO Auto-generated method stub
 		return false;
