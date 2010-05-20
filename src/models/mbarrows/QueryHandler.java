@@ -84,8 +84,15 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 
 		double tempContinuationProb = 0;
+		
+		//
+		double numberOfDayHandlers = _dayHandlers.size();
+		for(DayHandler dh :_dayHandlers){
+			tempContinuationProb += dh.getContinuationProbability()/numberOfDayHandlers;
+		}
+		
 		// TODO
-		double[] tempArr = { tempAdvertiserEffect, tempContinuationProb };
+		double[] tempArr = { tempAdvertiserEffect2, tempContinuationProb };
 		return tempArr;
 	}
 	

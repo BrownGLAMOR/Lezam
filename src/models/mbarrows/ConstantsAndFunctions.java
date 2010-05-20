@@ -434,7 +434,7 @@ public abstract class ConstantsAndFunctions
 		double[] testArray = getQuarticCoefficients();
 		double test = solve(testArray);
 						
-		System.out.println("The real root is:"+test);
+		//System.out.println("The real root is:"+test);
 						
 		
 		

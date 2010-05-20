@@ -199,6 +199,7 @@ public class MaxBarrowsTest {
 						//System.out.println("Our guess: "+preds[0]);
 						//System.out.println(trueAdvertiserEffect);
 						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+						System.out.println("Continuation Prob: "+preds[1]);
 
 						double average = 0.0;
 						if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)){
