@@ -38,7 +38,7 @@ public class Pair<T, S> implements Comparable
 
   public int compareTo(Object o) {
 	  if(o instanceof Pair && ((Pair) o).getFirst() instanceof Double) {
-		  return ((Comparable) getFirst()).compareTo(((Comparable) ((Pair) o).getFirst()));
+		  return - ((Comparable) getFirst()).compareTo(((Comparable) ((Pair) o).getFirst()));
 	  } else {
 		  System.out.println("foo");
 		  return 0;

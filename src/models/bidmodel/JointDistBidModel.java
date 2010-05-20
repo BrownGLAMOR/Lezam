@@ -23,7 +23,7 @@ public class JointDistBidModel extends AbstractBidModel{
 		_advertisers = advertisers;
 		_ourAdvertiser = ourAdvertiser; 
 		
-		rankhistory = new ArrayList<HashMap<String, Integer>>();		 
+		//rankhistory = new ArrayList<HashMap<String, Integer>>();		 
 		filters = new HashMap<Query, JointDistFilter>();
 
 		_queries = new ArrayList<Query>();
@@ -53,7 +53,7 @@ public class JointDistBidModel extends AbstractBidModel{
 		q.setManufacturer("flat");
 		_queries.add(q);
 		q = new Query();
-		q.setManufacturer("lioneer");
+		q.setManufacturer("lioneer");		
 		_queries.add(q);
 		_queries.add(new Query());
 			
@@ -67,7 +67,7 @@ public class JointDistBidModel extends AbstractBidModel{
 			}else if(qr.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
 				curMaxBid = maxReasonableBidF2;
 			}
-			filters.put(qr, new JointDistFilter(advertisers, curMaxBid, ourAdvertiser));
+			filters.put(qr, new JointDistFilter(advertisers, qr.getType(), curMaxBid, ourAdvertiser));
 		}
 	
 	}
