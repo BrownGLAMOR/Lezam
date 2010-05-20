@@ -41,7 +41,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
 				targetedPromoted[targeted][promoted][0] = forwardClickProbability(
-						_advertiserEffectBoundsAvg[2],
+						_advertiserEffectBoundsAvg[queryTypeToInt(_queryType)],
 						fTargetfPro[targeted][promoted]);
 				targetedPromoted[targeted][promoted][1] = 1;
 			}
@@ -59,8 +59,29 @@ public class QueryHandler extends ConstantsAndFunctions {
 						fTargetfPro[targeted][promoted]);
 			}
 		}
+		
 		// For now! TODO: later test results for this compared to weighted average
 		tempAdvertiserEffect /= 6;
+		
+		//Sum up denominators
+		double denominatorsum = 0;
+		for (int targeted = 0; targeted < 3; targeted++) {
+			for (int promoted = 0; promoted < 2; promoted++) {
+				denominatorsum += targetedPromoted[targeted][promoted][1];
+			}
+		}
+		
+		double tempAdvertiserEffect2 = 0;
+		for (int targeted = 0; targeted < 3; targeted++) {
+			for (int promoted = 0; promoted < 2; promoted++) {
+				tempAdvertiserEffect2 += (targetedPromoted[targeted][promoted][1]/denominatorsum)*inverseClickProbability(
+						targetedPromoted[targeted][promoted][0]
+								/ targetedPromoted[targeted][promoted][1],
+						fTargetfPro[targeted][promoted]);
+			}
+		}
+		
+
 
 		double tempContinuationProb = 0;
 		// TODO
@@ -100,7 +121,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		}
 		Ad ourAd = ads.get(ourAgent);
 		//If we were ever not in top slot, make day handler
-		if(notinslot1){
+		if(notinslot1 && (ourAd != null)){
 			
 			int totalClicks = queryReport.getClicks(_query);
 			
@@ -117,10 +138,10 @@ public class QueryHandler extends ConstantsAndFunctions {
 			//Calculate new value of continuation probability
 			//Calculate new average
 			
-		}else if(inslot1){
+		}else if(inslot1 && (ourAd != null)){
 			//Update advertiser effect
 			HashMap<Product,Double> clickdist = getClickDist(userStates,queryReport.getClicks(_query));
-			HashMap<Product,Double> imprdist = getClickDist(userStates,queryReport.getImpressions(_query));
+			HashMap<Product,Double> imprdist = getImpressionDist(userStates,queryReport.getImpressions(_query));
 			
 			int promoted = 0;
 			if(queryReport.getPromotedImpressions(_query)>0){
@@ -136,9 +157,13 @@ public class QueryHandler extends ConstantsAndFunctions {
 			double newAdvertiserEffect = getPredictions()[0];
 			
 			//Update all previous continuation probability estimates
-			_dayHandlers.add(null);
+			for(DayHandler dh : _dayHandlers){
+				dh.updateEstimate(newAdvertiserEffect);
+			}
+			
+			//_dayHandlers.add(null);
 		}else{
-			_dayHandlers.add(null);
+			//_dayHandlers.add(null);
 		}
 		
 		return false;

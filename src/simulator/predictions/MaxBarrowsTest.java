@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import models.mbarrows.AbstractMaxBarrows;
@@ -22,6 +23,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.UserClickModel;
 
@@ -44,6 +46,8 @@ public class MaxBarrowsTest {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
+		ArrayList<Double> percentError = new ArrayList<Double>();
+		ArrayList<Double> baselineError = new ArrayList<Double>();
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -123,15 +127,39 @@ public class MaxBarrowsTest {
 						LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
 						LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
 						int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
-
+						
+						int[] impressionPerAgent = new int[numAdvertisers];
+						//for each agent
+						for(int ag = 0; ag < numAdvertisers; ag++){
+							int sum = 0;
+							//for each slot
+							for(int slt = 0; slt < numSlots; slt++){
+								sum+=impressionMatrix[ag][slt];
+							}
+							impressionPerAgent[ag]=sum;
+						}
+						
+						//where are we in bid pair matrix?
+						ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
+						for(BidPair pair : bidPairs){
+							if(pair._advIdx==agent){
+								break;
+							}else{
+								higherthanus.add(new ImprPair(pair._advIdx,impressionPerAgent[pair._advIdx]));
+							}
+						}
+						
+						Collections.sort(higherthanus);
 						for(int j = 0; j < numSlots; j++) {
 							int numImpressions = impressionMatrix[agent][j];
 							impressionsPerSlot.add(numImpressions);
 
 							LinkedList<String> advsAbove = new LinkedList<String>();
 							if(!(numImpressions == 0 || numSlots == 0)) {
-								for(int k = 0; k < numSlots; k++) {
-									advsAbove.add(agents[bidPairs.get(k).getID()]);
+								//This List is NOT SORTED!!!
+								List<ImprPair> sublist = higherthanus.subList(0, j);
+								for(ImprPair imp : sublist){
+									advsAbove.add(agents[imp.getID()]);
 								}
 							}
 
@@ -158,10 +186,41 @@ public class MaxBarrowsTest {
 						 * do something with your predictions and the ground
 						 * truth
 						 */
+						double trueAdvertiserEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);
+						
+						//System.out.println(agents[agent]);
+						System.out.println(q);
+						//System.out.println("Our guess: "+preds[0]);
+						//System.out.println(trueAdvertiserEffect);
+						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+
+						double average = 0.0;
+						if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)){
+							average = 0.25;
+						}else
+						if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)){
+							average = 0.35;
+						}else{
+							average = 0.45;
+						}
+						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+						baselineError.add(Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+						
+						percentError.add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
 					}
 				}
 			}
 		}
+		double averagePercentError = 0.0;
+		double baselinePercentError = 0.0;
+		for(Double d : percentError){
+			averagePercentError += d/percentError.size();
+		}
+		for(Double d2 : baselineError){
+			baselinePercentError += d2/baselineError.size();
+		}
+		System.out.println("Average Percent Error: "+averagePercentError);
+		System.out.println("Baseline Percent Error: "+baselinePercentError);
 	}
 
 	public static class BidPair implements Comparable<BidPair> {
@@ -197,6 +256,48 @@ public class MaxBarrowsTest {
 				return 1;
 			}
 			if(otherBid < ourBid) {
+				return -1;
+			}
+			else {
+				return 0;
+			}
+		}
+
+	}
+	
+	public static class ImprPair implements Comparable<ImprPair> {
+
+		private int _advIdx;
+		private int _impr;
+
+		public ImprPair(int advIdx, int impr) {
+			_advIdx = advIdx;
+			_impr = impr;
+		}
+
+		public int getID() {
+			return _advIdx;
+		}
+
+		public void setID(int advIdx) {
+			_advIdx = advIdx;
+		}
+
+		public double getImpr() {
+			return _impr;
+		}
+
+		public void setImpr(int impr) {
+			_impr = impr;
+		}
+
+		public int compareTo(ImprPair agentImprPair) {
+			double ourBid = this._impr;
+			double otherBid = agentImprPair.getImpr();
+			if(ourBid > otherBid) {
+				return 1;
+			}
+			if(otherBid > ourBid) {
 				return -1;
 			}
 			else {
