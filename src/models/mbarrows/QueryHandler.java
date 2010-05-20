@@ -179,6 +179,9 @@ public class QueryHandler extends ConstantsAndFunctions {
 			for(String advertiser : thoseAbove){
 				//add their add to the list
 				adsAbove.add(ads.get(advertiser));
+				if(ads.get(advertiser)==null){
+					System.out.println(advertiser);
+				}
 			}
 			adsAbovePerSlot.add(adsAbove);
 		}

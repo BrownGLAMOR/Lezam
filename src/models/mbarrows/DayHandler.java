@@ -35,13 +35,12 @@ public class DayHandler extends ConstantsAndFunctions {
 	double ourAdvertiserEffect;
 	LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot;
 	HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers; // [IS,
-																		// non-IS]
+	// non-IS]
 	boolean targeted;
 	Product target;
-	
 
-
-	public DayHandler(Query q_,
+	public DayHandler(
+			Query q_,
 			int totalClicks_,
 			int numberPromotedSlots_,
 			LinkedList<Integer> impressionsPerSlot_,
@@ -51,8 +50,7 @@ public class DayHandler extends ConstantsAndFunctions {
 			// slots
 			// <ad>>
 			HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers_,
-			boolean targeted_, 
-			Product target_) {
+			boolean targeted_, Product target_) {
 
 		q = q_;
 		totalClicks = totalClicks_;
@@ -63,7 +61,7 @@ public class DayHandler extends ConstantsAndFunctions {
 		userStatesOfSearchingUsers = userStatesOfSearchingUsers_;
 		targeted = targeted_;
 		target = target_;
-		
+
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 			otherAdvertiserConvProb = .07;
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
@@ -91,30 +89,46 @@ public class DayHandler extends ConstantsAndFunctions {
 		for (Product p : userStatesOfSearchingUsers.keySet()) {
 			int ft = getFTargetIndex(targeted, p, target);
 			for (int ourSlot = 0; ourSlot < 5; ourSlot++) {
-				LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
-						.get(ourSlot);
-				double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)];
-				double theoreticalClickProb = forwardClickProbability(
-						ourAdvertiserEffect, ftfp);
-				double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
-				double nonIS = userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
-				for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-					Ad otherAd = advertisersAboveUs.get(prevSlot);
-					int ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());;
-					double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
-					double otherAdvertiserClickProb = forwardClickProbability(otherAdvertiserEffects,ftfpOther);
-					nonIS *= (1-otherAdvertiserConvProb*otherAdvertiserClickProb);
+				if (saw[ourSlot]) {
+					LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
+							.get(ourSlot);
+					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)];
+					double theoreticalClickProb = forwardClickProbability(
+							ourAdvertiserEffect, ftfp);
+					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
+					double nonIS = userStatesOfSearchingUsers.get(p).get(
+							ourSlot)[1];
+					for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
+						Ad otherAd = advertisersAboveUs.get(prevSlot);
+						//System.out.println("Our slot: "+ourSlot);
+						//System.out.println("Other slot: "+prevSlot);
+						//System.out.println(advertisersAboveUs.size());
+						//System.out.println("Ad "+otherAd);
+						int ftOther = 0;
+						if(otherAd==null){
+							ftOther = 0;
+						}else{
+							ftOther = getFTargetIndex(!otherAd.isGeneric(), p,
+								otherAd.getProduct());
+						}
+						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
+						double otherAdvertiserClickProb = forwardClickProbability(
+								otherAdvertiserEffects, ftfpOther);
+						nonIS *= (1 - otherAdvertiserConvProb
+								* otherAdvertiserClickProb);
+					}
+					coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));
 				}
-				coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));
 			}
 		}
 		currentEstimate = solve(coeff); // TODO: use solver
 	}
 
-	/*public double getContinuationProbability(double ourAdvertiserEffect) {
-		updateEstimate(ourAdvertiserEffect);
-		return getContinuationProbability();
-	}*/
+	/*
+	 * public double getContinuationProbability(double ourAdvertiserEffect) {
+	 * updateEstimate(ourAdvertiserEffect); return getContinuationProbability();
+	 * }
+	 */
 
 	public double getContinuationProbability() {
 		return currentEstimate;

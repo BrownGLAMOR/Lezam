@@ -182,9 +182,9 @@ public abstract class ConstantsAndFunctions
 		// exist)
 		for (int k = 0; k < 4; k++)
 		{
-			System.out.println("***** ROOT # "+(k+1)+"*****");
-			System.out.println("The real component is: "+_quarticRoots[k][m]);
-			System.out.println("The imaginary component is: "+_quarticRoots[k][m+1]);
+			//System.out.println("***** ROOT # "+(k+1)+"*****");
+			//System.out.println("The real component is: "+_quarticRoots[k][m]);
+			//System.out.println("The imaginary component is: "+_quarticRoots[k][m+1]);
 			
 			// If the real component of the root is nonzero and
 			// the imaginary component is zero return it
@@ -194,7 +194,7 @@ public abstract class ConstantsAndFunctions
 				realRoot = _quarticRoots[k][m];
 				
 				// Debug statement
-				System.out.println("The real root is: "+realRoot);
+				//System.out.println("The real root is: "+realRoot);
 				
 				return realRoot;
 			}
@@ -273,9 +273,9 @@ public abstract class ConstantsAndFunctions
 		// exist)
 		for (int k = 0; k < 3; k++)
 		{
-			System.out.println("***** ROOT # "+(k+1)+"*****");
-			System.out.println("The real component is: "+_cubicRoots[k][n]);
-			System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);
+			//System.out.println("***** ROOT # "+(k+1)+"*****");
+			//System.out.println("The real component is: "+_cubicRoots[k][n]);
+			//System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);
 			
 			// If the real component of the root is nonzero and
 			// the imaginary component is zero return it
@@ -285,7 +285,7 @@ public abstract class ConstantsAndFunctions
 				realRoot = _cubicRoots[k][n];
 				
 				// Debug statement
-				System.out.println("The real root is: "+realRoot);
+				//System.out.println("The real root is: "+realRoot);
 				
 				return realRoot;
 			}
