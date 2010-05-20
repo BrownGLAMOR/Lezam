@@ -50,6 +50,20 @@ public abstract class ConstantsAndFunctions
 	         {(1.0)/(1.0 + _TE), (1.0)/(1.0 + _TE)*(1.0+_PSB)}
 		 };
 	
+	int bool2int(boolean bool){
+		if (bool){
+			return 1;
+		}
+		return 0;
+	}
+	
+	int getFTargetIndex(boolean targeted, Product p, Product target){
+		if (targeted){
+			return (2-bool2int(p.equals(target)));
+		}
+		return 0;
+	}
+	
 	// Double array to store the roots for the quartic equation
 	static double[][] _quarticRoots;
 
