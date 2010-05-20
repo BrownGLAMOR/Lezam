@@ -73,7 +73,7 @@ public abstract class ConstantsAndFunctions {
 		return 0;
 	}
 	
-	public int getFTargetInd(boolean targeted, Product p, Product target){
+	public int getFTargetIndex(boolean targeted, Product p, Product target){
 		if (targeted){
 			return 2-bool2int(p.equals(target));
 		}
