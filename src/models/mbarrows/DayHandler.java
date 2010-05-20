@@ -72,9 +72,15 @@ public class DayHandler extends ConstantsAndFunctions {
 				c += something;
 			}
 			if (sawslot2) {
+				if (numberPromotedSlots>=2){
+					ftfp = fTargetfPro[ft][1];
+				}
 				d += something;
 			}
 			if (sawslot1) {
+				if (numberPromotedSlots>=1){
+					ftfp = fTargetfPro[ft][1];
+				}
 				e += something;
 			}
 		}

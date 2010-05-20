@@ -73,6 +73,13 @@ public abstract class ConstantsAndFunctions {
 		return 0;
 	}
 	
+	public int getFTargetInd(boolean targeted, Product p, Product target){
+		if (targeted){
+			return 2-bool2int(p.equals(target));
+		}
+		return 0;
+	}
+	
 	public double[][] getQuarticRoots(double a, double b,
 			double c, double d, double e) {
 		double[][] roots = new double[4][2];
