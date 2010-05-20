@@ -445,7 +445,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					if(theIndex <= 0){
 						theIndex = 0;
 					}
-					if(theIndex > numBidValues-1){
+					if(theIndex >= numBidValues-1){
 						theIndex = numBidValues-1;
 						onEdge = true;
 					}
@@ -474,7 +474,7 @@ public class IndependentBidModel extends AbstractBidModel{
 					if(theIndex <= 0){
 						theIndex = 0;
 					}
-					if(theIndex > numBidValues-1){
+					if(theIndex >= numBidValues-1){
 						theIndex = numBidValues-1;
 						onEdge = true;
 					}
