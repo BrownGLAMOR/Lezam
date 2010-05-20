@@ -256,7 +256,7 @@ public abstract class ConstantsAndFunctions
 			if ((_cubicRoots[k][n] >= 0) && (_cubicRoots[k][n+1]) == 0.0)
 			{
 				// Set the real root and then return it
-				realRoot = _quarticRoots[k][n];
+				realRoot = _cubicRoots[k][n];
 				
 				// Debug statement
 				System.out.println("The real root is: "+realRoot);
@@ -268,6 +268,52 @@ public abstract class ConstantsAndFunctions
 		return realRoot;
 		
 	}
+	
+	// Method that will solve a cubic or quartic equation - as needed
+	public static double solve(double[] coefficientsArray)
+	{
+		double realRoot = -1;
+		
+		// Debug statement
+		System.out.println("Coefficients[0] is: "+coefficientsArray[0]);
+		
+		// Check if the first component in the array is a 0. If
+		// it is, then this a quartic equation
+		if (coefficientsArray[0] != 0.0)
+		{
+			
+			// Get all the quartic roots
+			_quarticRoots = getQuarticRoots(coefficientsArray);
+			
+			// Extract the real root
+			realRoot = getRealQuarticRoot();
+		}
+		else
+		{
+			// Array to store cubic coefficients
+			double[] cubicCoefficientsArray = new double[4];
+			
+			// Index to keep track of the cubic coefficients array
+			int j = 0;
+			
+			// Copy all but the first coefficients
+			for (int i = 1; i < 4; i++)
+			{
+				cubicCoefficientsArray[j] = coefficientsArray[i];
+				j++;
+			}
+			
+			// Get all the cubic roots
+			_cubicRoots = getCubicRoots(cubicCoefficientsArray);
+			
+			// Extract the real root
+			realRoot = getRealCubicRoot();
+			
+		}
+		return realRoot;
+	}
+	
+	
 	
 	// Main to test the functionality of the cubic and quartic equation solvers
 	public static void main(String[] args) 
@@ -317,42 +363,49 @@ public abstract class ConstantsAndFunctions
 		
 		// ***** DEBUG INFO FOR CUBIC SOLVER*****
 		// Loop to run the equation solver
-		for(int i = 0; i < numberOfTrials; i++) 
-		{
-			double[] cubicCoefficientsArray = getCubicCoefficients();
-			
-			// ***** DEBUG INFO *****
-			// Statement to print out the coefficients
-			/*for (int j = 0; j < 5; j++)
-			{
-				System.out.println("The coefficients are: "+cubicCoefficientsArray[j]);
-			}*/
-			
-			_cubicRoots = getCubicRoots(cubicCoefficientsArray);
-			
-			// ***** DEBUG INFO *****
-			// Variable to index into the real and imaginary components
-			int n = 0;
-			
-			// For each of the four possible real roots, print them out (if they
-			// exist)
-			for (int k = 0; k < 3; k++)
-			{
-				System.out.println("***** ROOT # "+(k+1)+"*****");
-				System.out.println("The real component is: "+_cubicRoots[k][n]);
-				System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);	
-			}		
-			// Get the only real root
-			double realCubicRoot = getRealCubicRoot();
-			
-			// If the realCubicRoot is not -1, it must be real
-			if (realCubicRoot != -1)
-			{
-				System.out.println("***** REAL CUBIC ROOT FOUND! *****");
-				System.out.println("Real root is: "+realCubicRoot);				
-				break;
-			}
-		}
+//		for(int i = 0; i < numberOfTrials; i++) 
+//		{
+//			double[] cubicCoefficientsArray = getCubicCoefficients();
+//			
+//			// ***** DEBUG INFO *****
+//			// Statement to print out the coefficients
+//			/*for (int j = 0; j < 5; j++)
+//			{
+//				System.out.println("The coefficients are: "+cubicCoefficientsArray[j]);
+//			}*/
+//			
+//			_cubicRoots = getCubicRoots(cubicCoefficientsArray);
+//			
+//			// ***** DEBUG INFO *****
+//			// Variable to index into the real and imaginary components
+//			int n = 0;
+//			
+//			// For each of the four possible real roots, print them out (if they
+//			// exist)
+//			for (int k = 0; k < 3; k++)
+//			{
+//				System.out.println("***** ROOT # "+(k+1)+"*****");
+//				System.out.println("The real component is: "+_cubicRoots[k][n]);
+//				System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);	
+//			}		
+//			// Get the only real root
+//			double realCubicRoot = getRealCubicRoot();
+//			
+//			// If the realCubicRoot is not -1, it must be real
+//			if (realCubicRoot != -1)
+//			{
+//				System.out.println("***** REAL CUBIC ROOT FOUND! *****");
+//				System.out.println("Real root is: "+realCubicRoot);
+//						break;
+//			}
+//		}
+//		
+		  //double[] testArray = {0.0, 1.0, 5.5, 6.5, 7.3};
+		  double[] testArray = getCubicCoefficients();
+						double test = solve(testArray);
+						
+						System.out.println("The real root is:"+test);
+//						
 		
 		
 	}
