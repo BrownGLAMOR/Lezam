@@ -30,7 +30,7 @@ public class DayHandler extends ConstantsAndFunctions {
 			// < their
 			// slots
 			// <ad>>
-			HashMap<Product, int[]> userStatesOfSearchingUsers) // [IS, non-IS]
+			HashMap<Product,LinkedList<double[]>> userStatesOfSearchingUsers) // [IS, non-IS]
 	{
 		double[] coeff = new double[5];
 
