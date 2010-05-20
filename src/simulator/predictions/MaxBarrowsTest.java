@@ -12,6 +12,7 @@ import java.util.Set;
 
 import models.mbarrows.AbstractMaxBarrows;
 import models.mbarrows.MBarrowsImpl;
+import models.mbarrows.ParameterEstimation;
 import models.usermodel.TacTexAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -27,8 +28,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class MaxBarrowsTest {
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
 		int max = 1441;
 
@@ -39,7 +40,7 @@ public class MaxBarrowsTest {
 		return filenames;
 	}
 
-	public void modelParamPredictionChallenge(AbstractMaxBarrows baseModel) throws IOException, ParseException {
+	public void modelParamPredictionChallenge(AbstractMaxBarrows baseModel) throws IOException, ParseException, InstantiationException, IllegalAccessException {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
@@ -76,19 +77,7 @@ public class MaxBarrowsTest {
 			for(int agent = 0; agent < agents.length; agent++) {
 				Class<? extends AbstractMaxBarrows> c = baseModel.getClass();
 
-				AbstractMaxBarrows model = null;
-
-				try {
-					model = (AbstractMaxBarrows)(c.getConstructors()[0].newInstance(querySpace,agents[agent],numPromSlots));
-				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (InstantiationException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
-					e.printStackTrace();
-				}
+				AbstractMaxBarrows model = c.newInstance();
 
 				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
@@ -308,13 +297,14 @@ public class MaxBarrowsTest {
 		return impressionsBySlot;
 	}
 
-	public static void main(String[] args) throws IOException, ParseException  {
+	public static void main(String[] args) throws IOException, ParseException, InstantiationException, IllegalAccessException  {
 		MaxBarrowsTest evaluator = new MaxBarrowsTest();
 
 		double start = System.currentTimeMillis();
 		Set<Query> querySpace = new LinkedHashSet<Query>();
-		evaluator.modelParamPredictionChallenge(new MBarrowsImpl(querySpace,"this will be set later",0));
-
+		//evaluator.modelParamPredictionChallenge(new MBarrowsImpl(querySpace,"this will be set later",0));
+		evaluator.modelParamPredictionChallenge(new ParameterEstimation());
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");

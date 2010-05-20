@@ -23,6 +23,9 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 	
 	public ParameterEstimation()
 	{
+		m_queries = new ArrayList<Query>();
+		m_queryHandlers = new HashMap<Query, QueryHandler>();
+		
 		 // Get the 16 queries
 		 m_queries.add(new Query(null, null));
 		 m_queries.add(new Query("lioneer", null));
@@ -143,19 +146,21 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 	
 	@Override
 	public boolean updateModel(
-			QueryReport queryReport,
+			String ourAgent,
+			QueryReport queryReport, 
 			SalesReport salesReport,
-			HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
-			HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-			HashMap<String, HashMap<Query, Ad>> ads,
-			HashMap<Product, HashMap<UserState, Integer>> userStates) {
+			HashMap<Query,Integer> numberPromotedSlots,
+			HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
+			HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
+			HashMap<String,HashMap<Query,Ad>> ads,
+			HashMap<Product,HashMap<UserState,Integer>> userStates) {
 		
 		for(Query q: m_queries){
 			HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
 			for(String s : ads.keySet()){
 				query_ads.put(s, ads.get(s).get(q));
 			}
-			m_queryHandlers.get(q).update(queryReport,salesReport,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
+			m_queryHandlers.get(q).update(ourAgent,queryReport,salesReport,numberPromotedSlots,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
 		}
 		// TODO Auto-generated method stub
 		return false;

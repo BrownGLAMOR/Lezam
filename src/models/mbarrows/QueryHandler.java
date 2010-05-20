@@ -42,7 +42,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 			for (int promoted = 0; promoted < 2; promoted++) {
 				targetedPromoted[targeted][promoted][0] = forwardClickProbability(
 						_advertiserEffectBoundsAvg[2],
-						fTargetfPro[promoted][targeted]);
+						fTargetfPro[targeted][promoted]);
 				targetedPromoted[targeted][promoted][1] = 1;
 			}
 		}
@@ -56,7 +56,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 				tempAdvertiserEffect += inverseClickProbability(
 						targetedPromoted[targeted][promoted][0]
 								/ targetedPromoted[targeted][promoted][1],
-						fTargetfPro[promoted][targeted]);
+						fTargetfPro[targeted][promoted]);
 			}
 		}
 		// For now! TODO: later test results for this compared to weighted average
@@ -68,11 +68,17 @@ public class QueryHandler extends ConstantsAndFunctions {
 		return tempArr;
 	}
 	
-	public boolean update(QueryReport queryReport,
-			SalesReport salesReport, LinkedList<Integer> impressionsPerSlot,
+	public boolean update(
+			String ourAgent,
+			QueryReport queryReport,
+			SalesReport salesReport, 
+			HashMap<Query,Integer> numberPromotedSlots,
+			LinkedList<Integer> impressionsPerSlot,
 			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
 			HashMap<String, Ad> ads,
 			HashMap<Product, HashMap<UserState, Integer>> userStates){
+		
+		assert impressionsPerSlot.size() == advertisersAbovePerSlot.size();
 		
 		//getCurrent predictions
 		
@@ -87,8 +93,16 @@ public class QueryHandler extends ConstantsAndFunctions {
 				break;
 			}
 		}
+		//Were we ever in the top slot
+		boolean inslot1 = false;
+		if(impressionsPerSlot.get(0)>0){
+			inslot1 = true;
+		}
+		
 		//If we were ever not in top slot, make day handler
 		if(notinslot1){
+			
+			Ad ourAd = ads.get(ourAgent);
 			
 			int totalClicks = queryReport.getClicks(_query);
 			
@@ -96,12 +110,19 @@ public class QueryHandler extends ConstantsAndFunctions {
 			LinkedList<LinkedList<Ad>> adsAbovePerSlot = getAdsAbovePerSlot(advertisersAbovePerSlot,ads);
 			
 			//get states of searching users
-			 HashMap<Product,int[]> statesSearchingUsers = getStatesOfSearchingUsers(userStates);
+			HashMap<Product,LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates,impressionsPerSlot);
 			
-			DayHandler latestday = new DayHandler(_query, totalClicks, impressionsPerSlot, advertiserEffect, adsAbovePerSlot, statesSearchingUsers);
-			
+			DayHandler latestday = new DayHandler(_query, totalClicks,numberPromotedSlots,impressionsPerSlot, advertiserEffect, adsAbovePerSlot, statesSearchingUsers, (!ourAd.isGeneric()), ourAd.getProduct());
+		
 			_dayHandlers.add(latestday);
 			
+			//Calculate new value of continuation probability
+			//Calculate new average
+			
+		}else if(inslot1){
+			//Update advertiser effect
+			//Update all previous continuation probability estimates
+			_dayHandlers.add(null);
 		}else{
 			_dayHandlers.add(null);
 		}
@@ -125,16 +146,49 @@ public class QueryHandler extends ConstantsAndFunctions {
 		return adsAbovePerSlot;
 	}
 	
-	public HashMap<Product,int[]> getStatesOfSearchingUsers(HashMap<Product, HashMap<UserState, Integer>> userStates){
-		HashMap<Product, int[]> toreturn = new HashMap<Product, int[]>();
+	//To Do: Divide among all searching states 
+	public HashMap<Product,LinkedList<double[]>> getStatesOfSearchingUsers(HashMap<Product, HashMap<UserState, Integer>> userStates, LinkedList<Integer> impressionsPerSlot){
+		HashMap<Product,LinkedList<double[]>> toreturn = new HashMap<Product,LinkedList<double[]>>();
+		//numprefs should be 9
+		double numprefs = userStates.keySet().size();
 		//for each product
 		for (Product p : userStates.keySet()){
 			HashMap<UserState, Integer> states = userStates.get(p);
 			//count up how many searching users there were
-			int ISusers = states.get(UserState.IS);
-			int nonISusers = states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
-			int [] statesOfSearchingUsers = {ISusers,nonISusers};
-			toreturn.put(p,statesOfSearchingUsers);
+			double ISusers = 0.0;
+			double nonISusers = 0.0;
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_TWO) && 
+					(_query.getComponent().equals(p.getComponent())) &&
+					(_query.getManufacturer().equals(p.getManufacturer())))
+			{
+				ISusers = 
+				nonISusers = states.get(UserState.F2);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && (
+					(_query.getComponent().equals(p.getComponent())) ||
+					(_query.getManufacturer().equals(p.getManufacturer())))
+			){
+				nonISusers = 0.5*states.get(UserState.F1);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)){
+				nonISusers = 1.0/(numprefs)*states.get(UserState.F0);
+			}
+			//double nonISusers = states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
+			//make a list of Is, non Is users arrays, one for each slot
+			LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
+			double sum = ISusers+nonISusers;
+			for(Integer integer : impressionsPerSlot){
+				double ISusersPerSlot = 0.0;
+				double nonISusersPerSlot = 0.0;
+				if(sum>0.0){
+				}else{
+					ISusersPerSlot = ISusers*integer/sum;
+					nonISusersPerSlot = nonISusers*integer/sum;
+				}
+				double [] statesOfSearchingUsersPerSlot = {ISusersPerSlot,nonISusersPerSlot};
+				userSlotDist.add(statesOfSearchingUsersPerSlot);
+			}
+			toreturn.put(p,userSlotDist);
 		}
 		return toreturn;
 	}

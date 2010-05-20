@@ -89,8 +89,10 @@ public abstract class AbstractMaxBarrows extends AbstractModel {
 	 * ads containts the ad that each advertiser placed.  The strings in this hashmap are
 	 * the same as in the advertisersAbovePerSlot
 	 */
-	public abstract boolean updateModel(QueryReport queryReport, 
+	public abstract boolean updateModel(String ourAgent,
+										QueryReport queryReport, 
 										SalesReport salesReport,
+										HashMap<Query,Integer> numberPromotedSlots,
 										HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
 										HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
 										HashMap<String,HashMap<Query,Ad>> ads,
