@@ -40,7 +40,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	private static final double yesterdayProb = 0.5;
 	private static final double nDaysAgoProb = 0.5;
 	private static final double normVar = 6; 
-	private static final int numIterations = 9;
+	private static final int numIterations = 10;
 	private String ourAgent;
 	Set<String> _advertisers;
 	private static final boolean printlns = false;
@@ -317,97 +317,101 @@ public class IndependentBidModel extends AbstractBidModel{
 				}
 				//System.out.println("Running with agents: ");
 				for(String s:curStrKey){
-					//System.out.print(s+", ");
-					int numAds = curStrKey.size();
-					
-					/*String curAd = null;
-					while(curAd==null||curAd.equals(s)){
-						int toSelect = _r.nextInt(numAds);
-						for(java.util.Iterator<String> it = curStrKey.iterator(); it.hasNext()&&toSelect>=0; toSelect--){
-							curAd = it.next(); //TODO: change how this y advertiser is chosen
-						}
-					}*/
-					/*if(n!=0&&firstAd){
-						os.get(s).set(i, 1.0);
-					}*/
-					for(String curAd:curStrKey){
-						if(printlns)
-						System.out.print("Updating: " + s + "("+ranks.get(q).get(s)+") with advertiser: " + curAd + "("+ranks.get(q).get(curAd)+") [");
-						if(curAd == null){
-							System.out.println("PROBLEM 1 ******************************************************************************************");
-						}
-						for(int i = 0; i<numBidValues; i++){
-							if(printlns)
-							System.out.print(curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1).get(i) +", ");
-						}
-						if(printlns)
-						System.out.println("]");
-						if(printlns)
-						System.out.print("Updated probs: [");
-						for(int i = 0; i<numBidValues; i++){
-							/*if(n==0){
-								if(i==0){
-									os.put(s, new ArrayList<Double>());
-								}
-								os.get(s).add(1.0);
+					if(!s.equals(ourAgent)){
+						//System.out.print(s+", ");
+						int numAds = curStrKey.size();
+						
+						/*String curAd = null;
+						while(curAd==null||curAd.equals(s)){
+							int toSelect = _r.nextInt(numAds);
+							for(java.util.Iterator<String> it = curStrKey.iterator(); it.hasNext()&&toSelect>=0; toSelect--){
+								curAd = it.next(); //TODO: change how this y advertiser is chosen
 							}
-							else
-							{*/
-								double toSet = 0.0;
-								if(!curAd.equals(s)){
-									if(ranks.get(q).get(s).intValue()>ranks.get(q).get(curAd).intValue()){
-										ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
-										for(int j = i; j<numBidValues; j++){
-											toSet += yDist.get(j);
-										}
+						}*/
+						/*if(n!=0&&firstAd){
+							os.get(s).set(i, 1.0);
+						}*/
+						for(String curAd:curStrKey){
+							if(printlns)
+							System.out.print("Updating: " + s + "("+ranks.get(q).get(s)+") with advertiser: " + curAd + "("+ranks.get(q).get(curAd)+") [");
+							if(curAd == null){
+								System.out.println("PROBLEM 1 ******************************************************************************************");
+							}
+							for(int i = 0; i<numBidValues; i++){
+								if(printlns)
+								System.out.print(curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1).get(i) +", ");
+							}
+							if(printlns)
+							System.out.println("]");
+							if(printlns)
+							System.out.print("Updated probs: [");
+							for(int i = 0; i<numBidValues; i++){
+								/*if(n==0){
+									if(i==0){
+										os.put(s, new ArrayList<Double>());
 									}
-									else if(ranks.get(q).get(s).intValue()<ranks.get(q).get(curAd).intValue()){
-										ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
-										for(int j = i; j>=0; j--){
-											toSet += yDist.get(j);
+									os.get(s).add(1.0);
+								}
+								else
+								{*/
+									double toSet = 0.0;
+									if(!curAd.equals(s)){
+										if(ranks.get(q).get(s).intValue()>ranks.get(q).get(curAd).intValue()){
+											ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
+											for(int j = i; j<numBidValues; j++){
+												toSet += yDist.get(j);
+											}
+										}
+										else if(ranks.get(q).get(s).intValue()<ranks.get(q).get(curAd).intValue()){
+											ArrayList<Double> yDist = curStrHM.get(curAd).get(curStrHM.get(curAd).size()-1);
+											for(int j = i; j>=0; j--){
+												toSet += yDist.get(j);
+											}
+										}
+										else
+										{
+											toSet = 1.0;
 										}
 									}
 									else
 									{
 										toSet = 1.0;
 									}
-								}
-								else
-								{
-									toSet = 1.0;
-								}
-								os.get(s).set(i, os.get(s).get(i)*toSet);
-								if(printlns)
-								System.out.print(os.get(s).get(i) +", ");
-//							}
+									os.get(s).set(i, os.get(s).get(i)*toSet);
+									if(printlns)
+									System.out.print(os.get(s).get(i) +", ");
+	//							}
+							}
+							if(printlns)
+							System.out.println("]");
+							normalizeAL(os.get(s));
 						}
-						if(printlns)
-						System.out.println("]");
-						normalizeAL(os.get(s));
-					}
 					//System.out.println();
+					}
 				}
 				for(String s:curStrKey){
-					ArrayList<ArrayList<Double>> curDistHist = bidDist.get(q).get(s);
-					ArrayList<Double> lastDist = curDistHist.get(curDistHist.size()-1);
-					if(printlns){
-					System.out.println();
-					System.out.println();
-					System.out.print("Updating "+s+"From: [");
-					for(int i = 0; i<numBidValues; i++){
-						System.out.print(lastDist.get(i)+", ");
-					}
-					System.out.println("]");
-					System.out.print("Updating to: ");
-					}
-					for(int i = 0; i<numBidValues; i++){
-						if(printlns)
-						System.out.print(lastDist.get(i)*os.get(s).get(i)+", ");
-						lastDist.set(i, lastDist.get(i)*os.get(s).get(i)); 
-					}
-					if(printlns){
-					System.out.println("]");
-					System.out.println();
+					if(!s.equals(ourAgent)){
+						ArrayList<ArrayList<Double>> curDistHist = bidDist.get(q).get(s);
+						ArrayList<Double> lastDist = curDistHist.get(curDistHist.size()-1);
+						if(printlns){
+						System.out.println();
+						System.out.println();
+						System.out.print("Updating "+s+"From: [");
+						for(int i = 0; i<numBidValues; i++){
+							System.out.print(lastDist.get(i)+", ");
+						}
+						System.out.println("]");
+						System.out.print("Updating to: ");
+						}
+						for(int i = 0; i<numBidValues; i++){
+							if(printlns)
+							System.out.print(lastDist.get(i)*os.get(s).get(i)+", ");
+							lastDist.set(i, lastDist.get(i)*os.get(s).get(i)); 
+						}
+						if(printlns){
+						System.out.println("]");
+						System.out.println();
+						}
 					}
 				}
 				normalizeLastDay(bidDist);
@@ -435,12 +439,24 @@ public class IndependentBidModel extends AbstractBidModel{
 					}
 					double myBid = ourBid.get(q);
 					double theInd = ((((Math.log(myBid+0.25)/Math.log(2.0))+2)*25.0)-1.0);
+					boolean onEdge = false;
 					int theIndex = (int)(theInd);
-					if(theIndex < 0)
+					double firstProp = theInd-(double)theIndex;
+					if(theIndex <= 0){
 						theIndex = 0;
-					if(theIndex > numBidValues-1)
+					}
+					if(theIndex > numBidValues-1){
 						theIndex = numBidValues-1;
-					myALD.set(theIndex, 1.0);
+						onEdge = true;
+					}
+					if(!onEdge){
+						myALD.set(theIndex, 1.0-firstProp);
+						myALD.set(theIndex+1, firstProp);
+					}
+					else
+					{
+						myALD.set(theIndex, 1.0);
+					}
 					curDHM.add(myALD);
 					if(printlns)
 					System.out.println("MY RANK: " + ranks.get(q).get(s).intValue()+"MY BID DISC = " + theIndex + ",  MY BID = "+myBid);
@@ -452,12 +468,24 @@ public class IndependentBidModel extends AbstractBidModel{
 					}
 					double myBid = cpc.get(q).doubleValue();//TODO: make sure this isn't squashed (otherwise get appropriate input for adjustment)
 					double theInd = ((((Math.log(myBid+0.25)/Math.log(2.0))+2)*25.0)-1.0);
+					boolean onEdge = false;
 					int theIndex = (int)(theInd);
-					if(theIndex < 0)
+					double firstProp = theInd-(double)theIndex;
+					if(theIndex <= 0){
 						theIndex = 0;
-					if(theIndex > numBidValues-1)
+					}
+					if(theIndex > numBidValues-1){
 						theIndex = numBidValues-1;
-					myALD.set(theIndex, 1.0);
+						onEdge = true;
+					}
+					if(!onEdge){
+						myALD.set(theIndex, 1.0-firstProp);
+						myALD.set(theIndex+1, firstProp);
+					}
+					else
+					{
+						myALD.set(theIndex, 1.0);
+					}
 					curDHM.add(myALD);
 					if(printlns)
 					System.out.println("BELOW RANK: " +ranks.get(q).get(s).intValue()+ "BELOW BID DISC = " + theIndex + ",  BELOW BID = "+myBid);
