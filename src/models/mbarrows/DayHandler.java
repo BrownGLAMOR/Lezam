@@ -11,6 +11,7 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class DayHandler extends ConstantsAndFunctions {
@@ -23,79 +24,93 @@ public class DayHandler extends ConstantsAndFunctions {
 	// will solve ax^4+bx^3+cx^2+dx+e=0
 
 	double currentEstimate;
+	boolean[] saw;
+	double[] coeff;
 
-	public DayHandler(Query q, int totalClicks,
-			int numberPromotedSlots,
-			LinkedList<Integer> impressionsPerSlot, double ourAdvertiserEffect,
-			LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot
+	// inputs defined by constructor
+	Query q;
+	int totalClicks;
+	int numberPromotedSlots;
+	LinkedList<Integer> impressionsPerSlot;
+	double ourAdvertiserEffect;
+	LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot;
+	HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers; // [IS,
+																		// non-IS]
+	boolean targeted;
+	Product target;
+	
+
+
+	public DayHandler(Query q_,
+			int totalClicks_,
+			int numberPromotedSlots_,
+			LinkedList<Integer> impressionsPerSlot_,
+			double ourAdvertiserEffect_,
+			LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot_, // <our slot
 			// < their
 			// slots
 			// <ad>>
-			HashMap<Product,LinkedList<double[]>> userStatesOfSearchingUsers, boolean targeted, Product target) // [IS, non-IS]
-	{
-		double[] coeff = new double[5];
+			HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers_,
+			boolean targeted_, 
+			Product target_) {
 
-		boolean sawslot5 = impressionsPerSlot.get(4) > 0;
-		boolean sawslot4 = impressionsPerSlot.get(3) > 0;
-		boolean sawslot3 = impressionsPerSlot.get(2) > 0;
-		boolean sawslot2 = impressionsPerSlot.get(1) > 0;
-		boolean sawslot1 = impressionsPerSlot.get(0) > 0;
-
-		/*
-		 * //Which slots did we see? for(LinkedList<Ad> ads :
-		 * advertisersAdsAbovePerSlot){ if(ads.size()==4){ sawslot5=true; }
-		 * if(ads.size()==3){ sawslot4=true; } if(ads.size()==2){ sawslot3=true;
-		 * } if(ads.size()==1){ sawslot2=true; } }
-		 */
-		double something = 1; // TODO
-		a = 0;
-		b = 0;
-		c = 0;
-		d = 0;
-		e = -1.0 * totalClicks;
-		for (Product p : userStatesOfSearchingUsers.keySet()) {
-			int ft;
-			if (targeted){
-				ft = 2-bool2int(p.equals(target));
-			} else {
-				ft = 0;
-			}
-			double ftfp = fTargetfPro[ft][0];
-			double theoreticalClickProb = (ourAdvertiserEffect*ftfp);
-			if (sawslot5) {
-				a += something;
-			}
-			if (sawslot4) {
-				b += something;
-			}
-			if (sawslot3) {
-				c += something;
-			}
-			if (sawslot2) {
-				if (numberPromotedSlots>=2){
-					ftfp = fTargetfPro[ft][1];
-				}
-				d += something;
-			}
-			if (sawslot1) {
-				if (numberPromotedSlots>=1){
-					ftfp = fTargetfPro[ft][1];
-				}
-				e += something;
-			}
+		q = q_;
+		totalClicks = totalClicks_;
+		numberPromotedSlots = numberPromotedSlots_;
+		impressionsPerSlot = impressionsPerSlot_;
+		ourAdvertiserEffect = ourAdvertiserEffect_;
+		advertisersAdsAbovePerSlot = advertisersAdsAbovePerSlot_;
+		userStatesOfSearchingUsers = userStatesOfSearchingUsers_;
+		targeted = targeted_;
+		target = target_;
+		
+		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+			otherAdvertiserConvProb = .07;
+			otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
+		} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+			otherAdvertiserConvProb = .15;
+			otherAdvertiserEffects = _advertiserEffectBoundsAvg[1];
+		} else {
+			otherAdvertiserConvProb = .23;
+			otherAdvertiserEffects = _advertiserEffectBoundsAvg[2];
 		}
 
-		// TODO Auto-generated constructor stub
+		saw = new boolean[5];
+		coeff = new double[5];
+		for (int i = 0; i < 5; i++) {
+			saw[i] = (impressionsPerSlot.get(i) > 0);
+		}
+		updateEstimate(ourAdvertiserEffect);
 	}
 
 	public void updateEstimate(double ourAdvertiserEffect) {
-		// currentEstimate =
+		for (int i = 0; i < 5; i++) {
+			coeff[i] = 0;
+		}
+		coeff[4] = -1.0 * totalClicks;
+		for (Product p : userStatesOfSearchingUsers.keySet()) {
+			int ft = getFTargetIndex(targeted, p, target);
+			for (int ourSlot = 0; ourSlot < 5; ourSlot++) {
+				LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
+						.get(ourSlot);
+				double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)];
+				double theoreticalClickProb = forwardClickProbability(
+						ourAdvertiserEffect, ftfp);
+				double temp = 0;
+				for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
+					// TODO
+				}
+				coeff[ourSlot] += (theoreticalClickProb * temp);
+			}
+		}
+		
+		currentEstimate = 0; // TODO: use solver
 	}
 
-	public double getContinuationProbability(double ourAdvertiserEffect) {
+	/*public double getContinuationProbability(double ourAdvertiserEffect) {
 		updateEstimate(ourAdvertiserEffect);
 		return getContinuationProbability();
-	}
+	}*/
 
 	public double getContinuationProbability() {
 		return currentEstimate;
