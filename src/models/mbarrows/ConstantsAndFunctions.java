@@ -66,6 +66,12 @@ public abstract class ConstantsAndFunctions {
 		
 	}
 
+	public int bool2int(boolean b){
+		if (b){
+			return 1;
+		}
+		return 0;
+	}
 	
 	public double[][] getQuarticRoots(double a, double b,
 			double c, double d, double e) {

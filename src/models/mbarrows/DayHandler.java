@@ -53,6 +53,14 @@ public class DayHandler extends ConstantsAndFunctions {
 		d = 0;
 		e = -1.0 * totalClicks;
 		for (Product p : userStatesOfSearchingUsers.keySet()) {
+			int ft;
+			if (targeted){
+				ft = 2-bool2int(p.equals(target));
+			} else {
+				ft = 0;
+			}
+			double ftfp = fTargetfPro[ft][0];
+			double theoreticalClickProb = (ourAdvertiserEffect*ftfp);
 			if (sawslot5) {
 				a += something;
 			}
