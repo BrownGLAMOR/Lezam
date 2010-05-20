@@ -92,7 +92,7 @@ public abstract class AbstractMaxBarrows extends AbstractModel {
 	public abstract boolean updateModel(String ourAgent,
 										QueryReport queryReport, 
 										SalesReport salesReport,
-										HashMap<Query,Integer> numberPromotedSlots,
+										int numberPromotedSlots,
 										HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
 										HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
 										HashMap<String,HashMap<Query,Ad>> ads,

@@ -144,7 +144,7 @@ public class MaxBarrowsTest {
 
 					HashMap<Product,HashMap<UserState,Integer>> userStates = allUserDists.get(i);
 
-					model.updateModel(queryReport, salesReport, allImpressionsPerSlot, allAdvertisersAbovePerSlot, allAds, userStates);
+					model.updateModel(agents[agent], queryReport, salesReport, numPromSlots, allImpressionsPerSlot, allAdvertisersAbovePerSlot, allAds, userStates);
 					for(Query q : querySpace) {
 						double contProb = userClickModel.getContinuationProbability(userClickModel.queryIndex(q));
 						double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);

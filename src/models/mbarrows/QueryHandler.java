@@ -23,9 +23,9 @@ public class QueryHandler extends ConstantsAndFunctions {
 	final static double EPSILON = .0001;
 	
 	LinkedList<DayHandler> _dayHandlers;
-
-	// 1st - promoted
-	// 2nd - targeted - 1 is targeted, 2 is targeted incorrectly
+	
+	// 1st - targeted - 1 is targeted, 2 is targeted incorrectly
+	// 2nd - promoted
 	// 3rd - numerator, denominator
 	double targetedPromoted[][][];
 
@@ -98,11 +98,9 @@ public class QueryHandler extends ConstantsAndFunctions {
 		if(impressionsPerSlot.get(0)>0){
 			inslot1 = true;
 		}
-		
+		Ad ourAd = ads.get(ourAgent);
 		//If we were ever not in top slot, make day handler
 		if(notinslot1){
-			
-			Ad ourAd = ads.get(ourAgent);
 			
 			int totalClicks = queryReport.getClicks(_query);
 			
@@ -121,6 +119,22 @@ public class QueryHandler extends ConstantsAndFunctions {
 			
 		}else if(inslot1){
 			//Update advertiser effect
+			HashMap<Product,Double> clickdist = getClickDist(userStates,queryReport.getClicks(_query));
+			HashMap<Product,Double> imprdist = getClickDist(userStates,queryReport.getImpressions(_query));
+			
+			int promoted = 0;
+			if(queryReport.getPromotedImpressions(_query)>0){
+				promoted = 1;
+			}
+			
+			for(Product p : userStates.keySet()){
+				int targeted = getFTargetIndex((!ourAd.isGeneric()), p, ourAd.getProduct());
+				targetedPromoted[targeted][promoted][0]+=clickdist.get(p);
+				targetedPromoted[targeted][promoted][1]+=imprdist.get(p);
+			}
+			
+			double newAdvertiserEffect = getPredictions()[0];
+			
 			//Update all previous continuation probability estimates
 			_dayHandlers.add(null);
 		}else{
@@ -146,7 +160,48 @@ public class QueryHandler extends ConstantsAndFunctions {
 		return adsAbovePerSlot;
 	}
 	
-	//To Do: Divide among all searching states 
+	//Get Click Distribution
+	public HashMap<Product,Double> getClickDist(HashMap<Product, HashMap<UserState, Integer>> userStates, int clicks){
+		HashMap<Product, Double> toreturn = new HashMap<Product,Double>();
+		//numprefs should be 9
+		double numprefs = userStates.keySet().size();
+		//for each product
+		int total = 0;
+		HashMap<Product,Integer> userDist = new HashMap<Product,Integer>();
+		for (Product p : userStates.keySet()){
+			HashMap<UserState, Integer> states = userStates.get(p);
+			//add up the number of searching users
+			int searching = states.get(UserState.IS)+states.get(UserState.F2)+states.get(UserState.F1)+states.get(UserState.F0);
+			total += searching;
+			userDist.put(p, searching);
+		}
+		for (Product p : userStates.keySet()){
+			toreturn.put(p,1.0*userDist.get(p)*clicks/total);
+		}
+		return toreturn;
+	}
+	
+	//Get Impression Distribution
+	public HashMap<Product,Double> getImpressionDist(HashMap<Product, HashMap<UserState, Integer>> userStates, int Impressions){
+		HashMap<Product,Double> toreturn = new HashMap<Product,Double>();
+		//numprefs should be 9
+		double numprefs = userStates.keySet().size();
+		//for each product
+		int total = 0;
+		HashMap<Product,Integer> userDist = new HashMap<Product,Integer>();
+		for (Product p : userStates.keySet()){
+			HashMap<UserState, Integer> states = userStates.get(p);
+			//add up the number of searching users
+			int searching = states.get(UserState.IS)+states.get(UserState.F2)+states.get(UserState.F1)+states.get(UserState.F0);
+			total += searching;
+			userDist.put(p, searching);
+		}
+		for (Product p : userStates.keySet()){
+			toreturn.put(p,1.0*userDist.get(p)*Impressions/total);
+		}
+		return toreturn;
+	}
+
 	public HashMap<Product,LinkedList<double[]>> getStatesOfSearchingUsers(HashMap<Product, HashMap<UserState, Integer>> userStates, LinkedList<Integer> impressionsPerSlot){
 		HashMap<Product,LinkedList<double[]>> toreturn = new HashMap<Product,LinkedList<double[]>>();
 		//numprefs should be 9
@@ -165,8 +220,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 				nonISusers = states.get(UserState.F2);
 			}
 			if(_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && (
-					(_query.getComponent().equals(p.getComponent())) ||
-					(_query.getManufacturer().equals(p.getManufacturer())))
+					(_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
+					(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))
 			){
 				nonISusers = 0.5*states.get(UserState.F1);
 			}
