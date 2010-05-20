@@ -23,7 +23,7 @@ public class JointDistFilter {
 	double maxReasonableBid;
 	String _ourAdvertiser;
 	double[] dist;
-	public static final int NUMPARTICLES = 5000;
+	public static final int NUMPARTICLES = 1000;
 	
 	final static double[] initDistF0 = {0.13665254237288135, 0.0016419491525423728, 0.0022245762711864407, 0.0026483050847457626, 0.005084745762711864, 
 	0.03172669491525424, 0.010963983050847458, 0.023146186440677965, 0.027807203389830507, 0.028336864406779662, 
