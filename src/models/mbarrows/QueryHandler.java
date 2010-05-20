@@ -147,12 +147,25 @@ public class QueryHandler extends ConstantsAndFunctions {
 			if(queryReport.getPromotedImpressions(_query)>0){
 				promoted = 1;
 			}
+			//if (numberPromotedSlots>0){
+			//	promoted = 1;
+			//}
+			
+			double clicksum = 0;
+			double impressionsum = 0;
 			
 			for(Product p : userStates.keySet()){
 				int targeted = getFTargetIndex((!ourAd.isGeneric()), p, ourAd.getProduct());
+				
 				targetedPromoted[targeted][promoted][0]+=clickdist.get(p);
 				targetedPromoted[targeted][promoted][1]+=imprdist.get(p);
+				
+//				clicksum+=clickdist.get(p);
+//				impressionsum+=imprdist.get(p);
 			}
+			
+//			System.out.println(clicksum+" versus "+queryReport.getClicks(_query));
+//			System.out.println(impressionsum+" versus "+queryReport.getImpressions(_query));
 			
 			double newAdvertiserEffect = getPredictions()[0];
 			
@@ -195,16 +208,31 @@ public class QueryHandler extends ConstantsAndFunctions {
 		double numprefs = userStates.keySet().size();
 		//for each product
 		int total = 0;
-		HashMap<Product,Integer> userDist = new HashMap<Product,Integer>();
+		HashMap<Product,Double> userDist = new HashMap<Product,Double>();
 		for (Product p : userStates.keySet()){
 			HashMap<UserState, Integer> states = userStates.get(p);
 			//add up the number of searching users
-			int searching = states.get(UserState.IS)+states.get(UserState.F2)+states.get(UserState.F1)+states.get(UserState.F0);
+			double searching = 0;
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_TWO) && 
+					(_query.getComponent().equals(p.getComponent())) &&
+					(_query.getManufacturer().equals(p.getManufacturer())))
+			{
+				searching = 1.0/3.0*states.get(UserState.IS) + states.get(UserState.F2);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && (
+					(_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
+					(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))
+			){
+				searching = 1.0/6.0*states.get(UserState.IS) + 0.5*states.get(UserState.F1);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)){
+				searching = 1.0/3.0*states.get(UserState.IS)+1.0/(numprefs)*states.get(UserState.F0);
+			}
 			total += searching;
 			userDist.put(p, searching);
 		}
 		for (Product p : userStates.keySet()){
-			toreturn.put(p,1.0*userDist.get(p)*clicks/total);
+			toreturn.put(p,1.0*userDist.get(p)*((double) clicks)/((double) total));
 		}
 		return toreturn;
 	}
@@ -216,16 +244,31 @@ public class QueryHandler extends ConstantsAndFunctions {
 		double numprefs = userStates.keySet().size();
 		//for each product
 		int total = 0;
-		HashMap<Product,Integer> userDist = new HashMap<Product,Integer>();
+		HashMap<Product,Double> userDist = new HashMap<Product,Double>();
 		for (Product p : userStates.keySet()){
 			HashMap<UserState, Integer> states = userStates.get(p);
 			//add up the number of searching users
-			int searching = states.get(UserState.IS)+states.get(UserState.F2)+states.get(UserState.F1)+states.get(UserState.F0);
+			double searching = 0;
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_TWO) && 
+					(_query.getComponent().equals(p.getComponent())) &&
+					(_query.getManufacturer().equals(p.getManufacturer())))
+			{
+				searching = 1.0/3.0*states.get(UserState.IS) + states.get(UserState.F2);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && (
+					(_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
+					(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))
+			){
+				searching = 1.0/6.0*states.get(UserState.IS) + 0.5*states.get(UserState.F1);
+			}
+			if(_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)){
+				searching = 1.0/3.0*states.get(UserState.IS)+1.0/(numprefs)*states.get(UserState.F0);
+			}
 			total += searching;
 			userDist.put(p, searching);
 		}
 		for (Product p : userStates.keySet()){
-			toreturn.put(p,1.0*userDist.get(p)*Impressions/total);
+			toreturn.put(p,1.0*userDist.get(p)*((double) Impressions)/((double) total));
 		}
 		return toreturn;
 	}
