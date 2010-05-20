@@ -12,6 +12,7 @@ import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
 /**
@@ -62,6 +63,17 @@ public abstract class ConstantsAndFunctions
 			return (2-bool2int(p.equals(target)));
 		}
 		return 0;
+	}
+
+	int queryTypeToInt(QueryType qt){
+		if(qt.equals(QueryType.FOCUS_LEVEL_ZERO)){
+			return 0;
+		}else
+			if(qt.equals(QueryType.FOCUS_LEVEL_ONE)){
+				return 1;
+			}else{
+				return 2;
+			}
 	}
 	
 	// Double array to store the roots for the quartic equation
