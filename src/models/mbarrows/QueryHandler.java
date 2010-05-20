@@ -244,16 +244,18 @@ public class QueryHandler extends ConstantsAndFunctions {
 					(_query.getComponent().equals(p.getComponent())) &&
 					(_query.getManufacturer().equals(p.getManufacturer())))
 			{
-				ISusers = 
+				ISusers = 1.0/3.0*states.get(UserState.IS);
 				nonISusers = states.get(UserState.F2);
 			}
 			if(_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && (
 					(_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
 					(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))
 			){
+				ISusers = 1.0/6.0*states.get(UserState.IS);
 				nonISusers = 0.5*states.get(UserState.F1);
 			}
 			if(_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)){
+				ISusers = 1.0/3.0*states.get(UserState.IS);
 				nonISusers = 1.0/(numprefs)*states.get(UserState.F0);
 			}
 			//double nonISusers = states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
@@ -264,9 +266,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 				double ISusersPerSlot = 0.0;
 				double nonISusersPerSlot = 0.0;
 				if(sum>0.0){
-				}else{
-					ISusersPerSlot = ISusers*integer/sum;
-					nonISusersPerSlot = nonISusers*integer/sum;
+					ISusersPerSlot = (double) ISusers*((double) integer)/sum;
+					nonISusersPerSlot = (double) nonISusers*((double) integer)/sum;
 				}
 				double [] statesOfSearchingUsersPerSlot = {ISusersPerSlot,nonISusersPerSlot};
 				userSlotDist.add(statesOfSearchingUsersPerSlot);

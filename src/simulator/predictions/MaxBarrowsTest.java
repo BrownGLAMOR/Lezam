@@ -46,8 +46,14 @@ public class MaxBarrowsTest {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
-		ArrayList<Double> percentError = new ArrayList<Double>();
-		ArrayList<Double> baselineError = new ArrayList<Double>();
+		HashMap<QueryType, ArrayList<Double>> percentError = new HashMap<QueryType, ArrayList<Double>>();
+		percentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		percentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		percentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
+		HashMap<QueryType, ArrayList<Double>> baselineError = new HashMap<QueryType, ArrayList<Double>>();
+		baselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		baselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		baselineError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -204,23 +210,27 @@ public class MaxBarrowsTest {
 							average = 0.45;
 						}
 						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
-						baselineError.add(Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+						percentError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
 						
-						percentError.add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+						baselineError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
 					}
 				}
 			}
 		}
-		double averagePercentError = 0.0;
-		double baselinePercentError = 0.0;
-		for(Double d : percentError){
-			averagePercentError += d/percentError.size();
+		for(QueryType qt : percentError.keySet()){
+			double averagePercentError = 0.0;
+			double baselinePercentError = 0.0;
+			for(Double d : percentError.get(qt)){
+				//System.out.println(percentError.get(qt).size());
+				averagePercentError += d/percentError.get(qt).size();
+			}
+			for(Double d2 : baselineError.get(qt)){
+				baselinePercentError += d2/baselineError.get(qt).size();
+			}
+			System.out.println(qt);
+			System.out.println("Mean Percent Error Using Data: "+averagePercentError);
+			System.out.println("Mean Percent Error Using Average: "+baselinePercentError);
 		}
-		for(Double d2 : baselineError){
-			baselinePercentError += d2/baselineError.size();
-		}
-		System.out.println("Average Percent Error: "+averagePercentError);
-		System.out.println("Baseline Percent Error: "+baselinePercentError);
 	}
 
 	public static class BidPair implements Comparable<BidPair> {
