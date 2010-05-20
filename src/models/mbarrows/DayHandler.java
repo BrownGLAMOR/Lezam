@@ -96,15 +96,19 @@ public class DayHandler extends ConstantsAndFunctions {
 				double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)];
 				double theoreticalClickProb = forwardClickProbability(
 						ourAdvertiserEffect, ftfp);
-				double temp = 0;
+				double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
+				double nonIS = userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
 				for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-					// TODO
+					Ad otherAd = advertisersAboveUs.get(prevSlot);
+					int ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());;
+					double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
+					double otherAdvertiserClickProb = forwardClickProbability(otherAdvertiserEffects,ftfpOther);
+					nonIS *= (1-otherAdvertiserConvProb*otherAdvertiserClickProb);
 				}
-				coeff[ourSlot] += (theoreticalClickProb * temp);
+				coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));
 			}
 		}
-		
-		currentEstimate = 0; // TODO: use solver
+		currentEstimate = solve(coeff); // TODO: use solver
 	}
 
 	/*public double getContinuationProbability(double ourAdvertiserEffect) {
