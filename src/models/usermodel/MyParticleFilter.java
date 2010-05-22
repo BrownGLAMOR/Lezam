@@ -16,7 +16,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class MyParticleFilter extends TacTexAbstractUserModel {
+public class MyParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1263456;
 	private Random _R;

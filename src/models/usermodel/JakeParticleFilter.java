@@ -18,7 +18,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 
-public class JakeParticleFilter extends TacTexAbstractUserModel {
+public class JakeParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1119956;
 	private Random _R;

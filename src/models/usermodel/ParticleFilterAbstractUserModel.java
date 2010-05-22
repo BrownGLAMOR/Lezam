@@ -12,7 +12,7 @@ import edu.umich.eecs.tac.props.Query;
  * @author jberg
  *
  */
-public abstract class TacTexAbstractUserModel extends AbstractModel {
+public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	/**
 	 * Number of users per product type
 	 */

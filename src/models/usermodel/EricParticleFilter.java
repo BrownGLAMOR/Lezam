@@ -14,12 +14,12 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import models.AbstractModel;
-import models.usermodel.TacTexAbstractUserModel.Particle;
+import models.usermodel.ParticleFilterAbstractUserModel.Particle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class EricParticleFilter extends TacTexAbstractUserModel {
+public class EricParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1263456;
 	private Random _R;

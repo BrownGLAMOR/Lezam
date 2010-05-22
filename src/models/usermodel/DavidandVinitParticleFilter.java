@@ -21,7 +21,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class DavidandVinitParticleFilter extends TacTexAbstractUserModel {
+public class DavidandVinitParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1263456;
 	private Random _R;
@@ -262,7 +262,7 @@ public class DavidandVinitParticleFilter extends TacTexAbstractUserModel {
 				//The particle we've chosen.
 				Particle new_particle=particles[index];
 				//These particles should be unweighted
-				new_particle.setWeight(TacTexAbstractUserModel.BASE_WEIGHT);
+				new_particle.setWeight(ParticleFilterAbstractUserModel.BASE_WEIGHT);
 
 				//propagate
 

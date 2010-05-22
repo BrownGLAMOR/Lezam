@@ -20,21 +20,21 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class DavidLParticleFilter extends TacTexAbstractUserModel {
+public class DavidLParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1263456;
 	private Random _R;
 	private ArrayList<Product> _products;
-	private HashMap<Product, models.usermodel.TacTexAbstractUserModel.Particle[]> _next;
-	private HashMap<Product, models.usermodel.TacTexAbstractUserModel.Particle[]> _burst;
+	private HashMap<Product, models.usermodel.ParticleFilterAbstractUserModel.Particle[]> _next;
+	private HashMap<Product, models.usermodel.ParticleFilterAbstractUserModel.Particle[]> _burst;
 
 
 	public DavidLParticleFilter() {
 		_R = new Random(_seed);
-		_particles = new HashMap<Product,models.usermodel.TacTexAbstractUserModel.Particle[]>();
+		_particles = new HashMap<Product,models.usermodel.ParticleFilterAbstractUserModel.Particle[]>();
 		_products = new ArrayList<Product>();
-		_next = new HashMap<Product,models.usermodel.TacTexAbstractUserModel.Particle[]>();
-		_burst = new HashMap<Product, models.usermodel.TacTexAbstractUserModel.Particle[]>();
+		_next = new HashMap<Product,models.usermodel.ParticleFilterAbstractUserModel.Particle[]>();
+		_burst = new HashMap<Product, models.usermodel.ParticleFilterAbstractUserModel.Particle[]>();
 		
 		_products.add(new Product("flat", "dvd"));
 		_products.add(new Product("flat", "tv"));

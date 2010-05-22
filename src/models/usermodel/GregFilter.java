@@ -20,7 +20,7 @@ import edu.umich.eecs.tac.props.Query;
 import org.apache.commons.math.distribution.BinomialDistributionImpl;
 import org.apache.commons.math.random.RandomDataImpl;
 
-public class GregFilter extends TacTexAbstractUserModel {
+public class GregFilter extends ParticleFilterAbstractUserModel {
 
 	private long _seed = 1263456;
 	private Random _R;

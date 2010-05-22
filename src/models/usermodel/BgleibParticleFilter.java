@@ -12,7 +12,7 @@ import jsc.distributions.Binomial;
 import jsc.distributions.Normal;
 
 
-public class BgleibParticleFilter extends TacTexAbstractUserModel {
+public class BgleibParticleFilter extends ParticleFilterAbstractUserModel {
 
     private static final int USERS_TO_TRANSFER = 200;
     private static final double USERS_TO_TRANSFER_STDEV = 20.0;

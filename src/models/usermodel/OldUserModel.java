@@ -9,13 +9,13 @@ import java.util.HashMap;
 import java.util.Random;
 
 import models.AbstractModel;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class OldUserModel extends TacTexAbstractUserModel {
+public class OldUserModel extends ParticleFilterAbstractUserModel {
 	
 	private double F0users;
 	private double F2users;

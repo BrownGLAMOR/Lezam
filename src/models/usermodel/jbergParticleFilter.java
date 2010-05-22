@@ -18,7 +18,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class jbergParticleFilter extends TacTexAbstractUserModel {
+public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
 	private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
