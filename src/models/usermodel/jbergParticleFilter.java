@@ -340,7 +340,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		}
 		else {
 			for(int i = 0; i < particles.length; i++) {
-				Particle particle = new Particle(initParticle[i].getState());
+				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
 				particles[i] = particle;
 			}
 			System.out.println("We had to reinitialize the particles...");
@@ -383,7 +383,6 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 		Particle[] newParticles = new Particle[particles.length];
 		for(int i = 0; i < particles.length; i++) {
-			Particle newParticle = new Particle();
 			Particle particle = null;
 			double rand = _R.nextDouble();
 
@@ -395,9 +394,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				particle = particles[index];
 			}
 
-			int[] state = particle.getState();
-
-			newParticle.setState(state);
+			Particle newParticle = new Particle(particle.getState(),particle.getBurstHistory());
 			newParticles[i] = newParticle;
 		}
 		return newParticles;
@@ -505,6 +502,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
+			
+			particle.addToBurstHistory(burst);
 
 			int[] state = particle.getState();
 			int[] newState = new int[state.length];
@@ -589,6 +588,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
+			
+			particle.addToBurstHistory(burst);
 
 			int[] state = particle.getState();
 			int[] newState = new int[state.length];
@@ -676,7 +677,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				for(UserState state : UserState.values()) {
 					estimate[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
 				}
-				particleCopy[i] = new Particle(particle.getState(), particle.getWeight());
+				particleCopy[i] = new Particle(particle.getState(), particle.getWeight(), particle.getBurstHistory());
 			}
 
 			for(int i = 0; i < estimate.length; i++) {

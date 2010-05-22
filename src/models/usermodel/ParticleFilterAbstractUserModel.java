@@ -3,6 +3,7 @@
  */
 package models.usermodel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import models.AbstractModel;
 import edu.umich.eecs.tac.props.Product;
@@ -17,14 +18,14 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	 * Number of users per product type
 	 */
 	public static final int NUM_USERS_PER_PROD = 10000;
-	
+
 	/**
 	 * Number of particles in the filter
 	 */
 	public static final int NUM_PARTICLES = 1000;
-	
+
 	public static final double BASE_WEIGHT = 1.0/NUM_PARTICLES;
-	
+
 	/**
 	 *
 	 * This enum represents all the states a user
@@ -34,7 +35,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	 *
 	 */
 	public enum UserState {NS, IS, F0, F1, F2, T};
-	
+
 	/**
 	 * These particles represent the current estimate of each of the user population
 	 */
@@ -44,14 +45,14 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	 * states in a multidimensional array and the weights in an array.
 	 */
 	public HashMap<Product,Particle[]> _particles;
-	
+
 	/**
 	 * This will be called everyday and pass you the correct number of 
 	 * total impressions for every query.  Specifically you should use
 	 * this information to update your current estimation in particles
 	 */
 	public abstract boolean updateModel(HashMap<Query, Integer> totalImpressions);
-	
+
 	/**
 	 * When this method is called you should return you prediction for the user
 	 * distribution for the (product,state) combination, but it needs to be for
@@ -59,33 +60,39 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	 * is one day of lag
 	 */
 	public abstract int getPrediction(Product product, UserState userState);
-	
+
 	/**
 	 * This method should return the current estimate for this
 	 * (product,state) combination given the particles
 	 */
 	public abstract int getCurrentEstimate(Product product, UserState userState);
 
-	
+
 	/**
 	 * This class represents a particle (i.e. state and weight)
 	 */
 	public static class Particle {
-		
-		
-		
+
+
+
 		/**
 		 * This array represents the state of the particle.
 		 * The state vector has as many indices as
 		 * there are values in UserState
 		 */
 		int[] _state;
-		
+
 		/**
 		 * This represents the weight of the particle
 		 */
 		double _weight;
-		
+
+		/**
+		 * This maintains the history of whether or not
+		 * this particle bursted
+		 */
+		ArrayList<Boolean> _burstHistory;
+
 		/**
 		 * The default constructor initializes the particle to
 		 * have all users in the first state and the weight
@@ -96,12 +103,17 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 			_state = new int[UserState.values().length];
 			_state[0] = NUM_USERS_PER_PROD;
 			_weight = BASE_WEIGHT;
+			_burstHistory = new ArrayList<Boolean>();
 		}
-		
+
 		public Particle(int[] particle) {
 			this(particle,BASE_WEIGHT);
 		}
-		
+
+		public Particle(int[] particle, ArrayList<Boolean> burstHistory) {
+			this(particle,BASE_WEIGHT, burstHistory);
+		}
+
 		public Particle(int[] particle, double weight) {
 			if(particle.length != UserState.values().length) {
 				if(particle.length > UserState.values().length) {
@@ -111,7 +123,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 					throw new RuntimeException("Why are you passing me a particle if too few states");
 				}
 			}
-			
+
 			_state = new int[UserState.values().length];
 			int totalUsers = 0;
 			for(int i = 0; i < _state.length; i++) {
@@ -119,7 +131,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 				totalUsers += particle[i];
 			}
 			_weight = weight;
-			
+
 			if(totalUsers != NUM_USERS_PER_PROD) {
 				if(totalUsers > NUM_USERS_PER_PROD) {
 					throw new RuntimeException("Why are you passing me a particle if too many users");
@@ -128,8 +140,40 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 					throw new RuntimeException("Why are you passing me a particle if too few users");
 				}
 			}
+
+			_burstHistory = new ArrayList<Boolean>();
 		}
-		
+
+		public Particle(int[] particle, double weight, ArrayList<Boolean> burstHistory) {
+			if(particle.length != UserState.values().length) {
+				if(particle.length > UserState.values().length) {
+					throw new RuntimeException("Why are you passing me a particle if too many states");
+				}
+				else {
+					throw new RuntimeException("Why are you passing me a particle if too few states");
+				}
+			}
+
+			_state = new int[UserState.values().length];
+			int totalUsers = 0;
+			for(int i = 0; i < _state.length; i++) {
+				_state[i] = particle[i];
+				totalUsers += particle[i];
+			}
+			_weight = weight;
+
+			if(totalUsers != NUM_USERS_PER_PROD) {
+				if(totalUsers > NUM_USERS_PER_PROD) {
+					throw new RuntimeException("Why are you passing me a particle if too many users");
+				}
+				else {
+					throw new RuntimeException("Why are you passing me a particle if too few users");
+				}
+			}
+
+			_burstHistory = new ArrayList<Boolean>(burstHistory);
+		}
+
 		public String stateString() {
 			String output = "";
 			for(int i = 0; i < _state.length; i++) {
@@ -138,7 +182,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 			output = output.substring(0, output.length()-1);
 			return output;
 		}
-		
+
 		@Override
 		public String toString() {
 			String output = "" + _weight;
@@ -151,7 +195,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 		public int[] getState() {
 			return _state;
 		}
-		
+
 		public void setState(int[] state) {
 			if(state.length != _state.length) {
 				throw new RuntimeException("Too many states");
@@ -162,21 +206,30 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 				}
 			}
 		}
-		
+
 		public int getStateCount(UserState state) {
 			return _state[state.ordinal()];
 		}
-		
+
 		public double getWeight() {
 			return _weight;
 		}
-		
+
 		public void setWeight(double weight) {
 			_weight = weight;
 		}
 		
+		public ArrayList<Boolean> getBurstHistory() {
+			return _burstHistory;
+		}
 		
+		public void setBurstHistory(ArrayList<Boolean> burstHistory) {
+			_burstHistory = new ArrayList<Boolean>(burstHistory);
+		}
+		
+		public void addToBurstHistory(boolean burst) {
+			_burstHistory.add(burst);
+		}
+
 	}
-
-
 }
