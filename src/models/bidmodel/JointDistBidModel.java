@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.Set;
 
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 import models.AbstractModel;
@@ -17,16 +16,26 @@ public class JointDistBidModel extends AbstractBidModel{
 	ArrayList<Query> _queries;
 	Set<String> _advertisers;
 	String _ourAdvertiser;
+	HashMap<Query, Double> lastOurBid;
+	public int _numIters;
+	public double _gapFrac;
+	public int _numParticles;
 	
-	public JointDistBidModel(Set<String> advertisers, String ourAdvertiser) {
+	public JointDistBidModel(Set<String> advertisers, String ourAdvertiser, int numIters, double gapFrac, int numParticles) {
 		
 		_advertisers = advertisers;
 		_ourAdvertiser = ourAdvertiser; 
+		
+		_numIters = numIters;
+		_gapFrac = gapFrac;
+		_numParticles = numParticles;
 		
 		//rankhistory = new ArrayList<HashMap<String, Integer>>();		 
 		filters = new HashMap<Query, JointDistFilter>();
 
 		_queries = new ArrayList<Query>();
+		
+		lastOurBid = new HashMap<Query,Double>();
 		
 		_queries.add(new Query("flat", "dvd"));
 		_queries.add(new Query("flat", "tv"));
@@ -60,6 +69,7 @@ public class JointDistBidModel extends AbstractBidModel{
 		
 		for(Query qr : _queries) {
 			double curMaxBid = 0;
+			
 			if(qr.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 				curMaxBid = maxReasonableBidF0;
 			}else if(qr.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
@@ -67,7 +77,11 @@ public class JointDistBidModel extends AbstractBidModel{
 			}else if(qr.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
 				curMaxBid = maxReasonableBidF2;
 			}
-			filters.put(qr, new JointDistFilter(advertisers, qr.getType(), curMaxBid, ourAdvertiser));
+			
+//			curMaxBid = maxBid;
+			
+			filters.put(qr, new JointDistFilter(advertisers, qr.getType(), curMaxBid, ourAdvertiser, numIters, gapFrac, numParticles));
+			lastOurBid.put(qr, 0.0);
 		}
 	
 	}
@@ -80,28 +94,38 @@ public class JointDistBidModel extends AbstractBidModel{
 	
 	@Override
 	public double getPrediction(String player, Query q) {
-		return filters.get(q).getBid(player);
+		if(player.equals(_ourAdvertiser)) {
+			return lastOurBid.get(q);
+		}
+		else {
+			return filters.get(q).getBid(player);
+		}
 	}
 
 	@Override
 	public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
-		for(Query q : filters.keySet()) {
-			//System.out.println("ff");
-			filters.get(q).simulateDay(ourBid.get(q), cpc.get(q), ranks.get(q));
-			
+		for(Query q : _queries) {
+			if(Double.isNaN(ourBid.get(q)) || ourBid.get(q) < 0) {
+				ourBid.put(q,0.0);
+			}
 		}
-		return true; //Why does this return a boolean again?
+		
+		lastOurBid = ourBid;
+		for(Query q : filters.keySet()) {
+			filters.get(q).simulateDay(ourBid.get(q), cpc.get(q), ranks.get(q));
+		}
+
+		return true;
 	}
 
-	public static void main(String[] args) {		
-		
-		//JointDistBidModel j = new JointDistBidModel();
-		
+	@Override
+	public String toString() {
+		return "JointDistBidModel(" + _numIters + ", " + _gapFrac + ", " + _numParticles + ")";
 	}
 	
 	@Override
 	public AbstractModel getCopy() {
-		return new JointDistBidModel(_advertisers, _ourAdvertiser);
+		return new JointDistBidModel(_advertisers, _ourAdvertiser, _numIters, _gapFrac, _numParticles);
 	}
 
 }

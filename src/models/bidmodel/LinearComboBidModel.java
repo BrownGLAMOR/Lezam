@@ -29,6 +29,15 @@ public class LinearComboBidModel extends AbstractBidModel{
 	}
 	
 	@Override
+	public String toString() {
+		String output = "";
+		for(int i = 0; i < _models.size(); i++) {
+			output += _models.get(i) + ", " + _weights.get(i) + "\n";
+		}
+		return output;
+	}
+	
+	@Override
 	public AbstractModel getCopy() {
 		ArrayList<AbstractBidModel> newModels = new ArrayList<AbstractBidModel>();
 		for(AbstractBidModel model : _models) {
@@ -40,8 +49,8 @@ public class LinearComboBidModel extends AbstractBidModel{
 	@Override
 	public double getPrediction(String player, Query q) {
 		double prediction = 0.0;
-		for(AbstractBidModel model : _models) {
-			prediction += model.getPrediction(player, q);
+		for(int i = 0; i < _models.size(); i++) {
+			prediction += _models.get(i).getPrediction(player, q) * _weights.get(i);
 		}
 		return prediction/_totalWeight;
 	}
