@@ -5,10 +5,8 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
-import java.util.Set;
 
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
@@ -19,20 +17,19 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.UserClickModel;
 
 public class BidPredModelTest {
 
-	public static final boolean printlns = true;
+	public static final boolean printlns = false;
 	public static final boolean doRMSE = false;
-	
+
 	public ArrayList<String> getGameStrings() {
-//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
-				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+		//				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1425;
-		int max = 1464;
+		int min = 1440;
+		int max = 1448;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -85,88 +82,88 @@ public class BidPredModelTest {
 			HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
 
 			for(int agent = 0; agent<agents.length; agent++) {
-				AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
-				model.setAdvertiser(agents[agent]); 
-				if(printlns)
-				System.out.println("Testing for agent: " + agents[agent]);
+				System.gc(); System.gc(); System.gc(); System.gc();
+				if(agents[agent].equals("TacTex")) {
+					AbstractBidModel model = (AbstractBidModel) baseModel.getCopy();
+					model.setAdvertiser(agents[agent]); 
+					if(printlns)
+						System.out.println("Testing for agent: " + agents[agent]);
 
-				double ourTotError = 0;
-				double ourTotActual = 0;
-				int ourTotErrorCounter = 0;
+					double ourTotError = 0;
+					double ourTotActual = 0;
+					int ourTotErrorCounter = 0;
 
-				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+					LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
 
-				for(int i = 0; i < 57; i++) {
-					QueryReport queryReport = ourQueryReports.get(i);
-					System.out.print(""+(i+1) + ", ");
+					for(int i = 0; i < 57; i++) {
+						QueryReport queryReport = ourQueryReports.get(i);
+						System.out.print(""+(i+1) + ", ");
 
-					HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
-					HashMap<Query, Double> cpc = new HashMap<Query,Double>();
-					HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
-					for(Query q : querySpace) {
-						cpc.put(q, queryReport.getCPC(q)* Math.pow(userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent), squashing)); //need to squash CPC!!!
+						HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
+						HashMap<Query, Double> cpc = new HashMap<Query,Double>();
+						HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
+						for(Query q : querySpace) {
+							cpc.put(q, queryReport.getCPC(q)* Math.pow(userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent), squashing)); //need to squash CPC!!!
 
-						ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
-						for(int agentInner = 0; agentInner < agents.length; agentInner++) {
-							BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
-							double bid = innerBidBundle.getBid(q);
-							double squashedBid = bid * Math.pow(advEffect, squashing);
-							bidPairs.add(new BidPair(agentInner, squashedBid));
-							if(agentInner == agent) {
-								ourBid.put(q, squashedBid);
+							ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
+							for(int agentInner = 0; agentInner < agents.length; agentInner++) {
+								BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
+								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
+								double bid = innerBidBundle.getBid(q);
+								double squashedBid = bid * Math.pow(advEffect, squashing);
+								bidPairs.add(new BidPair(agentInner, squashedBid));
+								if(agentInner == agent) {
+									ourBid.put(q, squashedBid);
+								}
+							}
+
+							Collections.sort(bidPairs);
+
+							HashMap<String, Integer> queryRanks = new HashMap<String,Integer>();
+							for(int j = 0; j < bidPairs.size(); j++) {
+								queryRanks.put(agents[bidPairs.get(j).getID()], j);
+							}
+
+							ranks.put(q, queryRanks);
+						}
+
+						model.updateModel(cpc,ourBid,ranks);
+
+						for(Query q : querySpace) {
+							if(printlns)
+								System.out.print("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
+							for(int j = 0; j < agents.length; j++) {
+								/*
+								 * You guys don't really need to worry about predicting, because
+								 * that is not really the point of this particle filter.
+								 */
+								double bid = allBidBundles.get(agents[j]).get(i).getBid(q);
+								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), j);
+								double squashedBid = bid * Math.pow(advEffect, squashing);
+
+								double bidPred = model.getPrediction(agents[j],q);
+								if(printlns)
+									System.out.print("  \tAgent: " +agents[j]+" Act:"+/*(int)*/(squashedBid*100)+" <-> Pred: " + /*(int)*/(bidPred*100) +" -- ");
+								double error;
+								if(!doRMSE)
+									error = Math.abs(squashedBid - bidPred); //MAE
+								else
+									error = (squashedBid - bidPred)*(squashedBid - bidPred);
+								//							error = error*error;  //RMSE
+								ourTotActual += squashedBid;
+								ourTotError += error;
+								ourTotErrorCounter++;
 							}
 						}
-
-						Collections.sort(bidPairs);
-
-						HashMap<String, Integer> queryRanks = new HashMap<String,Integer>();
-						for(int j = 0; j < bidPairs.size(); j++) {
-							queryRanks.put(agents[bidPairs.get(j).getID()], j);
-						}
-
-						ranks.put(q, queryRanks);
-					}
-
-					model.updateModel(cpc,ourBid,ranks);
-
-					for(Query q : querySpace) {
 						if(printlns)
-						System.out.print("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
-						for(int j = 0; j < agents.length; j++) {
-							/*
-							 * You guys don't really need to worry about predicting, because
-							 * that is not really the point of this particle filter.
-							 */
-//							double bid = allBidBundles.get(agents[j]).get(i+2).getBid(q);
-							
-							double bid = allBidBundles.get(agents[j]).get(i).getBid(q);
-							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), j);
-							double squashedBid = bid * Math.pow(advEffect, squashing);
-							
-							double bidPred = model.getPrediction(agents[j],q);
-							//if(agents[j].equals("munsey")&&q.getType()==QueryType.FOCUS_LEVEL_ZERO);
-							if(printlns)
-							System.out.print("  \tAgent: " +agents[j]+" Act:"+/*(int)*/(squashedBid*100)+" <-> Pred: " + /*(int)*/(bidPred*100) +" -- ");
-							double error;
-							if(!doRMSE)
-								error = Math.abs(squashedBid - bidPred); //MAE
-							else
-								error = (squashedBid - bidPred)*(squashedBid - bidPred);
-//							error = error*error;  //RMSE
-							ourTotActual += squashedBid;
-							ourTotError += error;
-							ourTotErrorCounter++;
-						}
+							System.out.println();
 					}
-					if(printlns)
 					System.out.println();
+					ourTotErrorMap.put(agents[agent],ourTotError);
+					ourTotActualMap.put(agents[agent],ourTotActual);
+					ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
+					System.out.println("Error: " + (ourTotError/((double)ourTotErrorCounter)));
 				}
-				System.out.println();
-				ourTotErrorMap.put(agents[agent],ourTotError);
-				ourTotActualMap.put(agents[agent],ourTotActual);
-				ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
-
 			}
 
 			ourTotErrorMegaMap.put(filename,ourTotErrorMap);
@@ -192,10 +189,7 @@ public class BidPredModelTest {
 					MAE = (totError/totErrorCounter);
 				else
 					MAE = Math.sqrt(totError/totErrorCounter);
-//				double MSE = (totError/totErrorCounter);
-//				double RMSE = Math.sqrt(MSE);
 				double actual = totActual/totErrorCounter;
-//				RMSEList.add(RMSE);
 				RMSEList.add(MAE);
 				actualList.add(actual);
 			}
@@ -204,7 +198,7 @@ public class BidPredModelTest {
 		Collections.sort(RMSEList);
 
 		double[] rmseStd = getStdDevAndMean(RMSEList);
-//		double[] actualStd = getStdDevAndMean(actualList);
+		//		double[] actualStd = getStdDevAndMean(actualList);
 		double stop = System.currentTimeMillis();
 		double elapsed = (stop - start)/1000.0;
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + elapsed);
@@ -292,8 +286,8 @@ public class BidPredModelTest {
 		System.out.println(advertisers);
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
-//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0]));
+		//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
+		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], Integer.parseInt(args[0]),Double.parseDouble(args[1]),Integer.parseInt(args[2])));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
