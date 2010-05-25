@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Random;
 
 import models.usermodel.BgleibParticleFilter;
 import models.usermodel.DavidLParticleFilter;
@@ -13,9 +14,10 @@ import models.usermodel.DavidandVinitParticleFilter;
 import models.usermodel.GregFilter;
 import models.usermodel.JakeParticleFilter;
 import models.usermodel.OldUserModel;
-import models.usermodel.TacTexAbstractUserModel;
+import models.usermodel.ParticleFilterAbstractUserModel;
+import models.usermodel.TransactedLeastSquares;
 import models.usermodel.jbergParticleFilter;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.Product;
@@ -23,12 +25,21 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
 public class UserModelTest {
+	
+	TransactedLeastSquares tls = new TransactedLeastSquares();
 
 	public ArrayList<String> getGameStrings() {
-//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
 		int max = 1444;
+		
+//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
+//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
+//		int min = 309;
+//		int max = 484;
+		
+		
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -37,7 +48,7 @@ public class UserModelTest {
 		return filenames;
 	}
 
-	public double[] userStatePredictionChallenge(TacTexAbstractUserModel baseModel) throws IOException, ParseException {
+	public double userStatePredictionChallenge(ParticleFilterAbstractUserModel baseModel) throws IOException, ParseException {
 		double time = 0;
 		HashMap<String,Double> ourTotErrorCurrMegaMap = new HashMap<String,Double>();
 		HashMap<String,Double> ourTotActualCurrMegaMap = new HashMap<String,Double>();
@@ -63,7 +74,7 @@ public class UserModelTest {
 			GameStatus status = statusHandler.getGameStatus();
 			
 			double start = System.currentTimeMillis();
-			TacTexAbstractUserModel model = (TacTexAbstractUserModel) baseModel.getCopy();
+			ParticleFilterAbstractUserModel model = (ParticleFilterAbstractUserModel) baseModel.getCopy();
 			double stop = System.currentTimeMillis();
 			double elapsed = stop - start;
 			time += (elapsed / 1000.0);		
@@ -106,6 +117,7 @@ public class UserModelTest {
 
 			//				System.out.println(agents[agent]);
 			for(int i = 0; i < 57; i++) {
+//				tls.computeTransactedProbs(allUserDists.get(i).get(new Product("flat", "dvd")), allUserDists.get(i+1).get(new Product("flat", "dvd")));
 				HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
 				HashMap<Product, HashMap<UserState, Integer>> userDistsFuture = allUserDists.get(i+2);
 				
@@ -284,7 +296,7 @@ public class UserModelTest {
 		output[2] = rmseStdMAE[0];
 		output[3] = rmseStdLinf[0];
 		
-		return rmseStdPredLinf;
+		return rmseStdMAE[0] + rmseStdPredMAE[0];
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
@@ -312,18 +324,49 @@ public class UserModelTest {
 	public static void main(String[] args) throws IOException, ParseException  {
 		UserModelTest evaluator = new UserModelTest();
 
+		Random rand = new Random();
+		double args0,args1,args2,args3,args4,args5;
+		do {
+			args0 = rand.nextDouble()*.1;
+			args1 = rand.nextDouble()*.5;
+			args2 = rand.nextDouble()*.2;
+			args3 = rand.nextDouble()*.5;
+			args4 = rand.nextDouble()*.3;
+			args5 = rand.nextDouble()*.5;
+		} while(!(args0 < args2 && args2 < args4));
+
 		double start = System.currentTimeMillis();
-		evaluator.userStatePredictionChallenge(new jbergParticleFilter());
-		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
-		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
-		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
-		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
-		evaluator.userStatePredictionChallenge(new GregFilter());
-		evaluator.userStatePredictionChallenge(new OldUserModel());
+//		double err = evaluator.userStatePredictionChallenge(new jbergParticleFilter(args0,
+//				args1,
+//				args2,
+//				args3,
+//				args4,
+//				args5));
 		
+		double err = evaluator.userStatePredictionChallenge(new jbergParticleFilter(0.004932699,
+				0.263532334,
+				0.045700011,
+				0.174371757,
+				0.188113883,
+				0.220140091));
+		
+		//		evaluator.userStatePredictionChallenge(new DavidandVinitParticleFilter());
+		//		evaluator.userStatePredictionChallenge(new BgleibParticleFilter());
+		//		evaluator.userStatePredictionChallenge(new DavidLParticleFilter());
+		//		evaluator.userStatePredictionChallenge(new JakeParticleFilter());
+		//		evaluator.userStatePredictionChallenge(new GregFilter());
+		//		evaluator.userStatePredictionChallenge(new OldUserModel());
+
+		System.out.println(args0 + ", " + 
+				args1 + ", " + 
+				args2 + ", " + 
+				args3 + ", " + 
+				args4 + ", " + 
+				args5 + ", " + err);
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
 
 }

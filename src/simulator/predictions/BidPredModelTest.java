@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Random;
 
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
@@ -25,11 +26,11 @@ public class BidPredModelTest {
 	public static final boolean doRMSE = false;
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
-		//				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
+//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1440;
-		int max = 1448;
+		int min = 1435;
+		int max = 1455;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -97,7 +98,7 @@ public class BidPredModelTest {
 
 					for(int i = 0; i < 57; i++) {
 						QueryReport queryReport = ourQueryReports.get(i);
-						System.out.print(""+(i+1) + ", ");
+//						System.out.print(""+(i+1) + ", ");
 
 						HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
 						HashMap<Query, Double> cpc = new HashMap<Query,Double>();
@@ -158,11 +159,11 @@ public class BidPredModelTest {
 						if(printlns)
 							System.out.println();
 					}
-					System.out.println();
+					//					System.out.println();
 					ourTotErrorMap.put(agents[agent],ourTotError);
 					ourTotActualMap.put(agents[agent],ourTotActual);
 					ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
-					System.out.println("Error: " + (ourTotError/((double)ourTotErrorCounter)));
+//					System.out.println("Error: " + (ourTotError/((double)ourTotErrorCounter)));
 				}
 			}
 
@@ -283,15 +284,26 @@ public class BidPredModelTest {
 			advertisers.add(agents[i]);
 		}
 
-		System.out.println(advertisers);
+//		System.out.println(advertisers);
+		
+		Random r = new Random();
+		double randomJumpProb = r.nextDouble()*.3;
+		double yesterdayProb = r.nextDouble();
+		double nDaysAgoProb = r.nextDouble();
+		double var = r.nextDouble()*10;
+		
+		double total = randomJumpProb + yesterdayProb + nDaysAgoProb;
+		randomJumpProb /= total;
+		yesterdayProb /= total;
+		nDaysAgoProb /= total;
 
 		double start = System.currentTimeMillis();
-		//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers,  agents[0]));
-		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], Integer.parseInt(args[0]),Double.parseDouble(args[1]),Integer.parseInt(args[2])));
+		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, agents[0],1,randomJumpProb,yesterdayProb,nDaysAgoProb,var));
+		//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], Integer.parseInt(args[0]),Double.parseDouble(args[1]),Integer.parseInt(args[2])));
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
+//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
 
 }
