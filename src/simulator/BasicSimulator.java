@@ -1892,7 +1892,7 @@ public class BasicSimulator {
 	}
 
 	public static void main(String[] args) throws IOException, ParseException {
-		main1(args);
+		main2(args);
 	}
 
 	public static void main1(String[] args) throws IOException, ParseException {
@@ -1949,15 +1949,15 @@ public class BasicSimulator {
 		Random r = new Random();
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+		String baseFile = "/u/jberg/finals/day-2/server-2/game";
 
 		//		int min = 1425;
 		//		int max = 1465;
 
 		int min = 297;
-		//		int max = 313;
-		int max = 337;
+		int max = 298;
+		//		int max = 337;
 
 		//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
 		//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
@@ -1965,7 +1965,8 @@ public class BasicSimulator {
 		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
 		//				AbstractAgent agent = new DynamicMCKP();
 		//				AbstractAgent agent = new SemiEndoMCKPBid();
-		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
+		AbstractAgent agent = new SimpleAABidAgent();
 		//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, .25, .25, .25, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
