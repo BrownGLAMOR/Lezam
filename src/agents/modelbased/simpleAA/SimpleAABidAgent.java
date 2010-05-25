@@ -453,11 +453,24 @@ public class SimpleAABidAgent extends AbstractAgent {
 			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
-//			MCKSolver solver = new AllDeltasMCKSolver();
-//			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,_capacity,10);
+			/*
+			 * TODO
+			 * Change Solver
+			 * 
+			 * _capacity is the nominal capacity
+			 * 
+			 */
+			
+			ArrayList<Integer> salesHistory = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+			
+			MCKSolver solver = new AllDeltasMCKSolver();
+			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,_capacity,10);
 
-			MCKSolver solver = new DynamicMCKSolver();
-			Solution solution = solver.solve(problem);
+			
+			
+			
+//			MCKSolver solver = new DynamicMCKSolver();
+//			Solution solution = solver.solve(problem);
 			
 			Decisions decisions = solution.getDecisions();
 
