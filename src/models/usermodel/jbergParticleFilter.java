@@ -23,50 +23,17 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
 	private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
 	private HashMap<UserState,Double> _conversionProbs;
-	private long _seed = 37257359;
+	private long _seed = 61686;
 	private Random _R;
 	private ArrayList<Product> _products;
 	private Particle[] initParticle;
 	private static final double _burstProb = .1;
+	private static final double _successiveBurstProb = .2;
 	private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
 	private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
 	private HashMap<Product,HashMap<UserState,Double>> _predictions, _currentEstimate;
-
-//	694.9886157096605: 0.0626119 0.0251838 0.158351 0.67921 0.141542 0.160939 
-//	697.0156722415486: 0.00284918 0.172542 0.267033 0.440053 0.119098 0.893219 
-//	697.8355964995897: 0.0119813 0.264209 0.130913 0.620421 0.106847 0.607943 
-//	699.2415381348094: 0.00809258 0.163013 0.293061 0.957269 0.0923163 0.442596 
-//	699.3549323041273: 0.0724231 0.528481 0.168045 0.437404 0.107272 0.420076 
-//	699.5752877898738: 0.0144021 0.852746 0.187898 0.316331 0.133562 0.198476 
-//	700.3748063613748: 0.0355996 0.2807 0.167058 0.0516611 0.145452 0.174416 
-//	700.4081527010201: 0.0183964 0.403492 0.166033 0.992771 0.114652 0.291618 
-//	700.6141728471948: 0.0318413 0.743306 0.176706 0.59684 0.149999 0.6693 
-//	702.0728497070176: 0.0369804 0.366531 0.168774 0.766537 0.095683 0.136267 
-//	702.1050041219073: 0.0325374 0.374001 0.12593 0.304142 0.126231 0.724372 
-//	702.4207566133291: 0.0422767 0.34229 0.136049 0.932376 0.122228 0.494697 
-//	702.930491815266: 0.0413901 0.0291355 0.254303 0.272301 0.145452 0.139441 
-//	703.1527381330859: 0.0578801 0.353304 0.234287 0.375422 0.0848571 0.0844061 
-//	703.3201852282576: 0.0193268 0.556333 0.198908 0.781435 0.0931492 0.561895 
-//	703.4479184113078: 0.0870916 0.169205 0.113056 0.200854 0.136544 0.568712 
-//	703.4707302014956: 0.0840949 0.353304 0.165047 0.0678862 0.144986 0.173212 
-//	703.4842845284924: 0.0523127 0.972342 0.0620776 0.117437 0.15223 0.345201 
-//	703.9139222113099: 0.0110238 0.534941 0.261626 0.228775 0.0782604 0.695914 
-//	703.9170808939764: 0.0382358 0.788045 0.232357 0.975039 0.116294 0.261882 
-//	704.1502301455878: 0.0215972 0.152349 0.196439 0.817407 0.170955 0.993204 
-//	704.3572414860248: 0.0144021 0.852746 0.204914 0.12147 0.133562 0.139439 
-//	705.0420748391351: 0.0110726 0.544719 0.190365 0.187729 0.128143 0.0824589 
-//	705.2580201139046: 0.0552641 0.239727 0.215436 0.504392 0.109823 0.627374 
-//	705.6685022172433: 0.0692245 0.760256 0.0413297 0.0682217 0.162431 0.335104 
-//	705.8947946658368: 0.023155 0.259906 0.193046 0.837086 0.145458 0.716235 
-//	706.1499932465545: 0.0352226 0.353304 0.136283 0.469287 0.144986 0.173212 
-//	706.1611935442287: 0.0177863 0.403492 0.166033 0.992771 0.13875 0.291618 
-
 	
-	public jbergParticleFilter() {
-//		this(0.073, 0.35, 0.073*2, 0.35, 0.073*3, 0.35);
-//		this(0.0626119, 0.0251838, 0.158351, 0.67921, 0.141542, 0.160939);
-		this(0.0603256, 0.919268, 0.119586, 0.947004, 0.126231, 0.171058);
-	}
+	private static final boolean _rules2009 = true;
 
 	public jbergParticleFilter(double convPr1, double convPrVar1,
 			double convPr2, double convPrVar2,
@@ -77,9 +44,9 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_convPrVar2 = convPrVar2;
 		_baseConvPr3 = convPr3;
 		_convPrVar3 = convPrVar3;
-		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
-				_baseConvPr2 + " " + _convPrVar2 + " " + 
-				_baseConvPr3 + " " + _convPrVar3);
+//		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
+//				_baseConvPr2 + " " + _convPrVar2 + " " + 
+//				_baseConvPr3 + " " + _convPrVar3);
 		_standardProbs = new HashMap<UserState,HashMap<UserState,Double>>();
 		_burstProbs = new HashMap<UserState,HashMap<UserState,Double>>();
 		_R = new Random(_seed);
@@ -217,7 +184,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_products.add(new Product("lioneer", "audio"));
 
 		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
-		//		initializeParticlesFromFile("/u/jberg/initUserParticles");
+//				initializeParticlesFromFile("/u/jberg/initUserParticles");
 		updatePredictionMaps();
 	}
 
@@ -228,11 +195,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		 * Parse Particle Log
 		 */
 		BufferedReader input = null;
+		int count = 0;
 		try {
 			input = new BufferedReader(new FileReader(filename));
 			String line;
-			int count = 0;
-			while ((line = input.readLine()) != null) {
+			while ((line = input.readLine()) != null && count < NUM_PARTICLES) {
 				StringTokenizer st = new StringTokenizer(line," ");
 				if(st.countTokens() == UserState.values().length) {
 					for(int i = 0; i < UserState.values().length; i++) {
@@ -244,7 +211,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				}
 				count++;
 			}
-			if(count != NUM_PARTICLES) {
+			if(count > NUM_PARTICLES) {
 				throw new RuntimeException("Problem reading particle file");
 			}
 		} catch (FileNotFoundException e) {
@@ -257,7 +224,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		for(Product prod : _products) {
 			Particle[] particles = new Particle[NUM_PARTICLES];
 			for(int i = 0; i < particles.length; i++) {
-				Particle particle = new Particle(allStates[i]);
+				Particle particle = new Particle(allStates[i%count]);
 				particles[i] = particle;
 			}
 			_particles.put(prod, particles);
@@ -265,7 +232,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			if(firstTime) {
 				initParticle = new Particle[NUM_PARTICLES];
 				for(int i = 0; i < particles.length; i++) {
-					Particle particle = new Particle(allStates[i]);
+					Particle particle = new Particle(allStates[i%count]);
 					initParticle[i] = particle;
 				}
 				firstTime = false;
@@ -343,7 +310,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
 				particles[i] = particle;
 			}
-			System.out.println("We had to reinitialize the particles...");
+//			System.out.println("We had to reinitialize the particles...");
 		}
 	}
 
@@ -485,21 +452,58 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		for(int i = 0; i < particles.length; i++) {
 			double burstRand = _R.nextDouble();
 			boolean burst;
-			if(burstRand <= _burstProb) {
-				burst = true;
+
+			if(_rules2009) {
+				if(burstRand <= _burstProb) {
+					burst = true;
+				}
+				else {
+					burst = false;
+				}
 			}
 			else {
-				burst = false;
+				boolean successiveBurst = false;
+				ArrayList<Boolean> burstHistory = particles[i].getBurstHistory();
+				if(burstHistory.size() > 0) {
+					for(int j = 1; j <= 3 || j <= burstHistory.size(); j++) {
+						if(burstHistory.get(burstHistory.size() - j)) {
+							successiveBurst = true;
+							break;
+						}
+					}
+				}
+
+				if(successiveBurst) {
+					if(burstRand <= _successiveBurstProb) {
+						burst = true;
+					}
+					else {
+						burst = false;
+					}
+				}
+				else {
+					if(burstRand <= _burstProb) {
+						burst = true;
+					}
+					else {
+						burst = false;
+					}
+				}
 			}
 
 			HashMap<UserState, HashMap<UserState, Double>> transProbs = burst ? _burstProbs : _standardProbs;
 
 			HashMap<UserState, Double> conversionProbs = new HashMap<UserState,Double>();
 			conversionProbs.put(UserState.NS, 0.0);
-			conversionProbs.put(UserState.IS, 0.0);
 			conversionProbs.put(UserState.F0, _baseConvPr1*(1+_convPrVar1*_R.nextGaussian()));
 			conversionProbs.put(UserState.F1, _baseConvPr2*(1+_convPrVar2*_R.nextGaussian()));
 			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
+			if(_rules2009) {
+				conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2))/3.0);
+			}
+			else {
+				conversionProbs.put(UserState.IS, 0.0);
+			}
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
 			
@@ -582,10 +586,15 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 			HashMap<UserState, Double> conversionProbs = new HashMap<UserState,Double>();
 			conversionProbs.put(UserState.NS, 0.0);
-			conversionProbs.put(UserState.IS, 0.0);
 			conversionProbs.put(UserState.F0, _baseConvPr1*(1+_convPrVar1*_R.nextGaussian()));
 			conversionProbs.put(UserState.F1, _baseConvPr2*(1+_convPrVar2*_R.nextGaussian()));
 			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
+			if(_rules2009) {
+				conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2))/3.0);
+			}
+			else {
+				conversionProbs.put(UserState.IS, 0.0);
+			}
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
 			
@@ -726,3 +735,29 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 	}
 
 }
+
+
+/*
+
+
+9.13E-04	0.322757859	0.03073908	0.191880567	0.187458945	0.366898498	186.5540936
+0.004932699	0.263532334	0.045700011	0.174371757	0.188113883	0.220140091	186.7697856
+0.00137587	0.033243062	0.052249038	0.436104127	0.169024453	0.341843764	187.2162768
+0.001004541	0.363593202	0.029031876	0.166947116	0.189067606	0.15234732	188.0296134
+0.005197206	0.362167098	0.027407045	0.150127531	0.204464851	0.059186922	188.3200374
+0.004470606	0.152708964	0.019707097	0.345928109	0.19809	0.207009812	188.8046702
+0.005977345	0.003484737	0.054007691	0.265453547	0.172152857	0.276010655	188.9478476
+0.003556267	0.111575966	0.065888996	0.130363111	0.188318986	0.46448095	189.3403428
+1.47E-04	0.393714485	0.041534959	0.228842583	0.156192607	0.172643107	189.5679581
+0.00394025	0.272837768	0.003960436	0.20564184	0.206756387	0.05615008	190.6669672
+0.001068156	0.069795641	0.009629839	0.409295789	0.251571306	0.370058668	190.7993827
+0.009169542	0.462383102	0.020392133	0.203126828	0.178788577	0.015930587	190.8358756
+0.016361356	0.342006098	0.027478581	0.277848929	0.189073116	0.258146324	191.4164068
+0.009047789	0.063400987	0.061828757	0.433036314	0.161090511	0.222698552	191.4242609
+0.016530646	0.02055777	0.038830311	0.058805199	0.187553857	0.192670387	191.5670809
+0.003178379	0.478498104	0.009151328	0.024975585	0.254086582	0.353953349	191.7099659
+0.015307621	0.365407217	0.034933288	0.009679673	0.205192522	0.322534298	191.9689084
+9.17E-04	0.207878307	0.072797593	0.296011688	0.131309477	0.01807845	192.0322775
+
+
+*/

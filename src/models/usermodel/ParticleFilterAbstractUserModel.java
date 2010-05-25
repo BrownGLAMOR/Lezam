@@ -22,7 +22,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
 	/**
 	 * Number of particles in the filter
 	 */
-	public static final int NUM_PARTICLES = 1000;
+	public static final int NUM_PARTICLES = 3000;
 
 	public static final double BASE_WEIGHT = 1.0/NUM_PARTICLES;
 
