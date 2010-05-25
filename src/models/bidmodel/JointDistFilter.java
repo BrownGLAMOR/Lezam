@@ -18,7 +18,7 @@ public class JointDistFilter {
 	String _ourAdvertiser;
 	double[] dist;
 	public int ADJUST_BID_ITERATIONS = 15;
-	public double JUMP_GAP_FRACTION = 0.0;
+	public double JUMP_GAP_FRACTION = 0.8;
 	public int NUMPARTICLES = 1000;
 
 	
