@@ -12,6 +12,35 @@ import models.AbstractModel;
 
 public class IndependentBidModel extends AbstractBidModel{
 
+	/*
+	 * 
+	 IndependentBidModel(1	0.001920206	0.93158911	0.066490685	 2.6411142720749314)	0.040435407	886.512
+IndependentBidModel(1	0.002158675	0.809201528	0.188639797	 1.3215652774956843)	0.041970943	770.647
+IndependentBidModel(1	0.004189202	0.664774628	0.33103617	 1.501443206055253)	0.044563284	813.014
+IndependentBidModel(1	0.017824885	0.972635234	0.009539881	 4.872773921681622)	0.045360217	877.801
+IndependentBidModel(1	0.007471113	0.599089585	0.393439302	 0.6798428107025789)	0.045946334	411.19
+IndependentBidModel(1	0.023205428	0.708323137	0.268471434	 2.0289534202487136)	0.046080396	858.065
+IndependentBidModel(1	0.010000105	0.613800136	0.376199759	 2.2272145571380255)	0.046412113	719.28
+IndependentBidModel(1	0.032718437	0.894801643	0.07247992	 1.1098144471903948)	0.046511306	1054.171
+IndependentBidModel(1	0.024666645	0.839955651	0.135377703	 5.43534932015163)	0.046646183	679.441
+IndependentBidModel(1	0.023450539	0.966875203	0.009674258	 8.270653559072693)	0.04699118	730.738
+IndependentBidModel(1	0.006803242	0.554342302	0.438854456	 1.9629875579250566)	0.047007562	875.083
+IndependentBidModel(1	0.012511157	0.578897468	0.408591375	 2.6184790012523718)	0.047544342	889.126
+IndependentBidModel(1	0.043598151	0.760688128	0.195713721	 1.9539736844933442)	0.047632926	736.003
+IndependentBidModel(1	0.009236423	0.496808305	0.493955272	 0.21927469833677105)	0.047799383	899.582
+IndependentBidModel(1	0.044168383	0.884857875	0.070973742	 3.296999671119546)	0.047931406	907.069
+IndependentBidModel(1	0.036903518	0.878067728	0.085028754	 5.406437066335405)	0.0479414	377.253
+IndependentBidModel(1	0.029993772	0.683216401	0.286789827	 3.354864491649676)	0.048015084	920.56
+IndependentBidModel(1	0.010967657	0.677299865	0.311732478	 5.985499964801065)	0.048373207	778.826
+IndependentBidModel(1	0.034865069	0.696782142	0.268352788	 3.5795923554762465)	0.04847707	858.345
+IndependentBidModel(1	0.055675383	0.776354193	0.167970424	 1.0216991458279123)	0.0490047	816.604
+IndependentBidModel(1	0.040246328	0.786737255	0.173016416	 5.108495082759328)	0.049018642	872.999
+IndependentBidModel(1	0.052066641	0.757058472	0.190874887	 2.9448745108207253)	0.049078867	237.75
+IndependentBidModel(1	0.037765459	0.57623767	0.38599687	 0.7416173844210072)	0.049239585	776.944
+IndependentBidModel(1	0.004181492	0.536173184	0.459645324	 5.080979266545219)	0.049339255	844.513
+IndependentBidModel(1	0.016589003	0.483429222	0.499981775	 2.418015214683784)	0.049572269	774.336
+IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0.049766376	1064.232
+	 */
 
 	/**************************************************************************************************************************************
 	HOW DO YOU SELECT Y advertiser (equation 8) currently random and not the same as the current advertiser
@@ -28,7 +57,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	private double randomJumpProb = 0.0;
 	private double yesterdayProb = 0.8;
 	private double nDaysAgoProb = 0.2;
-	private double normVar = 6; 
+	private double normVar = 2.1; 
 	private int numIterations = 1;
 	private String ourAgent;
 	Set<String> _advertisers;
@@ -41,7 +70,7 @@ public class IndependentBidModel extends AbstractBidModel{
 		yesterdayProb = yesterday;
 		nDaysAgoProb = nDaysAgo;
 		normVar = var;
-		
+
 		_advertisers = advertisers;
 
 		if(printlns)
@@ -156,7 +185,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	private double normalDensFn(double d){
 		return Math.exp((-(d*d))/(2.0*normVar))/(Math.sqrt(2.0*Math.PI*normVar));
 	}
-	
+
 	private double normalDensFn(double d, double var){
 		return Math.exp((-(d*d))/(2.0*var))/(Math.sqrt(2.0*Math.PI*var));
 	}
@@ -305,7 +334,7 @@ public class IndependentBidModel extends AbstractBidModel{
 						for(String curAdv:curStrKey){
 							if(printlns)
 								System.out.print("Updating: " + s + "("+ranks.get(q).get(s)+") with advertiser: " + curAdv + "("+ranks.get(q).get(curAdv)+") [");
-							
+
 							for(int i = 0; i<numBidValues; i++){
 								if(printlns)
 									System.out.print(curStrHM.get(curAdv).get(curStrHM.get(curAdv).size()-1).get(i) +", ");
@@ -339,11 +368,11 @@ public class IndependentBidModel extends AbstractBidModel{
 								{
 									toSet = 1.0;
 								}
-								
+
 								if(Double.isNaN(toSet)) {
 									throw new RuntimeException();
 								}
-								
+
 								os.get(s).set(i, os.get(s).get(i)*toSet);
 								if(printlns)
 									System.out.print(os.get(s).get(i) +", ");
@@ -475,7 +504,7 @@ public class IndependentBidModel extends AbstractBidModel{
 	public AbstractModel getCopy() {
 		return new IndependentBidModel(_advertisers, ourAgent,numIterations,randomJumpProb,yesterdayProb,nDaysAgoProb, normVar);
 	}
-	
+
 	@Override
 	public String toString() {
 		return "IndependentBidModel(" + numIterations + ", " + randomJumpProb + ", " + yesterdayProb + ", " + nDaysAgoProb + ", " + normVar + ")";
