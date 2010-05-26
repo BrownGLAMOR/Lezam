@@ -3,7 +3,7 @@ package models.parameters;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import models.usermodel.TacTexAbstractUserModel.Particle;
+import models.usermodel.ParticleFilterAbstractUserModel.Particle;
 
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;

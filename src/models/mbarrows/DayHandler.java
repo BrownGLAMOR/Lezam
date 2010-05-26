@@ -5,7 +5,7 @@ import java.util.LinkedList;
 
 import org.apache.commons.math.complex.Complex;
 
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;

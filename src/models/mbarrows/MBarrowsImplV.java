@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Random;
 
 import models.AbstractModel;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;

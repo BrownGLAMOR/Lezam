@@ -7,7 +7,7 @@ import java.util.Random;
 import java.util.Set;
 
 import models.AbstractModel;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
@@ -29,6 +29,9 @@ public class MBarrowsImpl extends AbstractMaxBarrows {
 		 //This string should be equivalent to the strings in advertisersAbovePerSlot, whatever those turn out to be.
 		 //In other words, it should be a valid key for ads in the updateModel method
 		 m_ourname = us;
+		 
+		 m_continuationProbs = new HashMap<Query,Double>();
+		 m_advertiserEffects = new HashMap<Query,Double[]>();
 		 
 		 for (Query q : _querySpace){
 				QueryType qt = q.getType();
