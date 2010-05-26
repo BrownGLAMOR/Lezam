@@ -64,7 +64,7 @@ public class SimMisc {
 	/*
 	 * Kullback Leibler Divergence Test
 	 */
-	public double KLDivergence(double[] P, double[] Q) {
+	public static double KLDivergence(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("KL Divergence requires arrays of equal length");
 		}
@@ -83,7 +83,7 @@ public class SimMisc {
 	 * the KL divergence.  We want to minimize the KL divergence, which will
 	 * in turn maximize the likelihood
 	 */
-	public double KLLikelihood(double[] P, double[] Q) {
+	public static double KLLikelihood(double[] P, double[] Q) {
 		double divergence = KLDivergence(P, Q);
 		double likelihood = Math.exp(-1*divergence*P.length);
 		return likelihood;
@@ -94,7 +94,7 @@ public class SimMisc {
 	 * 
 	 * Probably want to use 2.....
 	 */
-	public double minkowskiDistance(double[] P, double[] Q, int p) {
+	public static double minkowskiDistance(double[] P, double[] Q, int p) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Minkowski Distance requires arrays of equal length");
 		}
@@ -113,7 +113,7 @@ public class SimMisc {
 	/*
 	 * When the areas are equal 
 	 */
-	public double histogramIntersection(double[] P, double[] Q) {
+	public static double histogramIntersection(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Histogram Intersection requires arrays of equal length");
 		}
@@ -133,7 +133,7 @@ public class SimMisc {
 		return distance;
 	}
 
-	public double jeffreyDivergence(double[] P, double[] Q) {
+	public static double jeffreyDivergence(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Jeffrey Divergence requires arrays of equal length");
 		}
@@ -155,7 +155,7 @@ public class SimMisc {
 	 * This is equivalent to the Earth Mover's Distance in 1 dimensional
 	 * histograms with equal area, and with equal bin sizes.
 	 */
-	public double matchDistance(double[] P, double[] Q) {
+	public static double matchDistance(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("Match Distance requires arrays of equal length");
 		}
@@ -176,7 +176,7 @@ public class SimMisc {
 	/*
 	 * Kolmogorov-Smirnov
 	 */
-	public double KSdistance(double[] P, double[] Q) {
+	public static double KSdistance(double[] P, double[] Q) {
 		if(P.length != Q.length) {
 			throw new RuntimeException("KS Distance requires arrays of equal length");
 		}
