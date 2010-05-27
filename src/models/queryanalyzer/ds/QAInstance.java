@@ -9,10 +9,9 @@ public class QAInstance {
 	private int[] _agentIds;
 	private int _agentIndex;
 	private int _impressions;
-	private double _bid;
 	private int _impressionsUB;
 	
-	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, double bid, int impressionsUB){
+	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int impressionsUB){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
 		assert(advetisers > agentIndex && agentIndex >= 0);
@@ -22,7 +21,6 @@ public class QAInstance {
 		_agentIds = agentIds;
 		_agentIndex = agentIndex;
 		_impressions = impressions;
-		_bid = bid;
 		_impressionsUB = impressionsUB;
 	}
 	
@@ -32,7 +30,6 @@ public class QAInstance {
 	public int[] getAgentIds() {return _agentIds;}
 	public int getAgentIndex() {return _agentIndex;}
 	public int getImpressions() {return _impressions;}
-	public double getBid() {return _bid;}
 	public int getImpressionsUB() {return _impressionsUB;}
 	
 	public int[] getBidOrder(QAData data){

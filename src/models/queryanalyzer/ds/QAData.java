@@ -45,7 +45,7 @@ public class QAData {
 			impressionsUB += usedAgentInfo[i].impressions;
 		}
 		
-		return new QAInstance(_slots, usedAgents, avgPos, agentIds, advIndex, usedAgentInfo[advIndex].impressions, usedAgentInfo[advIndex].bid, impressionsUB);
+		return new QAInstance(_slots, usedAgents, avgPos, agentIds, advIndex, usedAgentInfo[advIndex].impressions, impressionsUB);
 	}
 	
 	public String toString() {

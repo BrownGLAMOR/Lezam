@@ -93,7 +93,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			}
 
 			//this should maybe be squashed bid
-			QAInstance inst = new QAInstance(NUM_SLOTS, _advertisers.size(), avgPos, agentIds, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), bidBundle.getBid(q), maxImps.get(q));
+			QAInstance inst = new QAInstance(NUM_SLOTS, _advertisers.size(), avgPos, agentIds, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
 
 			int[] avgPosOrder = inst.getAvgPosOrder();
 
