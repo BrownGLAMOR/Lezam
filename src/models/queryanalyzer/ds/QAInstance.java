@@ -51,6 +51,29 @@ public class QAInstance {
 		return bidOrder;
 	}
 	
+	public int[] getAvgPosOrder() {
+		double[] pos = new double[_advetisers];
+		int[] posOrder = new int[_advetisers];
+		for(int i=0; i < _advetisers; i++){
+			pos[i] = -_avgPos[i];
+			posOrder[i] = i;
+		}
+		
+		sortListsDecending(posOrder, pos);
+		
+		//System.out.println("Pos order "+Arrays.toString(posOrder));
+		//System.out.println("Pos value "+Arrays.toString(pos));
+		
+		//not nessissary in general, but makes results consistent with the comet model
+		sortTiesAccending(posOrder, pos);
+		
+		//System.out.println("Pos order (break ties) "+Arrays.toString(posOrder));
+		//System.out.println("Pos value (break ties) "+Arrays.toString(pos));
+		
+		
+		return posOrder;
+	}
+	
 	public int[] getAvgPosOrder(QAData data) {
 		double[] pos = new double[_advetisers];
 		int[] posOrder = new int[_advetisers];
