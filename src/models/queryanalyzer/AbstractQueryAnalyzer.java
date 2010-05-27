@@ -1,5 +1,7 @@
 package models.queryanalyzer;
 
+import java.util.HashMap;
+
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -17,6 +19,6 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
 	
 	public abstract int[] getImpressionsPrediction(Query query);
 
-	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle);
+	public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps);
 
 }

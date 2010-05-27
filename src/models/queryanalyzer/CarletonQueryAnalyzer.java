@@ -21,7 +21,6 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	private ArrayList<String> _advertisers;
 	private String _ourAdvertiser;
 	public final static int NUM_SLOTS = 5;
-	public final static int maxImps = 2000;
 
 	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser) {
 		_querySpace = querySpace;
@@ -79,7 +78,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	}
 
 	@Override
-	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle) {
+	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,Integer> maxImps) {
 		for(Query q : _querySpace) {
 			double[] avgPos = new double[_advertisers.size()];
 			int[] agentIds = new int[_advertisers.size()];
@@ -94,7 +93,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			}
 
 			//this should maybe be squashed bid
-			QAInstance inst = new QAInstance(NUM_SLOTS, _advertisers.size(), avgPos, agentIds, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), bidBundle.getBid(q), maxImps);
+			QAInstance inst = new QAInstance(NUM_SLOTS, _advertisers.size(), avgPos, agentIds, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), bidBundle.getBid(q), maxImps.get(q));
 
 			int[] avgPosOrder = inst.getAvgPosOrder();
 
