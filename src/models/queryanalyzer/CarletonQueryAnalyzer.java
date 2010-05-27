@@ -110,4 +110,9 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser);
 	}
 
+	@Override
+	public void setAdvertisers(String ourAdv) {
+		_ourAdvertiser = ourAdv;
+	}
+
 }
