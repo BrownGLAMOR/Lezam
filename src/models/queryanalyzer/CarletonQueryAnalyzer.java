@@ -23,10 +23,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	private ArrayList<String> _advertisers;
 	private String _ourAdvertiser;
 	public final static int NUM_SLOTS = 5;
-	public final static int NUM_ITERATIONS = 50;
+	public int NUM_ITERATIONS = 10;
 
-	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser) {
+	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters) {
 		_querySpace = querySpace;
+		
+		NUM_ITERATIONS = numIters;
 
 		_allResults = new HashMap<Query,ArrayList<IEResult>>();
 		_allImpRanges = new HashMap<Query,ArrayList<int[][]>>();
@@ -165,16 +167,25 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
 			smartIESearcher.search(avgPosOrder, inst.getAvgPos());
 			IEResult bestSol = smartIESearcher.getBestSolution();
+			if(bestSol.getSol() == null) {
+				int[] imps = new int[avgPosOrder.length];
+				bestSol = new IEResult(0, imps, avgPosOrder); //TODO what to return here....
+			}
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
 			_allAgentIDs.get(q).add(agentIdsArr);
 		}
 		return true;
 	}
+	
+	@Override
+	public String toString() {
+		return "CarletonQueryAnalyzer(" + NUM_ITERATIONS + ")";
+	}
 
 	@Override
 	public AbstractModel getCopy() {
-		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser);
+		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser,NUM_ITERATIONS);
 	}
 
 	@Override

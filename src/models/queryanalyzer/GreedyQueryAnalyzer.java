@@ -162,6 +162,10 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 			ImpressionEstimator ie = new ImpressionEstimator(inst);
 
 			IEResult bestSol = ie.search(avgPosOrder);
+			if(bestSol.getSol() == null) {
+				int[] imps = new int[avgPosOrder.length];
+				bestSol = new IEResult(0, imps, avgPosOrder);
+			}
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
 			_allAgentIDs.get(q).add(agentIdsArr);
