@@ -164,12 +164,21 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			
 			int[] avgPosOrder = inst.getAvgPosOrder();
 
-			LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
-			smartIESearcher.search(avgPosOrder, inst.getAvgPos());
-			IEResult bestSol = smartIESearcher.getBestSolution();
-			if(bestSol.getSol() == null) {
+			System.out.println(inst);
+			
+			IEResult bestSol;
+			if(avgPosOrder.length > 0) {
+				LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
+				smartIESearcher.search(avgPosOrder, inst.getAvgPos());
+				bestSol = smartIESearcher.getBestSolution();
+				if(bestSol.getSol() == null) {
+					int[] imps = new int[avgPosOrder.length];
+					bestSol = new IEResult(0, imps, avgPosOrder);
+				}
+			}
+			else {
 				int[] imps = new int[avgPosOrder.length];
-				bestSol = new IEResult(0, imps, avgPosOrder); //TODO what to return here....
+				bestSol = new IEResult(0, imps, avgPosOrder);
 			}
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
