@@ -19,9 +19,9 @@ public class LDSearchIESmart extends LDSearchSmart {
 	@Override
 	protected boolean evalPerm(int[] perm) {
 		
-		System.out.println("Trying order: "+Arrays.toString(perm));
+//		System.out.println("Trying order: "+Arrays.toString(perm));
 		IEResult best = _ie.search(perm);
-		System.out.println();
+//		System.out.println();
 		
 		if(best != null && (_best == null || best.getObj() < _best.getObj())){
 			_best = best;

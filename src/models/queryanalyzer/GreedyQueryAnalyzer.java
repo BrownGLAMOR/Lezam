@@ -11,9 +11,9 @@ import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.search.LDSearchIESmart;
+import models.queryanalyzer.iep.ImpressionEstimator;
 
-public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
+public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 
 	private HashMap<Query,ArrayList<IEResult>> _allResults;
 	private HashMap<Query,ArrayList<int[]>> _allAgentIDs;
@@ -23,9 +23,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	private ArrayList<String> _advertisers;
 	private String _ourAdvertiser;
 	public final static int NUM_SLOTS = 5;
-	public final static int NUM_ITERATIONS = 50;
 
-	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser) {
+	public GreedyQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser) {
 		_querySpace = querySpace;
 
 		_allResults = new HashMap<Query,ArrayList<IEResult>>();
@@ -50,7 +49,6 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		for(int i = 0; i < advertisers.size(); i++) {
 			_advToIdx.put(advertisers.get(i), i);
 		}
-
 	}
 
 	@Override
@@ -98,7 +96,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		}
 		return null;
 	}
-
+	
 	@Override
 	public int[] getImpressionRangePrediction(Query q, String adv) {
 		int size = _allResults.get(q).size();
@@ -121,7 +119,6 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		}
 		return null;
 	}
-
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,Integer> maxImps) {
@@ -161,25 +158,25 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 //			System.out.println(inst);
 			
 			int[] avgPosOrder = inst.getAvgPosOrder();
+			
+			ImpressionEstimator ie = new ImpressionEstimator(inst);
 
-			LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
-			smartIESearcher.search(avgPosOrder, inst.getAvgPos());
-			IEResult bestSol = smartIESearcher.getBestSolution();
+			IEResult bestSol = ie.search(avgPosOrder);
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
 			_allAgentIDs.get(q).add(agentIdsArr);
 		}
 		return true;
 	}
+	
 
 	@Override
 	public AbstractModel getCopy() {
-		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser);
+		return new GreedyQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser);
 	}
 
 	@Override
 	public void setAdvertiser(String ourAdv) {
 		_ourAdvertiser = ourAdv;
 	}
-
 }

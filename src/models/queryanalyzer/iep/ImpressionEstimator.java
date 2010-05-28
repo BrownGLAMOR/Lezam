@@ -62,7 +62,7 @@ public class ImpressionEstimator {
 	
 	public IEResult search(int[] order){ //TODO incoperate order
 		if(!feasibleOrder(order)){
-			System.out.println("order is infeasible"); 
+//			System.out.println("order is infeasible"); 
 			return null;
 		}
 		
@@ -100,7 +100,7 @@ public class ImpressionEstimator {
 			int objVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
 			//assert(objVal <= ObjBound);
 			if(objVal < _objectiveBound){
-				System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + objVal);
+//				System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + objVal);
 				_objectiveBound = objVal;
 				_solutions.put(_nodeId, agentImpr);
 				_bestNode = _nodeId;
@@ -112,13 +112,10 @@ public class ImpressionEstimator {
 		
 		int bestImpr = calcMinImpressions(slotImpr, currIndex, _trueAvgPos[currAgent]);	
 
-		//cout << slotImpr << " - " << bestImpr << endl;
-		
 		if(bestImpr > 0){
 			if(currAgent == _ourIndex){
 				int objVal = Math.abs(bestImpr - _ourImpressions);
 				if(objVal >= _objectiveBound){
-					//cout << "****CUT!";
 					return;
 				}
 			}
@@ -129,7 +126,7 @@ public class ImpressionEstimator {
 		}
 		else {
 			int firstSlot = Math.min(currIndex+1, _slots);
-			int maxImpr = firstSlot == 1 ? _agentImprUB[currAgent] : slotImpr[firstSlot-2]-1;
+			int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot-2]-1;
 			
 			if(firstSlot == 1){
 				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){ //TODO: how to do this  "by (firstSlot == 1 ? i : i)"
@@ -142,7 +139,7 @@ public class ImpressionEstimator {
 				}
 			}
 			else {
-				for(int i=maxImpr ; i >= _agentImprLB[currAgent] ; i--){
+				for(int i=maxImpr; i >= _agentImprLB[currAgent] ; i--){
 					if(i % 100 == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
@@ -151,18 +148,7 @@ public class ImpressionEstimator {
 					}
 				}
 			}
-			/*
-			else { //tests results when fixing impressions
-				int[] agentImprCopy = copyArray(agentImpr);
-				agentImprCopy[currAgent] = maxImpr/2;
-				int[] newSlotImpr = fillSlots(slotImpr, maxImpr/2);
-				checkImpressions(currIndex+1, agentImprCopy,  newSlotImpr);
-			}
-			*/
-			
 		}
-		
-		
 	}
 
 	private int calcMinImpressions(int[] slotImpr, int currIndex, double trueAvgPos) {
