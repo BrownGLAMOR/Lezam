@@ -38,7 +38,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 	private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
 	private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
 	private HashMap<Product,HashMap<UserState,Double>> _predictions, _currentEstimate;
-	
+
 	private static final boolean _rules2009 = true;
 
 	public jbergParticleFilter(double convPr1, double convPrVar1,
@@ -50,9 +50,9 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_convPrVar2 = convPrVar2;
 		_baseConvPr3 = convPr3;
 		_convPrVar3 = convPrVar3;
-//		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
-//				_baseConvPr2 + " " + _convPrVar2 + " " + 
-//				_baseConvPr3 + " " + _convPrVar3);
+		//		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
+		//				_baseConvPr2 + " " + _convPrVar2 + " " + 
+		//				_baseConvPr3 + " " + _convPrVar3);
 		_standardProbs = new HashMap<UserState,HashMap<UserState,Double>>();
 		_burstProbs = new HashMap<UserState,HashMap<UserState,Double>>();
 		_R = new Random(_seed);
@@ -190,7 +190,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_products.add(new Product("lioneer", "audio"));
 
 		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
-//				initializeParticlesFromFile("/u/jberg/initUserParticles");
+		//				initializeParticlesFromFile("/u/jberg/initUserParticles");
 		updatePredictionMaps();
 	}
 
@@ -316,7 +316,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
 				particles[i] = particle;
 			}
-//			System.out.println("We had to reinitialize the particles...");
+			//			System.out.println("We had to reinitialize the particles...");
 		}
 	}
 
@@ -430,22 +430,25 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		for(Query q : totalImpressions.keySet()) {
 			Product prod = new Product(q.getManufacturer(), q.getComponent());
 			if(_products.contains(prod)) {
-				Particle[] particles = _particles.get(prod);
-				updateParticles(totalImpressions.get(q), particles);
-				particles = resampleParticles(particles);
-				_particles.put(prod, particles);
-			}
-		}
+				int totalImps = totalImpressions.get(q);
+				if(totalImps > 0) {
+					Particle[] particles = _particles.get(prod);
+					updateParticles(totalImps, particles);
+					particles = resampleParticles(particles);
+					_particles.put(prod, particles);
+					updatePredictionMaps(prod,false);
+				}
+				else {
+//					totalImps = 0;
+//					totalImps += getCurrentEstimate(prod,UserState.F2);
+//					totalImps += (1.0/3.0)*getCurrentEstimate(prod,UserState.IS);
+//					Particle[] particles = _particles.get(prod);
+//					updateParticles(totalImps, particles);
+//					particles = resampleParticles(particles);
+//					_particles.put(prod, particles);
+					updatePredictionMaps(prod,true);
+				}
 
-		/*
-		 * Update Predictions
-		 */
-		updatePredictionMaps();
-		
-		
-		for(Query q : totalImpressions.keySet()) {
-			Product prod = new Product(q.getManufacturer(), q.getComponent());
-			if(_products.contains(prod)) {
 				Particle[] particles = _particles.get(prod);
 				pushParticlesForward(particles,prod);
 				_particles.put(prod, particles);
@@ -499,7 +502,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			}
 
 			HashMap<UserState, HashMap<UserState, Double>> transProbs = burst ? _burstProbs : _standardProbs;
-			
+
 			HashMap<UserState, Double> conversionProbs = new HashMap<UserState,Double>();
 			conversionProbs.put(UserState.NS, 0.0);
 			conversionProbs.put(UserState.F0, _baseConvPr1*(1+_convPrVar1*_R.nextGaussian()));
@@ -513,7 +516,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			}
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
-			
+
 			particle.addToBurstHistory(burst);
 
 			int[] state = particle.getState();
@@ -585,7 +588,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			particle.setState(newState);
 		}
 	}
-	
+
 	public void pushParticlesForward(Particle[] particles, Product prod, boolean burst) {
 		for(int i = 0; i < particles.length; i++) {
 
@@ -604,7 +607,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			}
 			conversionProbs.put(UserState.T, 0.0);
 			Particle particle = particles[i];
-			
+
 			particle.addToBurstHistory(burst);
 
 			int[] state = particle.getState();
@@ -675,6 +678,57 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 			particle.setState(newState);
 		}
+	}
+
+	private void updatePredictionMaps(Product prod, boolean onlyNonBurst) {
+		Particle[] particles = _particles.get(prod);
+		Particle[] particleCopy = new Particle[particles.length];
+
+		HashMap<UserState,Double> estimates = new HashMap<UserState,Double>();
+		double[] estimate = new double[UserState.values().length];
+
+		double totalWeight = 0.0;
+		for(int i = 0; i < particles.length; i++) {
+			Particle particle = particles[i];
+			if(!(onlyNonBurst &&
+				 particle.getBurstHistory().size() > 0 &&
+				 particle.getBurstHistory().get(particle.getBurstHistory().size()-1) == true)) {
+				totalWeight += particle.getWeight();
+				for(UserState state : UserState.values()) {
+					estimate[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+				}
+			}
+			particleCopy[i] = new Particle(particle.getState(), particle.getWeight(), particle.getBurstHistory());
+		}
+
+		for(UserState state : UserState.values()) {
+			estimate[state.ordinal()] /= totalWeight;
+		}
+
+		for(int i = 0; i < estimate.length; i++) {
+			estimates.put(UserState.values()[i], estimate[i]);
+		}
+
+		_currentEstimate.put(prod, estimates);
+
+		pushParticlesForward(particleCopy,prod,false);
+		pushParticlesForward(particleCopy,prod,false);
+
+		HashMap<UserState,Double> estimatesPred = new HashMap<UserState,Double>();
+		double[] estimatePred = new double[UserState.values().length];
+
+		for(int i = 0; i < particleCopy.length; i++) {
+			Particle particle = particleCopy[i];
+			for(UserState state : UserState.values()) {
+				estimatePred[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();
+			}
+		}
+
+		for(int i = 0; i < estimatePred.length; i++) {
+			estimatesPred.put(UserState.values()[i], estimatePred[i]);
+		}
+
+		_predictions.put(prod, estimatesPred);
 	}
 
 	private void updatePredictionMaps() {
@@ -767,4 +821,4 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 9.17E-04	0.207878307	0.072797593	0.296011688	0.131309477	0.01807845	192.0322775
 
 
-*/
+ */
