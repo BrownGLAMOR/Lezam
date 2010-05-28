@@ -23,7 +23,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.UserClickModel;
 
 public class QueryAnalyzerTest {
-	
+
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
@@ -31,7 +31,7 @@ public class QueryAnalyzerTest {
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		int min = 1440;
+		int min = 1443;
 		int max = 1444;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
@@ -57,7 +57,7 @@ public class QueryAnalyzerTest {
 		HashMap<String,HashMap<String,Double>> ourTotRankErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotRankActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotRankErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
-		
+
 		HashMap<String,HashMap<String,Double>> ourTotImpErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotImpActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotImpErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
@@ -74,7 +74,7 @@ public class QueryAnalyzerTest {
 			HashMap<String,Double> ourTotRankErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotRankActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotRankErrorCounterMap = new HashMap<String, Integer>();
-			
+
 			HashMap<String,Double> ourTotImpErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotImpActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotImpErrorCounterMap = new HashMap<String, Integer>();
@@ -109,7 +109,7 @@ public class QueryAnalyzerTest {
 					double ourTotRankError = 0;
 					double ourTotRankActual = 0;
 					int ourTotRankErrorCounter = 0;
-					
+
 					double ourTotImpError = 0;
 					double ourTotImpActual = 0;
 					int ourTotImpErrorCounter = 0;
@@ -156,7 +156,7 @@ public class QueryAnalyzerTest {
 							for(int j = 0; j < bidPairs.size(); j++) {
 								queryRanks.put(bidPairs.get(j).getID(), j);
 							}
-							
+
 							HashMap<Integer,Integer> imps = new HashMap<Integer,Integer>();
 							for(int agentInner = 0; agentInner < agents.length; agentInner++) {
 								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
@@ -172,7 +172,7 @@ public class QueryAnalyzerTest {
 							for(int j = 0; j < rankPred.length; j++) {
 								rankPredMap.put(rankPred[j], j);
 							}
-							
+
 							int agentOffset = 0;
 							int skipped = 0;
 							for(int j = 0; j < agents.length; j++) {
@@ -189,12 +189,12 @@ public class QueryAnalyzerTest {
 									skipped++;
 									continue;
 								}
-								
+
 								double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
 								ourTotRankActual += queryRanks.get(j);
 								ourTotRankError += rankError;
 								ourTotRankErrorCounter++;
-								
+
 								double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
 								ourTotImpActual += imps.get(j);
 								ourTotImpError += impError;
@@ -206,7 +206,7 @@ public class QueryAnalyzerTest {
 					ourTotRankActualMap.put(agents[agent],ourTotRankActual);
 					ourTotRankErrorCounterMap.put(agents[agent],ourTotRankErrorCounter);
 					System.out.print("Rank Error: " + (ourTotRankError/((double)ourTotRankErrorCounter)) + ", ");
-					
+
 					ourTotImpErrorMap.put(agents[agent],ourTotImpError);
 					ourTotImpActualMap.put(agents[agent],ourTotImpActual);
 					ourTotImpErrorCounterMap.put(agents[agent],ourTotImpErrorCounter);
@@ -217,23 +217,23 @@ public class QueryAnalyzerTest {
 			ourTotRankErrorMegaMap.put(filename,ourTotRankErrorMap);
 			ourTotRankActualMegaMap.put(filename,ourTotRankActualMap);
 			ourTotRankErrorCounterMegaMap.put(filename,ourTotRankErrorCounterMap);
-			
+
 			ourTotImpErrorMegaMap.put(filename,ourTotImpErrorMap);
 			ourTotImpActualMegaMap.put(filename,ourTotImpActualMap);
 			ourTotImpErrorCounterMegaMap.put(filename,ourTotImpErrorCounterMap);
 		}
-		
-		
+
+
 		ArrayList<Double> rankRMSEList = new ArrayList<Double>();
 		ArrayList<Double> rankActualList = new ArrayList<Double>();
-		
+
 		ArrayList<Double> impRMSEList = new ArrayList<Double>();
 		ArrayList<Double> impActualList = new ArrayList<Double>();
 		for(String file : filenames) {
 			HashMap<String, Double> totRankErrorMap = ourTotRankErrorMegaMap.get(file);
 			HashMap<String, Double> totRankActualMap = ourTotRankActualMegaMap.get(file);
 			HashMap<String, Integer> totRankErrorCounterMap = ourTotRankErrorCounterMegaMap.get(file);
-			
+
 			HashMap<String, Double> totImpErrorMap = ourTotImpErrorMegaMap.get(file);
 			HashMap<String, Double> totImpActualMap = ourTotImpActualMegaMap.get(file);
 			HashMap<String, Integer> totImpErrorCounterMap = ourTotImpErrorCounterMegaMap.get(file);
@@ -246,7 +246,7 @@ public class QueryAnalyzerTest {
 				double rankActual = totRankActual/totRankErrorCounter;
 				rankRMSEList.add(rankMAE);
 				rankActualList.add(rankActual);
-				
+
 				double totImpError = totImpErrorMap.get(agent);
 				double totImpActual = totImpActualMap.get(agent);
 				double totImpErrorCounter = totImpErrorCounterMap.get(agent);
@@ -318,9 +318,10 @@ public class QueryAnalyzerTest {
 
 		double start = System.currentTimeMillis();
 
-		int numIters = Integer.parseInt(args[0]);
-		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
-		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
+		//		int numIters = Integer.parseInt(args[0]);
+		int numIters = 1;
+		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
+		//		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
 
 
 		double stop = System.currentTimeMillis();

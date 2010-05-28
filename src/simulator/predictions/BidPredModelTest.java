@@ -12,6 +12,7 @@ import java.util.Random;
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
 import models.bidmodel.JointDistBidModel;
+import models.bidmodel.LinearComboBidModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -26,11 +27,11 @@ public class BidPredModelTest {
 	public static final boolean doRMSE = false;
 
 	public ArrayList<String> getGameStrings() {
-//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
-		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
+				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1435;
-		int max = 1455;
+		int min = 1440;
+		int max = 1441;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -154,8 +155,13 @@ public class BidPredModelTest {
 								ourTotActual += squashedBid;
 								ourTotError += error;
 								ourTotErrorCounter++;
+								
+								if(q.equals(new Query("pg","tv"))) {
+									System.out.print(squashedBid + ", " + bidPred + ", ");
+								}
 							}
 						}
+						System.out.println();
 						if(printlns)
 							System.out.println();
 					}
@@ -286,21 +292,30 @@ public class BidPredModelTest {
 
 //		System.out.println(advertisers);
 		
-		Random r = new Random();
-		double randomJumpProb = r.nextDouble()*.3;
-		double yesterdayProb = r.nextDouble();
-		double nDaysAgoProb = r.nextDouble();
-		double var = r.nextDouble()*10;
-		
-		double total = randomJumpProb + yesterdayProb + nDaysAgoProb;
-		randomJumpProb /= total;
-		yesterdayProb /= total;
-		nDaysAgoProb /= total;
+//		Random r = new Random();
+//		double randomJumpProb = r.nextDouble()*.3;
+//		double yesterdayProb = r.nextDouble();
+//		double nDaysAgoProb = r.nextDouble();
+//		double var = r.nextDouble()*10;
+//		
+//		double total = randomJumpProb + yesterdayProb + nDaysAgoProb;
+//		randomJumpProb /= total;
+//		yesterdayProb /= total;
+//		nDaysAgoProb /= total;
 
 		double start = System.currentTimeMillis();
-		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, agents[0],1,randomJumpProb,yesterdayProb,nDaysAgoProb,var));
-		//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], Integer.parseInt(args[0]),Double.parseDouble(args[1]),Integer.parseInt(args[2])));
+//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, agents[0],1,0,.8,.2,2.1));
+//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], 15, .8, 1000));
 
+		ArrayList<AbstractBidModel> models = new ArrayList<AbstractBidModel>();
+		ArrayList<Double> weights = new ArrayList<Double>();
+		models.add(new IndependentBidModel(advertisers, agents[0],1,0,.8,.2,2.1));
+		models.add(new JointDistBidModel(advertisers, agents[0], 15, .8, 1000));
+		weights.add(Double.parseDouble(args[0]));
+		weights.add(1.0 - Double.parseDouble(args[0]));
+		evaluator.bidPredictionChallenge(new LinearComboBidModel(models, weights));
+		
+		
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 //		System.out.println("This took " + (elapsed / 1000) + " seconds");
