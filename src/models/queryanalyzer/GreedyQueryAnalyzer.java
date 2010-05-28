@@ -156,13 +156,20 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
 
 //			System.out.println(inst);
-			
+
 			int[] avgPosOrder = inst.getAvgPosOrder();
-			
+
 			ImpressionEstimator ie = new ImpressionEstimator(inst);
 
-			IEResult bestSol = ie.search(avgPosOrder);
-			if(bestSol.getSol() == null) {
+			IEResult bestSol;
+			if(avgPosOrder.length > 0) {
+				bestSol = ie.search(avgPosOrder);
+				if(bestSol.getSol() == null) {
+					int[] imps = new int[avgPosOrder.length];
+					bestSol = new IEResult(0, imps, avgPosOrder);
+				}
+			}
+			else {
 				int[] imps = new int[avgPosOrder.length];
 				bestSol = new IEResult(0, imps, avgPosOrder);
 			}
@@ -172,7 +179,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 		}
 		return true;
 	}
-	
+
 
 	@Override
 	public AbstractModel getCopy() {

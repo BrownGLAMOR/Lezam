@@ -57,14 +57,6 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
 		int[] slotStart= new int[slots];
 		int a;
 
-		int[] permOrder= new int[order.length];
-		for(int i = 0; i < order.length; ++i){
-			//System.out.println("Order["+i+"] = " + order[i]);
-			permOrder[order[i]] = i;
-			//System.out.println("permOrder["+order[i]+"] = " + i);
-		}
-
-
 		for(int i = 0; i < agents; ++i){
 			a = order[i];
 			//System.out.println(a);
@@ -89,9 +81,7 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
 						break;
 					}
 				}
-
 			}
-
 		}
 		return impressionsBySlot;
 	}
