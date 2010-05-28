@@ -1,5 +1,10 @@
 package models.usermodel;
 
+/**
+ * @author jberg
+ *
+ */
+
 import java.util.HashMap;
 import java.util.Random;
 
@@ -301,7 +306,134 @@ public class TransactedLeastSquares {
 		System.out.println("V': " + newArr);
 		System.out.println("Answers: " + new ArrayRealVector(answers) + "\n");
 	}
-	
+
+	public void computeTransactedProbs2(HashMap<UserState,Integer> state1, HashMap<UserState,Integer> state2) {
+		/*
+		 * Setting up the system of equations
+		 * 
+		 * Ax = b
+		 */
+		
+		double[][] A = new double[6][3];
+
+		A[0][0] = state1.get(UserState.F0);
+		A[0][1] = state1.get(UserState.F1);
+		A[0][2] = state1.get(UserState.F2);
+
+		A[1][0] = -.7 * state1.get(UserState.F0);
+
+		A[2][0] = -.2 * state1.get(UserState.F0);
+		A[2][1] = -.7 * state1.get(UserState.F1);
+
+		A[3][1] = -.2*state1.get(UserState.F1);
+		A[3][2] = -.9*state1.get(UserState.F2);
+		
+		A[4][0] = -2 * state1.get(UserState.F0);
+		A[4][1] = 1 * state1.get(UserState.F0);
+
+		A[5][1] = -1.5 * state1.get(UserState.F0);
+		A[5][2] = 1 * state1.get(UserState.F0);
+
+		Array2DRowRealMatrix matrix = new Array2DRowRealMatrix(A);
+
+		double[] b = new double[6];
+		b[0] = state2.get(UserState.T) - _standardProbs.get(UserState.T).get(UserState.T) * state1.get(UserState.T);
+		b[1] = state2.get(UserState.F0) - _standardProbs.get(UserState.IS).get(UserState.F0) * state1.get(UserState.IS)  -.7 * state1.get(UserState.F0);
+		b[2] = state2.get(UserState.F1) - _standardProbs.get(UserState.IS).get(UserState.F1) * state1.get(UserState.IS) -.2 * state1.get(UserState.F0) -.7 * state1.get(UserState.F1);
+		b[3] = state2.get(UserState.F2) - _standardProbs.get(UserState.IS).get(UserState.F2) * state1.get(UserState.IS) -.2*state1.get(UserState.F1) -.9*state1.get(UserState.F2);
+		b[4] = 0;
+		b[5] = 0;
+		QRDecomposition solver = new QRDecompositionImpl(matrix);
+		double[] answers = solver.getSolver().solve(b);
+
+		/*
+		 * Extracting the transition model from the
+		 * system solution
+		 */
+		double[][] transMat = new double[6][6];
+
+		transMat[0][0] = _standardProbs.get(UserState.NS).get(UserState.NS);
+		transMat[0][1] = _standardProbs.get(UserState.IS).get(UserState.NS);
+		transMat[0][2] = _standardProbs.get(UserState.F0).get(UserState.NS) * (1- answers[0]);
+		transMat[0][3] = _standardProbs.get(UserState.F1).get(UserState.NS) * (1- answers[1]);
+		transMat[0][4] = _standardProbs.get(UserState.F2).get(UserState.NS) * (1- answers[2]);
+		transMat[0][5] = _standardProbs.get(UserState.T).get(UserState.NS);
+
+		transMat[1][0] = _standardProbs.get(UserState.NS).get(UserState.IS);
+		transMat[1][1] = _standardProbs.get(UserState.IS).get(UserState.IS);
+		transMat[1][2] = _standardProbs.get(UserState.F0).get(UserState.IS);
+		transMat[1][3] = _standardProbs.get(UserState.F1).get(UserState.IS);
+		transMat[1][4] = _standardProbs.get(UserState.F2).get(UserState.IS);
+		transMat[1][5] = _standardProbs.get(UserState.T).get(UserState.IS);
+
+		transMat[2][0] = _standardProbs.get(UserState.NS).get(UserState.F0);
+		transMat[2][1] = _standardProbs.get(UserState.IS).get(UserState.F0);
+		transMat[2][2] = _standardProbs.get(UserState.F0).get(UserState.F0) * (1- answers[0]);
+		transMat[2][3] = _standardProbs.get(UserState.F1).get(UserState.F0);
+		transMat[2][4] = _standardProbs.get(UserState.F2).get(UserState.F0);
+		transMat[2][5] = _standardProbs.get(UserState.T).get(UserState.F0);
+
+		transMat[3][0] = _standardProbs.get(UserState.NS).get(UserState.F1);
+		transMat[3][1] = _standardProbs.get(UserState.IS).get(UserState.F1);
+		transMat[3][2] = _standardProbs.get(UserState.F0).get(UserState.F1) * (1- answers[0]);
+		transMat[3][3] = _standardProbs.get(UserState.F1).get(UserState.F1) * (1- answers[1]);
+		transMat[3][4] = _standardProbs.get(UserState.F2).get(UserState.F1);
+		transMat[3][5] = _standardProbs.get(UserState.T).get(UserState.F1);
+
+		transMat[4][0] = _standardProbs.get(UserState.NS).get(UserState.F2);
+		transMat[4][1] = _standardProbs.get(UserState.IS).get(UserState.F2);
+		transMat[4][2] = _standardProbs.get(UserState.F0).get(UserState.F2);
+		transMat[4][3] = _standardProbs.get(UserState.F1).get(UserState.F2) * (1- answers[1]);
+		transMat[4][4] = _standardProbs.get(UserState.F2).get(UserState.F2) * (1- answers[2]);
+		transMat[4][5] = _standardProbs.get(UserState.T).get(UserState.F2);
+
+		transMat[5][0] = _standardProbs.get(UserState.NS).get(UserState.T);
+		transMat[5][1] = _standardProbs.get(UserState.IS).get(UserState.T);
+		transMat[5][2] = answers[0];
+		transMat[5][3] = answers[1];
+		transMat[5][4] = answers[2];
+		transMat[5][5] = _standardProbs.get(UserState.T).get(UserState.T);
+
+		Array2DRowRealMatrix T = new Array2DRowRealMatrix(transMat);
+
+		/*
+		 * Check the answer
+		 */
+
+		double[] oldVec = new double[UserState.values().length];
+		double[] newVec = new double[UserState.values().length];
+
+		oldVec[0] = state1.get(UserState.NS);
+		oldVec[1] = state1.get(UserState.IS);
+		oldVec[2] = state1.get(UserState.F0);
+		oldVec[3] = state1.get(UserState.F1);
+		oldVec[4] = state1.get(UserState.F2);
+		oldVec[5] = state1.get(UserState.T);
+
+		newVec[0] = state2.get(UserState.NS);
+		newVec[1] = state2.get(UserState.IS);
+		newVec[2] = state2.get(UserState.F0);
+		newVec[3] = state2.get(UserState.F1);
+		newVec[4] = state2.get(UserState.F2);
+		newVec[5] = state2.get(UserState.T);
+
+		Array2DRowRealMatrix oldArr = new Array2DRowRealMatrix(oldVec);
+		Array2DRowRealMatrix newArr = new Array2DRowRealMatrix(newVec);
+		Array2DRowRealMatrix estVar = T.multiply(oldArr);
+		
+		double[][] data = estVar.getData();
+		double total = 0.0;
+		for(int i = 0; i < data.length; i++) {
+			total += data[i][0];
+		}
+		
+		System.out.println("T: " + T);
+		System.out.println("V: " + oldArr);
+		System.out.println("TV: " + estVar + ", tot: " + total);
+		System.out.println("V': " + newArr);
+		System.out.println("Answers: " + new ArrayRealVector(answers) + "\n");
+	}
+
 	
 	public static void main(String[] args) {
 		TransactedLeastSquares tls = new TransactedLeastSquares();
@@ -411,6 +543,6 @@ public class TransactedLeastSquares {
 		System.out.println(oldDist);
 		System.out.println(newDist);
 		
-		tls.computeTransactedProbs(oldDist,newDist);
+		tls.computeTransactedProbs2(oldDist,newDist);
 	}
 }

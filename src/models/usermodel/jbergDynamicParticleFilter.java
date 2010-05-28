@@ -24,7 +24,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 
 
-public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
+public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel {
 
 	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
 	private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
@@ -38,10 +38,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 	private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
 	private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
 	private HashMap<Product,HashMap<UserState,Double>> _predictions, _currentEstimate;
+	public HashMap<Product,TransactedProbUpdater> _tpu;
 	
 	private static final boolean _rules2009 = true;
 
-	public jbergParticleFilter(double convPr1, double convPrVar1,
+	public jbergDynamicParticleFilter(double convPr1, double convPrVar1,
 			double convPr2, double convPrVar2,
 			double convPr3, double convPrVar3) {
 		_baseConvPr1 = convPr1;
@@ -58,6 +59,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_R = new Random(_seed);
 		_particles = new HashMap<Product,Particle[]>();
 		_conversionProbs = new HashMap<UserState,Double>();
+		_tpu = new HashMap<Product,TransactedProbUpdater>();
 
 		_conversionProbs.put(UserState.NS, 0.0);
 		_conversionProbs.put(UserState.IS, 0.0);
@@ -188,6 +190,10 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_products.add(new Product("lioneer", "dvd"));
 		_products.add(new Product("lioneer", "tv"));
 		_products.add(new Product("lioneer", "audio"));
+		
+		for(Product product : _products) {
+			_tpu.put(product, new TransactedProbUpdater());
+		}
 
 		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
 //				initializeParticlesFromFile("/u/jberg/initUserParticles");
@@ -427,6 +433,16 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 	@Override
 	public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+		HashMap<Product,HashMap<UserState,Double>> currentEstimateCopy = new HashMap<Product,HashMap<UserState,Double>>();
+		
+		for (Product prod : _products) {
+			HashMap<UserState,Double> newMap = new HashMap<UserState,Double>();
+			for(UserState state : _currentEstimate.get(prod).keySet()) {
+				newMap.put(state,new Double(((double)_currentEstimate.get(prod).get(state))));
+			}
+			currentEstimateCopy.put(prod, newMap);
+		}
+		
 		for(Query q : totalImpressions.keySet()) {
 			Product prod = new Product(q.getManufacturer(), q.getComponent());
 			if(_products.contains(prod)) {
@@ -451,7 +467,17 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				_particles.put(prod, particles);
 			}
 		}
-
+		
+		/*
+		 * Update Transacted Prob Models
+		 */
+		for(Query q : totalImpressions.keySet()) {
+			Product prod = new Product(q.getManufacturer(), q.getComponent());
+			if(_products.contains(prod)) {
+				_tpu.get(prod).updateProbs(currentEstimateCopy.get(prod), _currentEstimate.get(prod));
+			}
+		}
+		
 		return true;
 	}
 
@@ -500,11 +526,13 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 			HashMap<UserState, HashMap<UserState, Double>> transProbs = burst ? _burstProbs : _standardProbs;
 			
+			double[] convProbs = _tpu.get(prod).getSampleProbs();
+
 			HashMap<UserState, Double> conversionProbs = new HashMap<UserState,Double>();
 			conversionProbs.put(UserState.NS, 0.0);
-			conversionProbs.put(UserState.F0, _baseConvPr1*(1+_convPrVar1*_R.nextGaussian()));
-			conversionProbs.put(UserState.F1, _baseConvPr2*(1+_convPrVar2*_R.nextGaussian()));
-			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
+			conversionProbs.put(UserState.F0, convProbs[0]*(1+convProbs[1]*_R.nextGaussian()));
+			conversionProbs.put(UserState.F1, convProbs[2]*(1+convProbs[3]*_R.nextGaussian()));
+			conversionProbs.put(UserState.F2, convProbs[4]*(1+convProbs[5]*_R.nextGaussian()));
 			if(_rules2009) {
 				conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2))/3.0);
 			}
@@ -591,11 +619,13 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 			HashMap<UserState, HashMap<UserState, Double>> transProbs = burst ? _burstProbs : _standardProbs;
 
+			double[] convProbs = _tpu.get(prod).getSampleProbs();
+
 			HashMap<UserState, Double> conversionProbs = new HashMap<UserState,Double>();
 			conversionProbs.put(UserState.NS, 0.0);
-			conversionProbs.put(UserState.F0, _baseConvPr1*(1+_convPrVar1*_R.nextGaussian()));
-			conversionProbs.put(UserState.F1, _baseConvPr2*(1+_convPrVar2*_R.nextGaussian()));
-			conversionProbs.put(UserState.F2, _baseConvPr3*(1+_convPrVar3*_R.nextGaussian()));
+			conversionProbs.put(UserState.F0, convProbs[0]*(1+convProbs[1]*_R.nextGaussian()));
+			conversionProbs.put(UserState.F1, convProbs[2]*(1+convProbs[3]*_R.nextGaussian()));
+			conversionProbs.put(UserState.F2, convProbs[4]*(1+convProbs[5]*_R.nextGaussian()));
 			if(_rules2009) {
 				conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2))/3.0);
 			}
@@ -738,7 +768,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new jbergParticleFilter(_baseConvPr1,_convPrVar1,_baseConvPr2,_convPrVar2,_baseConvPr3,_convPrVar3);
+		return new jbergDynamicParticleFilter(_baseConvPr1,_convPrVar1,_baseConvPr2,_convPrVar2,_baseConvPr3,_convPrVar3);
 	}
 
 }
