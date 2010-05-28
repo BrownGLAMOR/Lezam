@@ -5,6 +5,8 @@ package agents;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Properties;
@@ -238,6 +240,14 @@ public abstract class AbstractAgent extends Agent {
 	 */
 	private static final String CONFIG_FILENAME = "config/agentR.conf"; 
 	
+	protected ArrayList<String> _advertisers;
+	
+	protected HashMap<Query,Integer> _maxImps;
+	
+	public static final int MAX_F0_IMPS = 10969;
+	public static final int MAX_F1_IMPS = 1801;
+	public static final int MAX_F2_IMPS = 1423;
+	
 	/**
 	 * 
 	 */
@@ -257,6 +267,11 @@ public abstract class AbstractAgent extends Agent {
 			fis.close();
 		} catch (Exception e) {
 			_rServePort = 6311;  // Default port, in case the config file isn't there or isn't valid
+		}
+		
+		_advertisers = new ArrayList<String>();
+		for(int i = 1; i <= 8; i++) {
+			_advertisers.add("adv" + i);
 		}
 		
 //		System.out.println("Will attempt to connect to R on port " + _rServePort + " if R is needed.");
@@ -402,6 +417,21 @@ public abstract class AbstractAgent extends Agent {
             // The F2 query class
             _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
         }
+        
+		_maxImps = new HashMap<Query,Integer>();
+		for(Query q : _querySpace) {
+			int numImps;
+			if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+				numImps = MAX_F0_IMPS;
+			}
+			else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+				numImps = MAX_F1_IMPS;
+			}
+			else {
+				numImps = MAX_F2_IMPS;
+			}
+			_maxImps.put(q, numImps);
+		}
     }
 
     /**
