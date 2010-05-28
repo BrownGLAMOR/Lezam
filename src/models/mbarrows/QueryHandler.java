@@ -50,6 +50,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 	// Returns advertiser effect and continuation probability
 	public double[] getPredictions() {
+		
+		// avarage
 		double tempAdvertiserEffect = 0;
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
@@ -90,7 +92,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		for(DayHandler dh :_dayHandlers){
 			if(dh.getContinuationProbability()>0){
 				tempContinuationProb += dh.getContinuationProbability();
-				numberOfDayHandlers+=1;
+				numberOfDayHandlers+=1; // TODO: not average, throw out bad or something
 			}
 		}
 		
@@ -131,7 +133,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		if(impressionsPerSlot.get(0)>0){
 			inslot1 = true;
 		}
-		Ad ourAd = ads.get(ourAgent);
+		Ad ourAd = ads.get(ourAgent); // TODO: handle null ads instead of throwing them out
 		//If we were ever not in top slot, make day handler
 		if(notinslot1 && (ourAd != null)){
 			
@@ -213,7 +215,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		return adsAbovePerSlot;
 	}
 	
-	//Get Click Distribution
+	//Get Click Distribution TODO split up clicks intelligently
 	public HashMap<Product,Double> getClickDist(HashMap<Product, HashMap<UserState, Integer>> userStates, int clicks){
 		HashMap<Product, Double> toreturn = new HashMap<Product,Double>();
 		//numprefs should be 9

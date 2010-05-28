@@ -20,12 +20,10 @@ public class DayHandler extends ConstantsAndFunctions {
 	double otherAdvertiserConvProb;
 
 	double curProbClick;
-	double a, b, c, d, e;
-	// will solve ax^4+bx^3+cx^2+dx+e=0
 
 	double currentEstimate;
 	boolean[] saw;
-	double[] coeff;
+	double[] coeff; // will solve ax^4+bx^3+cx^2+dx+e=0
 
 	// inputs defined by constructor
 	Query q;
@@ -92,7 +90,7 @@ public class DayHandler extends ConstantsAndFunctions {
 				if (saw[ourSlot]) {
 					LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
 							.get(ourSlot);
-					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)];
+					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
 					double theoreticalClickProb = forwardClickProbability(
 							ourAdvertiserEffect, ftfp);
 					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
@@ -100,18 +98,16 @@ public class DayHandler extends ConstantsAndFunctions {
 							ourSlot)[1];
 					for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
 						Ad otherAd = advertisersAboveUs.get(prevSlot);
-						//System.out.println("Our slot: "+ourSlot);
-						//System.out.println("Other slot: "+prevSlot);
-						//System.out.println(advertisersAboveUs.size());
-						//System.out.println("Ad "+otherAd);
+						// System.out.println("Our slot: "+ourSlot);
+						// System.out.println("Other slot: "+prevSlot);
+						// System.out.println(advertisersAboveUs.size());
+						// System.out.println("Ad "+otherAd);
 						int ftOther = 0;
-						if(otherAd==null){
-							ftOther = 0;
-						}else{
+						if (otherAd != null) {
 							ftOther = getFTargetIndex(!otherAd.isGeneric(), p,
-								otherAd.getProduct());
+									otherAd.getProduct());
 						}
-						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
+						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
 						double otherAdvertiserClickProb = forwardClickProbability(
 								otherAdvertiserEffects, ftfpOther);
 						nonIS *= (1 - otherAdvertiserConvProb
@@ -121,7 +117,10 @@ public class DayHandler extends ConstantsAndFunctions {
 				}
 			}
 		}
-		currentEstimate = solve(coeff); // TODO: use solver
+
+		currentEstimate = solve(coeff);
+		// TODO: instead of solve, use these coefficients more appropriately
+		// (b-updating)
 	}
 
 	/*

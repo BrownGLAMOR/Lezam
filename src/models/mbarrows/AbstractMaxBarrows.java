@@ -20,53 +20,6 @@ public abstract class AbstractMaxBarrows extends AbstractModel {
 	/*
 	 * Assume you get passed this in the constructor
 	 */
-	int _numPromSlots;
-	
-	// Target Effect
-	final double _TE = 0.5;
-	
-	// Promoted Slot Bonus
-	final double _PSB =  0.5;
-	
-	// Component Specialty Bonus
-	final double _CSB = 0.6;
-	
-	// Advertiser effect  lower bound <> upper bound
-	final double[][] _advertiserEffectsBounds = { {0.2, 0.3},
-											      {0.3, 0.4},
-											      {0.4, 0.5}
-										  };
-	
-	// Average advertiser effect  
-	final double[] _advertiserEffectsBoundsAvg = {0.25,0.35,0.45};
-
-	
-	// Continuation Probability  lower bound <> upper bound
-	final double[][] _continuationProbBounds = { {0.2, 0.5},
-										         {0.3, 0.6},
-										         {0.4, 0.7}
-		  								 };
-	
-	final double[] _continuationProbBoundsAvg = {0.35,0.45,0.55};
-	
-	// Calculate the forward click probability as defined on page 14 of the spec.
-	public double forwardClickProbability(double advertiserEffect, double fTargetfPro)
-	{	
-		double temp = (advertiserEffect * fTargetfPro) / 
-			   ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
-		
-		return temp;
-	}
-	
-	// Calculate the inverse of the forward click probability
-	public double inverseClickProbability(double ProbClick, double fTargetfPro)
-	{
-		double temp = ProbClick / (ProbClick + fTargetfPro - ProbClick * fTargetfPro); 
-		
-		return temp;
-		
-	}
-
 	
 	/*
 	 * Return the advertiser effect and continuation probabilities in the array
