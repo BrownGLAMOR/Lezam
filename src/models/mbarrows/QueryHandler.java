@@ -61,8 +61,6 @@ public class QueryHandler extends ConstantsAndFunctions {
 						fTargetfPro[targeted][promoted]);
 			}
 		}
-		
-		// For now! TODO: later test results for this compared to weighted average
 		tempAdvertiserEffect /= 6;
 		
 		//Sum up denominators
@@ -90,15 +88,15 @@ public class QueryHandler extends ConstantsAndFunctions {
 		//
 		double numberOfDayHandlers = 0;
 		for(DayHandler dh :_dayHandlers){
-			if(dh.getContinuationProbability()>0){
+			if(dh.getContinuationProbability()>0){ // TODO: not average, throw out bad or something
 				tempContinuationProb += dh.getContinuationProbability();
-				numberOfDayHandlers+=1; // TODO: not average, throw out bad or something
+				numberOfDayHandlers+=1; 
 			}
 		}
 		
 		tempContinuationProb = tempContinuationProb/numberOfDayHandlers;
 		
-		// TODO
+		// TODO - delete 2 for weighted
 		double[] tempArr = { tempAdvertiserEffect2, tempContinuationProb };
 		return tempArr;
 	}
@@ -335,23 +333,6 @@ public class QueryHandler extends ConstantsAndFunctions {
 	}
 
 
-//	@Override
-//	public double[] getPrediction(Query q) {
-//		// TODO Auto-generated method stub
-//		return null;
-//	}
-//
-//	@Override
-//	public boolean updateModel(
-//			QueryReport queryReport,
-//			SalesReport salesReport,
-//			HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
-//			HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-//			HashMap<String, HashMap<Query, Ad>> ads,
-//			HashMap<Product, HashMap<UserState, Integer>> userStates) {
-//		// TODO Auto-generated method stub
-//		return false;
-//	}
 
 
 

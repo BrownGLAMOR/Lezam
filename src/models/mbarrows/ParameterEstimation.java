@@ -51,11 +51,6 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 
 	@Override
 	public double[] getPrediction(Query q) {
-//		Double[] toconvert = m_advertiserEffects.get(q);
-//		double[] toreturn = new double[toconvert.length];
-//		for (int index = 0; index < toconvert.length; index++){
-//			toreturn[index]=toconvert[index];
-//		}
 		return m_queryHandlers.get(q).getPredictions();
 	}
 	
@@ -77,13 +72,12 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 			}
 			m_queryHandlers.get(q).update(ourAgent,queryReport,salesReport,numberPromotedSlots,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
 		}
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		// TODO Auto-generated method stub
+		// TODO?
 		return null;
 	}
 }

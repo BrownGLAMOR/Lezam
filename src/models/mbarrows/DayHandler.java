@@ -123,32 +123,8 @@ public class DayHandler extends ConstantsAndFunctions {
 		// (b-updating)
 	}
 
-	/*
-	 * public double getContinuationProbability(double ourAdvertiserEffect) {
-	 * updateEstimate(ourAdvertiserEffect); return getContinuationProbability();
-	 * }
-	 */
-
 	public double getContinuationProbability() {
 		return currentEstimate;
 	}
-
-	// @Override
-	// public double[] getPrediction(Query q) {
-	// // TODO Auto-generated method stub
-	// return null;
-	// }
-	//
-	// @Override
-	// public boolean updateModel(
-	// QueryReport queryReport,
-	// SalesReport salesReport,
-	// HashMap<Query, LinkedList<Integer>> impressionsPerSlot,
-	// HashMap<Query, LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-	// HashMap<String, HashMap<Query, Ad>> ads,
-	// HashMap<Product, HashMap<UserState, Integer>> userStates) {
-	// // TODO Auto-generated method stub
-	// return false;
-	// }
 
 }
