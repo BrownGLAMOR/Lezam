@@ -69,10 +69,23 @@ public class SimMisc {
 			throw new RuntimeException("KL Divergence requires arrays of equal length");
 		}
 
+		double total1 = 0.0;
+		double total2 = 0.0;
+		for(int i = 0; i < P.length; i++) {
+			total1 += P[i];
+			total2 += Q[i];
+		}
+		for(int i = 0; i < P.length; i++) {
+			P[i] /= total1;
+			Q[i] /= total2;
+		}
+		
 		double divergence = 0.0;
 
 		for(int i = 0; i < P.length; i++) {
-			divergence += P[i] * (Math.log(P[i])-Math.log(Q[i]));
+			if(P[i] > 0 && Q[i] > 0) {
+				divergence += P[i] * (Math.log(P[i])-Math.log(Q[i]));
+			}
 		}
 
 		return divergence;
