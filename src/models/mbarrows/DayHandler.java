@@ -17,7 +17,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 public class DayHandler extends ConstantsAndFunctions {
 
 	double otherAdvertiserEffects;
-	double otherAdvertiserConvProb;
+	// double otherAdvertiserConvProb;
 
 	double curProbClick;
 
@@ -61,13 +61,13 @@ public class DayHandler extends ConstantsAndFunctions {
 		target = target_;
 
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-			otherAdvertiserConvProb = .07;
+			// otherAdvertiserConvProb = .07;
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
 		} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-			otherAdvertiserConvProb = .15;
+			// otherAdvertiserConvProb = .15;
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[1];
 		} else {
-			otherAdvertiserConvProb = .23;
+			// otherAdvertiserConvProb = .23;
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[2];
 		}
 
@@ -77,6 +77,21 @@ public class DayHandler extends ConstantsAndFunctions {
 			saw[i] = (impressionsPerSlot.get(i) > 0);
 		}
 		updateEstimate(ourAdvertiserEffect);
+	}
+
+	// TODO: add in whatever else is required, such as this advertiser's
+	// component specialty. note: the 'eta' equation is called 'etoClickPr' and
+	// is in ConstantsAndFunctions. will probably want to take in the ad type
+	// and use the eta equation, with some assumption of how much they've
+	// oversold
+	private double otherAdvertiserConvProb() {
+		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+			return .07;
+		} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+			return .15;
+		} else {
+			return .23;
+		}
 	}
 
 	public void updateEstimate(double ourAdvertiserEffect) {
@@ -90,7 +105,17 @@ public class DayHandler extends ConstantsAndFunctions {
 				if (saw[ourSlot]) {
 					LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
 							.get(ourSlot);
-					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
+					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)]; // TODO
+					// this
+					// should
+					// technically
+					// check
+					// if
+					// bid
+					// is
+					// above
+					// promoted
+					// reserve
 					double theoreticalClickProb = etoClickPr(
 							ourAdvertiserEffect, ftfp);
 					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
@@ -107,10 +132,20 @@ public class DayHandler extends ConstantsAndFunctions {
 							ftOther = getFTargetIndex(!otherAd.isGeneric(), p,
 									otherAd.getProduct());
 						}
-						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
+						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)]; // TODO
+						// this
+						// should
+						// technically
+						// check
+						// if
+						// bid
+						// is
+						// above
+						// promoted
+						// reserve
 						double otherAdvertiserClickProb = etoClickPr(
 								otherAdvertiserEffects, ftfpOther);
-						nonIS *= (1 - otherAdvertiserConvProb
+						nonIS *= (1 - otherAdvertiserConvProb()
 								* otherAdvertiserClickProb);
 					}
 					coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));

@@ -86,8 +86,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 		double numberOfDayHandlers = 0;
 		for (DayHandler dh : _dayHandlers) {
 			if (dh.getContinuationProbability() > 0) { // TODO: not average,
-														// throw out bad or
-														// something
+				// throw out bad or
+				// something
 				// note: only takes >0 because Solve returns -1 if imaginary or
 				// negative
 				tempContinuationProb += dh.getContinuationProbability();
@@ -118,7 +118,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 		// Were we ever not in a top slot
 		boolean notinslot1 = false;
-		/*// This is how David did it. Below makes more sense to me - mbarrows
+		/*
+		 * // This is how David did it. Below makes more sense to me - mbarrows
 		 * for(LinkedList<String> advertisersabove : advertisersAbovePerSlot){
 		 * if(advertisersabove.size()>0){ notinslot1 = true; break; } }
 		 */
@@ -133,15 +134,14 @@ public class QueryHandler extends ConstantsAndFunctions {
 		if (impressionsPerSlot.get(0) > 0) {
 			inslot1 = true;
 		}
-		Ad ourAd = ads.get(ourAgent); // TODO: handle null ads instead of
-										// throwing them out
+		Ad ourAd = ads.get(ourAgent);
 		boolean ourAdTargeted = true;
 		if (ourAd == null || ourAd.isGeneric()) {
 			ourAdTargeted = false;
 		}
-		Product prod = null;
-		if (ourAdTargeted){
-			prod = ourAd.getProduct();
+		Product ourAdProduct = null;
+		if (ourAdTargeted) {
+			ourAdProduct = ourAd.getProduct();
 		}
 		// If we were ever not in top slot, make day handler
 		if (notinslot1) {
@@ -158,18 +158,18 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 			DayHandler latestday = new DayHandler(_query, totalClicks,
 					numberPromotedSlots, impressionsPerSlot, advertiserEffect,
-					adsAbovePerSlot, statesSearchingUsers,
-					(ourAdTargeted), prod);
+					adsAbovePerSlot, statesSearchingUsers, (ourAdTargeted),
+					ourAdProduct);
 
 			_dayHandlers.add(latestday);
 
 			// Calculate new value of continuation probability
 			// Calculate new average
 
-		} else if (inslot1 && (ourAd != null)) {
+		} else if (inslot1) {
 			// Update advertiser effect
 			HashMap<Product, Double> clickdist = getClickDist(userStates,
-					queryReport.getClicks(_query));
+					queryReport.getClicks(_query), ourAdTargeted, ourAdProduct);
 			HashMap<Product, Double> imprdist = getImpressionDist(userStates,
 					queryReport.getImpressions(_query));
 
@@ -181,12 +181,11 @@ public class QueryHandler extends ConstantsAndFunctions {
 			// promoted = 1;
 			// }
 
-			double clicksum = 0;
-			double impressionsum = 0;
+			// double clicksum = 0;
+			// double impressionsum = 0;
 
 			for (Product p : userStates.keySet()) {
-				int targeted = getFTargetIndex((!ourAd.isGeneric()), p, ourAd
-						.getProduct());
+				int targeted = getFTargetIndex(ourAdTargeted, p, ourAdProduct);
 
 				targetedPromoted[targeted][promoted][0] += clickdist.get(p);
 				targetedPromoted[targeted][promoted][1] += imprdist.get(p);
@@ -207,6 +206,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 			// _dayHandlers.add(null);
 		} else {
+			// do nothing if we saw no impressions
 			// _dayHandlers.add(null);
 		}
 
@@ -225,23 +225,27 @@ public class QueryHandler extends ConstantsAndFunctions {
 			for (String advertiser : thoseAbove) {
 				// add their add to the list
 				adsAbove.add(ads.get(advertiser));
-				if (ads.get(advertiser) == null) {
-					System.out.println(advertiser);
-				}
+				/*
+				 * if (ads.get(advertiser) == null) {
+				 * System.out.println(advertiser); }
+				 */
 			}
 			adsAbovePerSlot.add(adsAbove);
 		}
 		return adsAbovePerSlot;
 	}
 
-	// Get Click Distribution TODO split up clicks intelligently
+	// Get Click Distribution
 	public HashMap<Product, Double> getClickDist(
-			HashMap<Product, HashMap<UserState, Integer>> userStates, int clicks) {
+			HashMap<Product, HashMap<UserState, Integer>> userStates,
+			int clicks, boolean ourAdTargeted, Product ourAdProduct) {
 		HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
 		// numprefs should be 9
 		double numprefs = userStates.keySet().size();
 		// for each product
 		int total = 0;
+		int totalMatching = 0;
+		int totalNotMatching = 0;
 		HashMap<Product, Double> userDist = new HashMap<Product, Double>();
 		for (Product p : userStates.keySet()) {
 			HashMap<UserState, Integer> states = userStates.get(p);
@@ -267,7 +271,18 @@ public class QueryHandler extends ConstantsAndFunctions {
 			}
 			total += searching;
 			userDist.put(p, searching);
+			if (ourAdTargeted) {
+				if (p.equals(ourAdProduct)) {
+					totalMatching += searching;
+				} else {
+					totalNotMatching += searching;
+				}
+			}
 		}
+		// TODO split up clicks intelligently if it's targeted, else do for loop
+		// note: use totalMatching and totalNotMatching to determine how to
+		// weight the clicks. I tried to do this on paper, but the eta equation
+		// screws it up and makes it not easy. good luck?
 		for (Product p : userStates.keySet()) {
 			toreturn.put(p, 1.0 * userDist.get(p) * ((double) clicks)
 					/ ((double) total));

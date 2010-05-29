@@ -67,10 +67,10 @@ public abstract class ConstantsAndFunctions {
 
 	// returns the corresponding index for the targeting part of fTargetfPro
 	int getFTargetIndex(boolean targeted, Product p, Product target) {
-		if (targeted) {
-			return (2 - bool2int(p.equals(target)));
+		if (!targeted || p == null || target == null) {
+			return 0;
 		}
-		return 0;
+		return (2 - bool2int(p.equals(target)));
 	}
 
 	// Turns a query type into 0/1/2
