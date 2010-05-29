@@ -12,9 +12,8 @@ import java.util.List;
 import java.util.Set;
 
 import models.mbarrows.AbstractMaxBarrows;
-import models.mbarrows.MBarrowsImpl;
 import models.mbarrows.ParameterEstimation;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState; // TODO: fix?
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import simulator.predictions.BidPredModelTest.BidPair;
