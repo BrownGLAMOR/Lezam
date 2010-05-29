@@ -29,10 +29,10 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F2_IMPS = 1423;
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		int min = 1443;
-		int max = 1444;
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		int min = 1440;
+		int max = 1441;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -318,10 +318,10 @@ public class QueryAnalyzerTest {
 
 		double start = System.currentTimeMillis();
 
-		//		int numIters = Integer.parseInt(args[0]);
-		int numIters = 1;
-		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
-		//		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
+		int numIters = Integer.parseInt(args[0]);
+		//		int numIters = 1;
+		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
+		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
 
 
 		double stop = System.currentTimeMillis();
