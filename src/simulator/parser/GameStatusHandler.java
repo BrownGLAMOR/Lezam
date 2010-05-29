@@ -13,10 +13,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
 
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
@@ -398,11 +400,76 @@ public class GameStatusHandler {
 		return output;
 	}
 
+	public static HashMap<Query,String> generateRDataSetOnlyBids(int min, int max, String adv) throws IOException, ParseException {
+		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		int min = 1425;
+		//		int max = 1426;
+		//		String adv = "AstonTAC";
+		//		String adv = "MetroClick";
+		//		String adv = "Schlemazl";
+		//		String adv = "epflagent";
+		//		String adv = "QuakTAC";
+		//		String adv = "UMTac09";
+		//		String adv = "munsey";
+		//		String adv = "TacTex";
+
+		HashMap<Query,String> outputs = new HashMap<Query,String>();
+
+		Set<Query> querySpace = new LinkedHashSet<Query>();
+		querySpace.add(new Query(null, null));
+		querySpace.add(new Query("lioneer", null));
+		querySpace.add(new Query(null, "tv"));
+		querySpace.add(new Query("lioneer", "tv"));
+		querySpace.add(new Query(null, "audio"));
+		querySpace.add(new Query("lioneer", "audio"));
+		querySpace.add(new Query(null, "dvd"));
+		querySpace.add(new Query("lioneer", "dvd"));
+		querySpace.add(new Query("pg", null));
+		querySpace.add(new Query("pg", "tv"));
+		querySpace.add(new Query("pg", "audio"));
+		querySpace.add(new Query("pg", "dvd"));
+		querySpace.add(new Query("flat", null));
+		querySpace.add(new Query("flat", "tv"));
+		querySpace.add(new Query("flat", "audio"));
+		querySpace.add(new Query("flat", "dvd"));
+
+		for(Query query : querySpace) {
+			outputs.put(query,"bid\n");
+		}
+
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
+			HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
+			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
+			for(int j = 0; j < 59; j++) {
+				Iterator<Query> iter = bidBundles.get(adv).get(j).iterator();
+				while(iter.hasNext()) {
+					Query query = (Query) iter.next();
+					BidBundle bundle = bidBundles.get(adv).get(j);
+					String output = outputs.get(query);
+					output += bundle.getBid(query) + "\n";
+					outputs.put(query,output);
+				}
+			}
+		}
+
+		for(Query query : querySpace) {
+			String output = outputs.get(query);
+			outputs.put(query,output.substring(0, output.length()-1));
+		}
+
+		return outputs;
+	}
+
 	public static String generateRDataSet() throws IOException, ParseException {
 		String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		String output = "";
 		int min = 1425;
 		int max = 1426;
+		String adv = "Schlemazl";
 		for(int i = min; i < max; i++) {
 			String file = filename + i + ".slg";
 			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
@@ -412,10 +479,9 @@ public class GameStatusHandler {
 			HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
 			output += "bid pos cpc prclick prconv query \n";
 			for(int j = 0; j < 59; j++) {
-				Iterator<Query> iter = bidBundles.get("Schlemazl").get(j).iterator();
+				Iterator<Query> iter = bidBundles.get(adv).get(j).iterator();
 				while(iter.hasNext()) {
 					Query query = (Query) iter.next();
-					String adv = "Schlemazl";
 					BidBundle bundle = bidBundles.get(adv).get(j);
 					QueryReport qreport = queryReports.get(adv).get(j);
 					SalesReport sreport = salesReports.get(adv).get(j);
@@ -774,7 +840,42 @@ public class GameStatusHandler {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-		generateCarletonDataSet2();
+		int min = 1442;
+		int max = 1443;
+				String adv = "AstonTAC";
+//				String adv = "MetroClick";
+//				String adv = "Schlemazl";
+//				String adv = "epflagent";
+//				String adv = "QuakTAC";
+//				String adv = "UMTac09";
+//				String adv = "munsey";
+//		String adv = "TacTex";
+		HashMap<Query, String> outputs = generateRDataSetOnlyBids(min,max,adv);
+		for(Query query : outputs.keySet()) {
+			FileOutputStream fout;		
+
+			try
+			{
+				// Open an output stream
+				fout = new FileOutputStream ("Rdata" + min + adv + query.getComponent() + query.getManufacturer() + ".data");
+
+				// Print a line of text
+				new PrintStream(fout).println(outputs.get(query));
+
+				// Close our output stream
+				fout.close();		
+			}
+			// Catches any error conditions
+			catch (IOException e)
+			{
+				System.err.println ("Unable to write to file");
+				System.exit(-1);
+			}
+		}
+
+		//		generateCarletonDataSet2();
+
+
 		//		// Stream to write file
 		//		FileOutputStream fout;		
 		//

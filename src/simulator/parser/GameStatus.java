@@ -3,7 +3,7 @@
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.BidBundle;

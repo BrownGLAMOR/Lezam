@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
 import simulator.Reports;
+import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BankStatus;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
@@ -16,11 +17,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class TACStatGenerator {
 
-	/*
-	 * Returns the means and std deviation
-	 * index 0 is the mean
-	 * index 1 is the std deviation
-	 */
 	public static double[] stdDeviation(Double[] revenueErrorArr) {
 		double[] meanAndStdDev = new double[2];
 		meanAndStdDev[0] = 0.0;
@@ -35,6 +31,23 @@ public class TACStatGenerator {
 		meanAndStdDev[1] /= revenueErrorArr.length;
 		meanAndStdDev[1] = Math.sqrt(meanAndStdDev[1]);
 		return meanAndStdDev;
+	}
+	
+	public static double[] meanAndVar(ArrayList<Double> revenue) {
+		double[] meanAndVar = new double[2];
+		meanAndVar[0] = 0.0;
+		meanAndVar[1] = 0.0;
+		for(int i = 0; i < revenue.size(); i++) {
+			meanAndVar[0] += revenue.get(i);
+		}
+		meanAndVar[0] /= revenue.size();
+		
+		for(int i = 0; i < revenue.size(); i++) {
+			meanAndVar[1] +=  (revenue.get(i) - meanAndVar[0])*(revenue.get(i) - meanAndVar[0]);
+		}
+		meanAndVar[1] /= revenue.size();
+		meanAndVar[1] = Math.sqrt(meanAndVar[1]);
+		return meanAndVar;
 	}
 	
 	public static void generateExtendedStats(String filename, int min, int max, int advId) throws IOException, ParseException {
@@ -116,6 +129,7 @@ public class TACStatGenerator {
 		double totDays = 0;
 		double totOverCap = 0;
 		double percOverCap = 0;
+		double percOverCapStdDev = 0;
 		System.out.println("Generating Reports");
 		String profits = "";
 		for(String file : reportsListMegaMap.keySet()) {
@@ -162,6 +176,9 @@ public class TACStatGenerator {
 				i++;
 			}
 			profits += profitTot + ", ";
+			
+			System.out.println(capacity);
+			Double[] percOverCapArr = new Double[sales.length];
 			for(int j = 0; j < sales.length; j++) {
 				double convs = 0;
 				for(int idx = j-4; idx < j; idx++) {
@@ -175,7 +192,11 @@ public class TACStatGenerator {
 				convs += sales[j];
 				totOverCap += convs-capacity;
 				percOverCap += convs/capacity;
+				percOverCapArr[j] = convs/capacity;
+				System.out.println(percOverCapArr[j] + ", " + sales[j]/(capacity/5.0));
 			}
+			
+			percOverCapStdDev += stdDeviation(percOverCapArr)[1];
 			
 			if(capacity == 300) {
 				lowVals.add(profitTot);
@@ -223,12 +244,16 @@ public class TACStatGenerator {
 		output += (totalPerfConv/totalConv) + ",";
 		output += (totOverCap/(totDays)) + ",";
 		output += (percOverCap/(totDays)) + ",";
+		output += (percOverCapStdDev/reportsListMegaMap.size()) + ", ";
 		System.out.println(header + "\n" + output);
 	}
 	
 	public static void generateAllAgentProfit(String filename, int min, int max) throws IOException, ParseException {
 		boolean firstSim = true;
-		HashMap<String,Double> results = new HashMap<String, Double>();
+		HashMap<String,ArrayList<Double>> results = new HashMap<String, ArrayList<Double>>();
+		HashMap<String,ArrayList<Double>> resultsLow = new HashMap<String, ArrayList<Double>>();
+		HashMap<String,ArrayList<Double>> resultsMed = new HashMap<String, ArrayList<Double>>();
+		HashMap<String,ArrayList<Double>> resultsHigh = new HashMap<String, ArrayList<Double>>();
 		for(int i = min; i < max; i++) {
 			String file = filename + i + ".slg";
 			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
@@ -236,25 +261,49 @@ public class TACStatGenerator {
 			String[] advertisers = gameStatus.getAdvertisers();
 			if(firstSim) {
 				for(int j = 0; j < advertisers.length; j++) {
-					results.put(advertisers[j], 0.0);
+					results.put(advertisers[j], new ArrayList<Double>());
+					resultsLow.put(advertisers[j], new ArrayList<Double>());
+					resultsMed.put(advertisers[j], new ArrayList<Double>());
+					resultsHigh.put(advertisers[j], new ArrayList<Double>());
 				}
 				firstSim = false;
 			}
 			HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
+			HashMap<String, AdvertiserInfo> advInfos = gameStatus.getAdvertiserInfos();
 			for(int j = 0; j < advertisers.length; j++)	{
 				LinkedList<BankStatus> bankStatus = bankStatuses.get(advertisers[j]);
+				AdvertiserInfo advInfo = advInfos.get(advertisers[j]);
 				BankStatus status = bankStatus.get(bankStatus.size()-1);
-				results.put(advertisers[j], results.get(advertisers[j]) + status.getAccountBalance());
+				
+				results.get(advertisers[j]).add(status.getAccountBalance());
+
+				int capacity = advInfo.getDistributionCapacity();
+				if(capacity == 300) {
+					resultsLow.get(advertisers[j]).add(status.getAccountBalance());
+				}
+				else if(capacity == 400) {
+					resultsMed.get(advertisers[j]).add(status.getAccountBalance());
+				}
+				else {
+					resultsHigh.get(advertisers[j]).add(status.getAccountBalance());
+				}
 			}
 		}
+		
+		System.out.println("Agent,All Mean,All StdDev,Low Mean,Low StdDev,Med Mean,Med StdDev,High Mean, High StdDev");
 		for(String name : results.keySet()) {
-			results.put(name, results.get(name) / (1.0 * (max-min)));
-		}
-		for(String name : results.keySet()) {
-			System.out.println(name + "    " + results.get(name));
+			double[] meanAndVar = meanAndVar(results.get(name));
+			double[] meanAndVarLow = meanAndVar(resultsLow.get(name));
+			double[] meanAndVarMed = meanAndVar(resultsMed.get(name));
+			double[] meanAndVarHigh = meanAndVar(resultsHigh.get(name));
+
+			System.out.println(name + ", " + meanAndVar[0] + ", " + meanAndVar[1] + ", " + 
+							   meanAndVarLow[0] + ", " + meanAndVarLow[1] + ", " + 
+							   meanAndVarMed[0] + ", " + meanAndVarMed[1] + ", " + 
+							   meanAndVarHigh[0] + ", " + meanAndVarHigh[1]);
 		}
 	}
-	
+
 	/**
 	 * @param args
 	 * @throws ParseException 
