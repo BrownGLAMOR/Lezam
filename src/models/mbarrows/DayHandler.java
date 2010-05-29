@@ -91,7 +91,7 @@ public class DayHandler extends ConstantsAndFunctions {
 					LinkedList<Ad> advertisersAboveUs = advertisersAdsAbovePerSlot
 							.get(ourSlot);
 					double ftfp = fTargetfPro[ft][bool2int(numberPromotedSlots >= ourSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
-					double theoreticalClickProb = forwardClickProbability(
+					double theoreticalClickProb = etoClickPr(
 							ourAdvertiserEffect, ftfp);
 					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
 					double nonIS = userStatesOfSearchingUsers.get(p).get(
@@ -108,7 +108,7 @@ public class DayHandler extends ConstantsAndFunctions {
 									otherAd.getProduct());
 						}
 						double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)]; // TODO this should technically check if bid is above promoted reserve
-						double otherAdvertiserClickProb = forwardClickProbability(
+						double otherAdvertiserClickProb = etoClickPr(
 								otherAdvertiserEffects, ftfpOther);
 						nonIS *= (1 - otherAdvertiserConvProb
 								* otherAdvertiserClickProb);
