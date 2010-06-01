@@ -34,6 +34,7 @@ public abstract class ConstantsAndFunctions {
 	final double[][] _continuationProbBounds = { { 0.2, 0.5 }, 
 												 { 0.3, 0.6 },
 												 { 0.4, 0.7 } };
+	
 	// Average continuation probability
 	final double[] _continuationProbBoundsAvg = {
 			(_continuationProbBounds[0][0] + _continuationProbBounds[0][1]) / 2,
@@ -49,7 +50,7 @@ public abstract class ConstantsAndFunctions {
 	// 1 - promoted
 	final double[][] fTargetfPro = { { (1.0), (1.0) * (1.0 + _PSB) },
 									 { (1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB) },
-									 { (1.0) / (1.0 + _TE), (1.0) / (1.0 + _TE) * (1.0 + _PSB) } };
+									 { (1.0) / (1.0 + _TE), ((1.0) / (1.0 + _TE)) * (1.0 + _PSB) } };
 
 	// Turns a boolean into binary
 	int bool2int(boolean bool) {
@@ -62,9 +63,14 @@ public abstract class ConstantsAndFunctions {
 	// returns the corresponding index for the targeting part of fTargetfPro
 	int getFTargetIndex(boolean targeted, Product p, Product target) {
 		if (!targeted || p == null || target == null) {
-			return 0;
+			return 0; //untargeted
 		}
-		return (2 - bool2int(p.equals(target)));
+		else if(p.equals(target)) {
+			return 1; //targeted correctly
+		}
+		else {
+			return 2; //targeted incorrectly
+		}
 	}
 
 	// Turns a query type into 0/1/2
@@ -90,18 +96,13 @@ public abstract class ConstantsAndFunctions {
 
 	// Calculate the forward click probability as defined on page 14 of the
 	// spec.
-	public double etoClickPr(double advertiserEffect,
-			double fTargetfPro) {
-		double probCLick = (advertiserEffect * fTargetfPro) / ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
-		return probCLick;
+	public double etoClickPr(double advertiserEffect, double fTargetfPro) {
+		return (advertiserEffect * fTargetfPro) / ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
 	}
 
 	// Calculate the inverse of the forward click probability
 	public double clickPrtoE(double probClick, double fTargetfPro) {
-		double e = probClick / (probClick + fTargetfPro - probClick * fTargetfPro);
-
-		return e;
-
+		return probClick / (probClick + fTargetfPro - probClick * fTargetfPro);
 	}
 
 	// This function to solves a quartic equation. It returns all the roots in
