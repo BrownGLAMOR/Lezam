@@ -26,10 +26,11 @@ public abstract class ConstantsAndFunctions {
 	// Promoted Slot Bonus
 	final double _PSB = 0.5;
 	// Component Specialty Bonus
-	final double _CSB = 0.6;
+	final double _CSB = 0.5;
 	// Advertiser effect lower bound <> upper bound
-	final double[][] _advertiserEffectBounds = { { 0.2, 0.3 }, { 0.3, 0.4 },
-			{ 0.4, 0.5 } };
+	final double[][] _advertiserEffectBounds = { { 0.2, 0.3 },
+												 { 0.3, 0.4 }, 
+												 { 0.4, 0.5 } };
 
 	// Average advertiser effect
 	final double[] _advertiserEffectBoundsAvg = {
@@ -38,8 +39,9 @@ public abstract class ConstantsAndFunctions {
 			(_advertiserEffectBounds[2][0] + _advertiserEffectBounds[2][1]) / 2 };
 
 	// Continuation Probability lower bound <> upper bound
-	final double[][] _continuationProbBounds = { { 0.2, 0.5 }, { 0.3, 0.6 },
-			{ 0.4, 0.7 } };
+	final double[][] _continuationProbBounds = { { 0.2, 0.5 }, 
+												 { 0.3, 0.6 },
+												 { 0.4, 0.7 } };
 	// Average continuation probability
 	final double[] _continuationProbBoundsAvg = {
 			(_continuationProbBounds[0][0] + _continuationProbBounds[0][1]) / 2,
@@ -54,8 +56,8 @@ public abstract class ConstantsAndFunctions {
 	// 0 - not promoted
 	// 1 - promoted
 	final double[][] fTargetfPro = { { (1.0), (1.0) * (1.0 + _PSB) },
-			{ (1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB) },
-			{ (1.0) / (1.0 + _TE), (1.0) / (1.0 + _TE) * (1.0 + _PSB) } };
+									 { (1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB) },
+									 { (1.0) / (1.0 + _TE), (1.0) / (1.0 + _TE) * (1.0 + _PSB) } };
 
 	// Turns a boolean into binary
 	int bool2int(boolean bool) {
@@ -98,16 +100,13 @@ public abstract class ConstantsAndFunctions {
 	// spec.
 	public double etoClickPr(double advertiserEffect,
 			double fTargetfPro) {
-		double ProbClick = (advertiserEffect * fTargetfPro)
-				/ ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
-
-		return ProbClick;
+		double probCLick = (advertiserEffect * fTargetfPro) / ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
+		return probCLick;
 	}
 
 	// Calculate the inverse of the forward click probability
-	public double clickPrtoE(double ProbClick, double fTargetfPro) {
-		double e = ProbClick
-				/ (ProbClick + fTargetfPro - ProbClick * fTargetfPro);
+	public double clickPrtoE(double probClick, double fTargetfPro) {
+		double e = probClick / (probClick + fTargetfPro - probClick * fTargetfPro);
 
 		return e;
 
@@ -119,8 +118,7 @@ public abstract class ConstantsAndFunctions {
 	// [1] This has been directly copied from
 	// agents.modelbased.mckputil.RootFinding
 	// [2] This function is overloaded
-	public static double[][] getQuarticRoots(double a, double b, double c,
-			double d, double e) {
+	public static double[][] getQuarticRoots(double a, double b, double c, double d, double e) {
 		double[][] roots = new double[4][2];
 		double A, B, C, D;
 		A = b / a;
@@ -210,7 +208,6 @@ public abstract class ConstantsAndFunctions {
 		}
 		// If no real root is found, return -1
 		return realRoot;
-
 	}
 
 	// This function to solves a cubic equation. It returns all the roots in an
@@ -219,8 +216,7 @@ public abstract class ConstantsAndFunctions {
 	// [1] This has been directly copied from
 	// agents.modelbased.mckputil.RootFinding
 	// [2] This function is overloaded
-	public static final double[][] getCubicRoots(double a, double b, double c,
-			double d) {
+	public static final double[][] getCubicRoots(double a, double b, double c, double d) {
 		double[][] roots = new double[3][2];
 		double A, B, C, Q, R, D;
 		A = b / a;
@@ -296,7 +292,6 @@ public abstract class ConstantsAndFunctions {
 		}
 		// If no real root is found, return -1
 		return realRoot;
-
 	}
 
 	// Method that will solve a cubic or quartic equation - as needed
