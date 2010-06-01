@@ -3,16 +3,10 @@ package models.mbarrows;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-import org.apache.commons.math.complex.Complex;
-
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 public class DayHandler extends ConstantsAndFunctions {
 

@@ -1,19 +1,11 @@
 package models.mbarrows;
 
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Random;
 
 import org.apache.commons.math.complex.Complex;
 
-import models.AbstractModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
-import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
 /**
  * @author jberg
@@ -337,98 +329,98 @@ public abstract class ConstantsAndFunctions {
 		return realRoot;
 	}
 
-	// Main to test the functionality of the cubic and quartic equation solvers
-	public static void main(String[] args) {
-		// Number of times we want to run the equation solvers
-		int numberOfTrials = 100;
-
-		// ***** DEBUG INFO FOR QUARTIC SOLVER*****
-		// // Loop to run the equation solver
-		// for(int i = 0; i < numberOfTrials; i++)
-		// {
-		// double[] quarticCoefficientsArray = getQuarticCoefficients();
-		//			
-		// // ***** DEBUG INFO *****
-		// // Statement to print out the coefficients
-		// /*for (int j = 0; j < 5; j++)
-		// {
-		// System.out.println("The coefficients are: "+quarticCoefficientsArray[j]);
-		// }*/
-		//			
-		// _quarticRoots = getQuarticRoots(quarticCoefficientsArray);
-		//			
-		// // ***** DEBUG INFO *****
-		// // Variable to index into the real and imaginary components
-		// //int m = 0;
-		//			
-		// // For each of the four possible real roots, print them out (if they
-		// // exist)
-		// /*for (int k = 0; k < 4; k++)
-		// {
-		// System.out.println("***** ROOT # "+(k+1)+"*****");
-		// System.out.println("The real component is: "+roots[k][m]);
-		// System.out.println("The imaginary component is: "+roots[k][m+1]);
-		// }*/
-		// // Get the only real root
-		// double realQuarticRoot = getRealQuarticRoot();
-		//			
-		// // If the realQuarticRoot is not -1, it must be real
-		// if (realQuarticRoot != -1.0)
-		// {
-		// System.out.println("***** REAL QUARTIC ROOT FOUND! *****");
-		// System.out.println("Real root is: "+realQuarticRoot);
-		// break;
-		// }
-		// }
-		//		
-
-		// ***** DEBUG INFO FOR CUBIC SOLVER*****
-		// Loop to run the equation solver
-		// for(int i = 0; i < numberOfTrials; i++)
-		// {
-		// double[] cubicCoefficientsArray = getCubicCoefficients();
-		//			
-		// // ***** DEBUG INFO *****
-		// // Statement to print out the coefficients
-		// /*for (int j = 0; j < 5; j++)
-		// {
-		// System.out.println("The coefficients are: "+cubicCoefficientsArray[j]);
-		// }*/
-		//			
-		// _cubicRoots = getCubicRoots(cubicCoefficientsArray);
-		//			
-		// // ***** DEBUG INFO *****
-		// // Variable to index into the real and imaginary components
-		// int n = 0;
-		//			
-		// // For each of the four possible real roots, print them out (if they
-		// // exist)
-		// for (int k = 0; k < 3; k++)
-		// {
-		// System.out.println("***** ROOT # "+(k+1)+"*****");
-		// System.out.println("The real component is: "+_cubicRoots[k][n]);
-		// System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);
-		// }
-		// // Get the only real root
-		// double realCubicRoot = getRealCubicRoot();
-		//			
-		// // If the realCubicRoot is not -1, it must be real
-		// if (realCubicRoot != -1)
-		// {
-		// System.out.println("***** REAL CUBIC ROOT FOUND! *****");
-		// System.out.println("Real root is: "+realCubicRoot);
-		// break;
-		// }
-		// }
-		//		
-		// ***** DEBUG INFO *****
-		// double[] testArray = {0.0, 1.2, 2.5, 6.5, 7.3};
-		double[] testArray = getQuarticCoefficients();
-		double test = solve(testArray);
-
-		// System.out.println("The real root is:"+test);
-
-	}
+//	// Main to test the functionality of the cubic and quartic equation solvers
+//	public static void main(String[] args) {
+//		// Number of times we want to run the equation solvers
+//		int numberOfTrials = 100;
+//
+//		// ***** DEBUG INFO FOR QUARTIC SOLVER*****
+//		// // Loop to run the equation solver
+//		// for(int i = 0; i < numberOfTrials; i++)
+//		// {
+//		// double[] quarticCoefficientsArray = getQuarticCoefficients();
+//		//			
+//		// // ***** DEBUG INFO *****
+//		// // Statement to print out the coefficients
+//		// /*for (int j = 0; j < 5; j++)
+//		// {
+//		// System.out.println("The coefficients are: "+quarticCoefficientsArray[j]);
+//		// }*/
+//		//			
+//		// _quarticRoots = getQuarticRoots(quarticCoefficientsArray);
+//		//			
+//		// // ***** DEBUG INFO *****
+//		// // Variable to index into the real and imaginary components
+//		// //int m = 0;
+//		//			
+//		// // For each of the four possible real roots, print them out (if they
+//		// // exist)
+//		// /*for (int k = 0; k < 4; k++)
+//		// {
+//		// System.out.println("***** ROOT # "+(k+1)+"*****");
+//		// System.out.println("The real component is: "+roots[k][m]);
+//		// System.out.println("The imaginary component is: "+roots[k][m+1]);
+//		// }*/
+//		// // Get the only real root
+//		// double realQuarticRoot = getRealQuarticRoot();
+//		//			
+//		// // If the realQuarticRoot is not -1, it must be real
+//		// if (realQuarticRoot != -1.0)
+//		// {
+//		// System.out.println("***** REAL QUARTIC ROOT FOUND! *****");
+//		// System.out.println("Real root is: "+realQuarticRoot);
+//		// break;
+//		// }
+//		// }
+//		//		
+//
+//		// ***** DEBUG INFO FOR CUBIC SOLVER*****
+//		// Loop to run the equation solver
+//		// for(int i = 0; i < numberOfTrials; i++)
+//		// {
+//		// double[] cubicCoefficientsArray = getCubicCoefficients();
+//		//			
+//		// // ***** DEBUG INFO *****
+//		// // Statement to print out the coefficients
+//		// /*for (int j = 0; j < 5; j++)
+//		// {
+//		// System.out.println("The coefficients are: "+cubicCoefficientsArray[j]);
+//		// }*/
+//		//			
+//		// _cubicRoots = getCubicRoots(cubicCoefficientsArray);
+//		//			
+//		// // ***** DEBUG INFO *****
+//		// // Variable to index into the real and imaginary components
+//		// int n = 0;
+//		//			
+//		// // For each of the four possible real roots, print them out (if they
+//		// // exist)
+//		// for (int k = 0; k < 3; k++)
+//		// {
+//		// System.out.println("***** ROOT # "+(k+1)+"*****");
+//		// System.out.println("The real component is: "+_cubicRoots[k][n]);
+//		// System.out.println("The imaginary component is: "+_cubicRoots[k][n+1]);
+//		// }
+//		// // Get the only real root
+//		// double realCubicRoot = getRealCubicRoot();
+//		//			
+//		// // If the realCubicRoot is not -1, it must be real
+//		// if (realCubicRoot != -1)
+//		// {
+//		// System.out.println("***** REAL CUBIC ROOT FOUND! *****");
+//		// System.out.println("Real root is: "+realCubicRoot);
+//		// break;
+//		// }
+//		// }
+//		//		
+//		// ***** DEBUG INFO *****
+//		// double[] testArray = {0.0, 1.2, 2.5, 6.5, 7.3};
+//		double[] testArray = getQuarticCoefficients();
+//		double test = solve(testArray);
+//
+//		// System.out.println("The real root is:"+test);
+//
+//	}
 
 	// /*
 	// * Return the advertiser effect and continuation probabilities in the
