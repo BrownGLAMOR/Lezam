@@ -11,6 +11,7 @@ import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 
 /**
@@ -34,21 +35,47 @@ public final class BidDistInit {
 			bidDist.add(curKey);
 			count++;
 		}
-		
+
 		int[] bidCountsF0 = new int[bidDist.size()];
 		int[] bidCountsF1 = new int[bidDist.size()];
 		int[] bidCountsF2 = new int[bidDist.size()];
 		int totalF0 = 0;
 		int totalF1 = 0;
 		int totalF2 = 0;
+		int maxF0 = 0;
+		int maxF1 = 0;
+		int maxF2 = 0;
 		for(int i = min; i < max; i++) {
 			String file = filename + i + ".slg";
 			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
 			GameStatus gameStatus = gameStatusHandler.getGameStatus();
 			String[] advertisers = gameStatus.getAdvertisers();
 			HashMap<String,LinkedList<BidBundle>> allBundles = gameStatus.getBidBundles();
+			HashMap<String,LinkedList<QueryReport>> allReports = gameStatus.getQueryReports();
 			for(int j = 0; j < advertisers.length; j++) {
 				LinkedList<BidBundle> bundles = allBundles.get(advertisers[j]);
+				LinkedList<QueryReport> reports = allReports.get(advertisers[j]);
+
+				for(QueryReport report : reports) {
+					for(Query q : report) {
+						if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+							if(report.getImpressions(q) > maxF0) {
+								maxF0 = report.getImpressions(q);
+							}
+						}
+						else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+							if(report.getImpressions(q) > maxF1) {
+								maxF1 = report.getImpressions(q);
+							}
+						}
+						else {
+							if(report.getImpressions(q) > maxF2) {
+								maxF2 = report.getImpressions(q);
+							}
+						}
+					}
+				}
+
 				for(BidBundle bundle : bundles) {
 					for(Query q : bundle) {
 						double bid = bundle.getBid(q);
@@ -74,12 +101,12 @@ public final class BidDistInit {
 								bidCountsF2[insertIdx] += 1;
 								totalF2++;
 							}
-//							if(insertIdx == 0) {
-//								System.out.println(bid + " is less than" + bidDist.get(0));
-//							}
-//							else {
-//								System.out.println(bid + " is between " + bidDist.get(insertIdx-1) + "  and" + bidDist.get(insertIdx));
-//							}
+							//							if(insertIdx == 0) {
+							//								System.out.println(bid + " is less than" + bidDist.get(0));
+							//							}
+							//							else {
+							//								System.out.println(bid + " is between " + bidDist.get(insertIdx-1) + "  and" + bidDist.get(insertIdx));
+							//							}
 						}
 						else {
 							System.out.println("Bid (" + bid + ") by " + advertisers[j] + " larger than maxBid, throwing it out");
@@ -88,13 +115,13 @@ public final class BidDistInit {
 				}
 			}
 		}
-		
+
 		double[] initDistF0 = new double[bidCountsF0.length];
 		double[] initCDFF0 = new double[bidCountsF0.length];
-		
+
 		double[] initDistF1 = new double[bidCountsF1.length];
 		double[] initCDFF1 = new double[bidCountsF1.length];
-		
+
 		double[] initDistF2 = new double[bidCountsF2.length];
 		double[] initCDFF2 = new double[bidCountsF2.length];
 		String outputF0 = "final static double[] initDistF0 = {";
@@ -124,18 +151,19 @@ public final class BidDistInit {
 				outputF2 += "\n";
 			}
 		}
-		
+
 		outputF0 = outputF0.substring(0, outputF0.length()-3);
 		outputF0 += "};";
 		System.out.println("\n\n\n" + outputF0 + "\n");
-		
+
 		outputF1 = outputF1.substring(0, outputF1.length()-3);
 		outputF1 += "};";
 		System.out.println(outputF1 + "\n");
-		
+
 		outputF2 = outputF2.substring(0, outputF2.length()-3);
 		outputF2 += "};";
 		System.out.println(outputF2);
+		System.out.println("\n\n\n" + maxF0 + ", " +  maxF1 + ", " +  maxF2);
 	}
 
 
