@@ -37,7 +37,7 @@ import models.targeting.BasicTargetModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.usermodel.AbstractUserModel;
 import models.usermodel.BasicUserModel;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
 import simulator.models.PerfectBidToPos;
@@ -61,6 +61,7 @@ import agents.modelbased.HardMCKPBid;
 import agents.modelbased.ILPBidAgent;
 import agents.modelbased.ILPBidSearchAgent;
 import agents.modelbased.ILPPosAgent;
+import agents.modelbased.NewSemiEndoMCKPBid;
 import agents.modelbased.SemiEndoMCKPBid;
 import agents.modelbased.MCKPBidDynProg;
 import agents.modelbased.MCKPBidNoDomElim;
@@ -113,6 +114,7 @@ public class BasicSimulator {
 	private boolean PERFECTMODELS = false;
 	private boolean SOMEREGMODELS = true;
 	private boolean _killBudgets = false;
+	private boolean is2009 = true;
 
 	/*
 	 * Gaussian noise for perf models
@@ -1323,44 +1325,55 @@ public class BasicSimulator {
 					agent.addCost(query, cpc);
 
 					double baselineConv;
+					if(is2009 || (user.getUserState() != UserState.IS)) {
 
-					if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-						baselineConv = .1;
-					}
-					else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-						baselineConv = .2;
-					}
-					else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-						baselineConv = .3;
-					}
-					else {
-						throw new RuntimeException("Malformed Query");
-					}
-
-					double overCap = agent.getOverCap();
-					if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
-						//						debug(agent.getAdvId() + " is overcap by " + overCap);
-					}
-					double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
-
-					String queryComp = query.getComponent();
-					String compSpecialty = agent.getCompSpecialty();
-
-					if(compSpecialty.equals(queryComp)) {
-						convPr = eta(convPr,1+_CSB);
-					}
-
-					rand = _R.nextDouble();
-
-					if(convPr >= rand) {
-						String queryMan = query.getManufacturer();
-						String manSpecialty = agent.getManSpecialty();
-						double revenue = 10;
-						if(manSpecialty.equals(queryMan)) {
-							revenue = (1+_MSB)*10;
+						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+							baselineConv = .1;
 						}
-						agent.addRevenue(query, revenue);
-						break;
+						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+							baselineConv = .2;
+						}
+						else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+							baselineConv = .3;
+						}
+						else {
+							throw new RuntimeException("Malformed Query");
+						}
+
+						double overCap = agent.getOverCap();
+						if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
+							//						debug(agent.getAdvId() + " is overcap by " + overCap);
+						}
+						double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
+
+						String queryComp = query.getComponent();
+						String compSpecialty = agent.getCompSpecialty();
+
+						if(compSpecialty.equals(queryComp)) {
+							convPr = eta(convPr,1+_CSB);
+						}
+
+						rand = _R.nextDouble();
+
+						if(convPr >= rand) {
+							String queryMan = query.getManufacturer();
+							String manSpecialty = agent.getManSpecialty();
+							double revenue = 10;
+							if(manSpecialty.equals(queryMan)) {
+								revenue = (1+_MSB)*10;
+							}
+							agent.addRevenue(query, revenue);
+							break;
+						}
+						else {
+							rand = _R.nextDouble();
+							if(contProb >= rand) {
+								continue;
+							}
+							else {
+								break;
+							}
+						}
 					}
 					else {
 						rand = _R.nextDouble();
@@ -1370,15 +1383,6 @@ public class BasicSimulator {
 						else {
 							break;
 						}
-					}
-				}
-				else {
-					rand = _R.nextDouble();
-					if(contProb >= rand) {
-						continue;
-					}
-					else {
-						break;
 					}
 				}
 			}
@@ -1458,7 +1462,7 @@ public class BasicSimulator {
 
 	public AbstractAgent stringToAgent(String string) {
 		if(string.equals("MCKP")) {
-			return new SemiEndoMCKPBid(false,false,false);
+			//			return new SemiEndoMCKPBid(false,false,false);
 		}
 		else if(string.equals("Cheap")) {
 			return new Cheap();
@@ -1470,11 +1474,12 @@ public class BasicSimulator {
 			return new ILPBidAgent();
 		}
 		else if(string.equals("newSSB")) {
-			return null;
+			return new Cheap();
 		}
 		else {
-			return new SemiEndoMCKPBid(false,false,false);
+			//			return new SemiEndoMCKPBid(false,false,false);
 		}
+		return new Cheap();
 	}
 
 	private double eta(double p, double x) {
@@ -1557,7 +1562,7 @@ public class BasicSimulator {
 			System.gc(); emptyFunction(); emptyFunction(); emptyFunction(); emptyFunction();
 
 			String filename = filenames[fileIdx];
-			int advId = 1;  //Set to 1 for schlemazl on day-2/server1
+			int advId = 0;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
@@ -1901,9 +1906,9 @@ public class BasicSimulator {
 		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
 		Random r = new Random(68616);
 
-//		AbstractAgent agent = new HardMCKPBid(Double.parseDouble(args[0]));
-//				AbstractAgent agent = new EquatePPSSimple(Double.parseDouble(args[0]));
-				AbstractAgent agent = new EquatePMSimple(Double.parseDouble(args[0]));
+		//		AbstractAgent agent = new HardMCKPBid(Double.parseDouble(args[0]));
+		//				AbstractAgent agent = new EquatePPSSimple(Double.parseDouble(args[0]));
+		AbstractAgent agent = new EquatePMSimple(Double.parseDouble(args[0]));
 		agentList.add(agent);
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
@@ -1945,35 +1950,59 @@ public class BasicSimulator {
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
-		ArrayList<AbstractAgent> agentList = new ArrayList<AbstractAgent>();
-		Random r = new Random();
+		Random r = new Random(68616);
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
 		String baseFile = "/u/jberg/finals/day-2/server-2/game";
 
-		//		int min = 1425;
-		//		int max = 1465;
+		//		int min = 1440;
+		//		int max = 1441;
 
 		int min = 297;
 		int max = 298;
-		//		int max = 337;
+		//				int max = 337;
+
+
+		//		String baseFile = "/Users/jordanberg/TADAGAMES/MCKP/cslab1a_sim";
+		//		int min = 3;
+		//		int max = 63;
+
+		//				String baseFile = "/Users/jordanberg/TADAGAMES/EquatePM/cslab2a_sim";
+		//				int min = 8;
+		//				int max = 63;
+
+		//		String baseFile = "/Users/jordanberg/TADAGAMES/EquatePPS/cslab3a_sim";
+		//		int min = 3;
+		//		int max = 63;
+
+
 
 		//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
 		//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
 		//				AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
 		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
-		//				AbstractAgent agent = new DynamicMCKP();
+
+
 		//				AbstractAgent agent = new SemiEndoMCKPBid();
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(20);
 		AbstractAgent agent = new SimpleAABidAgent();
+		//		AbstractAgent agent = new NewSemiEndoMCKPBid();
+		//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
+		//		AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
+
+
+
+		//		AbstractAgent agent = new DynamicMCKP(.075,7,10,5);
+		//		AbstractAgent agent = new DynamicMCKP(.075,7,15,5);
+		//		AbstractAgent agent = new DynamicMCKP(0.075,21,15,5);11
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(14, 0.075, 14, 10);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 21, 15);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 14, 10);
 		//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, .25, .25, .25, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//		AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
 		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
-
-		agentList.add(agent);
 
 		ArrayList<Double> returnVals = new ArrayList<Double>();
 		ArrayList<Double> lowVals = new ArrayList<Double>();
@@ -1986,6 +2015,132 @@ public class BasicSimulator {
 		}
 
 		for(int i = min; i < max; i++) {
+			sim.setSeed(r.nextLong());
+			ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
+			for(int j = 0; j < 17; j++) {
+				returnVals.set(j,returnVals.get(j) + val.get(j));
+			}
+
+			if(val.get(17) == 300) {
+				lowVals.add(val.get(0));
+			}
+			else if(val.get(17) == 400) {
+				medVals.add(val.get(0));
+			}
+			else {
+				highVals.add(val.get(0));
+			}
+		}
+
+		for(int i = 0; i < 17; i++) {
+			returnVals.set(i,returnVals.get(i)/((double)(max-min)));
+		}
+
+		allVals.addAll(lowVals);
+		allVals.addAll(medVals);
+		allVals.addAll(highVals);
+
+		double[] stdDevLow = stdDeviation(lowVals.toArray(new Double[lowVals.size()]));
+		double[] stdDevMed = stdDeviation(medVals.toArray(new Double[medVals.size()]));
+		double[] stdDevHigh = stdDeviation(highVals.toArray(new Double[highVals.size()]));
+		double[] stdDevAll = stdDeviation(allVals.toArray(new Double[allVals.size()]));
+
+		System.out.println("FINAL VALUES: " + returnVals);
+		System.out.println(stdDevLow[0] + ", " + stdDevLow[1]);
+		System.out.println(stdDevMed[0] + ", " + stdDevMed[1]);
+		System.out.println(stdDevHigh[0] + ", " + stdDevHigh[1]);
+		System.out.println(stdDevAll[0] + ", " + stdDevAll[1]);
+
+		double stop = System.currentTimeMillis();
+		double elapsed = stop - start;
+		System.out.println("This took " + (elapsed / 1000) + " seconds");
+	}
+
+	public static void main3(String[] args) throws IOException, ParseException {
+		BasicSimulator sim = new BasicSimulator();
+		double start = System.currentTimeMillis();
+
+		Random r = new Random(68616);
+
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
+		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+
+		//		int min = 1425;
+		//		int max = 1465;
+
+		int min = 297;
+		//		int max = 301;
+		int max = 337;
+
+		/*
+		 * Create Gaussian noise for models
+		 * 
+		 */
+		LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+		String[] components = {null,"tv","dvd","audio"};
+		String[] manufacturers = {null,"lioneer","flat","pg"};
+		for(int i = 0; i < components.length; i++) {
+			for(int j = 0; j < manufacturers.length; j++) {
+				querySpace.add(new Query(manufacturers[j], components[i]));
+			}
+		}
+
+		//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
+		//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
+		//				AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
+		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
+		//				AbstractAgent agent = new SemiEndoMCKPBid(.05,10,10,5);
+		//		AbstractAgent agent = new DynamicMCKP(.075,7,10,5);
+		//		AbstractAgent agent = new DynamicMCKP(.075,7,15,5);
+		//		AbstractAgent agent = new DynamicMCKP(0.075,21,15,5);11
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(14, 0.075, 14, 10);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 21, 15);
+		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 14, 10);
+		//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
+		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
+		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, .25, .25, .25, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
+		//		AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
+		//		AbstractAgent agent = new EquatePPS(11.3055, 0.0020563, -0.140335, 0.95, 0.999023, 0.00216053, -0.0519994, 0.952448, 0.686301, 0, 1.1427, 1.03945, 1.28737, 0.940937, 0.833736, 1.40315, 0.383182, 1.33115);
+
+		ArrayList<Double> returnVals = new ArrayList<Double>();
+		ArrayList<Double> lowVals = new ArrayList<Double>();
+		ArrayList<Double> medVals = new ArrayList<Double>();
+		ArrayList<Double> highVals = new ArrayList<Double>();
+		ArrayList<Double> allVals = new ArrayList<Double>();
+
+		for(int i = 0; i < 17; i++) {
+			returnVals.add(0.0);
+		}
+
+		//		double noisePrClick = 0.3;
+		//		double noiseCPC = 0.0;
+		//		double noiseConvPr = 0.0;
+
+		double noisePrClick = Double.parseDouble(args[0]);
+		double noiseCPC = Double.parseDouble(args[1]);
+		double noiseConvPr = Double.parseDouble(args[2]);
+
+		for(int i = min; i < max; i++) {
+			HashMap<Query,LinkedList<Double>> prClickNoise = new HashMap<Query, LinkedList<Double>>();
+			HashMap<Query,LinkedList<Double>> CPCNoise = new HashMap<Query, LinkedList<Double>>();
+			HashMap<Query,LinkedList<Double>> convPrNoise = new HashMap<Query, LinkedList<Double>>();
+			LinkedList<Double> prClickNoiseList = new LinkedList<Double>();
+			LinkedList<Double> CPCNoiseList = new LinkedList<Double>();
+			LinkedList<Double> convPrNoiseList = new LinkedList<Double>();
+			for(int days = 0; days < 61; days++) {
+				prClickNoiseList.add(r.nextGaussian()*noisePrClick);
+				CPCNoiseList.add(r.nextGaussian()*noiseCPC);
+				convPrNoiseList.add(r.nextGaussian()*noiseConvPr);
+			}
+			for(Query q : querySpace) {
+				prClickNoise.put(q, prClickNoiseList);
+				CPCNoise.put(q, CPCNoiseList);
+				convPrNoise.put(q, convPrNoiseList);
+			}
+
+			AbstractAgent agent = new DynamicMCKP(prClickNoise,CPCNoise,convPrNoise);
+
 			sim.setSeed(r.nextLong());
 			ArrayList<Double> val = sim.runSimulations(baseFile,i,i+1,0,0, agent);
 			for(int j = 0; j < 17; j++) {
