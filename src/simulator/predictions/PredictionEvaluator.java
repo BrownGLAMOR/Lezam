@@ -70,8 +70,8 @@ import models.targeting.BasicTargetModel;
 import models.usermodel.BasicUserModel;
 import models.usermodel.OldUserModel;
 import models.usermodel.HistoricalDailyAverageUserModel;
-import models.usermodel.TacTexAbstractUserModel;
-import models.usermodel.TacTexAbstractUserModel.UserState;
+import models.usermodel.ParticleFilterAbstractUserModel;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import edu.umich.eecs.tac.props.Ad;
@@ -97,8 +97,8 @@ public class PredictionEvaluator {
 
 //		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		int min = 1425;
-		int max = 1465;
+		int min = 1440;
+		int max = 1441;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/LATESTMCKP/localhost_sim";
 		//		int min = 2;
@@ -306,7 +306,7 @@ public class PredictionEvaluator {
 		System.out.println(baseModel + ", " + rmseStd[0] + ", " + rmseStd[1] + ", " + actualStd[0] + ", " + actualStd[1] + ", " + RMSEList.get(0) + ", " + percentile5 + ", " + percentile25 + ", " + percentile75 + ", " + percentile95 + ", " + RMSEList.get(RMSEList.size()-1));
 	}
 
-	public void userStatePredictionChallenge(TacTexAbstractUserModel baseModel) throws IOException, ParseException {
+	public void userStatePredictionChallenge(ParticleFilterAbstractUserModel baseModel) throws IOException, ParseException {
 		/*
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
@@ -322,7 +322,7 @@ public class PredictionEvaluator {
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 
-			TacTexAbstractUserModel model = (TacTexAbstractUserModel) baseModel.getCopy();
+			ParticleFilterAbstractUserModel model = (ParticleFilterAbstractUserModel) baseModel.getCopy();
 
 			double ourTotErrorCurr = 0;
 			double ourTotActualCurr = 0;
@@ -2774,7 +2774,12 @@ public class PredictionEvaluator {
 
 			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			jbergParticleFilter userModel = new jbergParticleFilter();
+			jbergParticleFilter userModel = new jbergParticleFilter(0.004932699,
+					0.263532334,
+					0.045700011,
+					0.174371757,
+					0.188113883,
+					0.220140091);
 			evaluator.userStatePredictionChallenge(userModel);
 			evaluator.userStatePredictionChallenge(new OldUserModel());
 			
