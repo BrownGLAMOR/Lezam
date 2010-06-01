@@ -52,15 +52,14 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 	}
 	
 	@Override
-	public boolean updateModel(
-			String ourAgent,
-			QueryReport queryReport, 
-			SalesReport salesReport,
-			int numberPromotedSlots,
-			HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
-			HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-			HashMap<String,HashMap<Query,Ad>> ads,
-			HashMap<Product,HashMap<UserState,Integer>> userStates) {
+	public boolean updateModel(String ourAgent,
+							   QueryReport queryReport, 
+							   SalesReport salesReport,
+							   int numberPromotedSlots,
+							   HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
+							   HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
+							   HashMap<String,HashMap<Query,Ad>> ads,
+							   HashMap<Product,HashMap<UserState,Integer>> userStates) {
 		
 		for(Query q: m_queries){
 			HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
@@ -69,12 +68,11 @@ public class ParameterEstimation extends AbstractMaxBarrows {
 			}
 			m_queryHandlers.get(q).update(ourAgent,queryReport,salesReport,numberPromotedSlots,impressionsPerSlot.get(q),advertisersAbovePerSlot.get(q),query_ads,userStates);
 		}
-		return false;
+		return true;
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		// TODO?
-		return null;
+		return new ParameterEstimation();
 	}
 }
