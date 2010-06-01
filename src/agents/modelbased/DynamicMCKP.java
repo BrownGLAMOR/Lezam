@@ -78,13 +78,34 @@ public class DynamicMCKP extends AbstractAgent {
 	private ArrayList<Double> _capList;
 	private int lagDays = 4;
 	private boolean salesDistFlag;
+	HashMap<Query, LinkedList<Double>> _prClickNoise, _CPCNoise, _convPrNoise;
+	public boolean NOISE;
 
 	public DynamicMCKP() {
-//		_R.setSeed(124962748);
+		//		_R.setSeed(124962748);
 		_R = new Random(616866);
 		_bidList = new LinkedList<Double>();
 		//		double increment = .25;
-		double bidIncrement  = .05;
+		double bidIncrement  = .07;
+		double bidMin = .04;
+		double bidMax = 1.65;
+		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
+		for(int i = 0; i < tot; i++) {
+			_bidList.add(bidMin+(i*bidIncrement));
+		}
+		NOISE = false;
+	}
+
+	public DynamicMCKP(HashMap<Query, LinkedList<Double>> prClickNoise, HashMap<Query, LinkedList<Double>> CPCNoise, HashMap<Query, LinkedList<Double>> convPrNoise) {
+		_prClickNoise = prClickNoise;
+		_CPCNoise = CPCNoise;
+		_convPrNoise = convPrNoise;
+		NOISE = true;
+		//		_R.setSeed(124962748);
+		_R = new Random(616866);
+		_bidList = new LinkedList<Double>();
+		//		double increment = .25;
+		double bidIncrement  = .07;
 		double bidMin = .04;
 		double bidMax = 1.65;
 		int tot = (int) Math.ceil((bidMax-bidMin) / bidIncrement);
@@ -92,8 +113,6 @@ public class DynamicMCKP extends AbstractAgent {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
 	}
-
-
 
 	@Override
 	public Set<AbstractModel> initModels() {
@@ -106,8 +125,8 @@ public class DynamicMCKP extends AbstractAgent {
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
-		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 10, true, true);
-		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 10, basicTargModel, true, true);
+		AbstractBidToCPC bidToCPC = new WEKAEnsembleBidToCPC(_querySpace, 10, 15, true, true);
+		AbstractBidToPrClick bidToPrClick = new WEKAEnsembleBidToPrClick(_querySpace, 10, 15, basicTargModel, true, true);
 		BasicConvPrModel convPrModel = new BasicConvPrModel(userModel, _querySpace, _baseConvProbs);
 		models.add(userModel);
 		models.add(queryToNumImp);
@@ -280,7 +299,7 @@ public class DynamicMCKP extends AbstractAgent {
 		}
 
 		buildMaps(models);
-		
+
 		//		System.out.println("Day: " + _day);
 
 		if(_day > 1) {
@@ -339,6 +358,17 @@ public class DynamicMCKP extends AbstractAgent {
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
 					}
+
+
+					if(NOISE) {
+						clickPr += _prClickNoise.get(q).get((int) _day);
+						CPC += _CPCNoise.get(q).get((int) _day);
+						convProb += _convPrNoise.get(q).get((int) _day);
+					}
+
+					clickPr = Math.max(0.0, clickPr);
+					CPC = Math.max(0.0, CPC);
+					convProb = Math.max(0.0, convProb);
 
 					queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
 				}
@@ -427,39 +457,6 @@ public class DynamicMCKP extends AbstractAgent {
 		return bidBundle;
 	}
 
-	private double[] basicVal(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-		double totalValue = 0;
-		for(Query q : _querySpace) {
-			if(solution.containsKey(q)) {
-				Item item = solution.get(q);
-				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
-				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, 1.0)*_salesPrices.get(item.q()) - prediction.getCPC());
-			}
-		}
-		double[] retVal = new double[2];
-		retVal[0] = totalValue;  retVal[1] = 0; return retVal;
-	}
-
-
-	//	private double[] basicVal(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-	//		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
-	//		double penalty = getPenalty(remainingCap, totalWeight);
-	//
-	//		double totalValue = 0;
-	//		for(Query q : _querySpace) {
-	//			if(solution.containsKey(q)) {
-	//				Item item = solution.get(q);
-	//				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
-	//				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
-	//			}
-	//		}
-	//                double[] retVal = new double[2];
-	//                retVal[0] = totalValue;  retVal[1] = totalWeight; return retVal;
-	//	}
-
-
-
-
 	private double[] solutionValueMultiDay2(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, int numDays) {
 		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
 		double penalty = getPenalty(remainingCap, totalWeight);
@@ -516,97 +513,6 @@ public class DynamicMCKP extends AbstractAgent {
 		return output;
 	}
 
-	private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
-		double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
-
-		double penalty = getPenalty(remainingCap, totalWeight);
-
-		double totalValue = 0;
-		double solWeight = 0;
-		HashMap<Query, Double> currentSalesDist = new HashMap<Query,Double>();
-		for(Query q : _querySpace) {
-			if(solution.containsKey(q)) {
-				Item item = solution.get(q);
-				Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
-				totalValue += prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(item.q()) - prediction.getCPC());
-				double tmpWeight = prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
-				solWeight += tmpWeight;
-				currentSalesDist.put(q, tmpWeight);
-			}
-		}
-
-		for(Query q : _querySpace) {
-			if(currentSalesDist.containsKey(q)) {
-				currentSalesDist.put(q, currentSalesDist.get(q)/solWeight);
-			}
-			else {
-				currentSalesDist.put(q, 0.0);
-			}
-		}
-
-		double valueLostWindow = Math.max(0, Math.min(_capWindow-1, 58 - _day));
-		//		double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
-		double multiDayLoss = 0;
-		if(valueLostWindow > 0 && solWeight > 0) {
-			ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
-			ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
-
-			Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
-			if(expectedConvsYesterday == null) {
-				expectedConvsYesterday = 0;
-				int counter2 = 0;
-				for(int j = 0; j < 5 && j < soldArray.size(); j++) {
-					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
-					counter2++;
-				}
-				expectedConvsYesterday /= (double)counter2;
-			}
-			soldArray.add(expectedConvsYesterday);
-			soldArray.add((int) solWeight);
-
-			for(int i = 0; i < valueLostWindow; i++) {
-				double expectedBudget = _capacity;
-
-				for(int j = 0; j < _capWindow-1; j++) {
-					expectedBudget -= soldArray.get(soldArray.size()-1-j);
-				}
-
-				double valueLost = 0;
-
-				double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap);
-				soldArray.add((int) numSales);
-
-				for(int j = 1; j <= numSales; j++) {
-					if(expectedBudget - j <= 0) {
-						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
-					}
-				}
-
-				double avgConvProb = 0; //the average probability of conversion;
-				for(Query q : _querySpace) {
-					avgConvProb += getConversionPrWithPenalty(q, getPenalty(expectedBudget, numSales)) * currentSalesDist.get(q);
-				}
-
-				double avgCPC = 0;
-				for(Query q : _querySpace) {
-					if(solution.containsKey(q)) {
-						Item item = solution.get(q);
-						Predictions prediction = allPredictionsMap.get(item.q()).get(item.idx());
-						avgCPC += prediction.getCPC() * currentSalesDist.get(q);
-					}
-				}
-
-				double avgCPA = avgCPC/avgConvProb;
-
-				multiDayLoss += Math.max(valueLost*avgCPA,0);
-			}
-		}
-		double[] output = new double[2];
-		output[0] = totalValue-multiDayLoss;
-		output[1] = solWeight;
-		return output;
-	}
-
 	private ArrayList<Integer> getCopy(ArrayList<Integer> soldArrayTMP) {
 		ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP.size());
 		for(int i = 0; i < soldArrayTMP.size(); i++) {
@@ -615,48 +521,6 @@ public class DynamicMCKP extends AbstractAgent {
 		return soldArray;
 	}
 
-	private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
-		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
-		double penalty = getPenalty(remainingCap,desiredSales);
-		//		System.out.println("Creating KnapSack with " + overCap + " units over, penalty = " + penalty);
-		for(Query q : _querySpace) {
-			ArrayList<Item> itemList = new ArrayList<Item>();
-			debug("Query: " + q);
-			ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
-			for(int i = 0; i < _bidList.size(); i++) {
-				Predictions predictions = queryPredictions.get(i);
-				double salesPrice = _salesPrices.get(q);
-				double clickPr = predictions.getClickPr();
-				double numImps = predictions.getNumImp();
-				//int numClicks = (int) (clickPr * numImps);
-				double numClicks = clickPr * numImps;
-				double CPC = predictions.getCPC();
-				double convProb = getConversionPrWithPenalty(q, penalty);
-
-				if(Double.isNaN(CPC)) {
-					CPC = 0.0;
-				}
-
-				if(Double.isNaN(clickPr)) {
-					clickPr = 0.0;
-				}
-
-				if(Double.isNaN(convProb)) {
-					convProb = 0.0;
-				}
-
-				double w = numClicks*convProb;				//weight = numClciks * convProv
-				double v = numClicks*convProb*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-				itemList.add(new Item(q,w,v,_bidList.get(i),false,0,i));
-			}
-			debug("Items for " + q);
-			Item[] items = itemList.toArray(new Item[0]);
-			IncItem[] iItems = getIncremental(items);
-			allIncItems.addAll(Arrays.asList(iItems));
-		}
-		Collections.sort(allIncItems);
-		return allIncItems;
-	}
 
 
 	private HashMap<Query,Integer> dynFillKnapsack(HashMap<Query,ArrayList<Predictions>> allPredictionsMap, double remCap) {
@@ -847,94 +711,6 @@ public class DynamicMCKP extends AbstractAgent {
 		return false;
 	}
 
-	//asdf
-	private boolean isDominated(ArrayList<Predictions> predictions, int lastIndex, int currIndex, double penalty, Query q) {
-		if(currIndex > predictions.size()-1) {
-			return false;
-		}
-
-		if(lastIndex < 0) {
-			//Check if it is LP dominated with (0,0)
-			double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
-			double[] nextVW = getValueAndWeight(predictions.get(currIndex+1),penalty,q);
-			if(currVW[1] == nextVW[1]) {
-				if(currVW[0] < nextVW[0]) {
-					//if this item has the same weight but lower value than the next item, it is dominated.
-					return true;
-				}
-				else {
-					//if this item has the same weight but a larger value than the next item, it is not dominated
-					return false;
-				}
-			}
-			else {
-				//if this item has smaller value than next item AND
-				//this item's efficiency is less than the efficiency of the next increment,
-				//it is dominated
-				for(int i = 1; i < predictions.size()-currIndex; i++) {
-					nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
-					if(currVW[1] == nextVW[1]) {
-						if(currVW[0] < nextVW[0]) {
-							return true;
-						}
-						else {
-							continue;
-						}
-					}
-
-					if(currVW[0] < nextVW[0] && (currVW[0])/(currVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		//asdf
-		/*
-		 * Check if it is dominated
-		 */
-		double[] lastVW = getValueAndWeight(predictions.get(lastIndex),penalty,q);
-		double[] currVW = getValueAndWeight(predictions.get(currIndex),penalty,q);
-		if(currVW[0] < lastVW[0]) {
-			//is this item less valuable than something of equal or less weight? dominated.
-			return true;
-		}
-
-		if(currVW[1] == lastVW[1]) { 
-			//it is more valuable than the last item. (or the same)
-			//is the weight the same as the last item?
-			//if so, it can't be dominated, or else the last thing we took was dominated, too.
-			return false;
-		}
-
-		if(currIndex == predictions.size()-1) {
-			//it is more valuable than the last item (or the same)
-			//If there are no heavier items, it's not dominated??
-			return false;
-		}
-
-		/*
-		 * Check if it is LP-dominated
-		 */
-		for(int i = 1; i < predictions.size()-currIndex; i++) {
-			double[] nextVW = getValueAndWeight(predictions.get(currIndex+i),penalty,q);
-			if(currVW[1] == nextVW[1]) {
-				if(currVW[0] < nextVW[0]) {
-					return true;
-				}
-				else {
-					continue;
-				}
-			}
-
-			if(currVW[0] < nextVW[0] && (currVW[0] - lastVW[0])/(currVW[1] - lastVW[1]) <= (nextVW[0] - currVW[0])/(nextVW[0] - currVW[0])) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	//FIXME: There is similar code between this and getIncItemsForOverCapLevel. Abstract this out.
 	private double[] getValueAndWeight(Predictions prediction, double penalty, Query q) {
@@ -968,35 +744,6 @@ public class DynamicMCKP extends AbstractAgent {
 		//		preds[0] =  prediction.getClickPr()*prediction.getNumImp()*(getConversionPrWithPenalty(q, penalty)*_salesPrices.get(q) - prediction.getCPC());
 		//		preds[1] =  prediction.getClickPr()*prediction.getNumImp()*getConversionPrWithPenalty(q, penalty);
 		return preds;
-	}
-
-
-
-	/**
-	 * Greedily fill the knapsack by selecting incremental items
-	 * @param incItems
-	 * @param budget
-	 * @return
-	 */
-	private HashMap<Query,Item> fillKnapsack(ArrayList<IncItem> incItems, double budget) {
-		if(budget < 0) {
-			return new HashMap<Query,Item>();
-		}
-		HashMap<Query,Item> solution = new HashMap<Query, Item>();
-		for(IncItem ii: incItems) {
-			//lower efficiencies correspond to heavier items, i.e. heavier items from the same item
-			//set replace lighter items as we want
-			//TODO this can be >= ii.w() OR 0
-			if(budget >= ii.w()) {
-				//				debug("adding item " + ii);
-				solution.put(ii.item().q(), ii.item());
-				budget -= ii.w();
-			}
-			else {
-				break;
-			}
-		}
-		return solution;
 	}
 
 	/**
@@ -1268,6 +1015,8 @@ public class DynamicMCKP extends AbstractAgent {
 		double convPr;
 		String component = q.getComponent();
 		double pred = _convPrModel.getPrediction(q);
+		pred += _convPrNoise.get(q).get((int) _day);
+		pred = Math.max(0.0, pred);
 		if(_compSpecialty.equals(component)) {
 			convPr = eta(pred*penalty,1+_CSB);
 		}
@@ -1297,6 +1046,11 @@ public class DynamicMCKP extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new DynamicMCKP();
-	}
+		if(NOISE) {
+			return new DynamicMCKP(_prClickNoise, _CPCNoise, _convPrNoise);
+		}
+		else {
+			return new DynamicMCKP();
+		}
+	}		
 }
