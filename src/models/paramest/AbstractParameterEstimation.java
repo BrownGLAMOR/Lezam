@@ -15,7 +15,7 @@ import edu.umich.eecs.tac.props.SalesReport;
  * @author jberg
  *
  */
-public abstract class AbstractMaxBarrows extends AbstractModel {
+public abstract class AbstractParameterEstimation extends AbstractModel {
 	
 	/*
 	 * Assume you get passed this in the constructor

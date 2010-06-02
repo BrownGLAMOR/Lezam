@@ -11,7 +11,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ParameterEstimation extends AbstractMaxBarrows {
+public class ParameterEstimation extends AbstractParameterEstimation {
 	
 	private ArrayList<Query> m_queries;
 	private HashMap<Query, QueryHandler> m_queryHandlers;
