@@ -7,10 +7,14 @@ import java.util.Map;
 import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
+	private static int SAMPLEING_FACTOR = 100;
+	
 	private int _nodeId;
-	private Map<Integer, int[]> _solutions;
+	private Map<Integer, IESolution> _solutions;
 	private int _bestNode;
-	private int _objectiveBound;
+	private int _combinedObjectiveBound;
+	//private int _imprObjectiveBound;
+	//private int _slotObjectiveBound;
 
 	private int _advertisers;
 	private int _slots;
@@ -73,8 +77,8 @@ public class ImpressionEstimator {
 		_agentImprLB[0] = Math.max(_agentImprLB[0], minSlotImpr);
 		
 		_nodeId = 0;
-		_solutions = new HashMap<Integer, int[]>();
-		_objectiveBound = _ourImpressions+1;
+		_solutions = new HashMap<Integer, IESolution>();
+		_combinedObjectiveBound = _ourImpressions+1;
 		
 		int[] agentImpr = new int[_advertisers];
 		for(int i=0; i < _advertisers; i++){
@@ -87,7 +91,8 @@ public class ImpressionEstimator {
 
 		checkImpressions(0, agentImpr, slotImpr, order);
 		
-		return new IEResult(_objectiveBound, _solutions.get(_bestNode), copyArray(order));
+		IESolution sol =  _solutions.get(_bestNode);
+		return new IEResult(_combinedObjectiveBound, sol._agentImpr, copyArray(order), sol._slotImpr);
 	}
 	
 
@@ -97,12 +102,23 @@ public class ImpressionEstimator {
 		
 		//System.out.println(_advertisers); 
 		if(currIndex >= _advertisers){
-			int objVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
+			int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
+			int slotObjVal = 1;
+			for(int i=1; i < slotImpr.length-1; i++){
+				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
+				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < SAMPLEING_FACTOR/2){
+					slotObjVal += 1;
+				} else {
+					break;
+				}
+			}
+			int combinedObj = imprObjVal/slotObjVal;///_slots;
+			
 			//assert(objVal <= ObjBound);
-			if(objVal < _objectiveBound){
+			if(combinedObj < _combinedObjectiveBound){
 //				System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + objVal);
-				_objectiveBound = objVal;
-				_solutions.put(_nodeId, agentImpr);
+				_combinedObjectiveBound = combinedObj;
+				_solutions.put(_nodeId, new IESolution(agentImpr, slotImpr));
 				_bestNode = _nodeId;
 			}
 			return;
@@ -114,10 +130,12 @@ public class ImpressionEstimator {
 
 		if(bestImpr > 0){
 			if(currAgent == _ourIndex){
+				/*
 				int objVal = Math.abs(bestImpr - _ourImpressions);
 				if(objVal >= _objectiveBound){
 					return;
 				}
+				*/
 			}
 			
 			agentImpr[currAgent] = bestImpr;
@@ -130,7 +148,7 @@ public class ImpressionEstimator {
 			
 			if(firstSlot == 1){
 				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){ //TODO: how to do this  "by (firstSlot == 1 ? i : i)"
-					if(i % 100 == 0 || i == maxImpr){
+					if(i % SAMPLEING_FACTOR == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
@@ -263,5 +281,15 @@ public class ImpressionEstimator {
 			newArr[i] = arr[i];
 		}
 		return newArr;
+	}
+	
+	private class IESolution {
+		public int[] _agentImpr;
+		public int[] _slotImpr;
+		
+		public IESolution(int[] agentImpr, int[] slotImpr){
+			_agentImpr = agentImpr;
+			_slotImpr = slotImpr;
+		}
 	}
 }

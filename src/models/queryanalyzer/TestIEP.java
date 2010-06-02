@@ -37,6 +37,8 @@ public class TestIEP {
 		
 		int[] trueImpressions = inst.getTrueImpressions(data);
 		System.out.println("Ground Truth:  "+Arrays.toString(trueImpressions));
+		
+		System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));
 	}
 	
 	public static void main(String[] args) throws Exception {

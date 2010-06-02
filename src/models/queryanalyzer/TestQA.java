@@ -22,7 +22,7 @@ public class TestQA {
 		System.out.println("All Data:");
 		System.out.println(data);
 		
-		int advetiser = 4;
+		int advetiser = 3;
 		QAInstance inst = data.buildInstances(advetiser);
 		
 		System.out.println("Instance for "+advetiser+":");
@@ -45,6 +45,8 @@ public class TestQA {
 		System.out.println("our Order: "+Arrays.toString(bestSol.getOrder()));
 		int[] bidOrder = inst.getBidOrder(data);
 		System.out.println("bid Order: "+Arrays.toString(bidOrder));
+		
+		System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));
 	}
 	
 	public static void main(String[] args) throws Exception {

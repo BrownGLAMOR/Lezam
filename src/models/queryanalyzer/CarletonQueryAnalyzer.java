@@ -1,4 +1,4 @@
-package models.queryanalyzer;
+	package models.queryanalyzer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -173,12 +173,14 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 				bestSol = smartIESearcher.getBestSolution();
 				if(bestSol.getSol() == null) {
 					int[] imps = new int[avgPosOrder.length];
-					bestSol = new IEResult(0, imps, avgPosOrder);
+					int[] slotimps = new int[NUM_SLOTS];
+					bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
 				}
 			}
 			else {
 				int[] imps = new int[avgPosOrder.length];
-				bestSol = new IEResult(0, imps, avgPosOrder);
+				int[] slotimps = new int[NUM_SLOTS];
+				bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
 			}
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
