@@ -7,7 +7,7 @@ import java.util.Map;
 import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
-	private static int SAMPLEING_FACTOR = 100;
+	private static int SAMPLING_FACTOR = 100;
 	
 	private int _nodeId;
 	private Map<Integer, IESolution> _solutions;
@@ -106,7 +106,7 @@ public class ImpressionEstimator {
 			int slotObjVal = 1;
 			for(int i=1; i < slotImpr.length-1; i++){
 				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
-				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < SAMPLEING_FACTOR/2){
+				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < SAMPLING_FACTOR/2){
 					slotObjVal += 1;
 				} else {
 					break;
@@ -148,7 +148,7 @@ public class ImpressionEstimator {
 			
 			if(firstSlot == 1){
 				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){ //TODO: how to do this  "by (firstSlot == 1 ? i : i)"
-					if(i % SAMPLEING_FACTOR == 0 || i == maxImpr){
+					if(i % SAMPLING_FACTOR == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
@@ -158,7 +158,7 @@ public class ImpressionEstimator {
 			}
 			else {
 				for(int i=maxImpr; i >= _agentImprLB[currAgent] ; i--){
-					if(i % 100 == 0 || i == maxImpr){
+					if(i % SAMPLING_FACTOR == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
