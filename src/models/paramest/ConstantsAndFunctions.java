@@ -1,4 +1,4 @@
-package models.mbarrows;
+package models.paramest;
 
 import java.util.Random;
 

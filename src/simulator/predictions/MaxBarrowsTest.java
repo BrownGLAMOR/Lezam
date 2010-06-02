@@ -1,7 +1,6 @@
 package simulator.predictions;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,12 +10,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import models.mbarrows.AbstractMaxBarrows;
-import models.mbarrows.ParameterEstimation;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState; // TODO: fix?
+import models.paramest.AbstractMaxBarrows;
+import models.paramest.ParameterEstimation;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
-import simulator.predictions.BidPredModelTest.BidPair;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -29,8 +27,8 @@ import edu.umich.eecs.tac.props.UserClickModel;
 public class MaxBarrowsTest {
 
 	public ArrayList<String> getGameStrings() {
-		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-				String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
 		int max = 1441;
 
@@ -132,7 +130,7 @@ public class MaxBarrowsTest {
 						LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
 						LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
 						int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
-						
+
 						int[] impressionPerAgent = new int[numAdvertisers];
 						//for each agent
 						for(int ag = 0; ag < numAdvertisers; ag++){
@@ -143,7 +141,7 @@ public class MaxBarrowsTest {
 							}
 							impressionPerAgent[ag]=sum;
 						}
-						
+
 						//where are we in bid pair matrix?
 						ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
 						for(BidPair pair : bidPairs){
@@ -153,7 +151,7 @@ public class MaxBarrowsTest {
 								higherthanus.add(new ImprPair(pair._advIdx,impressionPerAgent[pair._advIdx]));
 							}
 						}
-						
+
 						Collections.sort(higherthanus);
 						for(int j = 0; j < numSlots; j++) {
 							int numImpressions = impressionMatrix[agent][j];
@@ -179,20 +177,11 @@ public class MaxBarrowsTest {
 
 					model.updateModel(agents[agent], queryReport, salesReport, numPromSlots, allImpressionsPerSlot, allAdvertisersAbovePerSlot, allAds, userStates);
 					for(Query q : querySpace) {
-						double contProb = userClickModel.getContinuationProbability(userClickModel.queryIndex(q));
-						double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);
-
 						double[] preds = model.getPrediction(q);
 
-						/*
-						 * TODO
-						 * 
-						 * This is probably where you want to add code to 
-						 * do something with your predictions and the ground
-						 * truth
-						 */
 						double trueAdvertiserEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agent);
-						
+						double trueContinuationProb = userClickModel.getContinuationProbability(userClickModel.queryIndex(q));
+
 						//System.out.println(agents[agent]);
 						System.out.println(q);
 						//System.out.println("Our guess: "+preds[0]);
@@ -203,15 +192,16 @@ public class MaxBarrowsTest {
 						double average = 0.0;
 						if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)){
 							average = 0.25;
-						}else
-						if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)){
+						}
+						else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)){
 							average = 0.35;
-						}else{
+						}
+						else{
 							average = 0.45;
 						}
 						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
 						percentError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
-						
+
 						baselineError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
 					}
 				}
@@ -274,7 +264,7 @@ public class MaxBarrowsTest {
 		}
 
 	}
-	
+
 	public static class ImprPair implements Comparable<ImprPair> {
 
 		private int _advIdx;
@@ -358,8 +348,8 @@ public class MaxBarrowsTest {
 	Function output
 	This is a matrix where one direction is for each agent and the other direction is for the slot.
 	The matrix represents is the number of impressions observed at that slot for each of the agents.
-	*
-	* -gnthomps
+	 *
+	 * -gnthomps
 	 */
 
 
@@ -368,14 +358,6 @@ public class MaxBarrowsTest {
 
 		int[] slotStart= new int[slots];
 		int a;
-
-		int[] permOrder= new int[order.length];
-		for(int i = 0; i < order.length; ++i){
-			//System.out.println("Order["+i+"] = " + order[i]);
-			permOrder[order[i]] = i;
-			//System.out.println("permOrder["+order[i]+"] = " + i);
-		}
-
 
 		for(int i = 0; i < agents; ++i){
 			a = order[i];
@@ -415,7 +397,7 @@ public class MaxBarrowsTest {
 		Set<Query> querySpace = new LinkedHashSet<Query>();
 		//evaluator.modelParamPredictionChallenge(new MBarrowsImpl(querySpace,"this will be set later",0));
 		evaluator.modelParamPredictionChallenge(new ParameterEstimation());
-		
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
