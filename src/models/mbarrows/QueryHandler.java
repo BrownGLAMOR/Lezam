@@ -50,17 +50,6 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 	// Returns advertiser effect and continuation probability
 	public double[] getPredictions() {
-
-		// avarage
-		double tempAdvertiserEffect1 = 0;
-		for (int targeted = 0; targeted < 3; targeted++) {
-			for (int promoted = 0; promoted < 2; promoted++) {
-				tempAdvertiserEffect1 += clickPrtoE(targetedPromoted[targeted][promoted][0] / targetedPromoted[targeted][promoted][1],
-													fTargetfPro[targeted][promoted]);
-			}
-		}
-		tempAdvertiserEffect1 /= 6;
-
 		// Sum up denominators
 		double denominatorsum = 0;
 		for (int targeted = 0; targeted < 3; targeted++) {
@@ -69,18 +58,21 @@ public class QueryHandler extends ConstantsAndFunctions {
 			}
 		}
 
-		double tempAdvertiserEffect2 = 0;
+		
+		/*
+		 * Take a weighted average
+		 */
+		double advEffect = 0;
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
-				tempAdvertiserEffect2 += (targetedPromoted[targeted][promoted][1] / denominatorsum) * 
+				advEffect += (targetedPromoted[targeted][promoted][1] / denominatorsum) * 
 										  clickPrtoE(targetedPromoted[targeted][promoted][0] / targetedPromoted[targeted][promoted][1],
 												     fTargetfPro[targeted][promoted]);
 			}
 		}
 
-		double tempContinuationProb = 0;
-
-		//
+		
+		double contProb = 0;
 		double numberOfDayHandlers = 0;
 		for (DayHandler dh : _dayHandlers) {
 			if (dh.getContinuationProbability() > 0) { // TODO: not average,
@@ -88,16 +80,15 @@ public class QueryHandler extends ConstantsAndFunctions {
 				// something
 				// note: only takes >0 because Solve returns -1 if imaginary or
 				// negative
-				tempContinuationProb += dh.getContinuationProbability();
+				contProb += dh.getContinuationProbability();
 				numberOfDayHandlers += 1;
 			}
 		}
 
-		tempContinuationProb = tempContinuationProb / numberOfDayHandlers;
+		contProb = contProb / numberOfDayHandlers;
 
-		// TODO - switch 2 to 1 for average of the 6
-		double[] tempArr = { tempAdvertiserEffect2, tempContinuationProb };
-		return tempArr;
+		double[] predictions = { advEffect, contProb };
+		return predictions;
 	}
 
 	public boolean update(String ourAgent, QueryReport queryReport,
@@ -109,39 +100,37 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 		assert impressionsPerSlot.size() == advertisersAbovePerSlot.size();
 
-		// getCurrent predictions
-
 		double[] predictions = getPredictions();
 		double advertiserEffect = predictions[0];
 
 		// Were we ever not in a top slot
 		boolean notinslot1 = false;
-		/*
-		 * // This is how David did it. Below makes more sense to me - mbarrows
-		 * for(LinkedList<String> advertisersabove : advertisersAbovePerSlot){
-		 * if(advertisersabove.size()>0){ notinslot1 = true; break; } }
-		 */
 		for (int i = 1; i < 5; i++) {
 			if (impressionsPerSlot.get(i) > 0) {
 				notinslot1 = true;
 				break;
 			}
 		}
+		
 		// Were we ever in the top slot
 		boolean inslot1 = false;
 		if (impressionsPerSlot.get(0) > 0) {
 			inslot1 = true;
 		}
+		
+		
 		Ad ourAd = ads.get(ourAgent);
 		boolean ourAdTargeted = true;
 		if (ourAd == null || ourAd.isGeneric()) {
 			ourAdTargeted = false;
 		}
+		
 		Product ourAdProduct = null;
 		if (ourAdTargeted) {
 			ourAdProduct = ourAd.getProduct();
 		}
-		// If we were ever not in top slot, make day handler
+		
+		// If we were not in top slot for any part of the day, make day handler (to estimate cont prob)
 		if (notinslot1) {
 
 			int totalClicks = queryReport.getClicks(_query);
@@ -151,8 +140,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 					advertisersAbovePerSlot, ads);
 
 			// get states of searching users
-			HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(
-					userStates, impressionsPerSlot);
+			HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates, impressionsPerSlot);
 
 			DayHandler latestday = new DayHandler(_query, totalClicks,
 					numberPromotedSlots, impressionsPerSlot, advertiserEffect,
@@ -166,34 +154,20 @@ public class QueryHandler extends ConstantsAndFunctions {
 
 		} else if (inslot1) {
 			// Update advertiser effect
-			HashMap<Product, Double> clickdist = getClickDist(userStates,
-					queryReport.getClicks(_query), ourAdTargeted, ourAdProduct);
-			HashMap<Product, Double> imprdist = getImpressionDist(userStates,
-					queryReport.getImpressions(_query));
+			HashMap<Product, Double> clickdist = getClickDist(userStates,queryReport.getClicks(_query), ourAdTargeted, ourAdProduct);
+			HashMap<Product, Double> imprdist = getImpressionDist(userStates,queryReport.getImpressions(_query));
 
 			int promoted = 0;
 			if (queryReport.getPromotedImpressions(_query) > 0) {
 				promoted = 1;
 			}
-			// if (numberPromotedSlots>0){
-			// promoted = 1;
-			// }
-
-			// double clicksum = 0;
-			// double impressionsum = 0;
 
 			for (Product p : userStates.keySet()) {
 				int targeted = getFTargetIndex(ourAdTargeted, p, ourAdProduct);
 
 				targetedPromoted[targeted][promoted][0] += clickdist.get(p);
 				targetedPromoted[targeted][promoted][1] += imprdist.get(p);
-
-				// clicksum+=clickdist.get(p);
-				// impressionsum+=imprdist.get(p);
 			}
-
-			// System.out.println(clicksum+" versus "+queryReport.getClicks(_query));
-			// System.out.println(impressionsum+" versus "+queryReport.getImpressions(_query));
 
 			double newAdvertiserEffect = getPredictions()[0];
 
@@ -201,19 +175,17 @@ public class QueryHandler extends ConstantsAndFunctions {
 			for (DayHandler dh : _dayHandlers) {
 				dh.updateEstimate(newAdvertiserEffect);
 			}
-
-			// _dayHandlers.add(null);
+			
 		} else {
 			// do nothing if we saw no impressions
-			// _dayHandlers.add(null);
 		}
 
-		return false;
+		return true;
 	}
 
-	public LinkedList<LinkedList<Ad>> getAdsAbovePerSlot(
-			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
-			HashMap<String, Ad> ads) {
+	public LinkedList<LinkedList<Ad>> getAdsAbovePerSlot(LinkedList<LinkedList<String>> advertisersAbovePerSlot,
+														 HashMap<String, Ad> ads) {
+		
 		LinkedList<LinkedList<Ad>> adsAbovePerSlot = new LinkedList<LinkedList<Ad>>();
 		// for every slot
 		for (LinkedList<String> thoseAbove : advertisersAbovePerSlot) {
