@@ -40,7 +40,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
 				
-				targetedPromoted[targeted][promoted][0] = etoClickPr(_advertiserEffectBoundsAvg[queryTypeToInt(_queryType)],
+				targetedPromoted[targeted][promoted][0] = etaClickPr(_advertiserEffectBoundsAvg[queryTypeToInt(_queryType)],
 																	 fTargetfPro[targeted][promoted]);
 				
 				targetedPromoted[targeted][promoted][1] = 1;

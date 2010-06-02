@@ -96,7 +96,7 @@ public abstract class ConstantsAndFunctions {
 
 	// Calculate the forward click probability as defined on page 14 of the
 	// spec.
-	public double etoClickPr(double advertiserEffect, double fTargetfPro) {
+	public double etaClickPr(double advertiserEffect, double fTargetfPro) {
 		return (advertiserEffect * fTargetfPro) / ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
 	}
 

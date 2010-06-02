@@ -109,7 +109,7 @@ public class DayHandler extends ConstantsAndFunctions {
 					// above
 					// promoted
 					// reserve
-					double theoreticalClickProb = etoClickPr(
+					double theoreticalClickProb = etaClickPr(
 							ourAdvertiserEffect, ftfp);
 					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
 					double nonIS = userStatesOfSearchingUsers.get(p).get(
@@ -136,7 +136,7 @@ public class DayHandler extends ConstantsAndFunctions {
 						// above
 						// promoted
 						// reserve
-						double otherAdvertiserClickProb = etoClickPr(
+						double otherAdvertiserClickProb = etaClickPr(
 								otherAdvertiserEffects, ftfpOther);
 						nonIS *= (1 - otherAdvertiserConvProb()
 								* otherAdvertiserClickProb);
