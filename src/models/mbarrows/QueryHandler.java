@@ -16,11 +16,9 @@ public class QueryHandler extends ConstantsAndFunctions {
 	final Query _query;
 	final QueryType _queryType;
 
-	final static double EPSILON = .0001;
-
 	LinkedList<DayHandler> _dayHandlers;
 
-	// 1st - targeted - 1 is targeted, 2 is targeted incorrectly
+	// 1st - targeted - 0 is untargeted, 1 is targeted, 2 is targeted incorrectly
 	// 2nd - promoted
 	// 3rd - numerator, denominator
 	double targetedPromoted[][][];
@@ -33,11 +31,18 @@ public class QueryHandler extends ConstantsAndFunctions {
 		_dayHandlers = new LinkedList<DayHandler>();
 
 		targetedPromoted = new double[3][2][2];
+		
+		/*
+		 * Initialize the estimates to be the means with only
+		 * one view (as to not actually affect the estimate after
+		 * the first day)
+		 */
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
-				targetedPromoted[targeted][promoted][0] = etoClickPr(
-						_advertiserEffectBoundsAvg[queryTypeToInt(_queryType)],
-						fTargetfPro[targeted][promoted]);
+				
+				targetedPromoted[targeted][promoted][0] = etoClickPr(_advertiserEffectBoundsAvg[queryTypeToInt(_queryType)],
+																	 fTargetfPro[targeted][promoted]);
+				
 				targetedPromoted[targeted][promoted][1] = 1;
 			}
 		}
@@ -50,10 +55,8 @@ public class QueryHandler extends ConstantsAndFunctions {
 		double tempAdvertiserEffect1 = 0;
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
-				tempAdvertiserEffect1 += clickPrtoE(
-						targetedPromoted[targeted][promoted][0]
-								/ targetedPromoted[targeted][promoted][1],
-						fTargetfPro[targeted][promoted]);
+				tempAdvertiserEffect1 += clickPrtoE(targetedPromoted[targeted][promoted][0] / targetedPromoted[targeted][promoted][1],
+													fTargetfPro[targeted][promoted]);
 			}
 		}
 		tempAdvertiserEffect1 /= 6;
@@ -69,10 +72,9 @@ public class QueryHandler extends ConstantsAndFunctions {
 		double tempAdvertiserEffect2 = 0;
 		for (int targeted = 0; targeted < 3; targeted++) {
 			for (int promoted = 0; promoted < 2; promoted++) {
-				tempAdvertiserEffect2 += (targetedPromoted[targeted][promoted][1] / denominatorsum)
-						* clickPrtoE(targetedPromoted[targeted][promoted][0]
-								/ targetedPromoted[targeted][promoted][1],
-								fTargetfPro[targeted][promoted]);
+				tempAdvertiserEffect2 += (targetedPromoted[targeted][promoted][1] / denominatorsum) * 
+										  clickPrtoE(targetedPromoted[targeted][promoted][0] / targetedPromoted[targeted][promoted][1],
+												     fTargetfPro[targeted][promoted]);
 			}
 		}
 

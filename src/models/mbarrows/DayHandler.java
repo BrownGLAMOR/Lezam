@@ -26,8 +26,7 @@ public class DayHandler extends ConstantsAndFunctions {
 	LinkedList<Integer> impressionsPerSlot;
 	double ourAdvertiserEffect;
 	LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot;
-	HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers; // [IS,
-	// non-IS]
+	HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers; // [IS, non-IS]
 	boolean targeted;
 	Product target;
 
