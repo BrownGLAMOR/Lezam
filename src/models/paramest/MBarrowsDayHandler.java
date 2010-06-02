@@ -8,7 +8,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-public class DayHandler extends ConstantsAndFunctions {
+public class MBarrowsDayHandler extends ConstantsAndFunctions {
 
 	double otherAdvertiserEffects;
 	// double otherAdvertiserConvProb;
@@ -30,7 +30,7 @@ public class DayHandler extends ConstantsAndFunctions {
 	boolean targeted;
 	Product target;
 
-	public DayHandler(
+	public MBarrowsDayHandler(
 			Query q_,
 			int totalClicks_,
 			int numberPromotedSlots_,

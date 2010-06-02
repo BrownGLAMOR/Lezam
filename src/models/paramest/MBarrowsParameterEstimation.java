@@ -11,17 +11,17 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class ParameterEstimation extends AbstractParameterEstimation {
+public class MBarrowsParameterEstimation extends AbstractParameterEstimation {
 	
 	private ArrayList<Query> m_queries;
-	private HashMap<Query, QueryHandler> m_queryHandlers;
+	private HashMap<Query, MBarrowsQueryHandler> m_queryHandlers;
 	
 	double _probClick;
 	
-	public ParameterEstimation()
+	public MBarrowsParameterEstimation()
 	{
 		m_queries = new ArrayList<Query>();
-		m_queryHandlers = new HashMap<Query, QueryHandler>();
+		m_queryHandlers = new HashMap<Query, MBarrowsQueryHandler>();
 		
 		 // Get the 16 queries
 		 m_queries.add(new Query(null, null));
@@ -42,7 +42,7 @@ public class ParameterEstimation extends AbstractParameterEstimation {
 		 m_queries.add(new Query("flat", "dvd"));
 		 
 		 for(Query q: m_queries){
-			 m_queryHandlers.put(q, new QueryHandler(q));
+			 m_queryHandlers.put(q, new MBarrowsQueryHandler(q));
 		 }
 	}
 
@@ -73,6 +73,6 @@ public class ParameterEstimation extends AbstractParameterEstimation {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new ParameterEstimation();
+		return new MBarrowsParameterEstimation();
 	}
 }

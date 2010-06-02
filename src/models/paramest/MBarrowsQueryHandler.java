@@ -12,23 +12,23 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 
-public class QueryHandler extends ConstantsAndFunctions {
+public class MBarrowsQueryHandler extends ConstantsAndFunctions {
 	final Query _query;
 	final QueryType _queryType;
 
-	LinkedList<DayHandler> _dayHandlers;
+	LinkedList<MBarrowsDayHandler> _dayHandlers;
 
 	// 1st - targeted - 0 is untargeted, 1 is targeted, 2 is targeted incorrectly
 	// 2nd - promoted
 	// 3rd - numerator, denominator
 	double targetedPromoted[][][];
 
-	public QueryHandler(Query q) {
+	public MBarrowsQueryHandler(Query q) {
 
 		_query = q;
 		_queryType = q.getType();
 
-		_dayHandlers = new LinkedList<DayHandler>();
+		_dayHandlers = new LinkedList<MBarrowsDayHandler>();
 
 		targetedPromoted = new double[3][2][2];
 		
@@ -74,7 +74,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 		
 		double contProb = 0;
 		double numberOfDayHandlers = 0;
-		for (DayHandler dh : _dayHandlers) {
+		for (MBarrowsDayHandler dh : _dayHandlers) {
 			if (dh.getContinuationProbability() > 0) { // TODO: not average,
 				// throw out bad or
 				// something
@@ -142,7 +142,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 			// get states of searching users
 			HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates, impressionsPerSlot);
 
-			DayHandler latestday = new DayHandler(_query, totalClicks,
+			MBarrowsDayHandler latestday = new MBarrowsDayHandler(_query, totalClicks,
 					numberPromotedSlots, impressionsPerSlot, advertiserEffect,
 					adsAbovePerSlot, statesSearchingUsers, (ourAdTargeted),
 					ourAdProduct);
@@ -172,7 +172,7 @@ public class QueryHandler extends ConstantsAndFunctions {
 			double newAdvertiserEffect = getPredictions()[0];
 
 			// Update all previous continuation probability estimates
-			for (DayHandler dh : _dayHandlers) {
+			for (MBarrowsDayHandler dh : _dayHandlers) {
 				dh.updateEstimate(newAdvertiserEffect);
 			}
 			
