@@ -10,8 +10,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import models.paramest.AbstractMaxBarrows;
-import models.paramest.ParameterEstimation;
+import models.paramest.AbstractParameterEstimation;
+import models.paramest.BayesianParameterEstimation;
+import models.paramest.MBarrowsParameterEstimation;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -28,7 +29,7 @@ public class MaxBarrowsTest {
 
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
 		int max = 1441;
 
@@ -39,7 +40,7 @@ public class MaxBarrowsTest {
 		return filenames;
 	}
 
-	public void modelParamPredictionChallenge(AbstractMaxBarrows baseModel) throws IOException, ParseException, InstantiationException, IllegalAccessException {
+	public void modelParamPredictionChallenge(AbstractParameterEstimation baseModel) throws IOException, ParseException, InstantiationException, IllegalAccessException {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
@@ -82,9 +83,9 @@ public class MaxBarrowsTest {
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
 
 			for(int agent = 0; agent < agents.length; agent++) {
-				Class<? extends AbstractMaxBarrows> c = baseModel.getClass();
+				Class<? extends AbstractParameterEstimation> c = baseModel.getClass();
 
-				AbstractMaxBarrows model = c.newInstance();
+				AbstractParameterEstimation model = c.newInstance();
 
 				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
@@ -396,7 +397,8 @@ public class MaxBarrowsTest {
 		double start = System.currentTimeMillis();
 		Set<Query> querySpace = new LinkedHashSet<Query>();
 		//evaluator.modelParamPredictionChallenge(new MBarrowsImpl(querySpace,"this will be set later",0));
-		evaluator.modelParamPredictionChallenge(new ParameterEstimation());
+		//		evaluator.modelParamPredictionChallenge(new MBarrowsParameterEstimation());
+		evaluator.modelParamPredictionChallenge(new BayesianParameterEstimation());
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;

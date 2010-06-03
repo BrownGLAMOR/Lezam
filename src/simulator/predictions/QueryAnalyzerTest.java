@@ -31,9 +31,9 @@ public class QueryAnalyzerTest {
 	public static final boolean PERFECT_IMPS = true;
 
 	public ArrayList<String> getGameStrings() {
-		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		String baseFile = "./game"; //games 1425-1464
+		//		String baseFile = "./game"; //games 1425-1464
 		int min = 1425;
 		int max = 1426;
 
@@ -357,7 +357,7 @@ public class QueryAnalyzerTest {
 		double start = System.currentTimeMillis();
 
 		//		int numIters = Integer.parseInt(args[0]);
-		int numIters = 1;
+		int numIters = 5;
 		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
 		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
 

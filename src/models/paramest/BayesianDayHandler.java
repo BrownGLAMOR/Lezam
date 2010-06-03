@@ -92,11 +92,9 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 
 		_contProbDist = new ArrayList<Double>(NUM_DISCRETE_PROBS);
 		_contProbWeights = new ArrayList<Double>(NUM_DISCRETE_PROBS);
-		System.out.println("Intializing ContProb Dist");
 		for(int i = 0; i < NUM_DISCRETE_PROBS; i++) {
-			_contProbDist.add(_advertiserEffectBounds[qTypeIdx][0] + (_advertiserEffectBounds[qTypeIdx][1] - _advertiserEffectBounds[qTypeIdx][0]) * (1.0/(NUM_DISCRETE_PROBS-1.0)) * i);
+			_contProbDist.add(_continuationProbBounds[qTypeIdx][0] + (_continuationProbBounds[qTypeIdx][1] - _continuationProbBounds[qTypeIdx][0]) * (1.0/(NUM_DISCRETE_PROBS-1.0)) * i);
 			_contProbWeights.add(BASE_WEIGHT);
-			System.out.println(_contProbDist.get(i) + " " + _contProbWeights.get(i));
 		}
 
 		updateEstimate(_ourAdvertiserEffect);

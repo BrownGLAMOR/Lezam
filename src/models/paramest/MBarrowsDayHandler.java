@@ -112,8 +112,7 @@ public class MBarrowsDayHandler extends ConstantsAndFunctions {
 					double theoreticalClickProb = etaClickPr(
 							ourAdvertiserEffect, ftfp);
 					double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
-					double nonIS = userStatesOfSearchingUsers.get(p).get(
-							ourSlot)[1];
+					double nonIS = userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
 					for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
 						Ad otherAd = advertisersAboveUs.get(prevSlot);
 						// System.out.println("Our slot: "+ourSlot);

@@ -1,13 +1,12 @@
 package models.queryanalyzer.iep;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
-	private static int SAMPLING_FACTOR = 10;
+	private static int SAMPLING_FACTOR = 30;
 	private int _samplingImpressions;
 
 	private int _nodeId;
