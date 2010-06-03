@@ -31,6 +31,8 @@ public class ImpressionEstimator {
 		_trueAvgPos = inst.getAvgPos();
 		_ourIndex = inst.getAgentIndex(); //TODO is this ID or Index?
 		_ourImpressions = inst.getImpressions();
+		
+		assert _ourImpressions > 0;
 
 		_agentImprLB = new int[_advertisers];
 		_agentImprUB = new int[_advertisers];
@@ -66,7 +68,7 @@ public class ImpressionEstimator {
 
 	public IEResult search(int[] order){ //TODO incorporate order
 		if(!feasibleOrder(order)){
-			//			System.out.println("order is infeasible"); 
+			//System.out.println("order is infeasible"); 
 			return null;
 		}
 

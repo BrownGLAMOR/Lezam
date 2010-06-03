@@ -11,6 +11,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionEstimator;
 import models.queryanalyzer.search.LDSearchIESmart;
 
 public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
@@ -157,19 +158,22 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 				agentIdsArr[i] = agentIds.get(i);
 			}
 			
-			//this should maybe be squashed bid
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
-
-//			System.out.println(inst);
-			
 			int[] avgPosOrder = inst.getAvgPosOrder();
-
 			IEResult bestSol;
-			if(avgPosOrder.length > 0) {
-				LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
-				smartIESearcher.search(avgPosOrder, inst.getAvgPos());
-				bestSol = smartIESearcher.getBestSolution();
-				if(bestSol == null || bestSol.getSol() == null) {
+			if(queryReport.getImpressions(q) > 0) {
+				if(avgPosOrder.length > 0) {
+					LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
+					smartIESearcher.search(avgPosOrder, inst.getAvgPos());
+					bestSol = smartIESearcher.getBestSolution();
+					if(bestSol == null || bestSol.getSol() == null) {
+						System.out.println(q);
+						int[] imps = new int[avgPosOrder.length];
+						int[] slotimps = new int[NUM_SLOTS];
+						bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
+					}
+				}
+				else {
 					int[] imps = new int[avgPosOrder.length];
 					int[] slotimps = new int[NUM_SLOTS];
 					bestSol = new IEResult(0, imps, avgPosOrder, slotimps);

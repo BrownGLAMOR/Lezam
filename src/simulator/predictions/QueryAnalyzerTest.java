@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.queryanalyzer.GreedyQueryAnalyzer;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import simulator.predictions.BidPredModelTest.BidPair;
@@ -27,12 +28,13 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
+	public static final boolean PERFECT_IMPS = true;
 
 	public ArrayList<String> getGameStrings() {
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		int min = 1440;
-		int max = 1441;
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		int min = 1425;
+		int max = 1426;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -117,88 +119,123 @@ public class QueryAnalyzerTest {
 					LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
 					LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 					LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
+					LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
 
 					for(int i = 0; i < 57; i++) {
+						System.out.println(i);
 						QueryReport queryReport = ourQueryReports.get(i);
 						SalesReport salesReport = ourSalesReports.get(i);
 						BidBundle bidBundle = ourBidBundles.get(i);
 
-						HashMap<Query,Integer> maxImps = new HashMap<Query,Integer>();
-						for(Query q : querySpace) {
-							int numImps;
-							if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-								numImps = MAX_F0_IMPS;
+						HashMap<Query, Integer> totalImpressions = new HashMap<Query,Integer>();
+						if(PERFECT_IMPS) {
+							HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
+							for(Query q : querySpace) {
+								int imps = 0;
+								for(Product product : status.getRetailCatalog()) {
+									HashMap<UserState, Integer> userDist = userDists.get(product);
+									if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+										imps += userDist.get(UserState.F0);
+										imps += (1.5/3.0)*userDist.get(UserState.IS);
+									}
+									else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+										if(product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
+											imps += (1.5/2.0)*userDist.get(UserState.F1);
+											imps += (1.5/6.0)*userDist.get(UserState.IS);
+										}
+									}
+									else {
+										if(product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
+											imps += userDist.get(UserState.F2);
+											imps += (1.5/3.0)*userDist.get(UserState.IS);
+										}
+									}
+								}
+								totalImpressions.put(q, imps);
 							}
-							else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-								numImps = MAX_F1_IMPS;
+						}
+						else {
+							for(Query q : querySpace) {
+								int numImps;
+								if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+									numImps = MAX_F0_IMPS;
+								}
+								else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+									numImps = MAX_F1_IMPS;
+								}
+								else {
+									numImps = MAX_F2_IMPS;
+								}
+								totalImpressions.put(q, numImps);
 							}
-							else {
-								numImps = MAX_F2_IMPS;
-							}
-							maxImps.put(q, numImps);
 						}
 
-						model.updateModel(queryReport,salesReport,bidBundle,maxImps);
+						model.updateModel(queryReport,salesReport,bidBundle,totalImpressions);
 
 						for(Query q : querySpace) {
-							ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
-							for(int agentInner = 0; agentInner < agents.length; agentInner++) {
-								BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
-								double bid = innerBidBundle.getBid(q);
-								double squashedBid = bid * Math.pow(advEffect, squashing);
-								bidPairs.add(new BidPair(agentInner, squashedBid));
-							}
-
-							Collections.sort(bidPairs);
-
-							HashMap<Integer, Integer> queryRanks = new HashMap<Integer,Integer>();
-							for(int j = 0; j < bidPairs.size(); j++) {
-								queryRanks.put(bidPairs.get(j).getID(), j);
-							}
-
+							boolean skip = false;
 							HashMap<Integer,Integer> imps = new HashMap<Integer,Integer>();
 							for(int agentInner = 0; agentInner < agents.length; agentInner++) {
 								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
 								int imp = innerQueryReport.getImpressions(q);
+								if(agentInner == agent && imp == 0) {
+									skip = true;
+								}
 								imps.put(agentInner, imp);
 							}
 
-
-							int[] rankPred = model.getOrderPrediction(q);
-							int[] impsPred = model.getImpressionsPrediction(q);
-
-							HashMap<Integer, Integer> rankPredMap = new HashMap<Integer,Integer>();
-							for(int j = 0; j < rankPred.length; j++) {
-								rankPredMap.put(rankPred[j], j);
-							}
-
-							int agentOffset = 0;
-							int skipped = 0;
-							for(int j = 0; j < agents.length; j++) {
-								double avgPos;
-								if(j == agent) {
-									avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
-									agentOffset++;
-								}
-								else {
-									avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+2-agentOffset));
+							if(!skip) {
+								ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
+								for(int agentInner = 0; agentInner < agents.length; agentInner++) {
+									BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
+									double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
+									double bid = innerBidBundle.getBid(q);
+									double squashedBid = bid * Math.pow(advEffect, squashing);
+									bidPairs.add(new BidPair(agentInner, squashedBid));
 								}
 
-								if(Double.isNaN(avgPos) || avgPos < 0) {
-									skipped++;
-									continue;
+								Collections.sort(bidPairs);
+
+								HashMap<Integer, Integer> queryRanks = new HashMap<Integer,Integer>();
+								for(int j = 0; j < bidPairs.size(); j++) {
+									queryRanks.put(bidPairs.get(j).getID(), j);
 								}
 
-								double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
-								ourTotRankActual += queryRanks.get(j);
-								ourTotRankError += rankError;
-								ourTotRankErrorCounter++;
+								int[] rankPred = model.getOrderPrediction(q);
+								int[] impsPred = model.getImpressionsPrediction(q);
 
-								double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
-								ourTotImpActual += imps.get(j);
-								ourTotImpError += impError;
-								ourTotImpErrorCounter++;
+								HashMap<Integer, Integer> rankPredMap = new HashMap<Integer,Integer>();
+								for(int j = 0; j < rankPred.length; j++) {
+									rankPredMap.put(rankPred[j], j);
+								}
+
+								int agentOffset = 0;
+								int skipped = 0;
+								for(int j = 0; j < agents.length; j++) {
+									double avgPos;
+									if(j == agent) {
+										avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
+										agentOffset++;
+									}
+									else {
+										avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+2-agentOffset));
+									}
+
+									if(Double.isNaN(avgPos) || avgPos < 0) {
+										skipped++;
+										continue;
+									}
+
+									double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
+									ourTotRankActual += queryRanks.get(j);
+									ourTotRankError += rankError;
+									ourTotRankErrorCounter++;
+
+									double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
+									ourTotImpActual += imps.get(j);
+									ourTotImpError += impError;
+									ourTotImpErrorCounter++;
+								}
 							}
 						}
 					}
@@ -318,8 +355,8 @@ public class QueryAnalyzerTest {
 
 		double start = System.currentTimeMillis();
 
-		int numIters = Integer.parseInt(args[0]);
-		//		int numIters = 1;
+		//		int numIters = Integer.parseInt(args[0]);
+		int numIters = 1;
 		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
 		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
 

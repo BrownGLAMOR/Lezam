@@ -33,16 +33,16 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 		for(Query q : _querySpace) {
 			ArrayList<IEResult> resultsList = new ArrayList<IEResult>();
 			_allResults.put(q, resultsList);
-			
+
 			ArrayList<int[][]> impRanges = new ArrayList<int[][]>();
 			_allImpRanges.put(q,impRanges);
-			
+
 			ArrayList<int[]> agentIDs = new ArrayList<int[]>();
 			_allAgentIDs.put(q, agentIDs);
 		}
 
 		_advertisers = advertisers;
-		
+
 		_ourAdvertiser = ourAdvertiser;
 
 		_advToIdx = new HashMap<String,Integer>();
@@ -96,7 +96,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public int[] getImpressionRangePrediction(Query q, String adv) {
 		int size = _allResults.get(q).size();
@@ -135,36 +135,38 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 				else {
 					avgPos = queryReport.getPosition(q, "adv" + (i+2-agentOffset));
 				}
-				
+
 				if(!Double.isNaN(avgPos)) {
 					agentIds.add(i);
 					allAvgPos.add(avgPos);
 				}
 			}
-			
+
 			double[] allAvgPosArr = new double[allAvgPos.size()];
 			for(int i = 0; i < allAvgPosArr.length; i++) {
 				allAvgPosArr[i] = allAvgPos.get(i);
 			}
-			
+
 			int[] agentIdsArr = new int[agentIds.size()];
 			for(int i = 0; i < agentIdsArr.length; i++) {
 				agentIdsArr[i] = agentIds.get(i);
 			}
-			
-			//this should maybe be squashed bid
+
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
-
-//			System.out.println(inst);
-
 			int[] avgPosOrder = inst.getAvgPosOrder();
-
-			ImpressionEstimator ie = new ImpressionEstimator(inst);
-
 			IEResult bestSol;
-			if(avgPosOrder.length > 0) {
-				bestSol = ie.search(avgPosOrder);
-				if(bestSol == null || bestSol.getSol() == null) {
+			if(queryReport.getImpressions(q) > 0) {
+				if(avgPosOrder.length > 0) {
+					ImpressionEstimator ie = new ImpressionEstimator(inst);
+					bestSol = ie.search(avgPosOrder);
+					if(bestSol == null || bestSol.getSol() == null) {
+						System.out.println(q);
+						int[] imps = new int[avgPosOrder.length];
+						int[] slotimps = new int[NUM_SLOTS];
+						bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
+					}
+				}
+				else {
 					int[] imps = new int[avgPosOrder.length];
 					int[] slotimps = new int[NUM_SLOTS];
 					bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
