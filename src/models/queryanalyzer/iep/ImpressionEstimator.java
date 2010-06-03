@@ -50,8 +50,8 @@ public class ImpressionEstimator {
 		}
 		
 		if(((_trueAvgPos[_ourIndex] * 1000) % 1000) == 0){
-			_agentImprLB[_ourIndex] = _ourImpressions;
-			_agentImprUB[_ourIndex] = _ourImpressions;
+			//_agentImprLB[_ourIndex] = _ourImpressions-_samplingImpressions;
+			_agentImprUB[_ourIndex] = _ourImpressions+_samplingImpressions;
 		}
 
 	}
@@ -85,10 +85,9 @@ public class ImpressionEstimator {
 		}
 
 		//System.out.println(_ourIndex); 
-		int minSlotImpr = calcMinSlotImpressions(Math.min(getPosition(_ourIndex, order)+1,_slots), (int)_trueAvgPos[_ourIndex], _ourImpressions, _trueAvgPos[_ourIndex]);
+		//int minSlotImpr = calcMinSlotImpressions(Math.min(getPosition(_ourIndex, order)+1,_slots), (int)_trueAvgPos[_ourIndex], _ourImpressions, _trueAvgPos[_ourIndex]);
 		//System.out.println(minSlotImpr); 
-
-		_agentImprLB[order[0]] = Math.max(_agentImprLB[order[0]], minSlotImpr);
+		//_agentImprLB[order[0]] = Math.max(_agentImprLB[order[0]], minSlotImpr);
 
 		_nodeId = 0;
 		_solutions = new HashMap<Integer, IESolution>();
@@ -154,6 +153,9 @@ public class ImpressionEstimator {
 					_bestImprUB = slotImpr[0];
 				}
 			}
+			else {
+				//System.out.println("Throw out: "+_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + combinedObj+" - "+_combinedObjectiveBound);
+			}
 			return;
 		}
 
@@ -186,17 +188,18 @@ public class ImpressionEstimator {
 
 			if(firstSlot == 1){
 				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){
-					if(i % _samplingImpressions == 0 || i == maxImpr){
+					if(i % _samplingImpressions == 0 || i == maxImpr || i==_agentImprLB[currAgent]){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
+						
 						checkImpressions(currIndex+1, agentImprCopy,  newSlotImpr, order);
 					}
 				}
 			}
 			else {
 				for(int i=maxImpr; i >= _agentImprLB[currAgent] ; i--){
-					if(i % _samplingImpressions == 0 || i == maxImpr){
+					if(i % _samplingImpressions == 0 || i == maxImpr || i==_agentImprLB[currAgent]){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
