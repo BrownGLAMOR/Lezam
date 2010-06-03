@@ -164,7 +164,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 			IEResult bestSol;
 			if(avgPosOrder.length > 0) {
 				bestSol = ie.search(avgPosOrder);
-				if(bestSol.getSol() == null) {
+				if(bestSol == null || bestSol.getSol() == null) {
 					int[] imps = new int[avgPosOrder.length];
 					int[] slotimps = new int[NUM_SLOTS];
 					bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
