@@ -48,6 +48,8 @@ import edu.brown.cs.aa.algorithms.mck.DynamicMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.ExhaustiveMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.MCKSolver;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver.SolverProperty;
+import edu.brown.cs.aa.algorithms.multiday.DPMultiDay;
+import edu.brown.cs.aa.algorithms.multiday.MultiDayMCKSolver;
 import edu.brown.cs.aa.problem.func.Function;
 import edu.brown.cs.aa.problem.Item;
 import edu.brown.cs.aa.problem.ItemSet;
@@ -320,7 +322,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
 					counter2++;
 				}
-				expectedConvsYesterday /= (double)counter2;
+				expectedConvsYesterday = (int)(expectedConvsYesterday / (double)counter2);
 			}
 			soldArray.add(expectedConvsYesterday);
 			/*
@@ -449,8 +451,8 @@ public class SimpleAABidAgent extends AbstractAgent {
 //				System.exit(-1);
 //			}
 
-			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,15);
-			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
+//			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,15);
+//			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
 			/*
@@ -460,11 +462,19 @@ public class SimpleAABidAgent extends AbstractAgent {
 			 * _capacity is the nominal capacity
 			 * 
 			 */
+			MCKProblem problem = new MCKProblem(itemSets, _capacity, _capacity * 2.0);
+			// TODO: should this be 60 or 58 (or something else)?
+			MCKProblem[] problems = new MCKProblem[58 - (int)_day];
+			for (int i = 0; i < problems.length; i++)
+				problems[i] = problem;
 			
 			ArrayList<Integer> salesHistory = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+			double[] sales = new double[5];
+			for (int i = 0; i < 5; i++)
+				sales[i] = salesHistory.size() - 5 + i >= 0 ? salesHistory.get(salesHistory.size() - 5 + i) : 0;
 			
-			MCKSolver solver = new AllDeltasMCKSolver();
-			Solution solution = ((AllDeltasMCKSolver)solver).solve(problem,_capacity,10);
+			MultiDayMCKSolver solver = new DPMultiDay(10);
+			Solution solution = solver.solve(problems, sales).get(0);
 
 			
 			
