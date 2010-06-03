@@ -13,6 +13,7 @@ public class ImpressionEstimator {
 	private int _nodeId;
 	private Map<Integer, IESolution> _solutions;
 	private int _bestNode;
+	private int _bestImprUB;
 	private int _combinedObjectiveBound;
 	//private int _imprObjectiveBound;
 	//private int _slotObjectiveBound;
@@ -46,6 +47,11 @@ public class ImpressionEstimator {
 		for(int i=0; i < _advertisers; i++){
 			_agentImprLB[i] = 1;
 			_agentImprUB[i] = inst.getImpressionsUB();
+		}
+		
+		if(((_trueAvgPos[_ourIndex] * 1000) % 1000) == 0){
+			_agentImprLB[_ourIndex] = _ourImpressions;
+			_agentImprUB[_ourIndex] = _ourImpressions;
 		}
 
 	}
@@ -87,6 +93,7 @@ public class ImpressionEstimator {
 		_nodeId = 0;
 		_solutions = new HashMap<Integer, IESolution>();
 		_combinedObjectiveBound = _imprUB*_samplingImpressions + 1;
+		_bestImprUB = Integer.MAX_VALUE;//_imprUB*_samplingImpressions + 1;
 
 		int[] agentImpr = new int[_advertisers];
 		for(int i=0; i < _advertisers; i++){
@@ -112,11 +119,6 @@ public class ImpressionEstimator {
 	void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order){
 		_nodeId++;
 		
-		/*
-		if(slotImpr[0] > 2*_imprUB+_samplingImpressions){
-			return;
-		}
-		*/
 		
 		/*
 		 * TODO: for all slot impr, if first slot slotImpr > IMP UB then return
@@ -127,6 +129,7 @@ public class ImpressionEstimator {
 		//System.out.println(_advertisers); 
 		if(currIndex >= _advertisers){
 			int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
+			int slotImprObjVal = Math.max(0, slotImpr[0] - _imprUB);
 			int slotObjVal = 1;
 			for(int i=1; i < slotImpr.length-1; i++){
 				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
@@ -136,7 +139,7 @@ public class ImpressionEstimator {
 					break;
 				}
 			}
-			int combinedObj = imprObjVal/slotObjVal;///_slots;
+			int combinedObj = (imprObjVal+slotImprObjVal)/slotObjVal;///_slots;
 
 			//assert(objVal <= ObjBound);
 			//System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + combinedObj);
@@ -146,10 +149,19 @@ public class ImpressionEstimator {
 				_combinedObjectiveBound = combinedObj;
 				_solutions.put(_nodeId, new IESolution(agentImpr, slotImpr));
 				_bestNode = _nodeId;
+				
+				if(slotImpr[0] < _bestImprUB){
+					_bestImprUB = slotImpr[0];
+				}
 			}
 			return;
 		}
 
+		if(slotImpr[0] > _imprUB && slotImpr[0] > _bestImprUB){
+			//System.out.println("CUT: " + _nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + _imprUB);
+			return; //this is infeasible
+		}
+		
 		int currAgent = order[currIndex];
 
 		int bestImpr = calcMinImpressions(slotImpr, currIndex, _trueAvgPos[currAgent]);	
