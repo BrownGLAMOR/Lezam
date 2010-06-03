@@ -7,7 +7,8 @@ import java.util.Map;
 import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
-	private static int SAMPLING_FACTOR = 100;
+	private static int SAMPLING_FACTOR = 10;
+	private int _samplingImpressions;
 
 	private int _nodeId;
 	private Map<Integer, IESolution> _solutions;
@@ -21,6 +22,7 @@ public class ImpressionEstimator {
 	private double[] _trueAvgPos;
 	private int _ourIndex;
 	private int _ourImpressions;
+	private int _imprUB;
 	private int[] _agentImprUB;
 	private int[] _agentImprLB;
 
@@ -31,6 +33,10 @@ public class ImpressionEstimator {
 		_trueAvgPos = inst.getAvgPos();
 		_ourIndex = inst.getAgentIndex(); //TODO is this ID or Index?
 		_ourImpressions = inst.getImpressions();
+		_imprUB = inst.getImpressionsUB();
+		_samplingImpressions = _imprUB / SAMPLING_FACTOR + 1;
+		
+		//System.out.println("samp impr: " + _samplingImpressions);
 		
 		assert _ourImpressions > 0;
 
@@ -76,11 +82,11 @@ public class ImpressionEstimator {
 		int minSlotImpr = calcMinSlotImpressions(Math.min(getPosition(_ourIndex, order)+1,_slots), (int)_trueAvgPos[_ourIndex], _ourImpressions, _trueAvgPos[_ourIndex]);
 		//System.out.println(minSlotImpr); 
 
-		_agentImprLB[0] = Math.max(_agentImprLB[0], minSlotImpr);
+		_agentImprLB[order[0]] = Math.max(_agentImprLB[order[0]], minSlotImpr);
 
 		_nodeId = 0;
 		_solutions = new HashMap<Integer, IESolution>();
-		_combinedObjectiveBound = _ourImpressions+1;
+		_combinedObjectiveBound = _imprUB*_samplingImpressions + 1;
 
 		int[] agentImpr = new int[_advertisers];
 		for(int i=0; i < _advertisers; i++){
@@ -95,6 +101,7 @@ public class ImpressionEstimator {
 
 		IESolution sol =  _solutions.get(_bestNode);
 		if(sol == null) {
+			assert(false);
 			return null;
 		}
 		else {
@@ -104,14 +111,26 @@ public class ImpressionEstimator {
 
 	void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order){
 		_nodeId++;
-
+		
+		/*
+		if(slotImpr[0] > 2*_imprUB+_samplingImpressions){
+			return;
+		}
+		*/
+		
+		/*
+		 * TODO: for all slot impr, if first slot slotImpr > IMP UB then return
+		 * 
+		 */
+		
+		
 		//System.out.println(_advertisers); 
 		if(currIndex >= _advertisers){
 			int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
 			int slotObjVal = 1;
 			for(int i=1; i < slotImpr.length-1; i++){
 				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
-				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < SAMPLING_FACTOR/2){
+				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < _samplingImpressions/2){
 					slotObjVal += 1;
 				} else {
 					break;
@@ -120,8 +139,10 @@ public class ImpressionEstimator {
 			int combinedObj = imprObjVal/slotObjVal;///_slots;
 
 			//assert(objVal <= ObjBound);
+			//System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + combinedObj);
+			//System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + combinedObj + " - " + _combinedObjectiveBound);
 			if(combinedObj < _combinedObjectiveBound){
-				//				System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + objVal);
+				
 				_combinedObjectiveBound = combinedObj;
 				_solutions.put(_nodeId, new IESolution(agentImpr, slotImpr));
 				_bestNode = _nodeId;
@@ -152,8 +173,8 @@ public class ImpressionEstimator {
 			int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot-2]-1;
 
 			if(firstSlot == 1){
-				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){ //TODO: how to do this  "by (firstSlot == 1 ? i : i)"
-					if(i % SAMPLING_FACTOR == 0 || i == maxImpr){
+				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){
+					if(i % _samplingImpressions == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
@@ -163,7 +184,7 @@ public class ImpressionEstimator {
 			}
 			else {
 				for(int i=maxImpr; i >= _agentImprLB[currAgent] ; i--){
-					if(i % SAMPLING_FACTOR == 0 || i == maxImpr){
+					if(i % _samplingImpressions == 0 || i == maxImpr){
 						int[] agentImprCopy = copyArray(agentImpr);
 						agentImprCopy[currAgent] = i;
 						int[] newSlotImpr = fillSlots(slotImpr, i);
@@ -214,8 +235,10 @@ public class ImpressionEstimator {
 
 		if(fullSlotImp <= 0){
 			//cout << fullSlots..firstSlot << " - " << finalSlot << " - " << wImp << endl;
-			assert(false);
-			return -1;
+			//assert(false);
+			//TODO this is bad and it happens... so this is an ugly hack to fix it,
+			fullSlotImp = 1;
+			wImp = firstSlot;
 		}
 
 		//cout << fullSlots..firstSlot << " - " << finalSlot << " - " << wImp << endl;

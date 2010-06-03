@@ -31,8 +31,9 @@ public class QueryAnalyzerTest {
 	public static final boolean PERFECT_IMPS = true;
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
+		String baseFile = "./game"; //games 1425-1464
 		int min = 1425;
 		int max = 1426;
 
