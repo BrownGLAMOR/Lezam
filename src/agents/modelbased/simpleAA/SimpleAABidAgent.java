@@ -46,6 +46,7 @@ import edu.brown.cs.aa.algorithms.Solution;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.DynamicMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.ExhaustiveMCKSolver;
+import edu.brown.cs.aa.algorithms.mck.MCKSolution;
 import edu.brown.cs.aa.algorithms.mck.MCKSolver;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver.SolverProperty;
 import edu.brown.cs.aa.algorithms.multiday.DPMultiDay;
@@ -102,6 +103,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 		//		_R.setSeed(124962748);
 		_R = new Random(61686);
 		_bidList = new LinkedList<Double>();
+		//TODO: Change this back to 0.05
 		double bidIncrement  = .05;
 		double bidMin = .04;
 		double bidMax = 1.65;
@@ -463,20 +465,23 @@ public class SimpleAABidAgent extends AbstractAgent {
 			 * 
 			 */
 			MCKProblem problem = new MCKProblem(itemSets, _capacity, _capacity * 2.0);
-			// TODO: should this be 60 or 58 (or something else)?
+			System.out.println("Capacity: " + _capacity);
 			MCKProblem[] problems = new MCKProblem[58 - (int)_day];
 			for (int i = 0; i < problems.length; i++)
 				problems[i] = problem;
 			
-			ArrayList<Integer> salesHistory = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
-			double[] sales = new double[5];
-			for (int i = 0; i < 5; i++)
-				sales[i] = salesHistory.size() - 5 + i >= 0 ? salesHistory.get(salesHistory.size() - 5 + i) : 0;
+			double[] sales = new double[4];
+			for (int i = 0; i < sales.length; i++)
+				sales[i] = soldArray.get(i);
 			
-			MultiDayMCKSolver solver = new DPMultiDay(10);
-			Solution solution = solver.solve(problems, sales).get(0);
-
-			
+			Solution solution;
+			if (problems.length == 0)
+				solution = new MCKSolution(problem);
+			else
+			{
+				MultiDayMCKSolver solver = new DPMultiDay(50);
+				solution = solver.solve(problems, sales).get(0);
+			}
 			
 			
 //			MCKSolver solver = new DynamicMCKSolver();

@@ -1954,13 +1954,14 @@ public class BasicSimulator {
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+		String baseFile = "/pro/aa/finals/day-2/server-1/game";
 
-		//		int min = 1440;
-		//		int max = 1441;
+				int min = 1425;
+				int max = 1426;
 
-		int min = 297;
-		int max = 298;
+//		int min = 297;
+//		int max = 298;
 		//				int max = 337;
 
 
