@@ -378,8 +378,8 @@ public class QueryAnalyzerTest {
 		double elapsed = (stop - start)/1000.0;
 		System.out.println("Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time");
 		System.out.println(baseModel + ", " + rankRmseStd[0] + ", " + rankNoMatchRmseStd[0] + ", " + impRmseStd[0] + ", " + impPercRmseStd[0] + ", " + numInstances + ", " + 
-				(numNulls/((double) (numInstances+numNulls))) + ", " + (rankCorrect/((double) (numInstances+numNulls))) + ", " + 
-				(rankNoMatchCorrect/((double) (numInstances+numNulls))) + ", " + elapsed);
+				(numNulls/((double) (numInstances+numNulls))) + ", " + (rankCorrect/((double) (numInstances))) + ", " + 
+				(rankNoMatchCorrect/((double) (numInstances))) + ", " + elapsed);
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
