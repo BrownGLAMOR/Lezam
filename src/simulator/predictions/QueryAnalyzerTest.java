@@ -28,14 +28,14 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
-	public static final boolean PERFECT_IMPS = true;
+	public static boolean PERFECT_IMPS = true;
 
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		//		String baseFile = "./game"; //games 1425-1464
-		int min = 1425;
-		int max = 1426;
+		int min = 1440;
+		int max = 1441;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -58,13 +58,22 @@ public class QueryAnalyzerTest {
 		 * All these maps they are like this: <fileName<agentName,error>>
 		 */
 		HashMap<String,HashMap<String,Double>> ourTotRankErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotNoMatchRankErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotRankActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotRankErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
 
 		HashMap<String,HashMap<String,Double>> ourTotImpErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
+		HashMap<String,HashMap<String,Double>> ourTotImpPercErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Double>> ourTotImpActualMegaMap = new HashMap<String,HashMap<String,Double>>();
 		HashMap<String,HashMap<String,Integer>> ourTotImpErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
+
 		ArrayList<String> filenames = getGameStrings();
+
+		int numInstances = 0;
+		int rankCorrect = 0;
+		int rankNoMatchCorrect = 0;
+		int numNulls = 0;
+
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -75,10 +84,12 @@ public class QueryAnalyzerTest {
 			 * One map for each advertiser
 			 */
 			HashMap<String,Double> ourTotRankErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotNoMatchRankErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotRankActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotRankErrorCounterMap = new HashMap<String, Integer>();
 
 			HashMap<String,Double> ourTotImpErrorMap = new HashMap<String, Double>();
+			HashMap<String,Double> ourTotImpPercErrorMap = new HashMap<String, Double>();
 			HashMap<String,Double> ourTotImpActualMap = new HashMap<String, Double>();
 			HashMap<String,Integer> ourTotImpErrorCounterMap = new HashMap<String, Integer>();
 
@@ -110,12 +121,15 @@ public class QueryAnalyzerTest {
 					model.setAdvertiser(agents[agent]); 
 
 					double ourTotRankError = 0;
+					double ourTotNoMatchRankError = 0;
 					double ourTotRankActual = 0;
 					int ourTotRankErrorCounter = 0;
 
 					double ourTotImpError = 0;
+					double ourTotImpPercError = 0;
 					double ourTotImpActual = 0;
 					int ourTotImpErrorCounter = 0;
+
 
 					LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
 					LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
@@ -137,18 +151,18 @@ public class QueryAnalyzerTest {
 									HashMap<UserState, Integer> userDist = userDists.get(product);
 									if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 										imps += userDist.get(UserState.F0);
-										imps += (1.5/3.0)*userDist.get(UserState.IS);
+										imps += (1.25/3.0)*userDist.get(UserState.IS);
 									}
 									else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
 										if(product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
-											imps += (1.5/2.0)*userDist.get(UserState.F1);
-											imps += (1.5/6.0)*userDist.get(UserState.IS);
+											imps += (1.25/2.0)*userDist.get(UserState.F1);
+											imps += (1.25/6.0)*userDist.get(UserState.IS);
 										}
 									}
 									else {
 										if(product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
 											imps += userDist.get(UserState.F2);
-											imps += (1.5/3.0)*userDist.get(UserState.IS);
+											imps += (1.25/3.0)*userDist.get(UserState.IS);
 										}
 									}
 								}
@@ -205,78 +219,130 @@ public class QueryAnalyzerTest {
 								int[] rankPred = model.getOrderPrediction(q);
 								int[] impsPred = model.getImpressionsPrediction(q);
 
-								HashMap<Integer, Integer> rankPredMap = new HashMap<Integer,Integer>();
-								for(int j = 0; j < rankPred.length; j++) {
-									rankPredMap.put(rankPred[j], j);
+								int totImps = 0;
+								for(int j = 0; j < impsPred.length; j++) {
+									totImps += impsPred[j];
 								}
 
-								int agentOffset = 0;
-								int skipped = 0;
-								for(int j = 0; j < agents.length; j++) {
-									double avgPos;
-									if(j == agent) {
-										avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
-										agentOffset++;
-									}
-									else {
-										avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+2-agentOffset));
+								if(totImps > 0) {
+									HashMap<Integer, Integer> rankPredMap = new HashMap<Integer,Integer>();
+									for(int j = 0; j < rankPred.length; j++) {
+										rankPredMap.put(rankPred[j], j);
 									}
 
-									if(Double.isNaN(avgPos) || avgPos < 0) {
-										skipped++;
-										continue;
+									int agentOffset = 0;
+									int skipped = 0;
+									int totalDiff = 0;
+									int totalNoMatchDiff = 0;
+									for(int j = 0; j < agents.length; j++) {
+										double avgPos;
+										if(j == agent) {
+											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
+											agentOffset++;
+										}
+										else {
+											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+2-agentOffset));
+										}
+
+										if(Double.isNaN(avgPos) || avgPos < 0) {
+											skipped++;
+											continue;
+										}
+
+										double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
+										ourTotRankActual += queryRanks.get(j);
+										ourTotRankError += rankError;
+										ourTotRankErrorCounter++;
+										totalDiff += rankError;
+
+										boolean matchingAvgPos = false;
+										int agentOffset2 = 0;
+										for(int k = 0; k < agents.length; k++) {
+											double otherAvgPos;
+											if(k == agent) {
+												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q);
+												agentOffset2++;
+											}
+											else {
+												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+2-agentOffset2));
+											}
+											if((k != j) && otherAvgPos == avgPos) {
+												matchingAvgPos = true;
+												break;
+											}
+										}
+
+										if(!matchingAvgPos) {
+											ourTotNoMatchRankError += rankError;
+											totalNoMatchDiff += rankError;
+										}
+
+										double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
+										ourTotImpActual += imps.get(j);
+										ourTotImpError += impError;
+										ourTotImpPercError += (impError / imps.get(j))*100;
+										ourTotImpErrorCounter++;
 									}
-
-									double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
-									ourTotRankActual += queryRanks.get(j);
-									ourTotRankError += rankError;
-									ourTotRankErrorCounter++;
-
-									double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
-									ourTotImpActual += imps.get(j);
-									ourTotImpError += impError;
-									ourTotImpErrorCounter++;
+									numInstances++;
+									if(totalDiff == 0) {
+										rankCorrect++;
+									}
+									
+									if(totalNoMatchDiff == 0) {
+										rankNoMatchCorrect++;
+									}
+								}
+								else {
+									numNulls++;
 								}
 							}
 						}
 					}
 					ourTotRankErrorMap.put(agents[agent],ourTotRankError);
+					ourTotNoMatchRankErrorMap.put(agents[agent],ourTotNoMatchRankError);
 					ourTotRankActualMap.put(agents[agent],ourTotRankActual);
 					ourTotRankErrorCounterMap.put(agents[agent],ourTotRankErrorCounter);
-					System.out.print("Rank Error: " + (ourTotRankError/((double)ourTotRankErrorCounter)) + ", ");
 
 					ourTotImpErrorMap.put(agents[agent],ourTotImpError);
+					ourTotImpPercErrorMap.put(agents[agent],ourTotImpPercError);
 					ourTotImpActualMap.put(agents[agent],ourTotImpActual);
 					ourTotImpErrorCounterMap.put(agents[agent],ourTotImpErrorCounter);
-					System.out.println("Imp Error: " + (ourTotImpError/((double)ourTotImpErrorCounter)));
 				}
 			}
 
 			ourTotRankErrorMegaMap.put(filename,ourTotRankErrorMap);
+			ourTotNoMatchRankErrorMegaMap.put(filename,ourTotNoMatchRankErrorMap);
 			ourTotRankActualMegaMap.put(filename,ourTotRankActualMap);
 			ourTotRankErrorCounterMegaMap.put(filename,ourTotRankErrorCounterMap);
 
 			ourTotImpErrorMegaMap.put(filename,ourTotImpErrorMap);
+			ourTotImpPercErrorMegaMap.put(filename,ourTotImpPercErrorMap);
 			ourTotImpActualMegaMap.put(filename,ourTotImpActualMap);
 			ourTotImpErrorCounterMegaMap.put(filename,ourTotImpErrorCounterMap);
 		}
 
 
 		ArrayList<Double> rankRMSEList = new ArrayList<Double>();
+		ArrayList<Double> rankNoMatchRMSEList = new ArrayList<Double>();
 		ArrayList<Double> rankActualList = new ArrayList<Double>();
 
 		ArrayList<Double> impRMSEList = new ArrayList<Double>();
+		ArrayList<Double> impPercRMSEList = new ArrayList<Double>();
 		ArrayList<Double> impActualList = new ArrayList<Double>();
 		for(String file : filenames) {
 			HashMap<String, Double> totRankErrorMap = ourTotRankErrorMegaMap.get(file);
+			HashMap<String, Double> totNoMatchRankErrorMap = ourTotNoMatchRankErrorMegaMap.get(file);
 			HashMap<String, Double> totRankActualMap = ourTotRankActualMegaMap.get(file);
 			HashMap<String, Integer> totRankErrorCounterMap = ourTotRankErrorCounterMegaMap.get(file);
 
 			HashMap<String, Double> totImpErrorMap = ourTotImpErrorMegaMap.get(file);
+			HashMap<String, Double> totImpPercErrorMap = ourTotImpPercErrorMegaMap.get(file);
 			HashMap<String, Double> totImpActualMap = ourTotImpActualMegaMap.get(file);
 			HashMap<String, Integer> totImpErrorCounterMap = ourTotImpErrorCounterMegaMap.get(file);
+
 			for(String agent : totRankErrorCounterMap.keySet()) {
 				double totRankError = totRankErrorMap.get(agent);
+				double totNoMatchRankError = totNoMatchRankErrorMap.get(agent);
 				double totRankActual = totRankActualMap.get(agent);
 				double totRankErrorCounter = totRankErrorCounterMap.get(agent);
 				double rankMAE;
@@ -284,6 +350,10 @@ public class QueryAnalyzerTest {
 				double rankActual = totRankActual/totRankErrorCounter;
 				rankRMSEList.add(rankMAE);
 				rankActualList.add(rankActual);
+
+				double rankNoMatchMAE;
+				rankNoMatchMAE = (totNoMatchRankError/totRankErrorCounter);
+				rankNoMatchRMSEList.add(rankNoMatchMAE);
 
 				double totImpError = totImpErrorMap.get(agent);
 				double totImpActual = totImpActualMap.get(agent);
@@ -293,14 +363,23 @@ public class QueryAnalyzerTest {
 				double impActual = totImpActual/totImpErrorCounter;
 				impRMSEList.add(impMAE);
 				impActualList.add(impActual);
+				
+				double totImpPercError = totImpPercErrorMap.get(agent);
+				double impPercMAE = (totImpPercError/totImpErrorCounter);
+				impPercRMSEList.add(impPercMAE);
 			}
 		}
 
 		double[] rankRmseStd = getStdDevAndMean(rankRMSEList);
+		double[] rankNoMatchRmseStd = getStdDevAndMean(rankNoMatchRMSEList);
 		double[] impRmseStd = getStdDevAndMean(impRMSEList);
+		double[] impPercRmseStd = getStdDevAndMean(impPercRMSEList);
 		double stop = System.currentTimeMillis();
 		double elapsed = (stop - start)/1000.0;
-		System.out.println(baseModel + ", " + rankRmseStd[0] + ", " + impRmseStd[0] + ", " + elapsed);
+		System.out.println("Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time");
+		System.out.println(baseModel + ", " + rankRmseStd[0] + ", " + rankNoMatchRmseStd[0] + ", " + impRmseStd[0] + ", " + impPercRmseStd[0] + ", " + numInstances + ", " + 
+				(numNulls/((double) (numInstances+numNulls))) + ", " + (rankCorrect/((double) (numInstances+numNulls))) + ", " + 
+				(rankNoMatchCorrect/((double) (numInstances+numNulls))) + ", " + elapsed);
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
@@ -356,7 +435,6 @@ public class QueryAnalyzerTest {
 
 		double start = System.currentTimeMillis();
 
-		//		int numIters = Integer.parseInt(args[0]);
 		int numIters = 5;
 		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
 		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
