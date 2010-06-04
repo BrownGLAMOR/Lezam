@@ -1,0 +1,57 @@
+Basline: Sampling Factor 30 - LDS(1)
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.43725004760997904, 0.40925537992763283, 248.83565035231385, 72.52433201721617, 782, 0.0, 0.2544757033248082, 0.27621483375959077, 108.893
+
+
+Hard Imp UB: Sampling Factor 30 - LDS(1)
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.4369283536585366, 0.4089176829268293, 248.04458841463415, 72.49733004430696, 781, 0.0012787723785166241, 0.25480153649167736, 0.2765685019206146, 107.544
+
+
+Hard Imp UB: Sampling Factor 10 - LDS(1)
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.4369283536585366, 0.4089176829268293, 284.2326600609756, 77.29707016518171, 781, 0.0012787723785166241, 0.25480153649167736, 0.2765685019206146, 9.559
+
+Hard Imp UB: Sampling Factor 10 - LDS(1), sample first 10 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.43725004760997904, 0.40925537992763283, 269.5176156922491, 75.43331758626331, 782, 0.0, 0.2544757033248082, 0.27621483375959077, 14.995
+
+Hard Imp UB: Sampling Factor 30 - LDS(1), sample first 10 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.43725004760997904, 0.40925537992763283, 245.38068939249666, 72.03625746914317, 782, 0.0, 0.2544757033248082, 0.27621483375959077, 374.425
+
+Hard Imp UB: Sampling Factor 10 - LDS(5), sample first 10 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4322986097886117, 0.40258998286040754, 259.3306036945344, 70.0011825674284, 782, 0.0, 0.2659846547314578, 0.29028132992327366, 30.898
+
+Hard Imp UB: Sampling Factor 10 - LDS(5), sample first 5 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4368691677775662, 0.4067796610169492, 265.8678346981527, 70.51880140494269, 782, 0.0, 0.26214833759590794, 0.2851662404092072, 16.472
+
+
+
+Hard Imp UB: Sampling Factor 250 - LDS(10), sample first 5 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(10), 0.4204913349838126, 0.39097314797181487, 188.99619120167588, 51.39228516489544, 782, 0.0, 0.29411764705882354, 0.3171355498721228, 32.81
+
+Hard Imp UB: Sampling Factor 400 - LDS(1), sample first 5 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.43725004760997904, 0.40925537992763283, 215.22890877928015, 66.39730481888219, 782, 0.0, 0.2544757033248082, 0.27621483375959077, 164.479
+
+Hard Imp UB: Sampling Factor 250 - LDS(1), sample first 5 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(1), 0.43725004760997904, 0.40925537992763283, 210.85069510569414, 65.00135934956941, 782, 0.0, 0.2544757033248082, 0.27621483375959077, 17.695
+
+
+
+
+Hard Imp UB: Sampling Factor 250 - LDS(5), sample first 5 unit impressions
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4220148543134641, 0.39173490763664065, 195.09521995810323, 53.82343284565617, 782, 0.0, 0.2864450127877238, 0.309462915601023, 20.679
+
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4220148543134641, 0.3919253475528471, 190.2569034469625, 53.49777704253946, 782, 0.0, 0.2813299232736573, 0.30562659846547313, 32.852
+
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.42391925347552845, 0.393639306798705, 192.2125309464864, 54.336884824577304, 782, 0.0, 0.28388746803069054, 0.3069053708439898, 32.139
+

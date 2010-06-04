@@ -29,13 +29,14 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
 	public static boolean PERFECT_IMPS = true;
+	public static int LDS_ITERATIONS = 5;
 
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		//		String baseFile = "./game"; //games 1425-1464
-		int min = 1440;
-		int max = 1441;
+				String baseFile = "./game"; //games 1425-1464
+		int min = 1425;
+		int max = 1426;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -435,9 +436,8 @@ public class QueryAnalyzerTest {
 
 		double start = System.currentTimeMillis();
 
-		int numIters = 5;
 		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
-		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", numIters));
+		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", LDS_ITERATIONS));
 
 
 		double stop = System.currentTimeMillis();

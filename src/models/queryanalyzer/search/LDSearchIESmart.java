@@ -34,7 +34,7 @@ public class LDSearchIESmart extends LDSearchSmart {
 	}
 
 	public IEResult getBestSolution() {
-		assert(_best != null) : "possibly called before search was run";
+		//assert(_best != null) : "possibly called before search was run";
 		return _best;
 	}
 

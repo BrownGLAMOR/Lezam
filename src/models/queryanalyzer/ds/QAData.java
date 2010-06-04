@@ -42,9 +42,10 @@ public class QAData {
 		for(int i=0; i < usedAgents; i++){
 			avgPos[i] = usedAgentInfo[i].avgPos;
 			agentIds[i] = usedAgentInfo[i].id;
-			impressionsUB += usedAgentInfo[i].impressions;
-			//impressionsUB = Math.max(impressionsUB, usedAgentInfo[i].impressions);
+			//impressionsUB += usedAgentInfo[i].impressions;
+			impressionsUB = Math.max(impressionsUB, usedAgentInfo[i].impressions);
 		}
+		impressionsUB = 2*impressionsUB;
 		
 		return new QAInstance(_slots, usedAgents, avgPos, agentIds, advIndex, usedAgentInfo[advIndex].impressions, impressionsUB);
 	}
