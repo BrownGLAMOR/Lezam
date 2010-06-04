@@ -49,6 +49,7 @@ import edu.brown.cs.aa.algorithms.mck.ExhaustiveMCKSolver;
 import edu.brown.cs.aa.algorithms.mck.MCKSolution;
 import edu.brown.cs.aa.algorithms.mck.MCKSolver;
 import edu.brown.cs.aa.algorithms.mck.AllDeltasMCKSolver.SolverProperty;
+import edu.brown.cs.aa.algorithms.multiday.BenHillClimbingMultiday;
 import edu.brown.cs.aa.algorithms.multiday.DPMultiDay;
 import edu.brown.cs.aa.algorithms.multiday.MultiDayMCKSolver;
 import edu.brown.cs.aa.problem.func.Function;
@@ -479,7 +480,8 @@ public class SimpleAABidAgent extends AbstractAgent {
 				solution = new MCKSolution(problem);
 			else
 			{
-				MultiDayMCKSolver solver = new DPMultiDay(50);
+//				MultiDayMCKSolver solver = new DPMultiDay(50);
+				MultiDayMCKSolver solver = new BenHillClimbingMultiday(20);
 				solution = solver.solve(problems, sales).get(0);
 			}
 			
