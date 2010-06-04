@@ -12,6 +12,7 @@ public class LDSearchIESmart extends LDSearchSmart {
 	ImpressionEstimator _ie;
 	
 	public LDSearchIESmart(int maxIter, QAInstance inst){
+		super(inst.getNumSlots());
 		_maxIter = maxIter;
 		_ie = new ImpressionEstimator(inst);
 	}

@@ -61,9 +61,9 @@ public class ImpressionEstimator {
 			_agentImprUB[i] = inst.getImpressionsUB();
 		}
 		
-		if(((_trueAvgPos[_ourIndex] * 1000) % 1000) == 0){
-			//_agentImprLB[_ourIndex] = _ourImpressions-_samplingImpressions;
-			_agentImprUB[_ourIndex] = _ourImpressions+_samplingImpressions;
+		if(!_fractionalAvgPos[_ourIndex]){
+			_agentImprLB[_ourIndex] = _ourImpressions-_ourImpressions/10;
+			_agentImprUB[_ourIndex] = _ourImpressions+_ourImpressions/10;
 		}
 
 	}
@@ -81,7 +81,6 @@ public class ImpressionEstimator {
 	}
 
 	private boolean feasibleOrder(int[] order) {
-		//assert(false);
 		for(int i=0; i < order.length; i++){
 			int startPos = Math.min(i+1,_slots);
 			if(startPos < _trueAvgPos[order[i]]){
@@ -93,6 +92,7 @@ public class ImpressionEstimator {
 
 	public IEResult search(int[] order){ //TODO incorporate order
 		if(!feasibleOrder(order)){
+			assert(false) : "should have been eliminated in LDS search";
 			//System.out.println("order is infeasible"); 
 			return null;
 		}
@@ -313,6 +313,8 @@ public class ImpressionEstimator {
 		return newSlotImpr;
 	}
 
+	/*
+	//Seems this bound was a bad idea... makes many instances infeasible
 	private int calcMinSlotImpressions(int startSlot, int endSlot, int impressions, double avgPos) {
 		//System.out.println(startSlot + " " + endSlot);
 		assert(startSlot >= endSlot);
@@ -324,6 +326,7 @@ public class ImpressionEstimator {
 			return minSlotImpr;
 		}
 	}
+	*/
 
 	private int[] copyArray(int[] arr){
 		int[] newArr = new int[arr.length];

@@ -38,7 +38,7 @@ public class TestLDSearch {
 		
 		System.out.println("Iterations: "+searcher.getIterations());
 		
-		LDSearchOrderSmart smartSearcher = new LDSearchOrderSmart(bidOrder);
+		LDSearchOrderSmart smartSearcher = new LDSearchOrderSmart(bidOrder, inst.getNumSlots());
 		smartSearcher.search(avgPosOrder, inst.getAvgPos());
 		
 		System.out.println("Smart Iterations: "+smartSearcher.getIterations());

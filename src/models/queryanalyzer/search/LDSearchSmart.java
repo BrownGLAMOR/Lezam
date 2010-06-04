@@ -9,10 +9,13 @@ abstract class LDSearchSmart {
 	private int _iterations;
 	private PriorityQueue<LDSPerm> _LDSQueue;
 	
-	public LDSearchSmart(){
+	private int _slots;
+	
+	public LDSearchSmart(int slots){
 		_LDSQueue = new PriorityQueue<LDSPerm>();
 		_iterations = 0;
 		_distFactor = 10000;
+		_slots = slots;
 	}
 	
 	public void search(int[] startPerm, double[] avgPos){
@@ -47,9 +50,11 @@ abstract class LDSearchSmart {
 						nextPerm[i1] = nextPerm[i2];
 						nextPerm[i2] = temp;
 						
-						int delta = (int)(100*Math.abs(avgPos[nextPerm[i1]] - avgPos[nextPerm[i2]])); //needs a little more work, becouse avp array changes with swaps
-						//System.out.println("Pushing: "+Arrays.toString(nextPerm)+" "+nextSwapSet);
-						_LDSQueue.add(new LDSPerm(dsVal+_distFactor+delta, nextPerm, nextSwapSet));
+						if(feasibleOrder(nextPerm, avgPos)){
+							int delta = (int)(100*Math.abs(avgPos[nextPerm[i1]] - avgPos[nextPerm[i2]])); //needs a little more work, becouse avp array changes with swaps
+							//System.out.println("Pushing: "+Arrays.toString(nextPerm)+" "+nextSwapSet);
+							_LDSQueue.add(new LDSPerm(dsVal+_distFactor+delta, nextPerm, nextSwapSet));
+						}
 					}
 				}
 			}
@@ -57,6 +62,17 @@ abstract class LDSearchSmart {
 	}
 	
 	public int getIterations(){return _iterations;}
+	
+	private boolean feasibleOrder(int[] order, double[] avgPos) {
+		//assert(false);
+		for(int i=0; i < order.length; i++){
+			int startPos = Math.min(i+1,_slots);
+			if(startPos < avgPos[order[i]]){
+				return false;
+			}
+		}
+		return true;
+	}
 	
 	abstract protected boolean evalPerm(int[] perm);
 }

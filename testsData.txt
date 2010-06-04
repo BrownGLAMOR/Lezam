@@ -55,3 +55,12 @@ CarletonQueryAnalyzer(5), 0.4220148543134641, 0.3919253475528471, 190.2569034469
 Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
 CarletonQueryAnalyzer(5), 0.42391925347552845, 0.393639306798705, 192.2125309464864, 54.336884824577304, 782, 0.0, 0.28388746803069054, 0.3069053708439898, 32.139
 
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.42582365263759286, 0.3955437059607694, 191.09902875642734, 52.75051944620056, 782, 0.0, 0.28388746803069054, 0.3069053708439898, 46.508
+
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4406779661016949, 0.4105884593410779, 229.556274995239, 69.63310040105631, 782, 0.0, 0.2659846547314578, 0.289002557544757, 23.074
+
+with 10% error bounds
+Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time
+CarletonQueryAnalyzer(5), 0.4222773221438108, 0.3927140949837879, 166.04463093648675, 49.49022724848517, 781, 0.0012787723785166241, 0.2919334186939821, 0.31498079385403327, 38.474

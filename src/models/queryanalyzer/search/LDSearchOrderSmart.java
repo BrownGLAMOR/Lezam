@@ -3,7 +3,8 @@ package models.queryanalyzer.search;
 public class LDSearchOrderSmart extends LDSearchSmart {
 	int[] _goalPerm;
 	
-	public LDSearchOrderSmart(int[] goalPerm){
+	public LDSearchOrderSmart(int[] goalPerm, int slots){
+		super(slots);
 		_goalPerm = goalPerm;
 	}
 	
