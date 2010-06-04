@@ -31,7 +31,7 @@ public class ParameterEstimationTest {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
-		int max = 1441;
+		int max = 1450;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -44,14 +44,25 @@ public class ParameterEstimationTest {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
-		HashMap<QueryType, ArrayList<Double>> percentError = new HashMap<QueryType, ArrayList<Double>>();
-		percentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
-		percentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
-		percentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
-		HashMap<QueryType, ArrayList<Double>> baselineError = new HashMap<QueryType, ArrayList<Double>>();
-		baselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
-		baselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
-		baselineError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
+		HashMap<QueryType, ArrayList<Double>> advEffPercentError = new HashMap<QueryType, ArrayList<Double>>();
+		advEffPercentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		advEffPercentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		advEffPercentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
+		
+		HashMap<QueryType, ArrayList<Double>> advEffBaselineError = new HashMap<QueryType, ArrayList<Double>>();
+		advEffBaselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		advEffBaselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		advEffBaselineError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
+		
+		HashMap<QueryType, ArrayList<Double>> contProbPercentError = new HashMap<QueryType, ArrayList<Double>>();
+		contProbPercentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		contProbPercentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		contProbPercentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
+		
+		HashMap<QueryType, ArrayList<Double>> contProbBaselineError = new HashMap<QueryType, ArrayList<Double>>();
+		contProbBaselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
+		contProbBaselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
+		contProbBaselineError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
 		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
 			String filename = filenames.get(fileIdx);
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
@@ -184,43 +195,64 @@ public class ParameterEstimationTest {
 						double trueContinuationProb = userClickModel.getContinuationProbability(userClickModel.queryIndex(q));
 
 						//System.out.println(agents[agent]);
-						System.out.println(q);
+//						System.out.println(q);
 						//System.out.println("Our guess: "+preds[0]);
 						//System.out.println(trueAdvertiserEffect);
-						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
-						System.out.println("Continuation Prob: "+preds[1]);
+//						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+//						System.out.println("Continuation Prob: "+preds[1]);
 
-						double average = 0.0;
+						double advEffAverage = 0.0;
+						double contProbAverage = 0.0;
 						if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)){
-							average = 0.25;
+							advEffAverage = 0.25;
+							contProbAverage = .35;
 						}
 						else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)){
-							average = 0.35;
+							advEffAverage = 0.35;
+							contProbAverage = .45;
 						}
 						else{
-							average = 0.45;
+							advEffAverage = 0.45;
+							contProbAverage = .55;
 						}
-						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
-						percentError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
-
-						baselineError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+//						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+						advEffPercentError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+						advEffBaselineError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-advEffAverage)/trueAdvertiserEffect*100);
+						
+						contProbPercentError.get(q.getType()).add(Math.abs(trueContinuationProb-preds[1])/trueContinuationProb*100);
+						contProbBaselineError.get(q.getType()).add(Math.abs(trueContinuationProb-contProbAverage)/trueContinuationProb*100);
 					}
 				}
 			}
 		}
-		for(QueryType qt : percentError.keySet()){
-			double averagePercentError = 0.0;
-			double baselinePercentError = 0.0;
-			for(Double d : percentError.get(qt)){
+		for(QueryType qt : advEffPercentError.keySet()){
+			double advEffAveragePercentError = 0.0;
+			double advEffBaselinePercentError = 0.0;
+			for(Double d : advEffPercentError.get(qt)){
 				//System.out.println(percentError.get(qt).size());
-				averagePercentError += d/percentError.get(qt).size();
+				advEffAveragePercentError += d/advEffPercentError.get(qt).size();
 			}
-			for(Double d2 : baselineError.get(qt)){
-				baselinePercentError += d2/baselineError.get(qt).size();
+			for(Double d2 : advEffBaselineError.get(qt)){
+				advEffBaselinePercentError += d2/advEffBaselineError.get(qt).size();
 			}
 			System.out.println(qt);
-			System.out.println("Mean Percent Error Using Data: "+averagePercentError);
-			System.out.println("Mean Percent Error Using Average: "+baselinePercentError);
+			System.out.println("Advertiser Effect Mean Percent Error Using Data: "+advEffAveragePercentError);
+			System.out.println("Advertiser Effect Mean Percent Error Using Average: "+advEffBaselinePercentError);
+		}
+		
+		for(QueryType qt : advEffPercentError.keySet()){
+			double contProbAveragePercentError = 0.0;
+			double contProbaselinePercentError = 0.0;
+			for(Double d : contProbPercentError.get(qt)){
+				//System.out.println(percentError.get(qt).size());
+				contProbAveragePercentError += d/contProbPercentError.get(qt).size();
+			}
+			for(Double d2 : contProbBaselineError.get(qt)){
+				contProbaselinePercentError += d2/contProbPercentError.get(qt).size();
+			}
+			System.out.println(qt);
+			System.out.println("Continuation Prob Mean Percent Error Using Data: "+contProbAveragePercentError);
+			System.out.println("Continuation Prob Mean Percent Error Using Average: "+contProbaselinePercentError);
 		}
 	}
 
@@ -352,8 +384,6 @@ public class ParameterEstimationTest {
 	 *
 	 * -gnthomps
 	 */
-
-
 	public int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions){
 		int[][] impressionsBySlot = new int[agents][slots];
 
@@ -370,7 +400,6 @@ public class ParameterEstimationTest {
 					impressionsBySlot[a][0] = remainingImp;
 					slotStart[0] += remainingImp;
 				}else{
-
 					int r = slotStart[s-1] - slotStart[s];
 					//System.out.println("agent " +a + " r = "+(slotStart[s-1] - slotStart[s]));
 					assert(r >= 0);
