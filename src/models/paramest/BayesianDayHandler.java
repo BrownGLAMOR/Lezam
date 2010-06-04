@@ -34,9 +34,9 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 	ArrayList<Double> _contProbDist;
 	ArrayList<Double> _contProbWeights;
 	public static final int MAX_MLE_SOLS = 4;
-	public static final int NUM_DISCRETE_PROBS = 20;
+	public static final int NUM_DISCRETE_PROBS = 30;
 	public static final double BASE_WEIGHT = 1.0/NUM_DISCRETE_PROBS;
-	public static final boolean MLE = true;
+	public static final boolean MLE = false;
 
 	boolean[] _saw;
 
@@ -125,6 +125,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 					double theoreticalClickProb = etaClickPr(ourAdvertiserEffect, ftfp);
 					double IS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
 					double nonIS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
+					views += IS + nonIS;
 					for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
 						Ad otherAd = advertisersAboveUs.get(prevSlot);
 						int ftOther = 0;
@@ -133,9 +134,8 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 						}
 						double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= prevSlot + 1)];
 						double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
-						nonIS *= (1 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
+						nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
 					}
-					views += IS + nonIS;
 					coeff[(numSlots-1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
 				}
 			}
@@ -221,4 +221,14 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 		return clicks;
 	}
 
+	public double getInformationWeight() {
+		/*
+		 * Weight by the number of impressions in the sample
+		 */
+		double weight = 0.0;
+		for(int i = 0; i < _impressionsPerSlot.size(); i++) {
+			weight += _impressionsPerSlot.get(i);
+		}
+		return weight;
+	}
 }

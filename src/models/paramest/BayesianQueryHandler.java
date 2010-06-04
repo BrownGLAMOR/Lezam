@@ -1,5 +1,10 @@
 package models.paramest;
 
+/**
+ * 
+ * @author mbarrows,jberg
+ */
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,10 +25,11 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 	ArrayList<Double> _advEffDist;
 	ArrayList<Double> _advEfWeights;
 	public static final int MIN_IMPS = 10;
-	public static final int MAX_MLE_SOLS = 4;
-	public static final int NUM_DISCRETE_PROBS = 20;
+	public static final int MIN_CLICKS = 1;
+	public static final int MAX_MLE_SOLS = 2;
+	public static final int NUM_DISCRETE_PROBS = 30;
 	public static final double BASE_WEIGHT = 1.0/NUM_DISCRETE_PROBS;
-	public static final boolean MLE = true;
+	public static final boolean MLE = false;
 
 	LinkedList<BayesianDayHandler> _dayHandlers;
 	double[] _lastPredictions;
@@ -69,8 +75,9 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 			HashMap<Product, HashMap<UserState, Integer>> userStates) {
 
 		int totImpressions = queryReport.getImpressions(_query);
+		int totClicks = queryReport.getClicks(_query);
 
-		if(totImpressions > MIN_IMPS) {
+		if(totImpressions > MIN_IMPS && totClicks > MIN_CLICKS) {
 
 			assert impressionsPerSlot.size() == advertisersAbovePerSlot.size();
 
@@ -110,7 +117,8 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				LinkedList<LinkedList<Ad>> adsAbovePerSlot = getAdsAbovePerSlot(advertisersAbovePerSlot, ads);
 
 				// get states of searching users
-				HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates, impressionsPerSlot);
+				HashMap<Product, Double> imprdist = getImpressionDist(userStates,queryReport.getImpressions(_query));
+				HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates, impressionsPerSlot,imprdist);
 
 				BayesianDayHandler latestday = new BayesianDayHandler(_query, totalClicks,
 						numberPromotedSlots, impressionsPerSlot, _lastPredictions[0],
@@ -150,10 +158,6 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 					assert (imps > estClicks);
 					double prob = getBinomialProb(imps, trueClicks, estClicks);
 					double newProb = _advEfWeights.get(i) * prob;
-
-					if(Double.isNaN(newProb)) {
-						int iasd = 0; //noop
-					}
 
 					_advEfWeights.set(i,newProb);
 					total += newProb;
@@ -208,23 +212,17 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
 			if(notinslot1 || inslot1) {
 				double contProb = 0;
-				double numberOfDayHandlers = 0;
+				double totalWeight = 0;
 				for (BayesianDayHandler dh : _dayHandlers) {
-					contProb += dh.getContinuationProbability();
-					numberOfDayHandlers += 1;
+					double weight = dh.getInformationWeight();
+					contProb += dh.getContinuationProbability()*weight;
+					totalWeight += weight;
 				}
 
-				/*
-				 * TODO:
-				 * 
-				 * 1) Weight the day handlers
-				 * 	 a) Maybe by overall impressions?
-				 * 	 b) Maybe by average position?
-				 */
-
-				contProb = contProb / numberOfDayHandlers;
-
-				_lastPredictions[1] = contProb;
+				if(totalWeight > 0) {
+					contProb = contProb / totalWeight;
+					_lastPredictions[1] = contProb;
+				}
 			}
 		}
 		return true;
@@ -335,8 +333,12 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 		return toreturn;
 	}
 
-	public HashMap<Product, LinkedList<double[]>> getStatesOfSearchingUsers(HashMap<Product, HashMap<UserState, Integer>> userStates,
-			LinkedList<Integer> impressionsPerSlot) {
+	public HashMap<Product, LinkedList<double[]>> getStatesOfSearchingUsers(HashMap<Product, HashMap<UserState, Integer>> userStates, LinkedList<Integer> impressionsPerSlot, HashMap<Product, Double> imprdist) {
+
+		double impressions = 0;
+		for(Product p : imprdist.keySet()) {
+			impressions += imprdist.get(p);
+		}
 
 		HashMap<Product, LinkedList<double[]>> toreturn = new HashMap<Product, LinkedList<double[]>>();
 		// for each product
@@ -370,8 +372,8 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				double ISusersPerSlot = 0.0;
 				double nonISusersPerSlot = 0.0;
 				if (sum > 0.0) {
-					ISusersPerSlot = ((double) ISusers * ((double) integer)) / sum;
-					nonISusersPerSlot = ((double) nonISusers * ((double) integer)) / sum;
+					ISusersPerSlot = (((double) ISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
+					nonISusersPerSlot = (((double) nonISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
 				}
 				double[] statesOfSearchingUsersPerSlot = { ISusersPerSlot, nonISusersPerSlot };
 				userSlotDist.add(statesOfSearchingUsersPerSlot);
