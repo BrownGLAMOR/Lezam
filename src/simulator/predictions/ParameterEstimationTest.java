@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
+import models.bidmodel.AbstractBidModel;
 import models.paramest.AbstractParameterEstimation;
 import models.paramest.BayesianParameterEstimation;
 import models.paramest.MBarrowsParameterEstimation;
@@ -31,7 +33,7 @@ public class ParameterEstimationTest {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
-		int max = 1450;
+		int max = 1441;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -40,7 +42,7 @@ public class ParameterEstimationTest {
 		return filenames;
 	}
 
-	public void modelParamPredictionChallenge(AbstractParameterEstimation baseModel) throws IOException, ParseException, InstantiationException, IllegalAccessException {
+	public double modelParamPredictionChallenge(AbstractParameterEstimation baseModel) throws IOException, ParseException, InstantiationException, IllegalAccessException {
 		ArrayList<String> filenames = getGameStrings();
 		int numSlots = 5;
 		int numAdvertisers = 8;
@@ -48,17 +50,17 @@ public class ParameterEstimationTest {
 		advEffPercentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
 		advEffPercentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
 		advEffPercentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
-		
+
 		HashMap<QueryType, ArrayList<Double>> advEffBaselineError = new HashMap<QueryType, ArrayList<Double>>();
 		advEffBaselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
 		advEffBaselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
 		advEffBaselineError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
-		
+
 		HashMap<QueryType, ArrayList<Double>> contProbPercentError = new HashMap<QueryType, ArrayList<Double>>();
 		contProbPercentError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
 		contProbPercentError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
 		contProbPercentError.put(QueryType.FOCUS_LEVEL_TWO, new ArrayList<Double>());
-		
+
 		HashMap<QueryType, ArrayList<Double>> contProbBaselineError = new HashMap<QueryType, ArrayList<Double>>();
 		contProbBaselineError.put(QueryType.FOCUS_LEVEL_ZERO, new ArrayList<Double>());
 		contProbBaselineError.put(QueryType.FOCUS_LEVEL_ONE, new ArrayList<Double>());
@@ -94,9 +96,7 @@ public class ParameterEstimationTest {
 			LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
 
 			for(int agent = 0; agent < agents.length; agent++) {
-				Class<? extends AbstractParameterEstimation> c = baseModel.getClass();
-
-				AbstractParameterEstimation model = c.newInstance();
+				AbstractParameterEstimation model = (AbstractParameterEstimation) baseModel.getCopy();
 
 				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
@@ -195,11 +195,11 @@ public class ParameterEstimationTest {
 						double trueContinuationProb = userClickModel.getContinuationProbability(userClickModel.queryIndex(q));
 
 						//System.out.println(agents[agent]);
-//						System.out.println(q);
+						//						System.out.println(q);
 						//System.out.println("Our guess: "+preds[0]);
 						//System.out.println(trueAdvertiserEffect);
-//						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
-//						System.out.println("Continuation Prob: "+preds[1]);
+						//						System.out.println("Percent Error: "+Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
+						//						System.out.println("Continuation Prob: "+preds[1]);
 
 						double advEffAverage = 0.0;
 						double contProbAverage = 0.0;
@@ -215,16 +215,18 @@ public class ParameterEstimationTest {
 							advEffAverage = 0.45;
 							contProbAverage = .55;
 						}
-//						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
+						//						System.out.println("Baseline:"+Math.abs(trueAdvertiserEffect-average)/trueAdvertiserEffect*100);
 						advEffPercentError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-preds[0])/trueAdvertiserEffect*100);
 						advEffBaselineError.get(q.getType()).add(Math.abs(trueAdvertiserEffect-advEffAverage)/trueAdvertiserEffect*100);
-						
+
 						contProbPercentError.get(q.getType()).add(Math.abs(trueContinuationProb-preds[1])/trueContinuationProb*100);
 						contProbBaselineError.get(q.getType()).add(Math.abs(trueContinuationProb-contProbAverage)/trueContinuationProb*100);
 					}
 				}
 			}
 		}
+
+		double totalError = 0.0;
 		for(QueryType qt : advEffPercentError.keySet()){
 			double advEffAveragePercentError = 0.0;
 			double advEffBaselinePercentError = 0.0;
@@ -238,8 +240,9 @@ public class ParameterEstimationTest {
 			System.out.println(qt);
 			System.out.println("Advertiser Effect Mean Percent Error Using Data: "+advEffAveragePercentError);
 			System.out.println("Advertiser Effect Mean Percent Error Using Average: "+advEffBaselinePercentError);
+			totalError += advEffAveragePercentError;
 		}
-		
+
 		for(QueryType qt : advEffPercentError.keySet()){
 			double contProbAveragePercentError = 0.0;
 			double contProbaselinePercentError = 0.0;
@@ -253,7 +256,9 @@ public class ParameterEstimationTest {
 			System.out.println(qt);
 			System.out.println("Continuation Prob Mean Percent Error Using Data: "+contProbAveragePercentError);
 			System.out.println("Continuation Prob Mean Percent Error Using Average: "+contProbaselinePercentError);
+			totalError += contProbAveragePercentError;
 		}
+		return totalError;
 	}
 
 	public static class BidPair implements Comparable<BidPair> {
@@ -427,11 +432,25 @@ public class ParameterEstimationTest {
 		Set<Query> querySpace = new LinkedHashSet<Query>();
 		//evaluator.modelParamPredictionChallenge(new MBarrowsImpl(querySpace,"this will be set later",0));
 		//		evaluator.modelParamPredictionChallenge(new MBarrowsParameterEstimation());
-		evaluator.modelParamPredictionChallenge(new BayesianParameterEstimation());
+
+		//		Random rand = new Random();
+		//		double args0,args1,args2;
+		//		do {
+		//			args0 = rand.nextDouble()*.15;
+		//			args1 = rand.nextDouble()*.25;
+		//			args2 = rand.nextDouble()*.35;
+		//		} while(!(args0 < args1 && args1 < args2));
+		//
+		//		double[] c = new double[3];
+		//		c[0] = args0;
+		//		c[1] = args1;
+		//		c[2] = args2;
+
+		double error = evaluator.modelParamPredictionChallenge(new BayesianParameterEstimation());
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
 
 }
