@@ -18,8 +18,16 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 	
 	double _probClick;
 	
-	public BayesianParameterEstimation()
+	double[] _c;
+	
+	public BayesianParameterEstimation() {
+		this(new double[] {0.126114132,0.153193911,0.246344682});
+	}
+	
+	public BayesianParameterEstimation(double[] c)
 	{
+		_c = c;
+		
 		m_queries = new ArrayList<Query>();
 		m_queryHandlers = new HashMap<Query, BayesianQueryHandler>();
 		
@@ -42,7 +50,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 		 m_queries.add(new Query("flat", "dvd"));
 		 
 		 for(Query q: m_queries){
-			 m_queryHandlers.put(q, new BayesianQueryHandler(q));
+			 m_queryHandlers.put(q, new BayesianQueryHandler(q,_c));
 		 }
 	}
 
@@ -73,6 +81,6 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BayesianParameterEstimation();
+		return new BayesianParameterEstimation(_c);
 	}
 }

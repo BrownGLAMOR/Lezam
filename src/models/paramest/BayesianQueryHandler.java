@@ -24,8 +24,8 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
 	ArrayList<Double> _advEffDist;
 	ArrayList<Double> _advEfWeights;
-	public static final int MIN_IMPS = 10;
-	public static final int MIN_CLICKS = 1;
+	public static final int MIN_IMPS = 15;
+	public static final int MIN_CLICKS = 3;
 	public static final int MAX_MLE_SOLS = 2;
 	public static final int NUM_DISCRETE_PROBS = 30;
 	public static final double BASE_WEIGHT = 1.0/NUM_DISCRETE_PROBS;
@@ -34,7 +34,11 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 	LinkedList<BayesianDayHandler> _dayHandlers;
 	double[] _lastPredictions;
 
-	public BayesianQueryHandler(Query q) {
+	double[] _c;
+
+	public BayesianQueryHandler(Query q, double[] c) {
+
+		_c = c;
 
 		_query = q;
 		_queryType = q.getType();
@@ -123,7 +127,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				BayesianDayHandler latestday = new BayesianDayHandler(_query, totalClicks,
 						numberPromotedSlots, impressionsPerSlot, _lastPredictions[0],
 						adsAbovePerSlot, statesSearchingUsers, (ourAdTargeted),
-						ourAdProduct);
+						ourAdProduct,_c);
 
 				_dayHandlers.add(latestday);
 
@@ -199,6 +203,10 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 					}
 				}
 
+				if(Double.isNaN(currentEstimate)) {
+					System.out.println("poop");
+				}
+				
 				_lastPredictions[0] = currentEstimate;
 
 				// Update all previous continuation probability estimates
@@ -214,9 +222,11 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				double contProb = 0;
 				double totalWeight = 0;
 				for (BayesianDayHandler dh : _dayHandlers) {
-					double weight = dh.getInformationWeight();
-					contProb += dh.getContinuationProbability()*weight;
-					totalWeight += weight;
+					if(!Double.isNaN(dh.getContinuationProbability())) {
+						double weight = dh.getInformationWeight();
+						contProb += dh.getContinuationProbability()*weight;
+						totalWeight += weight;
+					}
 				}
 
 				if(totalWeight > 0) {

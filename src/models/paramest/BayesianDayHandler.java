@@ -50,13 +50,14 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 	HashMap<Product, LinkedList<double[]>> _userStatesOfSearchingUsers; // [IS, non-IS]
 	boolean _targeted;
 	Product _target;
+	private double[] _c;
 
 	public BayesianDayHandler(Query q, int totalClicks, int numberPromotedSlots,
 			LinkedList<Integer> impressionsPerSlot,
 			double ourAdvertiserEffect,
 			LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot < their slots <ad>>
 			HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers,
-			boolean targeted, Product target) {
+			boolean targeted, Product target, double[] c) {
 
 		_q = q;
 		_totalClicks = totalClicks;
@@ -67,6 +68,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 		_userStatesOfSearchingUsers = userStatesOfSearchingUsers;
 		_targeted = targeted;
 		_target = target;
+		_c = c;
 
 		if (_q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 			_otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
@@ -102,11 +104,11 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 
 	private double otherAdvertiserConvProb() {
 		if (_q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-			return .07;
+			return _c[0];
 		} else if (_q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-			return .15;
+			return _c[1];
 		} else {
-			return .23;
+			return _c[2];
 		}
 	}
 
