@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import models.AbstractModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
@@ -42,13 +43,12 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
 	 * ads containts the ad that each advertiser placed.  The strings in this hashmap are
 	 * the same as in the advertisersAbovePerSlot
 	 */
-	public abstract boolean updateModel(String ourAgent,
-										QueryReport queryReport, 
+	public abstract boolean updateModel(QueryReport queryReport, 
 										SalesReport salesReport,
+										BidBundle bidBundle,
 										int numberPromotedSlots,
-										HashMap<Query,LinkedList<Integer>> impressionsPerSlot,
-										HashMap<Query,LinkedList<LinkedList<String>>> advertisersAbovePerSlot,
-										HashMap<String,HashMap<Query,Ad>> ads,
+										HashMap<Query,int[]> order,
+										HashMap<Query,int[]> impressions,
 										HashMap<Product,HashMap<UserState,Integer>> userStates);
 	
 }

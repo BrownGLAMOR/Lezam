@@ -14,7 +14,6 @@ import java.util.Set;
 import models.bidmodel.AbstractBidModel;
 import models.paramest.AbstractParameterEstimation;
 import models.paramest.BayesianParameterEstimation;
-import models.paramest.MBarrowsParameterEstimation;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -100,11 +99,13 @@ public class ParameterEstimationTest {
 
 				LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
 				LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
+				LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
 
 				for(int i = 0; i < 57; i++) {
 
 					SalesReport salesReport = ourSalesReports.get(i);
 					QueryReport queryReport = ourQueryReports.get(i);
+					BidBundle bidBundle = ourBidBundles.get(i);
 
 					HashMap<String,HashMap<Query,Ad>> allAds = new HashMap<String, HashMap<Query,Ad>>();
 					for(int agentInner = 0; agentInner < agents.length; agentInner++) {
@@ -116,21 +117,43 @@ public class ParameterEstimationTest {
 						allAds.put(agents[agentInner],advAds);
 					}
 
-					HashMap<Query,LinkedList<LinkedList<String>>> allAdvertisersAbovePerSlot = new HashMap<Query,LinkedList<LinkedList<String>>>();
-					HashMap<Query,LinkedList<Integer>> allImpressionsPerSlot = new HashMap<Query,LinkedList<Integer>>();
+					HashMap<Query, int[]> allOrders = new HashMap<Query,int[]>();
+					HashMap<Query, int[]> allImpressions = new HashMap<Query,int[]>();
 					for(Query q : querySpace) {
 						int[] order = new int[numAdvertisers];
 						int[] impressions = new int[numAdvertisers];
 						ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
 						for(int agentInner = 0; agentInner < agents.length; agentInner++) {
-							QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
-							impressions[agentInner] = innerQueryReport.getImpressions(q);
+							if(agent == agentInner) {
+								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
+								impressions[0] = innerQueryReport.getImpressions(q);
 
-							BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-							double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
-							double bid = innerBidBundle.getBid(q);
-							double squashedBid = bid * Math.pow(advEffect, squashing);
-							bidPairs.add(new BidPair(agentInner, squashedBid));
+								BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
+								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
+								double bid = innerBidBundle.getBid(q);
+								double squashedBid = bid * Math.pow(advEffect, squashing);
+								bidPairs.add(new BidPair(0, squashedBid));
+							}
+							else if (agentInner < agent) {
+								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
+								impressions[agentInner+1] = innerQueryReport.getImpressions(q);
+
+								BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
+								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
+								double bid = innerBidBundle.getBid(q);
+								double squashedBid = bid * Math.pow(advEffect, squashing);
+								bidPairs.add(new BidPair(agentInner+1, squashedBid));
+							}
+							else {
+								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
+								impressions[agentInner] = innerQueryReport.getImpressions(q);
+
+								BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
+								double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
+								double bid = innerBidBundle.getBid(q);
+								double squashedBid = bid * Math.pow(advEffect, squashing);
+								bidPairs.add(new BidPair(agentInner, squashedBid));
+							}
 						}
 
 						Collections.sort(bidPairs);
@@ -139,55 +162,12 @@ public class ParameterEstimationTest {
 							order[j] = bidPairs.get(j).getID();
 						}
 
-						LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
-						LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
-						int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
-
-						int[] impressionPerAgent = new int[numAdvertisers];
-						//for each agent
-						for(int ag = 0; ag < numAdvertisers; ag++){
-							int sum = 0;
-							//for each slot
-							for(int slt = 0; slt < numSlots; slt++){
-								sum+=impressionMatrix[ag][slt];
-							}
-							impressionPerAgent[ag]=sum;
-						}
-
-						//where are we in bid pair matrix?
-						ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
-						for(BidPair pair : bidPairs){
-							if(pair._advIdx==agent){
-								break;
-							}else{
-								higherthanus.add(new ImprPair(pair._advIdx,impressionPerAgent[pair._advIdx]));
-							}
-						}
-
-						Collections.sort(higherthanus);
-						for(int j = 0; j < numSlots; j++) {
-							int numImpressions = impressionMatrix[agent][j];
-							impressionsPerSlot.add(numImpressions);
-
-							LinkedList<String> advsAbove = new LinkedList<String>();
-							if(!(numImpressions == 0 || numSlots == 0)) {
-								//This List is NOT SORTED!!!
-								List<ImprPair> sublist = higherthanus.subList(0, j);
-								for(ImprPair imp : sublist){
-									advsAbove.add(agents[imp.getID()]);
-								}
-							}
-
-							advertisersAbovePerSlot.add(advsAbove);
-						}
-
-						allAdvertisersAbovePerSlot.put(q, advertisersAbovePerSlot);
-						allImpressionsPerSlot.put(q, impressionsPerSlot);
+						allOrders.put(q, order);
+						allImpressions.put(q, impressions);
 					}
 
 					HashMap<Product,HashMap<UserState,Integer>> userStates = allUserDists.get(i);
-
-					model.updateModel(agents[agent], queryReport, salesReport, numPromSlots, allImpressionsPerSlot, allAdvertisersAbovePerSlot, allAds, userStates);
+					model.updateModel(queryReport, salesReport, bidBundle, numPromSlots, allOrders,allImpressions, userStates);
 					for(Query q : querySpace) {
 						double[] preds = model.getPrediction(q);
 
