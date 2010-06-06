@@ -159,7 +159,9 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			}
 			
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
-			int[] avgPosOrder = inst.getAvgPosOrder();
+			//int[] avgPosOrder = inst.getAvgPosOrder();
+			int[] avgPosOrder = inst.getCarletonOrder();
+			
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {
 				if(avgPosOrder.length > 0) {

@@ -30,16 +30,19 @@ public class TestLDSearch {
 		int[] avgPosOrder = inst.getAvgPosOrder(data);
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
+		int[] carletonOrder = inst.getCarletonOrder();
+		System.out.println("Carleton order: "+Arrays.toString(carletonOrder));
+		
 		int[] bidOrder = inst.getBidOrder(data);
 		System.out.println("Bid order: "+Arrays.toString(bidOrder));
 		
 		LDSearchOrder searcher = new LDSearchOrder(bidOrder);
-		searcher.search(avgPosOrder);
+		searcher.search(carletonOrder);
 		
 		System.out.println("Iterations: "+searcher.getIterations());
 		
 		LDSearchOrderSmart smartSearcher = new LDSearchOrderSmart(bidOrder, inst.getNumSlots());
-		smartSearcher.search(avgPosOrder, inst.getAvgPos());
+		smartSearcher.search(carletonOrder, inst.getAvgPos());
 		
 		System.out.println("Smart Iterations: "+smartSearcher.getIterations());
 	}

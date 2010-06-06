@@ -29,7 +29,7 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
 	public static boolean PERFECT_IMPS = true;
-	public static int LDS_ITERATIONS = 5;
+	public static int LDS_ITERATIONS = 10;
 
 	public ArrayList<String> getGameStrings() {
 		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";

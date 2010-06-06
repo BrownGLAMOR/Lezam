@@ -41,7 +41,7 @@ public class ImpressionEstimator {
 		_fractionalAvgPos = new boolean[_advertisers];
 		int wholeAvgPos = 0;
 		for(int i=0; i < _advertisers; i++){
-			_fractionalAvgPos[i] = ((_trueAvgPos[i] * 1000) % 1000) != 0;
+			_fractionalAvgPos[i] = ((_trueAvgPos[i] * 100000) % 100000) != 0;
 			if(!_fractionalAvgPos[i]){
 				wholeAvgPos += 1;
 			}

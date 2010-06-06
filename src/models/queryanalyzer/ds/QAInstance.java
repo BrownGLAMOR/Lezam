@@ -1,5 +1,8 @@
 package models.queryanalyzer.ds;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class QAInstance {
@@ -92,6 +95,63 @@ public class QAInstance {
 		
 		
 		return posOrder;
+	}
+	
+	public int[] getCarletonOrder() {
+		int[] avgPosOrder = getAvgPosOrder();
+		boolean[] avdAssigned = new boolean[_advetisers];
+		//boolean[] posAssigned = new boolean[_advetisers];
+		int[] carletonOrder = new int[_advetisers];
+		for(int i=0; i < _advetisers; i++){
+			avdAssigned[i] = false;
+			carletonOrder[i] = -1;
+		}
+		
+		ArrayList<HashSet<Integer>> advWholePos = new ArrayList<HashSet<Integer>>();
+		for(int i=0; i < _slots; i++){
+			advWholePos.add(i, new HashSet<Integer>());
+		}
+		
+		for(int i=0; i < _advetisers; i++){
+			if((((int)(_avgPos[i] * 100000) % 100000)) == 0){
+				int slot = (int)_avgPos[i];
+				if(slot < _slots){ //very important not to keep the last slot
+					 HashSet<Integer> advs = advWholePos.get(slot-1);
+					 advs.add(i);
+				}
+			}
+		}
+		
+		for(int i=0; i < _slots-1; i++){ //this should hold as long as we don't consider the last slot
+			HashSet<Integer> advs = advWholePos.get(i);
+			assert(advs.size() <= 1) : "this may need to go away in new game data";
+			if(advs.size() > 0){
+				int adv = advs.iterator().next(); //no good idea on how to pick, just do random.
+				
+				assert(carletonOrder[i] < 0);
+				carletonOrder[i] = adv;
+				assert(!avdAssigned[adv]);
+				avdAssigned[adv] = true;
+			}
+		}
+		
+		for(int i=0; i < _advetisers; i++){ 
+			int a = avgPosOrder[i];
+			if(!avdAssigned[a]){
+				for(int j=0; j < _advetisers; j++){ 
+					if(carletonOrder[j] < 0){
+						carletonOrder[j] = a;
+						avdAssigned[a] = true;
+						break;
+					}
+				}
+			}
+		}
+		
+		
+		
+		
+		return carletonOrder;
 	}
 	
 	public int[] getTrueImpressions(QAData data) {
