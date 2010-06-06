@@ -87,6 +87,14 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 							HashMap<Query,double[]> allBids,
 							HashMap<Product, HashMap<UserState, Integer>> userStates) {
 		
+		/*
+		 * 
+		 * TODO
+		 * 
+		 * if the information is bad just keep the old predictions
+		 * 
+		 */
+		
 		_c = convProbs;
 
 		/*
@@ -227,7 +235,8 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 									for(int j = ourOrder; j >= 0; j--) {
 										if(impressionsPerSlot.get(j) > 0) {
 											if(ourOrder+1+advBelowUsDrop < order.length) {
-												if(impressionsPerSlot.get(j) <= impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1]) {
+												if(j == numSlots-1 ||
+														impressionsPerSlot.get(j) <= impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1]) {
 													/*
 													 * All impressions in this slot were seen with the same person below us
 													 */
