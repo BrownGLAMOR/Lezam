@@ -4,9 +4,9 @@
 package agents;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Properties;
@@ -243,6 +243,10 @@ public abstract class AbstractAgent extends Agent {
 	protected ArrayList<String> _advertisers;
 	
 	protected HashMap<Query,Integer> _maxImps;
+
+	protected LinkedHashSet<String> _advertisersSet;
+
+	protected HashSet<Product> _products;
 	
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
@@ -270,8 +274,10 @@ public abstract class AbstractAgent extends Agent {
 		}
 		
 		_advertisers = new ArrayList<String>();
+		_advertisersSet = new LinkedHashSet<String>();
 		for(int i = 1; i <= 8; i++) {
 			_advertisers.add("adv" + i);
+			_advertisersSet.add("adv" + i);
 		}
 		
 //		System.out.println("Will attempt to connect to R on port " + _rServePort + " if R is needed.");
@@ -305,7 +311,6 @@ public abstract class AbstractAgent extends Agent {
             handleAdvertiserInfo((AdvertiserInfo) content);
         } else if (content instanceof StartInfo) {
             handleStartInfo((StartInfo) content);
-        
         } else if (content instanceof BankStatus) {
         	//TODO
         }
@@ -393,6 +398,10 @@ public abstract class AbstractAgent extends Agent {
     	_numPS = slotInfo.getPromotedSlots();
     	_numSlots = slotInfo.getRegularSlots();
         this._slotInfo = slotInfo;
+        
+        System.out.println("Number of Slots: " + _numSlots);
+        System.out.println("Number of Promoted Slots: " + _numPS);
+        System.out.println("Promoted Slot Bonus: " + _PSB);
     }
 
     /**
@@ -407,6 +416,7 @@ public abstract class AbstractAgent extends Agent {
             _querySpace.add(new Query(null, null));
         }
 
+        _products = new HashSet<Product>();
         for(Product product : retailCatalog) {
             // The F1 query classes
             // F1 Manufacturer only
@@ -416,6 +426,8 @@ public abstract class AbstractAgent extends Agent {
 
             // The F2 query class
             _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+            
+            _products.add(product);
         }
         
 		_maxImps = new HashMap<Query,Integer>();
@@ -452,6 +464,19 @@ public abstract class AbstractAgent extends Agent {
         _MSB = advertiserInfo.getManufacturerBonus();
         _manSpecialty = advertiserInfo.getManufacturerSpecialty();
         _targEffect = advertiserInfo.getTargetEffect();
+        
+        System.out.println("Advertiser ID: " + _advId);
+        System.out.println("Capacity: " + _capacity);
+        System.out.println("Capacity Window: " + _capWindow);
+        System.out.println("Capacity Lambda: " + _lambda);
+        System.out.println("Component Specialty: " + _compSpecialty);
+        System.out.println("Manufacturer Specialty: " + _manSpecialty);
+        System.out.println("Component Specialty Bonus: " + _CSB);
+        System.out.println("Manufacturer Specialty Bonus: " + _MSB);
+        System.out.println("F0 Baseline ConvPr: " + _piF0);
+        System.out.println("F1 Baseline ConvPr: " + _piF1);
+        System.out.println("F2 Baseline ConvPr: " + _piF2);
+        System.out.println("Target Effect: " + _targEffect);
     }
 
     /**

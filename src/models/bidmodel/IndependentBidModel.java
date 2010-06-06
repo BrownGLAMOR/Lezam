@@ -300,8 +300,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 	}
 
 	@Override
-	public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid,
-			HashMap<Query, HashMap<String, Integer>> ranks) {
+	public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
 		pushForwardCurEst(cpc, ourBid, ranks);
 		updateProbs(cpc, ourBid, ranks);
 		genCurEst();
