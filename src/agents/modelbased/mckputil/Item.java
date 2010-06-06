@@ -4,47 +4,56 @@ import edu.umich.eecs.tac.props.Query;
 
 public class Item {
 	Query _q;
-	double _w;
-	double _v;
-	double _b;//bid
+	double _weight;
+	double _value;
+	double _bid;//bid
+	double _budget;//bid
 	int _isID;//item set id (i.e., id for the query)
 	boolean _targ;
 	int _idx;
 	public static int UNDEFINED = -1;
 	
-	public Item(Query q, double w, double v, double b, boolean targ, int isID, int idx) {
+	public Item(Query q, double weight, double value, double bid, double budget, boolean targ, int isID, int idx) {
 		_q = q;
-		_w = w;
-		_v = v;
-		_b = b;
+		_weight = weight;
+		_value = value;
+		_bid = bid;
+		_budget = budget;
 		_targ = targ;
 		_isID = isID;
 		_idx = idx;
 	}
 	
-	public Item(Query q, double w, double v, double b, int isID, int idx) {
-		this(q,w,v,b,false,isID,idx);
+	/*
+	 * TODO:
+	 * 
+	 * We should get rid of this and allow all agents to set budgets in items, maybe?
+	 */
+	public Item(Query q, double weight, double value, double bid, boolean targ, int isID, int idx) {
+		_q = q;
+		_weight = weight;
+		_value = value;
+		_bid = bid;
+		_budget = Double.MAX_VALUE;
+		_targ = targ;
+		_isID = isID;
+		_idx = idx;
 	}
-
-	public Item(double w, double v) {
-		_w = w;
-		_v = v;
-		_b = UNDEFINED;
-		_targ = false;
-		_isID = UNDEFINED;
-	}
-
 	
 	public double w() {
-		return _w;
+		return _weight;
 	}
 
 	public double v() {
-		return _v;
+		return _value;
 	}
 
 	public double b() {
-		return _b;
+		return _bid;
+	}
+	
+	public double budget() {
+		return _budget;
 	}
 	
 	public boolean targ() {
@@ -64,7 +73,7 @@ public class Item {
 	}
 	
 	public String toString() {
-		return _q+" [W: " + _w + ", V: " + _v + ", B: " + _b + ", T: " + _targ + "]";
+		return _q+" [W: " + _weight + ", V: " + _value + ", B: " + _bid + "Budget: " + _budget + ", T: " + _targ + "]";
 	}
 
 }

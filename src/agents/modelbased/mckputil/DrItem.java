@@ -20,7 +20,7 @@ public class DrItem extends Item {
 	}
 	
 	public String toString() {
-		return _q+"day: " + _day +", [W: " + _w + ", V: " + _v + ", B: " + _b + ", T: " + _targ + "]";
+		return _q+"day: " + _day +", [W: " + _weight + ", V: " + _value + ", B: " + _bid + ", T: " + _targ + "]";
 	}
 
 }
