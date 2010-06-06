@@ -30,6 +30,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 	public static final int NUM_DISCRETE_PROBS = 30;
 	public static final double BASE_WEIGHT = 1.0/NUM_DISCRETE_PROBS;
 	public static final boolean MLE = false;
+	int _qTypeIdx;
 
 	LinkedList<BayesianDayHandler> _dayHandlers;
 	double[] _lastPredictions;
@@ -45,25 +46,24 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
 		_dayHandlers = new LinkedList<BayesianDayHandler>();
 
-		int qTypeIdx;
 		if (_query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-			qTypeIdx = 0;
+			_qTypeIdx = 0;
 		} else if (_query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-			qTypeIdx = 1;
+			_qTypeIdx = 1;
 		} else {
-			qTypeIdx = 2;
+			_qTypeIdx = 2;
 		}
 
 		_advEffDist = new ArrayList<Double>(NUM_DISCRETE_PROBS);
 		_advEfWeights = new ArrayList<Double>(NUM_DISCRETE_PROBS);
 		for(int i = 0; i < NUM_DISCRETE_PROBS; i++) {
-			_advEffDist.add(_advertiserEffectBounds[qTypeIdx][0] + (_advertiserEffectBounds[qTypeIdx][1] - _advertiserEffectBounds[qTypeIdx][0]) * (1.0/(NUM_DISCRETE_PROBS-1.0)) * i);
+			_advEffDist.add(_advertiserEffectBounds[_qTypeIdx][0] + (_advertiserEffectBounds[_qTypeIdx][1] - _advertiserEffectBounds[_qTypeIdx][0]) * (1.0/(NUM_DISCRETE_PROBS-1.0)) * i);
 			_advEfWeights.add(BASE_WEIGHT);
 		}
 
 		_lastPredictions = new double[2];
-		_lastPredictions[0] = _advertiserEffectBoundsAvg[qTypeIdx];
-		_lastPredictions[1] = _continuationProbBoundsAvg[qTypeIdx];
+		_lastPredictions[0] = _advertiserEffectBoundsAvg[_qTypeIdx];
+		_lastPredictions[1] = _continuationProbBoundsAvg[_qTypeIdx];
 	}
 
 	// Returns advertiser effect and continuation probability
@@ -204,9 +204,10 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				}
 
 				if(Double.isNaN(currentEstimate)) {
-					System.out.println("poop");
+					System.out.println("bad estimate!!!!!!");
+					currentEstimate = _advertiserEffectBoundsAvg[_qTypeIdx];
 				}
-				
+
 				_lastPredictions[0] = currentEstimate;
 
 				// Update all previous continuation probability estimates
@@ -353,42 +354,56 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 		HashMap<Product, LinkedList<double[]>> toreturn = new HashMap<Product, LinkedList<double[]>>();
 		// for each product
 		for (Product p : userStates.keySet()) {
-			HashMap<UserState, Integer> states = userStates.get(p);
-			// count up how many searching users there were
-			double ISusers = 0.0;
-			double nonISusers = 0.0;
-			if (_queryType.equals(QueryType.FOCUS_LEVEL_TWO) && 
-					_query.getComponent().equals(p.getComponent()) &&
-					_query.getManufacturer().equals(p.getManufacturer())) {
-				ISusers = 1.0 / 3.0 * states.get(UserState.IS);
-				nonISusers = states.get(UserState.F2);
-			}
-			if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && 
-					((_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) || 
-							(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))) {
-				ISusers = 1.0 / 6.0 * states.get(UserState.IS);
-				nonISusers = 0.5 * states.get(UserState.F1);
-			}
-			if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-				ISusers = 1.0 / 3.0 * states.get(UserState.IS);
-				nonISusers = states.get(UserState.F0);
-			}
-			// double nonISusers =
-			// states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
-			// make a list of Is, non Is users arrays, one for each slot
-			LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
-			double sum = ISusers + nonISusers;
-			for (Integer integer : impressionsPerSlot) {
-				double ISusersPerSlot = 0.0;
-				double nonISusersPerSlot = 0.0;
-				if (sum > 0.0) {
-					ISusersPerSlot = (((double) ISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
-					nonISusersPerSlot = (((double) nonISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
+			if(imprdist.get(p) > 0) {
+				HashMap<UserState, Integer> states = userStates.get(p);
+				// count up how many searching users there were
+				double ISusers = 0.0;
+				double nonISusers = 0.0;
+				if (_queryType.equals(QueryType.FOCUS_LEVEL_TWO) && 
+						_query.getComponent().equals(p.getComponent()) &&
+						_query.getManufacturer().equals(p.getManufacturer())) {
+					ISusers = 1.0 / 3.0 * states.get(UserState.IS);
+					nonISusers = states.get(UserState.F2);
 				}
-				double[] statesOfSearchingUsersPerSlot = { ISusersPerSlot, nonISusersPerSlot };
-				userSlotDist.add(statesOfSearchingUsersPerSlot);
+				if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) && 
+						((_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) || 
+								(_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))) {
+					ISusers = 1.0 / 6.0 * states.get(UserState.IS);
+					nonISusers = 0.5 * states.get(UserState.F1);
+				}
+				if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+					ISusers = 1.0 / 3.0 * states.get(UserState.IS);
+					nonISusers = states.get(UserState.F0);
+				}
+				// double nonISusers =
+				// states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
+				// make a list of Is, non Is users arrays, one for each slot
+				LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
+				double sum = ISusers + nonISusers;
+				for (Integer integer : impressionsPerSlot) {
+					double ISusersPerSlot = 0.0;
+					double nonISusersPerSlot = 0.0;
+					if (sum > 0.0) {
+						ISusersPerSlot = (((double) ISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
+						nonISusersPerSlot = (((double) nonISusers * ((double) integer)) / sum)*(imprdist.get(p)/impressions);
+					}
+					double[] statesOfSearchingUsersPerSlot = { ISusersPerSlot, nonISusersPerSlot };
+					userSlotDist.add(statesOfSearchingUsersPerSlot);
+				}
+				toreturn.put(p, userSlotDist);
 			}
-			toreturn.put(p, userSlotDist);
+			else {
+				/*
+				 * These will always be zero, because we are not getting any
+				 * impressions from this product
+				 */
+				LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
+				for (Integer imps : impressionsPerSlot) {
+					double[] statesOfSearchingUsersPerSlot = { 0.0, 0.0 };
+					userSlotDist.add(statesOfSearchingUsersPerSlot);
+				}
+				toreturn.put(p, userSlotDist);
+			}
 		}
 		return toreturn;
 	}

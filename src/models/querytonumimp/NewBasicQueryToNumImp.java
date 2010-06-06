@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import models.AbstractModel;
-import models.usermodel.AbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import edu.umich.eecs.tac.props.Product;
@@ -59,29 +58,6 @@ public class NewBasicQueryToNumImp extends AbstractQueryToNumImp {
 
 	@Override
 	public int getPrediction(Query q, int day) {
-        //Set num impressions per query
-        for(Query query : _querySpace) {
-        	int numImps = 0;
-        	for(Product product : _products) {
-        		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-        			numImps += _userModel.getPrediction(product, UserState.F0);
-        			numImps += _userModel.getPrediction(product, UserState.IS) / 3;
-        		}
-        		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-        			if(product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-        				numImps += _userModel.getPrediction(product, UserState.F1) / 2;
-        				numImps += _userModel.getPrediction(product, UserState.IS) / 6;
-        			}
-        		}
-        		else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-        			if(product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-        				numImps += _userModel.getPrediction(product, UserState.F2);
-        				numImps += _userModel.getPrediction(product, UserState.IS)/3;
-        			}
-        		}
-        	}
-        	_numImps.put(query, numImps);
-        }
 		return _numImps.get(q);
 	}
 	
@@ -96,14 +72,36 @@ public class NewBasicQueryToNumImp extends AbstractQueryToNumImp {
 	@Override
 	public int getPredictionWithPos(Query query, double pos,int day) {
 		/*
-		 * We have no use for the pos in this specific model
+		 * We have no use for the pos or day in this specific model
 		 */
 		return getPrediction(query,day);
 	}
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
-		//Nothing to do
+        //Set num impressions per query
+        for(Query query : _querySpace) {
+        	int numImps = 0;
+        	for(Product product : _products) {
+        		if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+        			numImps += _userModel.getPrediction(product, UserState.F0);
+        			numImps += _userModel.getPrediction(product, UserState.IS) / 3.0;
+        		}
+        		else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+        			if(product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
+        				numImps += _userModel.getPrediction(product, UserState.F1) / 2.0;
+        				numImps += _userModel.getPrediction(product, UserState.IS) / 6.0;
+        			}
+        		}
+        		else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+        			if(product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
+        				numImps += _userModel.getPrediction(product, UserState.F2);
+        				numImps += _userModel.getPrediction(product, UserState.IS)/3.0;
+        			}
+        		}
+        	}
+        	_numImps.put(query, numImps);
+        }
 		return true;
 	}
 

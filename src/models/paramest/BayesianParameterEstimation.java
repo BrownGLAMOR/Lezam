@@ -76,6 +76,13 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 							   HashMap<Query,int[]> allImpressions,
 							   HashMap<Product,HashMap<UserState,Integer>> userStates) {
 		for(Query q: m_queries){
+			
+			/*
+			 * TODO
+			 * 
+			 * if things broke skip the update
+			 */
+			
 			int[] order = allOrders.get(q);
 			int[] impressions = allImpressions.get(q);
 			
