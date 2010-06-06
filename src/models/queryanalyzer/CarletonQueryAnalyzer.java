@@ -13,6 +13,8 @@ import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionEstimator;
 import models.queryanalyzer.search.LDSearchIESmart;
+import models.queryanalyzer.search.LDSearchHybrid;
+
 
 public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
@@ -24,12 +26,14 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	private ArrayList<String> _advertisers;
 	private String _ourAdvertiser;
 	public final static int NUM_SLOTS = 5;
-	public int NUM_ITERATIONS = 10;
+	public int NUM_ITERATIONS_1 = 10;
+	public int NUM_ITERATIONS_2 = 10;
 
-	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters) {
+	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, int numIters2) {
 		_querySpace = querySpace;
 		
-		NUM_ITERATIONS = numIters;
+		NUM_ITERATIONS_1 = numIters1;
+		NUM_ITERATIONS_2 = numIters2;
 
 		_allResults = new HashMap<Query,ArrayList<IEResult>>();
 		_allImpRanges = new HashMap<Query,ArrayList<int[][]>>();
@@ -165,8 +169,10 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {
 				if(avgPosOrder.length > 0) {
-					LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS, inst);
+					LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS_2, inst);
 					smartIESearcher.search(avgPosOrder, inst.getAvgPos());
+					//LDSearchHybrid smartIESearcher = new LDSearchHybrid(NUM_ITERATIONS_1, NUM_ITERATIONS_2, inst);
+					//smartIESearcher.search();
 					bestSol = smartIESearcher.getBestSolution();
 					if(bestSol == null || bestSol.getSol() == null) {
 						System.out.println(q);
@@ -195,12 +201,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	
 	@Override
 	public String toString() {
-		return "CarletonQueryAnalyzer(" + NUM_ITERATIONS + ")";
+		return "CarletonQueryAnalyzer(" + NUM_ITERATIONS_1 +"," + NUM_ITERATIONS_2 + ")";
 	}
 
 	@Override
 	public AbstractModel getCopy() {
-		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser,NUM_ITERATIONS);
+		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser,NUM_ITERATIONS_1,NUM_ITERATIONS_2);
 	}
 
 	@Override

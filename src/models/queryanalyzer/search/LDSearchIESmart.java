@@ -8,7 +8,7 @@ import models.queryanalyzer.iep.ImpressionEstimator;
 
 public class LDSearchIESmart extends LDSearchSmart {
 	int _maxIter;
-	IEResult _best;
+	
 	ImpressionEstimator _ie;
 	
 	public LDSearchIESmart(int maxIter, QAInstance inst){
@@ -32,11 +32,6 @@ public class LDSearchIESmart extends LDSearchSmart {
 			return true;
 		else 
 			return false;
-	}
-
-	public IEResult getBestSolution() {
-		//assert(_best != null) : "possibly called before search was run";
-		return _best;
 	}
 
 }

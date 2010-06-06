@@ -4,12 +4,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 
+import models.queryanalyzer.iep.IEResult;
+
 abstract class LDSearchSmart {
 	private int _distFactor;
 	private int _iterations;
 	private PriorityQueue<LDSPerm> _LDSQueue;
 	
 	private int _slots;
+	IEResult _best;
 	
 	public LDSearchSmart(int slots){
 		_LDSQueue = new PriorityQueue<LDSPerm>();
@@ -19,6 +22,7 @@ abstract class LDSearchSmart {
 	}
 	
 	public void search(int[] startPerm, double[] avgPos){
+		_best = null;
 		_iterations = 0;
 		int Indexs = startPerm.length;
 		_LDSQueue.clear();
@@ -62,6 +66,11 @@ abstract class LDSearchSmart {
 	}
 	
 	public int getIterations(){return _iterations;}
+	
+	public IEResult getBestSolution() {
+		//assert(_best != null) : "possibly called before search was run";
+		return _best;
+	}
 	
 	private boolean feasibleOrder(int[] order, double[] avgPos) {
 		//assert(false);
