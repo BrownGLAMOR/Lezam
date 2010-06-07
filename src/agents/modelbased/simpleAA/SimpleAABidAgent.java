@@ -82,7 +82,6 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 	private Random _R;
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -355,7 +354,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 			output += remainingCap + "\n";
 			output += _querySpace.size() + "\n\n";
 
-			output += LAMBDA + "\n";
+			output += _lambda + "\n";
 			output += _CSB + "\n\n";
 			int setID = 0;
 			for(Query q : _querySpace) {
@@ -420,7 +419,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 					double numClicks = clickPr*numImps;
 
-					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, LAMBDA, specialty, _CSB);
+					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, _lambda, specialty, _CSB);
 					TACProfitFunction profitFunc = new TACProfitFunction(_salesPrices.get(q), numClicks, CPC, weightFunc);
 					output += numClicks + " " + CPC + "\n";
 					Item item = new Item(profitFunc,weightFunc,i,setID);
@@ -454,7 +453,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 //				System.exit(-1);
 //			}
 
-//			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,15);
+//			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,_lambda,(int) _day,15);
 //			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
