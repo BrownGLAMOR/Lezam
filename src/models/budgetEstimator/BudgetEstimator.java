@@ -27,7 +27,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 	private double _proReserve = .4;
 	private double _regReserve = .05;
 	private double[] _c;
-	
+
 	// Target Effect
 	final double _TE = 0.5;
 	// Promoted Slot Bonus
@@ -36,15 +36,15 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 	final double _CSB = 0.5;
 	// Advertiser effect lower bound <> upper bound
 	final double[][] _advertiserEffectBounds = { { 0.2, 0.3 },
-												 { 0.3, 0.4 }, 
-												 { 0.4, 0.5 } };
+			{ 0.3, 0.4 }, 
+			{ 0.4, 0.5 } };
 
 	// Average advertiser effect
 	final double[] _advertiserEffectBoundsAvg = {
 			(_advertiserEffectBounds[0][0] + _advertiserEffectBounds[0][1]) / 2,
 			(_advertiserEffectBounds[1][0] + _advertiserEffectBounds[1][1]) / 2,
 			(_advertiserEffectBounds[2][0] + _advertiserEffectBounds[2][1]) / 2 };
-	
+
 	// first index:
 	// 0 - untargeted
 	// 1 - targeted correctly
@@ -53,8 +53,8 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 	// 0 - not promoted
 	// 1 - promoted
 	final double[][] fTargetfPro = { { (1.0), (1.0) * (1.0 + _PSB) },
-									 { (1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB) },
-									 { (1.0) / (1.0 + _TE), ((1.0) / (1.0 + _TE)) * (1.0 + _PSB) } };
+			{ (1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB) },
+			{ (1.0) / (1.0 + _TE), ((1.0) / (1.0 + _TE)) * (1.0 + _PSB) } };
 
 	public final static boolean BUDGETINDOLLARS = true;
 
@@ -77,24 +77,16 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
 	@Override
 	public void updateModel(QueryReport queryReport, 
-							SalesReport salesReport,
-							BidBundle bidBundle,
-							int numberPromotedSlots,
-							double[] convProbs,
-							HashMap<Query, Double> contProbs,
-							HashMap<Query, int[]> allOrders,
-							HashMap<Query, int[]> allImpressions,
-							HashMap<Query,double[]> allBids,
-							HashMap<Product, HashMap<UserState, Integer>> userStates) {
-		
-		/*
-		 * 
-		 * TODO
-		 * 
-		 * if the information is bad just keep the old predictions
-		 * 
-		 */
-		
+			SalesReport salesReport,
+			BidBundle bidBundle,
+			int numberPromotedSlots,
+			double[] convProbs,
+			HashMap<Query, Double> contProbs,
+			HashMap<Query, int[]> allOrders,
+			HashMap<Query, int[]> allImpressions,
+			HashMap<Query,double[]> allBids,
+			HashMap<Product, HashMap<UserState, Integer>> userStates) {
+
 		_c = convProbs;
 
 		/*
@@ -105,241 +97,255 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 			for(Query q : _querySpace) {
 				double budget;
 				int[] impressions = allImpressions.get(q);
-				int ourImpressions = impressions[i];
-				if(ourImpressions > 0) {
-					double[] bids = allBids.get(q);
 
-					int[] order = allOrders.get(q);
-					int ourOrder = order.length-1;
-					for(int j = 0; j < order.length; j++) {
-						if(i == order[j]) {
-							ourOrder = j;
-						}
-					}
+				int impSum = 0;
+				for(int j = 0; j < impressions.length; j++) {
+					impSum += impressions[j];
+				}
 
-					if(ourOrder <= numSlots-1) {
-						int maxImps = 0;
+				if(impSum > 0) {
+
+					int ourImpressions = impressions[i];
+					if(ourImpressions > 0) {
+						double[] bids = allBids.get(q);
+
+						int[] order = allOrders.get(q);
+						int ourOrder = order.length-1;
 						for(int j = 0; j < order.length; j++) {
-							if(impressions[j] > maxImps) {
-								maxImps = impressions[j];
+							if(i == order[j]) {
+								ourOrder = j;
 							}
 						}
 
-						if(ourImpressions == maxImps) {
-							/*
-							 * We didn't drop so we should assume there was no budget
-							 */
-							budget = Double.MAX_VALUE;
-						}
-						else {
-							if(BUDGETINDOLLARS) {
-								HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
-								query_ads.put("adv1",bidBundle.getAd(q));
-								for(int j = 2; j <= 8; j++) {
-									query_ads.put("adv" + j, queryReport.getAd(q, "adv" + j));
+						if(ourOrder <= numSlots-1) {
+							int maxImps = 0;
+							for(int j = 0; j < order.length; j++) {
+								if(impressions[j] > maxImps) {
+									maxImps = impressions[j];
 								}
-								
-								Ad ourAd = query_ads.get("adv" + (i+1));
-								boolean ourAdTargeted = true;
-								if (ourAd == null || ourAd.isGeneric()) {
-									ourAdTargeted = false;
-								}
+							}
 
-								Product ourAdProduct = null;
-								if (ourAdTargeted) {
-									ourAdProduct = ourAd.getProduct();
-								}
-
-								LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
-								LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
-								int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
-
-								//where are we in bid pair matrix?
-								ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
-								for(int j = 0; j < order.length; j++){
-									if(order[j] == i){
-										break;
-									}else{
-										higherthanus.add(new ImprPair(order[j],impressions[order[j]]));
-									}
-								}
-
-								Collections.sort(higherthanus);
-								for(int j = 0; j < numSlots; j++) {
-									int numImpressions = impressionMatrix[i][j];
-									impressionsPerSlot.add(numImpressions);
-
-									LinkedList<String> advsAbove = new LinkedList<String>();
-									if(!(numImpressions == 0 || numSlots == 0)) {
-										List<ImprPair> sublist = higherthanus.subList(0, j);
-										for(ImprPair imp : sublist){
-											advsAbove.add("adv" + (imp.getID()+1));
-										}
-									}
-
-									advertisersAbovePerSlot.add(advsAbove);
-								}
-
-								double advEffect;
-								if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-									advEffect = _advertiserEffectBoundsAvg[0];
-								} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-									advEffect = _advertiserEffectBoundsAvg[1];
-								} else {
-									advEffect = _advertiserEffectBoundsAvg[2];
-								}
-								
-								LinkedList<LinkedList<Ad>> adsAbovePerSlot = getAdsAbovePerSlot(advertisersAbovePerSlot, query_ads);
-								HashMap<Product, Double> imprdist = getImpressionDist(q, userStates, ourImpressions);
-								HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers = getStatesOfSearchingUsers(q, userStates, impressionsPerSlot, imprdist);
-								LinkedList<Double> clicksPerSlot = getClicksPerSlot(q,numberPromotedSlots,impressionsPerSlot,advEffect,contProbs.get(q),
-										adsAbovePerSlot,userStatesOfSearchingUsers,ourAdTargeted,ourAdProduct);
-
+							if(ourImpressions == maxImps) {
 								/*
-								 * We were in the auction and dropped out, so calculate budget
+								 * We didn't drop so we should assume there was no budget
 								 */
-								if(ourImpressions < impressions[order[ourOrder+1]]) {
-									/*
-									 * We were beneath the same person for the whole game
-									 * so just multiply their CPC by number of clicks
-									 */
-
-									/*
-									 * Assuming everyone has the same advertiser effect, we
-									 * get that CPC is just bid of the person below you
-									 * plus 1 cent
-									 */
-									double totalClicks = 0;
-									for(Double clicks : clicksPerSlot) {
-										totalClicks += clicks;
-									}
-
-									double bidBelow = bids[order[ourOrder+1]];
-									if(ourOrder < numberPromotedSlots) {
-										if(bidBelow < _proReserve) {
-											bidBelow = _proReserve;
-										}
-									}
-									else {
-										if(bidBelow < _regReserve) {
-											bidBelow = _regReserve;
-										}
-									}
-
-									double CPC = bidBelow + .01;
-									budget = totalClicks*CPC;
-								}
-								else {
-									budget = 0.0;
-									int advBelowUsDrop = 0;
-									for(int j = ourOrder; j >= 0; j--) {
-										if(impressionsPerSlot.get(j) > 0) {
-											if(ourOrder+1+advBelowUsDrop < order.length) {
-												if(j == numSlots-1 ||
-														impressionsPerSlot.get(j) <= impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1]) {
-													/*
-													 * All impressions in this slot were seen with the same person below us
-													 */
-													double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
-													if(ourOrder < numberPromotedSlots) {
-														if(bidBelow < _proReserve) {
-															bidBelow = _proReserve;
-														}
-													}
-													else {
-														if(bidBelow < _regReserve) {
-															bidBelow = _regReserve;
-														}
-													}
-
-													double CPC = bidBelow + .01;
-													budget += clicksPerSlot.get(j)*CPC;
-												}
-												else {
-													/*
-													 * An advertiser dropped out in the middle of while we were in a given
-													 * slot.  Add the clicks we saw while that advertiser was in, remove
-													 * those impressions and clicks from the list, and rerun the current slot
-													 * with a new advertiser below us
-													 */
-													int numImpSeen = impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1];
-													int impPercentage = numImpSeen / (impressionsPerSlot.get(j));
-													double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
-													if(ourOrder < numberPromotedSlots) {
-														if(bidBelow < _proReserve) {
-															bidBelow = _proReserve;
-														}
-													}
-													else {
-														if(bidBelow < _regReserve) {
-															bidBelow = _regReserve;
-														}
-													}
-
-													double CPC = bidBelow + .01;
-													double numClickSeen = clicksPerSlot.get(j)*impPercentage;
-													budget += numClickSeen*CPC;
-													
-													/*
-													 * Increase the number of advertisers below us who dropped,
-													 * and reduce the number of impressions seen in the slot
-													 */
-													advBelowUsDrop++;
-													impressionsPerSlot.set(j, impressionsPerSlot.get(j)-numImpSeen);
-													clicksPerSlot.set(j, clicksPerSlot.get(j)-numClickSeen);
-													j++; //we need to rerun this slot with a new advertiser and fewer impressions
-												}
-											}
-											else {
-												/*
-												 * There is no one below us anymore, so we pay the reserve depending
-												 * on the slot
-												 */
-												if(j < numberPromotedSlots) {
-													budget += clicksPerSlot.get(j) * (_proReserve + .01);
-												}
-												else {
-													budget += clicksPerSlot.get(j) * (_regReserve + .01);
-												}
-											}
-										}
-									}
-								}
+								budget = Double.MAX_VALUE;
 							}
 							else {
-								budget = impressions[i];
+								if(BUDGETINDOLLARS) {
+									HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
+									query_ads.put("adv1",bidBundle.getAd(q));
+									for(int j = 2; j <= 8; j++) {
+										query_ads.put("adv" + j, queryReport.getAd(q, "adv" + j));
+									}
+
+									Ad ourAd = query_ads.get("adv" + (i+1));
+									boolean ourAdTargeted = true;
+									if (ourAd == null || ourAd.isGeneric()) {
+										ourAdTargeted = false;
+									}
+
+									Product ourAdProduct = null;
+									if (ourAdTargeted) {
+										ourAdProduct = ourAd.getProduct();
+									}
+
+									LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
+									LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
+									int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
+
+									//where are we in bid pair matrix?
+									ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
+									for(int j = 0; j < order.length; j++){
+										if(order[j] == i){
+											break;
+										}else{
+											higherthanus.add(new ImprPair(order[j],impressions[order[j]]));
+										}
+									}
+
+									Collections.sort(higherthanus);
+									for(int j = 0; j < numSlots; j++) {
+										int numImpressions = impressionMatrix[i][j];
+										impressionsPerSlot.add(numImpressions);
+
+										LinkedList<String> advsAbove = new LinkedList<String>();
+										if(!(numImpressions == 0 || numSlots == 0)) {
+											List<ImprPair> sublist = higherthanus.subList(0, j);
+											for(ImprPair imp : sublist){
+												advsAbove.add("adv" + (imp.getID()+1));
+											}
+										}
+
+										advertisersAbovePerSlot.add(advsAbove);
+									}
+
+									double advEffect;
+									if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+										advEffect = _advertiserEffectBoundsAvg[0];
+									} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+										advEffect = _advertiserEffectBoundsAvg[1];
+									} else {
+										advEffect = _advertiserEffectBoundsAvg[2];
+									}
+
+									LinkedList<LinkedList<Ad>> adsAbovePerSlot = getAdsAbovePerSlot(advertisersAbovePerSlot, query_ads);
+									HashMap<Product, Double> imprdist = getImpressionDist(q, userStates, ourImpressions);
+									HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers = getStatesOfSearchingUsers(q, userStates, impressionsPerSlot, imprdist);
+									LinkedList<Double> clicksPerSlot = getClicksPerSlot(q,numberPromotedSlots,impressionsPerSlot,advEffect,contProbs.get(q),
+											adsAbovePerSlot,userStatesOfSearchingUsers,ourAdTargeted,ourAdProduct);
+
+									/*
+									 * We were in the auction and dropped out, so calculate budget
+									 */
+									if(ourImpressions < impressions[order[ourOrder+1]]) {
+										/*
+										 * We were beneath the same person for the whole game
+										 * so just multiply their CPC by number of clicks
+										 */
+
+										/*
+										 * Assuming everyone has the same advertiser effect, we
+										 * get that CPC is just bid of the person below you
+										 * plus 1 cent
+										 */
+										double totalClicks = 0;
+										for(Double clicks : clicksPerSlot) {
+											totalClicks += clicks;
+										}
+
+										double bidBelow = bids[order[ourOrder+1]];
+										if(ourOrder < numberPromotedSlots) {
+											if(bidBelow < _proReserve) {
+												bidBelow = _proReserve;
+											}
+										}
+										else {
+											if(bidBelow < _regReserve) {
+												bidBelow = _regReserve;
+											}
+										}
+
+										double CPC = bidBelow + .01;
+										budget = totalClicks*CPC;
+									}
+									else {
+										budget = 0.0;
+										int advBelowUsDrop = 0;
+										for(int j = ourOrder; j >= 0; j--) {
+											if(impressionsPerSlot.get(j) > 0) {
+												if(ourOrder+1+advBelowUsDrop < order.length) {
+													if(j == numSlots-1 ||
+															impressionsPerSlot.get(j) <= impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1]) {
+														/*
+														 * All impressions in this slot were seen with the same person below us
+														 */
+														double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
+														if(ourOrder < numberPromotedSlots) {
+															if(bidBelow < _proReserve) {
+																bidBelow = _proReserve;
+															}
+														}
+														else {
+															if(bidBelow < _regReserve) {
+																bidBelow = _regReserve;
+															}
+														}
+
+														double CPC = bidBelow + .01;
+														budget += clicksPerSlot.get(j)*CPC;
+													}
+													else {
+														/*
+														 * An advertiser dropped out in the middle of while we were in a given
+														 * slot.  Add the clicks we saw while that advertiser was in, remove
+														 * those impressions and clicks from the list, and rerun the current slot
+														 * with a new advertiser below us
+														 */
+														int numImpSeen = impressionMatrix[order[ourOrder+1+advBelowUsDrop]][j+1];
+														int impPercentage = numImpSeen / (impressionsPerSlot.get(j));
+														double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
+														if(ourOrder < numberPromotedSlots) {
+															if(bidBelow < _proReserve) {
+																bidBelow = _proReserve;
+															}
+														}
+														else {
+															if(bidBelow < _regReserve) {
+																bidBelow = _regReserve;
+															}
+														}
+
+														double CPC = bidBelow + .01;
+														double numClickSeen = clicksPerSlot.get(j)*impPercentage;
+														budget += numClickSeen*CPC;
+
+														/*
+														 * Increase the number of advertisers below us who dropped,
+														 * and reduce the number of impressions seen in the slot
+														 */
+														advBelowUsDrop++;
+														impressionsPerSlot.set(j, impressionsPerSlot.get(j)-numImpSeen);
+														clicksPerSlot.set(j, clicksPerSlot.get(j)-numClickSeen);
+														j++; //we need to rerun this slot with a new advertiser and fewer impressions
+													}
+												}
+												else {
+													/*
+													 * There is no one below us anymore, so we pay the reserve depending
+													 * on the slot
+													 */
+													if(j < numberPromotedSlots) {
+														budget += clicksPerSlot.get(j) * (_proReserve + .01);
+													}
+													else {
+														budget += clicksPerSlot.get(j) * (_regReserve + .01);
+													}
+												}
+											}
+										}
+									}
+								}
+								else {
+									budget = impressions[i];
+								}
 							}
+						}
+						else {
+							/*
+							 * If they didn't start in the auction assume they had no budget
+							 * 
+							 * (this should really actually check if they entered and dropped
+							 * with someone still left in the auction)
+							 */
+							budget = Double.MAX_VALUE;
+
+							/*
+							 * We may consider keeping the old value here...
+							 */
+							//budget =  _budgetPredictions.get("adv"+(i+1)).get(q);
 						}
 					}
 					else {
 						/*
-						 * If they didn't start in the auction assume they had no budget
-						 * 
-						 * (this should really actually check if they entered and dropped
-						 * with someone still left in the auction)
+						 * If we didn't see any impressions, we have no information about budgets
 						 */
 						budget = Double.MAX_VALUE;
 
 						/*
 						 * We may consider keeping the old value here...
 						 */
-						//budget = budgets.get(q);
+						//budget =  _budgetPredictions.get("adv"+(i+1)).get(q);
 					}
+					budgets.put(q, budget);
 				}
 				else {
-					/*
-					 * If we didn't see any impressions, we have no information about budgets
-					 */
-					budget = Double.MAX_VALUE;
+					budgets.put(q, Double.MAX_VALUE);
 
-					/*
-					 * We may consider keeping the old value here...
-					 */
-					//budget = budgets.get(q);
+					//					budgets.put(q, _budgetPredictions.get("adv"+(i+1)).get(q));
 				}
-				budgets.put(q, budget);
 			}
-			_budgetPredictions.put("adv"+i, budgets);
+			_budgetPredictions.put("adv"+(i+1), budgets);
 		}
 	}
 
@@ -352,7 +358,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 			return _c[2];
 		}
 	}
-	
+
 	private LinkedList<Double> getClicksPerSlot(Query q,
 			int numberPromotedSlots,
 			LinkedList<Integer> impressionsPerSlot,
@@ -362,7 +368,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 			HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers,
 			boolean targeted,
 			Product target) {
-		
+
 		double otherAdvertiserEffects;
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
@@ -371,7 +377,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		} else {
 			otherAdvertiserEffects = _advertiserEffectBoundsAvg[2];
 		}
-		
+
 		double[] coeff = new double[numSlots];
 		for (int i = 0; i < numSlots; i++) {
 			coeff[i] = 0;
@@ -399,7 +405,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 				}
 			}
 		}
-		
+
 		LinkedList<Double> clicksPerSlot = new LinkedList<Double>();
 		double contProb2 = continuationProb*continuationProb;
 		double contProb3 = contProb2*continuationProb;
@@ -409,7 +415,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		clicksPerSlot.add(contProb2*coeff[2]);
 		clicksPerSlot.add(contProb3*coeff[1]);
 		clicksPerSlot.add(contProb4*coeff[0]);
-		
+
 		return clicksPerSlot;
 	}
 
@@ -418,7 +424,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 	public double etaClickPr(double advertiserEffect, double fTargetfPro) {
 		return (advertiserEffect * fTargetfPro) / ((advertiserEffect * fTargetfPro) + (1 - advertiserEffect));
 	}
-	
+
 
 	// Turns a boolean into binary
 	int bool2int(boolean bool) {
@@ -455,7 +461,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		System.out.println("Error in queryTypeToInt");
 		return 2;
 	}
-	
+
 	public int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions){
 		int[][] impressionsBySlot = new int[agents][slots];
 
@@ -491,7 +497,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		}
 		return impressionsBySlot;
 	}
-	
+
 	// Get Impression Distribution
 	public HashMap<Product, Double> getImpressionDist(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, int impressions) {
 		HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
@@ -539,7 +545,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		}
 		return adsAbovePerSlot;
 	}
-	
+
 	public HashMap<Product, LinkedList<double[]>> getStatesOfSearchingUsers(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, LinkedList<Integer> impressionsPerSlot, HashMap<Product, Double> imprdist) {
 
 		double impressions = 0;
@@ -594,8 +600,8 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 	public AbstractModel getCopy() {
 		return new BudgetEstimator(_querySpace);
 	}
-	
-	
+
+
 	public static class ImprPair implements Comparable<ImprPair> {
 
 		private int _advIdx;
@@ -636,6 +642,6 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 			}
 		}
 	}
-	
-	
+
+
 }
