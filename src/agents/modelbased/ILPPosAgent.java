@@ -85,7 +85,6 @@ public class ILPPosAgent extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -475,14 +474,14 @@ public class ILPPosAgent extends AbstractAgent {
 				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {
 						for(int j = 0; j <= _capList.get(i); j++) {
-							double iD = Math.pow(LAMBDA, j);
+							double iD = Math.pow(_lambda, j);
 							double worseConvProb = avgConvProb*iD;
 							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
 						}
 					}
 					else {
 						for(int j = _capList.get(i-1)+1; j <= _capList.get(i); j++) {
-							double iD = Math.pow(LAMBDA, j);
+							double iD = Math.pow(_lambda, j);
 							double worseConvProb = avgConvProb*iD;
 							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
 						}
@@ -683,11 +682,11 @@ public class ILPPosAgent extends AbstractAgent {
 						newPenalty = 0.0;
 						int num = 0;
 						for(double j = Math.abs(capacity)+1; j <= numOverCap; j++) {
-							newPenalty += Math.pow(LAMBDA, j);
+							newPenalty += Math.pow(_lambda, j);
 							num++;
 						}
 						newPenalty /= (num);
-						double oldPenalty = Math.pow(LAMBDA, Math.abs(capacity));
+						double oldPenalty = Math.pow(_lambda, Math.abs(capacity));
 						newPenalty = newPenalty/oldPenalty;
 					}
 					else {
@@ -697,7 +696,7 @@ public class ILPPosAgent extends AbstractAgent {
 						else {
 							newPenalty = capacity;
 							for(int j = 1; j <= numOverCap; j++) {
-								newPenalty += Math.pow(LAMBDA, j);
+								newPenalty += Math.pow(_lambda, j);
 							}
 							newPenalty /= (capacity + numOverCap);
 						}

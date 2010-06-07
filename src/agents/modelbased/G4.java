@@ -60,7 +60,6 @@ public class G4 extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -438,7 +437,7 @@ public class G4 extends AbstractAgent {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -450,7 +449,7 @@ public class G4 extends AbstractAgent {
 				else {
 					penalty = budget;
 					for(int j = 1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (budget + numOverCap);
 				}

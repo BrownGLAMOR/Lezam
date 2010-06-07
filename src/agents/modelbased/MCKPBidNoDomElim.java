@@ -63,7 +63,6 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -318,7 +317,7 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 			}
 			double penalty = 1.0;
 			if(budget < 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(budget));
+				penalty = Math.pow(_lambda, Math.abs(budget));
 			}
 			//NEED TO USE THE MODELS WE ARE PASSED!!!
 			HashMap<Query,HashMap<Integer,WeightValuePair>> wvMap = new HashMap<Query, HashMap<Integer,WeightValuePair>>();
@@ -419,7 +418,7 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 					double valueLostWindow = Math.max(1, Math.min(_capWindow, 59 - _day));
 					double valueLost = 0;
 					for (double j = min+1; j <= max; j++){
-						double iD = Math.pow(LAMBDA, j);
+						double iD = Math.pow(_lambda, j);
 						double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 						valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
 					}
@@ -473,11 +472,11 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 					newPenalty = 0.0;
 					int num = 0;
 					for(double j = Math.abs(budget)+1; j <= newNumOverCap; j++) {
-						newPenalty += Math.pow(LAMBDA, j);
+						newPenalty += Math.pow(_lambda, j);
 						num++;
 					}
 					newPenalty /= (num);
-					double oldPenalty = Math.pow(LAMBDA, Math.abs(budget));
+					double oldPenalty = Math.pow(_lambda, Math.abs(budget));
 					newPenalty = newPenalty/oldPenalty;
 				}
 				else {
@@ -487,7 +486,7 @@ public class MCKPBidNoDomElim extends AbstractAgent {
 					else {
 						newPenalty = budget;
 						for(int j = 1; j <= newNumOverCap; j++) {
-							newPenalty += Math.pow(LAMBDA, j);
+							newPenalty += Math.pow(_lambda, j);
 						}
 						newPenalty /= (budget + newNumOverCap);
 					}

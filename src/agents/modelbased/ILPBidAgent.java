@@ -66,7 +66,6 @@ public class ILPBidAgent extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -345,7 +344,7 @@ public class ILPBidAgent extends AbstractAgent {
 				 */
 				double convPrPenalty = 1.0;
 				if(remainingCap < 0) {
-					convPrPenalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+					convPrPenalty = Math.pow(_lambda, Math.abs(remainingCap));
 				}
 				HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 				for(Query q : _querySpace) {
@@ -424,14 +423,14 @@ public class ILPBidAgent extends AbstractAgent {
 				for (int i = 0; i < _capList.size(); i++){
 					if(i == 0) {
 						for(int j = 0; j <= _capList.get(i); j++) {
-							double iD = Math.pow(LAMBDA, j);
+							double iD = Math.pow(_lambda, j);
 							double worseConvProb = avgConvProb*iD;
 							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
 						}
 					}
 					else {
 						for(int j = _capList.get(i-1)+1; j <= _capList.get(i); j++) {
-							double iD = Math.pow(LAMBDA, j);
+							double iD = Math.pow(_lambda, j);
 							double worseConvProb = avgConvProb*iD;
 							valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
 						}
@@ -632,13 +631,13 @@ public class ILPBidAgent extends AbstractAgent {
 		solutionWeight = Math.max(0,solutionWeight);
 		if(remainingCap < 0) {
 			if(solutionWeight <= 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+				penalty = Math.pow(_lambda, Math.abs(remainingCap));
 			}
 			else {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -652,7 +651,7 @@ public class ILPBidAgent extends AbstractAgent {
 				if(solutionWeight > remainingCap) {
 					penalty = remainingCap;
 					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (solutionWeight);
 				}

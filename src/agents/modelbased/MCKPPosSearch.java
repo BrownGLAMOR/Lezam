@@ -69,7 +69,6 @@ public class MCKPPosSearch extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -516,7 +515,7 @@ public class MCKPPosSearch extends AbstractAgent {
 			penalty = 0.0;
 			int num = 0;
 			for(double j = Math.abs(budget)+1; j <= overCap; j++) {
-				penalty += Math.pow(LAMBDA, j);
+				penalty += Math.pow(_lambda, j);
 				num++;
 			}
 			penalty /= (num);
@@ -528,7 +527,7 @@ public class MCKPPosSearch extends AbstractAgent {
 			else {
 				penalty = budget;
 				for(int j = 1; j <= overCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 				}
 				penalty /= (budget + overCap);
 			}
@@ -569,14 +568,14 @@ public class MCKPPosSearch extends AbstractAgent {
 		double valueLost = 0;
 		if(budget < 0) {
 			for (double i = Math.abs(budget)+1; i <= overCap; i++){
-				double iD = Math.pow(LAMBDA, i);
+				double iD = Math.pow(_lambda, i);
 				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
 			}
 		}
 		else {
 			for (double i = 1; i <= overCap; i++){
-				double iD = Math.pow(LAMBDA, i);
+				double iD = Math.pow(_lambda, i);
 				double worseConvProb = avgConvProb*iD; //this is a gross average that lacks detail
 				valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow; //You also lose conversions in the future (for 5 days)
 			}
@@ -649,7 +648,7 @@ public class MCKPPosSearch extends AbstractAgent {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -661,7 +660,7 @@ public class MCKPPosSearch extends AbstractAgent {
 				else {
 					penalty = budget;
 					for(int j = 1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (budget + numOverCap);
 				}
@@ -720,7 +719,7 @@ public class MCKPPosSearch extends AbstractAgent {
 			penalty = 0.0;
 			int num = 0;
 			for(double j = Math.abs(initBudget)+1; j <= overCap; j++) {
-				penalty += Math.pow(LAMBDA, j);
+				penalty += Math.pow(_lambda, j);
 				num++;
 			}
 			penalty /= (num);
@@ -732,7 +731,7 @@ public class MCKPPosSearch extends AbstractAgent {
 			else {
 				penalty = initBudget;
 				for(int j = 1; j <= overCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 				}
 				penalty /= (initBudget + overCap);
 			}

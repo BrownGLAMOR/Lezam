@@ -61,7 +61,6 @@ public class DynamicMCKP extends AbstractAgent {
 
 	private Random _R;
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -381,7 +380,7 @@ public class DynamicMCKP extends AbstractAgent {
 			HashMap<Query,Item> solution = new HashMap<Query,Item>();
 			for(Query q : _querySpace) {
 				if(intSolution.containsKey(q) && intSolution.get(q) >= 0) {
-					solution.put(q, new Item(q, 0, 0,_bidList.get(intSolution.get(q)), 0,  intSolution.get(q)));
+					solution.put(q, new Item(q, 0, 0,_bidList.get(intSolution.get(q)),false, 0,  intSolution.get(q)));
 				}
 			}
 
@@ -534,7 +533,7 @@ public class DynamicMCKP extends AbstractAgent {
 			HashMap<Query,Item> itemSolution = new HashMap<Query,Item>();
 			for(Query q : _querySpace) {
 				if(solution.containsKey(q) && solution.get(q) >= 0) {
-					itemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)), 0,  solution.get(q)));
+					itemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)),false, 0,  solution.get(q)));
 				}
 			}
 
@@ -586,7 +585,7 @@ public class DynamicMCKP extends AbstractAgent {
 			HashMap<Query,Item> newItemSolution = new HashMap<Query,Item>();
 			for(Query q : _querySpace) {
 				if(solution.containsKey(q) && solution.get(q) >= 0) {
-					newItemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)), 0,  solution.get(q)));
+					newItemSolution.put(q, new Item(q, 0, 0,_bidList.get(solution.get(q)),false, 0,  solution.get(q)));
 				}
 			}
 
@@ -873,13 +872,13 @@ public class DynamicMCKP extends AbstractAgent {
 		solutionWeight = Math.max(0,solutionWeight);
 		if(remainingCap < 0) {
 			if(solutionWeight <= 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+				penalty = Math.pow(_lambda, Math.abs(remainingCap));
 			}
 			else {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -893,7 +892,7 @@ public class DynamicMCKP extends AbstractAgent {
 				if(solutionWeight > remainingCap) {
 					penalty = remainingCap;
 					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (solutionWeight);
 				}

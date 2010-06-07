@@ -429,21 +429,6 @@ public abstract class AbstractAgent extends Agent {
             
             _products.add(product);
         }
-        
-		_maxImps = new HashMap<Query,Integer>();
-		for(Query q : _querySpace) {
-			int numImps;
-			if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-				numImps = MAX_F0_IMPS;
-			}
-			else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-				numImps = MAX_F1_IMPS;
-			}
-			else {
-				numImps = MAX_F2_IMPS;
-			}
-			_maxImps.put(q, numImps);
-		}
     }
 
     /**

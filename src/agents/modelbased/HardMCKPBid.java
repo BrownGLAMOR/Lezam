@@ -60,7 +60,6 @@ public class HardMCKPBid extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -648,7 +647,7 @@ public class HardMCKPBid extends AbstractAgent {
 
 				for(int j = 1; j <= numSales; j++) {
 					if(expectedBudget - j <= 0) {
-						valueLost += 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(LAMBDA, Math.abs(expectedBudget-j));
+						valueLost += 1.0/Math.pow(_lambda, Math.abs(expectedBudget-j-1)) - 1.0/Math.pow(_lambda, Math.abs(expectedBudget-j));
 					}
 				}
 
@@ -882,13 +881,13 @@ public class HardMCKPBid extends AbstractAgent {
 		solutionWeight = Math.max(0,solutionWeight);
 		if(remainingCap < 0) {
 			if(solutionWeight <= 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(remainingCap));
+				penalty = Math.pow(_lambda, Math.abs(remainingCap));
 			}
 			else {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -902,7 +901,7 @@ public class HardMCKPBid extends AbstractAgent {
 				if(solutionWeight > remainingCap) {
 					penalty = remainingCap;
 					for(int j = 1; j <= solutionWeight-remainingCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (solutionWeight);
 				}

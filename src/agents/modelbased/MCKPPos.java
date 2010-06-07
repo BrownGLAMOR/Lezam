@@ -79,7 +79,6 @@ public class MCKPPos extends AbstractAgent {
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
-	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -367,7 +366,7 @@ public class MCKPPos extends AbstractAgent {
 			//index will be used as the id of the query
 			double penalty = 1.0;
 			if(budget < 0) {
-				penalty = Math.pow(LAMBDA, Math.abs(budget));
+				penalty = Math.pow(_lambda, Math.abs(budget));
 			}
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
@@ -588,7 +587,7 @@ public class MCKPPos extends AbstractAgent {
 				penalty = 0.0;
 				int num = 0;
 				for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-					penalty += Math.pow(LAMBDA, j);
+					penalty += Math.pow(_lambda, j);
 					num++;
 				}
 				penalty /= (num);
@@ -600,7 +599,7 @@ public class MCKPPos extends AbstractAgent {
 				else {
 					penalty = budget;
 					for(int j = 1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 					}
 					penalty /= (budget + numOverCap);
 				}
@@ -690,7 +689,7 @@ public class MCKPPos extends AbstractAgent {
 					penalty = 0.0;
 					int num = 0;
 					for(double j = Math.abs(budget)+1; j <= numOverCap; j++) {
-						penalty += Math.pow(LAMBDA, j);
+						penalty += Math.pow(_lambda, j);
 						num++;
 					}
 					penalty /= (num);
@@ -702,7 +701,7 @@ public class MCKPPos extends AbstractAgent {
 					else {
 						penalty = budget;
 						for(int j = 1; j <= numOverCap; j++) {
-							penalty += Math.pow(LAMBDA, j);
+							penalty += Math.pow(_lambda, j);
 						}
 						penalty /= (budget + numOverCap);
 					}
@@ -787,7 +786,7 @@ public class MCKPPos extends AbstractAgent {
 				double valueLostWindow = Math.max(1, Math.min(_capWindow, 58 - _day));
 				double valueLost = 0;
 				for (double j = min+1; j <= max; j++){
-					double iD = Math.pow(LAMBDA, j);
+					double iD = Math.pow(_lambda, j);
 					double worseConvProb = avgConvProb*iD;
 					valueLost += (avgConvProb - worseConvProb)*avgUSP*valueLostWindow;
 				}
