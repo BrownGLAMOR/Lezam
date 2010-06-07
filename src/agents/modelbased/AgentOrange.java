@@ -42,6 +42,17 @@ import agents.modelbased.mckputil.ItemComparatorByWeight;
 
 public class AgentOrange extends AbstractAgent {
 
+	/*
+	 * TODO:
+	 * 
+	 * 1) Predict opponent MSB and CSB
+	 * 2) Predict opponent ad type
+	 * 3) Dynamic or at least different capacity numbers
+	 */
+
+
+	double[] _c = {0.126114132,0.153193911,0.246344682};
+
 	private boolean BUDGET_OVERRIDE = true;
 	private double BUDGET_AVG_POS = 4.5;
 
@@ -55,8 +66,27 @@ public class AgentOrange extends AbstractAgent {
 	private double _safetyBudget = 800;
 	private int lagDays = 4;
 
-	private double _regReserve = .05;
-	private double _proReserve = .4;
+	private double[] _regReserveLow = {.08, .29, .46};
+	private double[] _regReserveHigh = {.29, .46, .6};
+	/*
+	 * FIXME:
+	 * 
+	 * We are just assuming that the reserve is half way between max and min
+	 */
+	private double[] _regReserve = {(_regReserveLow[0] + _regReserveHigh[0]) / 2.0,
+			(_regReserveLow[1] + _regReserveHigh[1]) / 2.0,
+			(_regReserveLow[2] + _regReserveHigh[2]) / 2.0};
+
+	/*
+	 * FIXME
+	 * 
+	 * We are just assuming that the pro reserve is 2/3 of the promoted boost
+	 * more than the regular reserve
+	 */
+	private double _proReserveBoost = .5;
+	private double[] _proReserve = {_regReserve[0] + _proReserveBoost * (2.0/3.0), 
+			_regReserve[1] + _proReserveBoost * (2.0/3.0),
+			_regReserve[2] + _proReserveBoost * (2.0/3.0)};
 
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -71,8 +101,6 @@ public class AgentOrange extends AbstractAgent {
 	private AbstractParameterEstimation _paramEstimation;
 	private AbstractBudgetEstimator _budgetEstimator;
 	private SalesDistributionModel _salesDist;
-
-	double[] _c = {0.126114132,0.153193911,0.246344682};
 
 	double[][] _advertiserEffectBounds;
 
@@ -114,14 +142,6 @@ public class AgentOrange extends AbstractAgent {
 			return 2; //targeted incorrectly
 		}
 	}
-
-	/*
-	 * TODO:
-	 * 
-	 * 1) Pass budgets in as upper bounds for Query Analyzer
-	 * 2) Redo virtualization with 10 days in user model
-	 */
-
 
 	public AgentOrange(boolean budgetOverride, double budgeAvgPos) {
 		_R = new Random();
@@ -201,6 +221,12 @@ public class AgentOrange extends AbstractAgent {
 			 * Taken from the spec
 			 */
 
+			/*
+			 * TODO
+			 * 
+			 * we can consider replacing these with our predicted clickPrs
+			 * 
+			 */
 			if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
 				_baseClickProbs.put(q, .3);
 			}
@@ -219,15 +245,20 @@ public class AgentOrange extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,"adv1",10,10);
+		/*
+		 * TODO
+		 * 
+		 * re-tune all parameters on new data sets
+		 */
+		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,10,10);
 		_userModel = new jbergParticleFilter(0.004932699,0.263532334,0.045700011,0.174371757,0.188113883,0.220140091);
 		_queryToNumImp = new NewBasicQueryToNumImp(_userModel);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		_convPrModel = new NewBasicConvPrModel(_userModel, _querySpace, _baseConvProbs);
 		ArrayList<AbstractBidModel> bidModels = new ArrayList<AbstractBidModel>();
 		ArrayList<Double> weights = new ArrayList<Double>();
-		bidModels.add(new IndependentBidModel(_advertisersSet, "adv1",1,0,.8,.2,2.1));
-		bidModels.add(new JointDistBidModel(_advertisersSet, "adv1", 15, .8, 1000));
+		bidModels.add(new IndependentBidModel(_advertisersSet, _advId,1,0,.8,.2,2.1));
+		bidModels.add(new JointDistBidModel(_advertisersSet, _advId, 15, .8, 1000));
 		weights.add(.5);
 		weights.add(.5);
 		_bidModel = new LinearComboBidModel(bidModels, weights);
@@ -276,11 +307,13 @@ public class AgentOrange extends AbstractAgent {
 				ArrayList<Double> bids = new ArrayList<Double>();
 				double unSquash = 1.0 / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing);
 
-				for(int i = 1; i < _advertisers.size(); i++) {
+				for(int i = 0; i < _advertisers.size(); i++) {
 					/*
 					 * We need to unsquash opponent bids
 					 */
-					bids.add(_bidModel.getPrediction("adv" + (i+1), q) * unSquash);
+					if(i != _advIdx) { //only care about opponent bids
+						bids.add(_bidModel.getPrediction("adv" + (i+1), q) * unSquash);
+					}
 				}
 
 				/*
@@ -294,7 +327,7 @@ public class AgentOrange extends AbstractAgent {
 				int NUM_SAMPLES = 2;
 				for(int i = 0; i < noDupeBids.size(); i++) {
 					newBids.add(noDupeBids.get(i) - .01);
-					//					newBids.add(noDupeBids.get(i));
+					//					newBids.add(noDupeBids.get(i)); //TODO may want to include this since we requash
 					newBids.add(noDupeBids.get(i) + .01);
 
 					if((i == 0 && noDupeBids.size() > 1) || (i > 0 && i != noDupeBids.size()-1)) {
@@ -460,6 +493,10 @@ public class AgentOrange extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
+					/*
+					 * TODO
+					 * bound these with the reserve scores
+					 */
 					double bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
@@ -480,6 +517,9 @@ public class AgentOrange extends AbstractAgent {
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
 		else {
+			/*
+			 * Bound these with the reseve scores
+			 */
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
 					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
@@ -517,6 +557,16 @@ public class AgentOrange extends AbstractAgent {
 	}
 
 	private double[] getImpsClicksAndCost(Query q, double bid, double budget, boolean targeting, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+		int queryTypeIdx;
+		if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			queryTypeIdx = 0;
+		}
+		else if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			queryTypeIdx = 1;
+		}
+		else {
+			queryTypeIdx = 2;
+		}
 		/*
 		 * Setup problem
 		 */
@@ -530,13 +580,15 @@ public class AgentOrange extends AbstractAgent {
 
 		ArrayList<BidBudgetAdPair> bidBudgetAdPairs = new ArrayList<BidBudgetAdPair>();
 		//need to squash our own bid
-		BidBudgetAdPair ourPair = new BidBudgetAdPair(0,bid * Math.pow(_paramEstimation.getPrediction(q)[0],_squashing),budget,ad);
+		BidBudgetAdPair ourPair = new BidBudgetAdPair(_advIdx,bid * Math.pow(_paramEstimation.getPrediction(q)[0],_squashing),budget,ad);
 		bidBudgetAdPairs.add(ourPair);
-		for(int i = 1; i < _advertisers.size(); i++) {
-			BidBudgetAdPair pair = new BidBudgetAdPair(i,_bidModel.getPrediction("adv" + (i+1), q),
-					_budgetEstimator.getBudgetEstimate(q,"adv" + (i+1)),
-					new Ad()); //TODO predict ads
-			bidBudgetAdPairs.add(pair);
+		for(int i = 0; i < _advertisers.size(); i++) {
+			if(i != _advIdx) {
+				BidBudgetAdPair pair = new BidBudgetAdPair(i,_bidModel.getPrediction("adv" + (i+1), q),
+						_budgetEstimator.getBudgetEstimate(q,"adv" + (i+1)),
+						new Ad()); //TODO predict ads
+				bidBudgetAdPairs.add(pair);
+			}
 		}
 
 		Collections.sort(bidBudgetAdPairs);
@@ -544,7 +596,7 @@ public class AgentOrange extends AbstractAgent {
 		//remove bids under reserve
 		int size = bidBudgetAdPairs.size();
 		for(int i = 0; i < size; i++) {
-			if(bidBudgetAdPairs.get(i).getBid() < _regReserve) {
+			if(bidBudgetAdPairs.get(i).getBid() < _regReserve[queryTypeIdx]) {
 				for(int j = i; j < size; j++) {
 					bidBudgetAdPairs.remove(i);
 				}
@@ -554,7 +606,7 @@ public class AgentOrange extends AbstractAgent {
 
 		boolean inAuction = false;
 		for(int i = 0; i < bidBudgetAdPairs.size(); i++) {
-			if(bidBudgetAdPairs.get(i).getID() == 0) {
+			if(bidBudgetAdPairs.get(i).getID() == _advIdx) {
 				inAuction = true;
 				break;
 			}
@@ -574,6 +626,17 @@ public class AgentOrange extends AbstractAgent {
 	}
 
 	private double[] recursiveImpsClicksAndCost(Query q, double impressionsSeen, ArrayList<BidBudgetAdPair> bidBudgetAdPairs, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+		int queryTypeIdx;
+		if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			queryTypeIdx = 0;
+		}
+		else if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+			queryTypeIdx = 1;
+		}
+		else {
+			queryTypeIdx = 2;
+		}
+		
 		double[] CPCs = new double[_advertisers.size()]; //indexed by idx in pair
 		double otherAdvertiserEffect;
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
@@ -587,32 +650,32 @@ public class AgentOrange extends AbstractAgent {
 		double squashedAdvEff = Math.pow(otherAdvertiserEffect,_squashing);
 
 		for(int i = 0; i < bidBudgetAdPairs.size()-1; i++) {
-			if(bidBudgetAdPairs.get(i).getID() == 0) {
-				CPCs[0] = (bidBudgetAdPairs.get(i+1).getBid() / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing)) + .01;
+			if(bidBudgetAdPairs.get(i).getID() == _advIdx) {
+				CPCs[_advIdx] = (bidBudgetAdPairs.get(i+1).getBid() / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing)) + .01;
 			}
 			else {
 				CPCs[bidBudgetAdPairs.get(i).getID()] = (bidBudgetAdPairs.get(i+1).getBid() / squashedAdvEff) + .01;
 			}
 		}
 
-
+		//the person in last is special because they pay the reserve
 		/*
 		 * Check that we aren't in a promoted slot....
 		 */
 		if(bidBudgetAdPairs.size()-1 < _numPS) {
-			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == 0) {
-				CPCs[0] = _proReserve / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
+			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == _advIdx) {
+				CPCs[_advIdx] = _proReserve[queryTypeIdx] / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
 			}
 			else {
-				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _proReserve / squashedAdvEff + .01;
+				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _proReserve[queryTypeIdx] / squashedAdvEff + .01;
 			}
 		}
 		else {
-			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == 0) {
-				CPCs[0] = _regReserve / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
+			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == _advIdx) {
+				CPCs[_advIdx] = _regReserve[queryTypeIdx] / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
 			}
 			else {
-				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _regReserve / squashedAdvEff + .01;
+				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _regReserve[queryTypeIdx] / squashedAdvEff + .01;
 			}
 		}
 
@@ -643,7 +706,7 @@ public class AgentOrange extends AbstractAgent {
 				double ftfp = fTargetfPro[ft][bool2int(_numPS >= slot + 1)];
 
 				double advertiserEffect;
-				if(pair.getID() == 0) {
+				if(pair.getID() == _advIdx) {
 					advertiserEffect = _paramEstimation.getPrediction(q)[0];
 				}
 				else {
@@ -689,7 +752,7 @@ public class AgentOrange extends AbstractAgent {
 			ImprPair impPair = new ImprPair(pairID, maxImps);
 			maxImpPairs.add(impPair);
 
-			if(pairID == 0) {
+			if(pairID == _advIdx) {
 				ourMaxImps = maxImps;
 			}
 		}
@@ -716,9 +779,9 @@ public class AgentOrange extends AbstractAgent {
 		}
 
 		if(done) {
-			double CPC = CPCs[0];
-			double impToViewRatio = impToViewRatios[0];
-			double clickPr = clickPrs[0];
+			double CPC = CPCs[_advIdx];
+			double impToViewRatio = impToViewRatios[_advIdx];
+			double clickPr = clickPrs[_advIdx];
 			double clicks = ourMaxImps*impToViewRatio*clickPr;
 			double cost = clicks*CPC;
 
@@ -730,9 +793,9 @@ public class AgentOrange extends AbstractAgent {
 			return impsClicksAndCost;
 		}
 		else {
-			double CPC = CPCs[0];
-			double impToViewRatio = impToViewRatios[0];
-			double clickPr = clickPrs[0];
+			double CPC = CPCs[_advIdx];
+			double impToViewRatio = impToViewRatios[_advIdx];
+			double clickPr = clickPrs[_advIdx];
 			double clicks = minImps*impToViewRatio*clickPr;
 			double cost = clicks*CPC;
 
@@ -896,7 +959,7 @@ public class AgentOrange extends AbstractAgent {
 				double avgPos = queryReport.getPosition(q);
 				boolean hitBudget = true;
 				if(Double.isNaN(budget) || 
-				   cost + bid < budget) {
+						cost + bid < budget) {
 					hitBudget = false;
 				}
 
@@ -909,17 +972,12 @@ public class AgentOrange extends AbstractAgent {
 		_queryAnalyzer.updateModel(queryReport, salesReport, bidBundle, _maxImps);
 
 		HashMap<Query,Integer> totalImpressions = new HashMap<Query,Integer>();
-		HashMap<Query, Double> cpc = new HashMap<Query,Double>();
-		HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
 		HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
 		HashMap<Query,int[]> order = new HashMap<Query,int[]>();
 		HashMap<Query,int[]> impressions = new HashMap<Query,int[]>();
 		HashMap<Query,int[]> fullOrders = new HashMap<Query,int[]>();
 		HashMap<Query,int[]> fullImpressions = new HashMap<Query,int[]>();
 		for(Query q : _querySpace) {
-			cpc.put(q, queryReport.getCPC(q));
-			ourBid.put(q, bidBundle.getBid(q));
-
 			int[] impsPred = _queryAnalyzer.getImpressionsPrediction(q);
 			int[] ranksPred = _queryAnalyzer.getOrderPrediction(q);
 			order.put(q, ranksPred);
@@ -939,8 +997,14 @@ public class AgentOrange extends AbstractAgent {
 			int agentOffset = 0;
 			for(int i = 0; i < _advertisers.size(); i++) {
 				double avgPos;
-				if(i == 0) {
+				if(i == _advIdx) {
 					avgPos = queryReport.getPosition(q);
+					//					avgPos = queryReport.getPosition(q, "adv" + (i+1));
+					/*
+					 * In the new game these return two different things.
+					 * The first returns our position with full decimal place,
+					 * the second returns the sampled version
+					 */
 				}
 				else {
 					avgPos = queryReport.getPosition(q, "adv" + (i+1));
@@ -991,21 +1055,28 @@ public class AgentOrange extends AbstractAgent {
 		_unitsSold.update(salesReport);
 		_convPrModel.updateModel(queryReport, salesReport,bidBundle);
 
-		_bidModel.updateModel(cpc, ourBid, ranks);
-
 		_paramEstimation.updateModel(queryReport, salesReport, bidBundle, _numPS, fullOrders, fullImpressions, userStates);
+
+		HashMap<Query, Double> cpc = new HashMap<Query,Double>();
+		HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
+		for(Query q : _querySpace) {
+			cpc.put(q, queryReport.getCPC(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
+			ourBid.put(q, bidBundle.getBid(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
+		}
+		_bidModel.updateModel(cpc, ourBid, ranks);
 
 		HashMap<Query,Double> contProbs = new HashMap<Query,Double>();
 		HashMap<Query, double[]> allbids = new HashMap<Query,double[]>();
 		for(Query q : _querySpace) {
 			contProbs.put(q, _paramEstimation.getPrediction(q)[1]);
 			double[] bids = new double[_advertisers.size()];
-			/*
-			 * TODO:
-			 * May consider taking our bid from the bundle
-			 */
 			for(int j = 0; j < bids.length; j++) {
-				bids[j] = _bidModel.getPrediction("adv" + (j+1), q);
+				if(j == _advIdx) {
+					bids[j] = bidBundle.getBid(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing);
+				}
+				else {
+					bids[j] = _bidModel.getPrediction("adv" + (j+1), q);
+				}
 			}
 			allbids.put(q, bids);
 		}
