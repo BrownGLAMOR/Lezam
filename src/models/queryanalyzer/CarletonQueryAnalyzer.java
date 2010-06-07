@@ -1,4 +1,4 @@
-	package models.queryanalyzer;
+package models.queryanalyzer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,7 +13,6 @@ import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionEstimator;
 import models.queryanalyzer.search.LDSearchIESmart;
-import models.queryanalyzer.search.LDSearchHybrid;
 
 
 public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
@@ -31,7 +30,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, int numIters2) {
 		_querySpace = querySpace;
-		
+
 		NUM_ITERATIONS_1 = numIters1;
 		NUM_ITERATIONS_2 = numIters2;
 
@@ -41,16 +40,16 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		for(Query q : _querySpace) {
 			ArrayList<IEResult> resultsList = new ArrayList<IEResult>();
 			_allResults.put(q, resultsList);
-			
+
 			ArrayList<int[][]> impRanges = new ArrayList<int[][]>();
 			_allImpRanges.put(q,impRanges);
-			
+
 			ArrayList<int[]> agentIDs = new ArrayList<int[]>();
 			_allAgentIDs.put(q, agentIDs);
 		}
 
 		_advertisers = advertisers;
-		
+
 		_ourAdvertiser = ourAdvertiser;
 
 		_advToIdx = new HashMap<String,Integer>();
@@ -145,27 +144,27 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 				else {
 					avgPos = queryReport.getPosition(q, "adv" + (i+2-agentOffset));
 				}
-				
+
 				if(!Double.isNaN(avgPos)) {
 					agentIds.add(i);
 					allAvgPos.add(avgPos);
 				}
 			}
-			
+
 			double[] allAvgPosArr = new double[allAvgPos.size()];
 			for(int i = 0; i < allAvgPosArr.length; i++) {
 				allAvgPosArr[i] = allAvgPos.get(i);
 			}
-			
+
 			int[] agentIdsArr = new int[agentIds.size()];
 			for(int i = 0; i < agentIdsArr.length; i++) {
 				agentIdsArr[i] = agentIds.get(i);
 			}
-			
+
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
 			//int[] avgPosOrder = inst.getAvgPosOrder();
 			int[] avgPosOrder = inst.getCarletonOrder();
-			
+
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {
 				if(avgPosOrder.length > 0) {
@@ -198,7 +197,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		}
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "CarletonQueryAnalyzer(" + NUM_ITERATIONS_1 +"," + NUM_ITERATIONS_2 + ")";
