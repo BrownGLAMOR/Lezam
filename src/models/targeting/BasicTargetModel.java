@@ -17,8 +17,8 @@ public class BasicTargetModel extends AbstractModel {
 
 	String _manufacturer, _component;
 	final double TE = 0.5;
-	final double CSB = 0.5;
-	final double MSB = 0.5;
+	final double CSB = 0.6;
+	final double MSB = 0.4;
 	final double PSB = 0.5;
 	final double USP = 10;
 
