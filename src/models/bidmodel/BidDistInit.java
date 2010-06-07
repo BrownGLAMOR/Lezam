@@ -173,11 +173,15 @@ public final class BidDistInit {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException, ParseException {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1425;
-		int max = 1465;
+		//		int min = 1425;
+		//		int max = 1465;
+
+		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		int min = 1;
+		int max = 77;
 
 		buildBidDistribution(baseFile,min,max);
 	}
