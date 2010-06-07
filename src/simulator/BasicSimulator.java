@@ -1,8 +1,6 @@
 package simulator;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.ParseException;
@@ -15,28 +13,18 @@ import java.util.LinkedList;
 import java.util.Random;
 import java.util.Set;
 
-import javax.management.RuntimeErrorException;
-
-import org.rosuda.REngine.Rserve.RConnection;
-
 import models.AbstractModel;
-import models.avgpostoposdist.AvgPosToPosDist;
 import models.bidtocpc.AbstractBidToCPC;
-import models.bidtocpc.RegressionBidToCPC;
 import models.bidtopos.AbstractBidToPos;
 import models.bidtoprclick.AbstractBidToPrClick;
 import models.postobid.AbstractPosToBid;
 import models.postocpc.AbstractPosToCPC;
 import models.postoprclick.AbstractPosToPrClick;
 import models.prconv.AbstractConversionModel;
-import models.prconv.GoodConversionPrModel;
-import models.prconv.HistoricPrConversionModel;
 import models.querytonumimp.AbstractQueryToNumImp;
 import models.querytonumimp.BasicQueryToNumImp;
 import models.targeting.BasicTargetModel;
-import models.unitssold.AbstractUnitsSoldModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.BasicUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import se.sics.tasim.aw.Message;
 import simulator.models.PerfectBidToCPC;
@@ -45,49 +33,23 @@ import simulator.models.PerfectBidToPrClick;
 import simulator.models.PerfectPosToBid;
 import simulator.models.PerfectPosToCPC;
 import simulator.models.PerfectPosToPrClick;
-import simulator.models.PerfectQueryToPrConv;
 import simulator.models.PerfectQueryToNumImp;
+import simulator.models.PerfectQueryToPrConv;
 import simulator.models.PerfectUnitsSoldModel;
 import simulator.models.PerfectUserModel;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import agents.AbstractAgent;
-import agents.modelbased.DrMCKPBid;
+import agents.modelbased.AgentOrange;
 import agents.modelbased.DynamicMCKP;
-import agents.modelbased.ExoMCKPBid;
-import agents.modelbased.ExoMCKPBidExhaustive;
-import agents.modelbased.G4;
-import agents.modelbased.HardMCKPBid;
 import agents.modelbased.ILPBidAgent;
-import agents.modelbased.ILPBidSearchAgent;
-import agents.modelbased.ILPPosAgent;
 import agents.modelbased.NewSemiEndoMCKPBid;
 import agents.modelbased.SemiEndoMCKPBid;
-import agents.modelbased.MCKPBidDynProg;
-import agents.modelbased.MCKPBidNoDomElim;
-import agents.modelbased.SemiEndoMCKPBidExhaustive;
-import agents.modelbased.MCKPPos;
-import agents.modelbased.MCKPPosSearch;
 import agents.modelbased.simpleAA.SimpleAABidAgent;
 import agents.olderagents.Cheap;
-import agents.olderagents.ClickProfitC;
 import agents.olderagents.ConstantPM;
-import agents.olderagents.EquateProfitC;
-import agents.olderagents.G3Agent;
 import agents.olderagents.GoodSlot;
-import agents.olderagents.PortfolioOpt;
-import agents.rulebased.AdjustPM;
-import agents.rulebased.AdjustPPS;
-import agents.rulebased.AdjustPR;
-import agents.rulebased.AdjustROI;
-import agents.rulebased.EquatePM;
-import agents.rulebased.EquatePPS;
-import agents.rulebased.EquatePR;
-import agents.rulebased.EquateROI;
 import agents.rulebased.simple.EquatePMSimple;
-import agents.rulebased.simple.EquatePPSSimple;
-import agents.rulebased.simple.EquatePRSimple;
-import agents.rulebased.simple.EquateROISimple;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -127,7 +89,7 @@ public class BasicSimulator {
 
 	SecureRandom _R;					//Random number generator
 
-	private double _LAMBDA = .995;
+	private double _LAMBDA;
 
 	private double _squashing;
 	private int _numUsers = 90000;
@@ -214,6 +176,7 @@ public class BasicSimulator {
 				System.out.println(" IMP VAR=" + _noiseImps + ",CLICKPR VAR=" + _noisePrClick + " GAUSSIAN ERROR");
 			}
 		}
+
 		HashMap<String,LinkedList<Reports>> reportsListMap = new HashMap<String, LinkedList<Reports>>();
 		initializeBasicInfo(status, advertiseridx);
 		agent.sendSimMessage(new Message("doesn't","matter",_pubInfo));
@@ -742,6 +705,8 @@ public class BasicSimulator {
 		_targEffect = _ourAdvInfo.getTargetEffect();
 		_CSB = _ourAdvInfo.getComponentBonus();
 		_MSB = _ourAdvInfo.getManufacturerBonus();
+		_LAMBDA = _ourAdvInfo.getDistributionCapacityDiscounter();
+		System.out.println("LAMBDA: " + _LAMBDA);
 
 		_pubInfo = _status.getPubInfo();
 		_reserveInfo = _status.getReserveInfo();
@@ -1447,7 +1412,7 @@ public class BasicSimulator {
 		//		//ASPIDMPASD
 		HashMap<String,Reports> reportsMap = new HashMap<String, Reports>();
 		for(SimAgent agent : agents) {
-			QueryReport queryReport = agent.buildQueryReport();
+			QueryReport queryReport = agent.buildQueryReport(agents);
 			SalesReport salesReport = agent.buildSalesReport();
 			Reports reports = new Reports(queryReport,salesReport);
 			reportsMap.put(agent.getAdvId(),reports);
@@ -1952,16 +1917,13 @@ public class BasicSimulator {
 
 		Random r = new Random(68616);
 
-		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
-		String baseFile = "/pro/aa/finals/day-2/server-1/game";
-
-				int min = 1425;
-				int max = 1426;
-
-//		int min = 297;
-//		int max = 298;
+		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+		int min = 1425;
+		int max = 1426;
+		//		int min = 297;
+		//		int max = 298;
 		//				int max = 337;
 
 
@@ -1985,9 +1947,10 @@ public class BasicSimulator {
 		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
 
 
-		//				AbstractAgent agent = new SemiEndoMCKPBid();
-		AbstractAgent agent = new SimpleAABidAgent();
-		//		AbstractAgent agent = new NewSemiEndoMCKPBid();
+		AbstractAgent agent = new SemiEndoMCKPBid();
+		//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
+		//				AbstractAgent agent = new SimpleAABidAgent();
+		//						AbstractAgent agent = new NewSemiEndoMCKPBid();
 		//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
 		//		AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
 
