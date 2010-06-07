@@ -55,7 +55,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	private boolean FORWARDUPDATING = false;
 	private boolean PRICELINES = false;
 
-	private double _safetyBudget = 1200;
+	private double _safetyBudget = 950;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -91,24 +91,22 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		bidListF2 = new ArrayList<Double>();
 
 		double increment  = .05;
-		double min = (.08 + .29) / 2.0;
-		double max = 1.8;
+		double min = .08;
+		double max = 1.0;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidListF0.add(min+(i*increment));
 		}
 
-		increment  = .07;
-		min = (.29 + .46) / 2.0;
-		max = 2.25;
+		min = .29;
+		max = 1.95;
 		tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidListF1.add(min+(i*increment));
 		}
 
-		increment  = .08;
-		min = (.46 + .6) / 2.0;
-		max = 2.75;
+		min = .46;
+		max = 2.35;
 		tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidListF2.add(min+(i*increment));
@@ -470,10 +468,10 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
+					bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*5);
+					bidBundle.addQuery(q, bid, new Ad(), bid*7);
 				}
 			}
 
@@ -496,15 +494,15 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					bidList = bidListF2;
 				}
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .8);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
-					bidBundle.addQuery(q, bid, new Ad(), bid*10);
+					double bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .8);
+					bidBundle.addQuery(q, bid, new Ad(), bid*20);
 				}
 			}
-			bidBundle.setCampaignDailySpendLimit(800);
+			bidBundle.setCampaignDailySpendLimit(925);
 		}
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
