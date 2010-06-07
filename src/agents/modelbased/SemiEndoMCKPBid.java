@@ -33,6 +33,7 @@ import agents.AbstractAgent.Predictions;
 import agents.modelbased.mckputil.IncItem;
 import agents.modelbased.mckputil.Item;
 import agents.modelbased.mckputil.ItemComparatorByWeight;
+import edu.umich.eecs.tac.props.AbstractTransportableEntryListBacking;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -40,6 +41,7 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
+import edu.umich.eecs.tac.props.BidBundle.BidEntry;
 
 /**
  * @author jberg, spucci, vnarodit
@@ -68,7 +70,9 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	private AbstractConversionModel _convPrModel;
 	private SalesDistributionModel _salesDist;
 	private BasicTargetModel _targModel;
-	private ArrayList<Double> bidList;
+	private ArrayList<Double> bidListF0;
+	private ArrayList<Double> bidListF1;
+	private ArrayList<Double> bidListF2;
 	private int lagDays = 4;
 	private boolean salesDistFlag;
 
@@ -81,15 +85,33 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		BUDGET = budget;
 		FORWARDUPDATING = forward;
 		PRICELINES = pricelines;
-//		_R.setSeed(616866);
-		bidList = new ArrayList<Double>();
-		//		double increment = .25;
+		//		_R.setSeed(616866);
+		bidListF0 = new ArrayList<Double>();
+		bidListF1 = new ArrayList<Double>();
+		bidListF2 = new ArrayList<Double>();
+
 		double increment  = .05;
-		double min = .04;
-		double max = 1.65;
+		double min = (.08 + .29) / 2.0;
+		double max = 1.8;
 		int tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
-			bidList.add(min+(i*increment));
+			bidListF0.add(min+(i*increment));
+		}
+
+		increment  = .05;
+		min = (.29 + .46) / 2.0;
+		max = 3.0;
+		tot = (int) Math.ceil((max-min) / increment);
+		for(int i = 0; i < tot; i++) {
+			bidListF1.add(min+(i*increment));
+		}
+
+		increment  = .05;
+		min = (.46 + .6) / 2.0;
+		max = 3.25;
+		tot = (int) Math.ceil((max-min) / increment);
+		for(int i = 0; i < tot; i++) {
+			bidListF2.add(min+(i*increment));
 		}
 
 		salesDistFlag = false;
@@ -264,7 +286,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	public BidBundle getBidBundle(Set<AbstractModel> models) {
 		double start = System.currentTimeMillis();
 		BidBundle bidBundle = new BidBundle();
-		
+
 		buildMaps(models);
 
 		if(SAFETYBUDGET) {
@@ -307,6 +329,18 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 				ArrayList<Item> itemList = new ArrayList<Item>();
 				ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
 				debug("Query: " + q);
+
+				ArrayList<Double> bidList;
+				if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+					bidList = bidListF0;
+				}
+				else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+					bidList = bidListF1;
+				}
+				else {
+					bidList = bidListF2;
+				}
+
 				for(int i = 0; i < bidList.size(); i++) {
 					double salesPrice = _salesPrices.get(q);
 					double bid = bidList.get(i);
@@ -358,6 +392,18 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 				double bid;
 
 				if(solution.containsKey(q)) {
+					ArrayList<Double> bidList;
+					if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+						bidList = bidListF0;
+					}
+					else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+						bidList = bidListF1;
+					}
+					else {
+						bidList = bidListF2;
+					}
+
+
 					int bidIdx = solution.get(q).idx();
 					Predictions predictions = queryPrediction.get(bidIdx);
 					double clickPr = predictions.getClickPr();
@@ -366,17 +412,8 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					double CPC = predictions.getCPC();
 
 					if(solution.get(q).targ()) {
-
 						bidBundle.setBid(q, bidList.get(bidIdx));
-
-						if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO))
-							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, _compSpecialty)));
-						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getComponent() == null)
-							bidBundle.setAd(q, new Ad(new Product(q.getManufacturer(), _compSpecialty)));
-						if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE) && q.getManufacturer() == null)
-							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
-						if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO) && q.getManufacturer().equals(_manSpecialty)) 
-							bidBundle.setAd(q, new Ad(new Product(_manSpecialty, q.getComponent())));
+						bidBundle.setAd(q, getTargetedAd(q));
 					}
 					else {
 						bidBundle.addQuery(q, bidList.get(bidIdx), new Ad());
@@ -390,6 +427,17 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					}
 				}
 				else {
+					ArrayList<Double> bidList;
+					if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+						bidList = bidListF0;
+					}
+					else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+						bidList = bidListF1;
+					}
+					else {
+						bidList = bidListF2;
+					}
+
 					/*
 					 * We decided that we did not want to be in this query, so we will use it to explore the space
 					 */
@@ -397,7 +445,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
+					bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*5);
@@ -412,12 +460,22 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		}
 		else {
 			for(Query q : _querySpace){
+				ArrayList<Double> bidList;
+				if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+					bidList = bidListF0;
+				}
+				else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+					bidList = bidListF1;
+				}
+				else {
+					bidList = bidListF2;
+				}
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
 					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(.04,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
+					double bid = randDouble(bidList.get(0),_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .65);
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
@@ -986,6 +1044,39 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 	@Override
 	public String toString() {
 		return "SemiEndoMCKPBid(Budget: " + BUDGET + ", Forward Update: " + FORWARDUPDATING + ", Pricelines: " + PRICELINES + ")";
+	}
+
+	private Ad getTargetedAd(Query q) {
+		Ad ad;
+		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+			/*
+			 * F0 Query, target our specialty
+			 */
+			ad = new Ad(new Product(_manSpecialty, _compSpecialty));
+		}
+		else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+			if(q.getComponent() == null) {
+				/*
+				 * F1 Query (comp = null), so target the subgroup that searches for this and our 
+				 * component specialty
+				 */
+				ad = new Ad(new Product(q.getManufacturer(), _compSpecialty));
+			}
+			else {
+				/*
+				 * F1 Query (man = null), so target the subgroup that searches for this and our 
+				 * manufacturer specialty
+				 */
+				ad = new Ad(new Product(_manSpecialty, q.getComponent()));
+			}
+		}
+		else  {
+			/*
+			 * F2 Query, so target the subgroup that searches for this
+			 */
+			ad = new Ad(new Product(q.getManufacturer(), q.getComponent()));
+		}
+		return ad;
 	}
 
 	@Override
