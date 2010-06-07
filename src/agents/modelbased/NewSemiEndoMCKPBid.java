@@ -112,7 +112,7 @@ public class NewSemiEndoMCKPBid extends AbstractAgent {
 		 * so we use a LinkedHashSet
 		 */
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,"adv1",1);
+		AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,"adv1",10,10);
 		ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(0.004932699,
 				0.263532334,
 				0.045700011,
@@ -239,12 +239,6 @@ public class NewSemiEndoMCKPBid extends AbstractAgent {
 			if(model instanceof AbstractQueryAnalyzer) {
 				AbstractQueryAnalyzer queryAnalyzer = (AbstractQueryAnalyzer) model;
 				
-				for(Query q : _querySpace) {
-					for(int i = 1; i <= 8; i++) {
-						System.out.println(queryReport.getPosition(q, "adv"+i));
-					}
-				}
-
 				queryAnalyzer.updateModel(queryReport, salesReport, _bidBundles.get(_bidBundles.size()-2), _maxImps);
 				_totalImpressions = new HashMap<Query,Integer>();
 				for(Query q : _querySpace) {
