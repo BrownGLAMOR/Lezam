@@ -205,7 +205,6 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
 				if(Double.isNaN(currentEstimate)) {
 					System.out.println("bad estimate!!!!!!");
-					currentEstimate = _advertiserEffectBoundsAvg[_qTypeIdx];
 				}
 
 				_lastPredictions[0] = currentEstimate;
@@ -236,6 +235,12 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 				}
 			}
 		}
+		
+		//TODO: take me out for the competition
+		if(Double.isNaN(_lastPredictions[0]) || Double.isNaN(_lastPredictions[1])) {
+			throw new RuntimeException();
+		}
+		
 		return true;
 	}
 

@@ -17,128 +17,129 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public class BayesianParameterEstimation extends AbstractParameterEstimation {
-	
+
 	private ArrayList<Query> m_queries;
 	private HashMap<Query, BayesianQueryHandler> m_queryHandlers;
-	
+
 	private int numSlots = 5;
 	private int numAdvertisers = 8;
-	
+
 	double _probClick;
-	
+
 	double[] _c;
-	
+
 	public BayesianParameterEstimation() {
 		this(new double[] {0.126114132,0.153193911,0.246344682});
 	}
-	
+
 	public BayesianParameterEstimation(double[] c)
 	{
 		_c = c;
-		
+
 		m_queries = new ArrayList<Query>();
 		m_queryHandlers = new HashMap<Query, BayesianQueryHandler>();
-		
-		 // Get the 16 queries
-		 m_queries.add(new Query(null, null));
-		 m_queries.add(new Query("lioneer", null));
-		 m_queries.add(new Query(null, "tv"));
-		 m_queries.add(new Query("lioneer", "tv"));
-		 m_queries.add(new Query(null, "audio"));
-		 m_queries.add(new Query("lioneer", "audio"));
-		 m_queries.add(new Query(null, "dvd"));
-		 m_queries.add(new Query("lioneer", "dvd"));
-		 m_queries.add(new Query("pg", null));
-		 m_queries.add(new Query("pg", "tv"));
-		 m_queries.add(new Query("pg", "audio"));
-		 m_queries.add(new Query("pg", "dvd"));
-		 m_queries.add(new Query("flat", null));
-		 m_queries.add(new Query("flat", "tv"));
-		 m_queries.add(new Query("flat", "audio"));
-		 m_queries.add(new Query("flat", "dvd"));
-		 
-		 for(Query q: m_queries){
-			 m_queryHandlers.put(q, new BayesianQueryHandler(q,_c));
-		 }
+
+		// Get the 16 queries
+		m_queries.add(new Query(null, null));
+		m_queries.add(new Query("lioneer", null));
+		m_queries.add(new Query(null, "tv"));
+		m_queries.add(new Query("lioneer", "tv"));
+		m_queries.add(new Query(null, "audio"));
+		m_queries.add(new Query("lioneer", "audio"));
+		m_queries.add(new Query(null, "dvd"));
+		m_queries.add(new Query("lioneer", "dvd"));
+		m_queries.add(new Query("pg", null));
+		m_queries.add(new Query("pg", "tv"));
+		m_queries.add(new Query("pg", "audio"));
+		m_queries.add(new Query("pg", "dvd"));
+		m_queries.add(new Query("flat", null));
+		m_queries.add(new Query("flat", "tv"));
+		m_queries.add(new Query("flat", "audio"));
+		m_queries.add(new Query("flat", "dvd"));
+
+		for(Query q: m_queries){
+			m_queryHandlers.put(q, new BayesianQueryHandler(q,_c));
+		}
 	}
 
 	@Override
 	public double[] getPrediction(Query q) {
 		return m_queryHandlers.get(q).getPredictions();
 	}
-	
+
 	@Override
 	public boolean updateModel(QueryReport queryReport, 
-							   SalesReport salesReport,
-							   BidBundle bidBundle,
-							   int numberPromotedSlots,
-							   HashMap<Query,int[]> allOrders,
-							   HashMap<Query,int[]> allImpressions,
-							   HashMap<Product,HashMap<UserState,Integer>> userStates) {
+			SalesReport salesReport,
+			BidBundle bidBundle,
+			int numberPromotedSlots,
+			HashMap<Query,int[]> allOrders,
+			HashMap<Query,int[]> allImpressions,
+			HashMap<Product,HashMap<UserState,Integer>> userStates) {
 		for(Query q: m_queries){
-			
-			/*
-			 * TODO
-			 * 
-			 * if things broke skip the update
-			 */
-			
+
 			int[] order = allOrders.get(q);
 			int[] impressions = allImpressions.get(q);
-			
-			HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
-			query_ads.put("adv1",bidBundle.getAd(q));
-			for(int i = 2; i <= 8; i++) {
-				query_ads.put("adv" + i, queryReport.getAd(q, "adv" + i));
-			}
-			
-			LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
-			LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
-			int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
 
-			int[] impressionPerAgent = new int[numAdvertisers];
-			//for each agent
-			for(int ag = 0; ag < numAdvertisers; ag++){
-				int sum = 0;
-				//for each slot
-				for(int slt = 0; slt < numSlots; slt++){
-					sum+=impressionMatrix[ag][slt];
+			int impSum = 0;
+			for(int i = 0; i < impressions.length; i++) {
+				impSum += impressions[i];
+			}
+
+			if(impSum > 0) {
+				HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
+				query_ads.put("adv1",bidBundle.getAd(q));
+				for(int i = 2; i <= 8; i++) {
+					query_ads.put("adv" + i, queryReport.getAd(q, "adv" + i));
 				}
-				impressionPerAgent[ag]=sum;
-			}
 
-			//where are we in bid pair matrix?
-			ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
-			for(int i = 0; i < order.length; i++){
-				if(order[i]==0){
-					break;
-				}else{
-					higherthanus.add(new ImprPair(order[i],impressionPerAgent[order[i]]));
+				LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
+				LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
+				int[][] impressionMatrix = greedyAssign(numSlots, numAdvertisers, order, impressions);
+
+				int[] impressionPerAgent = new int[numAdvertisers];
+				//for each agent
+				for(int ag = 0; ag < numAdvertisers; ag++){
+					int sum = 0;
+					//for each slot
+					for(int slt = 0; slt < numSlots; slt++){
+						sum+=impressionMatrix[ag][slt];
+					}
+					impressionPerAgent[ag]=sum;
 				}
-			}
 
-			Collections.sort(higherthanus);
-			for(int j = 0; j < numSlots; j++) {
-				int numImpressions = impressionMatrix[0][j];
-				impressionsPerSlot.add(numImpressions);
-
-				LinkedList<String> advsAbove = new LinkedList<String>();
-				if(!(numImpressions == 0 || numSlots == 0)) {
-					//This List is NOT SORTED!!!
-					List<ImprPair> sublist = higherthanus.subList(0, j);
-					for(ImprPair imp : sublist){
-						advsAbove.add("adv" + (imp.getID()+1));
+				//where are we in bid pair matrix?
+				ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
+				for(int i = 0; i < order.length; i++){
+					if(order[i]==0){
+						break;
+					}else{
+						higherthanus.add(new ImprPair(order[i],impressionPerAgent[order[i]]));
 					}
 				}
 
-				advertisersAbovePerSlot.add(advsAbove);
+				Collections.sort(higherthanus);
+				for(int j = 0; j < numSlots; j++) {
+					int numImpressions = impressionMatrix[0][j];
+					impressionsPerSlot.add(numImpressions);
+
+					LinkedList<String> advsAbove = new LinkedList<String>();
+					if(!(numImpressions == 0 || numSlots == 0)) {
+						//This List is NOT SORTED!!!
+						List<ImprPair> sublist = higherthanus.subList(0, j);
+						for(ImprPair imp : sublist){
+							advsAbove.add("adv" + (imp.getID()+1));
+						}
+					}
+
+					advertisersAbovePerSlot.add(advsAbove);
+				}
+
+				m_queryHandlers.get(q).update("adv1",queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates);
 			}
-			
-			m_queryHandlers.get(q).update("adv1",queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates);
 		}
 		return true;
 	}
-	
+
 	/*
 	Function input
 	number of slots: int slots
