@@ -50,12 +50,12 @@ import edu.umich.eecs.tac.props.BidBundle.BidEntry;
 public class SemiEndoMCKPBid extends AbstractAgent {
 
 	private int MAX_TIME_HORIZON = 5;
-	private boolean SAFETYBUDGET = false;
+	private boolean SAFETYBUDGET = true;
 	private boolean BUDGET = false;
 	private boolean FORWARDUPDATING = false;
 	private boolean PRICELINES = false;
 
-	private double _safetyBudget = 800;
+	private double _safetyBudget = 1200;
 
 	private Random _R = new Random();
 	private boolean DEBUG = false;
@@ -98,17 +98,17 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 			bidListF0.add(min+(i*increment));
 		}
 
-		increment  = .05;
+		increment  = .07;
 		min = (.29 + .46) / 2.0;
-		max = 3.0;
+		max = 2.25;
 		tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidListF1.add(min+(i*increment));
 		}
 
-		increment  = .05;
+		increment  = .08;
 		min = (.46 + .6) / 2.0;
-		max = 3.25;
+		max = 2.75;
 		tot = (int) Math.ceil((max-min) / increment);
 		for(int i = 0; i < tot; i++) {
 			bidListF2.add(min+(i*increment));
@@ -311,7 +311,6 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 				remainingCap = _capacity/_capWindow;
 			}
 			else {
-				//				budget = Math.max(20,_capacity*(2.0/5.0) - _unitsSold.getWindowSold()/4);
 				remainingCap = _capacity - _unitsSold.getWindowSold();
 				debug("Unit Sold Model Budget "  +remainingCap);
 			}
@@ -326,6 +325,9 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 			double penalty = getPenalty(remainingCap, 0);
 			HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 			for(Query q : _querySpace) {
+				double minClickPr = 0;
+				double minCPC = 0;
+				
 				ArrayList<Item> itemList = new ArrayList<Item>();
 				ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
 				debug("Query: " + q);
@@ -346,7 +348,6 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					double bid = bidList.get(i);
 					double clickPr = _bidToPrClick.getPrediction(q, bid, new Ad());
 					double numImps = _queryToNumImpModel.getPrediction(q,(int) (_day+1));
-					int numClicks = (int) (clickPr * numImps);
 					double CPC = _bidToCPC.getPrediction(q, bid);
 					double convProb = _convPrModel.getPrediction(q);
 
@@ -361,6 +362,30 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					if(Double.isNaN(convProb)) {
 						convProb = 0.0;
 					}
+					
+					/*
+					 * Click probability should always be increasing
+					 * with our current models
+					 */
+					if(clickPr < minClickPr) {
+						clickPr = minClickPr;
+					}
+					else {
+						minClickPr = clickPr;
+					}
+
+					/*
+					 * CPC should always be increasing
+					 * with our current models
+					 */
+					if(CPC < minCPC) {
+						CPC = minCPC;
+					}
+					else {
+						minCPC = CPC;
+					}
+					
+					int numClicks = (int) (clickPr * numImps);
 
 					debug("\tBid: " + bid);
 					debug("\tCPC: " + CPC);
