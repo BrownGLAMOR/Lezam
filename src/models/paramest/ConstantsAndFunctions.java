@@ -18,7 +18,7 @@ public abstract class ConstantsAndFunctions {
 	// Promoted Slot Bonus
 	final double _PSB = 0.5;
 	// Component Specialty Bonus
-	final double _CSB = 0.5;
+	final double _CSB = 0.6;
 	// Advertiser effect lower bound <> upper bound
 	final double[][] _advertiserEffectBounds = { { 0.2, 0.3 },
 												 { 0.3, 0.4 }, 
