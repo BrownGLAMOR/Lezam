@@ -70,29 +70,19 @@ public class AgentOrange extends AbstractAgent {
 	private AbstractParameterEstimation _paramEstimation;
 	private AbstractBudgetEstimator _budgetEstimator;
 	private SalesDistributionModel _salesDist;
-	
-	double[] _c = {0.126114132,0.153193911,0.246344682};
 
-	final double[][] _advertiserEffectBounds = { { 0.2, 0.3 },
-			{ 0.3, 0.4 }, 
-			{ 0.4, 0.5 } };
+	double[] _c = {0.126114132,0.153193911,0.246344682};
+	
+	double[][] _advertiserEffectBounds;
 
 	// Average advertiser effect
-	final double[] _advertiserEffectBoundsAvg = {
-			(_advertiserEffectBounds[0][0] + _advertiserEffectBounds[0][1]) / 2,
-			(_advertiserEffectBounds[1][0] + _advertiserEffectBounds[1][1]) / 2,
-			(_advertiserEffectBounds[2][0] + _advertiserEffectBounds[2][1]) / 2 };
+	double[] _advertiserEffectBoundsAvg;
 
 	// Continuation Probability lower bound <> upper bound
-	final double[][] _continuationProbBounds = { { 0.2, 0.5 }, 
-			{ 0.3, 0.6 },
-			{ 0.4, 0.7 } };
+	double[][] _continuationProbBounds;
 
 	// Average continuation probability
-	final double[] _continuationProbBoundsAvg = {
-			(_continuationProbBounds[0][0] + _continuationProbBounds[0][1]) / 2,
-			(_continuationProbBounds[1][0] + _continuationProbBounds[1][1]) / 2,
-			(_continuationProbBounds[2][0] + _continuationProbBounds[2][1]) / 2 };
+	double[] _continuationProbBoundsAvg;
 
 	// first index:
 	// 0 - untargeted
@@ -101,9 +91,7 @@ public class AgentOrange extends AbstractAgent {
 	// second index:
 	// 0 - not promoted
 	// 1 - promoted
-	final double[][] fTargetfPro = { { (1.0), (1.0) * (1.0 + _PSB) },
-			{ (1.0 + _targEffect), (1.0 + _targEffect) * (1.0 + _PSB) },
-			{ (1.0) / (1.0 + _targEffect), ((1.0) / (1.0 + _targEffect)) * (1.0 + _PSB) } };
+	double[][] fTargetfPro;
 
 	// Turns a boolean into binary
 	int bool2int(boolean bool) {
@@ -141,6 +129,38 @@ public class AgentOrange extends AbstractAgent {
 
 	@Override
 	public void initBidder() {
+		
+		_advertiserEffectBounds = new double[][]{ { 0.2, 0.3 },
+				{ 0.3, 0.4 }, 
+				{ 0.4, 0.5 } };
+
+		// Average advertiser effect
+		_advertiserEffectBoundsAvg = new double[]{
+				(_advertiserEffectBounds[0][0] + _advertiserEffectBounds[0][1]) / 2,
+				(_advertiserEffectBounds[1][0] + _advertiserEffectBounds[1][1]) / 2,
+				(_advertiserEffectBounds[2][0] + _advertiserEffectBounds[2][1]) / 2 };
+
+		// Continuation Probability lower bound <> upper bound
+		_continuationProbBounds = new double[][]{ { 0.2, 0.5 }, 
+				{ 0.3, 0.6 },
+				{ 0.4, 0.7 } };
+
+		// Average continuation probability
+		_continuationProbBoundsAvg = new double[]{
+				(_continuationProbBounds[0][0] + _continuationProbBounds[0][1]) / 2,
+				(_continuationProbBounds[1][0] + _continuationProbBounds[1][1]) / 2,
+				(_continuationProbBounds[2][0] + _continuationProbBounds[2][1]) / 2 };
+
+		// first index:
+		// 0 - untargeted
+		// 1 - targeted correctly
+		// 2 - targeted incorrectly
+		// second index:
+		// 0 - not promoted
+		// 1 - promoted
+		fTargetfPro = new double[][]{ { (1.0), (1.0) * (1.0 + _PSB) },
+				{ (1.0 + _targEffect), (1.0 + _targEffect) * (1.0 + _PSB) },
+				{ (1.0) / (1.0 + _targEffect), ((1.0) / (1.0 + _targEffect)) * (1.0 + _PSB) } };
 
 		_baseConvProbs = new HashMap<Query, Double>();
 		_baseClickProbs = new HashMap<Query, Double>();
@@ -253,8 +273,23 @@ public class AgentOrange extends AbstractAgent {
 			HashMap<Query,ArrayList<Double>> budgetLists = new HashMap<Query,ArrayList<Double>>();
 			for(Query q : _querySpace) {
 				ArrayList<Double> bids = new ArrayList<Double>();
-				for(int i = 0; i < _advertisers.size(); i++) {
-					bids.add(_bidModel.getPrediction("adv" + (i+1), q));
+				double otherAdvertiserEffect;
+				if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+					otherAdvertiserEffect = _advertiserEffectBoundsAvg[0];
+				} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+					otherAdvertiserEffect = _advertiserEffectBoundsAvg[1];
+				} else {
+					otherAdvertiserEffect = _advertiserEffectBoundsAvg[2];
+				}
+
+				//				                                  double unSquash = 1.0 / Math.pow(otherAdvertiserEffect,_squashing);
+				double unSquash = 1.0 / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing);
+
+				for(int i = 1; i < _advertisers.size(); i++) {
+					/*
+					 * We need to unsquash opponent bids
+					 */
+					bids.add(_bidModel.getPrediction("adv" + (i+1), q) * unSquash);
 				}
 
 				/*
@@ -268,7 +303,7 @@ public class AgentOrange extends AbstractAgent {
 				int NUM_SAMPLES = 1;
 				for(int i = 0; i < noDupeBids.size(); i++) {
 					newBids.add(noDupeBids.get(i) - .01);
-					newBids.add(noDupeBids.get(i));
+					//					newBids.add(noDupeBids.get(i));
 					newBids.add(noDupeBids.get(i) + .01);
 
 					if((i == 0 && noDupeBids.size() > 1) || (i > 0 && i != noDupeBids.size()-1)) {
@@ -283,25 +318,26 @@ public class AgentOrange extends AbstractAgent {
 
 
 				ArrayList<Double> budgetList = new ArrayList<Double>();
-//				double totImps = _queryToNumImp.getPrediction(q,(int) (_day+1));
-//				/*
-//				 * Estimate how much we would have to pay if we observed all impressions
-//				 * in each slot and paid the CPC given the person we start above
-//				 */
-//				for(int i = 0; i < _numSlots; i++) {
-//					if(bids.size() > i) {
-//
-//					}
-//					else {
-//
-//					}
-//				}
+				//				double totImps = _queryToNumImp.getPrediction(q,(int) (_day+1));
+				//				/*
+				//				 * Estimate how much we would have to pay if we observed all impressions
+				//				 * in each slot and paid the CPC given the person we start above
+				//				 */
+				//				for(int i = 0; i < _numSlots; i++) {
+				//					if(bids.size() > i) {
+				//
+				//					}
+				//					else {
+				//
+				//					}
+				//				}
 
-				budgetList.add(250.0);
-				budgetList.add(500.0);
-//				budgetList.add(1000.0);
+				budgetList.add(25.0);
+				budgetList.add(50.0);
+				budgetList.add(100.0);
+				//				budgetList.add(1000.0);
 				budgetList.add(Double.MAX_VALUE);
-				
+
 				budgetLists.put(q,budgetList);
 			}
 
@@ -327,6 +363,7 @@ public class AgentOrange extends AbstractAgent {
 				double convProbWithPen = getConversionPrWithPenalty(q, penalty);
 				double convProb = _convPrModel.getPrediction(q);
 				double salesPrice = _salesPrices.get(q);
+				int itemCount = 0;
 				for(int i = 0; i < bidLists.get(q).size(); i++) {
 					for(int j = 0; j < budgetLists.get(q).size(); j++) {
 						for(int k = 0; k < 2; k++) {
@@ -341,6 +378,15 @@ public class AgentOrange extends AbstractAgent {
 							double CPC = impsClicksAndCost[2] / impsClicksAndCost[1];
 
 							double clickPr = numClicks / numImps;
+
+							System.out.println("Bid: " + bid);
+							System.out.println("Budget: " + budget);
+							System.out.println("Targetting: " + targeting);
+							System.out.println("numImps: " + numImps);
+							System.out.println("numClicks: " + numClicks);
+							System.out.println("CPC: " + CPC);
+							System.out.println("clickPr: " + clickPr);
+							System.out.println();
 
 							if(Double.isNaN(CPC)) {
 								CPC = 0.0;
@@ -363,8 +409,9 @@ public class AgentOrange extends AbstractAgent {
 
 							double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
 							double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-							itemList.add(new Item(q,w,v,bid,budget,targeting,0,i));
+							itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
 							queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
+							itemCount++;
 						}
 					}
 				}
@@ -430,6 +477,12 @@ public class AgentOrange extends AbstractAgent {
 			/*
 			 * Pass expected conversions to unit sales model
 			 */
+
+			/*
+			 * TODO
+			 * 
+			 * passing the bundle may not be necessary
+			 */
 			double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
 		}
@@ -483,14 +536,16 @@ public class AgentOrange extends AbstractAgent {
 
 		ArrayList<BidBudgetAdPair> bidBudgetAdPairs = new ArrayList<BidBudgetAdPair>();
 		//need to squash our own bid
-		BidBudgetAdPair ourPair = new BidBudgetAdPair(0,bid * Math.pow(_squashing, _paramEstimation.getPrediction(q)[0]),budget,ad);
+		BidBudgetAdPair ourPair = new BidBudgetAdPair(0,bid * Math.pow(_paramEstimation.getPrediction(q)[0],_squashing),budget,ad);
 		bidBudgetAdPairs.add(ourPair);
 		for(int i = 1; i < _advertisers.size(); i++) {
-			BidBudgetAdPair pair = new BidBudgetAdPair(1,_bidModel.getPrediction("adv" + (i+1), q),
+			BidBudgetAdPair pair = new BidBudgetAdPair(i,_bidModel.getPrediction("adv" + (i+1), q),
 					_budgetEstimator.getBudgetEstimate(q,"adv" + (i+1)),
 					new Ad()); //TODO predict ads
 			bidBudgetAdPairs.add(pair);
 		}
+
+		Collections.sort(bidBudgetAdPairs);
 
 		//remove bids under reserve
 		int size = bidBudgetAdPairs.size();
@@ -526,10 +581,46 @@ public class AgentOrange extends AbstractAgent {
 
 	private double[] recursiveImpsClicksAndCost(Query q, double impressionsSeen, ArrayList<BidBudgetAdPair> bidBudgetAdPairs, HashMap<Product, HashMap<UserState, Integer>> userStates) {
 		double[] CPCs = new double[_advertisers.size()]; //indexed by idx in pair
-		for(int i = 0; i < bidBudgetAdPairs.size()-1; i++) {
-			CPCs[bidBudgetAdPairs.get(i).getID()] = bidBudgetAdPairs.get(i+1).getBid() + .01;
+		double otherAdvertiserEffect;
+		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+			otherAdvertiserEffect = _advertiserEffectBoundsAvg[0];
+		} else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+			otherAdvertiserEffect = _advertiserEffectBoundsAvg[1];
+		} else {
+			otherAdvertiserEffect = _advertiserEffectBoundsAvg[2];
 		}
-		CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _regReserve + .01;
+
+		double squashedAdvEff = Math.pow(otherAdvertiserEffect,_squashing);
+
+		for(int i = 0; i < bidBudgetAdPairs.size()-1; i++) {
+			if(bidBudgetAdPairs.get(i).getID() == 0) {
+				CPCs[0] = (bidBudgetAdPairs.get(i+1).getBid() / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing)) + .01;
+			}
+			else {
+				CPCs[bidBudgetAdPairs.get(i).getID()] = (bidBudgetAdPairs.get(i+1).getBid() / squashedAdvEff) + .01;
+			}
+		}
+
+
+		/*
+		 * Check that we aren't in a promoted slot....
+		 */
+		if(bidBudgetAdPairs.size()-1 < _numPS) {
+			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == 0) {
+				CPCs[0] = _proReserve / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
+			}
+			else {
+				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _proReserve / squashedAdvEff + .01;
+			}
+		}
+		else {
+			if(bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID() == 0) {
+				CPCs[0] = _regReserve / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing) + .01;
+			}
+			else {
+				CPCs[bidBudgetAdPairs.get(bidBudgetAdPairs.size()-1).getID()] = _regReserve / squashedAdvEff + .01;
+			}
+		}
 
 		double[] impToViewRatios = new double[_advertisers.size()];
 		double[] clickPrs = new double[_advertisers.size()];
@@ -556,6 +647,7 @@ public class AgentOrange extends AbstractAgent {
 				int ft = getFTargetIndex(targeted, p, target);
 
 				double ftfp = fTargetfPro[ft][bool2int(_numPS >= slot + 1)];
+				
 				double advertiserEffect;
 				if(pair.getID() == 0) {
 					advertiserEffect = _paramEstimation.getPrediction(q)[0];
@@ -570,8 +662,9 @@ public class AgentOrange extends AbstractAgent {
 					}
 				}
 				double theoreticalClickProb = etaClickPr(advertiserEffect, ftfp);
-				impToViewRatios[slot] += (IS+nonIS) / totalImps;
-				clickPrs[slot] += theoreticalClickProb * (sum / totalImps);
+
+				impToViewRatios[pair.getID()] += (IS+nonIS) / totalImps;
+				clickPrs[pair.getID()] += theoreticalClickProb * (sum / totalImps);
 
 				/*
 				 * Decrement the users based on clicking, converting,
@@ -583,7 +676,7 @@ public class AgentOrange extends AbstractAgent {
 				IS *= contProb;
 			}
 		}
-		
+
 		/*
 		 * Find the minimum number of impressions each advertiser can see
 		 * before hitting their budget
@@ -601,21 +694,20 @@ public class AgentOrange extends AbstractAgent {
 			double maxImps = budget / costPerImp;
 			ImprPair impPair = new ImprPair(pairID, maxImps);
 			maxImpPairs.add(impPair);
-			
+
 			if(pairID == 0) {
 				ourMaxImps = maxImps;
 			}
 		}
-		
+
 		Collections.sort(maxImpPairs);
-		Collections.reverse(maxImpPairs);
-		
+
 		ImprPair minImpPair = maxImpPairs.get(0);
 		int minID = minImpPair.getID();
 		double minImps = minImpPair.getImpr();
-		
+
 		boolean done = false;
-		
+
 		if(minImps >= ourMaxImps) {
 			done = true;
 			ourMaxImps = minImps;
@@ -623,43 +715,40 @@ public class AgentOrange extends AbstractAgent {
 				ourMaxImps = remainingImps;
 			}
 		}
-		
+
 		if(minImps > remainingImps) {
 			done = true;
 			ourMaxImps = remainingImps;
 		}
-		
+
 		if(done) {
-			BidBudgetAdPair pair = bidBudgetAdPairs.get(0);
-			int pairID = pair.getID();
-			double CPC = CPCs[pairID];
-			double impToViewRatio = impToViewRatios[pairID];
-			double clickPr = clickPrs[pairID];
+			double CPC = CPCs[0];
+			double impToViewRatio = impToViewRatios[0];
+			double clickPr = clickPrs[0];
 			double clicks = ourMaxImps*impToViewRatio*clickPr;
 			double cost = clicks*CPC;
-			
+
 			double[] impsClicksAndCost = new double[3];
 			impsClicksAndCost[0] = ourMaxImps;
 			impsClicksAndCost[1] = clicks;
 			impsClicksAndCost[2] = cost;
-			
+
 			return impsClicksAndCost;
 		}
 		else {
-			BidBudgetAdPair pair = bidBudgetAdPairs.get(0);
-			int pairID = pair.getID();
-			double CPC = CPCs[pairID];
-			double impToViewRatio = impToViewRatios[pairID];
-			double clickPr = clickPrs[pairID];
+			System.out.println("I AM HAPPENING");
+			double CPC = CPCs[0];
+			double impToViewRatio = impToViewRatios[0];
+			double clickPr = clickPrs[0];
 			double clicks = minImps*impToViewRatio*clickPr;
 			double cost = clicks*CPC;
-			
+
 			double[] impsClicksAndCost = new double[3];
 			impsClicksAndCost[0] = minImps;
 			impsClicksAndCost[1] = clicks;
 			impsClicksAndCost[2] = cost;
-			
-			
+
+
 			/*
 			 * Remake the problem with fewer impressions, lower budgets, and without
 			 * the person who hit their budget
@@ -683,19 +772,19 @@ public class AgentOrange extends AbstractAgent {
 				}
 				innerPair.setBudget(newBudget);
 			}
-			
+
 			bidBudgetAdPairs.remove(idxToRemove);
-			
+
 			double[] newImpsClicksAndCost = recursiveImpsClicksAndCost(q, impressionsSeen + minImps, bidBudgetAdPairs, userStates);
-			
+
 			newImpsClicksAndCost[0] += impsClicksAndCost[0];
 			newImpsClicksAndCost[1] += impsClicksAndCost[1];
 			newImpsClicksAndCost[2] += impsClicksAndCost[2];
-			
+
 			return newImpsClicksAndCost;
 		}
 	}
-	
+
 	private double otherAdvertiserConvProb(Query q) {
 		if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 			return _c[0];
@@ -870,7 +959,7 @@ public class AgentOrange extends AbstractAgent {
 		_queryToNumImp.updateModel(queryReport, salesReport);
 		_unitsSold.update(salesReport);
 		_convPrModel.updateModel(queryReport, salesReport,bidBundle);
-		
+
 		_bidModel.updateModel(cpc, ourBid, ranks);
 
 		_paramEstimation.updateModel(queryReport, salesReport, bidBundle, _numPS, fullOrders, fullImpressions, userStates);
@@ -881,6 +970,10 @@ public class AgentOrange extends AbstractAgent {
 		for(Query q : _querySpace) {
 			contProbs.put(q, _paramEstimation.getPrediction(q)[1]);
 			double[] bids = new double[_advertisers.size()];
+			/*
+			 * TODO:
+			 * May consider taking our bid from the bundle
+			 */
 			for(int j = 0; j < bids.length; j++) {
 				bids[j] = _bidModel.getPrediction("adv" + (j+1), q);
 			}
@@ -1441,6 +1534,11 @@ public class AgentOrange extends AbstractAgent {
 			_ad = ad;
 		}
 
+		@Override
+		public String toString() {
+			return _bid + "";
+		}
+
 		public int compareTo(BidBudgetAdPair agentBidPair) {
 			double ourBid = this._bid;
 			double otherBid = agentBidPair.getBid();
@@ -1455,7 +1553,7 @@ public class AgentOrange extends AbstractAgent {
 			}
 		}
 	}
-	
+
 	public static class ImprPair implements Comparable<ImprPair> {
 
 		private int _advIdx;
@@ -1480,6 +1578,11 @@ public class AgentOrange extends AbstractAgent {
 
 		public void setImpr(double impr) {
 			_impr = impr;
+		}
+
+		@Override
+		public String toString() {
+			return _impr + "";
 		}
 
 		public int compareTo(ImprPair agentImprPair) {
