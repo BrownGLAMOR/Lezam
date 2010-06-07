@@ -247,10 +247,14 @@ public abstract class AbstractAgent extends Agent {
 	protected LinkedHashSet<String> _advertisersSet;
 
 	protected HashSet<Product> _products;
+
+	public static final int MAX_F0_IMPS = 10753;
+	public static final int MAX_F1_IMPS = 2325;
+	public static final int MAX_F2_IMPS = 2221;
 	
-	public static final int MAX_F0_IMPS = 10969;
-	public static final int MAX_F1_IMPS = 1801;
-	public static final int MAX_F2_IMPS = 1423;
+//	public static final int MAX_F0_IMPS = 10969;
+//	public static final int MAX_F1_IMPS = 1801;
+//	public static final int MAX_F2_IMPS = 1423;
 	
 	/**
 	 * 
