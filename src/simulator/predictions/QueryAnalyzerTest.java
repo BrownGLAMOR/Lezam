@@ -10,6 +10,7 @@ import java.util.LinkedList;
 
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
+import models.queryanalyzer.GQA;
 import models.queryanalyzer.GreedyQueryAnalyzer;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
@@ -446,7 +447,8 @@ public class QueryAnalyzerTest {
 		double start = System.currentTimeMillis();
 
 		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
-		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", LDS_ITERATIONS_1, LDS_ITERATIONS_2, REPORT_FULLPOS_FORSELF));
+//		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", LDS_ITERATIONS_1, LDS_ITERATIONS_2, REPORT_FULLPOS_FORSELF));
+		evaluator.queryAnalyzerPredictionChallenge(new GQA(querySpace, advertisers, "this will be overwritten"));
 
 
 		double stop = System.currentTimeMillis();

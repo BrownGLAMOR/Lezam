@@ -103,7 +103,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
 		for(int i = 0; i < numAdvertisers; i++) {
 			//no need to calc our own budget
-			if(i == _ourAdvIdx) {
+			if(i != _ourAdvIdx) {
 				HashMap<Query, Double> budgets = new HashMap<Query,Double>();
 				for(Query q : _querySpace) {
 					int queryTypeIdx;

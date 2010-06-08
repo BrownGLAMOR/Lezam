@@ -37,10 +37,14 @@ public class UserModelTest {
 	public static final int MAX_F2_IMPS = 1423;
 	
 	public ArrayList<String> getGameStrings() {
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
+		int min = 1;
+		int max = 5;
+		
+//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 //		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-		int min = 1440;
-		int max = 1444;
+//		int min = 1440;
+//		int max = 1444;
 		
 //		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 //		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -363,7 +367,7 @@ public class UserModelTest {
 				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 			
-			AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace, advertisers, "TacTex",10,10);
+			AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace, advertisers, "TacTex",10,10, true);
 			
 			double ourTotErrorCurr = 0;
 			double ourTotActualCurr = 0;
@@ -645,19 +649,19 @@ public class UserModelTest {
 
 		double start = System.currentTimeMillis();
 		
-//		evaluator.userStatePerfectPredictionChallenge(new jbergParticleFilter(0.004932699,
-//				0.263532334,
-//				0.045700011,
-//				0.174371757,
-//				0.188113883,
-//				0.220140091));
-		
-		evaluator.userStateCarletonPredictionChallenge(new jbergParticleFilter(0.004932699,
+		evaluator.userStatePerfectPredictionChallenge(new jbergParticleFilter(0.004932699,
 				0.263532334,
 				0.045700011,
 				0.174371757,
 				0.188113883,
 				0.220140091));
+		
+//		evaluator.userStateCarletonPredictionChallenge(new jbergParticleFilter(0.004932699,
+//				0.263532334,
+//				0.045700011,
+//				0.174371757,
+//				0.188113883,
+//				0.220140091));
 		
 
 

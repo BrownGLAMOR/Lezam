@@ -1302,12 +1302,12 @@ public class BasicSimulator {
 							squashedBidUnder = _regReserve;
 						}
 					}
-					
-					
+
+
 					if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
 						squashedBidUnder = _proReserve;
 					}
-					
+
 					/*
 					 * TODO
 					 * 
@@ -1967,9 +1967,10 @@ public class BasicSimulator {
 
 		Random r = new Random(68616);
 
-		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		String baseFile = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
 		int min = 1;
-		int max = 9;
+		int max = 5;
 		//		int max = 77;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
@@ -2002,10 +2003,10 @@ public class BasicSimulator {
 		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
 
 
-		AbstractAgent agent = new SemiEndoMCKPBid();
-		//		AbstractAgent agent = new EquatePPSSimpleBudget2010();
-//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
-//		AbstractAgent agent = new AgentOrange(false,1);
+//						AbstractAgent agent = new SemiEndoMCKPBid();
+		//				AbstractAgent agent = new EquatePPSSimpleBudget2010();
+		//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
+		AbstractAgent agent = new AgentOrange();
 		//				AbstractAgent agent = new SimpleAABidAgent();
 		//						AbstractAgent agent = new NewSemiEndoMCKPBid();
 		//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);

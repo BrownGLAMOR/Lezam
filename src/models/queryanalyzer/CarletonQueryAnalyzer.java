@@ -11,8 +11,6 @@ import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimator;
-import models.queryanalyzer.search.LDSearchHybrid;
 import models.queryanalyzer.search.LDSearchIESmart;
 
 

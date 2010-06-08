@@ -27,11 +27,15 @@ public class BidPredModelTest {
 	public static final boolean doRMSE = false;
 
 	public ArrayList<String> getGameStrings() {
-				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
-//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
+		//				String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game"; //jberg HOME FILES
+		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //CS DEPT Files
 		//games 1425-1464
-		int min = 1440;
-		int max = 1441;
+		//		int min = 1440;
+		//		int max = 1441;
+
+		String baseFile = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
+		int min = 1;
+		int max = 4;
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -99,7 +103,7 @@ public class BidPredModelTest {
 
 					for(int i = 0; i < 57; i++) {
 						QueryReport queryReport = ourQueryReports.get(i);
-//						System.out.print(""+(i+1) + ", ");
+						//						System.out.print(""+(i+1) + ", ");
 
 						HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
 						HashMap<Query, Double> cpc = new HashMap<Query,Double>();
@@ -144,24 +148,27 @@ public class BidPredModelTest {
 								double squashedBid = bid * Math.pow(advEffect, squashing);
 
 								double bidPred = model.getPrediction(agents[j],q);
-								if(printlns)
-									System.out.print("  \tAgent: " +agents[j]+" Act:"+/*(int)*/(squashedBid*100)+" <-> Pred: " + /*(int)*/(bidPred*100) +" -- ");
-								double error;
-								if(!doRMSE)
-									error = Math.abs(squashedBid - bidPred); //MAE
-								else
-									error = (squashedBid - bidPred)*(squashedBid - bidPred);
-								//							error = error*error;  //RMSE
-								ourTotActual += squashedBid;
-								ourTotError += error;
-								ourTotErrorCounter++;
-								
-								if(q.equals(new Query("pg","tv"))) {
-									System.out.print(squashedBid + ", " + bidPred + ", ");
+
+								if (!Double.isNaN(bid) && squashedBid < 3.75) {
+
+									if(printlns)
+										System.out.print("  \tAgent: " +agents[j]+" Act:"+/*(int)*/(squashedBid*100)+" <-> Pred: " + /*(int)*/(bidPred*100) +" -- ");
+									double error;
+									if(!doRMSE)
+										error = Math.abs(squashedBid - bidPred); //MAE
+									else
+										error = (squashedBid - bidPred)*(squashedBid - bidPred);
+									//							error = error*error;  //RMSE
+									ourTotActual += squashedBid;
+									ourTotError += error;
+									ourTotErrorCounter++;
+
+									//								if(q.equals(new Query("pg","tv"))) {
+									//									System.out.print(squashedBid + ", " + bidPred + ", ");
+									//								}
 								}
 							}
 						}
-						System.out.println();
 						if(printlns)
 							System.out.println();
 					}
@@ -169,7 +176,7 @@ public class BidPredModelTest {
 					ourTotErrorMap.put(agents[agent],ourTotError);
 					ourTotActualMap.put(agents[agent],ourTotActual);
 					ourTotErrorCounterMap.put(agents[agent],ourTotErrorCounter);
-//					System.out.println("Error: " + (ourTotError/((double)ourTotErrorCounter)));
+					//					System.out.println("Error: " + (ourTotError/((double)ourTotErrorCounter)));
 				}
 			}
 
@@ -236,7 +243,7 @@ public class BidPredModelTest {
 		public void setBid(double bid) {
 			_bid = bid;
 		}
-		
+
 		@Override
 		public String toString() {
 			return _bid + "";
@@ -295,35 +302,35 @@ public class BidPredModelTest {
 			advertisers.add(agents[i]);
 		}
 
-//		System.out.println(advertisers);
-		
-//		Random r = new Random();
-//		double randomJumpProb = r.nextDouble()*.3;
-//		double yesterdayProb = r.nextDouble();
-//		double nDaysAgoProb = r.nextDouble();
-//		double var = r.nextDouble()*10;
-//		
-//		double total = randomJumpProb + yesterdayProb + nDaysAgoProb;
-//		randomJumpProb /= total;
-//		yesterdayProb /= total;
-//		nDaysAgoProb /= total;
+		//		System.out.println(advertisers);
+
+		//		Random r = new Random();
+		//		double randomJumpProb = r.nextDouble()*.3;
+		//		double yesterdayProb = r.nextDouble();
+		//		double nDaysAgoProb = r.nextDouble();
+		//		double var = r.nextDouble()*10;
+		//		
+		//		double total = randomJumpProb + yesterdayProb + nDaysAgoProb;
+		//		randomJumpProb /= total;
+		//		yesterdayProb /= total;
+		//		nDaysAgoProb /= total;
 
 		double start = System.currentTimeMillis();
-//		evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, agents[0],1,0,.8,.2,2.1));
-//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], 15, .8, 1000));
+						evaluator.bidPredictionChallenge(new IndependentBidModel(advertisers, agents[0], 1, 0, .7, .3, 2.0));
+//		evaluator.bidPredictionChallenge(new JointDistBidModel(advertisers, agents[0], 8, .7, 1000));
 
-		ArrayList<AbstractBidModel> models = new ArrayList<AbstractBidModel>();
-		ArrayList<Double> weights = new ArrayList<Double>();
-		models.add(new IndependentBidModel(advertisers, agents[0],1,0,.8,.2,2.1));
-		models.add(new JointDistBidModel(advertisers, agents[0], 15, .8, 1000));
-		weights.add(Double.parseDouble(args[0]));
-		weights.add(1.0 - Double.parseDouble(args[0]));
-		evaluator.bidPredictionChallenge(new LinearComboBidModel(models, weights));
-		
-		
+		//		ArrayList<AbstractBidModel> models = new ArrayList<AbstractBidModel>();
+		//		ArrayList<Double> weights = new ArrayList<Double>();
+		//		models.add(new IndependentBidModel(advertisers, agents[0],1,0,.8,.2,8.0));
+		//		models.add(new JointDistBidModel(advertisers, agents[0], 15, .8, 1000));
+		//		weights.add(.5);
+		//		weights.add(.5);
+		//		evaluator.bidPredictionChallenge(new LinearComboBidModel(models, weights));
+
+
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
-//		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
 
 }

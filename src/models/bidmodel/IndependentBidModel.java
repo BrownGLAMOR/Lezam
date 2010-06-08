@@ -85,7 +85,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 		_query.add(new Query("lioneer", "dvd"));
 		_query.add(new Query("lioneer", "tv"));
 		_query.add(new Query("lioneer", "audio"));
-		_query.add(new Query());
+		_query.add(new Query(null,null));
 		_query.add(new Query("flat", null));
 		_query.add(new Query("pg", null));
 		_query.add(new Query("lioneer", null));
@@ -183,7 +183,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 	}
 
 	private double normalDensFn(double d){
-		return Math.exp((-(d*d))/(2.0*normVar))/(Math.sqrt(2.0*Math.PI*normVar));
+		return normalDensFn(d,normVar);
 	}
 
 	private double normalDensFn(double d, double var){
@@ -218,15 +218,15 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 			toRet = new ArrayList<Double>();
 			for(int j = 0; j < numBidValues; j++){
 				double toAdd = 0.0;//randomJumpProb/startingList.size();
-				if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
-					toAdd += randomJumpProb*(InitDistributions.initDistF0[j]);
-				}
-				else if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
-					toAdd +=  randomJumpProb*(InitDistributions.initDistF1[j]);
-				}
-				else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
-					toAdd += randomJumpProb*(InitDistributions.initDistF2[j]);
-				}
+//				if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
+//					toAdd += randomJumpProb*(InitDistributions.initDistF0[j]);
+//				}
+//				else if(q.getType()==QueryType.FOCUS_LEVEL_ONE){
+//					toAdd +=  randomJumpProb*(InitDistributions.initDistF1[j]);
+//				}
+//				else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
+//					toAdd += randomJumpProb*(InitDistributions.initDistF2[j]);
+//				}
 				for(int k = 0; k < numBidValues; k++){
 					toAdd += yesterdayProb*transProbs[Math.abs(k-j)]*startingList.get(k);
 				}
@@ -239,6 +239,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 						toAdd += nDaysAgoProb*transProbs[Math.abs(k-j)]*arrayList.get(0).get(k);
 					}
 				}
+				toAdd = Math.max(0, toAdd);
 				toRet.add(toAdd);
 			}
 			startingList = toRet;
@@ -289,8 +290,6 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 
 	@Override
 	public double getPrediction(String player, Query q) {
-		/*ArrayList<Double> toRet = predValue.get(q).get(player);
-		return toRet.get(toRet.size()-1);*/
 		return getCurrentEstimate(player, q);
 	}
 
@@ -302,14 +301,13 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 	@Override
 	public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
 		pushForwardCurEst(cpc, ourBid, ranks);
-		updateProbs(cpc, ourBid, ranks);
+		updateProbs(ranks);
 		genCurEst();
 		//		pushPredictionsForward();
 		return true;
 	}
 
-	private void updateProbs(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid,
-			HashMap<Query, HashMap<String, Integer>> ranks) {
+	private void updateProbs(HashMap<Query, HashMap<String, Integer>> ranks) {
 		for(Query q:_query){
 			if(printlns)
 				System.out.println("Query: "+q.getComponent()+", "+q.getManufacturer()+" -- ");
@@ -371,6 +369,8 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 								if(Double.isNaN(toSet)) {
 									throw new RuntimeException();
 								}
+								
+								toSet = Math.max(0, toSet);
 
 								os.get(s).set(i, os.get(s).get(i)*toSet);
 								if(printlns)
@@ -401,7 +401,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 						for(int i = 0; i<numBidValues; i++){
 							if(printlns)
 								System.out.print(lastDist.get(i)*os.get(s).get(i)+", ");
-							lastDist.set(i, lastDist.get(i)*os.get(s).get(i)); 
+							lastDist.set(i, Math.max(0,lastDist.get(i)*os.get(s).get(i))); 
 						}
 						if(printlns){
 							System.out.println("]");
@@ -436,6 +436,7 @@ IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0
 					boolean onEdge = false;
 					int theIndex = (int)(theInd);
 					double firstProp = theInd-(double)theIndex;
+					assert firstProp > 0 : "firstprop";
 					if(Double.isNaN(firstProp)) {
 						throw new RuntimeException();
 					}
