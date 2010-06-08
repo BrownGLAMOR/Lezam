@@ -39,7 +39,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 	private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
 	private HashMap<Product,HashMap<UserState,Double>> _predictions, _currentEstimate;
 
-	private static final boolean _rules2009 = true;
+	private static final boolean _rules2009 = false;
 
 	public jbergParticleFilter(double convPr1, double convPrVar1,
 			double convPr2, double convPrVar2,
@@ -439,13 +439,13 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 					updatePredictionMaps(prod,false);
 				}
 				else {
-//					totalImps = 0;
-//					totalImps += getCurrentEstimate(prod,UserState.F2);
-//					totalImps += (1.0/3.0)*getCurrentEstimate(prod,UserState.IS);
-//					Particle[] particles = _particles.get(prod);
-//					updateParticles(totalImps, particles);
-//					particles = resampleParticles(particles);
-//					_particles.put(prod, particles);
+					//					totalImps = 0;
+					//					totalImps += getCurrentEstimate(prod,UserState.F2);
+					//					totalImps += (1.0/3.0)*getCurrentEstimate(prod,UserState.IS);
+					//					Particle[] particles = _particles.get(prod);
+					//					updateParticles(totalImps, particles);
+					//					particles = resampleParticles(particles);
+					//					_particles.put(prod, particles);
 					updatePredictionMaps(prod,true);
 				}
 
@@ -476,9 +476,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 				ArrayList<Boolean> burstHistory = particles[i].getBurstHistory();
 				if(burstHistory.size() > 0) {
 					for(int j = 1; j <= 3 || j <= burstHistory.size(); j++) {
-						if(burstHistory.get(burstHistory.size() - j)) {
-							successiveBurst = true;
-							break;
+						if(burstHistory.size() - j > 0) {
+							if(burstHistory.get(burstHistory.size() - j)) {
+								successiveBurst = true;
+								break;
+							}
 						}
 					}
 				}
@@ -691,8 +693,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		for(int i = 0; i < particles.length; i++) {
 			Particle particle = particles[i];
 			if(!(onlyNonBurst &&
-				 particle.getBurstHistory().size() > 0 &&
-				 particle.getBurstHistory().get(particle.getBurstHistory().size()-1) == true)) {
+					particle.getBurstHistory().size() > 0 &&
+					particle.getBurstHistory().get(particle.getBurstHistory().size()-1) == true)) {
 				totalWeight += particle.getWeight();
 				for(UserState state : UserState.values()) {
 					estimate[state.ordinal()] += particle.getStateCount(state) * particle.getWeight();

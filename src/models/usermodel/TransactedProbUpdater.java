@@ -29,7 +29,7 @@ public class TransactedProbUpdater {
 	public Random _R;
 	private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
 	private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
-	private boolean _rules2009 = true;
+	private boolean _rules2009 = false;
 
 
 
