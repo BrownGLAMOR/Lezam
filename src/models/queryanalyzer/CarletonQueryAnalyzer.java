@@ -27,6 +27,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	public final static int NUM_SLOTS = 5;
 	public int NUM_ITERATIONS_1 = 10;
 	public int NUM_ITERATIONS_2 = 10;
+	private boolean REPORT_FULLPOS_FORSELF = true;
 
 	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, int numIters2) {
 		_querySpace = querySpace;
@@ -138,7 +139,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			for(int i = 0; i < _advertisers.size(); i++) {
 				double avgPos;
 				if(_advertisers.get(i).equals(_ourAdvertiser)) {
-					avgPos = queryReport.getPosition(q);
+					if(REPORT_FULLPOS_FORSELF) {
+						avgPos = queryReport.getPosition(q);
+					}
+					else {
+						avgPos = queryReport.getPosition(q, "adv" + (i+1));
+					}
 					ourIdx = i;
 				}
 				else {
