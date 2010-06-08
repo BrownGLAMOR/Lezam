@@ -26,20 +26,25 @@ public class QAInstance {
 		_impressionsUB = impressionsUB;
 		
 		
-		int[] apOrder = getAvgPosOrder();
+		//
 		
-		int foundTooBigStart = 0;
-		int foundTooBigStop = 0;
-		for(int i=0; i<_slots && i<_advetisers; i++){
-			if(_avgPos[apOrder[i]] > i+1){
-				foundTooBigStart = i+1;
-				foundTooBigStop = (int)Math.ceil(_avgPos[apOrder[i]]);
-				break;
+		
+		while(!feasibleOrder(getAvgPosOrder())){
+			int[] apOrder = getAvgPosOrder();
+			
+			int foundTooBigStart = 0;
+			int foundTooBigStop = 0;
+			for(int i=0; i<_slots && i<_advetisers; i++){
+				if(_avgPos[apOrder[i]] > i+1){
+					foundTooBigStart = i+1;
+					foundTooBigStop = (int)Math.ceil(_avgPos[apOrder[i]]);
+					break;
+				}
 			}
-		}
-		
-		if(foundTooBigStart > 0){
-			addPaddingAgents(foundTooBigStart, foundTooBigStop);
+			
+			if(foundTooBigStart > 0){
+				addPaddingAgents(foundTooBigStart, foundTooBigStop);
+			}
 		}
 		
 		assert(feasibleOrder(getAvgPosOrder())) : "addPaddingAgents broke did not work...";
