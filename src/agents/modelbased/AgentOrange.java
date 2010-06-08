@@ -325,32 +325,47 @@ public class AgentOrange extends AbstractAgent {
 					}
 				}
 
+				if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+					double increment  = .05;
+					double min = .08;
+					double max = 1.0;
+					int tot = (int) Math.ceil((max-min) / increment);
+					for(int i = 0; i < tot; i++) {
+						newBids.add(min+(i*increment));
+					}
+				}
+				else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+					double increment  = .05;
+					double min = .29;
+					double max = 1.95;
+					int tot = (int) Math.ceil((max-min) / increment);
+					for(int i = 0; i < tot; i++) {
+						newBids.add(min+(i*increment));
+					}
+
+				}
+				else {
+					double increment  = .05;
+					double min = .46;
+					double max = 2.35;
+					int tot = (int) Math.ceil((max-min) / increment);
+					for(int i = 0; i < tot; i++) {
+						newBids.add(min+(i*increment));
+					}
+				}
+
 				Collections.sort(newBids);
 				bidLists.put(q, newBids);
 
 
 				ArrayList<Double> budgetList = new ArrayList<Double>();
-				//				double totImps = _queryToNumImp.getPrediction(q,(int) (_day+1));
-				//				/*
-				//				 * Estimate how much we would have to pay if we observed all impressions
-				//				 * in each slot and paid the CPC given the person we start above
-				//				 */
-				//				for(int i = 0; i < _numSlots; i++) {
-				//					if(bids.size() > i) {
-				//
-				//					}
-				//					else {
-				//
-				//					}
-				//				}
-
-				budgetList.add(25.0);
+				budgetList.add(35.0);
 				budgetList.add(50.0);
 				budgetList.add(75.0);
 				budgetList.add(100.0);
 				budgetList.add(200.0);
-				//				budgetList.add(1000.0);
-				//				budgetList.add(Double.MAX_VALUE);
+				budgetList.add(300.0);
+				budgetList.add(500.0);
 
 				budgetLists.put(q,budgetList);
 			}
@@ -481,7 +496,7 @@ public class AgentOrange extends AbstractAgent {
 					//					bidBundle.addQuery(q, bid, new Ad(), Double.NaN);
 					//					System.out.println("Bidding " + bid + "   for query: " + q);
 
-					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
+					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .75);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
 					bidBundle.addQuery(q, bid, new Ad(), bid*7);
@@ -501,11 +516,11 @@ public class AgentOrange extends AbstractAgent {
 			 */
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .8);
+					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .8);
+					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
 					bidBundle.addQuery(q, bid, new Ad(), bid*20);
 				}
 			}
@@ -523,7 +538,7 @@ public class AgentOrange extends AbstractAgent {
 		System.out.println(bidBundle);
 		return bidBundle;
 	}
-	
+
 	// Turns a query type into 0/1/2
 	int queryTypeToInt(QueryType qt) {
 		if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
@@ -990,6 +1005,8 @@ public class AgentOrange extends AbstractAgent {
 			ranksPred = newRanksPred;
 
 			int totalImps = getMaxImps(5,impsPred.length,ranksPred,impsPred);
+
+			totalImps *= .6;
 
 			if(totalImps == 0) {
 				//this means something bad happened
