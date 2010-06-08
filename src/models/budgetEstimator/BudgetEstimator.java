@@ -24,8 +24,17 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
 	private int numSlots = 5;
 	private int numAdvertisers = 8;
-	private double _proReserve = .4;
-	private double _regReserve = .05;
+	private double[] _regReserveLow = {.08, .29, .46};
+	private double[] _regReserveHigh = {.29, .46, .6};
+	private double[] _regReserve = {(_regReserveLow[0] + _regReserveHigh[0]) / 2.0,
+			(_regReserveLow[1] + _regReserveHigh[1]) / 2.0,
+			(_regReserveLow[2] + _regReserveHigh[2]) / 2.0};
+
+	private double _proReserveBoost = .5;
+	private double[] _proReserve = {_regReserve[0] + _proReserveBoost * (2.0/3.0), 
+			_regReserve[1] + _proReserveBoost * (2.0/3.0),
+			_regReserve[2] + _proReserveBoost * (2.0/3.0)};
+
 	private double[] _c;
 
 	// Target Effect
@@ -95,6 +104,17 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 		for(int i = 1; i < numAdvertisers; i++) {
 			HashMap<Query, Double> budgets = new HashMap<Query,Double>();
 			for(Query q : _querySpace) {
+				int queryTypeIdx;
+				if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+					queryTypeIdx = 0;
+				}
+				else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+					queryTypeIdx = 1;
+				}
+				else {
+					queryTypeIdx = 2;
+				}
+
 				double budget;
 				int[] impressions = allImpressions.get(q);
 
@@ -216,13 +236,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
 										double bidBelow = bids[order[ourOrder+1]];
 										if(ourOrder < numberPromotedSlots) {
-											if(bidBelow < _proReserve) {
-												bidBelow = _proReserve;
+											if(bidBelow < _proReserve[queryTypeIdx]) {
+												bidBelow = _proReserve[queryTypeIdx];
 											}
 										}
 										else {
-											if(bidBelow < _regReserve) {
-												bidBelow = _regReserve;
+											if(bidBelow < _regReserve[queryTypeIdx]) {
+												bidBelow = _regReserve[queryTypeIdx];
 											}
 										}
 
@@ -242,13 +262,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 														 */
 														double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
 														if(ourOrder < numberPromotedSlots) {
-															if(bidBelow < _proReserve) {
-																bidBelow = _proReserve;
+															if(bidBelow < _proReserve[queryTypeIdx]) {
+																bidBelow = _proReserve[queryTypeIdx];
 															}
 														}
 														else {
-															if(bidBelow < _regReserve) {
-																bidBelow = _regReserve;
+															if(bidBelow < _regReserve[queryTypeIdx]) {
+																bidBelow = _regReserve[queryTypeIdx];
 															}
 														}
 
@@ -266,13 +286,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 														int impPercentage = numImpSeen / (impressionsPerSlot.get(j));
 														double bidBelow = bids[order[ourOrder+1+advBelowUsDrop]];
 														if(ourOrder < numberPromotedSlots) {
-															if(bidBelow < _proReserve) {
-																bidBelow = _proReserve;
+															if(bidBelow < _proReserve[queryTypeIdx]) {
+																bidBelow = _proReserve[queryTypeIdx];
 															}
 														}
 														else {
-															if(bidBelow < _regReserve) {
-																bidBelow = _regReserve;
+															if(bidBelow < _regReserve[queryTypeIdx]) {
+																bidBelow = _regReserve[queryTypeIdx];
 															}
 														}
 
@@ -296,10 +316,10 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 													 * on the slot
 													 */
 													if(j < numberPromotedSlots) {
-														budget += clicksPerSlot.get(j) * (_proReserve + .01);
+														budget += clicksPerSlot.get(j) * (_proReserve[queryTypeIdx] + .01);
 													}
 													else {
-														budget += clicksPerSlot.get(j) * (_regReserve + .01);
+														budget += clicksPerSlot.get(j) * (_regReserve[queryTypeIdx] + .01);
 													}
 												}
 											}
