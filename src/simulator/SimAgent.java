@@ -9,7 +9,6 @@ import java.util.Set;
 import simulator.predictions.BidPredModelTest.BidPair;
 
 import edu.umich.eecs.tac.props.Ad;
-import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -246,8 +245,8 @@ public class SimAgent {
 				queryReport.setAd(query, _adType.get(query));
 
 				for(int i = 0; i < agents.size(); i++) {
-					queryReport.setAd(query, agents.get(i)._advId, agents.get(i)._adType.get(query));
-					queryReport.setPosition(query, agents.get(i)._advId, (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
+					queryReport.setAd(query, "adv" + (i+1), agents.get(i)._adType.get(query));
+					queryReport.setPosition(query, "adv" + (i+1), (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
 				}
 			}
 		}
@@ -327,7 +326,7 @@ public class SimAgent {
 				}
 
 				for(int i = 0; i < agents.size(); i++) {
-					queryReport.setAd(query, agents.get(i)._advId, agents.get(i)._adType.get(query));
+					queryReport.setAd(query, "adv" + (i+1), agents.get(i)._adType.get(query));
 					
 					ArrayList<Integer> ourTimeSlices = impTimeSlices.get(i);
 					int impSum = 0;
@@ -336,10 +335,10 @@ public class SimAgent {
 					}
 					
 					if(impSum == 0) {
-						queryReport.setPosition(query, agents.get(i)._advId, Double.NaN);
+						queryReport.setPosition(query, "adv" + (i+1), Double.NaN);
 					}
 					else {
-						queryReport.setPosition(query, agents.get(i)._advId, ((double) impSum) / ourTimeSlices.size());
+						queryReport.setPosition(query, "adv" + (i+1), ((double) impSum) / ourTimeSlices.size());
 					}
 				}
 			}
