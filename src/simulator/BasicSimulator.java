@@ -1969,7 +1969,7 @@ public class BasicSimulator {
 
 		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
 		int min = 1;
-		int max = 2;
+		int max = 9;
 		//		int max = 77;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
@@ -2004,7 +2004,8 @@ public class BasicSimulator {
 
 		AbstractAgent agent = new SemiEndoMCKPBid();
 		//		AbstractAgent agent = new EquatePPSSimpleBudget2010();
-		//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
+//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
+//		AbstractAgent agent = new AgentOrange(false,1);
 		//				AbstractAgent agent = new SimpleAABidAgent();
 		//						AbstractAgent agent = new NewSemiEndoMCKPBid();
 		//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);

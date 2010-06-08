@@ -236,6 +236,11 @@ public class BidPredModelTest {
 		public void setBid(double bid) {
 			_bid = bid;
 		}
+		
+		@Override
+		public String toString() {
+			return _bid + "";
+		}
 
 		public int compareTo(BidPair agentBidPair) {
 			double ourBid = this._bid;

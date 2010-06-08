@@ -1,10 +1,15 @@
 package simulator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 
+import simulator.predictions.BidPredModelTest.BidPair;
+
 import edu.umich.eecs.tac.props.Ad;
+import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
@@ -247,16 +252,95 @@ public class SimAgent {
 			}
 		}
 		else {
+			/*
+			 * set our own true position
+			 */
 			for(Query query : _querySpace) {
 				queryReport.addQuery(query,_regImps.get(query),_promImps.get(query),_numClicks.get(query),_cost.get(query),_posSum.get(query));
 				queryReport.setAd(query, _adType.get(query));
 			}
 
-			//TODO change to sampling
+			/*
+			 * set sample avg positions for everyone else
+			 */
 			for(Query query : _querySpace) {
+				ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
+				for(int agentInner = 0; agentInner < agents.size(); agentInner++) {
+					double squashedBid = agents.get(agentInner).getSquashedBid(query);
+					bidPairs.add(new BidPair(agentInner, squashedBid));
+				}
+
+				Collections.sort(bidPairs);
+
+				int[] order = new int[bidPairs.size()];
+				for(int i = 0; i < bidPairs.size(); i++) {
+					order[i] = bidPairs.get(i).getID();
+				}
+
+				int[] impressions = new int[bidPairs.size()];
+				for(int agentInner = 0; agentInner < agents.size(); agentInner++) {
+					impressions[agentInner] = agents.get(agentInner)._promImps.get(query) + agents.get(agentInner)._regImps.get(query);
+				}
+
+
+
+				int[][] allImpressions = greedyAssign(5, bidPairs.size(), order, impressions);
+				int maxImps = getMaxImps(5, bidPairs.size(), order, impressions);
+
+				/*
+				 * TODO
+				 * these samples should be drawn using seeing from the main simulator
+				 */
+				Random r = new Random();
+				ArrayList<Integer> timeSlices = new ArrayList<Integer>();
+				for(int i = 0; i < 10; i++) {
+					timeSlices.add(r.nextInt(maxImps));
+				}
+
+				Collections.sort(timeSlices);
+
+				ArrayList<ArrayList<Integer>> impTimeSlices = new ArrayList<ArrayList<Integer>>();
+				for(int i = 0; i < agents.size(); i++) {
+					ArrayList<Integer> impsSeen = new ArrayList<Integer>();
+					int[] impSums = new int[5];
+					impSums[0] = allImpressions[i][0];
+					for(int j = 1; j < 5; j++) {
+						impSums[j] = impSums[j-1] + allImpressions[i][j];
+					}
+
+					for(int j = 0; j < timeSlices.size(); j++) {
+						int impNum = timeSlices.get(j);
+						boolean addedImp = false;
+						for(int k = 0; k < 5; k++) {
+							if(impNum <= impSums[k]) {
+								impsSeen.add(k+1);
+								addedImp = true;
+								break;
+							}
+						}
+						if(!addedImp) {
+							break; //if we get here it means we are out of the auction
+						}
+					}
+
+					impTimeSlices.add(impsSeen);
+				}
+
 				for(int i = 0; i < agents.size(); i++) {
 					queryReport.setAd(query, agents.get(i)._advId, agents.get(i)._adType.get(query));
-					queryReport.setPosition(query, agents.get(i)._advId, (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
+					
+					ArrayList<Integer> ourTimeSlices = impTimeSlices.get(i);
+					int impSum = 0;
+					for(int j = 0; j < ourTimeSlices.size(); j++) {
+						impSum += ourTimeSlices.get(j);
+					}
+					
+					if(impSum == 0) {
+						queryReport.setPosition(query, agents.get(i)._advId, Double.NaN);
+					}
+					else {
+						queryReport.setPosition(query, agents.get(i)._advId, ((double) impSum) / ourTimeSlices.size());
+					}
 				}
 			}
 		}
@@ -296,6 +380,41 @@ public class SimAgent {
 			}
 		}
 		return impressionsBySlot;
+	}
+
+	public int getMaxImps(int slots, int agents, int[] order, int[] impressions) {
+		int[][] impressionsBySlot = new int[agents][slots];
+
+		int[] slotStart= new int[slots];
+		int a;
+
+		for(int i = 0; i < agents; ++i){
+			a = order[i];
+			//System.out.println(a);
+			int remainingImp = impressions[a];
+			//System.out.println("remaining impressions "+ impressions[a]);
+			for(int s = Math.min(i+1, slots)-1; s>=0; --s){
+				if(s == 0){
+					impressionsBySlot[a][0] = remainingImp;
+					slotStart[0] += remainingImp;
+				}else{
+
+					int r = slotStart[s-1] - slotStart[s];
+					//System.out.println("agent " +a + " r = "+(slotStart[s-1] - slotStart[s]));
+					assert(r >= 0);
+					if(r < remainingImp){
+						remainingImp -= r;
+						impressionsBySlot[a][s] = r;
+						slotStart[s] += r;
+					} else {
+						impressionsBySlot[a][s] = remainingImp;
+						slotStart[s] += remainingImp;
+						break;
+					}
+				}
+			}
+		}
+		return slotStart[0];
 	}
 
 	public SalesReport buildSalesReport() {
