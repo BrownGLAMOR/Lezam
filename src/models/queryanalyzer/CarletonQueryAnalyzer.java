@@ -134,10 +134,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		for(Query q : _querySpace) {
 			ArrayList<Double> allAvgPos = new ArrayList<Double>();
 			ArrayList<Integer> agentIds = new ArrayList<Integer>();
+			int ourIdx = 0;
 			for(int i = 0; i < _advertisers.size(); i++) {
 				double avgPos;
 				if(_advertisers.get(i).equals(_ourAdvertiser)) {
 					avgPos = queryReport.getPosition(q);
+					ourIdx = i;
 				}
 				else {
 					avgPos = queryReport.getPosition(q, "adv" + (i+1));
@@ -149,19 +151,27 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 				}
 			}
 
+			//			System.out.println(allAvgPos);
+			//			System.out.println(agentIds);
+			//			System.out.println(_ourAdvertiser);
+
 			double[] allAvgPosArr = new double[allAvgPos.size()];
 			for(int i = 0; i < allAvgPosArr.length; i++) {
 				allAvgPosArr[i] = allAvgPos.get(i);
 			}
 
 			int[] agentIdsArr = new int[agentIds.size()];
+			int ourNewIdx = 0;
 			for(int i = 0; i < agentIdsArr.length; i++) {
 				agentIdsArr[i] = agentIds.get(i);
+				if(agentIds.get(i) == ourIdx) {
+					ourNewIdx = i;
+				}
 			}
 
-			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
-			//int[] avgPosOrder = inst.getAvgPosOrder();
-			int[] avgPosOrder = inst.getCarletonOrder();
+			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q));
+			int[] avgPosOrder = inst.getAvgPosOrder();
+			//			int[] avgPosOrder = inst.getCarletonOrder();
 
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {
