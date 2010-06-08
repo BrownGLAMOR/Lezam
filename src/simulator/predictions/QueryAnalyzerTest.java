@@ -31,11 +31,12 @@ public class QueryAnalyzerTest {
 	public static boolean PERFECT_IMPS = true;
 	public static int LDS_ITERATIONS_1 = 5;
 	public static int LDS_ITERATIONS_2 = 5;
+	private boolean REPORT_FULLPOS_FORSELF = true;
 
 	public ArrayList<String> getGameStrings() {
-		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
-				String baseFile = "./game"; //games 1425-1464
+//		String baseFile = "./game"; //games 1425-1464
 		int min = 1425;
 		int max = 1426;
 
@@ -232,18 +233,21 @@ public class QueryAnalyzerTest {
 										rankPredMap.put(rankPred[j], j);
 									}
 
-									int agentOffset = 0;
 									int skipped = 0;
 									int totalDiff = 0;
 									int totalNoMatchDiff = 0;
 									for(int j = 0; j < agents.length; j++) {
 										double avgPos;
 										if(j == agent) {
-											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
-											agentOffset++;
+											if(REPORT_FULLPOS_FORSELF) {
+												avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
+											}
+											else {
+												avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+1));
+											}
 										}
 										else {
-											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+2-agentOffset));
+											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+1));
 										}
 
 										if(Double.isNaN(avgPos) || avgPos < 0) {
@@ -262,11 +266,15 @@ public class QueryAnalyzerTest {
 										for(int k = 0; k < agents.length; k++) {
 											double otherAvgPos;
 											if(k == agent) {
-												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q);
-												agentOffset2++;
+												if(REPORT_FULLPOS_FORSELF) {
+													otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q);
+												}
+												else {
+													otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+1));
+												}
 											}
 											else {
-												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+2-agentOffset2));
+												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+1));
 											}
 											if((k != j) && otherAvgPos == avgPos) {
 												matchingAvgPos = true;
@@ -289,7 +297,7 @@ public class QueryAnalyzerTest {
 									if(totalDiff == 0) {
 										rankCorrect++;
 									}
-									
+
 									if(totalNoMatchDiff == 0) {
 										rankNoMatchCorrect++;
 									}
@@ -365,7 +373,7 @@ public class QueryAnalyzerTest {
 				double impActual = totImpActual/totImpErrorCounter;
 				impRMSEList.add(impMAE);
 				impActualList.add(impActual);
-				
+
 				double totImpPercError = totImpPercErrorMap.get(agent);
 				double impPercMAE = (totImpPercError/totImpErrorCounter);
 				impPercRMSEList.add(impPercMAE);

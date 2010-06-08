@@ -134,15 +134,13 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		for(Query q : _querySpace) {
 			ArrayList<Double> allAvgPos = new ArrayList<Double>();
 			ArrayList<Integer> agentIds = new ArrayList<Integer>();
-			int agentOffset = 0;
 			for(int i = 0; i < _advertisers.size(); i++) {
 				double avgPos;
 				if(_advertisers.get(i).equals(_ourAdvertiser)) {
 					avgPos = queryReport.getPosition(q);
-					agentOffset++;
 				}
 				else {
-					avgPos = queryReport.getPosition(q, "adv" + (i+2-agentOffset));
+					avgPos = queryReport.getPosition(q, "adv" + (i+1));
 				}
 
 				if(!Double.isNaN(avgPos)) {
