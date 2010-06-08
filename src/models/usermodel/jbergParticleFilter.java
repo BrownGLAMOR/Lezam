@@ -189,8 +189,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		_products.add(new Product("lioneer", "tv"));
 		_products.add(new Product("lioneer", "audio"));
 
-		initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
-		//				initializeParticlesFromFile("/u/jberg/initUserParticles");
+				initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
+//		initializeParticlesFromFile("/u/jberg/initUserParticles");
 		updatePredictionMaps();
 	}
 
@@ -319,7 +319,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			//				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
 			//				particles[i] = particle;
 			//			}
-//			System.out.println("We had to reinitialize the particles...");
+			//			System.out.println("We had to reinitialize the particles...");
 		}
 	}
 

@@ -31,9 +31,9 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 			(_regReserveLow[2] + _regReserveHigh[2]) / 2.0};
 
 	private double _proReserveBoost = .5;
-	private double[] _proReserve = {_regReserve[0] + _proReserveBoost * (2.0/3.0), 
-			_regReserve[1] + _proReserveBoost * (2.0/3.0),
-			_regReserve[2] + _proReserveBoost * (2.0/3.0)};
+	private double[] _proReserve = {_regReserve[0] + _proReserveBoost * (1.0/2.0), 
+			_regReserve[1] + _proReserveBoost * (1.0/2.0),
+			_regReserve[2] + _proReserveBoost * (1.0/2.0)};
 
 	private double[] _c;
 

@@ -11,8 +11,6 @@ import java.util.Set;
 import models.AbstractModel;
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
-import models.bidmodel.JointDistBidModel;
-import models.bidmodel.LinearComboBidModel;
 import models.budgetEstimator.AbstractBudgetEstimator;
 import models.budgetEstimator.BudgetEstimator;
 import models.paramest.AbstractParameterEstimation;
@@ -49,17 +47,16 @@ public class AgentOrange extends AbstractAgent {
 	 * 2) Predict opponent ad type
 	 * 3) Dynamic or at least different capacity numbers
 	 */
-
-	double[] _c = {0.126114132,0.153193911,0.246344682};
+	double[] _c;
 
 	private boolean DEBUG = false;
 	private Random _R;
-	private boolean SAFETYBUDGET = false;
+	private boolean SAFETYBUDGET = true;
 	private boolean BUDGET = false;
 	private boolean FORWARDUPDATING = false;
 	private boolean PRICELINES = false;
 
-	private double _safetyBudget = 800;
+	private double _safetyBudget = 950;
 	private int lagDays = 4;
 
 	private double[] _regReserveLow = {.08, .29, .46};
@@ -140,8 +137,16 @@ public class AgentOrange extends AbstractAgent {
 	}
 
 	public AgentOrange() {
+		this(0.10753988514063796,0.187966273,0.339007416);
+	}
+
+	public AgentOrange(double c1, double c2, double c3) {
 		_R = new Random();
-		_R.setSeed(616866);
+//		_R.setSeed(616866);
+		_c = new double[3];
+		_c[0] = c1;
+		_c[1] = c2;
+		_c[2] = c3;
 	}
 
 	@Override
@@ -326,7 +331,7 @@ public class AgentOrange extends AbstractAgent {
 				}
 
 				if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-					double increment  = .05;
+					double increment  = .2;
 					double min = .08;
 					double max = 1.0;
 					int tot = (int) Math.ceil((max-min) / increment);
@@ -335,7 +340,7 @@ public class AgentOrange extends AbstractAgent {
 					}
 				}
 				else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-					double increment  = .05;
+					double increment  = .2;
 					double min = .29;
 					double max = 1.95;
 					int tot = (int) Math.ceil((max-min) / increment);
@@ -345,7 +350,7 @@ public class AgentOrange extends AbstractAgent {
 
 				}
 				else {
-					double increment  = .05;
+					double increment  = .2;
 					double min = .46;
 					double max = 2.35;
 					int tot = (int) Math.ceil((max-min) / increment);
@@ -365,7 +370,6 @@ public class AgentOrange extends AbstractAgent {
 				budgetList.add(100.0);
 				budgetList.add(200.0);
 				budgetList.add(300.0);
-				budgetList.add(500.0);
 
 				budgetLists.put(q,budgetList);
 			}
@@ -499,7 +503,14 @@ public class AgentOrange extends AbstractAgent {
 					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .75);
 
 					//					System.out.println("Exploring " + q + "   bid: " + bid);
-					bidBundle.addQuery(q, bid, new Ad(), bid*7);
+					if(q.getType() != QueryType.FOCUS_LEVEL_ZERO) {
+						if(q.getType() != QueryType.FOCUS_LEVEL_ONE) {
+							bidBundle.addQuery(q, bid, new Ad(), bid*10);
+						}
+						else {
+							bidBundle.addQuery(q, bid, new Ad(), bid*20);
+						}
+					}
 				}
 			}
 
@@ -516,11 +527,11 @@ public class AgentOrange extends AbstractAgent {
 			 */
 			for(Query q : _querySpace){
 				if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
+					double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
 					bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
 				}
 				else {
-					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .7);
+					double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
 					bidBundle.addQuery(q, bid, new Ad(), bid*20);
 				}
 			}
@@ -1611,7 +1622,7 @@ public class AgentOrange extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new AgentOrange();
+		return new AgentOrange(_c[0],_c[1],_c[2]);
 	}
 
 	public static class BidBudgetAdPair implements Comparable<BidBudgetAdPair> {
