@@ -29,8 +29,8 @@ public class QueryAnalyzerTest {
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
 	public static boolean PERFECT_IMPS = true;
-	public static int LDS_ITERATIONS_1 = 5;
-	public static int LDS_ITERATIONS_2 = 5;
+	public static int LDS_ITERATIONS_1 = 10;
+	public static int LDS_ITERATIONS_2 = 10;
 	private static boolean REPORT_FULLPOS_FORSELF = true;
 
 	public ArrayList<String> getGameStrings() {
@@ -38,7 +38,7 @@ public class QueryAnalyzerTest {
 		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		String baseFile = "./game"; //games 1425-1464
 		int min = 1;
-		int max = 2;
+		int max = 5;
 
 		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464

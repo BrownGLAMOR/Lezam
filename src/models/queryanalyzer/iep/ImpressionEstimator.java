@@ -7,8 +7,8 @@ import java.util.Map;
 import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
-	private static int SAMPLING_FACTOR = 250;
-	private static int MAX_PROBE_IMPRESSIONS = 1;
+	private static int SAMPLING_FACTOR = 100;
+	private static int MAX_PROBE_IMPRESSIONS = 1; //warning this must be greater than 0
 	private int _samplingImpressions;
 
 	private int _nodeId;
@@ -47,7 +47,8 @@ public class ImpressionEstimator {
 			}
 		}
 		
-		_samplingImpressions = Math.max(MAX_PROBE_IMPRESSIONS+1, _imprUB / SAMPLING_FACTOR * wholeAvgPos * wholeAvgPos + 1);
+		//_samplingImpressions = Math.max(MAX_PROBE_IMPRESSIONS+1, _imprUB / SAMPLING_FACTOR * wholeAvgPos * wholeAvgPos + 1);
+		_samplingImpressions = Math.max(MAX_PROBE_IMPRESSIONS+1,_imprUB / SAMPLING_FACTOR * wholeAvgPos * wholeAvgPos); //value must be at least 2, becouse it must be greater than MAX_PROBE_IMPRESSIONS
 		//System.out.println("samp impr: " + _samplingImpressions);
 		
 		assert _ourImpressions > 0;
@@ -151,7 +152,7 @@ public class ImpressionEstimator {
 			int slotObjCount = 1;
 			for(int i=0; i < slotImpr.length-1; i++){
 				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
-				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < _samplingImpressions/2 || imprObjVal == 0){
+				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < _samplingImpressions/4 || imprObjVal == 0){
 					slotObjVal += Math.abs(slotImpr[i] - slotImpr[i+1]);
 					slotObjCount++;
 				} else {

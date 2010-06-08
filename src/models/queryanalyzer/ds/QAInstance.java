@@ -2,7 +2,6 @@ package models.queryanalyzer.ds;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
 
 
 public class QAInstance {
@@ -44,7 +43,8 @@ public class QAInstance {
 		}
 	}
 	
-	//adds a "fake" advertiser with position 1.0
+	//pads the auction with "fake" advertisers so that the instance is feasible
+	//Feasible means every agent starts in a position greater or equal to their avg pos
 	//assumes the highest agent ID is 99
 	private void addPaddingAgents(int startSlot, int stopSlot){
 		int oldAdvertisers = _advetisers;
