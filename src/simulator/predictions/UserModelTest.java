@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.Random;
 
 import models.queryanalyzer.AbstractQueryAnalyzer;
+import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.queryanalyzer.GreedyQueryAnalyzer;
 import models.usermodel.BgleibParticleFilter;
 import models.usermodel.DavidLParticleFilter;
@@ -39,7 +40,7 @@ public class UserModelTest {
 		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 //		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		int min = 1440;
-		int max = 1441;
+		int max = 1444;
 		
 //		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
 //		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
@@ -137,7 +138,7 @@ public class UserModelTest {
 							imps += userDist.get(UserState.F0);
 							imps += (1.0/3.0)*userDist.get(UserState.IS);
 						}
-						else if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+						else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
 							if(product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
 								imps += (1.0/2.0)*userDist.get(UserState.F1);
 								imps += (1.0/6.0)*userDist.get(UserState.IS);
@@ -362,7 +363,7 @@ public class UserModelTest {
 				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
 			}
 			
-			AbstractQueryAnalyzer queryAnalyzer = new GreedyQueryAnalyzer(querySpace, advertisers, "TacTex");
+			AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace, advertisers, "TacTex",10,10);
 			
 			double ourTotErrorCurr = 0;
 			double ourTotActualCurr = 0;
@@ -643,12 +644,6 @@ public class UserModelTest {
 		} while(!(args0 < args2 && args2 < args4));
 
 		double start = System.currentTimeMillis();
-//		double err = evaluator.userStatePredictionChallenge(new jbergParticleFilter(args0,
-//				args1,
-//				args2,
-//				args3,
-//				args4,
-//				args5));
 		
 //		evaluator.userStatePerfectPredictionChallenge(new jbergParticleFilter(0.004932699,
 //				0.263532334,
