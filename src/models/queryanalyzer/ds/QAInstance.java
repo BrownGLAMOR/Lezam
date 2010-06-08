@@ -17,7 +17,7 @@ public class QAInstance {
 	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int impressionsUB){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
-		assert(advetisers > agentIndex && agentIndex >= 0);
+		assert(advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
 		_slots = slots;
 		_advetisers = advetisers;
 		_avgPos = avgPos;
@@ -25,6 +25,8 @@ public class QAInstance {
 		_agentIndex = agentIndex;
 		_impressions = impressions;
 		_impressionsUB = impressionsUB;
+		
+		
 	}
 	
 	public int getNumSlots() {return _slots;}
@@ -74,29 +76,6 @@ public class QAInstance {
 		return posOrder;
 	}
 	
-	public int[] getAvgPosOrder(QAData data) {
-		double[] pos = new double[_advetisers];
-		int[] posOrder = new int[_advetisers];
-		for(int i=0; i < _advetisers; i++){
-			pos[i] = -_avgPos[i];
-			posOrder[i] = i;
-		}
-		
-		sortListsDecending(posOrder, pos);
-		
-		//System.out.println("Pos order "+Arrays.toString(posOrder));
-		//System.out.println("Pos value "+Arrays.toString(pos));
-		
-		//not nessissary in general, but makes results consistent with the comet model
-		sortTiesAccending(posOrder, pos);
-		
-		//System.out.println("Pos order (break ties) "+Arrays.toString(posOrder));
-		//System.out.println("Pos value (break ties) "+Arrays.toString(pos));
-		
-		
-		return posOrder;
-	}
-	
 	public int[] getCarletonOrder() {
 		int[] avgPosOrder = getAvgPosOrder();
 		boolean[] avdAssigned = new boolean[_advetisers];
@@ -124,7 +103,7 @@ public class QAInstance {
 		
 		for(int i=0; i < _slots-1; i++){ //this should hold as long as we don't consider the last slot
 			HashSet<Integer> advs = advWholePos.get(i);
-			assert(advs.size() <= 1) : "this may need to go away in new game data";
+			//assert(advs.size() <= 1) : "this may need to go away in new game data";
 			if(advs.size() > 0){
 				int adv = advs.iterator().next(); //no good idea on how to pick, just do random.
 				

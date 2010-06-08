@@ -27,7 +27,7 @@ public class TestLDSearch {
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);
 		
-		int[] avgPosOrder = inst.getAvgPosOrder(data);
+		int[] avgPosOrder = inst.getAvgPosOrder();
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
 		int[] carletonOrder = inst.getCarletonOrder();

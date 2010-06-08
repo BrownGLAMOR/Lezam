@@ -29,11 +29,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 	public int NUM_ITERATIONS_2 = 10;
 	private boolean REPORT_FULLPOS_FORSELF = true;
 
-	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, int numIters2) {
+	public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, int numIters2, boolean selfAvgPosFlag) {
 		_querySpace = querySpace;
 
 		NUM_ITERATIONS_1 = numIters1;
 		NUM_ITERATIONS_2 = numIters2;
+		REPORT_FULLPOS_FORSELF = selfAvgPosFlag;
 
 		_allResults = new HashMap<Query,ArrayList<IEResult>>();
 		_allImpRanges = new HashMap<Query,ArrayList<int[][]>>();
@@ -175,9 +176,10 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 				}
 			}
 
+
 			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q));
-			int[] avgPosOrder = inst.getAvgPosOrder();
-			//			int[] avgPosOrder = inst.getCarletonOrder();
+			//int[] avgPosOrder = inst.getAvgPosOrder();
+			int[] avgPosOrder = inst.getCarletonOrder();
 
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {
@@ -219,7 +221,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser,NUM_ITERATIONS_1,NUM_ITERATIONS_2);
+		return new CarletonQueryAnalyzer(_querySpace,_advertisers,_ourAdvertiser,NUM_ITERATIONS_1,NUM_ITERATIONS_2, REPORT_FULLPOS_FORSELF);
 	}
 
 	@Override

@@ -8,7 +8,7 @@ import models.queryanalyzer.ds.QAInstance;
 
 public class ImpressionEstimator {
 	private static int SAMPLING_FACTOR = 250;
-	private static int MAX_PROBE_IMPRESSIONS = 5;
+	private static int MAX_PROBE_IMPRESSIONS = 1;
 	private int _samplingImpressions;
 
 	private int _nodeId;
@@ -48,7 +48,6 @@ public class ImpressionEstimator {
 		}
 		
 		_samplingImpressions = Math.max(MAX_PROBE_IMPRESSIONS+1, _imprUB / SAMPLING_FACTOR * wholeAvgPos * wholeAvgPos + 1);
-		
 		//System.out.println("samp impr: " + _samplingImpressions);
 		
 		assert _ourImpressions > 0;
@@ -92,6 +91,11 @@ public class ImpressionEstimator {
 
 	public IEResult search(int[] order){ //TODO incorporate order
 		if(!feasibleOrder(order)){
+			System.out.println(Arrays.toString(order)); 
+			for(int i=0; i < order.length; i++){
+				System.out.print(_trueAvgPos[order[i]]+" "); 
+			}
+			
 			assert(false) : "should have been eliminated in LDS search";
 			//System.out.println("order is infeasible"); 
 			return null;
