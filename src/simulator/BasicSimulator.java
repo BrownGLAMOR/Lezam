@@ -1240,7 +1240,12 @@ public class BasicSimulator {
 			/*
 			 * Adds impressions
 			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+			/*
+			 * TODO
+			 * 
+			 * maybe this should be j <= pairList.size()
+			 */
+			for(int j = 1; j <= _numSlots && j <= pairList.size(); j++) {
 				AgentBidPair pair = pairList.get(j-1);
 				double squashedBid = pair.getSquashedBid();
 				if(j <= _numPromSlots && squashedBid >= _proReserve) {
@@ -1254,7 +1259,7 @@ public class BasicSimulator {
 			/*
 			 * Actually generates clicks and what not
 			 */
-			for(int j = 1; j <= _numSlots && j < pairList.size(); j++) {
+			for(int j = 1; j <= _numSlots && j <= pairList.size(); j++) {
 				AgentBidPair pair = pairList.get(j-1);
 				SimAgent agent = pair.getAgent();
 				double squashedBid = pair.getSquashedBid();
@@ -1278,18 +1283,44 @@ public class BasicSimulator {
 				double clickPr = eta(advEffect,fTarg*fProm);
 				double rand = _R.nextDouble();
 				if(clickPr >= rand) {
-					AgentBidPair underPair = pairList.get(j);
-					SimAgent agentUnder = underPair.getAgent();
-					double bidUnder = agentUnder.getBid(query);
-					double advEffUnder = agentUnder.getAdvEffect(query);
-					double squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
+					double squashedBidUnder;
+					if(j != pairList.size()){
+						AgentBidPair underPair = pairList.get(j);
+						SimAgent agentUnder = underPair.getAgent();
+						double bidUnder = agentUnder.getBid(query);
+						double advEffUnder = agentUnder.getAdvEffect(query);
+						squashedBidUnder = Math.pow(advEffUnder, _squashing) * bidUnder;
+					}
+					else {
+						/*
+						 * A person with no one bidding under them pays the reserve price
+						 */
+						if(j <= _numPromSlots && squashedBid >= _proReserve) {
+							squashedBidUnder = _proReserve;
+						}
+						else {
+							squashedBidUnder = _regReserve;
+						}
+					}
+					
+					
 					if(j <= _numPromSlots && squashedBid >= _proReserve && squashedBidUnder <= _proReserve) {
 						squashedBidUnder = _proReserve;
 					}
+					
+					/*
+					 * TODO
+					 * 
+					 * the +.01 might go before the unsquashing....
+					 */
 					double cpc = squashedBidUnder / Math.pow(advEffect, _squashing) + .01;
 					cpc = ((int) ((cpc * 100) + 0.5)) / 100.0;
 					agent.addCost(query, cpc);
 
+					/*
+					 * TODO
+					 * remove the hard coded convPRs
+					 */
 					double baselineConv;
 					if(is2009 || (user.getUserState() != UserState.IS)) {
 
@@ -1322,9 +1353,6 @@ public class BasicSimulator {
 						}
 
 						double overCap = agent.getOverCap();
-						if(agent.getAdvId().equals(_agents[_ourAdvIdx])) {
-							//						debug(agent.getAdvId() + " is overcap by " + overCap);
-						}
 						double convPr = Math.pow(_LAMBDA, Math.max(0.0, overCap))*baselineConv;
 
 						String queryComp = query.getComponent();
