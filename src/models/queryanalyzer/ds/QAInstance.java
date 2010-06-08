@@ -41,6 +41,8 @@ public class QAInstance {
 		if(foundTooBigStart > 0){
 			addPaddingAgents(foundTooBigStart, foundTooBigStop);
 		}
+		
+		assert(feasibleOrder(getAvgPosOrder())) : "addPaddingAgents broke did not work...";
 	}
 	
 	//pads the auction with "fake" advertisers so that the instance is feasible
@@ -92,6 +94,16 @@ public class QAInstance {
 		//System.out.println("Bid value "+Arrays.toString(bids));
 		
 		return bidOrder;
+	}
+	
+	private boolean feasibleOrder(int[] order) {
+		for(int i=0; i < order.length; i++){
+			int startPos = Math.min(i+1,_slots);
+			if(startPos < _avgPos[order[i]]){
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public int[] getAvgPosOrder() {
