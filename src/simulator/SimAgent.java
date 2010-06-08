@@ -11,6 +11,7 @@ import edu.umich.eecs.tac.props.SalesReport;
 
 public class SimAgent {
 
+	public boolean _is2009 = false;
 
 	private HashMap<Query, Double> _bids;
 	private HashMap<Query, Double> _budgets;
@@ -234,24 +235,67 @@ public class SimAgent {
 
 	public QueryReport buildQueryReport(ArrayList<SimAgent> agents) {
 		QueryReport queryReport = new QueryReport();
-		for(Query query : _querySpace) {
-			queryReport.addQuery(query,_regImps.get(query),_promImps.get(query),_numClicks.get(query),_cost.get(query),_posSum.get(query));
-			queryReport.setAd(query, _adType.get(query));
+		if(_is2009) {
+			for(Query query : _querySpace) {
+				queryReport.addQuery(query,_regImps.get(query),_promImps.get(query),_numClicks.get(query),_cost.get(query),_posSum.get(query));
+				queryReport.setAd(query, _adType.get(query));
 
-			int agentOffset = 0;
-			for(int i = 0; i < agents.size(); i++) {
-				if(agents.get(i)._advId.equals(_advId)) {
-					queryReport.setAd(query, "adv1", agents.get(i)._adType.get(query));
-					queryReport.setPosition(query, "adv1", (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
-					agentOffset++;
+				for(int i = 0; i < agents.size(); i++) {
+					queryReport.setAd(query, agents.get(i)._advId, agents.get(i)._adType.get(query));
+					queryReport.setPosition(query, agents.get(i)._advId, (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
 				}
-				else {
-					queryReport.setAd(query, "adv" + (i+2-agentOffset), agents.get(i)._adType.get(query));
-					queryReport.setPosition(query, "adv" + (i+2-agentOffset), (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
+			}
+		}
+		else {
+			for(Query query : _querySpace) {
+				queryReport.addQuery(query,_regImps.get(query),_promImps.get(query),_numClicks.get(query),_cost.get(query),_posSum.get(query));
+				queryReport.setAd(query, _adType.get(query));
+			}
+
+			//TODO change to sampling
+			for(Query query : _querySpace) {
+				for(int i = 0; i < agents.size(); i++) {
+					queryReport.setAd(query, agents.get(i)._advId, agents.get(i)._adType.get(query));
+					queryReport.setPosition(query, agents.get(i)._advId, (agents.get(i)._posSum.get(query))/(agents.get(i)._regImps.get(query)+agents.get(i)._promImps.get(query)));
 				}
 			}
 		}
 		return queryReport;
+	}
+
+	public int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
+		int[][] impressionsBySlot = new int[agents][slots];
+
+		int[] slotStart= new int[slots];
+		int a;
+
+		for(int i = 0; i < agents; ++i){
+			a = order[i];
+			//System.out.println(a);
+			int remainingImp = impressions[a];
+			//System.out.println("remaining impressions "+ impressions[a]);
+			for(int s = Math.min(i+1, slots)-1; s>=0; --s){
+				if(s == 0){
+					impressionsBySlot[a][0] = remainingImp;
+					slotStart[0] += remainingImp;
+				}else{
+
+					int r = slotStart[s-1] - slotStart[s];
+					//System.out.println("agent " +a + " r = "+(slotStart[s-1] - slotStart[s]));
+					assert(r >= 0);
+					if(r < remainingImp){
+						remainingImp -= r;
+						impressionsBySlot[a][s] = r;
+						slotStart[s] += r;
+					} else {
+						impressionsBySlot[a][s] = remainingImp;
+						slotStart[s] += remainingImp;
+						break;
+					}
+				}
+			}
+		}
+		return impressionsBySlot;
 	}
 
 	public SalesReport buildSalesReport() {

@@ -50,6 +50,7 @@ import agents.olderagents.Cheap;
 import agents.olderagents.ConstantPM;
 import agents.olderagents.GoodSlot;
 import agents.rulebased.simple.EquatePMSimple;
+import agents.rulebased2010.simple.EquatePPSSimpleBudget2010;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -76,7 +77,7 @@ public class BasicSimulator {
 	private boolean PERFECTMODELS = false;
 	private boolean SOMEREGMODELS = true;
 	private boolean _killBudgets = false;
-	private boolean is2009 = true;
+	private boolean is2009 = false;
 
 	/*
 	 * Gaussian noise for perf models
@@ -1207,7 +1208,7 @@ public class BasicSimulator {
 			SimUser user = users.get(i);
 			Query query = user.getUserQuery();
 			if(query == null) {
-				//This means the user is IS or T
+				//This means the user is NS or T
 				continue;
 			}
 
@@ -1293,13 +1294,28 @@ public class BasicSimulator {
 					if(is2009 || (user.getUserState() != UserState.IS)) {
 
 						if(query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-							baselineConv = .1;
+							if(is2009) {
+								baselineConv = .1;
+							}
+							else {
+								baselineConv = .11;
+							}
 						}
 						else if(query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-							baselineConv = .2;
+							if(is2009) {
+								baselineConv = .2;
+							}
+							else {
+								baselineConv = .23;
+							}
 						}
 						else if(query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-							baselineConv = .3;
+							if(is2009) {							
+								baselineConv = .3;
+							}
+							else {
+								baselineConv = .36;
+							}
 						}
 						else {
 							throw new RuntimeException("Malformed Query");
@@ -1527,10 +1543,16 @@ public class BasicSimulator {
 			System.gc(); emptyFunction(); emptyFunction(); emptyFunction(); emptyFunction();
 
 			String filename = filenames[fileIdx];
-			int advId = 0;  //Set to 1 for schlemazl on day-2/server1
 			GameStatusHandler statusHandler = new GameStatusHandler(filename);
 			GameStatus status = statusHandler.getGameStatus();
 			String[] agents = status.getAdvertisers();
+			int advId = 0;  //Set to 1 for schlemazl on day-2/server1
+			for(int i = 0; i < agents.length; i++) {
+				if(agents[i].equals("TacTex")) {
+					advId = i;
+					break;
+				}
+			}
 
 			_querySpace = new LinkedHashSet<Query>();
 			_querySpace.add(new Query(null, null));
@@ -1917,11 +1939,16 @@ public class BasicSimulator {
 
 		Random r = new Random(68616);
 
-		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
+		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		int min = 1;
+		int max = 2;
+		//		int max = 77;
+
+		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
 		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
-		int min = 1425;
-		int max = 1426;
+		//		int min = 1425;
+		//		int max = 1426;
 		//		int min = 297;
 		//		int max = 298;
 		//				int max = 337;
@@ -1948,6 +1975,7 @@ public class BasicSimulator {
 
 
 		AbstractAgent agent = new SemiEndoMCKPBid();
+		//		AbstractAgent agent = new EquatePPSSimpleBudget2010();
 		//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
 		//				AbstractAgent agent = new SimpleAABidAgent();
 		//						AbstractAgent agent = new NewSemiEndoMCKPBid();
@@ -1988,7 +2016,7 @@ public class BasicSimulator {
 			if(val.get(17) == 300) {
 				lowVals.add(val.get(0));
 			}
-			else if(val.get(17) == 400) {
+			else if(val.get(17) == 450) {
 				medVals.add(val.get(0));
 			}
 			else {
@@ -2114,7 +2142,7 @@ public class BasicSimulator {
 			if(val.get(17) == 300) {
 				lowVals.add(val.get(0));
 			}
-			else if(val.get(17) == 400) {
+			else if(val.get(17) == 450) {
 				medVals.add(val.get(0));
 			}
 			else {
