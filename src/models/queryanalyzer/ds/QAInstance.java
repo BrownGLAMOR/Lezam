@@ -27,6 +27,47 @@ public class QAInstance {
 		_impressionsUB = impressionsUB;
 		
 		
+		int[] apOrder = getAvgPosOrder();
+		
+		int foundTooBigStart = 0;
+		int foundTooBigStop = 0;
+		for(int i=0; i<_slots && i<_advetisers; i++){
+			if(_avgPos[apOrder[i]] > i+1){
+				foundTooBigStart = i+1;
+				foundTooBigStop = (int)Math.ceil(_avgPos[apOrder[i]]);
+				break;
+			}
+		}
+		
+		if(foundTooBigStart > 0){
+			addPaddingAgents(foundTooBigStart, foundTooBigStop);
+		}
+	}
+	
+	//adds a "fake" advertiser with position 1.0
+	//assumes the highest agent ID is 99
+	private void addPaddingAgents(int startSlot, int stopSlot){
+		int oldAdvertisers = _advetisers;
+		double[] oldAvgPos = _avgPos;
+		int[] oldAgentIds = _agentIds;
+		
+		int newAdvertisers = oldAdvertisers+stopSlot-startSlot;
+		double[] newAvgPos = new double[newAdvertisers];
+		int[] newAgentIds = new int[newAdvertisers];
+		
+		for(int i=0; i < oldAdvertisers; i++){
+			newAvgPos[i] = oldAvgPos[i];
+			newAgentIds[i] = oldAgentIds[i];
+		}
+		
+		for(int i=0; i < stopSlot-startSlot; i++){
+			newAvgPos[oldAdvertisers+i] = startSlot+i;
+			newAgentIds[oldAdvertisers+i] = 100+i;
+		}
+		
+		_advetisers = newAdvertisers;
+		_avgPos = newAvgPos;
+		_agentIds = newAgentIds;
 	}
 	
 	public int getNumSlots() {return _slots;}
@@ -194,6 +235,7 @@ public class QAInstance {
 		String temp = "";
 		temp += "Slots: "+_slots+"\n";
 		temp += "Advertisers: "+_advetisers+"\n";
+		temp += Arrays.toString(_agentIds)+"\n";
 		temp += Arrays.toString(_avgPos)+"\n";
 		temp += "index: "+_agentIndex+"\n";
 		temp += "impressions: "+_impressions+"\n";

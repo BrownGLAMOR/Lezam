@@ -92,6 +92,7 @@ public class ImpressionEstimator {
 	public IEResult search(int[] order){ //TODO incorporate order
 		if(!feasibleOrder(order)){
 			System.out.println(Arrays.toString(order)); 
+			System.out.println(Arrays.toString(order)); 
 			for(int i=0; i < order.length; i++){
 				System.out.print(_trueAvgPos[order[i]]+" "); 
 			}

@@ -31,7 +31,7 @@ public class QueryAnalyzerTest {
 	public static boolean PERFECT_IMPS = true;
 	public static int LDS_ITERATIONS_1 = 5;
 	public static int LDS_ITERATIONS_2 = 5;
-	private static boolean REPORT_FULLPOS_FORSELF = false;
+	private static boolean REPORT_FULLPOS_FORSELF = true;
 
 	public ArrayList<String> getGameStrings() {
 		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
