@@ -13,6 +13,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
+import edu.umich.eecs.tac.props.UserClickModel;
 
 /**
  * 
@@ -52,6 +53,8 @@ public final class BidDistInit {
 			String[] advertisers = gameStatus.getAdvertisers();
 			HashMap<String,LinkedList<BidBundle>> allBundles = gameStatus.getBidBundles();
 			HashMap<String,LinkedList<QueryReport>> allReports = gameStatus.getQueryReports();
+			UserClickModel userClickModel = gameStatus.getUserClickModel();
+			double squashing = gameStatus.getPubInfo().getSquashingParameter();
 			for(int j = 0; j < advertisers.length; j++) {
 				LinkedList<BidBundle> bundles = allBundles.get(advertisers[j]);
 				LinkedList<QueryReport> reports = allReports.get(advertisers[j]);
@@ -78,7 +81,7 @@ public final class BidDistInit {
 
 				for(BidBundle bundle : bundles) {
 					for(Query q : bundle) {
-						double bid = bundle.getBid(q);
+						double bid = bundle.getBid(q)* Math.pow(userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), j), squashing);
 						int index = Collections.binarySearch(bidDist, bid);
 						int insertIdx;
 						if (index < 0) {
@@ -179,9 +182,14 @@ public final class BidDistInit {
 		//		int min = 1425;
 		//		int max = 1465;
 
+		//		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		//		int min = 1;
+		//		int max = 77;
+
 		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
+		//		String baseFile = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
 		int min = 1;
-		int max = 77;
+		int max = 25;
 
 		buildBidDistribution(baseFile,min,max);
 	}
@@ -363,4 +371,4 @@ final static double[] initDistF2 = {0.01165341376473814, 0.0031392152313457497, 
 
 10753, 2325, 2221
 
-*/
+ */

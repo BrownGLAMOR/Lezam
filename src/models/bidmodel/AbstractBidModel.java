@@ -10,9 +10,15 @@ import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 
 public abstract class AbstractBidModel extends AbstractModel {
-	protected static final double maxReasonableBidF0 = .8;
-	protected static final double maxReasonableBidF1 = 1.1;
-	protected static final double maxReasonableBidF2 = 1.6;
+	protected static final double maxReasonableBidF0 = 1.25;
+	protected static final double maxReasonableBidF1 = 1.95;
+	protected static final double maxReasonableBidF2 = 2.45;
+	
+//	protected static final double maxReasonableBidF0 = 1.35;
+//	protected static final double maxReasonableBidF1 = 2.75;
+//	protected static final double maxReasonableBidF2 = 3.5;
+	
+	
 	protected static final double maxBid = 3.75;
 	
 	public abstract boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks);
