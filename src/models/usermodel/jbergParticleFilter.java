@@ -291,6 +291,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		/*
 		 * Update weights based on observations
 		 */
+		ArrayList<Double> newWeights = new ArrayList<Double>();
 		for(int i = 0; i < particles.length; i++) {
 			Particle particle = particles[i];
 			double weight = particle.getWeight();
@@ -298,7 +299,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 			double prob = getProbability(totalImpressions, state);
 			double newWeight = weight*prob;
 			totalWeight += newWeight;
-			particle.setWeight(newWeight);
+			newWeights.add(newWeight);
+			//			particle.setWeight(newWeight);
 		}
 
 		/*
@@ -307,16 +309,17 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 		if(totalWeight > 0) {
 			for(int i = 0; i < particles.length; i++) {
 				Particle particle = particles[i];
-				double newWeight = particle.getWeight()/totalWeight;
-				particle.setWeight(newWeight);
+				//				double newWeight = particle.getWeight()/totalWeight;
+				particle.setWeight(newWeights.get(i) / totalWeight);
 			}
 		}
 		else {
-			for(int i = 0; i < particles.length; i++) {
-				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
-				particles[i] = particle;
-			}
-			//			System.out.println("We had to reinitialize the particles...");
+			//DO NOTHING!
+			//			for(int i = 0; i < particles.length; i++) {
+			//				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
+			//				particles[i] = particle;
+			//			}
+//			System.out.println("We had to reinitialize the particles...");
 		}
 	}
 
