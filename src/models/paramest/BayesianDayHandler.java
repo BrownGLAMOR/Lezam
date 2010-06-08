@@ -99,7 +99,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 			_contProbWeights.add(BASE_WEIGHT);
 		}
 
-		updateEstimate(_ourAdvertiserEffect);
+		updateEstimate(_ourAdvertiserEffect,_c);
 	}
 
 	private double otherAdvertiserConvProb() {
@@ -112,7 +112,8 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 		}
 	}
 
-	public void updateEstimate(double ourAdvertiserEffect) {
+	public void updateEstimate(double ourAdvertiserEffect, double[] c) {
+		_c = c;
 		double[] coeff = new double[numSlots];
 		for (int i = 0; i < numSlots; i++) {
 			coeff[i] = 0;
@@ -145,7 +146,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 			}
 		}
 
-		assert (views > _totalClicks);
+		if(views > _totalClicks) {
 
 		double total = 0.0;
 		for(int i = 0; i < NUM_DISCRETE_PROBS; i++) {
@@ -194,6 +195,10 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 			for(int i = 0; i < NUM_DISCRETE_PROBS; i++) {
 				_currentEstimate += _contProbWeights.get(i)*_contProbDist.get(i);
 			}
+		}
+		}
+		else {
+			_currentEstimate = Double.NaN;
 		}
 	}
 

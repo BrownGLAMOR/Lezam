@@ -49,6 +49,7 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
 										int numberPromotedSlots,
 										HashMap<Query,int[]> order,
 										HashMap<Query,int[]> impressions,
-										HashMap<Product,HashMap<UserState,Integer>> userStates);
+										HashMap<Product,HashMap<UserState,Integer>> userStates,
+										double[] c);
 	
 }

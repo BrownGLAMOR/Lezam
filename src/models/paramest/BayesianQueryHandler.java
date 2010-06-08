@@ -76,7 +76,8 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 			LinkedList<Integer> impressionsPerSlot,
 			LinkedList<LinkedList<String>> advertisersAbovePerSlot,
 			HashMap<String, Ad> ads,
-			HashMap<Product, HashMap<UserState, Integer>> userStates) {
+			HashMap<Product, HashMap<UserState, Integer>> userStates, double[] c) {
+		_c = c;
 
 		int totImpressions = queryReport.getImpressions(_query);
 		int totClicks = queryReport.getClicks(_query);
@@ -211,7 +212,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
 				// Update all previous continuation probability estimates
 				for (BayesianDayHandler dh : _dayHandlers) {
-					dh.updateEstimate(_lastPredictions[0]);
+					dh.updateEstimate(_lastPredictions[0],_c);
 				}
 
 			} else {

@@ -76,7 +76,8 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 			int numberPromotedSlots,
 			HashMap<Query,int[]> allOrders,
 			HashMap<Query,int[]> allImpressions,
-			HashMap<Product,HashMap<UserState,Integer>> userStates) {
+			HashMap<Product,HashMap<UserState,Integer>> userStates,
+			double[] c) {
 		for(Query q: m_queries){
 
 			int[] order = allOrders.get(q);
@@ -140,7 +141,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 					advertisersAbovePerSlot.add(advsAbove);
 				}
 
-				m_queryHandlers.get(q).update("adv" + (_ourAdvIdx + 1),queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates);
+				m_queryHandlers.get(q).update("adv" + (_ourAdvIdx + 1),queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates,c);
 			}
 		}
 		return true;
