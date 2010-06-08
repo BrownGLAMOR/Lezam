@@ -27,14 +27,16 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 	double _probClick;
 
 	double[] _c;
+	int _ourAdvIdx;
 
-	public BayesianParameterEstimation() {
-		this(new double[] {0.126114132,0.153193911,0.246344682});
+	public BayesianParameterEstimation(int ourAdvIdx) {
+		this(new double[] {0.126114132,0.153193911,0.246344682},ourAdvIdx);
 	}
 
-	public BayesianParameterEstimation(double[] c)
+	public BayesianParameterEstimation(double[] c, int ourAdvIdx)
 	{
 		_c = c;
+		_ourAdvIdx = ourAdvIdx;
 
 		m_queries = new ArrayList<Query>();
 		m_queryHandlers = new HashMap<Query, BayesianQueryHandler>();
@@ -87,9 +89,13 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
 			if(impSum > 0) {
 				HashMap<String, Ad> query_ads = new HashMap<String,Ad>();
-				query_ads.put("adv1",bidBundle.getAd(q));
-				for(int i = 2; i <= 8; i++) {
-					query_ads.put("adv" + i, queryReport.getAd(q, "adv" + i));
+				for(int i = 0; i < 8; i++) {
+					if(i == _ourAdvIdx) {
+						query_ads.put("adv" + (i+1),bidBundle.getAd(q));
+					}
+					else {
+						query_ads.put("adv" + (i+1), queryReport.getAd(q, "adv" + (i+1)));
+					}
 				}
 
 				LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
@@ -134,7 +140,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 					advertisersAbovePerSlot.add(advsAbove);
 				}
 
-				m_queryHandlers.get(q).update("adv1",queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates);
+				m_queryHandlers.get(q).update("adv" + (_ourAdvIdx + 1),queryReport,salesReport,numberPromotedSlots,impressionsPerSlot,advertisersAbovePerSlot,query_ads,userStates);
 			}
 		}
 		return true;
@@ -200,6 +206,6 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
 	@Override
 	public AbstractModel getCopy() {
-		return new BayesianParameterEstimation(_c);
+		return new BayesianParameterEstimation(_c,_ourAdvIdx);
 	}
 }
