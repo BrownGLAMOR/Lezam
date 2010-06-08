@@ -395,6 +395,7 @@ public abstract class AbstractAgent extends Agent {
      */
     protected void handlePublisherInfo(PublisherInfo publisherInfo) {
     	_squashing = publisherInfo.getSquashingParameter();
+    	System.out.println("Squashing Parameter: " + _squashing);
         this._publisherInfo = publisherInfo;
     }
 
@@ -460,7 +461,7 @@ public abstract class AbstractAgent extends Agent {
         _targEffect = advertiserInfo.getTargetEffect();
         
         for(int i = 0; i < _advertisers.size(); i++) {
-        	if(_advertisers.get(i).equals("adv" + (i+1))) {
+        	if(_advertisers.get(i).equals(_advId)) {
         		_advIdx = i;
         		break;
         	}

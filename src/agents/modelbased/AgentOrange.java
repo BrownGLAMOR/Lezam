@@ -53,7 +53,7 @@ public class AgentOrange extends AbstractAgent {
 
 	double[] _c = {0.126114132,0.153193911,0.246344682};
 
-	private boolean BUDGET_OVERRIDE = true;
+	private boolean BUDGET_OVERRIDE = false;
 	private double BUDGET_AVG_POS = 4.5;
 
 	private boolean DEBUG = false;
@@ -250,18 +250,12 @@ public class AgentOrange extends AbstractAgent {
 		 * 
 		 * re-tune all parameters on new data sets
 		 */
-		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,10,10);
+		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,10,10,true);
 		_userModel = new jbergParticleFilter(0.004932699,0.263532334,0.045700011,0.174371757,0.188113883,0.220140091);
 		_queryToNumImp = new NewBasicQueryToNumImp(_userModel);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		_convPrModel = new NewBasicConvPrModel(_userModel, _querySpace, _baseConvProbs);
-		ArrayList<AbstractBidModel> bidModels = new ArrayList<AbstractBidModel>();
-		ArrayList<Double> weights = new ArrayList<Double>();
-		bidModels.add(new IndependentBidModel(_advertisersSet, _advId,1,0,.8,.2,2.1));
-		bidModels.add(new JointDistBidModel(_advertisersSet, _advId, 15, .8, 1000));
-		weights.add(.5);
-		weights.add(.5);
-		_bidModel = new LinearComboBidModel(bidModels, weights);
+		_bidModel = new IndependentBidModel(_advertisersSet, _advId,1,0,.8,.2,2.0);
 		_paramEstimation = new BayesianParameterEstimation(_c,_advIdx);
 		_budgetEstimator = new BudgetEstimator(_querySpace,_advIdx);
 		_salesDist = new SalesDistributionModel(_querySpace);
@@ -973,15 +967,38 @@ public class AgentOrange extends AbstractAgent {
 
 		HashMap<Query,Integer> totalImpressions = new HashMap<Query,Integer>();
 		HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
-		HashMap<Query,int[]> order = new HashMap<Query,int[]>();
-		HashMap<Query,int[]> impressions = new HashMap<Query,int[]>();
 		HashMap<Query,int[]> fullOrders = new HashMap<Query,int[]>();
 		HashMap<Query,int[]> fullImpressions = new HashMap<Query,int[]>();
 		for(Query q : _querySpace) {
 			int[] impsPred = _queryAnalyzer.getImpressionsPrediction(q);
 			int[] ranksPred = _queryAnalyzer.getOrderPrediction(q);
-			order.put(q, ranksPred);
-			impressions.put(q, impsPred);
+			
+			int numToRemove = 0;
+			for(int i = 0; i < ranksPred.length; i++) {
+				if(ranksPred[i] >= 10) {
+					numToRemove++;
+				}
+			}
+
+			int[] newImpPred = new int[impsPred.length - numToRemove];
+			int[] newRanksPred = new int[impsPred.length - numToRemove];
+			
+			for(int i = 0; i < newImpPred.length; i++) {
+				newImpPred[i] = impsPred[i];
+			}
+			
+			int numSkipped = 0;
+			for(int i = 0; i < ranksPred.length; i++) {
+				if(ranksPred[i] < 10) {
+					newRanksPred[i-numSkipped] = ranksPred[i];
+				}
+				else {
+					numSkipped++;
+				}
+			}
+			
+			impsPred = newImpPred;
+			ranksPred = newRanksPred;
 
 			int totalImps = getMaxImps(5,impsPred.length,ranksPred,impsPred);
 
@@ -1039,6 +1056,8 @@ public class AgentOrange extends AbstractAgent {
 			fullOrders.put(q, fullOrder);
 			fullImpressions.put(q, fullImpression);
 		}
+		
+		System.out.println(ranks);
 
 		_userModel.updateModel(totalImpressions);
 
@@ -1060,8 +1079,8 @@ public class AgentOrange extends AbstractAgent {
 		HashMap<Query, Double> cpc = new HashMap<Query,Double>();
 		HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
 		for(Query q : _querySpace) {
-			cpc.put(q, queryReport.getCPC(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
-			ourBid.put(q, bidBundle.getBid(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
+			cpc.put(q, queryReport.getCPC(q));// * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
+			ourBid.put(q, bidBundle.getBid(q));// * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
 		}
 		_bidModel.updateModel(cpc, ourBid, ranks);
 

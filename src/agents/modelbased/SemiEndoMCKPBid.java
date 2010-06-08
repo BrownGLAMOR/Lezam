@@ -235,7 +235,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
-
+		
 		for(AbstractModel model: _models) {
 			if(model instanceof AbstractUserModel) {
 				AbstractUserModel userModel = (AbstractUserModel) model;
@@ -512,7 +512,12 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 				bidBundle.setBid(q, 0.0);
 			}
 		}
+		
+		/*
+		 * FIXME!
+		 */
 		return bidBundle;
+//		return new BidBundle();
 	}
 
 	private double getPenalty(double remainingCap, double solutionWeight) {
