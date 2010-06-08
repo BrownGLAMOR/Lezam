@@ -10,8 +10,8 @@ import java.util.LinkedList;
 
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
-import models.queryanalyzer.GQA;
 import models.queryanalyzer.GreedyQueryAnalyzer;
+import models.queryanalyzer.greg.GQA;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;

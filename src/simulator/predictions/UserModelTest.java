@@ -649,19 +649,19 @@ public class UserModelTest {
 
 		double start = System.currentTimeMillis();
 		
-		evaluator.userStatePerfectPredictionChallenge(new jbergParticleFilter(0.004932699,
-				0.263532334,
-				0.045700011,
-				0.174371757,
-				0.188113883,
-				0.220140091));
-		
-//		evaluator.userStateCarletonPredictionChallenge(new jbergParticleFilter(0.004932699,
+//		evaluator.userStatePerfectPredictionChallenge(new jbergParticleFilter(0.004932699,
 //				0.263532334,
 //				0.045700011,
 //				0.174371757,
 //				0.188113883,
 //				0.220140091));
+		
+		evaluator.userStateCarletonPredictionChallenge(new jbergParticleFilter(0.004932699,
+				0.263532334,
+				0.045700011,
+				0.174371757,
+				0.188113883,
+				0.220140091));
 		
 
 
