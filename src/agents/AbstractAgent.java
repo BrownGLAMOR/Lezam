@@ -175,6 +175,11 @@ public abstract class AbstractAgent extends Agent {
 	protected String _advId;
 	
 	/**
+	 * Our advertiser idx (0 based)
+	 */
+	protected int _advIdx;
+	
+	/**
 	 * Component Specialty Bonus
 	 */
 	protected double _CSB;
@@ -454,7 +459,15 @@ public abstract class AbstractAgent extends Agent {
         _manSpecialty = advertiserInfo.getManufacturerSpecialty();
         _targEffect = advertiserInfo.getTargetEffect();
         
+        for(int i = 0; i < _advertisers.size(); i++) {
+        	if(_advertisers.get(i).equals("adv" + (i+1))) {
+        		_advIdx = i;
+        		break;
+        	}
+        }
+        
         System.out.println("Advertiser ID: " + _advId);
+        System.out.println("Advertiser Index: " + _advIdx);
         System.out.println("Capacity: " + _capacity);
         System.out.println("Capacity Window: " + _capWindow);
         System.out.println("Capacity Lambda: " + _lambda);
