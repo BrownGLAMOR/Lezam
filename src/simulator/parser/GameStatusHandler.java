@@ -189,9 +189,14 @@ public class GameStatusHandler {
 					int listsize = bidbundlelist.size();
 					if(messageDay > listsize) {
 						for(int j = 0; j < (messageDay-listsize); j++) {
+							if(bidbundlelist.size() > 0) {
 							BidBundle bundleTemp = bidbundlelist.getLast();
 							BidBundle newBundle = copyBundle(bundleTemp);
 							bidbundlelist.add(newBundle);
+							}
+							else {
+								bidbundlelist.add(new BidBundle());
+							}
 						}
 					}
 					/*

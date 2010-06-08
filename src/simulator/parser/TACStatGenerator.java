@@ -303,6 +303,42 @@ public class TACStatGenerator {
 							   meanAndVarHigh[0] + ", " + meanAndVarHigh[1]);
 		}
 	}
+	
+	public static void findGoodGames(String filename, int min, int max) throws IOException, ParseException {
+		for(int i = min; i < max; i++) {
+			String file = filename + i + ".slg";
+			GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+			GameStatus gameStatus = gameStatusHandler.getGameStatus();
+			String[] advertisers = gameStatus.getAdvertisers();
+			HashMap<String, LinkedList<BankStatus>> bankStatuses = gameStatus.getBankStatuses();
+			HashMap<String, AdvertiserInfo> advInfos = gameStatus.getAdvertiserInfos();
+			boolean epflagent = false;
+			boolean wayne = false;
+			boolean winter = false;
+			for(int j = 0; j < advertisers.length; j++)	{
+				if(advertisers[j].equals("WayneAd")) {
+					wayne = true;
+				}
+				
+				if(advertisers[j].equals("uwWinter590")) {
+					winter = true;
+				}
+				
+				if(advertisers[j].equals("epflagent")) {
+					epflagent = true;
+				}
+			}
+			
+			if(!winter && !wayne && !epflagent) {
+				System.out.println("Good: " + file);
+				for(int j = 0; j < advertisers.length; j++)	{
+					System.out.println(advertisers[j]);
+				}
+			}
+			else {
+			}
+		}
+	}
 
 	/**
 	 * @param args
@@ -310,10 +346,10 @@ public class TACStatGenerator {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException, ParseException {
-		String filename = "/Users/jordanberg/TADAGAMES/MCKP/cslab1a_sim";
-		int min = 3;
-		int max = 63;
-		int advId = 0;
+//		String filename = "/Users/jordanberg/TADAGAMES/MCKP/cslab1a_sim";
+//		int min = 3;
+//		int max = 63;
+//		int advId = 0;
 		
 //		String filename = "/Users/jordanberg/TADAGAMES/EquatePM/cslab2a_sim";
 //		int min = 8;
@@ -325,7 +361,23 @@ public class TACStatGenerator {
 //		int max = 63;
 //		int advId = 0;
 		
+//		String filename = "/Users/jordanberg/Desktop/2010semifinals/server1/game";
+//		int min = 15007;
+//		int max = 15050;
+		
+//		String filename = "/Users/jordanberg/Desktop/2010semifinals/server2/game";
+//		int min = 1173;
+//		int max = 1216;
+		
+//		String filename = "/Users/jordanberg/Desktop/2010semifinals/goodgames/game";
+//		int min = 1;
+//		int max = 25;
+		
+		String filename = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
+		int min = 1;
+		int max = 5;
+		
 //		generateExtendedStats(filename,min,max,advId);
-		generateAllAgentProfit(filename,min,max);
+		findGoodGames(filename,min,max);
 	}
 }
