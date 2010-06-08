@@ -262,8 +262,8 @@ public class AgentOrange extends AbstractAgent {
 		weights.add(.5);
 		weights.add(.5);
 		_bidModel = new LinearComboBidModel(bidModels, weights);
-		_paramEstimation = new BayesianParameterEstimation(_c);
-		_budgetEstimator = new BudgetEstimator(_querySpace);
+		_paramEstimation = new BayesianParameterEstimation(_c,_advIdx);
+		_budgetEstimator = new BudgetEstimator(_querySpace,_advIdx);
 		_salesDist = new SalesDistributionModel(_querySpace);
 
 		models.add(_queryAnalyzer);
