@@ -586,7 +586,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
 					counter2++;
 				}
-				expectedConvsYesterday /= (double)counter2;
+				expectedConvsYesterday = (int)(expectedConvsYesterday / (double)counter2);
 			}
 			soldArray.add(expectedConvsYesterday);
 			soldArray.add((int) totalWeight);
@@ -659,7 +659,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 					expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
 					counter2++;
 				}
-				expectedConvsYesterday /= (double)counter2;
+				expectedConvsYesterday = (int)(expectedConvsYesterday / (double)counter2);
 			}
 			soldArray.add(expectedConvsYesterday);
 			soldArray.add((int) solWeight);

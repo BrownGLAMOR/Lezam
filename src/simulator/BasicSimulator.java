@@ -1,5 +1,7 @@
 package simulator;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -51,6 +53,7 @@ import agents.olderagents.ConstantPM;
 import agents.olderagents.GoodSlot;
 import agents.rulebased.simple.EquatePMSimple;
 import agents.rulebased2010.simple.EquatePPSSimpleBudget2010;
+import edu.brown.cs.aa.algorithms.multiday.*;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.AdvertiserInfo;
 import edu.umich.eecs.tac.props.BidBundle;
@@ -1928,7 +1931,7 @@ public class BasicSimulator {
 
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+		String baseFile = "../games/game";
 
 		//		int min = 1425;
 		//		int max = 1465;
@@ -1961,25 +1964,35 @@ public class BasicSimulator {
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
 	}
 
-	public static void main2(String[] args) throws IOException, ParseException {
+public static void main2(String[] args) throws IOException, ParseException {
+		
+//		runTest(null, "Jordan");
+		runTest(new BenHillClimbingMultiday(20), "HC20");
+//		runTest(new BenHillClimbingMultiday(10), "HC10");
+//		runTest(new BenHillClimbingMultiday(5), "HC5");
+//		runTest(new BenHillClimbingMultiday(1), "HC1");
+		runTest(new DPMultiDay(50), "DP50");
+//		runTest(new DPMultiDay(20), "DP20");
+//		runTest(new DPMultiDay(10), "DP10");
+	}
+	
+	private static void runTest(MultiDayMCKSolver solver, String filename) throws IOException, ParseException
+	{
 		BasicSimulator sim = new BasicSimulator();
 		double start = System.currentTimeMillis();
 
 		Random r = new Random(68616);
 
-		//		String baseFile = "/Users/jordanberg/Desktop/goodqual/game";
-		String baseFile = "/Users/jordanberg/Desktop/2010semifinals/reallygoodgames/game";
-		int min = 1;
-		int max = 5;
-		//		int max = 77;
-
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
 		//		String baseFile = "/Users/jordanberg/Desktop/finalsgames/server2/game";
-		//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
-		//		int min = 1425;
-		//		int max = 1426;
-		//		int min = 297;
-		//		int max = 298;
+//		String baseFile = "/u/jberg/finals/day-2/server-2/game";
+		String baseFile = "../games/game";
+
+				int min = 1429;
+				int max = 1437;
+
+//		int min = 297;
+//		int max = 298;
 		//				int max = 337;
 
 
@@ -1993,34 +2006,35 @@ public class BasicSimulator {
 
 		//		String baseFile = "/Users/jordanberg/TADAGAMES/EquatePPS/cslab3a_sim";
 		//		int min = 3;
-		//		int max = 63;
+				//		int max = 63;
 
 
 
-		//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
-		//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
-		//				AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
-		//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
+				//		AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
+				//						AbstractAgent agent = new EquatePRSimple(4.9376,1.02,1.375);
+				//				AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
+				//				AbstractAgent agent = new EquateROISimple(3.9376,1.03,1.525);
 
 
-//						AbstractAgent agent = new SemiEndoMCKPBid();
-		//				AbstractAgent agent = new EquatePPSSimpleBudget2010();
-		//		AbstractAgent agent = new AgentOrange(Boolean.parseBoolean(args[0]),Double.parseDouble(args[1]));
-		AbstractAgent agent = new AgentOrange();
-		//				AbstractAgent agent = new SimpleAABidAgent();
-		//						AbstractAgent agent = new NewSemiEndoMCKPBid();
-		//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
-		//		AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
+				AbstractAgent agent;
+				if (solver == null)
+					agent = new SemiEndoMCKPBid();
+
+				else
+					agent = new SimpleAABidAgent(solver);
+				//				AbstractAgent agent = new NewSemiEndoMCKPBid();
+				//				AbstractAgent agent = new EquatePMSimple(0.797475,1.02,1.525);
+				//		AbstractAgent agent = new EquatePPSSimple(9.9684,1.03,1.375);
 
 
 
-		//		AbstractAgent agent = new DynamicMCKP(.075,7,10,5);
-		//		AbstractAgent agent = new DynamicMCKP(.075,7,15,5);
-		//		AbstractAgent agent = new DynamicMCKP(0.075,21,15,5);11
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(14, 0.075, 14, 10);
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 21, 15);
-		//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 14, 10);
-		//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
+				//		AbstractAgent agent = new DynamicMCKP(.075,7,10,5);
+				//		AbstractAgent agent = new DynamicMCKP(.075,7,15,5);
+				//		AbstractAgent agent = new DynamicMCKP(0.075,21,15,5);11
+				//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(14, 0.075, 14, 10);
+				//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 21, 15);
+				//		AbstractAgent agent = new SemiEndoMCKPBidExhaustive(21, 0.075, 14, 10);
+				//		AbstractAgent agent = new EquatePM(0.797475, 0.00244287, -0.14746, 0.974011, 0.961644, 0.0164416, 0.251168, 1.01301, 0.887057, 40, 1.74482, 1.54988, 0.976145, 1.05998, 1.91675, 1.8596, 0.00204649, 2.96835);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, 1.44894, 1.32086, 1.61395, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//		AbstractAgent agent = new EquatePR(3.67805, 0.00255884, -0.258908, 0.954777, 0.826462, 0.00445251, -0.298878, 0.973704, 0.576163, 2.05602, .25, .25, .25, 0.957746, 1.43458, 1.02511, 0.040663, 1.90321);
 		//		AbstractAgent agent = new EquateROI(3.96915, 0.0090931, -0.11022, 0.955372, 0.711505, 0.0175136, -0.287934, 1.01525, 0.926097, 16.6729, 1.42595, 1.46134, 1.34566, 1.1253, 1.70769, 1.93906, 0.278101, 2.88159);
@@ -2046,7 +2060,7 @@ public class BasicSimulator {
 			if(val.get(17) == 300) {
 				lowVals.add(val.get(0));
 			}
-			else if(val.get(17) == 450) {
+			else if(val.get(17) == 400) {
 				medVals.add(val.get(0));
 			}
 			else {
@@ -2067,15 +2081,26 @@ public class BasicSimulator {
 		double[] stdDevHigh = stdDeviation(highVals.toArray(new Double[highVals.size()]));
 		double[] stdDevAll = stdDeviation(allVals.toArray(new Double[allVals.size()]));
 
+		BufferedWriter writer = new BufferedWriter(new FileWriter("../results/" + filename + "_" + System.currentTimeMillis() + ".txt"));
+		
 		System.out.println("FINAL VALUES: " + returnVals);
 		System.out.println(stdDevLow[0] + ", " + stdDevLow[1]);
 		System.out.println(stdDevMed[0] + ", " + stdDevMed[1]);
 		System.out.println(stdDevHigh[0] + ", " + stdDevHigh[1]);
 		System.out.println(stdDevAll[0] + ", " + stdDevAll[1]);
+		
+		writer.write("FINAL VALUES: " + returnVals + "\n");
+		writer.write(stdDevLow[0] + ", " + stdDevLow[1] + "\n");
+		writer.write(stdDevMed[0] + ", " + stdDevMed[1] + "\n");
+		writer.write(stdDevHigh[0] + ", " + stdDevHigh[1] + "\n");
+		writer.write(stdDevAll[0] + ", " + stdDevAll[1] + "\n");
 
 		double stop = System.currentTimeMillis();
 		double elapsed = stop - start;
 		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		writer.write("This took " + (elapsed / 1000) + " seconds");
+		
+		writer.close();
 	}
 
 	public static void main3(String[] args) throws IOException, ParseException {

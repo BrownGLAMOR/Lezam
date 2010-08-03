@@ -82,6 +82,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 	private Random _R;
 	private boolean DEBUG = false;
+	private double LAMBDA = .995;
 	private HashMap<Query, Double> _salesPrices;
 	private HashMap<Query, Double> _baseConvProbs;
 	private HashMap<Query, Double> _baseClickProbs;
@@ -98,12 +99,13 @@ public class SimpleAABidAgent extends AbstractAgent {
 	private ArrayList<Double> _capList;
 	private int lagDays = 4;
 	private boolean salesDistFlag;
+	
+	private MultiDayMCKSolver _solver;
 
-	public SimpleAABidAgent() {
+	public SimpleAABidAgent(MultiDayMCKSolver solver) {
 		//		_R.setSeed(124962748);
 		_R = new Random(61686);
 		_bidList = new LinkedList<Double>();
-		//TODO: Change this back to 0.05
 		double bidIncrement  = .05;
 		double bidMin = .04;
 		double bidMax = 1.65;
@@ -111,6 +113,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 		for(int i = 0; i < tot; i++) {
 			_bidList.add(bidMin+(i*bidIncrement));
 		}
+		_solver = solver;
 	}
 
 
@@ -354,7 +357,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 			output += remainingCap + "\n";
 			output += _querySpace.size() + "\n\n";
 
-			output += _lambda + "\n";
+			output += LAMBDA + "\n";
 			output += _CSB + "\n\n";
 			int setID = 0;
 			for(Query q : _querySpace) {
@@ -419,7 +422,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 					double numClicks = clickPr*numImps;
 
-					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, _lambda, specialty, _CSB);
+					TACWeightFunction weightFunc = new TACWeightFunction(numClicks, convProb, remainingCap, LAMBDA, specialty, _CSB);
 					TACProfitFunction profitFunc = new TACProfitFunction(_salesPrices.get(q), numClicks, CPC, weightFunc);
 					output += numClicks + " " + CPC + "\n";
 					Item item = new Item(profitFunc,weightFunc,i,setID);
@@ -453,7 +456,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 //				System.exit(-1);
 //			}
 
-//			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,_lambda,(int) _day,15);
+//			TACProfitMultiDayFuncion multiDayProfitFunc = new TACProfitMultiDayFuncion(soldArray,_capacity,remainingCap,LAMBDA,(int) _day,15);
 //			MCKProblem problem = new MCKProblem(itemSets, remainingCap,multiDayProfitFunc);
 			//			System.out.println(problem);
 
@@ -480,8 +483,8 @@ public class SimpleAABidAgent extends AbstractAgent {
 			else
 			{
 //				MultiDayMCKSolver solver = new DPMultiDay(50);
-				MultiDayMCKSolver solver = new BenHillClimbingMultiday(20);
-				solution = solver.solve(problems, sales).get(0);
+//				MultiDayMCKSolver solver = new BenHillClimbingMultiday(20);
+				solution = _solver.solve(problems, sales).get(0);
 			}
 			
 			
@@ -518,6 +521,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 			 */
 			double solutionWeight = solution.getCurrentWeight();
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
+			System.out.println("Expecting to sell " + solutionWeight);
 		}
 		else {
 			for(Query q : _querySpace){
@@ -530,6 +534,7 @@ public class SimpleAABidAgent extends AbstractAgent {
 					bidBundle.addQuery(q, bid, new Ad(), bid*10);
 				}
 			}
+			//TODO: change this back
 			bidBundle.setCampaignDailySpendLimit(800);
 		}
 		System.out.println(bidBundle);
@@ -578,6 +583,6 @@ public class SimpleAABidAgent extends AbstractAgent {
 
 	@Override
 	public AbstractAgent getCopy() {
-		return new SimpleAABidAgent();
+		return new SimpleAABidAgent(_solver);
 	}
 }
