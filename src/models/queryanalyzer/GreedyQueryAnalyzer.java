@@ -150,7 +150,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 				agentIdsArr[i] = agentIds.get(i);
 			}
 
-			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q));
+			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, _advToIdx.get(_ourAdvertiser), queryReport.getImpressions(q), maxImps.get(q), true);
 			int[] avgPosOrder = inst.getAvgPosOrder();
 			IEResult bestSol;
 			if(queryReport.getImpressions(q) > 0) {

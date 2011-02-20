@@ -6,7 +6,7 @@ import java.util.Map;
 
 import models.queryanalyzer.ds.QAInstance;
 
-public class ImpressionEstimator {
+public class ImpressionEstimator implements AbstractImpressionEstimator {
 	private static int SAMPLING_FACTOR = 100;
 	private static int MAX_PROBE_IMPRESSIONS = 1; //warning this must be greater than 0
 	private int _samplingImpressions;
@@ -135,7 +135,7 @@ public class ImpressionEstimator {
 	}
 
 	void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order){
-		_nodeId++;		
+		_nodeId++;
 		
 		if(slotImpr[0] > _imprUB){
 			//System.out.println("CUT: " + _nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + _imprUB);
@@ -145,6 +145,10 @@ public class ImpressionEstimator {
 	
 		//System.out.println(_advertisers); 
 		if(currIndex >= _advertisers){
+			
+			// We've come up with feasible impression estimates for all advertisers.
+			// Compute objective value for this solution.
+			
 			int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
 			int slotImprObjVal = Math.max(0, slotImpr[0] - _imprUB);
 			assert(slotImprObjVal == 0);
@@ -152,7 +156,7 @@ public class ImpressionEstimator {
 			int slotObjCount = 1;
 			for(int i=0; i < slotImpr.length-1; i++){
 				//slotObjVal = Math.abs(slotImpr[i] - slotImpr[i+1]);
-				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < _samplingImpressions/4 || imprObjVal == 0){
+				if(Math.abs(slotImpr[i] - slotImpr[i+1]) < _samplingImpressions/4 || imprObjVal == 0){ //FIXME: sodomka: 1) Should < in 1st condition be > ?   2) Why the second condition? Couldn't this make an objective w/ imprObjVal==1 better than one where imprObjVal==0? (note we are trying to minimize the objective)
 					slotObjVal += Math.abs(slotImpr[i] - slotImpr[i+1]);
 					slotObjCount++;
 				} else {
@@ -165,7 +169,7 @@ public class ImpressionEstimator {
 			//assert(objVal <= ObjBound);
 			//System.out.println(_nodeId + " - " + Arrays.toString(agentImpr) + " - " + Arrays.toString(slotImpr) + " - " + combinedObj);
 			//System.out.println(_nodeId + " - " + Arrays.toString(slotImpr) + " - " + combinedObj + " - " + _combinedObjectiveBound);
-			if(combinedObj < _combinedObjectiveBound || (combinedObj == _combinedObjectiveBound && slotObjVal < _bestSlotObjVal)){
+			if(combinedObj < _combinedObjectiveBound || (combinedObj == _combinedObjectiveBound && slotObjVal < _bestSlotObjVal)){ 
 				
 				
 				_combinedObjectiveBound = combinedObj;
@@ -184,6 +188,12 @@ public class ImpressionEstimator {
 		int bestImpr = calcMinImpressions(slotImpr, currIndex, _trueAvgPos[currAgent]);	
 
 		if(bestImpr > 0){
+			
+			// Some #imps for this agent was successfully found.
+			// If "this agent" is us, calculate how far the computed #imps is to our actual #imps.
+			//   If prediction is not close enough, return (and possibly search with some new #imps estimate for opponents)
+			// Go on to the next agent (assuming the #imps just found for this agent is true)
+			
 			if(currAgent == _ourIndex){
 				int objVal = Math.abs(bestImpr - _ourImpressions);
 				if(objVal >= _combinedObjectiveBound){
@@ -196,8 +206,14 @@ public class ImpressionEstimator {
 			checkImpressions(currIndex+1, agentImpr, newSlotImpr, order);
 		}
 		else {
+			
+			// BestImpr <= 0, i.e. avgPos is an integer for this agent (and thus #imps is not well specified).
+			// Iterate through different possible #imps.
+			// Iterate increasing/decreasing depending on whether or not this agent is in the 1st position.
+			
 			int firstSlot = Math.min(currIndex+1, _slots);
-			int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot-2]-1;
+			int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot-2]-1; //FIXME: sodomka: Why -1? 
+			//FIXME: sodomka: if we're not sampling the same points, for #imps, it seems like we're more likely to have small diffs
 
 			if(firstSlot == 1){
 				for(int i=_agentImprLB[currAgent]; i <= maxImpr; i++){

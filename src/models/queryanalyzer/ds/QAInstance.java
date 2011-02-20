@@ -12,8 +12,9 @@ public class QAInstance {
 	private int _agentIndex;
 	private int _impressions;
 	private int _impressionsUB;
+	private boolean _considerPaddingAgents;
 	
-	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int impressionsUB){
+	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int impressionsUB, boolean considerPaddingAgents){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
 		assert(advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -24,30 +25,30 @@ public class QAInstance {
 		_agentIndex = agentIndex;
 		_impressions = impressions;
 		_impressionsUB = impressionsUB;
-		
+		_considerPaddingAgents = considerPaddingAgents;
 		
 		//
 		
-		
-		while(!feasibleOrder(getAvgPosOrder())){
-			int[] apOrder = getAvgPosOrder();
-			
-			int foundTooBigStart = 0;
-			int foundTooBigStop = 0;
-			for(int i=0; i<_slots && i<_advetisers; i++){
-				if(_avgPos[apOrder[i]] > i+1){
-					foundTooBigStart = i+1;
-					foundTooBigStop = (int)Math.ceil(_avgPos[apOrder[i]]);
-					break;
+		if (_considerPaddingAgents) {
+			while(!feasibleOrder(getAvgPosOrder())){
+				int[] apOrder = getAvgPosOrder();
+
+				int foundTooBigStart = 0;
+				int foundTooBigStop = 0;
+				for(int i=0; i<_slots && i<_advetisers; i++){
+					if(_avgPos[apOrder[i]] > i+1){
+						foundTooBigStart = i+1;
+						foundTooBigStop = (int)Math.ceil(_avgPos[apOrder[i]]);
+						break;
+					}
+				}
+
+				if(foundTooBigStart > 0){
+					addPaddingAgents(foundTooBigStart, foundTooBigStop);
 				}
 			}
-			
-			if(foundTooBigStart > 0){
-				addPaddingAgents(foundTooBigStart, foundTooBigStop);
-			}
-		}
-		
-		assert(feasibleOrder(getAvgPosOrder())) : "addPaddingAgents broke did not work...";
+			assert(feasibleOrder(getAvgPosOrder())) : "addPaddingAgents broke did not work...";
+		}		
 	}
 	
 	//pads the auction with "fake" advertisers so that the instance is feasible

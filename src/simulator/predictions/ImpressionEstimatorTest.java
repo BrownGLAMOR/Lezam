@@ -24,7 +24,7 @@ import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
 import edu.umich.eecs.tac.props.UserClickModel;
 
-public class QueryAnalyzerTest {
+public class ImpressionEstimatorTest {
 
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
@@ -35,18 +35,9 @@ public class QueryAnalyzerTest {
 	private static boolean REPORT_FULLPOS_FORSELF = true;
 
 	public ArrayList<String> getGameStrings() {
-		//String baseFile = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-		//		String baseFile = "/pro/aa/finals/day-2/server-1/game"; //games 1425-1464
 		String baseFile = "./game"; //games 1425-1464
 		int min = 1;
 		int max = 5;
-
-		//		String baseFile = "/Users/jordanberg/Desktop/qualifiers/game";
-		//		String baseFile = "/pro/aa/qualifiers/game"; //games 1425-1464
-		//		int min = 309;
-		//		int max = 484;
-
-
 
 		ArrayList<String> filenames = new ArrayList<String>();
 		for(int i = min; i < max; i++) { 
@@ -55,6 +46,7 @@ public class QueryAnalyzerTest {
 		return filenames;
 	}
 
+	
 	public void queryAnalyzerPredictionChallenge(AbstractQueryAnalyzer baseModel) throws IOException, ParseException {
 		double start = System.currentTimeMillis();
 

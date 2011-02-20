@@ -22,6 +22,5 @@
 	<classpathentry kind="lib" path="lib/commons-math-2.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math-2.0.jar"/>
 	<classpathentry kind="lib" path="lib/jsc.jar"/>
-	<classpathentry kind="src" path="/SimpleAA"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -132,7 +132,18 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 	@Override
 	public boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query,Integer> maxImps) {
+		
+		
+		
+		
+		//For each query (independently)
 		for(Query q : _querySpace) {
+
+			//--------------
+			//Initialization
+			//--------------
+			
+			// Load data from the query report (specifically, the average position for each advertiser)
 			ArrayList<Double> allAvgPos = new ArrayList<Double>();
 			ArrayList<Integer> agentIds = new ArrayList<Integer>();
 			int ourIdx = 0;
@@ -161,11 +172,11 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			//			System.out.println(agentIds);
 			//			System.out.println(_ourAdvertiser);
 
+			// Create arrays with query report data (instead of arrayLists)
 			double[] allAvgPosArr = new double[allAvgPos.size()];
 			for(int i = 0; i < allAvgPosArr.length; i++) {
 				allAvgPosArr[i] = allAvgPos.get(i);
 			}
-
 			int[] agentIdsArr = new int[agentIds.size()];
 			int ourNewIdx = 0;
 			for(int i = 0; i < agentIdsArr.length; i++) {
@@ -176,7 +187,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			}
 
 
-			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q));
+			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q), true);
 			//int[] avgPosOrder = inst.getAvgPosOrder();
 			int[] avgPosOrder = inst.getCarletonOrder();
 
