@@ -6,28 +6,33 @@ import java.util.HashSet;
 
 public class QAInstance {
 	private int _slots;
+	private int _promotedSlots;
 	private int _advetisers;
 	private double[] _avgPos;
 	private int[] _agentIds;
 	private int _agentIndex;
 	private int _impressions;
+	private int _promotedImpressions;
 	private int _impressionsUB;
 	private boolean _considerPaddingAgents;
+	private boolean _promotionEligibilityVerified;
 	
-	public QAInstance(int slots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int impressionsUB, boolean considerPaddingAgents){
+	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
 		assert(advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
 		_slots = slots;
+		_promotedSlots = promotedSlots;
 		_advetisers = advetisers;
 		_avgPos = avgPos;
 		_agentIds = agentIds;
 		_agentIndex = agentIndex;
 		_impressions = impressions;
+		_promotedImpressions = promotedImpressions;
 		_impressionsUB = impressionsUB;
 		_considerPaddingAgents = considerPaddingAgents;
+		_promotionEligibilityVerified = promotionEligibiltyVerified;
 		
-		//
 		
 		if (_considerPaddingAgents) {
 			while(!feasibleOrder(getAvgPosOrder())){
@@ -79,13 +84,16 @@ public class QAInstance {
 	}
 	
 	public int getNumSlots() {return _slots;}
+	public int getNumPromotedSlots() {return _promotedSlots;}
 	public int getNumAdvetisers() {return _advetisers;}
 	public double[] getAvgPos() {return _avgPos;}
 	public int[] getAgentIds() {return _agentIds;}
 	public int getAgentIndex() {return _agentIndex;}
 	public int getImpressions() {return _impressions;}
+	public int getPromotedImpressions() {return _promotedImpressions;}
 	public int getImpressionsUB() {return _impressionsUB;}
-	
+	public boolean getPromotionEligibilityVerified() {return _promotionEligibilityVerified;}
+
 	public int[] getBidOrder(QAData data){
 		double[] bids = new double[_advetisers];
 		int[] bidOrder = new int[_advetisers];
@@ -259,7 +267,6 @@ public class QAInstance {
 		temp += "impressions: "+_impressions+"\n";
 		return temp;
 	}
-
 
 	
 }

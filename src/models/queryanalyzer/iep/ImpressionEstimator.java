@@ -357,6 +357,10 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 		}
 		return newArr;
 	}
+	
+	public String getName() {
+		return "CJC";
+	}
 
 	private class IESolution {
 		public int[] _agentImpr;

@@ -1,17 +1,28 @@
 package simulator.predictions;
 
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 
+import org.apache.commons.math.stat.descriptive.AggregateSummaryStatistics;
+
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.queryanalyzer.GreedyQueryAnalyzer;
+import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.greg.GQA;
+import models.queryanalyzer.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.iep.EricImpressionEstimator;
+import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionEstimator;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -26,6 +37,9 @@ import edu.umich.eecs.tac.props.UserClickModel;
 
 public class ImpressionEstimatorTest {
 
+	BufferedWriter bufferedWriter = null;
+
+
 	public static final int MAX_F0_IMPS = 10969;
 	public static final int MAX_F1_IMPS = 1801;
 	public static final int MAX_F2_IMPS = 1423;
@@ -34,355 +48,531 @@ public class ImpressionEstimatorTest {
 	public static int LDS_ITERATIONS_2 = 10;
 	private static boolean REPORT_FULLPOS_FORSELF = true;
 
+
+	//Performance metrics
+	int numInstances = 0;
+	double aggregateAbsError = 0;
+
 	public ArrayList<String> getGameStrings() {
 		String baseFile = "./game"; //games 1425-1464
 		int min = 1;
-		int max = 5;
+		int max = 1;//5;
 
 		ArrayList<String> filenames = new ArrayList<String>();
-		for(int i = min; i < max; i++) { 
+		for(int i = min; i <= max; i++) { 
 			filenames.add(baseFile + i + ".slg");
 		}
 		return filenames;
 	}
 
-	
-	public void queryAnalyzerPredictionChallenge(AbstractQueryAnalyzer baseModel) throws IOException, ParseException {
-		double start = System.currentTimeMillis();
 
-		/*
-		 * All these maps they are like this: <fileName<agentName,error>>
-		 */
-		HashMap<String,HashMap<String,Double>> ourTotRankErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> ourTotNoMatchRankErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> ourTotRankActualMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Integer>> ourTotRankErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
-
-		HashMap<String,HashMap<String,Double>> ourTotImpErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> ourTotImpPercErrorMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Double>> ourTotImpActualMegaMap = new HashMap<String,HashMap<String,Double>>();
-		HashMap<String,HashMap<String,Integer>> ourTotImpErrorCounterMegaMap = new HashMap<String,HashMap<String,Integer>>();
-
+	/**
+	 * Debugging method used to print out whatever data I want from the game logs
+	 * @throws ParseException 
+	 * @throws IOException 
+	 */
+	public void printGameLogInfo() throws IOException, ParseException {
 		ArrayList<String> filenames = getGameStrings();
-
-		int numInstances = 0;
-		int rankCorrect = 0;
-		int rankNoMatchCorrect = 0;
-		int numNulls = 0;
-
-		for(int fileIdx = 0; fileIdx < filenames.size(); fileIdx++) {
-			String filename = filenames.get(fileIdx);
-			GameStatusHandler statusHandler = new GameStatusHandler(filename);
-			GameStatus status = statusHandler.getGameStatus();
-			String[] agents = status.getAdvertisers();
-
-			/*
-			 * One map for each advertiser
-			 */
-			HashMap<String,Double> ourTotRankErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> ourTotNoMatchRankErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> ourTotRankActualMap = new HashMap<String, Double>();
-			HashMap<String,Integer> ourTotRankErrorCounterMap = new HashMap<String, Integer>();
-
-			HashMap<String,Double> ourTotImpErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> ourTotImpPercErrorMap = new HashMap<String, Double>();
-			HashMap<String,Double> ourTotImpActualMap = new HashMap<String, Double>();
-			HashMap<String,Integer> ourTotImpErrorCounterMap = new HashMap<String, Integer>();
-
-			UserClickModel userClickModel = status.getUserClickModel();
-			double squashing = status.getPubInfo().getSquashingParameter();
-
-			//Make the query space
+		for (int gameIdx=0; gameIdx<filenames.size(); gameIdx++) {
+			String filename = filenames.get(gameIdx);
+			GameStatus status = new GameStatusHandler(filename).getGameStatus();
+			double reserve = status.getReserveInfo().getRegularReserve();
+			double promotedReserve = status.getReserveInfo().getPromotedReserve();
+			double numPromotedSlots = status.getSlotInfo().getPromotedSlots();
+//			double approxPromotedReserve = getApproximatePromotedReserveScore(status);
+//			System.out.println("reserve="+reserve+", promotedReserve="+promotedReserve+", approxPromotedReserve="+approxPromotedReserve+", numPromotedSlots="+numPromotedSlots);
+			// Make the query space
 			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
-			querySpace.add(new Query(null, null));
+			querySpace.add(new Query(null, null)); //F0
 			for(Product product : status.getRetailCatalog()) {
-				// The F1 query classes
-				// F1 Manufacturer only
-				querySpace.add(new Query(product.getManufacturer(), null));
-				// F1 Component only
-				querySpace.add(new Query(null, product.getComponent()));
-
-				// The F2 query class
-				querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+				querySpace.add(new Query(product.getManufacturer(), null)); // F1 Manufacturer only
+				querySpace.add(new Query(null, product.getComponent())); // F1 Component only
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent())); // The F2 query class
 			}
+			Query[] queryArr = new Query[querySpace.size()];
+			querySpace.toArray(queryArr);
+			int numQueries = queryArr.length;
 
-			HashMap<String, LinkedList<QueryReport>> allQueryReports = status.getQueryReports();
-			HashMap<String, LinkedList<SalesReport>> allSalesReports = status.getSalesReports();
-			HashMap<String, LinkedList<BidBundle>> allBidBundles = status.getBidBundles();
-
-			for(int agent = 0; agent<agents.length; agent++) {
-				System.gc(); System.gc(); System.gc(); System.gc();
-				if(agents[agent].equals("TacTex")) {
-					AbstractQueryAnalyzer model = (AbstractQueryAnalyzer) baseModel.getCopy();
-					model.setAdvertiser(agents[agent]); 
-
-					double ourTotRankError = 0;
-					double ourTotNoMatchRankError = 0;
-					double ourTotRankActual = 0;
-					int ourTotRankErrorCounter = 0;
-
-					double ourTotImpError = 0;
-					double ourTotImpPercError = 0;
-					double ourTotImpActual = 0;
-					int ourTotImpErrorCounter = 0;
-
-
-					LinkedList<QueryReport> ourQueryReports = allQueryReports.get(agents[agent]);
-					LinkedList<SalesReport> ourSalesReports = allSalesReports.get(agents[agent]);
-					LinkedList<BidBundle> ourBidBundles = allBidBundles.get(agents[agent]);
-					LinkedList<HashMap<Product, HashMap<UserState, Integer>>> allUserDists = status.getUserDistributions();
-
-					for(int i = 0; i < 57; i++) {
-						System.out.println(i);
-						QueryReport queryReport = ourQueryReports.get(i);
-						SalesReport salesReport = ourSalesReports.get(i);
-						BidBundle bidBundle = ourBidBundles.get(i);
-
-						HashMap<Query, Integer> totalImpressions = new HashMap<Query,Integer>();
-						if(PERFECT_IMPS) {
-							HashMap<Product, HashMap<UserState, Integer>> userDists = allUserDists.get(i);
-							for(Query q : querySpace) {
-								int imps = 0;
-								for(Product product : status.getRetailCatalog()) {
-									HashMap<UserState, Integer> userDist = userDists.get(product);
-									if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-										imps += userDist.get(UserState.F0);
-										imps += (1.25/3.0)*userDist.get(UserState.IS);
-									}
-									else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-										if(product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
-											imps += (1.25/2.0)*userDist.get(UserState.F1);
-											imps += (1.25/6.0)*userDist.get(UserState.IS);
-										}
-									}
-									else {
-										if(product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
-											imps += userDist.get(UserState.F2);
-											imps += (1.25/3.0)*userDist.get(UserState.IS);
-										}
-									}
-								}
-								totalImpressions.put(q, imps);
-							}
-						}
-						else {
-							for(Query q : querySpace) {
-								int numImps;
-								if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-									numImps = MAX_F0_IMPS;
-								}
-								else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-									numImps = MAX_F1_IMPS;
-								}
-								else {
-									numImps = MAX_F2_IMPS;
-								}
-								totalImpressions.put(q, numImps);
-							}
-						}
-
-						model.updateModel(queryReport,salesReport,bidBundle,totalImpressions);
-
-						for(Query q : querySpace) {
-							boolean skip = false;
-							HashMap<Integer,Integer> imps = new HashMap<Integer,Integer>();
-							for(int agentInner = 0; agentInner < agents.length; agentInner++) {
-								QueryReport innerQueryReport = allQueryReports.get(agents[agentInner]).get(i);
-								int imp = innerQueryReport.getImpressions(q);
-								if(agentInner == agent && imp == 0) {
-									skip = true;
-								}
-								imps.put(agentInner, imp);
-							}
-
-							if(!skip) {
-								ArrayList<BidPair> bidPairs = new ArrayList<BidPair>();
-								for(int agentInner = 0; agentInner < agents.length; agentInner++) {
-									BidBundle innerBidBundle = allBidBundles.get(agents[agentInner]).get(i);
-									double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), agentInner);
-									double bid = innerBidBundle.getBid(q);
-									double squashedBid = bid * Math.pow(advEffect, squashing);
-									bidPairs.add(new BidPair(agentInner, squashedBid));
-								}
-
-								Collections.sort(bidPairs);
-
-								HashMap<Integer, Integer> queryRanks = new HashMap<Integer,Integer>();
-								for(int j = 0; j < bidPairs.size(); j++) {
-									queryRanks.put(bidPairs.get(j).getID(), j);
-								}
-
-								int[] rankPred = model.getOrderPrediction(q);
-								int[] impsPred = model.getImpressionsPrediction(q);
-
-								int totImps = 0;
-								for(int j = 0; j < impsPred.length; j++) {
-									totImps += impsPred[j];
-								}
-
-								if(totImps > 0) {
-									HashMap<Integer, Integer> rankPredMap = new HashMap<Integer,Integer>();
-									for(int j = 0; j < rankPred.length; j++) {
-										rankPredMap.put(rankPred[j], j);
-									}
-
-									int skipped = 0;
-									int totalDiff = 0;
-									int totalNoMatchDiff = 0;
-									for(int j = 0; j < agents.length; j++) {
-										double avgPos;
-										if(j == agent) {
-											if(REPORT_FULLPOS_FORSELF) {
-												avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q);
-											}
-											else {
-												avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+1));
-											}
-										}
-										else {
-											avgPos = allQueryReports.get(agents[j]).get(i).getPosition(q, "adv" + (j+1));
-										}
-
-										if(Double.isNaN(avgPos) || avgPos < 0) {
-											skipped++;
-											continue;
-										}
-
-										double rankError = Math.abs(rankPredMap.get(j-skipped) - queryRanks.get(j)); //MAE
-										ourTotRankActual += queryRanks.get(j);
-										ourTotRankError += rankError;
-										ourTotRankErrorCounter++;
-										totalDiff += rankError;
-
-										boolean matchingAvgPos = false;
-										int agentOffset2 = 0;
-										for(int k = 0; k < agents.length; k++) {
-											double otherAvgPos;
-											if(k == agent) {
-												if(REPORT_FULLPOS_FORSELF) {
-													otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q);
-												}
-												else {
-													otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+1));
-												}
-											}
-											else {
-												otherAvgPos = allQueryReports.get(agents[k]).get(i).getPosition(q, "adv" + (k+1));
-											}
-											if((k != j) && otherAvgPos == avgPos) {
-												matchingAvgPos = true;
-												break;
-											}
-										}
-
-										if(!matchingAvgPos) {
-											ourTotNoMatchRankError += rankError;
-											totalNoMatchDiff += rankError;
-										}
-
-										double impError = Math.abs(impsPred[j-skipped] - imps.get(j)); //MAE
-										ourTotImpActual += imps.get(j);
-										ourTotImpError += impError;
-										ourTotImpPercError += (impError / imps.get(j))*100;
-										ourTotImpErrorCounter++;
-									}
-									numInstances++;
-									if(totalDiff == 0) {
-										rankCorrect++;
-									}
-
-									if(totalNoMatchDiff == 0) {
-										rankNoMatchCorrect++;
-									}
-								}
-								else {
-									numNulls++;
-								}
-							}
-						}
-					}
-					ourTotRankErrorMap.put(agents[agent],ourTotRankError);
-					ourTotNoMatchRankErrorMap.put(agents[agent],ourTotNoMatchRankError);
-					ourTotRankActualMap.put(agents[agent],ourTotRankActual);
-					ourTotRankErrorCounterMap.put(agents[agent],ourTotRankErrorCounter);
-
-					ourTotImpErrorMap.put(agents[agent],ourTotImpError);
-					ourTotImpPercErrorMap.put(agents[agent],ourTotImpPercError);
-					ourTotImpActualMap.put(agents[agent],ourTotImpActual);
-					ourTotImpErrorCounterMap.put(agents[agent],ourTotImpErrorCounter);
+			// Make predictions for each day/query in this game
+			int numReports = 57;//57; //TODO: Why?
+			for (int d=0; d<numReports; d++) {
+				for (int queryIdx=0; queryIdx<numQueries; queryIdx++) {
+					Query query = queryArr[queryIdx];
+					Integer[] imps = getAgentImpressions(status, d, query);
+					Integer[] promotedImps = getAgentPromotedImpressions(status, d, query);
+					System.out.println("promotedImps=" + Arrays.toString(promotedImps) + "\timps="+Arrays.toString(imps));
 				}
 			}
-
-			ourTotRankErrorMegaMap.put(filename,ourTotRankErrorMap);
-			ourTotNoMatchRankErrorMegaMap.put(filename,ourTotNoMatchRankErrorMap);
-			ourTotRankActualMegaMap.put(filename,ourTotRankActualMap);
-			ourTotRankErrorCounterMegaMap.put(filename,ourTotRankErrorCounterMap);
-
-			ourTotImpErrorMegaMap.put(filename,ourTotImpErrorMap);
-			ourTotImpPercErrorMegaMap.put(filename,ourTotImpPercErrorMap);
-			ourTotImpActualMegaMap.put(filename,ourTotImpActualMap);
-			ourTotImpErrorCounterMegaMap.put(filename,ourTotImpErrorCounterMap);
 		}
+		throw new RuntimeException("Finished printing game log. Aborting.");
+	}
+	
+	
+	
+	/**
+	 * Load a game
+	 * For each day,
+	 * Get all query reports that came in on that day
+	 * From these, infer: numSlots, numAgents, avgPos[], agentIds[], ourAgentIdx, ourImpressions, impressionsUB
+	 * also infer squashed bid ordering.
+	 * Input these into the given Impression Estimator (via a QA instance)
+	 * Compare output impsPer
+	 * @param del
+	 * @throws IOException
+	 * @throws ParseException
+	 */
+	public void impressionEstimatorPredictionChallenge(int impressionEstimatorIdx) throws IOException, ParseException {
+		//printGameLogInfo();
+		
+		initializeLog("iePred" + impressionEstimatorIdx + ".txt");
+		numInstances = 0;
+		aggregateAbsError = 0;		
+		ArrayList<String> filenames = getGameStrings();
+
+//		for (int gameIdx=3; gameIdx<=3; gameIdx++) {
+		for (int gameIdx=0; gameIdx<filenames.size(); gameIdx++) {
+			String filename = filenames.get(gameIdx);
+
+			// Load this game and its basic parameters
+			GameStatus status = new GameStatusHandler(filename).getGameStatus();
+			int NUM_PROMOTED_SLOTS = status.getSlotInfo().getPromotedSlots();
+			HashMap<QueryType, Double> promotedReserveScore = getApproximatePromotedReserveScore(status);
+			
+			
+			// Make the query space
+			LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+			querySpace.add(new Query(null, null)); //F0
+			for(Product product : status.getRetailCatalog()) {
+				querySpace.add(new Query(product.getManufacturer(), null)); // F1 Manufacturer only
+				querySpace.add(new Query(null, product.getComponent())); // F1 Component only
+				querySpace.add(new Query(product.getManufacturer(), product.getComponent())); // The F2 query class
+			}
+
+			Query[] queryArr = new Query[querySpace.size()];
+			querySpace.toArray(queryArr);
+			int numQueries = queryArr.length;
+			
+			// Make predictions for each day/query in this game
+			int numReports = 15;//57; //TODO: Why?
+//			for (int d=31; d<=31; d++) {
+			for (int d=0; d<numReports; d++) {
+				
+				System.out.println("Game " + (gameIdx+1) + "/" + filenames.size() + ", Day " + d + "/" + numReports);
+				
+//				for (int queryIdx=5; queryIdx<=5; queryIdx++) {
+				for (int queryIdx=0; queryIdx<numQueries; queryIdx++) {
+					Query query = queryArr[queryIdx];
+
+					// Get avg position for each agent
+					Double[] actualAveragePositions = getAveragePositions(status, d, query);
+
+					// Get squashed bids for each agent
+					Double[] squashedBids = getSquashedBids(status, d, query);
+
+					Double[] budgets = getBudgets(status, d, query);
+
+					// Get total number of impressions for each agent
+					Integer[] impressions = getAgentImpressions(status, d, query);
+
+					Integer[] promotedImpressions = getAgentPromotedImpressions(status, d, query);
+					
+					Boolean[] promotionEligibility = getAgentPromotionEligibility(status, d, query, promotedReserveScore.get(query.getType()));
+					
+					// DEBUG: Print out some game values.
+					System.out.println("d="+d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
+					System.out.println("d="+d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
+					System.out.println("d="+d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
+					System.out.println("d="+d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
+					System.out.println("d="+d + "\tq=" + query + "\tbudgets=" + Arrays.toString(budgets));
+					System.out.println("d="+d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
+					System.out.println("d="+d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
+					System.out.println("d="+d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
+					System.out.println();
+
+					// Determine how many agents actually participated
+					int numParticipants = 0;
+					for (int a=0; a<actualAveragePositions.length; a++) {
+						//if (!actualAveragePositions[a].isNaN()) numParticipants++;
+						if (! Double.isNaN( actualAveragePositions[a] ) ) numParticipants++;
+					}
+
+					// Reduce to only auction participants
+					double[] reducedAvgPos = new double[numParticipants];
+					double[] reducedBids = new double[numParticipants];
+					int[] reducedImps = new int[numParticipants];
+					int[] reducedPromotedImps = new int[numParticipants];
+					boolean[] reducedPromotionEligibility = new boolean[numParticipants];
+					int rIdx = 0;
+					for (int a=0; a<actualAveragePositions.length; a++) {
+						if (!actualAveragePositions[a].isNaN()) {
+							reducedAvgPos[rIdx] = actualAveragePositions[a];
+							reducedBids[rIdx] = squashedBids[a];
+							reducedImps[rIdx] = impressions[a];
+							reducedPromotedImps[rIdx] = promotedImpressions[a];
+							reducedPromotionEligibility[rIdx] = promotionEligibility[a];
+							rIdx++;
+						}
+					}
+
+					// Get ordering of remaining squashed bids
+					int[] ordering = getIndicesForDescendingOrder(reducedBids);
+
+					// Some params needed for the QA instance
+					// TODO: Have some of these configurable.
+					int[] agentIds = new int[numParticipants]; //Just have them all be 0. TODO: Is carleton using this?
+					int NUM_SLOTS = 5;
+					int impressionsUB = 11000;
 
 
-		ArrayList<Double> rankRMSEList = new ArrayList<Double>();
-		ArrayList<Double> rankNoMatchRMSEList = new ArrayList<Double>();
-		ArrayList<Double> rankActualList = new ArrayList<Double>();
+					// For each agent, make a prediction (each agent sees a different num impressions)
+//					for (int ourAgentIdx=2; ourAgentIdx<=2; ourAgentIdx++) {
+					for (int ourAgentIdx=0; ourAgentIdx<numParticipants; ourAgentIdx++) {
+						double start = System.currentTimeMillis(); //time the prediction time on this instance
+						
+						int ourImps = reducedImps[ourAgentIdx];
+						int ourPromotedImps = reducedPromotedImps[ourAgentIdx];
+						boolean ourPromotionEligibility = reducedPromotionEligibility[ourAgentIdx];
+						
+						//DEBUG TEMP FIXME: Just want to see how much promotion constraint helps.
+						//if (ourPromotedImps <= 0) continue;
+						//ourPromotionEligibility = false; //FIXME just temporary
+						//if (ourPromotionEligibility == false) continue; 
+						
+						QAInstance inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, agentIds, ourAgentIdx, ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility);
 
-		ArrayList<Double> impRMSEList = new ArrayList<Double>();
-		ArrayList<Double> impPercRMSEList = new ArrayList<Double>();
-		ArrayList<Double> impActualList = new ArrayList<Double>();
-		for(String file : filenames) {
-			HashMap<String, Double> totRankErrorMap = ourTotRankErrorMegaMap.get(file);
-			HashMap<String, Double> totNoMatchRankErrorMap = ourTotNoMatchRankErrorMegaMap.get(file);
-			HashMap<String, Double> totRankActualMap = ourTotRankActualMegaMap.get(file);
-			HashMap<String, Integer> totRankErrorCounterMap = ourTotRankErrorCounterMegaMap.get(file);
+						//FIXME: we should be able to choose more elegantly at runtime what class we're going to load.
+						//This is annoying... ImpressionEstimator requires a QAInstance in the constructor,
+						//but this QAInstance isn't ready until now. 
+						//Terrible, band-aid solution is to have an integer corresponding to each test.
+						AbstractImpressionEstimator model = null;
+						String modelName = null;
+						if(impressionEstimatorIdx == 1) model = new ImpressionEstimator(inst);
+						if(impressionEstimatorIdx == 2) model = new EricImpressionEstimator(inst);
 
-			HashMap<String, Double> totImpErrorMap = ourTotImpErrorMegaMap.get(file);
-			HashMap<String, Double> totImpPercErrorMap = ourTotImpPercErrorMegaMap.get(file);
-			HashMap<String, Double> totImpActualMap = ourTotImpActualMegaMap.get(file);
-			HashMap<String, Integer> totImpErrorCounterMap = ourTotImpErrorCounterMegaMap.get(file);
+						IEResult result = model.search(ordering);
 
-			for(String agent : totRankErrorCounterMap.keySet()) {
-				double totRankError = totRankErrorMap.get(agent);
-				double totNoMatchRankError = totNoMatchRankErrorMap.get(agent);
-				double totRankActual = totRankActualMap.get(agent);
-				double totRankErrorCounter = totRankErrorCounterMap.get(agent);
-				double rankMAE;
-				rankMAE = (totRankError/totRankErrorCounter);
-				double rankActual = totRankActual/totRankErrorCounter;
-				rankRMSEList.add(rankMAE);
-				rankActualList.add(rankActual);
+						//Get predictions (also provide dummy values for failure)
+						int[] predictedImpsPerAgent;
+						if (result != null) predictedImpsPerAgent = result.getSol();
+						else {
+							predictedImpsPerAgent = new int[reducedImps.length];
+							Arrays.fill(predictedImpsPerAgent, -1);
+						}
 
-				double rankNoMatchMAE;
-				rankNoMatchMAE = (totNoMatchRankError/totRankErrorCounter);
-				rankNoMatchRMSEList.add(rankNoMatchMAE);
+						double stop = System.currentTimeMillis();
+						double secondsElapsed = (stop - start)/1000.0;
 
-				double totImpError = totImpErrorMap.get(agent);
-				double totImpActual = totImpActualMap.get(agent);
-				double totImpErrorCounter = totImpErrorCounterMap.get(agent);
-				double impMAE;
-				impMAE = (totImpError/totImpErrorCounter);
-				double impActual = totImpActual/totImpErrorCounter;
-				impRMSEList.add(impMAE);
-				impActualList.add(impActual);
+						//System.out.println("predicted: " + Arrays.toString(predictedImpsPerAgent));
+						//System.out.println("actual: " + Arrays.toString(reducedImps));
 
-				double totImpPercError = totImpPercErrorMap.get(agent);
-				double impPercMAE = (totImpPercError/totImpErrorCounter);
-				impPercRMSEList.add(impPercMAE);
+						//Update performance metrics
+						updatePerformanceMetrics(predictedImpsPerAgent, reducedImps);
+						//outputPerformanceMetrics();
+
+
+						//LOGGING
+						double[] err = new double[predictedImpsPerAgent.length];
+						for (int a=0; a<predictedImpsPerAgent.length; a++) {
+							err[a] = Math.abs(predictedImpsPerAgent[a] - reducedImps[a]);
+						}
+						StringBuffer sb = new StringBuffer();
+						sb.append("err="+Arrays.toString(err) + "\t");
+						sb.append("pred="+Arrays.toString(predictedImpsPerAgent) + "\t");
+						sb.append("actual="+Arrays.toString(reducedImps) + "\t");
+						sb.append("g=" + gameIdx + " ");
+						sb.append("d="+d + " a=" + ourAgentIdx + " q=" + query + " avgPos=" + Arrays.toString(reducedAvgPos) + " ");
+						sb.append("bids=" + Arrays.toString(reducedBids) + " ");
+						sb.append("imps=" + Arrays.toString(reducedImps) + " ");
+						sb.append("order=" + Arrays.toString(ordering) + " ");
+						sb.append( ((impressionEstimatorIdx==1) ? "CJC" : "IP") ) ;
+						System.out.println(sb);
+
+						
+						//Save all relevant data to file
+						sb = new StringBuffer();
+						for (int predictingAgentIdx=0; predictingAgentIdx<numParticipants; predictingAgentIdx++) {
+							int ourBidRank = -1;
+							int oppBidRank = -1;
+							for (int i=0; i<ordering.length; i++) {
+								if (ordering[i] == ourAgentIdx) ourBidRank = i;
+								if (ordering[i] == predictingAgentIdx) oppBidRank = i;
+							}
+														
+							
+							sb.append(model.getName()+",");
+							sb.append(gameIdx + ",");
+							sb.append(d + ",");
+							sb.append(queryIdx + ",");
+							sb.append(ourBidRank + ","); 
+							sb.append(oppBidRank + ",");  
+							sb.append(reducedAvgPos[ourAgentIdx] + ","); //our avgPos
+							sb.append(reducedAvgPos[predictingAgentIdx] + ","); //opponent avgPos            
+							sb.append(query.getType() + ",");
+							sb.append(numParticipants + ",");
+							sb.append(reducedImps[predictingAgentIdx] + ","); //actual
+							sb.append(predictedImpsPerAgent[predictingAgentIdx] + ","); //prediction
+							sb.append(secondsElapsed + "\n");
+						}
+						//Log the result (for later loading into R)
+						writeToLog(sb.toString());
+					}
+				}
 			}
 		}
 
-		double[] rankRmseStd = getStdDevAndMean(rankRMSEList);
-		double[] rankNoMatchRmseStd = getStdDevAndMean(rankNoMatchRMSEList);
-		double[] impRmseStd = getStdDevAndMean(impRMSEList);
-		double[] impPercRmseStd = getStdDevAndMean(impPercRMSEList);
-		double stop = System.currentTimeMillis();
-		double elapsed = (stop - start)/1000.0;
-		System.out.println("Model, Rank Err, No Match Rank Err, Imp Err, Imp % err, Num Instances, % null, % correct rank, % no match correct rank, time");
-		System.out.println(baseModel + ", " + rankRmseStd[0] + ", " + rankNoMatchRmseStd[0] + ", " + impRmseStd[0] + ", " + impPercRmseStd[0] + ", " + numInstances + ", " + 
-				(numNulls/((double) (numInstances+numNulls))) + ", " + (rankCorrect/((double) (numInstances))) + ", " + 
-				(rankNoMatchCorrect/((double) (numInstances))) + ", " + elapsed);
+		outputPerformanceMetrics();
+		closeLog();
+	}
+
+
+
+	
+	//=======================================================================//
+	//=============================== LOGGING ===============================//
+	//=======================================================================//
+	
+	private void initializeLog(String filename) {
+		try {
+			//Construct the BufferedWriter object
+			bufferedWriter = new BufferedWriter(new FileWriter(filename));
+
+			//Create header
+			StringBuffer sb = new StringBuffer();
+			sb.append("model,");
+			sb.append("game.idx,");			
+			sb.append("day.idx,");
+			sb.append("query.idx,");
+			sb.append("our.bid.rank,");
+			sb.append("opp.bid.rank,");
+			sb.append("our.avg.pos,");
+			sb.append("opp.avg.pos,");        
+			sb.append("focus.level,");
+			sb.append("num.participants,");
+			sb.append("actual.imps,");
+			sb.append("predicted.imps,");
+			sb.append("seconds");
+
+			//Start writing to the output stream
+			bufferedWriter.write(sb.toString());
+			bufferedWriter.newLine();
+
+		} catch (FileNotFoundException ex) {
+			ex.printStackTrace();
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private void closeLog() {
+		try {
+			if (bufferedWriter != null) {
+				bufferedWriter.flush();
+				bufferedWriter.close();
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
+	}
+
+	private void writeToLog(String data) {
+		try{
+			bufferedWriter.write(data);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
+
+
+
+
+	/**
+	 * 
+	 * @param predictedImpsPerAgent
+	 * @param actualImpsPerAgent
+	 */
+	private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent) {
+		assert(predictedImpsPerAgent.length == actualImpsPerAgent.length);
+
+		for (int a=0; a<predictedImpsPerAgent.length; a++) {
+			numInstances++;
+			aggregateAbsError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
+		}
+	}
+
+	private void outputPerformanceMetrics() {
+		double meanAbsError = aggregateAbsError / numInstances;
+		System.out.println("Mean absolute error: " + meanAbsError);
+	}
+
+
+	/**
+	 * Get an array of average positions (one element for each agent), for the given day/query 
+	 * @param allQueryReports
+	 * @param d
+	 * @param query
+	 * @return
+	 */
+	private Double[] getAveragePositions(GameStatus status, int d, Query query) {
+		String[] agents = status.getAdvertisers();
+		Double[] averagePositions = new Double[agents.length];
+		for (int a=0; a<agents.length; a++) {
+			String agentName = agents[a];
+			try {
+				averagePositions[a] = status.getQueryReports().get(agentName).get(d).getPosition(query);
+			} catch(Exception e) {
+				//May get here if the agent doesn't have a query report (does this ever happen?)
+				averagePositions[a] = Double.NaN;
+				throw new RuntimeException("ahhhhhhhhhhhhhhhhhhhhhhhh");
+			}	
+		}
+		return averagePositions;
+	}
+
+
+	private Double[] getSquashedBids(GameStatus status, int d, Query query) {
+		String[] agents = status.getAdvertisers();
+		Double[] squashedBids = new Double[agents.length];
+		UserClickModel userClickModel = status.getUserClickModel();
+		double squashing = status.getPubInfo().getSquashingParameter();
+		for (int a=0; a<agents.length; a++) {
+			String agentName = agents[a];
+			try{
+				double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(query), a);
+				double bid = status.getBidBundles().get(agentName).get(d).getBid(query);
+				squashedBids[a] = bid * Math.pow(advEffect, squashing);
+			} catch(Exception e) {
+				squashedBids[a] = Double.NaN;
+			}
+		}
+		return squashedBids;		
+	}
+
+
+	private Double[] getBudgets(GameStatus status, int d, Query query) {
+		String[] agents = status.getAdvertisers();
+		Double[] budgets = new Double[agents.length];
+		for (int a=0; a<agents.length; a++) {
+			String agentName = agents[a];
+			try{
+				budgets[a] = status.getBidBundles().get(agentName).get(d).getDailyLimit(query);
+			} catch(Exception e) {
+				budgets[a] = Double.NaN;
+			}
+		}
+		return budgets;		
+	}
+
+	private Integer[] getAgentImpressions(GameStatus status, int d, Query query) {
+		String[] agents = status.getAdvertisers();
+		Integer[] agentImpressions= new Integer[agents.length];
+		for (int a=0; a<agents.length; a++) {
+			String agentName = agents[a];
+			try {
+				agentImpressions[a] = status.getQueryReports().get(agentName).get(d).getImpressions(query);
+			} catch(Exception e) {
+				//May get here if the agent doesn't have a query report (does this ever happen?)
+				agentImpressions[a] = null;
+			}	
+		}
+		return agentImpressions;
+	}
+
+	private Integer[] getAgentPromotedImpressions(GameStatus status, int d, Query query) {
+		String[] agents = status.getAdvertisers();
+		Integer[] agentImpressions= new Integer[agents.length];
+		for (int a=0; a<agents.length; a++) {
+			String agentName = agents[a];
+			try {
+				agentImpressions[a] = status.getQueryReports().get(agentName).get(d).getPromotedImpressions(query);
+			} catch(Exception e) {
+				//May get here if the agent doesn't have a query report (does this ever happen?)
+				agentImpressions[a] = null;
+			}	
+		}
+		return agentImpressions;
+	}
+	
+
+	private Boolean[] getAgentPromotionEligibility(GameStatus status, int d, Query query, double promotedReserveScore) {
+		Double[] squashedBids = getSquashedBids(status, d, query);
+		Boolean[] promotionEligibility = new Boolean[squashedBids.length];
+		//double promotedReserveScore = status.getReserveInfo().getPromotedReserve(); //This is always returning 0.
+		for (int a=0; a<squashedBids.length; a++) {
+			try {
+				//TODO: Squashed bid must be > or >= promoted reserve score?
+				if(squashedBids[a] >= promotedReserveScore) promotionEligibility[a] = true;
+				else promotionEligibility[a] = false;
+			} catch(Exception e) {
+				//May get here if the agent doesn't have a query report (does this ever happen?)
+				promotionEligibility[a] = false;
+			}	
+		}
+		return promotionEligibility;
+	}
+
+	
+	
+	//TODO: Make this more precise. (Isn't this value logged anywhere??)
+	private HashMap<QueryType, Double> getApproximatePromotedReserveScore(GameStatus status) {
+		
+		//This is our approximation of promoted reserve score: the lowest score for which someone received a promoted slot.
+		HashMap<QueryType, Double> currentLowPromotedScore = new HashMap<QueryType, Double>();
+		//double currentLowPromotedScore = Double.POSITIVE_INFINITY;
+		currentLowPromotedScore.put(QueryType.FOCUS_LEVEL_ZERO, Double.POSITIVE_INFINITY);
+		currentLowPromotedScore.put(QueryType.FOCUS_LEVEL_ONE, Double.POSITIVE_INFINITY);
+		currentLowPromotedScore.put(QueryType.FOCUS_LEVEL_TWO, Double.POSITIVE_INFINITY);
+				
+		// Make the query space
+		//TODO: Don't hardcode this here. 
+		LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
+		querySpace.add(new Query(null, null)); //F0
+		for(Product product : status.getRetailCatalog()) {
+			querySpace.add(new Query(product.getManufacturer(), null)); // F1 Manufacturer only
+			querySpace.add(new Query(null, product.getComponent())); // F1 Component only
+			querySpace.add(new Query(product.getManufacturer(), product.getComponent())); // The F2 query class
+		}
+		int numDays = 57; //TODO: Don't hardcode this.
+		for (int d=0; d<numDays; d++) {
+			for (Query q : querySpace) {
+				Integer[] promotedImps = getAgentPromotedImpressions(status, d, q);
+				Double[] squashedBids = getSquashedBids(status, d, q);
+				
+				for (int a=0; a<promotedImps.length; a++) {
+					if (promotedImps[a] > 0 && squashedBids[a] < currentLowPromotedScore.get(q.getType())) {
+						currentLowPromotedScore.put(q.getType(), squashedBids[a]);
+					}
+				}
+			}
+		}
+		return currentLowPromotedScore;
+	}
+	
+	
+	//Get the indices of the vals, starting with the highest val and decreasing.
+	public static int[] getIndicesForDescendingOrder(double[] valsUnsorted) {
+		double[] vals = valsUnsorted.clone(); //these values will be modified
+		int length = vals.length;
+
+		int[] ids = new int[length];
+		for (int i=0; i<length; i++) ids[i] = i;
+
+		for(int i=0; i < length; i++){
+			for(int j=i+1; j < length; j++){
+				if(vals[i] < vals[j]){
+					double tempVal = vals[i];
+					int tempId = ids[i];
+
+					vals[i] = vals[j];
+					ids[i] = ids[j];
+
+					vals[j] = tempVal;
+					ids[j] = tempId;
+				}
+			}
+		}
+		return ids;
 	}
 
 	private double[] getStdDevAndMean(ArrayList<Double> list) {
@@ -407,45 +597,15 @@ public class ImpressionEstimatorTest {
 		return stdDev;
 	}
 
+
 	public static void main(String[] args) throws IOException, ParseException  {
-		QueryAnalyzerTest evaluator = new QueryAnalyzerTest();
-
-		ArrayList<String> filenames = evaluator.getGameStrings();
-		String filename = filenames.get(0);
-		GameStatusHandler statusHandler = new GameStatusHandler(filename);
-		GameStatus status = statusHandler.getGameStatus();
-		String[] agents = status.getAdvertisers();
-
-		ArrayList<String> advertisers = new ArrayList<String>();
-
-		for(int i = 0; i < agents.length; i++) {
-			advertisers.add(agents[i]);
-		}
-
-		//Make the query space
-		LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
-		querySpace.add(new Query(null, null));
-		for(Product product : status.getRetailCatalog()) {
-			// The F1 query classes
-			// F1 Manufacturer only
-			querySpace.add(new Query(product.getManufacturer(), null));
-			// F1 Component only
-			querySpace.add(new Query(null, product.getComponent()));
-
-			// The F2 query class
-			querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
-		}
-
-		double start = System.currentTimeMillis();
-
-		//		evaluator.queryAnalyzerPredictionChallenge(new GreedyQueryAnalyzer(querySpace, advertisers, "this will be overwritten"));
-		evaluator.queryAnalyzerPredictionChallenge(new CarletonQueryAnalyzer(querySpace, advertisers, "this will be overwritten", LDS_ITERATIONS_1, LDS_ITERATIONS_2, REPORT_FULLPOS_FORSELF));
-		//evaluator.queryAnalyzerPredictionChallenge(new GQA(querySpace, advertisers, "this will be overwritten"));
-
-
-		double stop = System.currentTimeMillis();
-		double elapsed = stop - start;
-		//		System.out.println("This took " + (elapsed / 1000) + " seconds");
+		ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
+		System.out.println("\n\n\n\n\nSTARTING TEST 1");
+		evaluator.impressionEstimatorPredictionChallenge(1);
+		System.out.println("\n\n\n\n\nSTARTING TEST 2");
+		evaluator.impressionEstimatorPredictionChallenge(2);
+//		double[] vals = {2, 7, 3, 4};  
+//		System.out.println(Arrays.toString(ImpressionEstimatorTest.getIndicesForDescendingOrder(vals)));
 	}
 
 }

@@ -9,5 +9,6 @@ public interface AbstractImpressionEstimator {
 	 */
 	public IEResult search(int[] order);
 	
+	public String getName();
 	
 }
