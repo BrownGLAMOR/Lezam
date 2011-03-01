@@ -9,6 +9,7 @@ public class QAInstance {
 	private int _promotedSlots;
 	private int _advetisers;
 	private double[] _avgPos;
+	private double[] _sampledAvgPos;
 	private int[] _agentIds;
 	private int _agentIndex;
 	private int _impressions;
@@ -17,7 +18,7 @@ public class QAInstance {
 	private boolean _considerPaddingAgents;
 	private boolean _promotionEligibilityVerified;
 	
-	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified){
+	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
 		assert(advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -25,6 +26,7 @@ public class QAInstance {
 		_promotedSlots = promotedSlots;
 		_advetisers = advetisers;
 		_avgPos = avgPos;
+		_sampledAvgPos = sampledAvgPos;
 		_agentIds = agentIds;
 		_agentIndex = agentIndex;
 		_impressions = impressions;
@@ -87,6 +89,7 @@ public class QAInstance {
 	public int getNumPromotedSlots() {return _promotedSlots;}
 	public int getNumAdvetisers() {return _advetisers;}
 	public double[] getAvgPos() {return _avgPos;}
+	public double[] getSampledAvgPos() {return _sampledAvgPos;}
 	public int[] getAgentIds() {return _agentIds;}
 	public int getAgentIndex() {return _agentIndex;}
 	public int getImpressions() {return _impressions;}

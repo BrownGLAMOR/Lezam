@@ -1,6 +1,7 @@
 package models.queryanalyzer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -187,7 +188,25 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			}
 
 
-			QAInstance inst = new QAInstance(NUM_SLOTS, allAvgPos.size(), allAvgPosArr, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q), true);
+			//--------------
+			//sodomka: 3/1/11: I added some things to the QAInstance that Carleton doesn't use. Let's just add dummy values.
+
+			//No distinguishing between exact and sampled positions.
+			double[] dummySampledAvgPositions = new double[agentIds.size()];
+			Arrays.fill(dummySampledAvgPositions, -1);
+
+			//No distinguishing between promoted and unpromoted slots
+			int numPromotedSlots = -1; 
+			
+			//Not considering how many promoted impressions we saw
+			int numPromotedImpressions = -1;
+			
+			//Not considering whether our bid is high enough to be in a promoted slot
+			boolean promotionEligibiltyVerified = false;
+			//--------------
+			
+			
+			QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(), allAvgPosArr, dummySampledAvgPositions, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q), true, promotionEligibiltyVerified);
 			//int[] avgPosOrder = inst.getAvgPosOrder();
 			int[] avgPosOrder = inst.getCarletonOrder();
 
