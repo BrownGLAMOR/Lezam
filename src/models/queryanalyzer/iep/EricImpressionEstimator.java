@@ -18,9 +18,12 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 	private int _imprUB;
 	private int[] _agentImprUB;
 	private int[] _agentImprLB;
-	boolean INTEGER_PROGRAM = false;
-	boolean USE_EPSILON = true;
-	int NUM_SAMPLES = 5;
+	private double[] _agentImpressionDistributionMean;
+	private double[] _agentImpressionDistributionStdev;
+	
+	boolean INTEGER_PROGRAM = true;
+	boolean USE_EPSILON = false;
+	int NUM_SAMPLES = 10;
 	
 	public EricImpressionEstimator(QAInstance inst) {
 		_advertisers = inst.getNumAdvetisers();
@@ -33,6 +36,8 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 		_ourPromotedImpressions = inst.getPromotedImpressions();
 		_ourPromotedEligibilityVerified = inst.getPromotionEligibilityVerified();
 		_imprUB = inst.getImpressionsUB();
+		_agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
+		_agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
 
 	}
 
@@ -53,6 +58,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 		I_aPromoted[_ourIndex] = _ourPromotedImpressions;
 		promotionEligiblityVerified[_ourIndex] = _ourPromotedEligibilityVerified;
 		
+		
 		//Average position for each agent
 		double[] mu_a = _trueAvgPos;
 		double[] sampledMu_a = _sampledAvgPos;
@@ -63,11 +69,16 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 		double[] orderedSampledMu_a = order(sampledMu_a, order);
 		double[] orderedI_aPromoted = order(I_aPromoted, order);
 		boolean[] orderedPromotionEligibilityVerified = order(promotionEligiblityVerified, order);
-
+		double[] orderedI_aDistributionMean = order(_agentImpressionDistributionMean, order);
+		double[] orderedI_aDistributionStdev = order(_agentImpressionDistributionStdev, order);
+		
 		//Get mu_a values, given impressions
 		//Waterfall params: I_a, mu_a, I_aPromoted, isKnownPromotionEligible, numSlots, numPromotedSlots, integerProgram, useEpsilon
 		//WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON);
-		WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES);
+		WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, 
+				_slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB, 
+				orderedI_aDistributionMean, orderedI_aDistributionStdev);
+
 		WaterfallILP.WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();
 
@@ -173,6 +184,12 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 			//These aren't actually used; everything is -1 except the current agentIdx
 			double[] I_aFull = {742, 742, 556, 589, 222, 520, 186, 153};
 			double[] mu_aFull = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
+
+			
+			//Get priors on impressions
+			double[] agentImpressionDistributionMean = {742, 742, 556, 589, 222, 520, 186, 153};
+			double[] agentImpressionDistributionStdev = {10, 10, 10, 10, 10, 10, 10, 10};
+			
 			
 			//Get observed exact average positions (we only see one)
 			double[] mu_a = new double[mu_aFull.length];
@@ -190,7 +207,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 			boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
 			int impressionsUB = 10000;			
 			int numAgents = mu_a.length;
-
+			
+			
+			
 			//By default, ordering will be from first to last position
 			int[] order = new int[numAgents];
 			for (int i=0; i<order.length; i++) order[i] = i;
@@ -211,8 +230,8 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 			}
 			
 			//int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified
-			QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, carletonAvgPos, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed);
-			QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed);
+			QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, carletonAvgPos, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, agentImpressionDistributionMean, agentImpressionDistributionStdev);
+			QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, agentImpressionDistributionMean, agentImpressionDistributionStdev);
 
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);

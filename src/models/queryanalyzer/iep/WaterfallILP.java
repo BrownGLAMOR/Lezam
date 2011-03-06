@@ -1,6 +1,8 @@
 package models.queryanalyzer.iep;
 
 import java.util.Arrays;
+
+import se.sics.tasim.is.AgentInfo;
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
@@ -15,15 +17,45 @@ import ilog.cplex.IloCplex.IntParam;
 //setenvvar ILOG_LICENSE_FILE /com/ilm/access.ilm
 
 public class WaterfallILP {
-	
+
 	//************************************ FIELDS ************************************
-	
+
 	// The objective function can be of any of these types.
+	/**
+	 * NONE, 
+	 * MINIMIZE_SLOT_DIFF_PROXY, 
+	 * MINIMIZE_SLOT_DIFF, 
+	 * MINIMIZE_SLOT_DIFF_TIEBREAKER, 
+	 * SPREAD_SAMPLES_LINEAR, 
+	 * SPREAD_SAMPLES_QUADRATIC, 
+	 * CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
+	 * MINIMIZE_SAMPLE_MU_DIFF
+	 */
 	public enum Objective
 	{
-	  NONE, MINIMIZE_SLOT_DIFF_PROXY, SPREAD_SAMPLES_LINEAR
+		NONE, 
+		MINIMIZE_SLOT_DIFF_PROXY, 
+		MINIMIZE_SLOT_DIFF, 
+		MINIMIZE_SLOT_DIFF_TIEBREAKER,
+		SPREAD_SAMPLES_LINEAR, 
+		SPREAD_SAMPLES_QUADRATIC, 
+		CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
+		MINIMIZE_SAMPLE_MU_DIFF, //get resulting avgPos as close as possible to sampledMu
+		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
 	}
-		
+
+	//************************************ CONFIG ************************************
+	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
+	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
+	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
+	private double TIMEOUT_IN_SECONDS = 300;
+	private boolean SUPPRESS_OUTPUT = true;
+	private boolean SUPPRESS_OUTPUT_MODEL = true;
+	private boolean USE_SAMPLING_CONSTRAINTS = false;
+	private boolean USE_RANKING_CONSTRAINTS = true;
+	
+	//************************************ FIELD DECLARATIONS ************************************
 	boolean INTEGER_PROGRAM;
 	boolean USE_EPSILON;
 	int numAgents;
@@ -31,12 +63,13 @@ public class WaterfallILP {
 	int numPromotedSlots;
 
 	//Parameters that should eventually be set by the constructor
-	int minImpsPerSlot = 0;
-	int maxImpsPerSlot = 10000;
+	int minImpsPerAgentPerSlot = 0;
+	int maxImpsPerAgentPerSlot = 10000;
 	int minImpsPerAgent = 1;
-	int maxImpsPerAgent = 10000;
+	int maxImpsPerAgent;
 	int LARGE_CONSTANT_Y_a_k = 100000;
 	double epsilon = .00001;
+	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
 	//These are sorted by decreasing squashed bid rank:
 	double[] knownI_a; //total impressions for each agent
@@ -50,18 +83,15 @@ public class WaterfallILP {
 	double[] knownSampledMu_a; //sampled average position
 	boolean[] isKnownSampledMu_a;
 	int numSamples;	
+	boolean samplingAnyAveragePositions; //If we're not doing any sampling, we can save some time by not including certain constraints.
 
-	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
-	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
-	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
-	private Objective DESIRED_OBJECTIVE = Objective.SPREAD_SAMPLES_LINEAR;
-	
-	
-	
-	
+	double[] knownI_aDistributionMean;
+	double[] knownI_aDistributionStdev;
+	boolean[] isKnownI_aDistributionMean;
+
 	//************************************ CONSTRUCTORS ************************************
 
-		
+
 	/**
 	 * This constructor is for the usual case, when there are no sampled average positions.
 	 * @param knownI_a
@@ -75,7 +105,8 @@ public class WaterfallILP {
 	 */
 	public WaterfallILP(double[] knownI_a, double[] knownMu_a, double[] knownI_aPromoted, 
 			boolean[] isKnownPromotionEligible, int numSlots, int numPromotedSlots, 
-			boolean integerProgram, boolean useEpsilon) {
+			boolean integerProgram, boolean useEpsilon, int maxImpsPerAgent,
+			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
 		this.INTEGER_PROGRAM = integerProgram;
 		this.USE_EPSILON = useEpsilon;
 		this.knownI_a = knownI_a;
@@ -85,21 +116,30 @@ public class WaterfallILP {
 		numAgents = knownI_a.length;
 		this.numSlots = numSlots;
 		this.numPromotedSlots = numPromotedSlots;
-
+		this.maxImpsPerAgent = maxImpsPerAgent; //upper bound on agent imps
+		this.knownI_aDistributionMean = knownI_aDistributionMean;
+		this.knownI_aDistributionStdev = knownI_aDistributionStdev;
+		
 		//By default, sampled average positions are not given.
+		this.samplingAnyAveragePositions = false; 
 		this.knownSampledMu_a = new double[numAgents];
 		Arrays.fill(this.knownSampledMu_a, -1);
-		
+
 		isKnownI_a = new boolean[numAgents];
 		isKnownMu_a = new boolean[numAgents];
 		isKnownI_aPromoted = new boolean[numAgents];
 		isKnownSampledMu_a = new boolean[numAgents];
+		isKnownI_aDistributionMean = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
 			if(knownI_a[a] != -1) isKnownI_a[a] = true;
 			if(knownMu_a[a] != -1) isKnownMu_a[a] = true;
 			if(knownI_aPromoted[a] != -1) isKnownI_aPromoted[a] = true;
 			if(knownSampledMu_a[a] != -1) isKnownSampledMu_a[a] = true;
-		}		
+			if(knownI_aDistributionMean[a] != -1) isKnownI_aDistributionMean[a] = true;
+			
+			//Make sure the minimum I_a stdev is 1. (We don't want to ever assume we know exactly what the opponent imps will be).
+			if (knownI_aDistributionStdev[a] != -1 && knownI_aDistributionStdev[a]< MIN_IMPRESSIONS_STDEV) knownI_aDistributionStdev[a] = MIN_IMPRESSIONS_STDEV;
+		}			
 	}
 
 
@@ -119,20 +159,26 @@ public class WaterfallILP {
 	public WaterfallILP(double[] knownI_a, double[] knownMu_a, double[] knownI_aPromoted, 
 			boolean[] isKnownPromotionEligible, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, 
-			double[] knownSampledMu_a, int numSamples) {
+			double[] knownSampledMu_a, int numSamples, int maxImpsPerAgent,
+			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
 		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible,
-				numSlots, numPromotedSlots, integerProgram, useEpsilon);
+				numSlots, numPromotedSlots, integerProgram, useEpsilon, maxImpsPerAgent,
+				knownI_aDistributionMean, knownI_aDistributionStdev);
 		this.knownSampledMu_a = knownSampledMu_a;
 		this.isKnownSampledMu_a = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
-			if(knownSampledMu_a[a] != -1) isKnownSampledMu_a[a] = true;
+			if(Double.isNaN( knownSampledMu_a[a] )) knownSampledMu_a[a] = 0; //change NaN values to 0
+			if(knownSampledMu_a[a] != -1) {
+				isKnownSampledMu_a[a] = true; //mark whether it's known
+				samplingAnyAveragePositions = true; //If any sampled avg positions are known, this is true.
+			}
 		}
 		this.numSamples = numSamples;
 	}
 
 
-	
-	
+
+
 	//************************************ MAIN SOLVER METHOD ************************************
 
 	/**
@@ -143,24 +189,24 @@ public class WaterfallILP {
 	public WaterfallResult solve() {
 
 		StringBuffer sb1 = new StringBuffer();
-		sb1.append("Solving new Waterfall instance.\n");
+		sb1.append("Hi, Solving new Waterfall instance.\n");
 		sb1.append("  I_a="+Arrays.toString(knownI_a) + ", Mu_a="+Arrays.toString(knownMu_a) + ", I_aPromoted="+Arrays.toString(knownI_aPromoted) + ", ");
 		sb1.append("promOK="+Arrays.toString(isKnownPromotionEligible) + ", numAgents=" + numAgents + ", numSlots=" + numSlots + ", numPromotedSlots=" + numPromotedSlots + ", ");
-		sb1.append("sampledMu_a="+Arrays.toString(knownSampledMu_a) +", numSamples=" + numSamples);
+		sb1.append("sampledMu_a="+Arrays.toString(knownSampledMu_a) +", numSamples=" + numSamples + ", ");
+		sb1.append("I_aDistMean="+Arrays.toString(knownI_aDistributionMean) +", I_aDistStdev=" + Arrays.toString(knownI_aDistributionStdev));
 		System.out.println(sb1);
 
-		
-		
-		
+
+
 		double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
 		double[] U_kDouble = new double[numSamples];
-		
-		try {			
+
+		try {
 			IloCplex cplex = new IloCplex();
 
 			//-------------------------------- SET CPLEX PARAMS -------------------------------------
-			cplex.setOut(null);
-			
+			if (SUPPRESS_OUTPUT) cplex.setOut(null);
+			cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
 			if (RETURN_MULTIPLE_SOLUTIONS) {
 				cplex.setParam(IntParam.SolnPoolIntensity, 4);
 				cplex.setParam(IntParam.SolnPoolReplace, 2);
@@ -173,23 +219,41 @@ public class WaterfallILP {
 			IloIntVar[][] Y_a_k = createConditionalVariables1(cplex);
 			IloNumVar[] I_a = createImpressionsPerAgentVariables(cplex);
 
-			IloNumVar[] U_k = createImpressionSamplingVariables(cplex); //which impression did sample k happen on?
-			IloIntVar[][] d_a_k = createDroppedOutVariables(cplex); //did agent a drop out of sample k?
-			IloIntVar[][] h_a_k = createHowDroppedOutVariables(cplex); //is the sample before or after the agent's impression interval?
-			IloIntVar[][] p_a_k = createPositionVariables(cplex); //position of agent a at sample k?
-			IloNumVar[] Istart_a = createStartingImpressionVariables(cplex); //when did agent a see its first impression?
-			IloNumVar[] Iend_a = createEndingImpressionVariables(cplex); //when did agent a see its last impression?
-			
-			
+			//Create additional decision variables if we're sampling any average positions.
+			IloNumVar[] U_k = null;
+			IloIntVar[][] d_a_k = null;
+			IloIntVar[][] h_a_k = null;
+			IloIntVar[][] p_a_k = null;
+			IloNumVar[] Istart_a = null;
+			IloNumVar[] Iend_a = null;;
+			if (samplingAnyAveragePositions) {
+				U_k = createImpressionSamplingVariables(cplex); //which impression did sample k happen on?
+				d_a_k = createDroppedOutVariables(cplex); //did agent a drop out of sample k?
+				h_a_k = createHowDroppedOutVariables(cplex); //is the sample before or after the agent's impression interval?
+				p_a_k = createPositionVariables(cplex); //position of agent a at sample k?
+				Istart_a = createStartingImpressionVariables(cplex); //when did agent a see its first impression?
+				Iend_a = createEndingImpressionVariables(cplex); //when did agent a see its last impression?
+			}
+
 			//-------------------------------- CREATE OBJECTIVE FUNCITON -------------------------------------
 			if (DESIRED_OBJECTIVE == Objective.NONE) {
 				addObjective_indifferentBetweenFeasibleSolutions(cplex, I_a_s);				
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF_PROXY) {
-				addObjective_minimizeSlotImpressionDifferenceProxy(cplex, I_a_s);				
+				addObjective_minimizeSlotImpressionDifferenceProxy(cplex, I_a_s);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF || DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF_TIEBREAKER) {
+				addObjective_minimizeSlotImpressionDifference(cplex, I_a_s);
+			} else if (DESIRED_OBJECTIVE == Objective.CLOSE_TO_IMPRESSIONS_UPPER_BOUND) {
+				addObjective_closeToImpressionsUpperBound(cplex, I_a_s);
 			} else if (DESIRED_OBJECTIVE == Objective.SPREAD_SAMPLES_LINEAR) {
 				addObjective_spreadSamplesLinear(cplex, U_k, I_a_s);
+			} else if (DESIRED_OBJECTIVE == Objective.SPREAD_SAMPLES_QUADRATIC) {
+				addObjective_spreadSamplesQuadratic(cplex, U_k, I_a_s);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SAMPLE_MU_DIFF) {
+				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, I_a);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
+				addObjective_minimizeImpressionPriorError(cplex, I_a);
 			}
-			
+
 
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
 
@@ -203,10 +267,10 @@ public class WaterfallILP {
 
 			// An agent's total impressions must sum to impressions per slot.
 			addConstraint_totalImpressionsDefinition(cplex, I_a_s, I_a);
-						
+
 			// If we know any agents' total impressions (such as our own), these must be satisfied.
 			addConstraint_totalImpressionsKnown(cplex, I_a);
-
+			
 			// If we know any agents' total promoted impressions, these must be satisfied.
 			if (USE_PROMOTED_SLOT_CONSTRAINTS) {
 				addConstraint_totalPromotedImpressionsKnown(cplex, I_a_s);
@@ -216,42 +280,46 @@ public class WaterfallILP {
 			addConstraint_exactAveragePositionsKnown(cplex, I_a_s, I_a);
 
 			//---Sampling constraints---
-			//Define starting impression for each advertiser
-			addConstraint_startingImpressionDefinition(cplex, I_a_s, Istart_a);
-			
-			//Define ending impression for each advertiser
-			addConstraint_endingImpressionDefinition(cplex, I_a_s, Iend_a);
-			
-			//Define what it means to drop out (for agents that started in a slot)
-			addConstraint_droppedOutDefinitionInitialAgents(cplex, d_a_k, U_k, Iend_a);
-			
-			//Define what it means to drop out (for agents that didn't start in a slot)
-			addConstraint_droppedOutDefinitionLaterAgents(cplex, d_a_k, h_a_k, U_k, Istart_a, Iend_a);
-			
-			//Define each agent's position for each sample.
-			addConstraint_samplePositionDefinition(cplex, p_a_k, d_a_k);
-			
-			//Agent impressions per slot must result in the known (sampled) average positions.
-			addConstraint_sampledAveragePositionsKnown(cplex, p_a_k, d_a_k);
+			//Note that there are some objectives that don't require these constraints, even if sampledMu are present
+			if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
+//			if (samplingAnyAveragePositions) {
+				//Define starting impression for each advertiser
+				addConstraint_startingImpressionDefinition(cplex, I_a_s, Istart_a);
 
-			//Samples have to be ordered by impression number (lower k = lower U_k)
-			addConstraint_orderedSamples(cplex, U_k);
-			
-			//The highest sampled impression can't be higher than the total number of impressions seen.
-			//(TODO: Is this true? Or can samples occur even if nobody is in the auction?)
-			addConstraint_maxSample(cplex, U_k, I_a_s);
-			
-			//If the sample mu has been given for an agent, not all the samples can be dropped
-			addConstraint_notAllSamplesDropped(cplex, d_a_k);
-			
-			
+				//Define ending impression for each advertiser
+				addConstraint_endingImpressionDefinition(cplex, I_a_s, Iend_a);
+
+				//Define what it means to drop out (for agents that started in a slot)
+				addConstraint_droppedOutDefinitionInitialAgents(cplex, d_a_k, U_k, Iend_a);
+
+				//Define what it means to drop out (for agents that didn't start in a slot)
+				addConstraint_droppedOutDefinitionLaterAgents(cplex, d_a_k, h_a_k, U_k, Istart_a, Iend_a);
+
+				//Define each agent's position for each sample.
+				addConstraint_samplePositionDefinition(cplex, p_a_k, d_a_k);
+
+				//Agent impressions per slot must result in the known (sampled) average positions.
+				addConstraint_sampledAveragePositionsKnown(cplex, p_a_k, d_a_k);
+
+				//Samples have to be ordered by impression number (lower k = lower U_k)
+				addConstraint_orderedSamples(cplex, U_k);
+
+				//The highest sampled impression can't be higher than the total number of impressions seen.
+				//(TODO: Is this true? Or can samples occur even if nobody is in the auction?)
+				addConstraint_maxSample(cplex, U_k, I_a_s);
+
+				//If the sample mu has been given for an agent, not all the samples can be dropped
+				addConstraint_notAllSamplesDropped(cplex, d_a_k);
+			}
+
+
 			//----------------------------- PRINT AND SOLVE MODEL --------------------------------------------------
 
 			/**
 			 * Print and solve model
 			 */
 //			System.out.println("Constraints added.");
-//			System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
+			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
 			if ( cplex.solve() ) {
 				cplex.output().println("Solution status = " + cplex.getStatus());
 				cplex.output().println("Solution value = " + cplex.getObjValue());
@@ -263,11 +331,13 @@ public class WaterfallILP {
 						I_a_sDouble[a][s] = cplex.getValue(I_a_s[a][s]);
 					}
 				}
-				
-				for (int k=0; k<numSamples; k++) {
-					U_kDouble[k] = cplex.getValue(U_k[k]);
+
+				if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
+					for (int k=0; k<numSamples; k++) {
+						U_kDouble[k] = cplex.getValue(U_k[k]);
+					}
 				}
-				
+
 //				System.out.println("BEST SOLUTION:\n" + arrayString(I_a_sDouble));
 
 				//Get total imps per agent
@@ -326,10 +396,10 @@ public class WaterfallILP {
 
 
 
-	
-	
-	
-	
+
+
+
+
 
 
 
@@ -344,9 +414,9 @@ public class WaterfallILP {
 			if (INTEGER_PROGRAM) {
 				//Agents have a variable for every possible slot they could have been in.
 				//(They don't have variables for slots that were below where they started).
-				I_a_s[a] = cplex.intVarArray(a+1, minImpsPerSlot, maxImpsPerSlot); 
+				I_a_s[a] = cplex.intVarArray(a+1, minImpsPerAgentPerSlot, maxImpsPerAgentPerSlot); 
 			} else {
-				I_a_s[a] = cplex.numVarArray(a+1, minImpsPerSlot, maxImpsPerSlot);
+				I_a_s[a] = cplex.numVarArray(a+1, minImpsPerAgentPerSlot, maxImpsPerAgentPerSlot);
 			}
 		}
 		return I_a_s;
@@ -370,14 +440,16 @@ public class WaterfallILP {
 		return I_a;
 	}
 
+
+	
 	private IloNumVar[] createImpressionSamplingVariables(IloCplex cplex) throws IloException {
 		IloNumVar[] U_k;
 		if (INTEGER_PROGRAM) {
 			//TODO: If U_k can be beyond the number of viewed impressions (e.g. after all agents
 			//have dropped out), we may want to change this upper bound.
-			U_k = cplex.intVarArray(numSamples, 1, maxImpsPerSlot);
+			U_k = cplex.intVarArray(numSamples, 1, maxImpsPerAgentPerSlot);
 		} else {
-			U_k = cplex.numVarArray(numSamples, 1, maxImpsPerSlot);
+			U_k = cplex.numVarArray(numSamples, 1, maxImpsPerAgentPerSlot);
 		}
 		return U_k;
 	}
@@ -389,7 +461,7 @@ public class WaterfallILP {
 		}
 		return d_a_k;
 	}
-	
+
 	/**
 	 * Creates variables specifying how the agent dropped out (e.g. did the sample occur
 	 * before the agent had been in the auction yet, or after the agent had seen all
@@ -411,7 +483,7 @@ public class WaterfallILP {
 		}
 		return h_a_k;
 	}
-	
+
 	private IloIntVar[][] createPositionVariables(IloCplex cplex) throws IloException {
 		IloIntVar[][] p_a_k = new IloIntVar[numAgents][];
 		for (int a=0; a<numAgents; a++) {
@@ -419,7 +491,7 @@ public class WaterfallILP {
 		}
 		return p_a_k;
 	}
-	
+
 	/**
 	 * Create variables specifying the starting impression for each agent.
 	 * Agents starting in the auction will have a starting impression of 1.
@@ -430,9 +502,9 @@ public class WaterfallILP {
 	private IloNumVar[] createStartingImpressionVariables(IloCplex cplex) throws IloException {
 		IloNumVar[] Istart_a;
 		if (INTEGER_PROGRAM) {
-			Istart_a = cplex.intVarArray(numAgents, 1, maxImpsPerSlot); 
+			Istart_a = cplex.intVarArray(numAgents, 1, maxImpsPerAgentPerSlot); 
 		} else {
-			Istart_a = cplex.numVarArray(numAgents, 1, maxImpsPerSlot); 				
+			Istart_a = cplex.numVarArray(numAgents, 1, maxImpsPerAgentPerSlot); 				
 		}
 		return Istart_a;
 	}
@@ -446,9 +518,9 @@ public class WaterfallILP {
 	private IloNumVar[] createEndingImpressionVariables(IloCplex cplex) throws IloException {
 		IloNumVar[] Iend_a;
 		if (INTEGER_PROGRAM) {
-			Iend_a = cplex.intVarArray(numAgents, 1, maxImpsPerSlot); 
+			Iend_a = cplex.intVarArray(numAgents, 1, maxImpsPerAgentPerSlot); 
 		} else {
-			Iend_a = cplex.numVarArray(numAgents, 1, maxImpsPerSlot); 				
+			Iend_a = cplex.numVarArray(numAgents, 1, maxImpsPerAgentPerSlot); 				
 		}
 		return Iend_a;
 	}
@@ -457,7 +529,7 @@ public class WaterfallILP {
 
 	//************************************ OBJECTIVE FUNCTIONS ************************************
 
-	
+
 	/**
 	 * This is just a generic objective function. It doesn't favor one
 	 * feasible solution over another. (Maybe there's a way to specify
@@ -477,7 +549,7 @@ public class WaterfallILP {
 		cplex.addMaximize(expr);
 	}
 
-	
+
 	/**
 	 * This is a proxy to trying to maximize the number of slots
 	 * that see the same amount of impressions as the first slot.
@@ -494,9 +566,9 @@ public class WaterfallILP {
 			IloCplex cplex, IloNumVar[][] I_a_s) throws IloException {
 		// distance = (numSlots-1)*slot1Imps - sum(otherSlotImps)
 		// minimize distance
-		IloLinearNumExpr slot1Imps = cplex.linearNumExpr();
+		IloLinearNumExpr slot1ImpsMultiplied = cplex.linearNumExpr();
 		for (int a=0; a<numAgents; a++) {
-			slot1Imps.addTerm( (numSlots-1) , I_a_s[a][0]);
+			slot1ImpsMultiplied.addTerm( (numSlots-1) , I_a_s[a][0]);
 		}
 		IloLinearNumExpr otherSlotImps = cplex.linearNumExpr();
 		for (int a=1; a<numAgents; a++) {
@@ -504,11 +576,59 @@ public class WaterfallILP {
 				otherSlotImps.addTerm(1, I_a_s[a][s]);
 			}
 		}
-		cplex.addMinimize(cplex.diff(slot1Imps, otherSlotImps));
+		cplex.addMinimize(cplex.diff(slot1ImpsMultiplied, otherSlotImps));
 	}
 
+	
+	
+	private void addObjective_minimizeSlotImpressionDifference(
+			IloCplex cplex, IloNumVar[][] I_a_s) throws IloException {
+		//Maximize the number of slots that end at the same time as the first slot.
+		//Tiebreaker: maximize the number of impressions seen in the first slot.
+		int LARGE_CONSTANT = maxImpsPerAgent + 1;
 
+		//Create 1/0 variable which will say whether some other slot has the same #imps as slot 1.
+		IloIntVar[] differentImpsThanSlot1 = cplex.intVarArray(numSlots-1, 0, 1);		
 
+		//Determine how many imps were in slot 1.
+		IloLinearNumExpr slot1Imps = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			slot1Imps.addTerm( 1, I_a_s[a][0]);
+		}
+
+		//Determine how many imps were in each of the other slots
+		for (int s=1; s<numSlots; s++) {
+			IloLinearNumExpr slotSImps = cplex.linearNumExpr();
+			for (int a=s; a<numAgents; a++) {
+				slotSImps.addTerm(1, I_a_s[a][s]);
+			}
+			//Add constraint: if different amount of imps in these slots, "differentImpsThanSlot1 = 1"
+			cplex.addLe(cplex.diff(slot1Imps, slotSImps), cplex.prod(LARGE_CONSTANT, differentImpsThanSlot1[s-1])); //-1 because we don't have a var for the 0th slot
+		}
+		
+		if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF) {
+			cplex.addMinimize(cplex.sum(differentImpsThanSlot1));
+		} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF_TIEBREAKER) {
+			cplex.addMinimize(cplex.diff( cplex.prod(LARGE_CONSTANT , cplex.sum(differentImpsThanSlot1)) , slot1Imps) );
+		}
+	}
+	
+	
+
+	private void addObjective_closeToImpressionsUpperBound(
+			IloCplex cplex, IloNumVar[][] I_a_s) throws IloException {
+		IloLinearNumExpr slotImps = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+				slotImps.addTerm(1, I_a_s[a][s]);
+			}
+		}
+		cplex.addMaximize(slotImps);
+		//cplex.addMinimize(cplex.diff(numSlots*maxImpsPerAgent, slotImps));		
+	}
+
+	
+	
 
 
 	private void addObjective_spreadSamplesLinear(IloCplex cplex,
@@ -527,6 +647,103 @@ public class WaterfallILP {
 		}
 		cplex.addMinimize(cplex.sum(sampleDistances));
 	}
+
+
+	private void addObjective_spreadSamplesQuadratic(IloCplex cplex,
+			IloNumVar[] U_k, IloNumVar[][] I_a_s) throws IloException {
+
+		IloLinearNumExpr slot1Imps = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			slot1Imps.addTerm( (numSlots-1) , I_a_s[a][0]);
+		}
+
+		IloNumExpr[] sampleDistances = new IloNumExpr[numSamples+1];
+		sampleDistances[0] = cplex.prod( cplex.diff(U_k[0], 1), cplex.diff(U_k[0], 1) );
+		for (int k=1; k<numSamples; k++) {
+			sampleDistances[k] = cplex.prod( cplex.diff(U_k[k], U_k[k-1]), cplex.diff(U_k[k], U_k[k-1]) );
+		}
+		sampleDistances[numSamples] = cplex.prod( cplex.diff(slot1Imps, U_k[numSamples-1]), cplex.diff(slot1Imps, U_k[numSamples-1]) );
+
+		cplex.addMinimize(cplex.sum(sampleDistances));
+	}
+
+
+	
+	
+	/**
+	 * This will cause constraints to be created that try to make the average positions
+	 * as close as possible to what were sampled (assuming you don't have exact info for that position).
+	 * 
+	 * @param cplex
+	 * @param I_a_s
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addObjective_minimizeDistanceFromSampledMu(IloCplex cplex,
+			IloNumVar[][] I_a_s, IloNumVar[] I_a) throws IloException {
+		
+		//The maximum allowed difference between the sample and observed average positions 
+		int LARGE_CONSTANT = numSlots;
+			
+		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
+		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		
+		//Add constraints stating resulting avgPositions have to be close to sampledMu
+		for (int a=0; a<numAgents; a++) {
+			if (!isKnownMu_a[a] && isKnownSampledMu_a[a]) {
+				//Compute resulting avgPosition
+				IloLinearNumExpr lhs = cplex.linearNumExpr();
+				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+					lhs.addTerm(s+1, I_a_s[a][s]);
+				}
+				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], I_a[a]);
+
+				//Make sure avgPosition is close to satisfied
+				cplex.addLe(lhs, cplex.sum(rhs, errors[a]));
+				cplex.addGe(lhs, cplex.sum(rhs, cplex.prod(-1, errors[a])));
+				
+				//Keep track of which agents have constraints here
+				relevantErrors.addTerm(1, errors[a]);
+			}
+		}
+		
+		//Minimize total distance from sampledMus
+		cplex.addMinimize(relevantErrors);
+	}
+	
+	
+	
+	/**
+	 * This will make the predicted agent impressions as close to our priors as possible. 
+	 * @param cplex
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addObjective_minimizeImpressionPriorError(IloCplex cplex, IloNumVar[] I_a) throws IloException {
+		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
+		double maxError = 5; //Place some limit on how many standard deviations away we can be?
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, maxError);				
+		
+		// This constraint ensures that any difference between the waterfall's predicted impressions and 
+		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			//Only consider this agent's impressions model if we don't know its exact impressions.
+			if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
+				cplex.addLe(I_a[a], cplex.sum( knownI_aDistributionMean[a] , cplex.prod(knownI_aDistributionStdev[a], I_aError[a])  )  );
+				cplex.addGe(I_a[a], cplex.diff( knownI_aDistributionMean[a] , cplex.prod(knownI_aDistributionStdev[a], I_aError[a])  )  );
+				relevantErrors.addTerm(1, I_aError[a]);
+			}
+		}
+		cplex.addMinimize(relevantErrors);
+	}
+	
+	
+
+
+	
+	
 	
 
 	//************************************ CONSTRAINTS ************************************
@@ -540,8 +757,8 @@ public class WaterfallILP {
 	 * @throws IloException
 	 */
 	private void addConstraint_waterfallOrdering(IloCplex cplex, IloNumVar[][] I_a_s) throws IloException {
-		 // Advertiser $a$ can't spend more time in slots $k$ through $a$ than 
-		 // advertisers above him spent in slot $k-1$.
+		// Advertiser $a$ can't spend more time in slots $k$ through $a$ than 
+		// advertisers above him spent in slot $k-1$.
 		for (int a=1; a<numAgents; a++) {
 			for (int k=1; k<=a; k++) {
 				StringBuffer sb = new StringBuffer();					
@@ -560,12 +777,12 @@ public class WaterfallILP {
 				}
 //				System.out.println(sb);
 				cplex.addLe(myCumulativeImps, oppCumulativeImps); //add constraint
-				
+
 			}
 		}		
 	}
 
-	
+
 
 	/**
 	 * This constraint states that, if an agent appeared at all in slot k, 
@@ -630,7 +847,7 @@ public class WaterfallILP {
 		}
 	}
 
-	
+
 
 	/**
 	 * This constraint combines the two other waterfall ordering constraints
@@ -662,7 +879,7 @@ public class WaterfallILP {
 				}
 //				System.out.println(sb);
 				cplex.addLe(myCumulativeImps, oppCumulativeImps); //add constraint
-				
+
 				//If I have anything in the above slot, the above constraint is tight.
 				cplex.add( cplex.ifThen(cplex.ge(I_a_s[a][k-1], 1), cplex.eq(myCumulativeImps, oppCumulativeImps)) );
 			}
@@ -670,7 +887,7 @@ public class WaterfallILP {
 	}
 
 
-	
+
 	/**
 	 * This constraint ensures that an agent's total impressions
 	 * is the sum of impressions he received in each slot.
@@ -714,8 +931,8 @@ public class WaterfallILP {
 		}
 	}
 
-	
-	
+
+
 	/**
 	 * This constraint ensures that if we know any agents' total PROMOTED impressions, the total 
 	 * impressions CPLEX decides on for promoted slots will match this value.
@@ -738,8 +955,10 @@ public class WaterfallILP {
 		}		
 	}
 
+
 	
 	
+
 	/**
 	 * This constraint ensures that agent impressions per slot must result in the known 
 	 * (exact) average positions.
@@ -757,7 +976,7 @@ public class WaterfallILP {
 					lhs.addTerm(s+1, I_a_s[a][s]);
 				}
 				IloNumExpr rhs = cplex.prod(knownMu_a[a], I_a[a]);
-				
+
 				if (USE_EPSILON) {
 					cplex.addLe(lhs, cplex.sum(rhs, epsilon));
 					cplex.addGe(lhs, cplex.sum(rhs, -epsilon));
@@ -768,7 +987,8 @@ public class WaterfallILP {
 		}
 	}
 
-	
+
+
 	/**
 	 * This constraint ensures that the last impression seen by the advertiser
 	 * is actually consistent with the number of impressions seen per slot.
@@ -817,10 +1037,10 @@ public class WaterfallILP {
 		//Only one of these constraints is active, depending on whether or not
 		//the agent dropped out. We choose a large constant to ensure one of the
 		//constraints is always trivially satisfied.
-		int LARGE_CONSTANT = maxImpsPerSlot + 1;
+		int LARGE_CONSTANT = maxImpsPerAgentPerSlot + 1;
 		for (int a=0; a<Math.min(numAgents, numSlots); a++) {
 			for (int k=0; k<numSamples; k++) {
-				
+
 				//When not dropped out, sample happened before agent's last impression. (Equation 19)
 				cplex.addLe(U_k[k], cplex.sum(Iend_a[a], cplex.prod(LARGE_CONSTANT, d_a_k[a][k])));
 
@@ -838,7 +1058,7 @@ public class WaterfallILP {
 	private void addConstraint_droppedOutDefinitionLaterAgents(IloCplex cplex,
 			IloIntVar[][] d_a_k, IloIntVar[][] h_a_k, IloNumVar[] U_k,
 			IloNumVar[] Istart_a, IloNumVar[] Iend_a) throws IloException {
-		int LARGE_CONSTANT = maxImpsPerSlot + 1;
+		int LARGE_CONSTANT = maxImpsPerAgentPerSlot + 1;
 
 		//for each agent that doesn't start in a slot
 		for (int a=numSlots; a<numAgents; a++) {
@@ -846,11 +1066,11 @@ public class WaterfallILP {
 				//When not dropped out, sample happened after the agent's first impression. (Equation 18)
 				//(comes into play when d_a_k = 0)
 				cplex.addGe(U_k[k], cplex.sum(Istart_a[a], cplex.prod(-LARGE_CONSTANT, d_a_k[a][k])));
-				
+
 				//When not dropped out, sample happened before agent's last impression. (Equation 19)
 				//(comes into play when d_a_k = 0)
 				cplex.addLe(U_k[k], cplex.sum(Iend_a[a], cplex.prod(LARGE_CONSTANT, d_a_k[a][k])));
-				
+
 				//When dropped out, sample may have happened before the agent's first impression. (Equation 20)
 				//(comes into play when d_a_k = 1)
 				//(comes into play when h_a_k = 0)
@@ -874,7 +1094,7 @@ public class WaterfallILP {
 		}
 	}
 
-	
+
 
 	/**
 	 * This defines which position an agent is in for sample k, given which agents above him 
@@ -895,7 +1115,7 @@ public class WaterfallILP {
 				for (int opp=0; opp<a; opp++) {
 					numDroppedOutAbove.addTerm(-1, d_a_k[opp][k]);
 				}
-				
+
 				//(Break equality into two inequality constraints.)
 				//When not dropped out, position >= start slot - #agents above who dropped out
 				cplex.addGe(p_a_k[a][k], cplex.sum(
@@ -905,7 +1125,7 @@ public class WaterfallILP {
 				cplex.addLe(p_a_k[a][k], cplex.sum(
 						numDroppedOutAbove, 
 						cplex.prod(LARGE_CONSTANT, d_a_k[a][k])));
-				
+
 				//When dropped out, position is 0. [Bounded by 0, so we only need an <= constraint]
 				cplex.addLe(p_a_k[a][k], cplex.sum(
 						LARGE_CONSTANT,
@@ -944,14 +1164,14 @@ public class WaterfallILP {
 		}
 	}
 
-	
+
 	private void addConstraint_orderedSamples(IloCplex cplex, IloNumVar[] U_k) throws IloException {
 		for (int k=1; k<numSamples; k++) {
 			cplex.addGe(U_k[k], cplex.sum(1, U_k[k-1]) );
 		}
 	}
-	
-	
+
+
 	private void addConstraint_maxSample(IloCplex cplex, IloNumVar[] U_k,
 			IloNumVar[][] I_a_s) throws IloException {
 		IloLinearNumExpr firstSlotImpressions = cplex.linearNumExpr();
@@ -960,7 +1180,7 @@ public class WaterfallILP {
 		}
 
 		if (numSamples>0) cplex.addLe(U_k[numSamples-1], firstSlotImpressions);
-		
+
 		//Actually only need this for the last sample, since they're ordered.
 		//for (int k=0; k<numSamples; k++) { 
 		//	cplex.addLe(U_k[k], firstSlotImpressions);
@@ -968,7 +1188,7 @@ public class WaterfallILP {
 	}
 
 
-	
+
 
 
 	/**
@@ -997,12 +1217,12 @@ public class WaterfallILP {
 	}
 
 
-	
-	
-	
+
+
+
 	//************************************ UTILITIES ************************************
 
-	
+
 	/**
 	 * Simple 2D array printing method
 	 * @param a
@@ -1037,92 +1257,49 @@ public class WaterfallILP {
 	public class WaterfallResult {
 		private final double[][] I_a_s;
 		private final double[] U_k;
-		
+
 		public WaterfallResult(double[][] I_a_s, double[] U_k) {
 			this.I_a_s = I_a_s;
 			this.U_k = U_k;
 		}
-		
+
 		public double[][] getI_a_s() {return I_a_s;}
 		public double[] getU_k() {return U_k;}
 	}
 
 
-	
+
 	//************************************ MAIN METHOD ************************************
-	
+
 	/**
 	 * Main method. Solve an instance of the ILP.
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-//		double[] I_a = {4, 6, 9, 5, 12};
-//		double[] mu_a = {-1, -1, -1, -1, -1};
-		//double[] I_a = {-1, -1, -1, -1, 12};
-		//double[] mu_a = {1, , -1, -1, -1};
-
-		//double[] I_a = {-1, 4};
-		//double[] mu_a = {1.0, 1.5};
-
-		//double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-		//double[] mu_a = {-1, -1, -1, -1, -1, -1, -1, -1};
 
 		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-		double[] I_a = {-1, -1, -1, 589, -1, -1, -1, -1};
+		double[] I_a = {-1, -1, -1, 500, -1, -1, -1, -1};
 		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-		double[] mu_a = {-1, -1, -1, 3.94397284, -1, -1, -1, -1};
+		double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
 		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
 		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
-		double[] knownSampledMu_a = {1.0, 2.0, 3.0, 3.75, 5, 4, 4.5, 5};
+		double[] knownSampledMu_a = {-1, -1, -1, -1, -1, -1, -1, -1};
 		int numSamples = 5;
-
-		
-//		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-//		double[] I_a = {100, -1, -1, -1, -1, -1};
-//		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-//		double[] mu_a = {-1, -1, -1, -1, -1, -1};
-//		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1};
-//		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false};
-//		double[] knownSampledMu_a = {1.0, 2.0, 3.0, 4.0, 5, 5}; 
-//		int numSamples = 5;
-
-
-//		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-//		double[] I_a = {100, -1, -1, -1, -1, -1};
-//		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-//		double[] mu_a = {-1, -1, -1, -1, -1, -1};
-//		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1};
-//		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false};
-//		double[] knownSampledMu_a = {1.0, 2.0, 3.0, 4.0, 5, 5}; 
-//		int numSamples = 5;
-
-		
-		
-		
-
-//		double[] I_a = {-1, 80, -1};
-//		double[] mu_a = {-1, 1.5, -1};		
-//		double[] I_aPromoted = {-1, -1, -1};
-//		boolean[] isKnownPromotionEligible = {false, false, false};
-//		double[] knownSampledMu_a = {1.0, 2.0, 2.5}; 
-//		int numSamples = 4;
-
-//		double[] I_a = {80};
-//		double[] mu_a = {1.0};		
-//		double[] I_aPromoted = {-1};
-//		boolean[] isKnownPromotionEligible = {false};
-//		double[] knownSampledMu_a = {1.0}; 
-//		int numSamples = 3;
-
-		
+		double[] knownI_aDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
+		double[] knownI_aDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
 		int numSlots = 5;
 		int numPromotedSlots = 0;
 		boolean integerProgram = true;
 		boolean useEpsilon = false;
+		int maxImpsPerAgent = 10000;
 		
 		//Get mu_a values, given impressions
-		WaterfallILP ilp = new WaterfallILP(I_a, mu_a, I_aPromoted, isKnownPromotionEligible, numSlots, numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, numSamples);
+		WaterfallILP ilp = new WaterfallILP(
+				I_a, mu_a, I_aPromoted, isKnownPromotionEligible, numSlots, 
+				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
+				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev);
+
 		WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();
 		double[] U_k = result.getU_k();

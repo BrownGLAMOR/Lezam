@@ -17,8 +17,12 @@ public class QAInstance {
 	private int _impressionsUB;
 	private boolean _considerPaddingAgents;
 	private boolean _promotionEligibilityVerified;
+	private double[] _agentImpressionDistributionMean; //prior on agent impressions
+	private double[] _agentImpressionDistributionStdev; //prior on agent impressions
 	
-	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified){
+	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, 
+			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
+			double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev){
 		assert(avgPos.length == advetisers);
 		assert(agentIds.length == advetisers);
 		assert(advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -34,7 +38,8 @@ public class QAInstance {
 		_impressionsUB = impressionsUB;
 		_considerPaddingAgents = considerPaddingAgents;
 		_promotionEligibilityVerified = promotionEligibiltyVerified;
-		
+		_agentImpressionDistributionMean = agentImpressionDistributionMean;
+		_agentImpressionDistributionStdev = agentImpressionDistributionStdev;
 		
 		if (_considerPaddingAgents) {
 			while(!feasibleOrder(getAvgPosOrder())){
@@ -96,7 +101,9 @@ public class QAInstance {
 	public int getPromotedImpressions() {return _promotedImpressions;}
 	public int getImpressionsUB() {return _impressionsUB;}
 	public boolean getPromotionEligibilityVerified() {return _promotionEligibilityVerified;}
-
+	public double[] getAgentImpressionDistributionMean() {return _agentImpressionDistributionMean;}
+	public double[] getAgentImpressionDistributionStdev() {return _agentImpressionDistributionStdev;}
+	
 	public int[] getBidOrder(QAData data){
 		double[] bids = new double[_advetisers];
 		int[] bidOrder = new int[_advetisers];
