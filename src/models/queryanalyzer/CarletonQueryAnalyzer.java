@@ -190,7 +190,9 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 			//--------------
 			//sodomka: 3/1/11: I added some things to the QAInstance that Carleton doesn't use. Let's just add dummy values.
-
+			//(We could have just added a default constructor to take care of these things, but this
+			// should make it more visible that these are possible extensions to CarletonQueryAnalyzer).
+			
 			//No distinguishing between exact and sampled positions.
 			double[] dummySampledAvgPositions = new double[agentIds.size()];
 			Arrays.fill(dummySampledAvgPositions, -1);
@@ -203,10 +205,19 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			
 			//Not considering whether our bid is high enough to be in a promoted slot
 			boolean promotionEligibiltyVerified = false;
+			
+			//Not using any prior knowledge about agent impressions
+			double[] agentImpressionDistributionMean = new double[agentIds.size()]; 
+			double[] agentImpressionDistributionStdev = new double[agentIds.size()];
+			
 			//--------------
 			
 			
-			QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(), allAvgPosArr, dummySampledAvgPositions, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q), true, promotionEligibiltyVerified);
+			QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(), 
+					allAvgPosArr, dummySampledAvgPositions, agentIdsArr, ourNewIdx, 
+					queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q), 
+					true, promotionEligibiltyVerified,
+					agentImpressionDistributionMean, agentImpressionDistributionStdev);
 			//int[] avgPosOrder = inst.getAvgPosOrder();
 			int[] avgPosOrder = inst.getCarletonOrder();
 
