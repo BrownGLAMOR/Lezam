@@ -1,76 +1,63 @@
 package models.postocpc;
 
-import java.util.Random;
-
-import weka.classifiers.Classifier;
-import weka.classifiers.functions.GaussianProcesses;
-import weka.classifiers.functions.LeastMedSq;
-import weka.classifiers.functions.LinearRegression;
-import weka.classifiers.functions.MultilayerPerceptron;
-import weka.classifiers.functions.RBFNetwork;
-import weka.classifiers.functions.SMOreg;
-import weka.classifiers.functions.SimpleLinearRegression;
-import weka.classifiers.lazy.IBk;
-import weka.classifiers.lazy.KStar;
-import weka.classifiers.lazy.LWL;
-import weka.classifiers.meta.AdditiveRegression;
-import weka.classifiers.meta.Bagging;
-import weka.classifiers.meta.RegressionByDiscretization;
-import weka.classifiers.rules.ConjunctiveRule;
-import weka.classifiers.rules.DecisionTable;
-import weka.classifiers.rules.M5Rules;
-import weka.classifiers.trees.DecisionStump;
-import weka.classifiers.trees.M5P;
-import weka.classifiers.trees.REPTree;
-import weka.classifiers.trees.m5.M5Base;
-import weka.core.Attribute;
-import weka.core.FastVector;
-import weka.core.Instance;
-import weka.core.Instances;
-import models.AbstractModel;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
+import models.AbstractModel;
+import weka.classifiers.Classifier;
+import weka.classifiers.functions.LinearRegression;
+import weka.classifiers.lazy.IBk;
+import weka.classifiers.lazy.KStar;
+import weka.classifiers.lazy.LWL;
+import weka.classifiers.meta.AdditiveRegression;
+import weka.classifiers.meta.RegressionByDiscretization;
+import weka.classifiers.trees.REPTree;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instance;
+import weka.core.Instances;
+
+import java.util.Random;
 
 public class WEKAPosToCPC extends AbstractPosToCPC {
 
-	FastVector _allAttributes;
-	Instances _data;
-	Classifier _predictor;
-	int _idx;
-	double _weight;
+   FastVector _allAttributes;
+   Instances _data;
+   Classifier _predictor;
+   int _idx;
+   double _weight;
 
-	public WEKAPosToCPC(int idx,double weight) {
-		_idx = idx;
-		_weight = weight;
-		Attribute posAttribute = new Attribute("pos");
-		Attribute cpcAttribute = new Attribute("cpc");
-		FastVector fvQuery = new FastVector(16);
-		fvQuery.addElement("null-null");
-		fvQuery.addElement("lioneer-null");
-		fvQuery.addElement("null-tv");
-		fvQuery.addElement("lioneer-tv");
-		fvQuery.addElement("null-audio");
-		fvQuery.addElement("lioneer-audio");
-		fvQuery.addElement("null-dvd");
-		fvQuery.addElement("lioneer-dvd");
-		fvQuery.addElement("pg-null");
-		fvQuery.addElement("pg-tv");
-		fvQuery.addElement("pg-audio");
-		fvQuery.addElement("pg-dvd");
-		fvQuery.addElement("flat-null");
-		fvQuery.addElement("flat-tv");
-		fvQuery.addElement("flat-audio");
-		fvQuery.addElement("flat-dvd");
-		Attribute queryAttribute = new Attribute("query",fvQuery);
-		_allAttributes = new FastVector(3);
-		_allAttributes.addElement(posAttribute);
-		_allAttributes.addElement(cpcAttribute);
-		_allAttributes.addElement(queryAttribute);
-		Random random = new Random();
-		_data = new Instances("data"+random.nextLong(),_allAttributes,100);
-		_data.setClassIndex(1);
+   public WEKAPosToCPC(int idx, double weight) {
+      _idx = idx;
+      _weight = weight;
+      Attribute posAttribute = new Attribute("pos");
+      Attribute cpcAttribute = new Attribute("cpc");
+      FastVector fvQuery = new FastVector(16);
+      fvQuery.addElement("null-null");
+      fvQuery.addElement("lioneer-null");
+      fvQuery.addElement("null-tv");
+      fvQuery.addElement("lioneer-tv");
+      fvQuery.addElement("null-audio");
+      fvQuery.addElement("lioneer-audio");
+      fvQuery.addElement("null-dvd");
+      fvQuery.addElement("lioneer-dvd");
+      fvQuery.addElement("pg-null");
+      fvQuery.addElement("pg-tv");
+      fvQuery.addElement("pg-audio");
+      fvQuery.addElement("pg-dvd");
+      fvQuery.addElement("flat-null");
+      fvQuery.addElement("flat-tv");
+      fvQuery.addElement("flat-audio");
+      fvQuery.addElement("flat-dvd");
+      Attribute queryAttribute = new Attribute("query", fvQuery);
+      _allAttributes = new FastVector(3);
+      _allAttributes.addElement(posAttribute);
+      _allAttributes.addElement(cpcAttribute);
+      _allAttributes.addElement(queryAttribute);
+      Random random = new Random();
+      _data = new Instances("data" + random.nextLong(), _allAttributes, 100);
+      _data.setClassIndex(1);
 
 //		Instance query1 = new Instance(3);
 //		query1.setValue((Attribute)_allAttributes.elementAt(0),0.0);
@@ -168,108 +155,132 @@ public class WEKAPosToCPC extends AbstractPosToCPC {
 //		query16.setValue((Attribute)_allAttributes.elementAt(2),"flat-dvd");
 //		_data.add(query16);
 
-		_predictor = getClassifier(idx);
-		
-		try {
-			_predictor.buildClassifier(_data);
-		} catch (Exception e) {
+      _predictor = getClassifier(idx);
+
+      try {
+         _predictor.buildClassifier(_data);
+      } catch (Exception e) {
 //			e.printStackTrace();
-		}
-	}
+      }
+   }
 
-	@Override
-	public double getPrediction(Query query, double pos) {
-		if(Double.isNaN(pos) || pos >= 6) {
-			return 0;
-		}
-		Instance pred = new Instance(3);
-		pred.setValue((Attribute)_allAttributes.elementAt(0),pos);
-		pred.setValue((Attribute)_allAttributes.elementAt(2),query.getManufacturer() + "-" + query.getComponent());
-		pred.setDataset(_data);
-		double prediction = 0.0;
-		try {
-			prediction = _predictor.classifyInstance(pred);
-		} catch (Exception e) {
+   @Override
+   public double getPrediction(Query query, double pos) {
+      if (Double.isNaN(pos) || pos >= 6) {
+         return 0;
+      }
+      Instance pred = new Instance(3);
+      pred.setValue((Attribute) _allAttributes.elementAt(0), pos);
+      pred.setValue((Attribute) _allAttributes.elementAt(2), query.getManufacturer() + "-" + query.getComponent());
+      pred.setDataset(_data);
+      double prediction = 0.0;
+      try {
+         prediction = _predictor.classifyInstance(pred);
+      } catch (Exception e) {
 //			e.printStackTrace();
-		}
-		
-		if(prediction < 0.0) {
-			return 0.0;
-		}
+      }
 
-		return prediction;
-	}
+      if (prediction < 0.0) {
+         return 0.0;
+      }
 
-	@Override
-	public String toString() {
-        switch (_idx) {
-        case 1:  return "WEKAPosToCPC(LinearRegression), weight: " + _weight + ")";
-        case 2:  return "WEKAPosToCPC(IBk), weight: " + _weight + ")";
-        case 3:  return "WEKAPosToCPC(KStar), weight: " + _weight + ")";
-        case 4: return "WEKAPosToCPC(LWL), weight: " + _weight + ")";
-        case 5: return "WEKAPosToCPC(AdditiveRegression), weight: " + _weight + ")";
-        case 6:  return "WEKAPosToCPC(REPTree), weight: " + _weight + ")";
-        case 7:  return "WEKAPosToCPC(RegressionByDiscretization), weight: " + _weight + ")";
-        default: return "WEKAPosToCPC(LinearRegression), weight: " + _weight + ")";
-        }
-	}
+      return prediction;
+   }
 
-	@Override
-	public boolean updateModel(QueryReport queryReport,
-			SalesReport salesReport, BidBundle bidBundle) {
+   @Override
+   public String toString() {
+      switch (_idx) {
+         case 1:
+            return "WEKAPosToCPC(LinearRegression), weight: " + _weight + ")";
+         case 2:
+            return "WEKAPosToCPC(IBk), weight: " + _weight + ")";
+         case 3:
+            return "WEKAPosToCPC(KStar), weight: " + _weight + ")";
+         case 4:
+            return "WEKAPosToCPC(LWL), weight: " + _weight + ")";
+         case 5:
+            return "WEKAPosToCPC(AdditiveRegression), weight: " + _weight + ")";
+         case 6:
+            return "WEKAPosToCPC(REPTree), weight: " + _weight + ")";
+         case 7:
+            return "WEKAPosToCPC(RegressionByDiscretization), weight: " + _weight + ")";
+         default:
+            return "WEKAPosToCPC(LinearRegression), weight: " + _weight + ")";
+      }
+   }
 
-		if(_weight > 0.0 && _weight != 0) {
-			/*
-			 * Reweight old data
-			 */
-			int numDays = (int) (_data.numInstances()/16.0);
-			for(int i = 0; i < _data.numInstances(); i++) {
-				int idx = (int) (i/16.0);
-				_data.instance(i).setWeight(Math.pow(_weight, numDays - idx));
-			}
-		}
-		
-		for(Query query : queryReport) {
-			Instance newInstance = new Instance(3);
-			double pos = queryReport.getPosition(query);
-			if(Double.isNaN(pos)) {
-				pos = 6.0;
-			}
-			double cpc = queryReport.getCPC(query);
-			if(Double.isNaN(cpc)) {
-				cpc = 0.0;
-			}
-			newInstance.setValue((Attribute)_allAttributes.elementAt(0),pos);
-			newInstance.setValue((Attribute)_allAttributes.elementAt(1),cpc);
-			newInstance.setValue((Attribute)_allAttributes.elementAt(2),query.getManufacturer() + "-" + query.getComponent());
-			_data.add(newInstance);
-		}
-		try {
-			_predictor.buildClassifier(_data);
-		} catch (Exception e) {
+   @Override
+   public boolean updateModel(QueryReport queryReport,
+                              SalesReport salesReport, BidBundle bidBundle) {
+
+      if (_weight > 0.0 && _weight != 0) {
+         /*
+             * Reweight old data
+             */
+         int numDays = (int) (_data.numInstances() / 16.0);
+         for (int i = 0; i < _data.numInstances(); i++) {
+            int idx = (int) (i / 16.0);
+            _data.instance(i).setWeight(Math.pow(_weight, numDays - idx));
+         }
+      }
+
+      for (Query query : queryReport) {
+         Instance newInstance = new Instance(3);
+         double pos = queryReport.getPosition(query);
+         if (Double.isNaN(pos)) {
+            pos = 6.0;
+         }
+         double cpc = queryReport.getCPC(query);
+         if (Double.isNaN(cpc)) {
+            cpc = 0.0;
+         }
+         newInstance.setValue((Attribute) _allAttributes.elementAt(0), pos);
+         newInstance.setValue((Attribute) _allAttributes.elementAt(1), cpc);
+         newInstance.setValue((Attribute) _allAttributes.elementAt(2), query.getManufacturer() + "-" + query.getComponent());
+         _data.add(newInstance);
+      }
+      try {
+         _predictor.buildClassifier(_data);
+      } catch (Exception e) {
 //			e.printStackTrace();
-		}
-		
-		return true;
-	}
-	
-	public Classifier getClassifier(int idx) {
-		Classifier classifier;
-        switch (idx) {
-            case 1:  classifier = (Classifier)new LinearRegression(); break;
-            case 2:  classifier = (Classifier)new IBk(); break;
-            case 3:  classifier = (Classifier)new KStar(); break;
-            case 4: classifier = (Classifier)new LWL(); break;
-            case 5: classifier = (Classifier)new AdditiveRegression(); break;
-            case 6:  classifier = (Classifier)new REPTree(); break;
-            case 7:  classifier = (Classifier)new RegressionByDiscretization(); break;
-            default: classifier = (Classifier)new LinearRegression(); break;
-        }
-		return classifier;
-	}
+      }
 
-	@Override
-	public AbstractModel getCopy() {
-		return new WEKAPosToCPC(_idx,_weight);
-	}
+      return true;
+   }
+
+   public Classifier getClassifier(int idx) {
+      Classifier classifier;
+      switch (idx) {
+         case 1:
+            classifier = (Classifier) new LinearRegression();
+            break;
+         case 2:
+            classifier = (Classifier) new IBk();
+            break;
+         case 3:
+            classifier = (Classifier) new KStar();
+            break;
+         case 4:
+            classifier = (Classifier) new LWL();
+            break;
+         case 5:
+            classifier = (Classifier) new AdditiveRegression();
+            break;
+         case 6:
+            classifier = (Classifier) new REPTree();
+            break;
+         case 7:
+            classifier = (Classifier) new RegressionByDiscretization();
+            break;
+         default:
+            classifier = (Classifier) new LinearRegression();
+            break;
+      }
+      return classifier;
+   }
+
+   @Override
+   public AbstractModel getCopy() {
+      return new WEKAPosToCPC(_idx, _weight);
+   }
 }

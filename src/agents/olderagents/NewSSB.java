@@ -1,212 +1,215 @@
 package agents.olderagents;
 
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.Set;
-import java.io.File;
-import java.io.FileNotFoundException;
-
 import agents.AbstractAgent;
-
+import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.prconv.AbstractConversionModel;
 import models.prconv.HistoricPrConversionModel;
 import models.targeting.BasicTargetModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.UnitsSoldMovingAvg;
-import edu.umich.eecs.tac.props.Ad;
-import edu.umich.eecs.tac.props.BidBundle;
-import edu.umich.eecs.tac.props.Product;
-import edu.umich.eecs.tac.props.Query;
-import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.QueryType;
-import edu.umich.eecs.tac.props.SalesReport;
 
-public class NewSSB extends AbstractAgent{
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Set;
 
-	protected AbstractUnitsSoldModel _unitsSoldModel;
-	protected AbstractConversionModel _conversionPrModel;
-	protected HashMap<Query, Double> _reinvestment;
-	protected HashMap<Query, Double> _revenue;
-	protected BidBundle _bidBundle;
-	protected int counter = 1;
+public class NewSSB extends AbstractAgent {
 
-	protected double magicDivisor = 8;
+   protected AbstractUnitsSoldModel _unitsSoldModel;
+   protected AbstractConversionModel _conversionPrModel;
+   protected HashMap<Query, Double> _reinvestment;
+   protected HashMap<Query, Double> _revenue;
+   protected BidBundle _bidBundle;
+   protected int counter = 1;
 
-	protected PrintStream output;
+   protected double magicDivisor = 8;
 
-	@Override
-	public BidBundle getBidBundle(Set<AbstractModel> models) {
+   protected PrintStream output;
 
-		if(_salesReport == null || _queryReport == null) {
-			return new BidBundle();
-		}
-		_unitsSoldModel.update(_salesReport);
+   @Override
+   public BidBundle getBidBundle(Set<AbstractModel> models) {
 
-		for (Query query : _querySpace) {
+      if (_salesReport == null || _queryReport == null) {
+         return new BidBundle();
+      }
+      _unitsSoldModel.update(_salesReport);
 
-			_conversionPrModel.getPrediction(query);
+      for (Query query : _querySpace) {
 
-			//handle the case of no impression (the agent got no slot)
-			handleNoImpression(query);
-			//handle the case when the agent got the promoted slots
-			handlePromotedSlots(query);
-			//walk otherwise
-			walking(query);
+         _conversionPrModel.getPrediction(query);
+
+         //handle the case of no impression (the agent got no slot)
+         handleNoImpression(query);
+         //handle the case when the agent got the promoted slots
+         handlePromotedSlots(query);
+         //walk otherwise
+         walking(query);
 
 
-			//if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
-			if(query.getType() == QueryType.FOCUS_LEVEL_TWO)
-			{
-				_bidBundle.setBidAndAd(query, getQueryBid(query), new Ad(new Product(query.getManufacturer(), query.getComponent())));
-			}
-			else{
-				_bidBundle.setBid(query, getQueryBid(query));
-			}
+         //if the query is focus_level_two, send the targeted ad; send generic ad otherwise;
+         if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+            _bidBundle.setBidAndAd(query, getQueryBid(query), new Ad(new Product(query.getManufacturer(), query.getComponent())));
+         } else {
+            _bidBundle.setBid(query, getQueryBid(query));
+         }
 
 
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+         _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
 
-			//			//print out the properties
-			//			StringBuffer buff = new StringBuffer("");
-			//			buff.append("\t").append("day").append(counter).append("\n");
-			//			buff.append("\t").append("product: ").append(query.getManufacturer()).append(", ").append(query.getComponent());
-			//			buff.append("\t").append("bid: ").append(getQueryBid(query)).append("\n");
-			//			buff.append("\t").append("Conversion: ").append(_conversionPrModel.get(query)).append("\n");
-			//			buff.append("\t").append("ReinvestFactor: ").append(_reinvestment.get(query)).append("\n");
-			//			buff.append("\t").append("ConversionRevenue: ").append(_revenue.get(query)).append("\n");
-			//			buff.append("\t").append("Spend Limit: ").append(setQuerySpendLimit(query)).append("\n");
-			//			buff.append("\t").append("Slot: ").append(_queryReport.getPosition(query)).append("\n");
-			//			System.out.print(buff);
-			//			//output.append(buff);
+         //			//print out the properties
+         //			StringBuffer buff = new StringBuffer("");
+         //			buff.append("\t").append("day").append(counter).append("\n");
+         //			buff.append("\t").append("product: ").append(query.getManufacturer()).append(", ").append(query.getComponent());
+         //			buff.append("\t").append("bid: ").append(getQueryBid(query)).append("\n");
+         //			buff.append("\t").append("Conversion: ").append(_conversionPrModel.get(query)).append("\n");
+         //			buff.append("\t").append("ReinvestFactor: ").append(_reinvestment.get(query)).append("\n");
+         //			buff.append("\t").append("ConversionRevenue: ").append(_revenue.get(query)).append("\n");
+         //			buff.append("\t").append("Spend Limit: ").append(setQuerySpendLimit(query)).append("\n");
+         //			buff.append("\t").append("Slot: ").append(_queryReport.getPosition(query)).append("\n");
+         //			System.out.print(buff);
+         //			//output.append(buff);
 
-		}
-		//	   output.flush();
-		counter++;
-		return _bidBundle;
-	}
+      }
+      //	   output.flush();
+      counter++;
+      return _bidBundle;
+   }
 
-	@Override
-	public void initBidder() {
+   @Override
+   public void initBidder() {
 
-		_unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
+      _unitsSoldModel = new UnitsSoldMovingAvg(_querySpace, _capacity, _capWindow);
 
-		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
+      BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty, _compSpecialty);
 
-		_conversionPrModel = new HistoricPrConversionModel(_querySpace,basicTargModel);
+      _conversionPrModel = new HistoricPrConversionModel(_querySpace, basicTargModel);
 
-		_reinvestment = new HashMap<Query,Double>();
-		for (Query query : _querySpace){
-			_reinvestment.put(query,0.9);
-		}
+      _reinvestment = new HashMap<Query, Double>();
+      for (Query query : _querySpace) {
+         _reinvestment.put(query, 0.9);
+      }
 
-		_revenue = new HashMap<Query, Double>();
-		for (Query query: _querySpace){
-			if (query.getManufacturer() == _manSpecialty) _revenue.put(query, 15.0);
-			else _revenue.put(query,10.0);
-		}
-
-
-		/*
-		try {
-			output = new PrintStream(new File("log.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} */
+      _revenue = new HashMap<Query, Double>();
+      for (Query query : _querySpace) {
+         if (query.getManufacturer() == _manSpecialty) {
+            _revenue.put(query, 15.0);
+         } else {
+            _revenue.put(query, 10.0);
+         }
+      }
 
 
-		_bidBundle = new BidBundle();
-		for (Query query : _querySpace) {
-
-			_bidBundle.setBid(query, getQueryBid(query));
-
-			_bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
-		}
-
-	}
-
-	@Override
-	public Set<AbstractModel> initModels() {
-
-		return null;
-	}
-
-	@Override
-	public void updateModels(SalesReport salesReport,
-			QueryReport queryReport) {
+      /*
+        try {
+           output = new PrintStream(new File("log.txt"));
+        } catch (FileNotFoundException e) {
+           // TODO Auto-generated catch block
+           e.printStackTrace();
+        } */
 
 
-	}
+      _bidBundle = new BidBundle();
+      for (Query query : _querySpace) {
 
-	protected double getQueryBid(Query q)
-	{
-		return _conversionPrModel.getPrediction(q)*_reinvestment.get(q)*_revenue.get(q);
-	}
+         _bidBundle.setBid(query, getQueryBid(query));
 
-	protected void handleNoImpression(Query q){
-		if(Double.isNaN(_queryReport.getPosition(q))){
-			double increase = Math.max(_reinvestment.get(q)*1.3, _reinvestment.get(q)+0.1);
-			if(increase > 0.95) _reinvestment.put(q,0.95);
-			else _reinvestment.put(q, increase);
+         _bidBundle.setDailyLimit(query, setQuerySpendLimit(query));
+      }
 
-		}
+   }
 
-	}
+   @Override
+   public Set<AbstractModel> initModels() {
 
-	protected void handlePromotedSlots(Query q){
-		if(_queryReport.getPosition(q) < 1.1){
-			//if(_reinvestment.get(q)*0.6 <= 0.1) _reinvestment.put(q, 0.1);
-			//else _reinvestment.put(q,_reinvestment.get(q)*0.6);
-			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q)*_revenue.get(q)));
-		}
-		if(_queryReport.getPosition(q)< 2.1 && _queryReport.getPosition(q) > 1.1 && _numPS ==2){
-			//if(_reinvestment.get(q)*0.6 <= 0.2) _reinvestment.put(q, 0.1);
-			//else _reinvestment.put(q,_reinvestment.get(q)*0.8);
-			_reinvestment.put(q,_queryReport.getCPC(q)/(_conversionPrModel.getPrediction(q)));
-		}
-	}   
+      return null;
+   }
 
-	protected void walking(Query q){
-		if(getQueryBid(q) <= 0.25) return;
-		if((_queryReport.getPosition(q) > 1 || (_queryReport.getPosition(q) > 2 && _numPS == 2)) && _queryReport.getPosition(q) <= 5){
-			Random random = new Random();
-			double current = _reinvestment.get(q);
-			double currentBid = getQueryBid(q);
-			double y = currentBid/current;
-			double distance = Math.abs(currentBid - _queryReport.getCPC(q));
-			double rfDistance = (current - (distance/y))/10;
-
-			if(random.nextDouble() < 0.5){
-				if(current + rfDistance >= 0.90)  _reinvestment.put(q,0.90);
-				else _reinvestment.put(q,current + rfDistance);
-			}
-			else{
-
-				if(current - rfDistance <= 0.1)	_reinvestment.put(q,0.1);	    	
-				else  _reinvestment.put(q, current - rfDistance);
-				//_reinvestment.put(q,_queryReport.getCPC(q)/_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q));
-			}
-		}
-	}
+   @Override
+   public void updateModels(SalesReport salesReport,
+                            QueryReport queryReport) {
 
 
-	protected double setQuerySpendLimit(Query q) {
+   }
 
-		double remainCap = _capacity - _unitsSoldModel.getWindowSold();
-		if(remainCap < 0) remainCap = 0;
-		return getQueryBid(q)*remainCap/8;
-	}
+   protected double getQueryBid(Query q) {
+      return _conversionPrModel.getPrediction(q) * _reinvestment.get(q) * _revenue.get(q);
+   }
 
-	@Override
-	public String toString() {
-		return "NewSSB";
-	}
+   protected void handleNoImpression(Query q) {
+      if (Double.isNaN(_queryReport.getPosition(q))) {
+         double increase = Math.max(_reinvestment.get(q) * 1.3, _reinvestment.get(q) + 0.1);
+         if (increase > 0.95) {
+            _reinvestment.put(q, 0.95);
+         } else {
+            _reinvestment.put(q, increase);
+         }
 
-	@Override
-	public AbstractAgent getCopy() {
-		return new NewSSB();
-	}
+      }
+
+   }
+
+   protected void handlePromotedSlots(Query q) {
+      if (_queryReport.getPosition(q) < 1.1) {
+         //if(_reinvestment.get(q)*0.6 <= 0.1) _reinvestment.put(q, 0.1);
+         //else _reinvestment.put(q,_reinvestment.get(q)*0.6);
+         _reinvestment.put(q, _queryReport.getCPC(q) / (_conversionPrModel.getPrediction(q) * _revenue.get(q)));
+      }
+      if (_queryReport.getPosition(q) < 2.1 && _queryReport.getPosition(q) > 1.1 && _numPS == 2) {
+         //if(_reinvestment.get(q)*0.6 <= 0.2) _reinvestment.put(q, 0.1);
+         //else _reinvestment.put(q,_reinvestment.get(q)*0.8);
+         _reinvestment.put(q, _queryReport.getCPC(q) / (_conversionPrModel.getPrediction(q)));
+      }
+   }
+
+   protected void walking(Query q) {
+      if (getQueryBid(q) <= 0.25) {
+         return;
+      }
+      if ((_queryReport.getPosition(q) > 1 || (_queryReport.getPosition(q) > 2 && _numPS == 2)) && _queryReport.getPosition(q) <= 5) {
+         Random random = new Random();
+         double current = _reinvestment.get(q);
+         double currentBid = getQueryBid(q);
+         double y = currentBid / current;
+         double distance = Math.abs(currentBid - _queryReport.getCPC(q));
+         double rfDistance = (current - (distance / y)) / 10;
+
+         if (random.nextDouble() < 0.5) {
+            if (current + rfDistance >= 0.90) {
+               _reinvestment.put(q, 0.90);
+            } else {
+               _reinvestment.put(q, current + rfDistance);
+            }
+         } else {
+
+            if (current - rfDistance <= 0.1) {
+               _reinvestment.put(q, 0.1);
+            } else {
+               _reinvestment.put(q, current - rfDistance);
+            }
+            //_reinvestment.put(q,_queryReport.getCPC(q)/_conversionPrModel.get(q).getPrediction(_unitsSoldModel.getWindowSold()-_capacity)*_revenue.get(q));
+         }
+      }
+   }
+
+
+   protected double setQuerySpendLimit(Query q) {
+
+      double remainCap = _capacity - _unitsSoldModel.getWindowSold();
+      if (remainCap < 0) {
+         remainCap = 0;
+      }
+      return getQueryBid(q) * remainCap / 8;
+   }
+
+   @Override
+   public String toString() {
+      return "NewSSB";
+   }
+
+   @Override
+   public AbstractAgent getCopy() {
+      return new NewSSB();
+   }
 
 }
