@@ -45,7 +45,7 @@ public class WaterfallILP {
 	}
 
 	//************************************ CONFIG ************************************
-	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
 	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
@@ -219,6 +219,11 @@ public class WaterfallILP {
 			IloIntVar[][] Y_a_k = createConditionalVariables1(cplex);
 			IloNumVar[] I_a = createImpressionsPerAgentVariables(cplex);
 
+			IloIntVar[][] r_a_agent = null;
+			if(USE_RANKING_CONSTRAINTS) {
+				r_a_agent = createRankingVariables(cplex);
+			}
+				
 			//Create additional decision variables if we're sampling any average positions.
 			IloNumVar[] U_k = null;
 			IloIntVar[][] d_a_k = null;
@@ -268,21 +273,32 @@ public class WaterfallILP {
 			// An agent's total impressions must sum to impressions per slot.
 			addConstraint_totalImpressionsDefinition(cplex, I_a_s, I_a);
 
+			
 			// If we know any agents' total impressions (such as our own), these must be satisfied.
-			addConstraint_totalImpressionsKnown(cplex, I_a);
+			if(!USE_RANKING_CONSTRAINTS) addConstraint_totalImpressionsKnown(cplex, I_a);
+			else addConstraint_totalImpressionsKnownRankingUnknown(cplex, I_a, r_a_agent);
 			
 			// If we know any agents' total promoted impressions, these must be satisfied.
 			if (USE_PROMOTED_SLOT_CONSTRAINTS) {
-				addConstraint_totalPromotedImpressionsKnown(cplex, I_a_s);
+				if(!USE_RANKING_CONSTRAINTS) addConstraint_totalPromotedImpressionsKnown(cplex, I_a_s);
+				else addConstraint_totalPromotedImpressionsKnownRankingUnknown(cplex, I_a_s, r_a_agent);
 			}
 
+			
 			// Agent impressions per slot must result in the known (exact) average positions.
-			addConstraint_exactAveragePositionsKnown(cplex, I_a_s, I_a);
+			if(!USE_RANKING_CONSTRAINTS) addConstraint_exactAveragePositionsKnown(cplex, I_a_s, I_a);
+			else addConstraint_exactAveragePositionsKnownRankingUnknown(cplex, I_a_s, I_a, r_a_agent);
+
+			
+			//---Additional ranking constraints--
+			if(USE_RANKING_CONSTRAINTS) {
+				addConstraint_oneRankingPerAgent(cplex, r_a_agent);
+				addConstraint_oneAgentPerRanking(cplex, r_a_agent);
+			}
 
 			//---Sampling constraints---
 			//Note that there are some objectives that don't require these constraints, even if sampledMu are present
 			if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
-//			if (samplingAnyAveragePositions) {
 				//Define starting impression for each advertiser
 				addConstraint_startingImpressionDefinition(cplex, I_a_s, Istart_a);
 
@@ -337,7 +353,25 @@ public class WaterfallILP {
 						U_kDouble[k] = cplex.getValue(U_k[k]);
 					}
 				}
+				
+				if (USE_RANKING_CONSTRAINTS) {
+					//Re-arrange I_a_s double to be in the proper order
+					double[][] r_a_agentDouble = new double[numAgents][];
+					for (int a=0; a<numAgents; a++) r_a_agentDouble[a] = cplex.getValues(r_a_agent[a]);
+					
+					double[][] I_a_sDoubleReordered = new double[numAgents][];
+					for (int agent=0; agent<numAgents; agent++) {
+						for (int a=0; a<numAgents; a++) {
+							//If this agent was in initial position a
+							if (Math.round(r_a_agentDouble[a][agent]) == 1) {
+								I_a_sDoubleReordered[agent] = I_a_sDouble[a];
+							}
+						}
+					}
+					I_a_sDouble = I_a_sDoubleReordered;
+				}
 
+				
 //				System.out.println("BEST SOLUTION:\n" + arrayString(I_a_sDouble));
 
 				//Get total imps per agent
@@ -440,6 +474,14 @@ public class WaterfallILP {
 		return I_a;
 	}
 
+	
+	private IloIntVar[][] createRankingVariables(IloCplex cplex) throws IloException {
+		IloIntVar[][] r_a_agent = new IloIntVar[numAgents][];
+		for (int a=0; a<numAgents; a++) {
+			r_a_agent[a] = cplex.intVarArray(numAgents, 0, 1); 
+		}
+		return r_a_agent;
+	}
 
 	
 	private IloNumVar[] createImpressionSamplingVariables(IloCplex cplex) throws IloException {
@@ -930,9 +972,43 @@ public class WaterfallILP {
 			}
 		}
 	}
+	
+	
+	/**
+	 * This constraint ensures that if we know any agents' total impressions, the total 
+	 * impressions CPLEX decides on will match this value. Ranking is unknown.
+	 * @param cplex
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addConstraint_totalImpressionsKnownRankingUnknown(IloCplex cplex, IloNumVar[] I_a, IloIntVar[][] r_a_agent) throws IloException {
+		int LARGE_CONSTANT = maxImpsPerAgent + 1;
+		for (int agent=0; agent<numAgents; agent++) { 
+			if (isKnownI_a[agent]) {
+				for (int a=0; a<numAgents; a++) {
+					IloLinearNumExpr rhs1 = cplex.linearNumExpr();
+					rhs1.setConstant(knownI_a[agent] - LARGE_CONSTANT);
+					rhs1.addTerm(LARGE_CONSTANT, r_a_agent[a][agent]);
 
+					IloLinearNumExpr rhs2 = cplex.linearNumExpr();
+					rhs2.setConstant(knownI_a[agent] + LARGE_CONSTANT);
+					rhs2.addTerm(-LARGE_CONSTANT, r_a_agent[a][agent]);
 
+					if (USE_EPSILON) {
+						cplex.addGe(I_a[a], cplex.sum(rhs1, -epsilon));
+						cplex.addLe(I_a[a], cplex.sum(rhs2, epsilon));
+					} else {
+						cplex.addGe(I_a[a], rhs1);
+						cplex.addLe(I_a[a], rhs2);
+					}
+				}
+			}
+		}
+	}
 
+	
+	
+	
 	/**
 	 * This constraint ensures that if we know any agents' total PROMOTED impressions, the total 
 	 * impressions CPLEX decides on for promoted slots will match this value.
@@ -953,6 +1029,51 @@ public class WaterfallILP {
 				}
 			}
 		}		
+	}
+
+
+
+	/**
+	 * This constraint ensures that if we know any agents' total PROMOTED impressions, the total 
+	 * impressions CPLEX decides on for promoted slots will match this value.
+	 * @param cplex
+	 * @param I_a_s
+	 * @throws IloException
+	 */
+	private void addConstraint_totalPromotedImpressionsKnownRankingUnknown(IloCplex cplex,
+			IloNumVar[][] I_a_s, IloIntVar[][] r_a_agent) throws IloException {
+		int LARGE_CONSTANT = 1000;
+		for (int agent=0; agent<numAgents; agent++) {
+			if (isKnownI_aPromoted[agent]) { //If we know how many promoted imps the agent received
+				if (isKnownPromotionEligible[agent] || knownI_aPromoted[agent] > 0) { //If we know the agent was eligible for promotion or we observed promoted slots
+					for (int a=0; a<numAgents; a++) {
+						//Number of promoted impressions according to CPLEX
+						IloLinearNumExpr lhs = cplex.linearNumExpr();
+						for (int s=0; s<=Math.min(a, numPromotedSlots-1); s++) {
+							lhs.addTerm(1, I_a_s[a][s]);
+						}
+						
+						//This agent's known promoted impressions 
+						IloLinearNumExpr rhs1 = cplex.linearNumExpr();
+						rhs1.setConstant(knownI_aPromoted[agent] - LARGE_CONSTANT);
+						rhs1.addTerm(LARGE_CONSTANT, r_a_agent[a][agent]);
+
+						//This agent's known promoted impressions
+						IloLinearNumExpr rhs2 = cplex.linearNumExpr();
+						rhs2.setConstant(knownI_aPromoted[agent] + LARGE_CONSTANT);
+						rhs2.addTerm(-LARGE_CONSTANT, r_a_agent[a][agent]);
+
+						if (USE_EPSILON) {
+							cplex.addGe(lhs, cplex.sum(rhs1, -epsilon));
+							cplex.addLe(lhs, cplex.sum(rhs2, epsilon));
+						} else {
+							cplex.addGe(lhs, rhs1);
+							cplex.addLe(lhs, rhs2);
+						}
+					}
+				}
+			}
+		}
 	}
 
 
@@ -987,8 +1108,79 @@ public class WaterfallILP {
 		}
 	}
 
+	
 
+	/**
+	 * This constraint ensures that agent impressions per slot must result in the known 
+	 * (exact) average positions. We do not know the ranking of advertisers in this case.
+	 * @param cplex
+	 * @param I_a_s
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addConstraint_exactAveragePositionsKnownRankingUnknown(IloCplex cplex,
+			IloNumVar[][] I_a_s, IloNumVar[] I_a, IloIntVar[][] r_a_agent) throws IloException {
+		//Choose a large constant so that constraints are trivially satisfied if constant is introduced. 
+		//I think it only has to be (numSlots-1) * maxImpsPerAgent + 1, but we'll play it safe.
+		//TODO: Do we need some checking for when knownMu_a = NaN??? (e.g. when we have people that weren't in the auction)
+		//  (Since it's exactAvgPositions, I think we can just remove these "noImps" agents from the problem
+		//   beforehand without losing generality) 
+		int LARGE_CONSTANT = numSlots * maxImpsPerAgent + 1;
 
+		for (int a=0; a<numAgents; a++) {
+			if (isKnownMu_a[a]) {
+				IloLinearNumExpr lhs = cplex.linearNumExpr();
+				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+					lhs.addTerm(s+1, I_a_s[a][s]);
+				}
+				
+				for (int agent=0; agent<numAgents; agent++) {					
+					IloLinearNumExpr rhs1 = cplex.linearNumExpr();
+					rhs1.addTerm(knownMu_a[agent], I_a[a]);
+					rhs1.addTerm(LARGE_CONSTANT, r_a_agent[a][agent]);
+					rhs1.setConstant(-LARGE_CONSTANT);
+					
+					IloLinearNumExpr rhs2 = cplex.linearNumExpr();
+					rhs2.addTerm(knownMu_a[agent], I_a[a]);
+					rhs2.addTerm(-LARGE_CONSTANT, r_a_agent[a][agent]);
+					rhs2.setConstant(LARGE_CONSTANT);
+										
+					if (USE_EPSILON) {
+						cplex.addGe(lhs, cplex.sum(rhs1, -epsilon));
+						cplex.addLe(lhs, cplex.sum(rhs2, epsilon));
+					} else {
+						cplex.addGe(lhs, rhs1);
+						cplex.addLe(lhs, rhs2);
+					}
+				}
+			}
+		}
+	}
+	
+	
+	
+	private void addConstraint_oneRankingPerAgent(IloCplex cplex, IloIntVar[][] r_a_agent) throws IloException {
+		for (int agent=0; agent<numAgents; agent++) {
+			IloLinearNumExpr lhs = cplex.linearNumExpr();
+			for (int a=0; a<numAgents; a++) {
+				lhs.addTerm(1, r_a_agent[a][agent]);
+			}
+			cplex.addEq(lhs, 1);
+		}
+	}
+
+	private void addConstraint_oneAgentPerRanking(IloCplex cplex, IloIntVar[][] r_a_agent) throws IloException {
+		for (int a=0; a<numAgents; a++) {
+			IloLinearNumExpr lhs = cplex.linearNumExpr();
+			for (int agent=0; agent<numAgents; agent++) {
+				lhs.addTerm(1, r_a_agent[a][agent]);
+			}
+			cplex.addEq(lhs, 1);
+		}
+	}
+
+	
+	
 	/**
 	 * This constraint ensures that the last impression seen by the advertiser
 	 * is actually consistent with the number of impressions seen per slot.
@@ -1278,10 +1470,31 @@ public class WaterfallILP {
 	public static void main(String[] args) {
 
 
+		
+//		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
+//		double[] I_a = {-1, -1, -1, 556};
+//		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
+//		double[] mu_a = {1.0, 2.0, 4.0, 3.0};
+//		double[] I_aPromoted = {-1, -1, -1, -1};
+//		boolean[] isKnownPromotionEligible = {false, false, false, false};
+//		double[] knownSampledMu_a = {-1, -1, -1, -1};
+//		int numSamples = 5;
+//		double[] knownI_aDistributionMean = {-1, -1, -1, -1};
+//		double[] knownI_aDistributionStdev = {-1, -1, -1, -1};
+//		int numSlots = 5;
+//		int numPromotedSlots = 0;
+//		boolean integerProgram = true;
+//		boolean useEpsilon = false;
+//		int maxImpsPerAgent = 10000;
+		
+		
 		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-		double[] I_a = {-1, -1, -1, 500, -1, -1, -1, -1};
-		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-		double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
+//		double[] I_a = {-1, -1, -1, 589, -1, -1, -1, -1};
+//		double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
+		double[] I_a = {589, -1, -1, -1, -1, -1, -1, -1};
+		double[] mu_a = {3.94397284, 1, 4.34807692, 3, 5, 4.17741935, 5, 2};
+
+		//double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
 		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
 		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
 		double[] knownSampledMu_a = {-1, -1, -1, -1, -1, -1, -1, -1};

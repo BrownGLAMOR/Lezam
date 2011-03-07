@@ -73,8 +73,6 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 		double[] orderedI_aDistributionStdev = order(_agentImpressionDistributionStdev, order);
 		
 		//Get mu_a values, given impressions
-		//Waterfall params: I_a, mu_a, I_aPromoted, isKnownPromotionEligible, numSlots, numPromotedSlots, integerProgram, useEpsilon
-		//WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON);
 		WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, 
 				_slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB, 
 				orderedI_aDistributionMean, orderedI_aDistributionStdev);
@@ -139,6 +137,17 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 		}
 		return arr;		
 	}
+	
+	
+//	//FIXME DEBUG: Don't do any ordering (see how the alg performs)
+//	private static double[] order(double[] arr, int[] order) {
+//		return arr.clone();
+//	}
+//	private static int[] unorder(int[] orderedArr, int[] order) {
+//		return orderedArr.clone();
+//	}
+//	//END FIXME DEBUG
+	
 	
 	private static boolean[] order(boolean[] arr , int[] order) {
 		boolean[] orderedArr = new boolean[arr.length];

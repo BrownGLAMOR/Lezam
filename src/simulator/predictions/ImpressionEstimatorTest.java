@@ -270,7 +270,7 @@ public class ImpressionEstimatorTest {
 
 			// Make predictions for each day/query in this game
 			int numReports = 57; //TODO: Why?
-//			for (int d=56; d<=56; d++) {
+//			for (int d=0; d<=20; d++) {
 			for (int d=0; d<numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
@@ -1098,12 +1098,23 @@ public class ImpressionEstimatorTest {
 	public static void main(String[] args) throws IOException, ParseException  {
 
 		ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
-
+		double start;
+		double stop;
+		double secondsElapsed;
+		
 		System.out.println("\n\n\n\n\nSTARTING TEST 1");
+		start = System.currentTimeMillis();
 		evaluator.impressionEstimatorPredictionChallenge(1);
-
+		stop = System.currentTimeMillis();
+		secondsElapsed = (stop - start)/1000.0;
+		System.out.println("SECONDS ELAPSED: " + secondsElapsed); 
+		
 		System.out.println("\n\n\n\n\nSTARTING TEST 2");
+		start = System.currentTimeMillis();
 		evaluator.impressionEstimatorPredictionChallenge(2);
+		stop = System.currentTimeMillis();
+		secondsElapsed = (stop - start)/1000.0;
+		System.out.println("SECONDS ELAPSED: " + secondsElapsed); 
 
 		//evaluator.logGameData();
 
