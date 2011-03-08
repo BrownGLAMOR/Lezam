@@ -53,6 +53,16 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
    }
 
    @Override
+   public IEResult getIEResultPrediction(Query q) {
+      ArrayList<IEResult> results = _allResults.get(q);
+      int size = results.size();
+      if (size > 0) {
+         return results.get(size - 1);
+      }
+      return new IEResult(0, new int[8], new int[8], new int[5]);
+   }
+
+   @Override
    public int getImpressionsPrediction(Query q, String adv) {
       int size = _allResults.get(q).size();
       if (size > 0) {
