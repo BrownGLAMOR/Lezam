@@ -1,13 +1,13 @@
 package models.queryanalyzer.search;
 
-import java.util.Set;
+import java.util.List;
 
 public class LDSPerm implements Comparable<LDSPerm> {
    int _value;
    int[] _perm;
-   Set<LDSSwap> _swapped;
+   List<LDSSwap> _swapped;
 
-   public LDSPerm(int value, int[] perm, Set<LDSSwap> swapped) {
+   public LDSPerm(int value, int[] perm, List<LDSSwap> swapped) {
       _value = value;
       _perm = perm;
       _swapped = swapped;
