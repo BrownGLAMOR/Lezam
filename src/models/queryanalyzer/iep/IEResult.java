@@ -4,8 +4,8 @@ import java.util.Arrays;
 
 public class IEResult {
 	private int[] _order;
-	private int[] _sol;
-	private int[] _slotImpr;
+	private int[] _sol; //numImps each agent saw
+	private int[] _slotImpr; //numImps in each slot
 	private int _obj;
 	
 	public IEResult(int obj, int[] sol, int[] order, int[] slotImpr){
