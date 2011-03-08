@@ -2,6 +2,7 @@ package models.queryanalyzer.search;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 
 import models.queryanalyzer.iep.IEResult;
@@ -26,7 +27,7 @@ abstract class LDSearchSmart {
 		_iterations = 0;
 		int Indexs = startPerm.length;
 		_LDSQueue.clear();
-		_LDSQueue.add(new LDSPerm(0, startPerm, new HashSet<LDSSwap>()));
+		_LDSQueue.add(new LDSPerm(0, startPerm, new LinkedList<LDSSwap>()));
 
 		while(!_LDSQueue.isEmpty()){
 			_iterations += 1;
@@ -46,7 +47,7 @@ abstract class LDSearchSmart {
 							nextPerm[j] = perm._perm[j];
 						}
 						
-						HashSet<LDSSwap> nextSwapSet = new HashSet<LDSSwap>();
+						LinkedList<LDSSwap> nextSwapSet = new LinkedList<LDSSwap>();
 						nextSwapSet.addAll(perm._swapped);
 						nextSwapSet.add(new LDSSwap(i1,i2));
 						
