@@ -2,14 +2,14 @@
 #Plots the results.
 library(plotrix)
 library(hexbin)
-
+library(splus2R)
 
 #==============CONFIGUATION================
-INPUT.DIR = "~/Desktop/analysis/"
+INPUT.DIR = "~/mydocs/workspace/AA-new2/analysis/"
 CJC.FILENAME = paste(INPUT.DIR, "iePred1.txt", sep="");
 IP.FILENAME = paste(INPUT.DIR, "iePred2.txt", sep="");
 LP.FILENAME = paste(INPUT.DIR, "iePred2.txt", sep="");
-OUTPUT.DIR = "~/Desktop/analysis/output/"
+OUTPUT.DIR = "~/mydocs/workspace/AA-new2/analysis/output/"
 WATERFALL.OUTPUT.DIR = "~/Desktop/analysis/output/waterfall/"
 NUM.SLOTS = 5
 COLORS = c("red", "blue", "green", "black", "yellow", "magenta", "brown", "purple")
@@ -30,6 +30,67 @@ create.table = function(filename) {
 
 
 
+#output: g, d, q, myRank, oppRank, slotPredictionError
+#where slotPredictionError = mean_{slot} abs(I_a_S - predI_a_s)
+compute.slot.prediction.error = function(data, g, d, q, r, NUM.SLOTS, filename) {
+	
+	#For each game, day, query, ourRank:
+	#compute predicted waterfall
+	#compute actual waterfall
+	#Create summary stat for each predicted agent: mean absolute impsPerSlot error
+	#Return a data frame containing (g, d, q, r, oppRank, impsPerSlotErrorMetric)
+
+	error.summary = NULL
+	games = unique(data$game.idx)
+	for (g in games) {
+		data1 = subset(data, data$game.idx==g)
+		days = unique(data1$day.idx)
+		for (d in days) {
+			data2 = subset(data1, data1$day.idx==d)
+			queries = unique(data2$query.idx) 
+			for (q in queries) {
+				data3 = subset(data2, data2$query.idx==q)
+				our.bid.ranks = unique(data3$our.bid.rank) 
+				for (r in our.bid.ranks) {
+					data4 = subset(data3, data3$our.bid.rank==r)
+					data5 = data4[order(data4$opp.bid.rank),] #make data rank-ordered
+					actual.waterfall = greedy.waterfall.alg(data5$actual.imps, NUM.SLOTS)
+					predicted.waterfall = greedy.waterfall.alg(data5$predicted.imps, NUM.SLOTS)
+					
+					opp.bid.ranks = unique(data5$opp.bid.rank)
+					for (o in opp.bid.ranks) {
+						slot.errors = actual.waterfall[o,] - predicted.waterfall[o,]
+
+						#Compute the mean absolute error for relevant predictions
+						#(Predicting agent w/ initial slot 1 got no imps in slot 2 is not interesting)
+						#TODO: What about once we can't assume we got the slot correct?
+						#Let's just compute both values.
+						#I.a.s.err.ma = mean(abs(slot.errors))
+						#I.a.s.err.ma.excluding.obvious = sum(abs(slot.errors))/o
+						I.a.s.error.L1 = sum(abs(slot.errors)) #sum of (absolute) error
+						I.a.s.error.L2 = vecnorm(slot.errors, 2) #RMSE
+						I.a.s.error.LInf = max(abs(slot.errors)) #max error
+
+
+						#Also keep track of total imps error (and other stats that we already have, but might want in this summary table)
+						I.a.error = data5$abs.err[which(data5$opp.bid.rank==o)]
+						I.a.predicted = data5$predicted.imps[which(data5$opp.bid.rank==o)]
+						I.a.actual = data5$actual.imps[which(data5$opp.bid.rank==o)]
+						focus.level = data5$focus.level[which(data5$opp.bid.rank==o)]
+						
+						#Add this data to our summary
+						error.summary = rbind(error.summary, c(g, d, q, r, o, I.a.s.error.L1, I.a.s.error.L2, I.a.s.error.LInf, I.a.error, I.a.predicted, I.a.actual, focus.level))
+					}
+					print(actual.waterfall)
+					print(predicted.waterfall)
+				}	
+			}
+		}
+	}
+	colnames(error.summary) = c("game.idx", "day.idx", "query.idx", "our.bid.rank", "opp.bid.rank", "I.a.s.error.L1", "I.a.s.error.L2", "I.a.s.error.LInf", "I.a.error", "I.a.predicted", "I.a.actual", "focus.level")
+	error.summary = as.data.frame(error.summary)
+}
+
 
 
 
@@ -40,14 +101,13 @@ plot.waterfalls = function(data, g, d, q, r, NUM.SLOTS, filename) {
 	data.sub = subset(data, game.idx==g & day.idx==d & query.idx==q & our.bid.rank==r)
 	data.sub = data.sub[order(data.sub$opp.bid.rank),] #make data rank-ordered
 	
-	#Add column for observed number of impressions
+	#Add column for observed number of impressions (for plotted table)
 	observed.imps = rep("", nrow(data.sub))
 	observed.imp.idx = (data.sub$our.bid.rank == data.sub$opp.bid.rank)
 	observed.imps[ observed.imp.idx ] = data.sub$actual.imps[observed.imp.idx]
 	data.sub$observed.imps = observed.imps
 	data.sub$color = COLORS[data.sub$opp.bid.rank]
 
-	
 	actual.waterfall = greedy.waterfall.alg(data.sub$actual.imps, NUM.SLOTS)
 	predicted.waterfall = greedy.waterfall.alg(data.sub$predicted.imps, NUM.SLOTS)
 		
@@ -90,7 +150,7 @@ greedy.waterfall.alg = function(imps, NUM.SLOTS) {
 			opp.remaining.above = sum(tot[,s-1])-sum(tot[a,])
 			if(s==1) opp.remaining.above = Inf
 			tot[a,s] = max( min(my.remaining.imps, opp.remaining.above), 0 )
-			print(paste(a, s, my.remaining.imps, opp.remaining.above, tot[a,s]))
+			#print(paste(a, s, my.remaining.imps, opp.remaining.above, tot[a,s]))
 		}
 	}
 	tot

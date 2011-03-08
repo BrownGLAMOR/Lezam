@@ -21,6 +21,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 	private HashMap<Query,ArrayList<IEResult>> _allResults;
 	private HashMap<Query,ArrayList<int[]>> _allAgentIDs;
+	private HashMap<Query,ArrayList<String[]>> _allAgentNames;
+
 	private HashMap<Query,ArrayList<int[][]>> _allImpRanges;
 	private Set<Query> _querySpace;
 	private HashMap<String,Integer> _advToIdx;
@@ -41,6 +43,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		_allResults = new HashMap<Query,ArrayList<IEResult>>();
 		_allImpRanges = new HashMap<Query,ArrayList<int[][]>>();
 		_allAgentIDs = new HashMap<Query,ArrayList<int[]>>();
+		_allAgentNames = new HashMap<Query,ArrayList<String[]>>();
 		for(Query q : _querySpace) {
 			ArrayList<IEResult> resultsList = new ArrayList<IEResult>();
 			_allResults.put(q, resultsList);
@@ -50,6 +53,9 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 			ArrayList<int[]> agentIDs = new ArrayList<int[]>();
 			_allAgentIDs.put(q, agentIDs);
+			
+			ArrayList<String[]> agentNames = new ArrayList<String[]>();
+			_allAgentNames.put(q, agentNames);
 		}
 
 		_advertisers = advertisers;
@@ -70,12 +76,13 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       if (size > 0) {
          return results.get(size - 1);
       }
-      return new IEResult(0, new int[8], new int[8], new int[5]);
+      return null; //new IEResult(0, new int[8], new int[8], new int[5]);
    }
 
 	@Override
 	public int getImpressionsPrediction(Query q, String adv) {
 		int size = _allResults.get(q).size();
+		System.out.println("NAMES: " + _advToIdx.keySet());
 		if(size > 0) {
 			int[] agentIDs = _allAgentIDs.get(q).get(_allAgentIDs.get(q).size()-1);
 			for(int i = 0; i < agentIDs.length; i++) {
@@ -87,14 +94,43 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		return 0;
 	}
 
+	
 	@Override
 	public int[] getImpressionsPrediction(Query q) {
-		int size = _allResults.get(q).size();
-		if(size > 0) {
-			return _allResults.get(q).get(size-1).getSol();
+		//For each advertiser, get the impressions predictions.
+		//If an advertiser doesn't appear, their impressions prediction is 0.
+		//Create the array that we'll return.
+		int[] impressionsPredictions = new int[_advertisers.size()];
+		
+		//Get most recent impressions predictions (IEResult)
+		int latestResultIdx = _allResults.get(q).size() - 1;
+		int[] impressionsPredictionsReduced = _allResults.get(q).get(latestResultIdx).getSol();
+
+		//Get names of agents that appear in the IEResult
+		String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
+
+		//Get the actual predictions from IEResult
+		for (int a=0; a<_advertisers.size(); a++) {
+			String adv = _advertisers.get(a);
+			
+			for (int aReduced=0; aReduced<agentNamesReduced.length; aReduced++) {
+				if (adv.equals( agentNamesReduced[aReduced] )) {
+					impressionsPredictions[a] = impressionsPredictionsReduced[aReduced];
+				}
+			}
 		}
-		return null;
+		return impressionsPredictions;
 	}
+	
+	
+//	@Override
+//	public int[] getImpressionsPrediction(Query q) {
+//		int size = _allResults.get(q).size();
+//		if(size > 0) {
+//			return _allResults.get(q).get(size-1).getSol();
+//		}
+//		return null;
+//	}
 
 	@Override
 	public int getOrderPrediction(Query q, String adv) {
@@ -159,6 +195,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			// Load data from the query report (specifically, the average position for each advertiser)
 			ArrayList<Double> allAvgPos = new ArrayList<Double>();
 			ArrayList<Integer> agentIds = new ArrayList<Integer>();
+			ArrayList<String> agentNames = new ArrayList<String>();
 			int ourIdx = 0;
 			for(int i = 0; i < _advertisers.size(); i++) {
 				double avgPos;
@@ -177,10 +214,15 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
 				if(!Double.isNaN(avgPos)) {
 					agentIds.add(i);
+					agentNames.add(_advertisers.get(i));
 					allAvgPos.add(avgPos);
 				}
 			}
 
+			
+			
+			
+			
 			//			System.out.println(allAvgPos);
 			//			System.out.println(agentIds);
 			//			System.out.println(_ourAdvertiser);
@@ -198,6 +240,10 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 					ourNewIdx = i;
 				}
 			}
+
+			//Create array of agent names that are actually considered in this instance.
+			String[] agentNamesArr = new String[agentNames.size()];
+			agentNamesArr = agentNames.toArray(agentNamesArr);
 
 
 			//--------------
@@ -243,10 +289,11 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 			IEResult bestSol = estimator.getBestSolution(inst);
 
 
-			
 			_allResults.get(q).add(bestSol);
 			_allImpRanges.get(q).add(greedyAssign(5,bestSol.getSol().length,bestSol.getOrder(),bestSol.getSol()));
-			_allAgentIDs.get(q).add(agentIdsArr);
+
+			_allAgentNames.get(q).add(agentNamesArr);
+			_allAgentIDs.get(q).add(agentIdsArr); //these are the IDs of each agent that was in the QAInstance for the given query. Corresponds to indices of IEResults
 		}
 		return true;
 	}

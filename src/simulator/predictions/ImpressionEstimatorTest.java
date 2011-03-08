@@ -23,6 +23,7 @@ public class ImpressionEstimatorTest {
 
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
+   boolean CONSIDER_ALL_PARTICIPANTS = true;
 
    BufferedWriter bufferedWriter = null;
 
@@ -33,7 +34,6 @@ public class ImpressionEstimatorTest {
    public static int LDS_ITERATIONS_1 = 10;
    public static int LDS_ITERATIONS_2 = 10;
    private static boolean REPORT_FULLPOS_FORSELF = true;
-
 
    //Performance metrics
    int numInstances = 0;
@@ -673,7 +673,7 @@ public class ImpressionEstimatorTest {
                int numParticipants = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
                   //if (!actualAveragePositions[a].isNaN()) numParticipants++;
-                  if (!Double.isNaN(actualAveragePositions[a])) {
+                  if (CONSIDER_ALL_PARTICIPANTS || !Double.isNaN(actualAveragePositions[a])) {
                      numParticipants++;
                   }
                }
@@ -690,7 +690,7 @@ public class ImpressionEstimatorTest {
                double[] reducedImpsDistStdev = new double[numParticipants];
                int rIdx = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
-                  if (!actualAveragePositions[a].isNaN()) {
+                  if (CONSIDER_ALL_PARTICIPANTS || !actualAveragePositions[a].isNaN()) {
                      reducedAvgPos[rIdx] = actualAveragePositions[a];
                      reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
                      reducedBids[rIdx] = squashedBids[a];
@@ -782,14 +782,20 @@ public class ImpressionEstimatorTest {
 
                   AbstractQueryAnalyzer model = RIEList.get(i);
                   IEResult result = model.getIEResultPrediction(query);
-
+                  System.out.println("Result: " + result);
+                  
+                  System.out.println("IMPRS PREDICTIONS: " + Arrays.toString(model.getImpressionsPrediction(query)) );
+                  System.out.println("ADVERTISERS: " + Arrays.toString(advertisers));
+                  
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
                   if (result != null) {
-                     predictedImpsPerAgent = result.getSol();
+                     predictedImpsPerAgent = model.getImpressionsPrediction(query);
                   } else {
-                     predictedImpsPerAgent = new int[reducedImps.length];
+                     predictedImpsPerAgent = new int[reducedImps.length]; //this should probably be advertisers.length
                      Arrays.fill(predictedImpsPerAgent, -1);
+                     System.out.println("Result was null.");
+                     System.exit(-1);
                   }
 
                   double stop = System.currentTimeMillis();
