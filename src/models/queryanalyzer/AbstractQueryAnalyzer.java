@@ -24,8 +24,6 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
 
    public abstract int[][] getImpressionRangePrediction(Query query);
 
-   public abstract IEResult getIEResultPrediction(Query query);
-
    public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps);
 
    public abstract void setAdvertiser(String ourAdv);
