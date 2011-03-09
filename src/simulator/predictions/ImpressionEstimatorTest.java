@@ -887,13 +887,23 @@ public class ImpressionEstimatorTest {
 		return actualBidOrdering;
 	}
 
+	
+	/**
+	 * This gives, for each agent that was in the auction (i.e. saw at least one impression):
+	 * The actual squashed bid ranking of the agent, if the agent had at least one sample
+	 * -1, if the agent didn't see any samples.
+	 * @param ordering
+	 * @param reducedImps
+	 * @param sampleAvgPos
+	 * @return
+	 */
 	private int[] getSampledBidOrdering(int[] ordering, int[] reducedImps, double[] sampleAvgPos) {
 		int[] actualBidOrdering = new int[ordering.length]; //[a b c d] means the agent with index 0 has rank a
 		Arrays.fill(actualBidOrdering, -1);
 		int rank = 0;
 		for (int i=0; i<actualBidOrdering.length; i++) {
-			if (reducedImps[ordering[i]] > 0 && !Double.isNaN(sampleAvgPos[ordering[i]])) {
-				actualBidOrdering[ordering[i]] = i;
+			if (reducedImps[ordering[i]] > 0) {
+				if (!Double.isNaN(sampleAvgPos[ordering[i]])) actualBidOrdering[ordering[i]] = rank;
 				rank++;
 			}
 		}
