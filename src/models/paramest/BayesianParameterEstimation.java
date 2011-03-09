@@ -3,7 +3,6 @@ package models.paramest;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-import simulator.predictions.ParameterEstimationTest.ImprPair;
 
 import java.util.*;
 
@@ -192,6 +191,47 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
       }
       return impressionsBySlot;
+   }
+
+   public static class ImprPair implements Comparable<ImprPair> {
+
+      private int _advIdx;
+      private int _impr;
+
+      public ImprPair(int advIdx, int impr) {
+         _advIdx = advIdx;
+         _impr = impr;
+      }
+
+      public int getID() {
+         return _advIdx;
+      }
+
+      public void setID(int advIdx) {
+         _advIdx = advIdx;
+      }
+
+      public double getImpr() {
+         return _impr;
+      }
+
+      public void setImpr(int impr) {
+         _impr = impr;
+      }
+
+      public int compareTo(ImprPair agentImprPair) {
+         double ourBid = this._impr;
+         double otherBid = agentImprPair.getImpr();
+         if (ourBid > otherBid) {
+            return 1;
+         }
+         if (otherBid > ourBid) {
+            return -1;
+         } else {
+            return 0;
+         }
+      }
+
    }
 
    @Override
