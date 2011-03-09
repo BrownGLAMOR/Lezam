@@ -54,11 +54,6 @@ abstract class LDSearchSmart {
 
                   if (feasibleOrder(nextPerm, avgPos)) {
 
-//                     int delta = (int)(100*Math.abs(avgPos[nextPerm[i1]] - avgPos[nextPerm[i2]])); //needs a little more work, becouse avp array changes with swaps
-//
-//                     _LDSQueue.add(new LDSPerm(dsVal+_distFactor+delta, nextPerm, nextSwapSet));
-
-
                      double[] avgPosClone = (double[]) avgPos.clone();
                      double val = 0.0;
                      for (LDSSwap swap : nextSwapSet) {
@@ -71,7 +66,7 @@ abstract class LDSearchSmart {
                         avgPosClone[idx2] = tmpAvg;
                      }
 
-                     int dsVal = (int) (1000 * val);
+                     int dsVal = (int) (100 * val);
 
                      _LDSQueue.add(new LDSPerm(dsVal + _distFactor, nextPerm, nextSwapSet));
                   }
