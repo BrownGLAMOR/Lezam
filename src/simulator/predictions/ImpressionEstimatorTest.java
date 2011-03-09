@@ -21,7 +21,7 @@ import java.util.*;
 
 public class ImpressionEstimatorTest {
 
-   private boolean SAMPLED_AVERAGE_POSITIONS = false;
+   private boolean SAMPLED_AVERAGE_POSITIONS = true;
    public static boolean PERFECT_IMPS = true;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
 
@@ -372,19 +372,19 @@ public class ImpressionEstimatorTest {
                int NUM_SLOTS = 5;
 
 
-               //FIXME DEBUG
-               //For now, skip anything with a NaN in sampled impressions
-               boolean hasNaN = false;
-               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
-                  if (Double.isNaN(reducedSampledAvgPos[i])) {
-                     hasNaN = true;
-                  }
-               }
-               if (hasNaN) {
-                  numSkips++;
-                  continue;
-               }
-               //FIXME END DEBUG
+//               //FIXME DEBUG
+//               //For now, skip anything with a NaN in sampled impressions
+//               boolean hasNaN = false;
+//               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
+//                  if (Double.isNaN(reducedSampledAvgPos[i])) {
+//                     hasNaN = true;
+//                  }
+//               }
+//               if (hasNaN) {
+//                  numSkips++;
+//                  continue;
+//               }
+//               //FIXME END DEBUG
 
 
                // For each agent, make a prediction (each agent sees a different num impressions)
