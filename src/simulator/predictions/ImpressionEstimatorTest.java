@@ -24,7 +24,13 @@ public class ImpressionEstimatorTest {
    private boolean SAMPLED_AVERAGE_POSITIONS = true;
    public static boolean PERFECT_IMPS = true;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
+   
+   
+   //if we're sampling average positions, do we want to remove agents that received no samples?
+   //(if we're using exact average positions anyway, true/false has no effect)
+   boolean REMOVE_SAMPLE_NANS = true; 
 
+   
    BufferedWriter bufferedWriter = null;
 
 
@@ -316,7 +322,7 @@ public class ImpressionEstimatorTest {
                int numParticipants = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
                   //if (!actualAveragePositions[a].isNaN()) numParticipants++;
-                  if (!Double.isNaN(actualAveragePositions[a])) {
+                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS) ) {
                      numParticipants++;
                   }
                }
@@ -332,7 +338,7 @@ public class ImpressionEstimatorTest {
                double[] reducedImpsDistStdev = new double[numParticipants];
                int rIdx = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
-                  if (!actualAveragePositions[a].isNaN()) {
+                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
                      reducedAvgPos[rIdx] = actualAveragePositions[a];
                      reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
                      reducedBids[rIdx] = squashedBids[a];
@@ -409,23 +415,10 @@ public class ImpressionEstimatorTest {
                   QAInstance inst;
                   AbstractImpressionEstimator model = null;
                   if (impressionEstimatorIdx == SolverType.CP) {
-                     boolean considerPadding = false;
-                     double[] avgPos = new double[reducedAvgPos.length];
-                     if (SAMPLED_AVERAGE_POSITIONS) {
-                        for (int i = 0; i < reducedAvgPos.length; i++) {
-                           if (i == ourAgentIdx) {
-                              avgPos[i] = reducedAvgPos[i];
-                           } else {
-                              avgPos[i] = reducedSampledAvgPos[i];
-                           }
-                        }
-                        considerPadding = true; //DEBUG. should be true
-                     } else {
-                        avgPos = reducedAvgPos;
-                     }
-                     inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                                           ourImps, ourPromotedImps, impressionsUB, considerPadding, ourPromotionEligibility,
-                                           reducedImpsDistMean, reducedImpsDistStdev);
+                     inst = getCarletonQAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+                             ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility,
+                             reducedImpsDistMean, reducedImpsDistStdev);
+
                      model = new ImpressionEstimator(inst);
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
@@ -535,6 +528,98 @@ public class ImpressionEstimatorTest {
 
 
    /**
+    * Gets a QAInstance in the format that Carleton's algorithm wants.
+    * @param NUM_SLOTS
+    * @param NUM_PROMOTED_SLOTS
+    * @param numParticipants
+    * @param reducedAvgPos
+    * @param reducedSampledAvgPos
+    * @param agentIds
+    * @param ourAgentIdx
+    * @param ourImps
+    * @param ourPromotedImps
+    * @param impressionsUB
+    * @param ourPromotionEligibility
+    * @param reducedImpsDistMean
+    * @param reducedImpsDistStdev
+    * @return
+    */
+   private QAInstance getCarletonQAInstance(int NUM_SLOTS, int NUM_PROMOTED_SLOTS,
+		int numParticipants, double[] reducedAvgPos,
+		double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
+		int ourImps, int ourPromotedImps, int impressionsUB,
+		boolean ourPromotionEligibility,
+		double[] reducedImpsDistMean, double[] reducedImpsDistStdev) {
+	   
+       double[] avgPos = new double[reducedAvgPos.length];
+       boolean considerPadding = false;
+
+     //If exact average positions, just return a standard query instance (with no padding)
+     if (!SAMPLED_AVERAGE_POSITIONS) {
+  	   avgPos = reducedAvgPos.clone();
+  	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+  			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+  			   reducedImpsDistMean, reducedImpsDistStdev);
+     } else {
+   	   avgPos = reducedSampledAvgPos.clone();
+   	   avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+   	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+   			   ourImps, ourPromotedImps, impressionsUB, true, ourPromotionEligibility,
+   			   reducedImpsDistMean, reducedImpsDistStdev);
+     }
+
+     
+	   
+//       //If exact average positions, just return a standard query instance (with no padding)
+//       if (!SAMPLED_AVERAGE_POSITIONS) {
+//    	   avgPos = reducedAvgPos.clone();
+//    	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+//    			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+//    			   reducedImpsDistMean, reducedImpsDistStdev);
+//       }
+//       
+//
+//       //Otherwise, use sampled average position everywhere except for our own agent
+//       int ourAgentID = agentIds[ourAgentIdx];
+//
+//       avgPos = reducedSampledAvgPos.clone();
+//       avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+//       
+//       //Except that we also have to remove any agents that were not sampled
+//       //(they have Double.NaN average position values, and CJC does not like. It pads agents instead.)
+//		ArrayList<Double> nonNanAvgPos = new ArrayList<Double>();
+//		ArrayList<Integer> nonNanAgentIds = new ArrayList<Integer>();
+//		int nonNanParticipants = 0;
+//       for (int i = 0; i < reducedAvgPos.length; i++) {
+//        	  if (!Double.isNaN(avgPos[i])) {
+//        		  nonNanParticipants++;
+//        		  nonNanAvgPos.add(avgPos[i]);
+//        		  nonNanAgentIds.add(agentIds[i]);
+//        	  }
+//          }
+//       
+//       //Convert these lists into arrays
+//       double[] nonNanAvgPosArr = new double[nonNanAvgPos.size()];
+//       int[] nonNanAgentIdsArr = new int[nonNanAgentIds.size()];
+//       int ourNonNanAgentIdx = -1;
+//       for (int i=0; i<nonNanParticipants; i++) {
+//    	   nonNanAvgPosArr[i] = nonNanAvgPos.get(i);
+//    	   nonNanAgentIdsArr[i] = nonNanAgentIds.get(i);
+//    	   if (nonNanAgentIdsArr[i] == ourAgentID) ourNonNanAgentIdx = i;
+//       }
+//       
+//       //TODO: If Carleton's IE actually uses the following at some point, they will have to be updated, too:
+//       //reducedSampledAvgPos, reducedImpsDistMean, reducedImpsDistStdev
+//       
+//       //Return the QAInstance (with padding)
+//       return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, nonNanParticipants, nonNanAvgPosArr, reducedSampledAvgPos, nonNanAgentIdsArr, ourNonNanAgentIdx,
+//                             ourImps, ourPromotedImps, impressionsUB, true, ourPromotionEligibility,
+//                             reducedImpsDistMean, reducedImpsDistStdev);
+          
+}
+
+
+/**
     * Load a game
     * For each day,
     * Get all query reports that came in on that day
