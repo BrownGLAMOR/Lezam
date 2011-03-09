@@ -36,7 +36,8 @@ public class ImpressionEstimatorTest {
 	private static boolean REPORT_FULLPOS_FORSELF = true;
 
 	//Performance metrics
-	int numInstances = 0;
+	int numImprsPredictions = 0;
+	int numOrderingPredictions = 0;
 	int numCorrectlyOrderedInstances = 0;
 	double aggregateAbsError = 0;
 
@@ -215,7 +216,8 @@ public class ImpressionEstimatorTest {
 		//printGameLogInfo();
 
 		initializeLog("iePred" + impressionEstimatorIdx + ".txt");
-		numInstances = 0;
+		numImprsPredictions = 0;
+		numOrderingPredictions = 0;
 		numCorrectlyOrderedInstances = 0;
 		aggregateAbsError = 0;
 		ArrayList<String> filenames = getGameStrings();
@@ -540,7 +542,8 @@ public class ImpressionEstimatorTest {
 		//printGameLogInfo();
 
 		initializeLog("riePred" + impressionEstimatorIdx + ".txt");
-		numInstances = 0;
+		numImprsPredictions = 0;
+		numOrderingPredictions = 0;
 		numCorrectlyOrderedInstances = 0;
 		aggregateAbsError = 0;
 		ArrayList<String> filenames = getGameStrings();
@@ -652,23 +655,23 @@ public class ImpressionEstimatorTest {
 
 					double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, false);
 
-					// DEBUG: Print out some game values.
-					System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
-					System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
-					System.out.println("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
-					System.out.println("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
-					System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
-					System.out.println("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
-					System.out.println("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
-					System.out.println("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
-					System.out.println("d=" + d + "\tq=" + query + "\tbudgets=" + Arrays.toString(budgets));
-					System.out.println("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
-					System.out.println("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
-					System.out.println("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
-					System.out.println("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
-					System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
-					System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
-					System.out.println();
+//					// DEBUG: Print out some game values.
+//					System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
+//					System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
+//					System.out.println("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
+//					System.out.println("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
+//					System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
+//					System.out.println("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
+//					System.out.println("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
+//					System.out.println("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
+//					System.out.println("d=" + d + "\tq=" + query + "\tbudgets=" + Arrays.toString(budgets));
+//					System.out.println("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
+//					System.out.println("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
+//					System.out.println("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
+//					System.out.println("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
+//					System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
+//					System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
+//					System.out.println();
 
 
 					// Determine how many agents actually participated
@@ -741,6 +744,19 @@ public class ImpressionEstimatorTest {
 					QueryReport queryReport = status.getQueryReports().get(advertisers[i]).get(d);
 					SalesReport salesreport = status.getSalesReports().get(advertisers[i]).get(d);
 					BidBundle bidBundle = status.getBidBundles().get(advertisers[i]).get(d);
+					
+					
+//					//DEBUG: Have query report contain exact info
+//					for (Query query : queryArr) {
+//						Double[] actualPositionsForAgents = getAveragePositions(status, d, query);
+//						for (int a=0; a<advertisers.length; a++) {	
+//							String advertiser = "adv" + (a+1);
+//							queryReport.setPosition(query, advertiser, actualPositionsForAgents[a]);
+//						}
+//					}
+//					//END DEBUG
+
+					
 					model.updateModel(queryReport, salesreport, bidBundle, maxImpsMap);
 				}
 
@@ -765,14 +781,33 @@ public class ImpressionEstimatorTest {
 
 					int[] ordering = orderingMap.get(query); //[a b c d] means highest ranked agent is the one with index a
 					int[] actualBidOrdering = getActualBidOrdering(ordering, reducedImps); //[a b c d] means the agent with index 0 has rank a
-					int[] sampledBidOrdering = getSampledBidOrdering(ordering, reducedImps, reducedSampledAvgPos); //The ordering for agents that had at least one sample
-					
+					int[] sampledBidOrdering = getSampledBidOrdering(ordering, reducedImps, reducedSampledAvgPos); //The initial positions of agents that had at least one sample
+					int[] sampledBidRelativeOrdering = getRelativeOrdering(sampledBidOrdering); //The ordering for agents that had at least one sample
 
 					//May have decided to skip query in pre-processing
 					Boolean skip = skipQuery.get(query);
 					if (skip != null && skip) {
 						continue;
 					}
+					
+					
+					
+					
+					// DEBUG: Print out some game values.
+					System.out.println("---------------------------------------------");
+					System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
+					System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
+					System.out.println("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
+					System.out.println("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
+					System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(reducedBids));
+					System.out.println("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(reducedImps));
+					System.out.println("d=" + d + "\tq=" + query + "\tActualBidOrdering=" + Arrays.toString(actualBidOrdering));
+					System.out.println("d=" + d + "\tq=" + query + "\tSampledBidOrdering=" + Arrays.toString(sampledBidOrdering));
+					System.out.println("d=" + d + "\tq=" + query + "\tSampledBidRelativeOrdering=" + Arrays.toString(sampledBidRelativeOrdering));
+					System.out.println();
+					
+					
+					
 
 					// For each agent, make a prediction (each agent sees a different num impressions)
 					int ourAgentIdx = 0;
@@ -785,13 +820,15 @@ public class ImpressionEstimatorTest {
 
 						AbstractQueryAnalyzer model = RIEList.get(i);
 
-						System.out.println("IMPRS PREDICTIONS: " + Arrays.toString(model.getImpressionsPrediction(query)) );
-						System.out.println("ADVERTISERS: " + Arrays.toString(advertisers));
+						System.out.println("   a=" + i );
+						System.out.println("   Predicted impressions: " + Arrays.toString(model.getImpressionsPrediction(query)) );
+						System.out.println("   Predicted ordering: " + Arrays.toString(model.getOrderPrediction(query)));
 
 						//Get predictions 
 						int[] predictedImpsPerAgent = model.getImpressionsPrediction(query);
 						int[] predictedOrdering = model.getOrderPrediction(query);
-
+						int[] predictedRelativeOrdering = getRelativeOrdering(predictedOrdering);
+						
 						double stop = System.currentTimeMillis();
 						double secondsElapsed = (stop - start) / 1000.0;
 
@@ -799,8 +836,8 @@ public class ImpressionEstimatorTest {
 						//System.out.println("actual: " + Arrays.toString(reducedImps));
 
 						//Update performance metrics
-						System.out.println("d=" + d + " q=" + query + " i=" + i);
 						updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedOrdering, sampledBidOrdering);
+//						updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedRelativeOrdering, sampledBidRelativeOrdering);
 						//outputPerformanceMetrics();
 
 
@@ -883,7 +920,6 @@ public class ImpressionEstimatorTest {
 				rank++;
 			}
 		}
-		System.out.println("ACTUAL ordering="+ Arrays.toString(ordering) + ",  reducedImps="+ Arrays.toString(reducedImps) + ",  actualOrder=" + Arrays.toString(actualBidOrdering));
 		return actualBidOrdering;
 	}
 
@@ -903,13 +939,38 @@ public class ImpressionEstimatorTest {
 		int rank = 0;
 		for (int i=0; i<actualBidOrdering.length; i++) {
 			if (reducedImps[ordering[i]] > 0) {
-				if (!Double.isNaN(sampleAvgPos[ordering[i]])) actualBidOrdering[ordering[i]] = rank;
+				if (!Double.isNaN(sampleAvgPos[ordering[i]])) {
+					actualBidOrdering[ordering[i]] = rank;
+				}
 				rank++;
 			}
 		}
-		System.out.println("SAMPLE ordering="+ Arrays.toString(ordering) + ",  reducedImps="+ Arrays.toString(sampleAvgPos) + ",  actualOrder=" + Arrays.toString(actualBidOrdering));
 		return actualBidOrdering;
 	}
+	
+	
+	/**
+	 * Takes as input the initial position each sampled agent was in.
+	 * Returns the relative ordering of each agent.
+	 * @param bidOrdering
+	 * @return
+	 */
+	private int[] getRelativeOrdering(int[] initialPositions) {
+		int[] relativeOrdering = new int[initialPositions.length];
+		Arrays.fill(relativeOrdering, -1);
+		for (int i=0; i<relativeOrdering.length; i++) {
+			if (initialPositions[i] == -1) continue;
+			int numWithLowerPosition = 0;
+			for (int j=0; j<relativeOrdering.length; j++) {
+				if (initialPositions[j] == -1) continue;
+				if (initialPositions[j] < initialPositions[i]) numWithLowerPosition++;
+			}
+			relativeOrdering[i] = numWithLowerPosition;
+		}
+		return relativeOrdering;
+	}
+	
+	
 
 	/**
 	 * Varifies that data is valid for testing.
@@ -1145,18 +1206,15 @@ public class ImpressionEstimatorTest {
 	private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int[] predictedOrdering, int[] actualOrdering) {
 		assert (predictedImpsPerAgent.length == actualImpsPerAgent.length);
 
-		System.out.println("PREDICTED ORDERING: " + Arrays.toString(predictedOrdering));
-		System.out.println("   ACTUAL ORDERING: " + Arrays.toString(actualOrdering));
-		System.out.println();
-
 		for (int a = 0; a < predictedImpsPerAgent.length; a++) {
-			numInstances++;
+			numImprsPredictions++;
 			aggregateAbsError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);         
 		}
 
 		//Keep track of the number of times the ordering was perfect 
 		//(defined to be "perfect" if every agent that actually saw an impression is in its proper order)
 		//(the agent doesn't need to properly order agents that didn't even appear)
+		numOrderingPredictions++;
 		boolean isCorrectOrdering = true;
 		for (int a = 0; a < actualImpsPerAgent.length; a++) {
 			if (actualImpsPerAgent[a] > 0) {
@@ -1167,14 +1225,21 @@ public class ImpressionEstimatorTest {
 		}
 		if (isCorrectOrdering) {
 			numCorrectlyOrderedInstances++;
-		}      
+		}
+		
+		System.out.println("    (predicted ordering): " + Arrays.toString(predictedOrdering));
+		System.out.println("       (actual ordering): " + Arrays.toString(actualOrdering));
+		System.out.println("   (is correct ordering): " + isCorrectOrdering);
+		System.out.println();
+
+		
 	}
 
 	private void outputPerformanceMetrics() {
-		double meanAbsError = aggregateAbsError / numInstances;
-		double pctCorrectOrdering = numCorrectlyOrderedInstances / (double) numInstances;
+		double meanAbsError = aggregateAbsError / numImprsPredictions;
+		double pctCorrectOrdering = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
 		System.out.println("Mean absolute error: " + meanAbsError);
-		System.out.println("Pct correctly ordered instances: " + pctCorrectOrdering);
+		System.out.println("Pct correctly ordered instances: " + numCorrectlyOrderedInstances + "/" + numOrderingPredictions + "=" + pctCorrectOrdering);
 	}
 
 
