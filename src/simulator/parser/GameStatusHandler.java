@@ -6,7 +6,6 @@ import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
 import se.sics.tasim.logtool.ParticipantInfo;
-import se.sics.tasim.props.SimulationStatus;
 
 import java.io.*;
 import java.text.ParseException;
@@ -25,12 +24,31 @@ public class GameStatusHandler {
       _gameStatus = parseGameLog(filename);
    }
 
-   public GameStatus parseGameLog(String filename) throws IOException, ParseException {
+   private GameStatus parseGameLog(String filename) throws IOException, ParseException {
       InputStream inputStream = new FileInputStream(filename);
       GameLogParser parser = new GameLogParser(new LogReader(inputStream));
       parser.start();
       parser.stop();
       LinkedList<SimParserMessage> messages = parser.getMessages();
+
+      //TODO REPLACE THIS CREATION OF QUERYSPACE
+      Set<Query> querySpace = new LinkedHashSet<Query>();
+      querySpace.add(new Query(null, null));
+      querySpace.add(new Query("lioneer", null));
+      querySpace.add(new Query(null, "tv"));
+      querySpace.add(new Query("lioneer", "tv"));
+      querySpace.add(new Query(null, "audio"));
+      querySpace.add(new Query("lioneer", "audio"));
+      querySpace.add(new Query(null, "dvd"));
+      querySpace.add(new Query("lioneer", "dvd"));
+      querySpace.add(new Query("pg", null));
+      querySpace.add(new Query("pg", "tv"));
+      querySpace.add(new Query("pg", "audio"));
+      querySpace.add(new Query("pg", "dvd"));
+      querySpace.add(new Query("flat", null));
+      querySpace.add(new Query("flat", "tv"));
+      querySpace.add(new Query("flat", "audio"));
+      querySpace.add(new Query("flat", "dvd"));
 
       ParticipantInfo[] participants = parser.getParticipants();
       String[] participantNames = parser.getParticipantNames();
@@ -68,7 +86,6 @@ public class GameStatusHandler {
          LinkedList<BidBundle> bidBundlelist = new LinkedList<BidBundle>();
          LinkedList<QueryReport> queryReportlist = new LinkedList<QueryReport>();
          LinkedList<SalesReport> salesReportlist = new LinkedList<SalesReport>();
-         LinkedList<SimulationStatus> simulationStatusList = new LinkedList<SimulationStatus>();
          bankStatuses.put(advertisers[i], bankStatuslist);
          bidBundles.put(advertisers[i], bidBundlelist);
          queryReports.put(advertisers[i], queryReportlist);
@@ -96,16 +113,13 @@ public class GameStatusHandler {
                bankStatuses.put(name, bankstatuslist);
             }
          } else if (content instanceof SlotInfo && !slotinfoflag) {
-            SlotInfo slotinfotemp = (SlotInfo) content;
-            slotInfo = slotinfotemp;
+            slotInfo = (SlotInfo) content;
             slotinfoflag = true;
          } else if (content instanceof ReserveInfo && !reserveinfoflag) {
-            ReserveInfo reserveinfotemp = (ReserveInfo) content;
-            reserveInfo = reserveinfotemp;
+            reserveInfo = (ReserveInfo) content;
             reserveinfoflag = true;
          } else if (content instanceof PublisherInfo && !pubinfoflag) {
-            PublisherInfo publisherinfotemp = (PublisherInfo) content;
-            pubInfo = publisherinfotemp;
+            pubInfo = (PublisherInfo) content;
             pubinfoflag = true;
          } else if (content instanceof SalesReport) {
             /*
@@ -136,8 +150,7 @@ public class GameStatusHandler {
                queryReports.put(name, queryreportlist);
             }
          } else if (content instanceof RetailCatalog && !retailcatalogflag) {
-            RetailCatalog retailcatalogtemp = (RetailCatalog) content;
-            retailCatalog = retailcatalogtemp;
+            retailCatalog = (RetailCatalog) content;
             retailcatalogflag = true;
          } else if (content instanceof BidBundle) {
             if (messageDay <= 58) {
@@ -160,86 +173,72 @@ public class GameStatusHandler {
                      }
                   }
                }
-               /*
-                     * This ensures we don't get too many
-                     */
-               if (messageDay == bidbundlelist.size()) {
-                  /*
-                         * Check for NaN's and Negative bids which
-                         * are replaced by our bid from last round
-                         */
-                  for (Query query : bidbundletemp.keys()) {
-                     double bid = bidbundletemp.getBid(query);
-                     double budget = bidbundletemp.getDailyLimit(query);
-                     Ad ad = bidbundletemp.getAd(query);
 
-                     if (bidbundlelist.size() > 0) {
-                        if (Double.isNaN(bid) || bid < 0) {
-                           bid = bidbundlelist.get(bidbundlelist.size() - 1).getBid(query);
-                        }
-                        if (Double.isNaN(budget)) {
-                           budget = bidbundlelist.get(bidbundlelist.size() - 1).getDailyLimit(query);
-                        }
-                        if (ad == null) {
-                           ad = bidbundlelist.get(bidbundlelist.size() - 1).getAd(query);
-                        }
-                     }
 
-                     bidbundletemp.addQuery(query, bid, ad, budget);
-                  }
-
-                  double totalBudget = bidbundletemp.getCampaignDailySpendLimit();
-                  if (bidbundlelist.size() > 0 && Double.isNaN(totalBudget)) {
-                     bidbundletemp.setCampaignDailySpendLimit(bidbundlelist.get(bidbundlelist.size() - 1).getCampaignDailySpendLimit());
-                  }
-
-                  bidbundlelist.addLast(bidbundletemp);
-               }
                /*
                      * This means they sent a second bid bundle, so write over the last entry
                      */
-               else {
+               while (messageDay < bidbundlelist.size()) {
                   bidbundlelist.removeLast();
-                  /*
-                         * Check for NaN's and Negative bids which
-                         * are replaced by our bid from last round
-                         */
-                  for (Query query : bidbundletemp.keys()) {
-                     double bid = bidbundletemp.getBid(query);
-                     double budget = bidbundletemp.getDailyLimit(query);
-                     Ad ad = bidbundletemp.getAd(query);
-
-                     if (bidbundlelist.size() > 0) {
-                        if (Double.isNaN(bid) || bid < 0) {
-                           bid = bidbundlelist.get(bidbundlelist.size() - 1).getBid(query);
-                        }
-                        if (Double.isNaN(budget)) {
-                           budget = bidbundlelist.get(bidbundlelist.size() - 1).getDailyLimit(query);
-                        }
-                        if (ad == null) {
-                           ad = bidbundlelist.get(bidbundlelist.size() - 1).getAd(query);
-                        }
-                     }
-
-                     bidbundletemp.addQuery(query, bid, ad, budget);
-                  }
-
-                  double totalBudget = bidbundletemp.getCampaignDailySpendLimit();
-                  if (bidbundlelist.size() > 0 && Double.isNaN(totalBudget)) {
-                     bidbundletemp.setCampaignDailySpendLimit(bidbundlelist.get(bidbundlelist.size() - 1).getCampaignDailySpendLimit());
-                  }
-
-                  bidbundlelist.add(bidbundletemp);
                }
+
+               /*
+               * Check for NaN's and Negative bids which
+               * are replaced by our bid from last round
+               */
+               for (Query query : bidbundletemp.keys()) {
+                  double bid = bidbundletemp.getBid(query);
+                  double budget = bidbundletemp.getDailyLimit(query);
+                  Ad ad = bidbundletemp.getAd(query);
+
+                  if (bidbundlelist.size() > 0) {
+                     if (Double.isNaN(bid) || bid < 0) {
+                        bid = bidbundlelist.get(bidbundlelist.size() - 1).getBid(query);
+                     }
+                     if (Double.isNaN(budget)) {
+                        budget = bidbundlelist.get(bidbundlelist.size() - 1).getDailyLimit(query);
+                     }
+                     if (ad == null) {
+                        ad = bidbundlelist.get(bidbundlelist.size() - 1).getAd(query);
+                     }
+                  } else {
+                     if (Double.isNaN(bid) || bid < 0) {
+                        bid = 0;
+                     }
+                     if (Double.isNaN(budget)) {
+                        budget = Double.MAX_VALUE;
+                     }
+                     if (ad == null) {
+                        ad = new Ad();
+                     }
+                  }
+
+                  bidbundletemp.addQuery(query, bid, ad, budget);
+               }
+
+               for (Query query : querySpace) {
+                  if (!bidbundletemp.containsQuery(query)) {
+                     bidbundletemp.addQuery(query, 0, new Ad(), 0);
+                  }
+               }
+
+               double totalBudget = bidbundletemp.getCampaignDailySpendLimit();
+               if (Double.isNaN(totalBudget)) {
+                  if (bidbundlelist.size() > 0) {
+                     bidbundletemp.setCampaignDailySpendLimit(bidbundlelist.get(bidbundlelist.size() - 1).getCampaignDailySpendLimit());
+                  } else {
+                     bidbundletemp.setCampaignDailySpendLimit(0);
+                  }
+               }
+
+               bidbundlelist.addLast(bidbundletemp);
                bidBundles.put(name, bidbundlelist);
             }
          } else if (content instanceof UserClickModel && !userclickmodelflag) {
-            UserClickModel userclickmodeltemp = (UserClickModel) content;
-            userClickModel = userclickmodeltemp;
+            userClickModel = (UserClickModel) content;
             userclickmodelflag = true;
          } else if (content instanceof AdvertiserInfo) {
-            AdvertiserInfo advertiserinfotemp = (AdvertiserInfo) content;
-            advInfo = advertiserinfotemp;
+            advInfo = (AdvertiserInfo) content;
             String name = participantNames[to];
             advertiserInfos.put(name, advInfo);
          } else if (content instanceof UserPopulationState) {
@@ -288,9 +287,8 @@ public class GameStatusHandler {
       }
 
 
-      GameStatus gameStatus = new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
-                                             userDists, slotInfo, reserveInfo, pubInfo, retailCatalog, userClickModel);
-      return gameStatus;
+      return new GameStatus(advertisers, bankStatuses, bidBundles, queryReports, salesReports, advertiserInfos,
+                            userDists, slotInfo, reserveInfo, pubInfo, retailCatalog, userClickModel);
    }
 
 
@@ -437,8 +435,6 @@ public class GameStatusHandler {
          GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
          HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
          for (int j = 0; j < 59; j++) {
             Iterator<Query> iter = bidBundles.get(adv).get(j).iterator();
             while (iter.hasNext()) {
@@ -528,11 +524,9 @@ public class GameStatusHandler {
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
          HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
          HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
          String[] advertisers = gameStatus.getAdvertisers();
          int numAdvs = advertisers.length;
          ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-         double reserve = reserveInfo.getRegularReserve();
          PublisherInfo pubInfo = gameStatus.getPubInfo();
          double squashing = pubInfo.getSquashingParameter();
          UserClickModel clickModel = gameStatus.getUserClickModel();
@@ -542,8 +536,6 @@ public class GameStatusHandler {
                Query query = (Query) iter.next();
                String output = "";
                output += numAdvs + " " + numSlots + "\n";
-               ArrayList<AdvBidPair> bidPairListAdvSort = new ArrayList<AdvBidPair>();
-               ArrayList<AdvBidPair> bidPairListBidSort = new ArrayList<AdvBidPair>();
                for (int k = 0; k < advertisers.length; k++) {
                   String adv = advertisers[k];
                   BidBundle bundle = bidBundles.get(adv).get(j);
@@ -575,178 +567,6 @@ public class GameStatusHandler {
                catch (IOException e) {
                   System.err.println("Unable to write to file");
                   System.exit(-1);
-               }
-            }
-         }
-      }
-   }
-
-   public static void generateCarletonDataSet() throws IOException, ParseException {
-      String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-      int min = 1425;
-      int max = 1426;
-      int numSlots = 5;
-      for (int i = min; i < max; i++) {
-         String file = filename + i + ".slg";
-         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
-         GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-         String[] advertisers = gameStatus.getAdvertisers();
-         int numAdvs = advertisers.length;
-         ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-         double reserve = reserveInfo.getRegularReserve();
-         PublisherInfo pubInfo = gameStatus.getPubInfo();
-         double squashing = pubInfo.getSquashingParameter();
-         UserClickModel clickModel = gameStatus.getUserClickModel();
-         for (int j = 0; j < 59; j++) {
-            for (int ourAdvId = 0; ourAdvId < advertisers.length; ourAdvId++) {
-               Iterator<Query> iter = bidBundles.get(advertisers[0]).get(j).iterator();
-               while (iter.hasNext()) {
-                  Query query = (Query) iter.next();
-                  String output = "";
-                  output += numAdvs + " " + numSlots + "\n";
-                  output += (ourAdvId + 1) + " " + queryReports.get(advertisers[ourAdvId]).get(j).getImpressions(query) + "\n";
-                  ArrayList<AdvBidPair> bidPairListAdvSort = new ArrayList<AdvBidPair>();
-                  ArrayList<AdvBidPair> bidPairListBidSort = new ArrayList<AdvBidPair>();
-                  for (int k = 0; k < advertisers.length; k++) {
-                     String adv = advertisers[k];
-                     BidBundle bundle = bidBundles.get(adv).get(j);
-                     QueryReport qreport = queryReports.get(adv).get(j);
-                     double avgPos = Double.isNaN(qreport.getPosition(query)) ? -1 : qreport.getPosition(query);
-                     double squashedBid = bundle.getBid(query) * Math.pow(clickModel.getAdvertiserEffect(clickModel.queryIndex(query), k), squashing);
-                     if (Double.isNaN(squashedBid)) {
-                        throw new RuntimeException();
-                     }
-                     int numImps = qreport.getImpressions(query);
-                     output += avgPos + " ";
-
-                     AdvBidPair bidPair = new AdvBidPair(k, squashedBid, numImps, avgPos);
-                     bidPairListBidSort.add(bidPair);
-                     bidPairListAdvSort.add(bidPair);
-                  }
-                  output = output.substring(0, output.length() - 1);
-                  output += "\n\n";
-
-                  Collections.sort(bidPairListBidSort);
-                  int[][][] startEndImpArr = new int[numAdvs][numSlots][2];
-
-                  /*
-                         * Determine Time Spent in each position
-                         */
-                  int nextSlot = 0;
-                  for (int k = 0; k < advertisers.length; k++) {
-                     AdvBidPair bidPair = bidPairListAdvSort.get(k);
-                     int numImps = bidPair.getNumImps();
-                     if (numImps > 0) {
-                        if (nextSlot == 0) {
-                           startEndImpArr[k][nextSlot][0] = 1;
-                           startEndImpArr[k][nextSlot++][1] = numImps + 1;
-                        } else {
-                           /*
-                                     * We need to check 2 things, one if the person
-                                     * above us moved up in position, or if we
-                                     * had more impressions than them.  If either of these
-                                     * are true the impressions will be spread over multiple
-                                     * slots, otherwise all impressions were in the current
-                                     * start slot
-                                     */
-                           int numSkips = 0;
-                           boolean moveUp = false;
-                           int currSlot = nextSlot < numSlots ? nextSlot : numSlots;
-                           int currImp = 1;
-                           int impsUsed = 0;
-                           for (int l = 0; l < nextSlot; l++) {
-                              int idx = k - (l + numSkips + 1);
-                              boolean spread = false;
-                              int numImpsOther = 0;
-                              for (int m = 0; m < startEndImpArr[idx].length; m++) {
-                                 int newImps = startEndImpArr[idx][m][1] - startEndImpArr[idx][m][0];
-                                 if (numImpsOther > 0 && newImps > 0) {
-                                    spread = true;
-                                 }
-                                 numImpsOther += newImps;
-                              }
-
-                              if (numImpsOther == 0) {
-                                 numSkips++; //we need to skip this advertiser
-                              } else {
-                                 if (spread) {
-                                    moveUp = true;
-
-
-                                    if (numImps > numImpsOther) {
-
-                                    } else {
-                                       break;
-                                    }
-                                 } else if (numImps > numImpsOther) {
-
-                                 } else if (impsUsed >= numImps) {
-                                    break;
-                                 } else {
-                                    startEndImpArr[k][currSlot][0] = currImp + 1;
-                                    startEndImpArr[k][currSlot][1] = (numImps - impsUsed) + currImp + 1;
-                                    break;
-                                 }
-                              }
-                           }
-
-                           if (moveUp) {
-                              if (nextSlot >= numSlots) {
-
-                              } else {
-                                 int idx = k - (numSkips + 1);
-                                 startEndImpArr[k][nextSlot][0] = 1;
-                                 startEndImpArr[k][nextSlot][1] = startEndImpArr[idx][nextSlot][1];
-                                 for (int l = 0; l < nextSlot; l++) {
-                                    idx = k - (l + numSkips + 1);
-                                    startEndImpArr[k][nextSlot - l][0] = startEndImpArr[k][nextSlot][1] + 1;
-                                    startEndImpArr[k][nextSlot][1] = startEndImpArr[idx][nextSlot][1];
-                                 }
-                                 nextSlot++;
-                              }
-                           } else {
-                              startEndImpArr[k][nextSlot][0] = 1;
-                              startEndImpArr[k][nextSlot++][1] = numImps + 1;
-                           }
-                        }
-                     }
-                  }
-
-
-                  for (int x = 0; x < startEndImpArr.length; x++) {
-                     for (int y = 0; y < startEndImpArr[x].length; y++) {
-                        for (int z = 0; z < startEndImpArr[x][y].length; z++) {
-                           output += startEndImpArr[x][y][z] + " ";
-                        }
-                        output = output.substring(0, output.length() - 1);
-                        output += "\n";
-                     }
-                     output += "\n";
-                  }
-                  output = output.substring(0, output.length() - 2);
-                  System.out.println(output);
-
-                  //check validity
-                  for (int x = 0; x < startEndImpArr.length; x++) {
-                     double posSum = 0;
-                     for (int y = 0; y < startEndImpArr[x].length; y++) {
-                        posSum += (y + 1) * (startEndImpArr[x][y][1] - startEndImpArr[x][y][0]);
-                     }
-
-                     double avgPos = posSum / numSlots;
-                     if (avgPos == 0) {
-                        avgPos = -1;
-                     }
-
-                     if (Math.abs(avgPos - bidPairListAdvSort.get(x).getAvgPos()) < .0001) {
-                        System.out.println("TRUE");
-                     } else {
-                        System.out.println("FALSE");
-                     }
-                  }
                }
             }
          }
@@ -818,10 +638,23 @@ public class GameStatusHandler {
 
    }
 
-   public static void main(String[] args) throws FileNotFoundException, IOException, IllegalConfigurationException, ParseException {
-      int min = 1442;
-      int max = 1443;
-      String adv = "AstonTAC";
+   public static void main(String[] args) throws IOException, IllegalConfigurationException, ParseException {
+
+      String baseFile = "./game"; //games 1425-1464
+      int min = 1;
+      int max = 5;
+      for (int i = min; i < max; i++) {
+         String file = baseFile + i + ".slg";
+         System.out.println("PARSING " + file);
+         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+         GameStatus gameStatus = gameStatusHandler.getGameStatus();
+         System.out.println("FINISHED PARSING " + file);
+      }
+
+
+//      int min = 1442;
+//      int max = 1443;
+//      String adv = "AstonTAC";
       //				String adv = "MetroClick";
       //				String adv = "Schlemazl";
       //				String adv = "epflagent";
@@ -829,26 +662,26 @@ public class GameStatusHandler {
       //				String adv = "UMTac09";
       //				String adv = "munsey";
       //		String adv = "TacTex";
-      HashMap<Query, String> outputs = generateRDataSetOnlyBids(min, max, adv);
-      for (Query query : outputs.keySet()) {
-         FileOutputStream fout;
-
-         try {
-            // Open an output stream
-            fout = new FileOutputStream("Rdata" + min + adv + query.getComponent() + query.getManufacturer() + ".data");
-
-            // Print a line of text
-            new PrintStream(fout).println(outputs.get(query));
-
-            // Close our output stream
-            fout.close();
-         }
-         // Catches any error conditions
-         catch (IOException e) {
-            System.err.println("Unable to write to file");
-            System.exit(-1);
-         }
-      }
+//      HashMap<Query, String> outputs = generateRDataSetOnlyBids(min, max, adv);
+//      for (Query query : outputs.keySet()) {
+//         FileOutputStream fout;
+//
+//         try {
+//            // Open an output stream
+//            fout = new FileOutputStream("Rdata" + min + adv + query.getComponent() + query.getManufacturer() + ".data");
+//
+//            // Print a line of text
+//            new PrintStream(fout).println(outputs.get(query));
+//
+//            // Close our output stream
+//            fout.close();
+//         }
+//         // Catches any error conditions
+//         catch (IOException e) {
+//            System.err.println("Unable to write to file");
+//            System.exit(-1);
+//         }
+//      }
 
       //		generateCarletonDataSet2();
 
