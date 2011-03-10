@@ -21,16 +21,16 @@ import java.util.*;
 
 public class ImpressionEstimatorTest {
 
-   private boolean SAMPLED_AVERAGE_POSITIONS = true;
+   private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
-   
-   
+
+
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
-   boolean REMOVE_SAMPLE_NANS = false; 
+   boolean REMOVE_SAMPLE_NANS = false;
 
-   
+
    BufferedWriter bufferedWriter = null;
 
 
@@ -54,9 +54,10 @@ public class ImpressionEstimatorTest {
    }
 
    public ArrayList<String> getGameStrings() {
-      String baseFile = "./game"; //games 1425-1464
+      String baseFile = "./game";
       int min = 1;
-      int max = 1;//5;
+      int max = 8;
+      ;
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = min; i <= max; i++) {
@@ -232,7 +233,7 @@ public class ImpressionEstimatorTest {
       aggregateAbsError = 0;
       ArrayList<String> filenames = getGameStrings();
 
-      for (int gameIdx = 0; gameIdx <= 0; gameIdx++) {
+      for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
 //			for (int gameIdx=0; gameIdx<filenames.size(); gameIdx++) {
          String filename = filenames.get(gameIdx);
 
@@ -296,9 +297,9 @@ public class ImpressionEstimatorTest {
 
                int impressionsUB = getAgentImpressionsUpperBound(status, d, query);
 
-               double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, true);
+               double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
 
-               double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, false);
+               double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false);
 
                // DEBUG: Print out some game values.
                System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
@@ -322,7 +323,7 @@ public class ImpressionEstimatorTest {
                int numParticipants = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
                   //if (!actualAveragePositions[a].isNaN()) numParticipants++;
-                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS) ) {
+                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
                      numParticipants++;
                   }
                }
@@ -354,7 +355,7 @@ public class ImpressionEstimatorTest {
 
                // Get ordering of remaining squashed bids
                int[] ordering = getIndicesForDescendingOrder(reducedBids);
-               
+
                System.out.println("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
                System.out.println("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
                System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
@@ -421,11 +422,11 @@ public class ImpressionEstimatorTest {
 
                   if (impressionEstimatorIdx == SolverType.CP) {
                      inst = getCarletonQAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                             ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility,
-                             reducedImpsDistMean, reducedImpsDistStdev, ordering);
+                                                  ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility,
+                                                  reducedImpsDistMean, reducedImpsDistStdev, ordering);
 
                      model = new ImpressionEstimator(inst);
-                     
+
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
                      double[] avgPos = new double[reducedAvgPos.length];
@@ -450,18 +451,18 @@ public class ImpressionEstimatorTest {
                      model = new EricImpressionEstimator(inst);
                   }
 
-                  
+
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
 
                   IEResult result = model.search(ordering);
                   if (result != null) {
-                      predictedImpsPerAgent = result.getSol();
-                   } else {
-                      predictedImpsPerAgent = new int[reducedImps.length];
-                      Arrays.fill(predictedImpsPerAgent, -1);
-                   }
-                  
+                     predictedImpsPerAgent = result.getSol();
+                  } else {
+                     predictedImpsPerAgent = new int[reducedImps.length];
+                     Arrays.fill(predictedImpsPerAgent, -1);
+                  }
+
                   double stop = System.currentTimeMillis();
                   double secondsElapsed = (stop - start) / 1000.0;
 
@@ -536,6 +537,7 @@ public class ImpressionEstimatorTest {
 
    /**
     * Gets a QAInstance in the format that Carleton's algorithm wants.
+    *
     * @param NUM_SLOTS
     * @param NUM_PROMOTED_SLOTS
     * @param numParticipants
@@ -552,42 +554,41 @@ public class ImpressionEstimatorTest {
     * @return
     */
    private QAInstance getCarletonQAInstance(int NUM_SLOTS, int NUM_PROMOTED_SLOTS,
-		int numParticipants, double[] reducedAvgPos,
-		double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
-		int ourImps, int ourPromotedImps, int impressionsUB,
-		boolean ourPromotionEligibility,
-		double[] reducedImpsDistMean, double[] reducedImpsDistStdev,
-		int[] ordering) {
-	   
-       double[] avgPos = new double[reducedAvgPos.length];
-       boolean considerPadding = false;
+                                            int numParticipants, double[] reducedAvgPos,
+                                            double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
+                                            int ourImps, int ourPromotedImps, int impressionsUB,
+                                            boolean ourPromotionEligibility,
+                                            double[] reducedImpsDistMean, double[] reducedImpsDistStdev,
+                                            int[] ordering) {
 
-     //If exact average positions, just return a standard query instance (with no padding)
-     if (!SAMPLED_AVERAGE_POSITIONS) {
-  	   avgPos = reducedAvgPos.clone();
-  	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-  			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-  			   reducedImpsDistMean, reducedImpsDistStdev);
-     } else {
-   	   avgPos = reducedSampledAvgPos.clone();
-   	   avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
-   	   
-   	   //If any agents have a NaN sampled average position, give them a dummy average position
-   	   //equal to Min(their starting position, numSlots)
-   	   for (int i=0; i<avgPos.length; i++) {
-   		   if (Double.isNaN(avgPos[ordering[i]])) {
-   			   avgPos[ordering[i]] = Math.min(i+1, NUM_SLOTS);
-   		   }
-   	   }
-   	   
-   	   System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
-   	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-   			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-   			   reducedImpsDistMean, reducedImpsDistStdev);
-     }
+      double[] avgPos = new double[reducedAvgPos.length];
+      boolean considerPadding = false;
 
-     
-	   
+      //If exact average positions, just return a standard query instance (with no padding)
+      if (!SAMPLED_AVERAGE_POSITIONS) {
+         avgPos = reducedAvgPos.clone();
+         return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+                               reducedImpsDistMean, reducedImpsDistStdev);
+      } else {
+         avgPos = reducedSampledAvgPos.clone();
+         avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+
+         //If any agents have a NaN sampled average position, give them a dummy average position
+         //equal to Min(their starting position, numSlots)
+         for (int i = 0; i < avgPos.length; i++) {
+            if (Double.isNaN(avgPos[ordering[i]])) {
+               avgPos[ordering[i]] = Math.min(i + 1, NUM_SLOTS);
+            }
+         }
+
+         System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
+         return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+                               reducedImpsDistMean, reducedImpsDistStdev);
+      }
+
+
 //       //If exact average positions, just return a standard query instance (with no padding)
 //       if (!SAMPLED_AVERAGE_POSITIONS) {
 //    	   avgPos = reducedAvgPos.clone();
@@ -633,11 +634,11 @@ public class ImpressionEstimatorTest {
 //       return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, nonNanParticipants, nonNanAvgPosArr, reducedSampledAvgPos, nonNanAgentIdsArr, ourNonNanAgentIdx,
 //                             ourImps, ourPromotedImps, impressionsUB, true, ourPromotionEligibility,
 //                             reducedImpsDistMean, reducedImpsDistStdev);
-          
-}
+
+   }
 
 
-/**
+   /**
     * Load a game
     * For each day,
     * Get all query reports that came in on that day
@@ -661,8 +662,8 @@ public class ImpressionEstimatorTest {
       aggregateAbsError = 0;
       ArrayList<String> filenames = getGameStrings();
 
-      for (int gameIdx = 0; gameIdx <= 0; gameIdx++) {
-//			for (int gameIdx=0; gameIdx<filenames.size(); gameIdx++) {
+
+      for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
          String filename = filenames.get(gameIdx);
 
          // Load this game and its basic parameters
@@ -1161,6 +1162,21 @@ public class ImpressionEstimatorTest {
       return imps;
    }
 
+   private double[] getAgentImpressionsDistributionMeanOrStdev(GameStatus status, Query query, int d, boolean getMean) {
+      String[] agents = status.getAdvertisers();
+      double[] meanOrStdevImps = new double[agents.length];
+      for (int a = 0; a < agents.length; a++) {
+         String agentName = agents[a];
+         int imps = status.getQueryReports().get(agentName).get(d).getImpressions(query);
+
+         if (getMean) {
+            meanOrStdevImps[a] = imps;
+         } else {
+            meanOrStdevImps[a] = Math.max(1, imps) * .25;
+         }
+      }
+      return meanOrStdevImps;
+   }
 
    private double[] getAgentImpressionsDistributionMeanOrStdev(GameStatus status, Query query, boolean getMean) {
       String[] agents = status.getAdvertisers();
