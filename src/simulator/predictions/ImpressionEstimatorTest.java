@@ -28,7 +28,7 @@ public class ImpressionEstimatorTest {
    
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
-   boolean REMOVE_SAMPLE_NANS = true; 
+   boolean REMOVE_SAMPLE_NANS = false; 
 
    
    BufferedWriter bufferedWriter = null;
@@ -354,7 +354,11 @@ public class ImpressionEstimatorTest {
 
                // Get ordering of remaining squashed bids
                int[] ordering = getIndicesForDescendingOrder(reducedBids);
-
+               
+               System.out.println("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
+               System.out.println("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
+               System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
+               System.out.println("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
 
                // If any agents have the same squashed bids, we won't know the definitive ordering.
                // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
@@ -414,12 +418,14 @@ public class ImpressionEstimatorTest {
                   //Terrible, band-aid solution is to have an integer corresponding to each test.
                   QAInstance inst;
                   AbstractImpressionEstimator model = null;
+
                   if (impressionEstimatorIdx == SolverType.CP) {
                      inst = getCarletonQAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                              ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility,
-                             reducedImpsDistMean, reducedImpsDistStdev);
+                             reducedImpsDistMean, reducedImpsDistStdev, ordering);
 
                      model = new ImpressionEstimator(inst);
+                     
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
                      double[] avgPos = new double[reducedAvgPos.length];
@@ -444,17 +450,18 @@ public class ImpressionEstimatorTest {
                      model = new EricImpressionEstimator(inst);
                   }
 
-                  IEResult result = model.search(ordering);
-
+                  
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
-                  if (result != null) {
-                     predictedImpsPerAgent = result.getSol();
-                  } else {
-                     predictedImpsPerAgent = new int[reducedImps.length];
-                     Arrays.fill(predictedImpsPerAgent, -1);
-                  }
 
+                  IEResult result = model.search(ordering);
+                  if (result != null) {
+                      predictedImpsPerAgent = result.getSol();
+                   } else {
+                      predictedImpsPerAgent = new int[reducedImps.length];
+                      Arrays.fill(predictedImpsPerAgent, -1);
+                   }
+                  
                   double stop = System.currentTimeMillis();
                   double secondsElapsed = (stop - start) / 1000.0;
 
@@ -549,7 +556,8 @@ public class ImpressionEstimatorTest {
 		double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
 		int ourImps, int ourPromotedImps, int impressionsUB,
 		boolean ourPromotionEligibility,
-		double[] reducedImpsDistMean, double[] reducedImpsDistStdev) {
+		double[] reducedImpsDistMean, double[] reducedImpsDistStdev,
+		int[] ordering) {
 	   
        double[] avgPos = new double[reducedAvgPos.length];
        boolean considerPadding = false;
@@ -563,8 +571,18 @@ public class ImpressionEstimatorTest {
      } else {
    	   avgPos = reducedSampledAvgPos.clone();
    	   avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+   	   
+   	   //If any agents have a NaN sampled average position, give them a dummy average position
+   	   //equal to Min(their starting position, numSlots)
+   	   for (int i=0; i<avgPos.length; i++) {
+   		   if (Double.isNaN(avgPos[ordering[i]])) {
+   			   avgPos[ordering[i]] = Math.min(i+1, NUM_SLOTS);
+   		   }
+   	   }
+   	   
+   	   System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
    	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-   			   ourImps, ourPromotedImps, impressionsUB, true, ourPromotionEligibility,
+   			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
    			   reducedImpsDistMean, reducedImpsDistStdev);
      }
 

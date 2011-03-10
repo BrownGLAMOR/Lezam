@@ -19,6 +19,7 @@ public class QAInstance {
 	private boolean _promotionEligibilityVerified;
 	private double[] _agentImpressionDistributionMean; //prior on agent impressions
 	private double[] _agentImpressionDistributionStdev; //prior on agent impressions
+	int MIN_PADDED_AGENT_ID = 100;
 	
 	public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, 
 			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
@@ -82,7 +83,7 @@ public class QAInstance {
 		
 		for(int i=0; i < stopSlot-startSlot; i++){
 			newAvgPos[oldAdvertisers+i] = startSlot+i;
-			newAgentIds[oldAdvertisers+i] = 100+i;
+			newAgentIds[oldAdvertisers+i] = MIN_PADDED_AGENT_ID+i;
 		}
 		
 		_advetisers = newAdvertisers;
@@ -104,6 +105,15 @@ public class QAInstance {
 	public double[] getAgentImpressionDistributionMean() {return _agentImpressionDistributionMean;}
 	public double[] getAgentImpressionDistributionStdev() {return _agentImpressionDistributionStdev;}
 	
+	public boolean[] isPadded() {
+		boolean[] padded = new boolean[_advetisers];
+		for (int i=0; i<_advetisers; i++) {
+			if (_agentIds[i] >= MIN_PADDED_AGENT_ID) padded[i] = true;  
+		}
+		return padded;
+	}
+
+	
 	public int[] getBidOrder(QAData data){
 		double[] bids = new double[_advetisers];
 		int[] bidOrder = new int[_advetisers];
@@ -119,7 +129,7 @@ public class QAInstance {
 		
 		return bidOrder;
 	}
-	
+		
 	private boolean feasibleOrder(int[] order) {
 		for(int i=0; i < order.length; i++){
 			int startPos = Math.min(i+1,_slots);
