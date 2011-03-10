@@ -99,8 +99,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 			}
 			
 			assert(false) : "should have been eliminated in LDS search";
-			System.out.println("order is infeasible"); 
-			System.exit(-1);
+			//System.out.println("order is infeasible"); 
 			return null;
 		}
 
