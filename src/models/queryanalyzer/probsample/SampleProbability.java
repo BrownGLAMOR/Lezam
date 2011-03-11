@@ -33,7 +33,7 @@ public class SampleProbability {
          queue.add(impsPerAgent[order[i]]);
       }
 
-      int lastIdx = queue.size() - 1;
+      int lastIdx = queue.size();
 
       while (!queue.isEmpty()) {
          int val = queue.poll();
@@ -45,14 +45,21 @@ public class SampleProbability {
          }
       }
 
-      //remove all duplicates from end of array
-      while (impsBeforeDropout.size() > 1 &&
-              impsBeforeDropout.get(impsBeforeDropout.size() - 1) ==
-                      impsBeforeDropout.get(impsBeforeDropout.size() - 2)) {
-         impsBeforeDropout.remove(impsBeforeDropout.size() - 1);
-      }
+      debug("BEFORE DUPES: " + impsBeforeDropout);
+      impsBeforeDropout = removeDupes(impsBeforeDropout);
+      debug("AFTER DUPES: " + impsBeforeDropout);
 
       return convertListToArr(impsBeforeDropout);
+   }
+
+   public ArrayList<Integer> removeDupes(ArrayList<Integer> list) {
+      ArrayList<Integer> arrNoDupes = new ArrayList<Integer>();
+      for (Integer val : list) {
+         if (!arrNoDupes.contains(val)) {
+            arrNoDupes.add(val);
+         }
+      }
+      return arrNoDupes;
    }
 
    public static int[] convertListToArr(List<Integer> integers) {
@@ -71,6 +78,11 @@ public class SampleProbability {
 
       //TODO: For now we are assuming that samples must take place while agents were still in the auction
       int numDropoutPoints = impsBeforeDropout.length;
+
+      if (numDropoutPoints == 1) {
+         debug("\n\nONLY ONE PERSON IN THE AUCTION, NO PROBLEM!\n\n");
+         return;
+      }
 
 //      if(!DEBUG) {
       _cplex.setOut(null);
@@ -182,6 +194,7 @@ public class SampleProbability {
             }
          }
          _cplex.addEq(expr, avgPos * numSamples);
+         debug(expr.toString() + "  =  " + (avgPos * numSamples));
       }
 
       //Add constraint on number of samples
@@ -203,6 +216,8 @@ public class SampleProbability {
          debug(vals);
       }
 
+      debug("\n\n");
+
    }
 
    private void debug(String s) {
@@ -210,7 +225,6 @@ public class SampleProbability {
          System.out.println(s);
       }
    }
-
 
    /*
   Function input
