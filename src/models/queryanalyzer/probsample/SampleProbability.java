@@ -16,7 +16,7 @@ public class SampleProbability {
    private IloCplex _cplex;
    private int maxSols = 1000;
 
-   private boolean DEBUG = false;
+   private boolean DEBUG = true;
 
    public SampleProbability() {
       try {
@@ -71,7 +71,7 @@ public class SampleProbability {
    }
 
 
-   public void getAllSolutions(double[] avgPosArr, int[] order, int[] impsPerAgent, int numSlots, int numSamples) throws IloException {
+   public void getProbabilityofSample(double[] avgPosArr, int[] order, int[] impsPerAgent, int impressionUpperBound, int numSlots, int numSamples) throws IloException {
 
       int[] impsBeforeDropout = getDropoutPoints(impsPerAgent, order, numSlots);
       int[][] impsPerSlot = greedyAssign(numSlots, impsPerAgent.length, order, impsPerAgent);
@@ -219,16 +219,31 @@ public class SampleProbability {
 
       _cplex.populate();
 
+      int[] impsBetweenDropout = new int[numDropoutPoints + 1];
+      impsBetweenDropout[0] = impsBeforeDropout[0];
+      for (int i = 1; i < impsBeforeDropout.length; i++) {
+         impsBetweenDropout[i] = impsBeforeDropout[i] - impsBeforeDropout[i - 1];
+      }
+      impsBetweenDropout[numDropoutPoints] = impressionUpperBound - impsBeforeDropout[numDropoutPoints - 1];
+
+      double probability = 0.0;
+
       System.out.println("" + _cplex.getSolnPoolNsolns());
       for (int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
          double[] val = _cplex.getValues(samplesPerBin, i);
          String vals = "";
          for (int j = 0; j < val.length; ++j) {
-            vals += val[j] + ", ";
+            double curVal = val[j];
+            if (curVal > 0) {
+               probability += curVal * Math.log10(impsBetweenDropout[j]);
+            }
+            vals += curVal + ", ";
          }
          debug(vals);
       }
-
+      probability -= numSamples * Math.log10(impressionUpperBound);
+      probability = Math.pow(probability, 10);
+      System.out.println("Probability: " + probability);
       debug("\n\n");
 
    }
