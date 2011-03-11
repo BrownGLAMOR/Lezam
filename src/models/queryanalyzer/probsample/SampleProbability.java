@@ -16,7 +16,7 @@ public class SampleProbability {
    private IloCplex _cplex;
    private int maxSols = 100;
 
-   private boolean DEBUG = true;
+   private boolean DEBUG = false;
 
    public SampleProbability() {
       try {
@@ -80,7 +80,7 @@ public class SampleProbability {
       int numDropoutPoints = impsBeforeDropout.length;
 
       if (numDropoutPoints == 1) {
-         debug("\n\nONLY ONE PERSON IN THE AUCTION, NO PROBLEM!\n\n");
+//         debug("\n\nONLY ONE PERSON IN THE AUCTION, NO PROBLEM!\n\n");
          return;
       }
 
@@ -114,11 +114,15 @@ public class SampleProbability {
 
          IloLinearNumExpr expr = _cplex.linearNumExpr();
 
+         ArrayList<Boolean> inAuction = new ArrayList<Boolean>();
+
          //Add the position we are currently in or avgPos if we are out of the auction
          if (i < numSlots) {
             expr.addTerm(i + 1, samplesPerBin[0]);
+            inAuction.add(true);
          } else {
             expr.addTerm(avgPos, samplesPerBin[0]);
+            inAuction.add(false);
          }
 
          //Add positions for all future dropout points
@@ -133,6 +137,7 @@ public class SampleProbability {
                if (totalImps <= totalImpsSeen) {
                   //We are out of the auction so set position to average
                   expr.addTerm(avgPos, samplesPerBin[j]);
+                  inAuction.add(false);
                } else {
                   //Still in auction, determine position
                   double currPos = -1;
@@ -153,6 +158,7 @@ public class SampleProbability {
                   }
 
                   expr.addTerm(currPos + 1, samplesPerBin[j]);
+                  inAuction.add(true);
                }
             } else {
                //Started out of the auction
@@ -165,9 +171,11 @@ public class SampleProbability {
                if (impsBeforeEntry < totalImpsSeen) {
                   //We aren't in the auction yet
                   expr.addTerm(avgPos, samplesPerBin[j]);
+                  inAuction.add(false);
                } else if (impsBeforeEntry + totalImps <= totalImpsSeen) {
                   //We are out of the auction
                   expr.addTerm(avgPos, samplesPerBin[j]);
+                  inAuction.add(false);
                } else {
                   //Still in auction, determine position
                   double currPos = -1;
@@ -190,11 +198,24 @@ public class SampleProbability {
                   }
 
                   expr.addTerm(currPos + 1, samplesPerBin[j]);
+                  inAuction.add(true);
                }
             }
          }
          _cplex.addEq(expr, avgPos * numSamples);
          debug(expr.toString() + "  =  " + (avgPos * numSamples));
+
+         if (avgPos != 0) {
+            IloLinearIntExpr expr2 = _cplex.linearIntExpr();
+            for (int j = 0; j < numDropoutPoints; j++) {
+               boolean currInAuction = inAuction.get(j);
+               if (currInAuction) {
+                  expr2.addTerm(1, samplesPerBin[j]);
+               }
+            }
+            _cplex.addGe(expr2, 1);
+            debug(expr2.toString() + " >= " + 1);
+         }
       }
 
       //Add constraint on number of samples
@@ -206,7 +227,7 @@ public class SampleProbability {
 
       _cplex.populate();
 
-      debug("Num Vals = " + _cplex.getSolnPoolNsolns());
+      System.out.println("Num Vals = " + _cplex.getSolnPoolNsolns());
       for (int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
          double[] val = _cplex.getValues(samplesPerBin, i);
          String vals = "";
