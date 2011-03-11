@@ -14,7 +14,7 @@ import java.util.PriorityQueue;
 public class SampleProbability {
 
    private IloCplex _cplex;
-   private int maxSols = 100;
+   private int maxSols = 1000;
 
    private boolean DEBUG = false;
 
@@ -76,10 +76,9 @@ public class SampleProbability {
       int[] impsBeforeDropout = getDropoutPoints(impsPerAgent, order, numSlots);
       int[][] impsPerSlot = greedyAssign(numSlots, impsPerAgent.length, order, impsPerAgent);
 
-      //TODO: For now we are assuming that samples must take place while agents were still in the auction
       int numDropoutPoints = impsBeforeDropout.length;
 
-      if (numDropoutPoints == 1) {
+      if (numDropoutPoints == 1 || order.length == 0) {
 //         debug("\n\nONLY ONE PERSON IN THE AUCTION, NO PROBLEM!\n\n");
          return;
       }
@@ -99,14 +98,14 @@ public class SampleProbability {
       IloIntVar[] samplesPerBin;
       int lowerBound = 0;
       int upperBound = numSamples;
-      samplesPerBin = _cplex.intVarArray(numDropoutPoints, lowerBound, upperBound);
+      samplesPerBin = _cplex.intVarArray(numDropoutPoints + 1, lowerBound, upperBound);
 
       //Setup constraints
       for (int i = 0; i < order.length; i++) {
          int currAgent = order[i];
          double avgPos = avgPosArr[currAgent];
          int[] ourImpsPerSlot = impsPerSlot[currAgent];
-         int totalImps = impsPerAgent[currAgent];
+         int ourTotImps = impsPerAgent[currAgent];
 
          if (Double.isNaN(avgPos)) {
             avgPos = 0; //people not in the auctions have a position of zero in this model
@@ -127,14 +126,11 @@ public class SampleProbability {
 
          //Add positions for all future dropout points
          for (int j = 1; j < numDropoutPoints; j++) {
-            int totalImpsSeen = 0;
-            for (int k = 0; k < j; k++) {
-               totalImpsSeen += impsBeforeDropout[k];
-            }
+            int totalImpsSeen = impsBeforeDropout[j - 1];
 
             if (i < numSlots) {
                //Started in the auction
-               if (totalImps <= totalImpsSeen) {
+               if (ourTotImps <= totalImpsSeen) {
                   //We are out of the auction so set position to average
                   expr.addTerm(avgPos, samplesPerBin[j]);
                   inAuction.add(false);
@@ -152,9 +148,7 @@ public class SampleProbability {
                   }
 
                   if (currPos < 0) {
-                     //We are no longer in the auction so set positon to average
-                     currPos = avgPos;
-                     System.out.println("\n\n\nI SHOULD NEVER GET CALLED!\n\n\n");
+                     throw new RuntimeException();
                   }
 
                   expr.addTerm(currPos + 1, samplesPerBin[j]);
@@ -162,17 +156,14 @@ public class SampleProbability {
                }
             } else {
                //Started out of the auction
-               int impsBeforeEntry = 0;
                int numDropsBeforeEntry = i - (numSlots - 1);
-               for (int k = 0; k < numDropsBeforeEntry; k++) {
-                  impsBeforeEntry += impsBeforeDropout[k];
-               }
+               int impsBeforeEntry = impsBeforeDropout[numDropsBeforeEntry - 1];
 
-               if (impsBeforeEntry < totalImpsSeen) {
+               if (impsBeforeEntry > totalImpsSeen) {
                   //We aren't in the auction yet
                   expr.addTerm(avgPos, samplesPerBin[j]);
                   inAuction.add(false);
-               } else if (impsBeforeEntry + totalImps <= totalImpsSeen) {
+               } else if ((impsBeforeEntry + ourTotImps) <= totalImpsSeen) {
                   //We are out of the auction
                   expr.addTerm(avgPos, samplesPerBin[j]);
                   inAuction.add(false);
@@ -192,9 +183,7 @@ public class SampleProbability {
                   }
 
                   if (currPos < 0) {
-                     //We are no longer in the auction so set position to average
-                     currPos = avgPos;
-                     System.out.println("\n\n\nI SHOULD NEVER GET CALLED!\n\n\n");
+                     throw new RuntimeException();
                   }
 
                   expr.addTerm(currPos + 1, samplesPerBin[j]);
@@ -202,6 +191,7 @@ public class SampleProbability {
                }
             }
          }
+         expr.addTerm(avgPos, samplesPerBin[numDropoutPoints]);
          _cplex.addEq(expr, avgPos * numSamples);
          debug(expr.toString() + "  =  " + (avgPos * numSamples));
 
@@ -214,20 +204,22 @@ public class SampleProbability {
                }
             }
             _cplex.addGe(expr2, 1);
-            debug(expr2.toString() + " >= " + 1);
+//            debug(expr2.toString() + " >= " + 1);
          }
       }
 
+      _cplex.addLe(samplesPerBin[numDropoutPoints], numSamples - 1);
+
       //Add constraint on number of samples
       IloLinearIntExpr expr = _cplex.linearIntExpr();
-      for (int i = 0; i < numDropoutPoints; i++) {
+      for (int i = 0; i < samplesPerBin.length; i++) {
          expr.addTerm(1, samplesPerBin[i]);
       }
       _cplex.addEq(expr, numSamples);
 
       _cplex.populate();
 
-      System.out.println("Num Vals = " + _cplex.getSolnPoolNsolns());
+      System.out.println("" + _cplex.getSolnPoolNsolns());
       for (int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
          double[] val = _cplex.getValues(samplesPerBin, i);
          String vals = "";
