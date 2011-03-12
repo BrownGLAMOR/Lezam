@@ -232,17 +232,18 @@ public class SampleProbability {
       for (int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
          double[] val = _cplex.getValues(samplesPerBin, i);
          String vals = "";
+         double innerProb = 1.0;
          for (int j = 0; j < val.length; ++j) {
             double curVal = val[j];
             if (curVal > 0) {
-               probability += curVal * Math.log10(impsBetweenDropout[j]);
+               innerProb *= Math.pow(impsBetweenDropout[j], curVal);
             }
             vals += curVal + ", ";
          }
+         probability += innerProb;
          debug(vals);
       }
-      probability -= numSamples * Math.log10(impressionUpperBound);
-      probability = Math.pow(probability, 10);
+      probability /= Math.pow(impressionUpperBound, numSamples);
       System.out.println("Probability: " + probability);
       debug("\n\n");
 
