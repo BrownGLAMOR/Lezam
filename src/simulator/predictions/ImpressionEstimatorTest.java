@@ -57,7 +57,7 @@ public class ImpressionEstimatorTest {
       String baseFile = "./game";
       int min = 1;
       int max = 8;
-      ;
+
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = min; i <= max; i++) {
@@ -447,7 +447,7 @@ public class ImpressionEstimatorTest {
                      }
                      inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
                                            ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-                                           reducedImpsDistMean, reducedImpsDistStdev);
+                                           reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
                      model = new EricImpressionEstimator(inst);
                   }
 
@@ -569,10 +569,13 @@ public class ImpressionEstimatorTest {
          avgPos = reducedAvgPos.clone();
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-                               reducedImpsDistMean, reducedImpsDistStdev);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
       } else {
          avgPos = reducedSampledAvgPos.clone();
-         avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+
+         if (REPORT_FULLPOS_FORSELF) {
+            avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+         }
 
          //If any agents have a NaN sampled average position, give them a dummy average position
          //equal to Min(their starting position, numSlots)
@@ -585,7 +588,7 @@ public class ImpressionEstimatorTest {
          System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-                               reducedImpsDistMean, reducedImpsDistStdev);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
       }
 
 
@@ -697,7 +700,7 @@ public class ImpressionEstimatorTest {
          for (int i = 0; i < advertisers.length; i++) {
             AbstractQueryAnalyzer model = null;
             if (impressionEstimatorIdx == SolverType.CP) {
-               model = new CarletonQueryAnalyzer(querySpace, advList, advertisers[i], LDS_ITERATIONS_1, LDS_ITERATIONS_2, REPORT_FULLPOS_FORSELF);
+               model = new CarletonQueryAnalyzer(querySpace, advList, advertisers[i], LDS_ITERATIONS_1, LDS_ITERATIONS_2, REPORT_FULLPOS_FORSELF, SAMPLED_AVERAGE_POSITIONS);
             } else if (impressionEstimatorIdx == SolverType.MIP) {
                //TODO
             }

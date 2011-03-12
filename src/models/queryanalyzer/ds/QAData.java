@@ -77,7 +77,7 @@ public class QAData {
                             avgPos, dummySampledAvgPositions, agentIds, advIndex,
                             usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
                             true, promotionEligibiltyVerified,
-                            agentImpressionDistributionMean, agentImpressionDistributionStdev);
+                            agentImpressionDistributionMean, agentImpressionDistributionStdev, true);
    }
 
    public String toString() {

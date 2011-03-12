@@ -24,9 +24,12 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
    private ArrayList<String> _advertisers;
    private String _ourAdvertiser;
    public final static int NUM_SLOTS = 5;
+   private boolean _isSampled;
 
-   public GreedyQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser) {
+   public GreedyQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean isSampled) {
       _querySpace = querySpace;
+
+      _isSampled = isSampled;
 
       _allResults = new HashMap<Query, ArrayList<IEResult>>();
       _allImpRanges = new HashMap<Query, ArrayList<int[][]>>();
@@ -178,7 +181,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
                                           allAvgPosArr, dummySampledAvgPositions, agentIdsArr, _advToIdx.get(_ourAdvertiser),
                                           queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q),
                                           true, promotionEligibiltyVerified,
-                                          agentImpressionDistributionMean, agentImpressionDistributionStdev);
+                                          agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled);
 
          int[] avgPosOrder = inst.getAvgPosOrder();
          IEResult bestSol;
@@ -212,7 +215,7 @@ public class GreedyQueryAnalyzer extends AbstractQueryAnalyzer {
 
    @Override
    public AbstractModel getCopy() {
-      return new GreedyQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser);
+      return new GreedyQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, _isSampled);
    }
 
    @Override

@@ -348,7 +348,7 @@ public class UserModelTest {
             querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
          }
 
-         AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace, advertisers, "TacTex", 10, 10, true);
+         AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace, advertisers, "TacTex", 10, 10, true, true);
 
          double ourTotErrorCurr = 0;
          double ourTotActualCurr = 0;

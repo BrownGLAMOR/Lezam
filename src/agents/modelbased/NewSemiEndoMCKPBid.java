@@ -90,7 +90,7 @@ public class NewSemiEndoMCKPBid extends AbstractAgent {
          * so we use a LinkedHashSet
          */
       Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-      AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(_querySpace, _advertisers, "adv1", 10, 10, true);
+      AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(_querySpace, _advertisers, "adv1", 10, 10, true, true);
       ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(0.004932699,
                                                                           0.263532334,
                                                                           0.045700011,
