@@ -55,7 +55,7 @@ public class WaterfallILP {
 	private boolean SUPPRESS_OUTPUT = true;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
-	private boolean USE_RANKING_CONSTRAINTS = false;
+	private boolean USE_RANKING_CONSTRAINTS;
 	private boolean USE_BUDGET_CONSTRAINTS = false; //If someone didn't hit budget, nobody else can have more total imps than that person did.
 	
 	//************************************ FIELD DECLARATIONS ************************************
@@ -110,8 +110,10 @@ public class WaterfallILP {
 	public WaterfallILP(double[] knownI_a, double[] knownMu_a, double[] knownI_aPromoted, 
 			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, int maxImpsPerAgent,
-			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
+			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
+			boolean useRankingConstraints) {
 		
+		this.USE_RANKING_CONSTRAINTS = useRankingConstraints;
 		this.INTEGER_PROGRAM = integerProgram;
 		this.USE_EPSILON = useEpsilon;
 		this.knownI_a = knownI_a;
@@ -199,10 +201,11 @@ public class WaterfallILP {
 			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, 
 			double[] knownSampledMu_a, int numSamples, int maxImpsPerAgent,
-			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
+			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
+			boolean useRankingConstraints) {
 		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget,
 				numSlots, numPromotedSlots, integerProgram, useEpsilon, maxImpsPerAgent,
-				knownI_aDistributionMean, knownI_aDistributionStdev);
+				knownI_aDistributionMean, knownI_aDistributionStdev, useRankingConstraints);
 		this.knownSampledMu_a = knownSampledMu_a;
 		this.isKnownSampledMu_a = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
@@ -1590,7 +1593,7 @@ public class WaterfallILP {
 		boolean integerProgram = true;
 		boolean useEpsilon = false;
 		int maxImpsPerAgent = 10000;
-		
+		boolean useRankingConstraints = false;
 		
 		
 		
@@ -1603,7 +1606,8 @@ public class WaterfallILP {
 		WaterfallILP ilp = new WaterfallILP(
 				I_a, mu_a, I_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
 				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
-				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev);
+				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev,
+				useRankingConstraints);
 
 		WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();

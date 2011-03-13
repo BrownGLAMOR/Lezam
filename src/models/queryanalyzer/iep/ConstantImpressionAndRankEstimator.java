@@ -10,12 +10,12 @@ import models.queryanalyzer.ds.QAInstance;
  */
 public class ConstantImpressionAndRankEstimator implements ImpressionAndRankEstimator {
 
-	ImpressionEstimator ie;
+	AbstractImpressionEstimator ie;
 	
 	//[2 3 0 1] states that the highest ranked agent is in index 2. 
 	int[] ordering; 
 	
-	public ConstantImpressionAndRankEstimator(ImpressionEstimator ie, int[] ordering) {
+	public ConstantImpressionAndRankEstimator(AbstractImpressionEstimator ie, int[] ordering) {
 		this.ie = ie;
 		this.ordering = ordering;
 	}

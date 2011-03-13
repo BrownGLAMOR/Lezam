@@ -25,8 +25,10 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    boolean INTEGER_PROGRAM = true;
    boolean USE_EPSILON = false;
    int NUM_SAMPLES = 10;
-
-   public EricImpressionEstimator(QAInstance inst) {
+   boolean USE_RANKING_CONSTRAINTS;
+   
+   public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints) {
+	   USE_RANKING_CONSTRAINTS = useRankingConstraints;
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
       _promotedSlots = inst.getNumPromotedSlots();
@@ -84,7 +86,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       //Get mu_a values, given impressions
       WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
                                           _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
-                                          orderedI_aDistributionMean, orderedI_aDistributionStdev);
+                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS);
 
       WaterfallILP.WaterfallResult result = ilp.solve();
       double[][] I_a_s = result.getI_a_s();
@@ -269,7 +271,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 //			System.out.println("Eric Instance:\n" + ericInst);
 
          ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
-         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst);
+         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false);
 
          IEResult carletonResult = carletonImpressionEstimator.search(order);
          IEResult ericResult = ericImpressionEstimator.search(order);

@@ -37,7 +37,14 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    public ImpressionEstimator(QAInstance inst) {
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
-      _trueAvgPos = inst.getAvgPos();
+
+      //_trueAvgPos should contain exact average positions whenever possible.
+      //If there is no exact average position, use sampled average position.
+      _trueAvgPos = inst.getAvgPos().clone();
+      for (int i=0; i<_trueAvgPos.length; i++) {
+    	  if (_trueAvgPos[i] == -1) _trueAvgPos[i] = inst.getSampledAvgPos()[i];
+      }
+      
       _ourIndex = inst.getAgentIndex();
       _ourImpressions = inst.getImpressions();
       _imprUB = inst.getImpressionsUB();

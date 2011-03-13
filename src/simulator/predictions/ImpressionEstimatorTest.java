@@ -5,6 +5,7 @@ import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.iep.ConstantImpressionAndRankEstimator;
 import models.queryanalyzer.iep.EricImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionAndRankEstimator;
@@ -513,7 +514,10 @@ public class ImpressionEstimatorTest {
                      inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
                                            ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
-                     model = new EricImpressionEstimator(inst);
+                     
+                     
+                     boolean useRankingConstraints = !orderingKnown; //Only use ranking constraints if you don't know the ordering
+                     model = new EricImpressionEstimator(inst, useRankingConstraints);
                      
                   }
 
@@ -521,7 +525,11 @@ public class ImpressionEstimatorTest {
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
 
-                  IEResult result = model.search(ordering);
+                  
+                  fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                  IEResult result = fullModel.getBestSolution();
+//                  IEResult result = model.search(ordering);
+                  
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
                   } else {
