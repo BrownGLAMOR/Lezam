@@ -7,9 +7,13 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 
 	public final static int NUM_SLOTS = 5;
 	public int NUM_ITERATIONS_2 = 10;
-
+	private QAInstance inst;
 	
-	public IEResult getBestSolution(QAInstance inst) {
+	public LDSImpressionAndRankEstimator(QAInstance inst) {
+		this.inst = inst;
+	}
+	
+	public IEResult getBestSolution() {
 		//int[] avgPosOrder = inst.getAvgPosOrder();
 		int[] avgPosOrder = inst.getCarletonOrder();
 		IEResult bestSol;

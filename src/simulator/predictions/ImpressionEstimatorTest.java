@@ -7,6 +7,7 @@ import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.iep.EricImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionAndRankEstimator;
 import models.queryanalyzer.iep.ImpressionEstimator;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
@@ -48,7 +49,7 @@ public class ImpressionEstimatorTest {
 
    BufferedWriter bufferedWriter = null;
 
-
+   int NUM_SLOTS = 5;
    public static final int MAX_F0_IMPS = 10969;
    public static final int MAX_F1_IMPS = 1801;
    public static final int MAX_F2_IMPS = 1468;
@@ -244,9 +245,12 @@ public class ImpressionEstimatorTest {
     * @throws IOException
     * @throws ParseException
     */
-   public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx) throws IOException, ParseException {
+   public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx, boolean orderingKnown) throws IOException, ParseException {
       //printGameLogInfo();
 
+
+
+	   
 
 	   StringBuffer sb1= new StringBuffer();
 	   sb1.append("iePred");
@@ -269,14 +273,12 @@ public class ImpressionEstimatorTest {
       ArrayList<String> filenames = getGameStrings();
 
       for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
-//			for (int gameIdx=0; gameIdx<filenames.size(); gameIdx++) {
          String filename = filenames.get(gameIdx);
 
          // Load this game and its basic parameters
          GameStatus status = new GameStatusHandler(filename).getGameStatus();
          int NUM_PROMOTED_SLOTS = status.getSlotInfo().getPromotedSlots();
          HashMap<QueryType, Double> promotedReserveScore = getApproximatePromotedReserveScore(status);
-
 
          // Make the query space
          LinkedHashSet<Query> querySpace = new LinkedHashSet<Query>();
@@ -338,9 +340,13 @@ public class ImpressionEstimatorTest {
                int impressionsUB = getAgentImpressionsUpperBound(status, d, query);
 
                double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
-
                double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false);
-
+               if (!USE_WATERFALL_PRIORS) {
+            	   Arrays.fill(impsDistMean, -1);
+            	   Arrays.fill(impsDistStdev, -1);
+               }
+               
+               
                // DEBUG: Print out some game values.
                System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
                System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
@@ -401,8 +407,18 @@ public class ImpressionEstimatorTest {
 
 
                // Get ordering of remaining squashed bids
-               int[] ordering = getIndicesForDescendingOrder(reducedBids);
+               int[] ordering;
+               if (orderingKnown) {
+            	   ordering = getIndicesForDescendingOrder(reducedBids);
+               } else {
+            	   ordering = new int[reducedBids.length];
+            	   for (int i=0; i<ordering.length; i++) {
+            		   ordering[i] = i;   
+            	   }
+               }
 
+
+               
                System.out.println("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
                System.out.println("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
                System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
@@ -426,8 +442,8 @@ public class ImpressionEstimatorTest {
 
                // Some params needed for the QA instance
                // TODO: Have some of these configurable.
-               int[] agentIds = new int[numParticipants]; //Just have them all be 0. TODO: Is carleton using this?
-               int NUM_SLOTS = 5;
+               int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
+               for (int i=0; i<agentIds.length; i++) agentIds[i] = -(i+1);
 
 
 //               //FIXME DEBUG
@@ -466,6 +482,7 @@ public class ImpressionEstimatorTest {
                   //but this QAInstance isn't ready until now.
                   //Terrible, band-aid solution is to have an integer corresponding to each test.
                   QAInstance inst;
+                  ImpressionAndRankEstimator fullModel = null;
                   AbstractImpressionEstimator model = null;
 
                   if (impressionEstimatorIdx == SolverType.CP) {
@@ -497,6 +514,7 @@ public class ImpressionEstimatorTest {
                                            ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
                      model = new EricImpressionEstimator(inst);
+                     
                   }
 
 
@@ -638,54 +656,6 @@ public class ImpressionEstimatorTest {
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
       }
-
-
-//       //If exact average positions, just return a standard query instance (with no padding)
-//       if (!SAMPLED_AVERAGE_POSITIONS) {
-//    	   avgPos = reducedAvgPos.clone();
-//    	   return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-//    			   ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
-//    			   reducedImpsDistMean, reducedImpsDistStdev);
-//       }
-//       
-//
-//       //Otherwise, use sampled average position everywhere except for our own agent
-//       int ourAgentID = agentIds[ourAgentIdx];
-//
-//       avgPos = reducedSampledAvgPos.clone();
-//       avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
-//       
-//       //Except that we also have to remove any agents that were not sampled
-//       //(they have Double.NaN average position values, and CJC does not like. It pads agents instead.)
-//		ArrayList<Double> nonNanAvgPos = new ArrayList<Double>();
-//		ArrayList<Integer> nonNanAgentIds = new ArrayList<Integer>();
-//		int nonNanParticipants = 0;
-//       for (int i = 0; i < reducedAvgPos.length; i++) {
-//        	  if (!Double.isNaN(avgPos[i])) {
-//        		  nonNanParticipants++;
-//        		  nonNanAvgPos.add(avgPos[i]);
-//        		  nonNanAgentIds.add(agentIds[i]);
-//        	  }
-//          }
-//       
-//       //Convert these lists into arrays
-//       double[] nonNanAvgPosArr = new double[nonNanAvgPos.size()];
-//       int[] nonNanAgentIdsArr = new int[nonNanAgentIds.size()];
-//       int ourNonNanAgentIdx = -1;
-//       for (int i=0; i<nonNanParticipants; i++) {
-//    	   nonNanAvgPosArr[i] = nonNanAvgPos.get(i);
-//    	   nonNanAgentIdsArr[i] = nonNanAgentIds.get(i);
-//    	   if (nonNanAgentIdsArr[i] == ourAgentID) ourNonNanAgentIdx = i;
-//       }
-//       
-//       //TODO: If Carleton's IE actually uses the following at some point, they will have to be updated, too:
-//       //reducedSampledAvgPos, reducedImpsDistMean, reducedImpsDistStdev
-//       
-//       //Return the QAInstance (with padding)
-//       return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, nonNanParticipants, nonNanAvgPosArr, reducedSampledAvgPos, nonNanAgentIdsArr, ourNonNanAgentIdx,
-//                             ourImps, ourPromotedImps, impressionsUB, true, ourPromotionEligibility,
-//                             reducedImpsDistMean, reducedImpsDistStdev);
-
    }
 
 
@@ -1865,28 +1835,29 @@ public class ImpressionEstimatorTest {
    
    
    public static void runAllTests() throws IOException, ParseException {
-	     boolean[] trueOrFalseArr = {false, true};
-	      for (boolean sampledAvgPositions : trueOrFalseArr) {
-	    	  for (boolean perfectImps : trueOrFalseArr) {
-	    		  for (boolean useWaterfallPriors : trueOrFalseArr) {
-	    			  ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest(sampledAvgPositions, perfectImps, useWaterfallPriors);
-	    		      double start;
-	    		      double stop;
-	    		      double secondsElapsed;
+	   boolean[] trueOrFalseArr = {false, true};
+	   for (boolean orderingKnown : trueOrFalseArr) {
+		   for (boolean sampledAvgPositions : trueOrFalseArr) {
+			   for (boolean perfectImps : trueOrFalseArr) {
+				   for (boolean useWaterfallPriors : trueOrFalseArr) {
+					   ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest(sampledAvgPositions, perfectImps, useWaterfallPriors);
+					   double start;
+					   double stop;
+					   double secondsElapsed;
 
-	    		      for (SolverType solverType : SolverType.values()) {
-	    		    	  System.out.println("SUMMARY: ---------------");
-		    		      System.out.println("SUMMARY: STARTING TEST: sampled=" + sampledAvgPositions + ", perfectImps=" + perfectImps + ", usePrior=" + useWaterfallPriors + ", solver=" + solverType);
-		    		      start = System.currentTimeMillis();
-		    		      evaluator.impressionEstimatorPredictionChallenge(solverType);
-		    		      stop = System.currentTimeMillis();
-		    		      secondsElapsed = (stop - start) / 1000.0;
-		    		      System.out.println("SUMMARY: Seconds elapsed: " + secondsElapsed);	    		    	  
-	    		      }	    		      
-	    		  }
-	    	  }
-	      }
-	      
+					   for (SolverType solverType : SolverType.values()) {
+						   System.out.println("SUMMARY: ---------------");
+						   System.out.println("SUMMARY: STARTING TEST: sampled=" + sampledAvgPositions + ", perfectImps=" + perfectImps + ", usePrior=" + useWaterfallPriors + ", solver=" + solverType);
+						   start = System.currentTimeMillis();
+						   evaluator.impressionEstimatorPredictionChallenge(solverType, orderingKnown);
+						   stop = System.currentTimeMillis();
+						   secondsElapsed = (stop - start) / 1000.0;
+						   System.out.println("SUMMARY: Seconds elapsed: " + secondsElapsed);	    		    	  
+					   }	    		      
+				   }
+			   }
+		   }
+	     }
  }
    
    
@@ -1902,8 +1873,8 @@ public class ImpressionEstimatorTest {
 	      double secondsElapsed;
 	      System.out.println("\n\n\n\n\nSTARTING TEST 1");
 	      start = System.currentTimeMillis();
-	      evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);
-//	      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
+	      evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, true);
+//	      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, true);
 	      stop = System.currentTimeMillis();
 	      secondsElapsed = (stop - start) / 1000.0;
 	      System.out.println("SECONDS ELAPSED: " + secondsElapsed);

@@ -20,16 +20,8 @@ public class ConstantImpressionAndRankEstimator implements ImpressionAndRankEsti
 		this.ordering = ordering;
 	}
 	
-	public IEResult getBestSolution(QAInstance instance) {
+	public IEResult getBestSolution() {
 		return ie.search(ordering);
 	}
 	
-	public void setOrdering(int[] ordering) {
-		this.ordering = ordering;
-	}
-	
-	public int[] getOrdering() {
-		return this.ordering;
-	}
-
 }

@@ -4,5 +4,5 @@ import models.queryanalyzer.ds.QAInstance;
 
 public interface ImpressionAndRankEstimator {
 	
-	public IEResult getBestSolution(QAInstance instance);
+	public IEResult getBestSolution();
 }
