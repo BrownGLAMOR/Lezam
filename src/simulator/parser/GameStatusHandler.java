@@ -186,6 +186,7 @@ public class GameStatusHandler {
                * Check for NaN's and Negative bids which
                * are replaced by our bid from last round
                */
+               BidBundle newBidBundle = new BidBundle();
                for (Query query : bidbundletemp.keys()) {
                   double bid = bidbundletemp.getBid(query);
                   double budget = bidbundletemp.getDailyLimit(query);
@@ -213,25 +214,27 @@ public class GameStatusHandler {
                      }
                   }
 
-                  bidbundletemp.addQuery(query, bid, ad, budget);
+                  newBidBundle.addQuery(query, bid, ad, budget);
                }
 
                for (Query query : querySpace) {
-                  if (!bidbundletemp.containsQuery(query)) {
-                     bidbundletemp.addQuery(query, 0, new Ad(), 0);
+                  if (!newBidBundle.containsQuery(query)) {
+                     newBidBundle.addQuery(query, 0, new Ad(), 0);
                   }
                }
 
                double totalBudget = bidbundletemp.getCampaignDailySpendLimit();
                if (Double.isNaN(totalBudget)) {
                   if (bidbundlelist.size() > 0) {
-                     bidbundletemp.setCampaignDailySpendLimit(bidbundlelist.get(bidbundlelist.size() - 1).getCampaignDailySpendLimit());
+                     totalBudget = bidbundlelist.get(bidbundlelist.size() - 1).getCampaignDailySpendLimit();
                   } else {
-                     bidbundletemp.setCampaignDailySpendLimit(0);
+                     totalBudget = 0;
                   }
                }
 
-               bidbundlelist.addLast(bidbundletemp);
+               newBidBundle.setCampaignDailySpendLimit(totalBudget);
+
+               bidbundlelist.addLast(newBidBundle);
                bidBundles.put(name, bidbundlelist);
             }
          } else if (content instanceof UserClickModel && !userclickmodelflag) {
@@ -642,12 +645,26 @@ public class GameStatusHandler {
 
       String baseFile = "./game"; //games 1425-1464
       int min = 1;
-      int max = 5;
+      int max = 9;
       for (int i = min; i < max; i++) {
          String file = baseFile + i + ".slg";
          System.out.println("PARSING " + file);
          GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
+         Set<Query> querySpace = gameStatus.getQuerySpace();
+         LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get("McCon");
+         for (BidBundle bundle : bundles) {
+            for (Query query : querySpace) {
+               if (Double.isNaN(bundle.getBid(query))) {
+                  throw new RuntimeException(query.toString());
+               } else if (Double.isNaN(bundle.getDailyLimit(query))) {
+                  throw new RuntimeException();
+               }
+            }
+            if (Double.isNaN(bundle.getCampaignDailySpendLimit())) {
+               throw new RuntimeException();
+            }
+         }
          System.out.println("FINISHED PARSING " + file);
       }
 

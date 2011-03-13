@@ -4,7 +4,9 @@ import edu.umich.eecs.tac.props.*;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 /**
  * @author jberg
@@ -23,6 +25,7 @@ public class GameStatus {
    private PublisherInfo _pubInfo;
    private RetailCatalog _retailCatalog;
    private UserClickModel _userClickModel;
+   private Set<Query> _querySpace;
 
    public GameStatus(String[] advertisers,
                      HashMap<String, LinkedList<BankStatus>> bankStatuses,
@@ -48,6 +51,25 @@ public class GameStatus {
       _pubInfo = pubInfo;
       _retailCatalog = retailCatalog;
       _userClickModel = userClickModel;
+
+      _querySpace = new HashSet<Query>();
+
+      // The query space is all the F0, F1, and F2 queries for each product
+      // The F0 query class
+      if (_retailCatalog.size() > 0) {
+         _querySpace.add(new Query(null, null));
+      }
+
+      for (Product product : _retailCatalog) {
+         // The F1 query classes
+         // F1 Manufacturer only
+         _querySpace.add(new Query(product.getManufacturer(), null));
+         // F1 Component only
+         _querySpace.add(new Query(null, product.getComponent()));
+
+         // The F2 query class
+         _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+      }
    }
 
    public String[] getAdvertisers() {
@@ -97,6 +119,10 @@ public class GameStatus {
 
    public UserClickModel getUserClickModel() {
       return _userClickModel;
+   }
+
+   public Set<Query> getQuerySpace() {
+      return _querySpace;
    }
 
 }
