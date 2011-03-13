@@ -276,7 +276,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
          //Not considering whether we hit our budget
          boolean hitOurBudget = true;
-			
+
          //Not using any prior knowledge about agent impressions
          double[] agentImpressionDistributionMean = new double[agentIds.size()];
          double[] agentImpressionDistributionStdev = new double[agentIds.size()];
@@ -297,8 +297,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                           agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled);
 
 
-         ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator();
-         IEResult bestSol = estimator.getBestSolution(inst);
+         ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(inst);
+         IEResult bestSol = estimator.getBestSolution();
 
 
          _allResults.get(q).add(bestSol);
