@@ -241,7 +241,7 @@ public class WaterfallILP {
 		System.out.println(sb1);
 
 
-
+		double objectiveVal = 0;
 		double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
 		double[] U_kDouble = new double[numSamples];
 
@@ -388,6 +388,8 @@ public class WaterfallILP {
 				cplex.output().println("Solution value = " + cplex.getObjValue());
 				cplex.output().println("Objective function = " + cplex.getObjective());
 
+				objectiveVal = cplex.getObjValue();
+				
 				//Create double array to return
 				for (int a=0; a<numAgents; a++) {
 					for (int s=0; s<=a; s++) {
@@ -472,7 +474,7 @@ public class WaterfallILP {
 			System.err.println("Concert exception '" + e + "' caught");
 		}
 
-		return new WaterfallResult(I_a_sDouble, U_kDouble);
+		return new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble);
 	}
 
 
@@ -1529,10 +1531,12 @@ public class WaterfallILP {
 
 	//************************************ RESULT DATA STRUCTURE ************************************
 	public class WaterfallResult {
+		private final double objectiveVal;
 		private final double[][] I_a_s;
 		private final double[] U_k;
 
-		public WaterfallResult(double[][] I_a_s, double[] U_k) {
+		public WaterfallResult(double objectiveVal, double[][] I_a_s, double[] U_k) {
+			this.objectiveVal = objectiveVal;
 			this.I_a_s = I_a_s;
 			this.U_k = U_k;
 		}

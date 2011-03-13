@@ -8,9 +8,11 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 	public final static int NUM_SLOTS = 5;
 	public int NUM_ITERATIONS_2 = 10;
 	private QAInstance inst;
+	private AbstractImpressionEstimator ie;
 	
-	public LDSImpressionAndRankEstimator(QAInstance inst) {
-		this.inst = inst;
+	public LDSImpressionAndRankEstimator(AbstractImpressionEstimator ie) {
+		this.ie = ie;
+		this.inst = ie.getInstance();
 	}
 	
 	public IEResult getBestSolution() {
@@ -20,7 +22,7 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 		
 		if(inst.getImpressions() > 0) {
 			if(avgPosOrder.length > 0) {
-				LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS_2, inst);
+				LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS_2, ie);
 				smartIESearcher.search(avgPosOrder, inst.getAvgPos());
 				//LDSearchHybrid smartIESearcher = new LDSearchHybrid(NUM_ITERATIONS_1, NUM_ITERATIONS_2, inst);
 				//smartIESearcher.search();

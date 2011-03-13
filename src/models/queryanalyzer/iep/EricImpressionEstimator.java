@@ -6,6 +6,8 @@ import java.util.Arrays;
 
 public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
+	private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MAXIMIZE; //maximize or minimize?
+   private QAInstance _instance;
    private int _advertisers;
    private int _slots;
    private int _promotedSlots;
@@ -29,6 +31,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    
    public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints) {
 	   USE_RANKING_CONSTRAINTS = useRankingConstraints;
+	   _instance = inst;
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
       _promotedSlots = inst.getNumPromotedSlots();
@@ -45,6 +48,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
    }
 
+   public ObjectiveGoal getObjectiveGoal() {
+	   return _objectiveGoal;
+   }
 
    public String getName() {
       if (INTEGER_PROGRAM) {
@@ -52,6 +58,10 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       } else {
          return "LP";
       }
+   }
+   
+   public QAInstance getInstance() {
+	   return _instance;
    }
 
    public IEResult search(int[] order) {

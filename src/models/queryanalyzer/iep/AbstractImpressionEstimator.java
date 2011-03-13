@@ -1,5 +1,7 @@
 package models.queryanalyzer.iep;
 
+import models.queryanalyzer.ds.QAInstance;
+
 public interface AbstractImpressionEstimator {
 	
 	/**
@@ -10,5 +12,19 @@ public interface AbstractImpressionEstimator {
 	public IEResult search(int[] order);
 	
 	public String getName();
+	
+	public QAInstance getInstance();
+
+	
+	/**
+	 * State whether IEResults with high value or low value are better.
+	 * @return
+	 */
+	public ObjectiveGoal getObjectiveGoal(); 
+	
+	
+	public enum ObjectiveGoal {
+		MINIMIZE, MAXIMIZE
+	}
 	
 }

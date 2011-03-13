@@ -38,7 +38,7 @@ public class ImpressionEstimatorTest {
 	
 	
 	
-   private boolean SAMPLED_AVERAGE_POSITIONS = true;
+   private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
    boolean USE_WATERFALL_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
@@ -68,7 +68,7 @@ public class ImpressionEstimatorTest {
    double aggregateAbsError = 0;
 
    private enum SolverType {
-      CP, MIP
+      CP, MIP, LDSMIP
    }
    
    private enum GameSet {
@@ -297,8 +297,8 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-//			for (int d=0; d<=10; d++) {
-         for (int d = 0; d < numReports; d++) {
+			for (int d=0; d<=10; d++) {
+//         for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
             for (int queryIdx = 0; queryIdx < numQueries; queryIdx++) {
@@ -532,6 +532,12 @@ public class ImpressionEstimatorTest {
                       boolean useRankingConstraints = !orderingKnown; //Only use ranking constraints if you don't know the ordering
                 	  model = new EricImpressionEstimator(inst, useRankingConstraints);
                 	  fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                  }
+                  if (impressionEstimatorIdx == SolverType.LDSMIP) {
+            		  boolean useRankingConstraints = false;
+            		  model = new EricImpressionEstimator(inst, useRankingConstraints);
+                	  if (orderingKnown) fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                	  else fullModel = new LDSImpressionAndRankEstimator(model);
                   }
                   
                   
@@ -1883,15 +1889,16 @@ public class ImpressionEstimatorTest {
 
 	   
 //	   ImpressionEstimatorTest.runAllTests();
-	   boolean ORDERING_KNOWN = true;
+	   boolean ORDERING_KNOWN = false;
 	   ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
 	   double start;
 	   double stop;
 	   double secondsElapsed;
 	   System.out.println("\n\n\n\n\nSTARTING TEST 1");
 	   start = System.currentTimeMillis();
-//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, true);
-	   evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN);
+//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
+	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, ORDERING_KNOWN);
+//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN);
 	   stop = System.currentTimeMillis();
 	   secondsElapsed = (stop - start) / 1000.0;
 	   System.out.println("SECONDS ELAPSED: " + secondsElapsed);

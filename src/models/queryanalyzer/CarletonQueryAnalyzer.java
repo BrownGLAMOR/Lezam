@@ -8,6 +8,7 @@ import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionAndRankEstimator;
+import models.queryanalyzer.iep.ImpressionEstimator;
 import models.queryanalyzer.iep.LDSImpressionAndRankEstimator;
 
 import java.util.ArrayList;
@@ -301,8 +302,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                           true, promotionEligibiltyVerified, hitOurBudget,
                                           agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled, ordering);
 
-
-         ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(inst);
+         ImpressionEstimator ie = new ImpressionEstimator(inst);
+         ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
          IEResult bestSol = estimator.getBestSolution();
 
 

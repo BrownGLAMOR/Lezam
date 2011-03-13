@@ -10,7 +10,7 @@ import java.util.Map;
 public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    private boolean IE_DEBUG = false;
-
+   QAInstance _instance;
 
    private static int SAMPLING_FACTOR = 200;
    private static int MAX_PROBE_IMPRESSIONS = 1; //warning this must be greater than 0
@@ -42,6 +42,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private double _timeOut = 1; //in seconds
 
    public ImpressionEstimator(QAInstance inst) {
+	   _instance = inst;
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
 
@@ -127,7 +128,15 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       }
    }
 
+   public QAInstance getInstance() {
+	   return _instance;
+   }
 
+   public ObjectiveGoal getObjectiveGoal() {
+	   //At least with the old LDS, lower objective values are better. Change this if necessary.
+	   return ObjectiveGoal.MINIMIZE;
+   }
+   
    private boolean feasibleOrder(int[] order) {
       for (int i = 0; i < order.length; i++) {
          int startPos = Math.min(i + 1, _slots);
