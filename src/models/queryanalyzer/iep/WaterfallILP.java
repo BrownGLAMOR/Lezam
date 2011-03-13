@@ -1,5 +1,6 @@
 package models.queryanalyzer.iep;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import se.sics.tasim.is.AgentInfo;
@@ -42,18 +43,20 @@ public class WaterfallILP {
 		CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
 		MINIMIZE_SAMPLE_MU_DIFF, //get resulting avgPos as close as possible to sampledMu
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
+		DEPENDS_ON_CIRCUMSTANCES
 	}
 
 	//************************************ CONFIG ************************************
-	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
+	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES;
 	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
-	private double TIMEOUT_IN_SECONDS = 300;
+	private double TIMEOUT_IN_SECONDS = 30;
 	private boolean SUPPRESS_OUTPUT = true;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
-	private boolean USE_RANKING_CONSTRAINTS = true;
+	private boolean USE_RANKING_CONSTRAINTS = false;
+	private boolean USE_BUDGET_CONSTRAINTS = false; //If someone didn't hit budget, nobody else can have more total imps than that person did.
 	
 	//************************************ FIELD DECLARATIONS ************************************
 	boolean INTEGER_PROGRAM;
@@ -74,18 +77,19 @@ public class WaterfallILP {
 	//These are sorted by decreasing squashed bid rank:
 	double[] knownI_a; //total impressions for each agent
 	double[] knownMu_a; //average position for each agent
-	double[] knownI_aPromoted;
-	boolean[] isKnownPromotionEligible; //Is it known that a given agent was eligible for promotion? (When in doubt, set false. Setting true will add more constraints to problem.)
+	double[] knownI_aPromoted; //total promoted impressions for each agent
+	boolean[] isKnownPromotionEligible; //Is it known that a given agent was eligible for promotion? (i.e. did the agent bid high enough?) (When in doubt, set false. Setting true will add more constraints to problem.)
+	int[] hitBudget; //1 if budget was hit, 0 if it was not, -1 if unknown.
 	boolean[] isKnownI_a; //(if I_a is not known, a default -1 value is used)
-	boolean[] isKnownMu_a;
+	boolean[] isKnownMu_a; //(if mu is not known, a default -1 value is used)
 	boolean[] isKnownI_aPromoted; //(if I_a is not known, a default -1 value is used)
 
 	double[] knownSampledMu_a; //sampled average position
-	boolean[] isKnownSampledMu_a;
-	int numSamples;	
+	boolean[] isKnownSampledMu_a; //(if sampledMu not known, a default -1 value is used)
+	int numSamples;	//number of samples that were used to calculate sampled average position
 	boolean samplingAnyAveragePositions; //If we're not doing any sampling, we can save some time by not including certain constraints.
 
-	double[] knownI_aDistributionMean;
+	double[] knownI_aDistributionMean; 
 	double[] knownI_aDistributionStdev;
 	boolean[] isKnownI_aDistributionMean;
 
@@ -104,15 +108,17 @@ public class WaterfallILP {
 	 * @param useEpsilon
 	 */
 	public WaterfallILP(double[] knownI_a, double[] knownMu_a, double[] knownI_aPromoted, 
-			boolean[] isKnownPromotionEligible, int numSlots, int numPromotedSlots, 
+			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
+		
 		this.INTEGER_PROGRAM = integerProgram;
 		this.USE_EPSILON = useEpsilon;
 		this.knownI_a = knownI_a;
 		this.knownMu_a = knownMu_a;
 		this.knownI_aPromoted = knownI_aPromoted;
 		this.isKnownPromotionEligible = isKnownPromotionEligible;
+		this.hitBudget = hitBudget;
 		numAgents = knownI_a.length;
 		this.numSlots = numSlots;
 		this.numPromotedSlots = numPromotedSlots;
@@ -139,7 +145,40 @@ public class WaterfallILP {
 			
 			//Make sure the minimum I_a stdev is 1. (We don't want to ever assume we know exactly what the opponent imps will be).
 			if (knownI_aDistributionStdev[a] != -1 && knownI_aDistributionStdev[a]< MIN_IMPRESSIONS_STDEV) knownI_aDistributionStdev[a] = MIN_IMPRESSIONS_STDEV;
-		}			
+		}
+		
+		
+		//-------------------
+		//(sampled problem if not all avgPositions are known exactly)
+		//usingPriors, sampledProblem = (f,f): minimizeSlotDiff
+		//usingPriors, sampledProblem = (f,t): spread_samples_linear (and USE_SAMPLING_CONSTRAINTS=true)
+		//usingPriors, sampledProblem = (t,f): minimize_impression_prior_error
+		//usingPriors, sampledProblem = (t,t): ??? (spread_samples_linear) : should be a combo, though
+		//If we don't know any priors, don't use an objective that depends on it
+		if (DESIRED_OBJECTIVE == Objective.DEPENDS_ON_CIRCUMSTANCES) {
+			boolean usingPriors = false;
+			boolean sampledProblem = false;
+			for (int a=0; a<numAgents; a++) {
+				if (isKnownI_aDistributionMean[a]) usingPriors = true;
+				if (!isKnownMu_a[a]) sampledProblem = true; 
+			}
+		
+			//Choose appropriate objective
+			if (!usingPriors && !sampledProblem) {
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
+			} else if (!usingPriors && sampledProblem) {
+				DESIRED_OBJECTIVE = Objective.SPREAD_SAMPLES_LINEAR;
+				USE_SAMPLING_CONSTRAINTS = true;
+				INTEGER_PROGRAM = false;
+			} else if (usingPriors && !sampledProblem) {
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+			} else { //usingPriors && sampledProblem
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+			}
+			System.out.println("usingPriors: " + usingPriors + ", sampledProblem: " + sampledProblem + ", objective: " + DESIRED_OBJECTIVE);
+		}
+		//--------------------
+		
 	}
 
 
@@ -157,11 +196,11 @@ public class WaterfallILP {
 	 * @param numSamples
 	 */
 	public WaterfallILP(double[] knownI_a, double[] knownMu_a, double[] knownI_aPromoted, 
-			boolean[] isKnownPromotionEligible, int numSlots, int numPromotedSlots, 
+			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, 
 			double[] knownSampledMu_a, int numSamples, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev) {
-		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible,
+		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget,
 				numSlots, numPromotedSlots, integerProgram, useEpsilon, maxImpsPerAgent,
 				knownI_aDistributionMean, knownI_aDistributionStdev);
 		this.knownSampledMu_a = knownSampledMu_a;
@@ -174,6 +213,7 @@ public class WaterfallILP {
 			}
 		}
 		this.numSamples = numSamples;
+		
 	}
 
 
@@ -191,7 +231,8 @@ public class WaterfallILP {
 		StringBuffer sb1 = new StringBuffer();
 		sb1.append("Hi, Solving new Waterfall instance.\n");
 		sb1.append("  I_a="+Arrays.toString(knownI_a) + ", Mu_a="+Arrays.toString(knownMu_a) + ", I_aPromoted="+Arrays.toString(knownI_aPromoted) + ", ");
-		sb1.append("promOK="+Arrays.toString(isKnownPromotionEligible) + ", numAgents=" + numAgents + ", numSlots=" + numSlots + ", numPromotedSlots=" + numPromotedSlots + ", ");
+		sb1.append("promOK="+Arrays.toString(isKnownPromotionEligible) + ", hitBudget=" + Arrays.toString(hitBudget) + ", ");
+		sb1.append("numAgents=" + numAgents + ", numSlots=" + numSlots + ", numPromotedSlots=" + numPromotedSlots + ", ");
 		sb1.append("sampledMu_a="+Arrays.toString(knownSampledMu_a) +", numSamples=" + numSamples + ", ");
 		sb1.append("I_aDistMean="+Arrays.toString(knownI_aDistributionMean) +", I_aDistStdev=" + Arrays.toString(knownI_aDistributionStdev));
 		System.out.println(sb1);
@@ -231,7 +272,7 @@ public class WaterfallILP {
 			IloIntVar[][] p_a_k = null;
 			IloNumVar[] Istart_a = null;
 			IloNumVar[] Iend_a = null;;
-			if (samplingAnyAveragePositions) {
+			if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
 				U_k = createImpressionSamplingVariables(cplex); //which impression did sample k happen on?
 				d_a_k = createDroppedOutVariables(cplex); //did agent a drop out of sample k?
 				h_a_k = createHowDroppedOutVariables(cplex); //is the sample before or after the agent's impression interval?
@@ -284,6 +325,9 @@ public class WaterfallILP {
 				else addConstraint_totalPromotedImpressionsKnownRankingUnknown(cplex, I_a_s, r_a_agent);
 			}
 
+			// If we know that some agent didn't hit their budget, then nobody could have seen more total impressions that that agent
+			// (where "total impressions" includes out-of-slot impressions)
+			if(USE_BUDGET_CONSTRAINTS) addConstraint_didntHitBudget(cplex, I_a_s);
 			
 			// Agent impressions per slot must result in the known (exact) average positions.
 			if(!USE_RANKING_CONSTRAINTS) addConstraint_exactAveragePositionsKnown(cplex, I_a_s, I_a);
@@ -427,6 +471,7 @@ public class WaterfallILP {
 
 		return new WaterfallResult(I_a_sDouble, U_kDouble);
 	}
+
 
 
 
@@ -1078,6 +1123,40 @@ public class WaterfallILP {
 
 
 	
+	/**
+	 * This constraint ensures that, if any agent didn't hit their budget,
+	 * nobody else saw more "total impressions" than that agent.
+	 * TODO: If an agent didn't hit their budget, their "total imps" equals the total number of user searches.
+	 * TODO: If multiple agents didn't hit their budget, they must have seen the same number of impressions.
+	 * TODO: What about when an agent is known to HAVE hit their budget? Can we say that they received less than the full amount of impressions?
+	 * @param cplex
+	 * @param i_a
+	 * @throws IloException 
+	 */
+	private void addConstraint_didntHitBudget(IloCplex cplex, IloNumVar[][] I_a_s) throws IloException {
+		for (int a=0; a<numAgents; a++) {
+			if (hitBudget[a] == 0) {
+
+				//Get the number of impressions this agent saw
+				IloLinearNumExpr totalImps_a = cplex.linearNumExpr();
+				for (int s=0; s<=a; s++) {
+					totalImps_a.addTerm(1, I_a_s[a][s]);
+				}
+
+				//Get the number of impressions for some other agent
+				for (int a2=0; a2<numAgents; a2++) {
+					IloLinearNumExpr totalImps_a2 = cplex.linearNumExpr();
+					for (int s=0; s<=a2; s++) {
+						totalImps_a2.addTerm(1, I_a_s[a2][s]);
+					}
+					//Make sure this other agent's impressions aren't more than the agent with no hit budget
+					cplex.addLe(totalImps_a2, totalImps_a);
+				}
+			}
+		}
+	}
+
+	
 	
 
 	/**
@@ -1468,19 +1547,21 @@ public class WaterfallILP {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
-
 		
 //		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-//		double[] I_a = {-1, -1, -1, 556};
-//		//  double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-//		double[] mu_a = {1.0, 2.0, 4.0, 3.0};
-//		double[] I_aPromoted = {-1, -1, -1, -1};
-//		boolean[] isKnownPromotionEligible = {false, false, false, false};
-//		double[] knownSampledMu_a = {-1, -1, -1, -1};
+//		double[] I_a = {-1, -1, -1, 589, -1, -1, -1, -1};
+//		double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
+////		double[] I_a = {589, -1, -1, -1, -1, -1, -1, -1};
+////		double[] mu_a = {3.94397284, 1, 4.34807692, 3, 5, 4.17741935, 5, 2};
+//
+//		//double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
+//		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
+//		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
+//		int[] hitBudget = {-1, -1, -1, -1, -1, -1, -1, -1};
+//		double[] knownSampledMu_a = {-1, -1, -1, -1, -1, -1, -1, -1};
 //		int numSamples = 5;
-//		double[] knownI_aDistributionMean = {-1, -1, -1, -1};
-//		double[] knownI_aDistributionStdev = {-1, -1, -1, -1};
+//		double[] knownI_aDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
+//		double[] knownI_aDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
 //		int numSlots = 5;
 //		int numPromotedSlots = 0;
 //		boolean integerProgram = true;
@@ -1488,35 +1569,45 @@ public class WaterfallILP {
 //		int maxImpsPerAgent = 10000;
 		
 		
+		
+		
 		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-//		double[] I_a = {-1, -1, -1, 589, -1, -1, -1, -1};
-//		double[] mu_a = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
-		double[] I_a = {589, -1, -1, -1, -1, -1, -1, -1};
-		double[] mu_a = {3.94397284, 1, 4.34807692, 3, 5, 4.17741935, 5, 2};
+		double[] I_a = {75, -1};
+		double[] mu_a = {1, 1.75};
+//		double[] I_a = {589, -1, -1, -1, -1, -1, -1, -1};
+//		double[] mu_a = {3.94397284, 1, 4.34807692, 3, 5, 4.17741935, 5, 2};
 
 		//double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
-		double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
-		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
-		double[] knownSampledMu_a = {-1, -1, -1, -1, -1, -1, -1, -1};
+		double[] I_aPromoted = {-1, -1};
+		boolean[] isKnownPromotionEligible = {false, false};
+		int[] hitBudget = {0, -1};
+		double[] knownSampledMu_a = {-1, -1};
 		int numSamples = 5;
-		double[] knownI_aDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
-		double[] knownI_aDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
+		double[] knownI_aDistributionMean = {-1, -1};
+		double[] knownI_aDistributionStdev = {-1, -1};
 		int numSlots = 5;
 		int numPromotedSlots = 0;
 		boolean integerProgram = true;
 		boolean useEpsilon = false;
 		int maxImpsPerAgent = 10000;
 		
+		
+		
+		
+		
+		
+		
+		
+		
 		//Get mu_a values, given impressions
 		WaterfallILP ilp = new WaterfallILP(
-				I_a, mu_a, I_aPromoted, isKnownPromotionEligible, numSlots, 
+				I_a, mu_a, I_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
 				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
 				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev);
 
 		WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();
 		double[] U_k = result.getU_k();
-		System.out.println(I_a_s);
 		System.out.println("I_a_s = " + arrayString(I_a_s));
 		System.out.println("U_k = " + Arrays.toString(U_k));
 		System.out.println("Done");

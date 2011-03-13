@@ -274,6 +274,9 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          //Not considering whether our bid is high enough to be in a promoted slot
          boolean promotionEligibiltyVerified = false;
 
+         //Not considering whether we hit our budget
+         boolean hitOurBudget = true;
+			
          //Not using any prior knowledge about agent impressions
          double[] agentImpressionDistributionMean = new double[agentIds.size()];
          double[] agentImpressionDistributionStdev = new double[agentIds.size()];
@@ -290,7 +293,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(),
                                           allAvgPosArr, dummySampledAvgPositions, agentIdsArr, ourNewIdx,
                                           queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q),
-                                          true, promotionEligibiltyVerified,
+                                          true, promotionEligibiltyVerified, hitOurBudget,
                                           agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled);
 
 

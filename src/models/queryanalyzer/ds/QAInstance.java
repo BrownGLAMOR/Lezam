@@ -18,6 +18,7 @@ public class QAInstance {
    private int _impressionsUB;
    private boolean _considerPaddingAgents;
    private boolean _promotionEligibilityVerified;
+	private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
    private double[] _agentImpressionDistributionMean; //prior on agent impressions
    private double[] _agentImpressionDistributionStdev; //prior on agent impressions
    private boolean _isSampled;
@@ -25,6 +26,7 @@ public class QAInstance {
 
    public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
+                     boolean hitOurBudget,
                      double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled) {
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
@@ -138,6 +140,10 @@ public class QAInstance {
       return _promotionEligibilityVerified;
    }
 
+   public boolean getHitOurBudget() {
+	   return _hitOurBudget;
+   }
+	
    public double[] getAgentImpressionDistributionMean() {
       return _agentImpressionDistributionMean;
    }

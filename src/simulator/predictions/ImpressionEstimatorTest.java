@@ -21,10 +21,25 @@ import java.util.*;
 
 public class ImpressionEstimatorTest {
 
+	
+	
+	public ImpressionEstimatorTest() {
+		//Use default configuration
+	}
+	
+	public ImpressionEstimatorTest(boolean sampleAvgPositions, boolean perfectImps, boolean useWaterfallPriors) {
+		SAMPLED_AVERAGE_POSITIONS = sampleAvgPositions;
+		PERFECT_IMPS = perfectImps;
+		USE_WATERFALL_PRIORS = useWaterfallPriors;
+	}
+	
+	
+	
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
+   boolean USE_WATERFALL_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
-
+   GameSet GAMES_TO_TEST = GameSet.test2010;
 
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
@@ -52,12 +67,20 @@ public class ImpressionEstimatorTest {
    private enum SolverType {
       CP, MIP
    }
+   
+   private enum GameSet {
+	   finals2010, semifinals2010, test2010
+   }
 
    public ArrayList<String> getGameStrings() {
       String baseFile = "./game";
       int min = 1;
       int max = 8;
 
+      if (GAMES_TO_TEST == GameSet.test2010) {
+    	  min = 1;
+    	  max = 1;
+      }
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = min; i <= max; i++) {
@@ -224,7 +247,19 @@ public class ImpressionEstimatorTest {
    public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx) throws IOException, ParseException {
       //printGameLogInfo();
 
-      initializeLog("iePred" + impressionEstimatorIdx + ".txt");
+
+	   StringBuffer sb1= new StringBuffer();
+	   sb1.append("iePred");
+	   sb1.append("." + impressionEstimatorIdx);
+	   sb1.append( SAMPLED_AVERAGE_POSITIONS ? ".sampled" : ".exact" );
+	   sb1.append( PERFECT_IMPS ? ".impsPerfect" : ".impsUB");
+	   sb1.append( USE_WATERFALL_PRIORS ? ".prior" : ".noPrior");
+	   sb1.append("." + GAMES_TO_TEST);
+	   sb1.append(".txt");
+	   String logFilename = sb1.toString();
+	   
+	   
+      initializeLog(logFilename);
       numInstances = 0;
       numSkips = 0;
       numImprsPredictions = 0;
@@ -258,7 +293,7 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-//			for (int d=0; d<=20; d++) {
+//			for (int d=0; d<=10; d++) {
          for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
@@ -284,6 +319,8 @@ public class ImpressionEstimatorTest {
 
                Double[] budgets = getBudgets(status, d, query);
 
+               Double[] globalBudgets = getGlobalBudgets(status, d);
+               
                // Get total number of impressions for each agent
                Integer[] impressions = getAgentImpressions(status, d, query);
 
@@ -295,6 +332,9 @@ public class ImpressionEstimatorTest {
 
                Boolean[] promotionEligibility = getAgentPromotionEligibility(status, d, query, promotedReserveScore.get(query.getType()));
 
+               //Determine whether each agent hit their query or global budget (1 if yes, 0 if not)
+               Boolean[] hitBudget = getAgentHitBudget(status, d, query);
+               
                int impressionsUB = getAgentImpressionsUpperBound(status, d, query);
 
                double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
@@ -306,12 +346,17 @@ public class ImpressionEstimatorTest {
                System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
                System.out.println("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
                System.out.println("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
-               System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
                System.out.println("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
                System.out.println("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
                System.out.println("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
-               System.out.println("d=" + d + "\tq=" + query + "\tbudgets=" + Arrays.toString(budgets));
                System.out.println("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
+               System.out.println("d=" + d + "\tq=" + query + "\thitBudget=" + Arrays.toString(hitBudget));
+               System.out.println("d=" + d + "\tq=" + query + "\tqueryBudgets=" + Arrays.toString(budgets));
+               System.out.println("d=" + d + "\tq=" + query + "\tquerySpend=" + Arrays.toString(getAgentQuerySpend(status, d, query)));
+               System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
+               System.out.println("d=" + d + "\tq=" + query + "\tglobalBudgets=" + Arrays.toString(globalBudgets));
+               System.out.println("d=" + d + "\tq=" + query + "\tglobalSpend=" + Arrays.toString(getAgentGlobalSpend(status, d)));               
+               System.out.println("d=" + d + "\tq=" + query + "\tglobalBids=" + Arrays.toString(getAgentGlobalMaxAvgCPC(status, d)));
                System.out.println("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
                System.out.println("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
                System.out.println("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
@@ -335,6 +380,7 @@ public class ImpressionEstimatorTest {
                int[] reducedImps = new int[numParticipants];
                int[] reducedPromotedImps = new int[numParticipants];
                boolean[] reducedPromotionEligibility = new boolean[numParticipants];
+               boolean[] reducedHitBudget = new boolean[numParticipants];
                double[] reducedImpsDistMean = new double[numParticipants];
                double[] reducedImpsDistStdev = new double[numParticipants];
                int rIdx = 0;
@@ -346,6 +392,7 @@ public class ImpressionEstimatorTest {
                      reducedImps[rIdx] = impressions[a];
                      reducedPromotedImps[rIdx] = promotedImpressions[a];
                      reducedPromotionEligibility[rIdx] = promotionEligibility[a];
+                     reducedHitBudget[rIdx] = hitBudget[a];
                      reducedImpsDistMean[rIdx] = impsDistMean[a];
                      reducedImpsDistStdev[rIdx] = impsDistStdev[a];
                      rIdx++;
@@ -406,7 +453,8 @@ public class ImpressionEstimatorTest {
                   int ourImps = reducedImps[ourAgentIdx];
                   int ourPromotedImps = reducedPromotedImps[ourAgentIdx];
                   boolean ourPromotionEligibility = reducedPromotionEligibility[ourAgentIdx];
-
+                  boolean ourHitBudget = reducedHitBudget[ourAgentIdx];
+                  
                   //DEBUG TEMP FIXME: Just want to see how much promotion constraint helps.
                   //if (ourPromotedImps <= 0) continue;
                   //ourPromotionEligibility = false; //FIXME just temporary
@@ -422,7 +470,7 @@ public class ImpressionEstimatorTest {
 
                   if (impressionEstimatorIdx == SolverType.CP) {
                      inst = getCarletonQAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                                                  ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility,
+                                                  ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility, ourHitBudget,
                                                   reducedImpsDistMean, reducedImpsDistStdev, ordering);
 
                      model = new ImpressionEstimator(inst);
@@ -446,7 +494,7 @@ public class ImpressionEstimatorTest {
                         avgPos = reducedAvgPos;
                      }
                      inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
-                                           ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+                                           ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
                      model = new EricImpressionEstimator(inst);
                   }
@@ -557,7 +605,7 @@ public class ImpressionEstimatorTest {
                                             int numParticipants, double[] reducedAvgPos,
                                             double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
                                             int ourImps, int ourPromotedImps, int impressionsUB,
-                                            boolean ourPromotionEligibility,
+                                            boolean ourPromotionEligibility, boolean ourHitBudget,
                                             double[] reducedImpsDistMean, double[] reducedImpsDistStdev,
                                             int[] ordering) {
 
@@ -568,7 +616,7 @@ public class ImpressionEstimatorTest {
       if (!SAMPLED_AVERAGE_POSITIONS) {
          avgPos = reducedAvgPos.clone();
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
       } else {
          avgPos = reducedSampledAvgPos.clone();
@@ -587,7 +635,7 @@ public class ImpressionEstimatorTest {
 
          System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility,
+                               ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
       }
 
@@ -1488,6 +1536,22 @@ public class ImpressionEstimatorTest {
       return budgets;
    }
 
+
+   private Double[] getGlobalBudgets(GameStatus status, int d) {
+      String[] agents = status.getAdvertisers();
+      Double[] globalBudgets = new Double[agents.length];
+      for (int a = 0; a < agents.length; a++) {
+         String agentName = agents[a];
+         try {
+            globalBudgets[a] = status.getBidBundles().get(agentName).get(d).getCampaignDailySpendLimit();
+         } catch (Exception e) {
+            globalBudgets[a] = Double.NaN;
+         }
+      }
+      return globalBudgets;
+   }
+
+   
    private Double[] getAdvertiserEffects(GameStatus status, int d, Query query) {
       String[] agents = status.getAdvertisers();
       Double[] advEffects = new Double[agents.length];
@@ -1601,6 +1665,117 @@ public class ImpressionEstimatorTest {
       return promotionEligibility;
    }
 
+   
+
+
+   /**
+    * Determines whether or not each agent hit their query or global budget for the given day.
+    * FIXME: it is assumed that an agent hits their budget if an additional click would put them
+    * over their spending limit. We are also being slightly liberal about who hit their budget,
+    * since we're assuming that the CPC for the last click equals the agent's average CPC. 
+    * We should check to see how hitting budget is actually determined. (i.e. make sure it's not
+    * bids that determine whether the agent has hit its budget)
+    * @param status
+    * @param d
+    * @param query
+    * @return
+    */
+   private Boolean[] getAgentHitBudget(GameStatus status, int d, Query query) {
+	   String[] agents = status.getAdvertisers();
+	   Boolean[] agentHitBudget = new Boolean[agents.length];
+	   for (int a=0; a < agentHitBudget.length; a++) {
+		   String agentName = agents[a];
+		   QueryReport queryReport = status.getQueryReports().get(agentName).get(d);
+		   BidBundle bidBundle = status.getBidBundles().get(agentName).get(d);
+		   
+		   //Get total amount spent for this agent (across queries)
+		   double globalSpend = 0;
+		   double maxBid = 0;
+		   for (Query q : queryReport.keys()) {
+			   globalSpend += queryReport.getCost(q);
+			   
+			   double bid = queryReport.getCPC(q); //double bid = bidBundle.getBid(q);
+			   if (!Double.isNaN(bid) && bid > maxBid) {
+				   maxBid = bid;
+				   //maxBid = Math.max(maxBid, bidBundle.getBid(q) );				   
+			   }
+		   }
+		   
+		   //Get amount spent for this agent (for this query only)
+		   double querySpend = queryReport.getCost(query);
+		   double queryBid = queryReport.getCPC(query); //double queryBid = bidBundle.getBid(query);
+		   
+		   //Get budgets for this agent
+		   double maxQuerySpend = bidBundle.getDailyLimit(query);
+		   double maxGlobalSpend = bidBundle.getCampaignDailySpendLimit();
+		   
+		   //If an extra click would have put us over a spending limit, we've hit our budget
+		   //NOTE: This is a liberal estimate: we could say we hit our budget even though we didn't. See method description.
+		   //TODO: > or >=? What about global budget? Does agent drop out of every auction at once when global budget is hit,
+		   //  or would it stay in auctions that it can still afford? (should we use maxBid or queryBid?)
+		   if (querySpend + queryBid > maxQuerySpend ||
+				   globalSpend + maxBid > maxGlobalSpend) {
+			   agentHitBudget[a] = true;
+		   } else {
+			   agentHitBudget[a] = false;
+		   }
+	   }
+	   return agentHitBudget;
+   }
+   
+
+   private Double[] getAgentQuerySpend(GameStatus status, int d, Query query) {
+	   String[] agents = status.getAdvertisers();
+	   Double[] agentCost = new Double[agents.length];
+	   for (int a=0; a<agents.length; a++) {
+		   String agentName = agents[a];
+		   agentCost[a] = status.getQueryReports().get(agentName).get(d).getCost(query);
+	   }
+	   return agentCost;
+   }
+   
+   private Double[] getAgentGlobalSpend(GameStatus status, int d) {
+	   String[] agents = status.getAdvertisers();
+	   Double[] agentCost = new Double[agents.length];
+	   for (int a=0; a<agents.length; a++) {
+		   String agentName = agents[a];
+		   QueryReport queryReport = status.getQueryReports().get(agentName).get(d);
+		   
+		   //Get total amount spent for this agent (across queries)
+		   double globalSpend = 0;
+		   for (Query q : queryReport.keys()) {
+			   globalSpend += queryReport.getCost(q);
+		   }
+		   agentCost[a] = globalSpend;
+	   }
+	   return agentCost;
+   }
+   
+   private Double[] getAgentGlobalMaxAvgCPC(GameStatus status, int d) {
+	   String[] agents = status.getAdvertisers();
+	   Double[] maxCPCs = new Double[agents.length];
+	   for (int a=0; a<agents.length; a++) {
+		   String agentName = agents[a];
+		   QueryReport queryReport = status.getQueryReports().get(agentName).get(d);
+		   BidBundle bidBundle = status.getBidBundles().get(agentName).get(d);
+		   
+		   //Get total amount spent for this agent (across queries)
+		   double maxCPC = 0;
+		   for (Query q : queryReport.keys()) {
+			   double cpc = queryReport.getCPC(q);
+			   //System.out.println("a=" + a + ", q=" + q + ", bid=" + bidBundle.getBid(q) + ", CPC=" + queryReport.getCPC(q));
+			   if (!Double.isNaN(cpc) && cpc > maxCPC) {
+				   maxCPC = cpc;
+			   }
+		   }
+		   maxCPCs[a] = maxCPC;
+	   }
+	   return maxCPCs;
+   }
+   
+   
+   
+   
 
    //TODO: Make this more precise. (Isn't this value logged anywhere??)
    private HashMap<QueryType, Double> getApproximatePromotedReserveScore(GameStatus status) {
@@ -1687,13 +1862,63 @@ public class ImpressionEstimatorTest {
       return stdDev;
    }
 
+   
+   
+   public static void runAllTests() throws IOException, ParseException {
+	     boolean[] trueOrFalseArr = {false, true};
+	      for (boolean sampledAvgPositions : trueOrFalseArr) {
+	    	  for (boolean perfectImps : trueOrFalseArr) {
+	    		  for (boolean useWaterfallPriors : trueOrFalseArr) {
+	    			  ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest(sampledAvgPositions, perfectImps, useWaterfallPriors);
+	    		      double start;
+	    		      double stop;
+	    		      double secondsElapsed;
+
+	    		      for (SolverType solverType : SolverType.values()) {
+	    		    	  System.out.println("SUMMARY: ---------------");
+		    		      System.out.println("SUMMARY: STARTING TEST: sampled=" + sampledAvgPositions + ", perfectImps=" + perfectImps + ", usePrior=" + useWaterfallPriors + ", solver=" + solverType);
+		    		      start = System.currentTimeMillis();
+		    		      evaluator.impressionEstimatorPredictionChallenge(solverType);
+		    		      stop = System.currentTimeMillis();
+		    		      secondsElapsed = (stop - start) / 1000.0;
+		    		      System.out.println("SUMMARY: Seconds elapsed: " + secondsElapsed);	    		    	  
+	    		      }	    		      
+	    		  }
+	    	  }
+	      }
+	      
+ }
+   
+   
 
    public static void main(String[] args) throws IOException, ParseException {
 
-      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
-      double start;
-      double stop;
-      double secondsElapsed;
+	   
+//	   ImpressionEstimatorTest.runAllTests();
+	   
+	      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
+	      double start;
+	      double stop;
+	      double secondsElapsed;
+	      System.out.println("\n\n\n\n\nSTARTING TEST 1");
+	      start = System.currentTimeMillis();
+	      evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);
+//	      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
+	      stop = System.currentTimeMillis();
+	      secondsElapsed = (stop - start) / 1000.0;
+	      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+//      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
+//      double start;
+//      double stop;
+//      double secondsElapsed;
 
 //      System.out.println("\n\n\n\n\nSTARTING TEST 1");
 //      start = System.currentTimeMillis();
@@ -1702,12 +1927,12 @@ public class ImpressionEstimatorTest {
 //      secondsElapsed = (stop - start) / 1000.0;
 //      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
 
-      System.out.println("\n\n\n\n\nSTARTING TEST 1");
-      start = System.currentTimeMillis();
-      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
-      stop = System.currentTimeMillis();
-      secondsElapsed = (stop - start) / 1000.0;
-      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
+//      System.out.println("\n\n\n\n\nSTARTING TEST 1");
+//      start = System.currentTimeMillis();
+//      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
+//      stop = System.currentTimeMillis();
+//      secondsElapsed = (stop - start) / 1000.0;
+//      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
 
 //		System.out.println("\n\n\n\n\nSTARTING TEST 2");
 //		start = System.currentTimeMillis();
