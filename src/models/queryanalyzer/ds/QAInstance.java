@@ -22,12 +22,14 @@ public class QAInstance {
    private double[] _agentImpressionDistributionMean; //prior on agent impressions
    private double[] _agentImpressionDistributionStdev; //prior on agent impressions
    private boolean _isSampled;
+   private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
    int MIN_PADDED_AGENT_ID = 100;
 
    public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
                      boolean hitOurBudget,
-                     double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled) {
+                     double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled, 
+                     int[] initialPosition) {
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
       assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -46,6 +48,7 @@ public class QAInstance {
       _agentImpressionDistributionMean = agentImpressionDistributionMean;
       _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
       _isSampled = isSampled;
+      _initialPosition = initialPosition;
 
       if (_considerPaddingAgents) {
          while (!feasibleOrder(getAvgPosOrder())) {
@@ -161,7 +164,23 @@ public class QAInstance {
       }
       return padded;
    }
+   
+   //The ith index contains the index of the agent that started in the ith position.
+   //TODO: This is confusing, since for all the other "get" arrays, the ith index refers to the ith agent.
+   public int[] getInitialPositionOrdering() {
+	   return _initialPosition;
+   }
 
+   /**
+    * If any initial positions are not known (i.e. they are -1), return false.
+    * @return
+    */
+   public boolean allInitialPositionsKnown() {
+	   for (int i=0; i<_advetisers; i++) {
+		   if (_initialPosition[i] == -1) return false;
+	   }
+	   return true;
+   }
 
    public int[] getBidOrder(QAData data) {
       double[] bids = new double[_advetisers];

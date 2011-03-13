@@ -280,7 +280,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          //Not using any prior knowledge about agent impressions
          double[] agentImpressionDistributionMean = new double[agentIds.size()];
          double[] agentImpressionDistributionStdev = new double[agentIds.size()];
-
+         Arrays.fill(agentImpressionDistributionMean, -1);
+         Arrays.fill(agentImpressionDistributionStdev, -1);
+         
+         //We don't know which agentIdx was in the ith position, for any i.
+         int[] ordering = new int[agentIds.size()];
+         Arrays.fill(ordering, -1);
          //--------------
 
 
@@ -294,7 +299,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                           allAvgPosArr, dummySampledAvgPositions, agentIdsArr, ourNewIdx,
                                           queryReport.getImpressions(q), numPromotedImpressions, maxImps.get(q),
                                           true, promotionEligibiltyVerified, hitOurBudget,
-                                          agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled);
+                                          agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled, ordering);
 
 
          ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(inst);

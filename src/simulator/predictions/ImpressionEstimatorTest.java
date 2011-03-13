@@ -10,6 +10,7 @@ import models.queryanalyzer.iep.EricImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionAndRankEstimator;
 import models.queryanalyzer.iep.ImpressionEstimator;
+import models.queryanalyzer.iep.LDSImpressionAndRankEstimator;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -37,7 +38,7 @@ public class ImpressionEstimatorTest {
 	
 	
 	
-   private boolean SAMPLED_AVERAGE_POSITIONS = false;
+   private boolean SAMPLED_AVERAGE_POSITIONS = true;
    public static boolean PERFECT_IMPS = true;
    boolean USE_WATERFALL_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
@@ -486,50 +487,58 @@ public class ImpressionEstimatorTest {
                   ImpressionAndRankEstimator fullModel = null;
                   AbstractImpressionEstimator model = null;
 
+                  
+                  //Remove any average position information that the agent doesn't have access to.
+                  double[] avgPos;
+                  double[] sAvgPos;
+                  if (SAMPLED_AVERAGE_POSITIONS) {
+                	  //Avg position is -1 except for our agent.
+                	  avgPos = new double[reducedAvgPos.length];
+                	  Arrays.fill(avgPos, -1);
+                	  avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+                	  //Sampled avgPositions are their actual values
+                	  sAvgPos = reducedSampledAvgPos.clone();
+                  } else {
+                	  //Avg positions are their actual values
+                	  avgPos = reducedAvgPos.clone();
+                	  //Sampled avgPositions are -1
+                	  sAvgPos = new double[reducedAvgPos.length];
+                	  Arrays.fill(sAvgPos, -1);
+                  }
+
+                  //Remove any ordering information that the agent doesn't have access to.
+                  int[] knownInitialPositions = ordering.clone();
+                  if (!orderingKnown) Arrays.fill(knownInitialPositions, -1);
+
+                  
+                  //---------------- Create new QAInstance --------------                 
+                  boolean considerPaddingAgents = false;
+                  inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
+                		  ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
+                		  reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, knownInitialPositions);
+
+                  
+                  //---------------- SOLVE INSTANCE ----------------------
                   if (impressionEstimatorIdx == SolverType.CP) {
-                     inst = getCarletonQAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, reducedAvgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
-                                                  ourImps, ourPromotedImps, impressionsUB, ourPromotionEligibility, ourHitBudget,
-                                                  reducedImpsDistMean, reducedImpsDistStdev, ordering);
-
-                     model = new ImpressionEstimator(inst);
-
+                	  if (orderingKnown) {
+                		  model = new ImpressionEstimator(inst);
+                    	  fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                	  } else {
+                		  //TODO: Add in the unranked problem. (Currently takes in a QAInstance.)
+                		  //fullModel = new LDSImpressionAndRankEstimator()
+                	  }
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
-                     double[] avgPos = new double[reducedAvgPos.length];
-                     double[] sAvgPos;
-                     if (SAMPLED_AVERAGE_POSITIONS) {
-                        sAvgPos = reducedSampledAvgPos;
-                        for (int i = 0; i < reducedAvgPos.length; i++) {
-                           if (i == ourAgentIdx) {
-                              avgPos[i] = reducedAvgPos[i];
-                           } else {
-                              avgPos[i] = -1;
-                           }
-                        }
-                     } else {
-                        sAvgPos = new double[reducedSampledAvgPos.length];
-                        Arrays.fill(sAvgPos, -1);
-                        avgPos = reducedAvgPos;
-                     }
-                     inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
-                                           ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
-                                           reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
-                     
-                     
-                     boolean useRankingConstraints = !orderingKnown; //Only use ranking constraints if you don't know the ordering
-                     model = new EricImpressionEstimator(inst, useRankingConstraints);
-                     
+                      boolean useRankingConstraints = !orderingKnown; //Only use ranking constraints if you don't know the ordering
+                	  model = new EricImpressionEstimator(inst, useRankingConstraints);
+                	  fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                   }
-
-
+                  
+                  
+                  //---------------- GET RESULT -----------------------
+                  IEResult result = fullModel.getBestSolution();
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
-
-                  
-                  fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                  IEResult result = fullModel.getBestSolution();
-//                  IEResult result = model.search(ordering);
-                  
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
                   } else {
@@ -643,7 +652,7 @@ public class ImpressionEstimatorTest {
          avgPos = reducedAvgPos.clone();
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
-                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null);
       } else {
          avgPos = reducedSampledAvgPos.clone();
 
@@ -662,7 +671,7 @@ public class ImpressionEstimatorTest {
          System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
-                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null);
       }
    }
 
@@ -1874,21 +1883,21 @@ public class ImpressionEstimatorTest {
 
 	   
 //	   ImpressionEstimatorTest.runAllTests();
-	   
-	      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
-	      double start;
-	      double stop;
-	      double secondsElapsed;
-	      System.out.println("\n\n\n\n\nSTARTING TEST 1");
-	      start = System.currentTimeMillis();
-	      evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, true);
-//	      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, true);
-	      stop = System.currentTimeMillis();
-	      secondsElapsed = (stop - start) / 1000.0;
-	      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
-	   
-	   
-	   
+	   boolean ORDERING_KNOWN = true;
+	   ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
+	   double start;
+	   double stop;
+	   double secondsElapsed;
+	   System.out.println("\n\n\n\n\nSTARTING TEST 1");
+	   start = System.currentTimeMillis();
+//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, true);
+	   evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN);
+	   stop = System.currentTimeMillis();
+	   secondsElapsed = (stop - start) / 1000.0;
+	   System.out.println("SECONDS ELAPSED: " + secondsElapsed);
+
+
+
 	   
 	   
 	   
