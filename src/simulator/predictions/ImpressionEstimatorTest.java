@@ -1896,8 +1896,8 @@ public class ImpressionEstimatorTest {
 	   double secondsElapsed;
 	   System.out.println("\n\n\n\n\nSTARTING TEST 1");
 	   start = System.currentTimeMillis();
-//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
-	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, ORDERING_KNOWN);
+	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
+//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, ORDERING_KNOWN);
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN);
 	   stop = System.currentTimeMillis();
 	   secondsElapsed = (stop - start) / 1000.0;

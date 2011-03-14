@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
-	private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MAXIMIZE; //maximize or minimize?
+	private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
    private QAInstance _instance;
    private int _advertisers;
    private int _slots;
