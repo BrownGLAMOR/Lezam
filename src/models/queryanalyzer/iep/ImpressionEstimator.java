@@ -2,24 +2,20 @@ package models.queryanalyzer.iep;
 
 import models.queryanalyzer.ds.QAInstance;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    private boolean IE_DEBUG = false;
    QAInstance _instance;
 
-   private static int SAMPLING_FACTOR = 200;
+   private static int SAMPLING_FACTOR = 100;
    private static int MAX_PROBE_IMPRESSIONS = 1; //warning this must be greater than 0
    private int _samplingImpressions;
 
    private int _nodeId;
    private Map<Integer, IESolution> _solutions;
    private int _bestNode;
-   private int _bestSlotObjVal;
    private double _bestImprObjVal;
    private double _combinedObjectiveBound;
 
@@ -42,7 +38,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private double _timeOut = 1; //in seconds
 
    public ImpressionEstimator(QAInstance inst) {
-	   _instance = inst;
+      _instance = inst;
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
 
@@ -129,14 +125,14 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    }
 
    public QAInstance getInstance() {
-	   return _instance;
+      return _instance;
    }
 
    public ObjectiveGoal getObjectiveGoal() {
-	   //At least with the old LDS, lower objective values are better. Change this if necessary.
-	   return ObjectiveGoal.MINIMIZE;
+      //At least with the old LDS, lower objective values are better. Change this if necessary.
+      return ObjectiveGoal.MINIMIZE;
    }
-   
+
    private boolean feasibleOrder(int[] order) {
       for (int i = 0; i < order.length; i++) {
          int startPos = Math.min(i + 1, _slots);
@@ -162,7 +158,6 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       _nodeId = 0;
       _solutions = new HashMap<Integer, IESolution>();
       _combinedObjectiveBound = Integer.MAX_VALUE;
-      _bestSlotObjVal = Integer.MAX_VALUE;
       _bestImprObjVal = Double.MAX_VALUE;
 
       int[] agentImpr = new int[_advertisers];
@@ -188,11 +183,11 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order) {
       _nodeId++;
 
-      double stop = System.currentTimeMillis();
-      double elapsed = (stop - _startTime) / 1000.0;
-      if (elapsed > _timeOut) {
-         return;
-      }
+//      double stop = System.currentTimeMillis();
+//      double elapsed = (stop - _startTime) / 1000.0;
+//      if (elapsed > _timeOut) {
+//         return;
+//      }
 
       if (slotImpr[0] > _imprUB) {
          return; //this is infeasible
@@ -202,29 +197,27 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
          // We've come up with feasible impression estimates for all advertisers.
          // Compute objective value for this solution.
+         assert (slotImpr[0] - _imprUB >= 0);
 
-         int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions);
-         int slotImprObjVal = Math.max(0, slotImpr[0] - _imprUB);
-         assert (slotImprObjVal == 0);
-         int slotObjVal = 1;
-         int slotObjCount = 1;
-         for (int i = 0; i < slotImpr.length - 1; i++) {
-            if (Math.abs(slotImpr[i] - slotImpr[i + 1]) < _samplingImpressions / 4 || imprObjVal == 0) { //FIXME: sodomka: 1) Should < in 1st condition be > ?   2) Why the second condition? Couldn't this make an objective w/ imprObjVal==1 better than one where imprObjVal==0? (note we are trying to minimize the objective)
-               slotObjVal += Math.abs(slotImpr[i] - slotImpr[i + 1]);
-               slotObjCount++;
-            } else {
-               break;
-            }
-         }
+         int imprObjVal = Math.abs(agentImpr[_ourIndex] - _ourImpressions) + 1;
+//         int slotObjVal = 1;
+//         int slotObjCount = 1;
+//         for (int i = 0; i < slotImpr.length - 1; i++) {
+//            if (Math.abs(slotImpr[i] - slotImpr[i + 1]) < _samplingImpressions / 4) {
+//               slotObjVal += Math.abs(slotImpr[i] - slotImpr[i + 1]);
+//               slotObjCount++;
+//            } else {
+//               break;
+//            }
+//         }
 
-         double probWaterfall = getImpressionModelObjective(agentImpr, order);
+         double probWaterfall = getImpressionModelObjective(agentImpr, order) + 1;
 
          double combinedObj = imprObjVal * probWaterfall;
 
-         if (combinedObj < _combinedObjectiveBound || (combinedObj == _combinedObjectiveBound && slotObjVal < _bestSlotObjVal)) {
+         if (combinedObj < _combinedObjectiveBound) {
             _combinedObjectiveBound = combinedObj;
             _bestImprObjVal = imprObjVal;
-            _bestSlotObjVal = slotObjVal;
             _solutions.put(_nodeId, new IESolution(agentImpr, slotImpr));
             _bestNode = _nodeId;
          }
@@ -260,7 +253,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          // Iterate increasing/decreasing depending on whether or not this agent is in the 1st position.
 
          int firstSlot = Math.min(currIndex + 1, _slots);
-         int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot - 2] - 1; //FIXME: sodomka: Why -1?
+         int maxImpr = (firstSlot == 1) ? _agentImprUB[currAgent] : slotImpr[firstSlot - 2]; //FIXME: sodomka: Why -1?
          //FIXME: sodomka: if we're not sampling the same points, for #imps, it seems like we're more likely to have small diffs
 
          LinkedList<Integer> branches = new LinkedList<Integer>();
@@ -278,12 +271,20 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
             }
          }
 
+//         branches.clear();
+
          Integer impPred = (int) _agentImpressionDistributionMean[currAgent];
          if (impPred >= 0) {
             if (branches.contains(impPred)) {
                branches.remove(impPred);
             }
             branches.addFirst(impPred);
+         }
+
+         if (currAgent == _ourIndex) {
+            if (_ourImpressions != impPred) {
+               branches.addFirst(_ourImpressions);
+            }
          }
 
          for (Integer branch : branches) {
@@ -320,16 +321,61 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       } else {
          return (1.0 - obj);
       }
+//      return obj;
    }
 
    private double gaussianPDF(double x, double mean, double sigma) {
       double diff = x - mean;
       double sigma2 = sigma * sigma;
       return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
+//      return (diff * diff) / (2.0 * sigma2);
    }
 
    private int calcMinImpressions(int[] slotImpr, int currIndex, double trueAvgPos) {
-      int firstSlot = Math.min(currIndex + 1, _slots);
+      int firstSlot = currIndex + 1;
+      if (currIndex + 1 > _slots) {
+         //Calculate the number of people who simultaneously dropped if any
+         HashSet<Integer> duplicateMap = new HashSet<Integer>();
+         for (int i = 0; i < slotImpr.length - 1; i++) {
+            for (int j = i + 1; j < slotImpr.length; j++) {
+               if (slotImpr[i] == slotImpr[j]) {
+                  duplicateMap.add(slotImpr[i]);
+               }
+            }
+         }
+
+         //Duplicates of the # of imps seen in slot 1 do not indicate simultaneous dropouts
+         if (duplicateMap.contains(slotImpr[0])) {
+            duplicateMap.remove(slotImpr[0]);
+         }
+
+         //Make sure the dupes have happened
+         ArrayList<Integer> toRemoveList = new ArrayList<Integer>();
+         for (Integer dupe : duplicateMap) {
+            if (dupe > slotImpr[slotImpr.length - (currIndex + 1 - _slots)]) {
+               toRemoveList.add(dupe);
+            }
+         }
+
+         for (Integer toRemove : toRemoveList) {
+            duplicateMap.remove(toRemove);
+         }
+
+         if (duplicateMap.size() > 0) {
+            int dupeCount = 0;
+            for (Integer dupe : duplicateMap) {
+               for (int i = 0; i < slotImpr.length; i++) {
+                  if (slotImpr[i] == dupe) {
+                     dupeCount++;
+                  }
+               }
+            }
+
+            firstSlot = _slots - dupeCount + 1;
+         } else {
+            firstSlot = _slots;
+         }
+      }
 
       double approxAvgPos = firstSlot;
       if (approxAvgPos == trueAvgPos) {
@@ -367,11 +413,8 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          wImp = firstSlot;
       }
 
-      //int finalSlotImp = (int)ceil((wImp - fullSlotImp*trueAvgPos)/(trueAvgPos - finalSlot));
-      int finalSlotImp = (int) ((wImp - fullSlotImp * trueAvgPos) / (trueAvgPos - finalSlot));
-      if (finalSlotImp < 1) {
-         finalSlotImp = 1;
-      }
+      double finalSlotImpFloat = (wImp - fullSlotImp * trueAvgPos) / (trueAvgPos - finalSlot);
+      int finalSlotImp = (int) (finalSlotImpFloat + .5);
 
       return fullSlotImp + finalSlotImp;
    }
