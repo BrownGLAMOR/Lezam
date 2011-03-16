@@ -23,5 +23,16 @@ public class LDSSwap implements Comparable<LDSSwap> {
       }
       return 1;
    }
+   
+   public boolean equals(Object obj) {
+	   if (!(obj instanceof LDSSwap)) return false;
+	   LDSSwap o = (LDSSwap) obj;
+	   if (_a1 == o._a1 && _a2 == o._a2) return true;
+	   return false;
+   }
 
+
+   public String toString() {
+	   return "(" + _a1 +"," + _a2 + ")";
+   }
 }
