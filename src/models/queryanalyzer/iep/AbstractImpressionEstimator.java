@@ -15,6 +15,15 @@ public interface AbstractImpressionEstimator {
 	
 	public QAInstance getInstance();
 
+
+	/**
+	 * Gets the approximate average position of each agent.
+	 * If exact average positions are known, those should be used.
+	 * Otherwise, use sampled average positions.
+	 * This can possibly include padded agents if they exist.
+	 */
+	public double[] getApproximateAveragePositions();
+	
 	
 	/**
 	 * State whether IEResults with high value or low value are better.

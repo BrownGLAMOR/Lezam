@@ -51,8 +51,8 @@ public class QAInstance {
       _initialPosition = initialPosition;
 
       if (_considerPaddingAgents) {
-         while (!feasibleOrder(getAvgPosOrder())) {
-            int[] apOrder = getAvgPosOrder();
+         while (!feasibleOrder(getAvgPosOrder(avgPos))) {
+            int[] apOrder = getAvgPosOrder(avgPos);
 
             int foundTooBigStart = 0;
             int foundTooBigStop = 0;
@@ -68,7 +68,7 @@ public class QAInstance {
                addPaddingAgents(foundTooBigStart, foundTooBigStop);
             }
          }
-         assert (feasibleOrder(getAvgPosOrder())) : "addPaddingAgents broke did not work...";
+         assert (feasibleOrder(getAvgPosOrder(avgPos))) : "addPaddingAgents broke did not work...";
       }
    }
 
@@ -177,7 +177,7 @@ public class QAInstance {
     */
    public boolean allInitialPositionsKnown() {
 	   for (int i=0; i<_advetisers; i++) {
-		   if (_initialPosition[i] == -1) return false;
+		   if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) return false;
 	   }
 	   return true;
    }
@@ -208,11 +208,12 @@ public class QAInstance {
       return true;
    }
 
-   public int[] getAvgPosOrder() {
-      double[] pos = new double[_advetisers];
-      int[] posOrder = new int[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
-         pos[i] = -_avgPos[i];
+   public static int[] getAvgPosOrder(double[] averagePositions) {
+      double[] pos = new double[averagePositions.length];
+      int[] posOrder = new int[averagePositions.length];
+      for (int i = 0; i < averagePositions.length; i++) {
+//         pos[i] = -_avgPos[i];
+    	  pos[i] = -averagePositions[i];
          posOrder[i] = i;
       }
 
@@ -231,32 +232,34 @@ public class QAInstance {
       return posOrder;
    }
 
-   public int[] getCarletonOrder() {
-      int[] avgPosOrder = getAvgPosOrder();
-      boolean[] avdAssigned = new boolean[_advetisers];
+   public static int[] getCarletonOrder(double[] averagePositions, int numSlots) {
+	   int numAdvertisers = averagePositions.length;
+      int[] avgPosOrder = getAvgPosOrder(averagePositions);
+      boolean[] avdAssigned = new boolean[numAdvertisers];
       //boolean[] posAssigned = new boolean[_advetisers];
-      int[] carletonOrder = new int[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
+      int[] carletonOrder = new int[numAdvertisers];
+      for (int i = 0; i < numAdvertisers; i++) {
          avdAssigned[i] = false;
          carletonOrder[i] = -1;
       }
 
       ArrayList<HashSet<Integer>> advWholePos = new ArrayList<HashSet<Integer>>();
-      for (int i = 0; i < _slots; i++) {
+      for (int i = 0; i < numSlots; i++) {
          advWholePos.add(i, new HashSet<Integer>());
       }
 
-      for (int i = 0; i < _advetisers; i++) {
-         if ((((int) (_avgPos[i] * 100000) % 100000)) == 0) {
-            int slot = (int) _avgPos[i];
-            if (slot < _slots) { //very important not to keep the last slot
+      for (int i = 0; i < numAdvertisers; i++) {
+         if ((((int) (averagePositions[i] * 100000) % 100000)) == 0) {
+            int slot = (int) averagePositions[i];
+            if (slot < numSlots) { //very important not to keep the last slot
+            	System.out.println("slot=" + slot + ", slots=" + numSlots);
                HashSet<Integer> advs = advWholePos.get(slot - 1);
                advs.add(i);
             }
          }
       }
 
-      for (int i = 0; i < _slots - 1; i++) { //this should hold as long as we don't consider the last slot
+      for (int i = 0; i < numSlots - 1; i++) { //this should hold as long as we don't consider the last slot
          HashSet<Integer> advs = advWholePos.get(i);
          //assert(advs.size() <= 1) : "this may need to go away in new game data";
          if (advs.size() > 0) {
@@ -269,10 +272,10 @@ public class QAInstance {
          }
       }
 
-      for (int i = 0; i < _advetisers; i++) {
+      for (int i = 0; i < numAdvertisers; i++) {
          int a = avgPosOrder[i];
          if (!avdAssigned[a]) {
-            for (int j = 0; j < _advetisers; j++) {
+            for (int j = 0; j < numAdvertisers; j++) {
                if (carletonOrder[j] < 0) {
                   carletonOrder[j] = a;
                   avdAssigned[a] = true;
@@ -295,7 +298,7 @@ public class QAInstance {
       return impressions;
    }
 
-   private void sortListsDecending(int[] ids, double[] vals) {
+   private static void sortListsDecending(int[] ids, double[] vals) {
       assert (ids.length == vals.length);
       int length = ids.length;
 
@@ -323,7 +326,7 @@ public class QAInstance {
     * @param ids
     * @param vals
     */
-   private void sortTiesAccending(int[] ids, double[] vals) {
+   private static void sortTiesAccending(int[] ids, double[] vals) {
       assert (ids.length == vals.length);
       int length = ids.length;
 

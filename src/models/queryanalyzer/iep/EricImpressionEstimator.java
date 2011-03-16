@@ -196,6 +196,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    }
 
 
+
    public static void testOrdering() {
       double[] a = {90, 80, 70, 10, 20, 30};
       int[] order = {0, 1, 2, 5, 4, 3};
@@ -217,17 +218,17 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
       //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
 
-      for (int ourAgentIdx = 0; ourAgentIdx < 8; ourAgentIdx++) {
+      for (int ourAgentIdx = 0; ourAgentIdx <= 0; ourAgentIdx++) {
 
 
          //These aren't actually used; everything is -1 except the current agentIdx
-         double[] I_aFull = {742, 742, 556, 589, 222, 520, 186, 153};
-         double[] mu_aFull = {1, 2, 3, 3.94397284, 5, 4.34807692, 4.17741935, 5};
+         double[] I_aFull = {200, 200};
+         double[] mu_aFull = {1.5, 2.5};
 
 
          //Get priors on impressions
-         double[] agentImpressionDistributionMean = {742, 742, 556, 589, 222, 520, 186, 153};
-         double[] agentImpressionDistributionStdev = {10, 10, 10, 10, 10, 10, 10, 10};
+         double[] agentImpressionDistributionMean = {-1, -1};
+         double[] agentImpressionDistributionStdev = {-1, -1};
 
 
          //Get observed exact average positions (we only see one)
@@ -235,27 +236,24 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          Arrays.fill(mu_a, -1);
          mu_a[ourAgentIdx] = mu_aFull[ourAgentIdx];
 
-         double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
-         boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
-         double[] knownSampledMu_a = {1.0, 2.0, 3.0, 3.75, 5, 4, 4.5, 5};
+         double[] I_aPromoted = {-1, -1};
+         boolean[] isKnownPromotionEligible = {false, false};
+         double[] knownSampledMu_a = {1.5, 2.5};
+//         double[] knownSampledMu_a = {1, 1.5, 2.5};
          int numSlots = 5;
          int numPromotedSlots = 0;
 
          int ourImpressions = (int) I_aFull[ourAgentIdx];
          int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
          boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
-         int impressionsUB = 10000;
+         int impressionsUB = 200;
          int numAgents = mu_a.length;
 
          //Did we hit our budget? (added constraint if we didn't)
          boolean hitOurBudget = true;
 			
-         //By default, ordering will be from first to last position
-         int[] order = new int[numAgents];
-         for (int i = 0; i < order.length; i++) {
-            order[i] = i;
-         }
-
+         int[] predictedOrder = {-1, -1};
+         
          //Give arbitrary agent IDs
          int[] agentIds = new int[numAgents];
          for (int i = 0; i < agentIds.length; i++) {
@@ -263,19 +261,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          }
 
 
-         //Carleton wants average positions to be used when available, otherwise use sampled average positions
-         double[] carletonAvgPos = new double[mu_a.length];
-         for (int i = 0; i < mu_a.length; i++) {
-            if (mu_a[i] != -1) {
-               carletonAvgPos[i] = mu_a[i];
-            } else {
-               carletonAvgPos[i] = knownSampledMu_a[i];
-            }
-         }
-
          //int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified
-         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, carletonAvgPos, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, order);
-         QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, order);
+         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
+         QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
 
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);
@@ -283,14 +271,28 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false);
 
-         IEResult carletonResult = carletonImpressionEstimator.search(order);
-         IEResult ericResult = ericImpressionEstimator.search(order);
+         double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
+         int[] cOrder = QAInstance.getAvgPosOrder(cPos);
+         //int[] cOrder = {1, 2, 0};
+         System.out.println("cPos: " + Arrays.toString(cPos) + ", cOrder: " + Arrays.toString(cOrder));
+         IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
+         //IEResult ericResult = ericImpressionEstimator.search(order);
 
          System.out.println("ourAgentIdx=" + ourAgentIdx);
          System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
-         System.out.println("        IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
+         //System.out.println("        IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
       }
    }
+
+public double[] getApproximateAveragePositions() {
+	double[] avgPos = new double[_advertisers];
+	for (int i=0; i<_advertisers; i++) {
+		if (_trueAvgPos[i] != -1) avgPos[i] = _trueAvgPos[i];
+		else if (_sampledAvgPos[i] != -1) avgPos[i] = _sampledAvgPos[i];
+		else avgPos[i] = -1; //FIXME: Make this something other than a negative value!
+	}
+	return avgPos;
+}
 
 
 }

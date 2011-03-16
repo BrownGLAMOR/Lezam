@@ -16,8 +16,9 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 	}
 	
 	public IEResult getBestSolution() {
-		//int[] avgPosOrder = inst.getAvgPosOrder();
-		int[] avgPosOrder = inst.getCarletonOrder();
+		double[] avgPos = ie.getApproximateAveragePositions();
+//		int[] avgPosOrder = inst.getAvgPosOrder(avgPos);
+		int[] avgPosOrder = inst.getCarletonOrder(avgPos, NUM_SLOTS);
 		IEResult bestSol;
 		
 		if(inst.getImpressions() > 0) {

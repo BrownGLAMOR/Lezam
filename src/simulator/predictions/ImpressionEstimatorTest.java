@@ -517,8 +517,8 @@ public class ImpressionEstimatorTest {
                         model = new ImpressionEstimator(inst);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      } else {
-                        //TODO: Add in the unranked problem. (Currently takes in a QAInstance.)
-                        //fullModel = new LDSImpressionAndRankEstimator()
+                    	 model = new ImpressionEstimator(inst);
+                    	 fullModel = new LDSImpressionAndRankEstimator(model);
                      }
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {

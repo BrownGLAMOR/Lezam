@@ -69,7 +69,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
       //Initially, none of the agents are padded
       //(This isn't really needed when we know the rankings of everybody)
-      //_agentIsPadded = new boolean[_advertisers];
+      _agentIsPadded = new boolean[_advertisers];
 
       //Optionally pad agents. How the agents are padded will depend on whether or not
       //the ordering is known exactly.
@@ -78,6 +78,8 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       // (We'll also have to remove these padded agents before returning the IEResult.)
       if (inst.allInitialPositionsKnown()) {
          padAgentsWithKnownPositions(inst.getInitialPositionOrdering());
+      } else {
+    	padAgentsWithUnknownPositions();  
       }
 
 
@@ -114,6 +116,96 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    }
 
+   
+   
+   private IEResult reduceIEResult(IEResult result) {
+	   //FIXME: Add something here
+	   return result;
+   }
+   
+   private void padAgentsWithUnknownPositions() {
+	      //if (_considerPaddingAgents) {
+	          while (!feasibleOrder(QAInstance.getAvgPosOrder(_trueAvgPos))) {
+	             int[] apOrder = QAInstance.getAvgPosOrder(_trueAvgPos);
+
+	             int foundTooBigStart = 0;
+	             int foundTooBigStop = 0;
+	             for (int i = 0; i < _slots && i < _advertisers; i++) {
+	                if (_trueAvgPos[apOrder[i]] > i + 1) {
+	                   foundTooBigStart = i + 1;
+	                   foundTooBigStop = (int) Math.ceil(_trueAvgPos[apOrder[i]]);
+	                   break;
+	                }
+	             }
+
+	             if (foundTooBigStart > 0) {
+	                addPaddingAgents(foundTooBigStart, foundTooBigStop);
+	             }
+	          }
+	          assert (feasibleOrder(QAInstance.getAvgPosOrder(_trueAvgPos))) : "addPaddingAgents broke did not work...";
+	     //  }
+   }
+   
+   //pads the auction with "fake" advertisers so that the instance is feasible
+   //Feasible means every agent starts in a position greater or equal to their avg pos
+   //assumes the highest agent ID is 99
+   private void addPaddingAgents(int startSlot, int stopSlot) {
+      int oldAdvertisers = _advertisers;
+      double[] oldAvgPos = _trueAvgPos;
+      //int[] oldAgentIds = _agentIds;
+      boolean[] oldAgentIsPadded = _agentIsPadded;
+      double[] oldAgentImpressionDistributionMean = _agentImpressionDistributionMean;
+      double[] oldAgentImpressionDistributionStdev = _agentImpressionDistributionStdev;
+      boolean[] oldAgentSawSample = _agentSawSample; //true if the agent saw at least one sample.
+
+      
+      int newAdvertisers = oldAdvertisers + stopSlot - startSlot;
+      double[] newAvgPos = new double[newAdvertisers];
+      //int[] newAgentIds = new int[newAdvertisers];
+      boolean[] newAgentIsPadded = new boolean[newAdvertisers];
+      double[] newAgentImpressionDistributionMean = new double[newAdvertisers];
+      double[] newAgentImpressionDistributionStdev = new double[newAdvertisers];
+      boolean[] newAgentSawSample = new boolean[newAdvertisers];
+      
+      for (int i = 0; i < oldAdvertisers; i++) {
+         newAvgPos[i] = oldAvgPos[i];
+         //newAgentIds[i] = oldAgentIds[i];
+         newAgentIsPadded[i] = oldAgentIsPadded[i];
+         newAgentImpressionDistributionMean[i] = oldAgentImpressionDistributionMean[i];
+         newAgentImpressionDistributionStdev[i] = oldAgentImpressionDistributionStdev[i];
+         newAgentSawSample[i] = oldAgentSawSample[i];
+      }
+
+      for (int i = 0; i < stopSlot - startSlot; i++) {
+         newAvgPos[oldAdvertisers + i] = startSlot + i;
+         //newAgentIds[oldAdvertisers + i] = MIN_PADDED_AGENT_ID + i;
+         newAgentIsPadded[i] = true;
+
+         //TODO: What prior impressions values do we want for padded advertisers?
+         newAgentImpressionDistributionMean[i] = -1;
+         newAgentImpressionDistributionMean[i] = -1;
+      }
+
+      _advertisers = newAdvertisers;
+      _trueAvgPos = newAvgPos;
+      //_agentIds = newAgentIds;
+      _agentIsPadded = newAgentIsPadded;
+      _agentImpressionDistributionMean = newAgentImpressionDistributionMean;
+      _agentImpressionDistributionStdev = newAgentImpressionDistributionStdev;
+      _agentSawSample = newAgentSawSample;
+   }
+
+   
+
+
+   public double[] getApproximateAveragePositions() {
+		return _trueAvgPos.clone();
+   }
+   
+   
+   
+   
+   
    private void padAgentsWithKnownPositions(int[] ordering) {
       //If any agents have a NaN sampled average position (and also a NaN unsampled average position),
       //give them a dummy average position equal to min(their starting position, numSlots).
