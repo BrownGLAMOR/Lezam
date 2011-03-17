@@ -16,7 +16,7 @@ public class SampleProbability {
    private IloCplex _cplex;
    private int maxSols = 1000;
 
-   private boolean DEBUG = true;
+   private boolean DEBUG = false;
 
    public SampleProbability() {
       try {
@@ -71,7 +71,9 @@ public class SampleProbability {
    }
 
 
-   public void getProbabilityofSample(double[] avgPosArr, int[] order, int[] impsPerAgent, int impressionUpperBound, int numSlots, int numSamples) throws IloException {
+   public double getProbabilityofSample(double[] avgPosArr, int[] order, int[] impsPerAgent, int impressionUpperBound, int numSlots, int numSamples) throws IloException {
+
+      _cplex.clearModel(); //clear last model
 
       int[] impsBeforeDropout = getDropoutPoints(impsPerAgent, order, numSlots);
       int[][] impsPerSlot = greedyAssign(numSlots, impsPerAgent.length, order, impsPerAgent);
@@ -80,7 +82,7 @@ public class SampleProbability {
 
       if (numDropoutPoints == 1 || order.length == 0) {
 //         debug("\n\nONLY ONE PERSON IN THE AUCTION, NO PROBLEM!\n\n");
-         return;
+         return 0;
       }
 
 //      if(!DEBUG) {
@@ -93,6 +95,7 @@ public class SampleProbability {
       _cplex.setParam(IloCplex.IntParam.SolnPoolReplace, 1); //Keep all optimal solutions
       _cplex.setParam(IloCplex.IntParam.SolnPoolCapacity, maxSols);  //Set size of solution pool
       _cplex.setParam(IloCplex.IntParam.PopulateLim, maxSols); //Set number of solution to get in each populate step
+      _cplex.setParam(IloCplex.DoubleParam.WorkMem, 1000); //Give it 1GB of RAM
 
       //Create variables
       IloIntVar[] samplesPerBin;
@@ -228,7 +231,7 @@ public class SampleProbability {
 
       double probability = 0.0;
 
-      System.out.println("" + _cplex.getSolnPoolNsolns());
+      debug("" + _cplex.getSolnPoolNsolns());
       for (int i = 0; i < _cplex.getSolnPoolNsolns(); i++) {
          double[] val = _cplex.getValues(samplesPerBin, i);
          String vals = "";
@@ -244,9 +247,10 @@ public class SampleProbability {
          debug(vals);
       }
       probability /= Math.pow(impressionUpperBound, numSamples);
-      System.out.println("Probability: " + probability);
+      debug("Probability: " + probability);
       debug("\n\n");
-
+//      _cplex.end();
+      return probability;
    }
 
    private void debug(String s) {
