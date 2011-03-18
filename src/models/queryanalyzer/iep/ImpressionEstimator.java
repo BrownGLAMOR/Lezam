@@ -22,7 +22,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    private ObjFun objectiveFun = ObjFun.NONE;
 
-   private boolean EXACT_AVGPOS = false;
+   private boolean EXACT_AVGPOS = true;
    private int _numSamples = 10;
    private int _fractionalBranches = 2; //The number of branches will be double this(1 above and 1 below solved imps)
    SampleProbability _sampleP;
@@ -432,7 +432,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order) {
       _nodeId++;
 
-     // System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
+//      System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
     		  //+ ", slotImps=" + Arrays.toString(slotImpr) );
       
 //      double stop = System.currentTimeMillis();
@@ -523,6 +523,10 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
             new RuntimeException();
          }
 
+         
+         //System.out.println("combinedObj=" + combinedObj + ", imprObjVal=" + imprObjVal + ", probWaterfall=" + probWaterfall + ", sampleProb=" + sampleProb);
+         
+         
          if (combinedObj <= _combinedObjectiveBound) {
 
             if (!EXACT_AVGPOS) {
@@ -550,6 +554,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
             }
          }
 
+         
          //System.out.println("combinedObjBound=" + _combinedObjectiveBound + ", bestImprObj=" + _bestImprObjVal + ", bestNode=" + _bestNode);
 
          return;

@@ -29,7 +29,7 @@ public class ImpressionEstimatorTest {
       USE_WATERFALL_PRIORS = useWaterfallPriors;
    }
 
-   private double PRIOR_STDEV_MULTIPLIER = 1; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
+   private double PRIOR_STDEV_MULTIPLIER = .5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
    boolean USE_WATERFALL_PRIORS = true;
@@ -286,8 +286,8 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-//			for (int d=0; d<=10; d++) {
-         for (int d = 0; d < numReports; d++) {
+			for (int d=0; d<=10; d++) {
+//         for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
             for (int queryIdx = 0; queryIdx < numQueries; queryIdx++) {
@@ -1243,7 +1243,7 @@ public class ImpressionEstimatorTest {
 
     	 //Potentially add some noise to the mean imps prior
     	 Random r = new Random();
-    	 double noisyImps = Math.max(0, imps + r.nextGaussian() * noiseFactor);
+    	 double noisyImps = Math.max(0, imps + r.nextGaussian() * imps * noiseFactor);
 
          if (getMean) {
             meanOrStdevImps[a] = noisyImps;
