@@ -1,5 +1,6 @@
 package models.queryanalyzer.search;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class LDSPerm implements Comparable<LDSPerm> {
@@ -23,8 +24,13 @@ public class LDSPerm implements Comparable<LDSPerm> {
       return 0;
    }
 
+   
    public int getVal() {
       return _value;
+   }
+   
+   public String toString() {
+	   return "(value=" + _value + ", perm=" + Arrays.toString(_perm) + ", swapped=" + _swapped.toString() + ")";
    }
 }
 

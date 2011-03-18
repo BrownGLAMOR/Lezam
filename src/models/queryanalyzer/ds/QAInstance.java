@@ -252,7 +252,7 @@ public class QAInstance {
          if ((((int) (averagePositions[i] * 100000) % 100000)) == 0) {
             int slot = (int) averagePositions[i];
             if (slot < numSlots) { //very important not to keep the last slot
-            	System.out.println("slot=" + slot + ", slots=" + numSlots);
+            	//System.out.println("slot=" + slot + ", slots=" + numSlots);
                HashSet<Integer> advs = advWholePos.get(slot - 1);
                advs.add(i);
             }

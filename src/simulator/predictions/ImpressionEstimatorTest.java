@@ -29,7 +29,7 @@ public class ImpressionEstimatorTest {
       USE_WATERFALL_PRIORS = useWaterfallPriors;
    }
 
-
+   private double PRIOR_STDEV_MULTIPLIER = 1; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
    boolean USE_WATERFALL_PRIORS = true;
@@ -74,7 +74,7 @@ public class ImpressionEstimatorTest {
 
       if (GAMES_TO_TEST == GameSet.test2010) {
          min = 1;
-         max = 8;
+         max = 1;
       }
 
       ArrayList<String> filenames = new ArrayList<String>();
@@ -286,7 +286,7 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-//			for (int d=49; d<=49; d++) {
+//			for (int d=0; d<=10; d++) {
          for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
@@ -331,8 +331,8 @@ public class ImpressionEstimatorTest {
                //Determine whether each agent hit their query or global budget (1 if yes, 0 if not)
                Boolean[] hitBudget = getAgentHitBudget(status, d, query);
 
-               double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
-               double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false);
+               double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true, PRIOR_STDEV_MULTIPLIER);
+               double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false, PRIOR_STDEV_MULTIPLIER);
                if (!USE_WATERFALL_PRIORS) {
                   Arrays.fill(impsDistMean, -1);
                   Arrays.fill(impsDistStdev, -1);
@@ -387,6 +387,48 @@ public class ImpressionEstimatorTest {
 
                int impressionsUB = getAgentImpressionsUpperBound(status, d, query, reducedImps, ordering);
 
+
+               // If any agents have the same squashed bids, we won't know the definitive ordering.
+               // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
+               // For now, we'll drop any instances with duplicate squashed bids.
+               if (duplicateSquashedBids(reducedBids, ordering)) {
+                  System.out.println("Duplicate squashed bids found. Skipping instance.");
+                  numSkips++;
+                  continue;
+               }
+
+               //More generally, make sure our data isn't corrupt
+               if (!validData(reducedBids)) {
+                  System.out.println("Invalid data. Skipping instance.");
+                  numSkips++;
+                  continue;
+               }
+
+               // Some params needed for the QA instance
+               // TODO: Have some of these configurable.
+               int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
+               for (int i = 0; i < agentIds.length; i++) {
+                  agentIds[i] = -(i + 1);
+               }
+
+
+               //FIXME DEBUG
+               //For now, skip anything with a NaN in sampled impressions
+               boolean hasNaN = false;
+               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
+                  if (Double.isNaN(reducedSampledAvgPos[i])) {
+                     hasNaN = true;
+                  }
+               }
+               if (!hasNaN) {
+                  numSkips++;
+                  continue;
+               }
+               //FIXME END DEBUG
+
+               
+               
+               
                // DEBUG: Print out some game values.
                System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
                System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
@@ -415,48 +457,12 @@ public class ImpressionEstimatorTest {
                System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
                System.out.println("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
 
-               // If any agents have the same squashed bids, we won't know the definitive ordering.
-               // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
-               // For now, we'll drop any instances with duplicate squashed bids.
-               if (duplicateSquashedBids(reducedBids, ordering)) {
-                  System.out.println("Duplicate squashed bids found. Skipping instance.");
-                  numSkips++;
-                  continue;
-               }
-
-               //More generally, make sure our data isn't corrupt
-               if (!validData(reducedBids)) {
-                  System.out.println("Invalid data. Skipping instance.");
-                  numSkips++;
-                  continue;
-               }
-
-               // Some params needed for the QA instance
-               // TODO: Have some of these configurable.
-               int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
-               for (int i = 0; i < agentIds.length; i++) {
-                  agentIds[i] = -(i + 1);
-               }
-
-
-//               //FIXME DEBUG
-//               //For now, skip anything with a NaN in sampled impressions
-//               boolean hasNaN = false;
-//               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
-//                  if (Double.isNaN(reducedSampledAvgPos[i])) {
-//                     hasNaN = true;
-//                  }
-//               }
-//               if (hasNaN) {
-//                  numSkips++;
-//                  continue;
-//               }
-//               //FIXME END DEBUG
-
+               
 
                // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
                for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
+            	   System.out.println("ourAgentIdx=" + ourAgentIdx);
                   double start = System.currentTimeMillis(); //time the prediction time on this instance
 
                   int ourImps = reducedImps[ourAgentIdx];
@@ -537,13 +543,15 @@ public class ImpressionEstimatorTest {
                   }
 
 
-                  //---------------- GET RESULT -----------------------
+                  //---------------- SOLVE FOR RESULT -----------------------
                   IEResult result = fullModel.getBestSolution();
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
+
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
                   } else {
+                	  System.out.println("Result is null.");
                      predictedImpsPerAgent = new int[reducedImps.length];
                      Arrays.fill(predictedImpsPerAgent, -1);
                   }
@@ -565,6 +573,7 @@ public class ImpressionEstimatorTest {
                      err[a] = Math.abs(predictedImpsPerAgent[a] - reducedImps[a]);
                   }
                   StringBuffer sb = new StringBuffer();
+                  sb.append("result=" + result + "\n");
                   sb.append("err=" + Arrays.toString(err) + "\t");
                   sb.append("pred=" + Arrays.toString(predictedImpsPerAgent) + "\t");
                   sb.append("actual=" + Arrays.toString(reducedImps) + "\t");
@@ -1225,17 +1234,21 @@ public class ImpressionEstimatorTest {
       return imps;
    }
 
-   private double[] getAgentImpressionsDistributionMeanOrStdev(GameStatus status, Query query, int d, boolean getMean) {
+   private double[] getAgentImpressionsDistributionMeanOrStdev(GameStatus status, Query query, int d, boolean getMean, double noiseFactor) {
       String[] agents = status.getAdvertisers();
       double[] meanOrStdevImps = new double[agents.length];
       for (int a = 0; a < agents.length; a++) {
          String agentName = agents[a];
-         int imps = status.getQueryReports().get(agentName).get(d).getImpressions(query);
+         int imps = status.getQueryReports().get(agentName).get(d).getImpressions(query);         
+
+    	 //Potentially add some noise to the mean imps prior
+    	 Random r = new Random();
+    	 double noisyImps = Math.max(0, imps + r.nextGaussian() * noiseFactor);
 
          if (getMean) {
-            meanOrStdevImps[a] = imps;
+            meanOrStdevImps[a] = noisyImps;
          } else {
-            meanOrStdevImps[a] = Math.max(1, imps) * .25;
+            meanOrStdevImps[a] = Math.max(1, imps * noiseFactor); //Ensure stdev is never 0
          }
       }
       return meanOrStdevImps;
