@@ -30,9 +30,9 @@ public class ImpressionEstimatorTest {
    }
 
    private double PRIOR_STDEV_MULTIPLIER = .5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
-   private boolean SAMPLED_AVERAGE_POSITIONS = false;
+   private boolean SAMPLED_AVERAGE_POSITIONS = true;
    public static boolean PERFECT_IMPS = true;
-   boolean USE_WATERFALL_PRIORS = true;
+   boolean USE_WATERFALL_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
    GameSet GAMES_TO_TEST = GameSet.test2010;
 
@@ -69,12 +69,15 @@ public class ImpressionEstimatorTest {
 
    public ArrayList<String> getGameStrings() {
       String baseFile = "./game";
-      int min = 1;
-      int max = 8;
+      int min;
+      int max;
 
       if (GAMES_TO_TEST == GameSet.test2010) {
          min = 1;
          max = 1;
+      } else {
+         min = 1;
+         max = 8;
       }
 
       ArrayList<String> filenames = new ArrayList<String>();
@@ -286,8 +289,8 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-			for (int d=0; d<=10; d++) {
-//         for (int d = 0; d < numReports; d++) {
+//			for (int d=0; d<=10; d++) {
+         for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
             for (int queryIdx = 0; queryIdx < numQueries; queryIdx++) {
@@ -331,11 +334,16 @@ public class ImpressionEstimatorTest {
                //Determine whether each agent hit their query or global budget (1 if yes, 0 if not)
                Boolean[] hitBudget = getAgentHitBudget(status, d, query);
 
-               double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true, PRIOR_STDEV_MULTIPLIER);
-               double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false, PRIOR_STDEV_MULTIPLIER);
+               double[] impsDistMean;
+               double[] impsDistStdev;
                if (!USE_WATERFALL_PRIORS) {
+                  impsDistMean = new double[numReports];
+                  impsDistStdev = new double[numReports];
                   Arrays.fill(impsDistMean, -1);
                   Arrays.fill(impsDistStdev, -1);
+               } else {
+                  impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true, PRIOR_STDEV_MULTIPLIER);
+                  impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false, PRIOR_STDEV_MULTIPLIER);
                }
 
                // Determine how many agents actually participated
@@ -412,23 +420,21 @@ public class ImpressionEstimatorTest {
                }
 
 
-               //FIXME DEBUG
-               //For now, skip anything with a NaN in sampled impressions
-               boolean hasNaN = false;
-               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
-                  if (Double.isNaN(reducedSampledAvgPos[i])) {
-                     hasNaN = true;
-                  }
-               }
-               if (!hasNaN) {
-                  numSkips++;
-                  continue;
-               }
-               //FIXME END DEBUG
+//               //FIXME DEBUG
+//               //For now, skip anything with a NaN in sampled impressions
+//               boolean hasNaN = false;
+//               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
+//                  if (Double.isNaN(reducedSampledAvgPos[i])) {
+//                     hasNaN = true;
+//                  }
+//               }
+//               if (!hasNaN) {
+//                  numSkips++;
+//                  continue;
+//               }
+//               //FIXME END DEBUG
 
-               
-               
-               
+
                // DEBUG: Print out some game values.
                System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
                System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
@@ -457,12 +463,11 @@ public class ImpressionEstimatorTest {
                System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
                System.out.println("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
 
-               
 
                // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
                for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
-            	   System.out.println("ourAgentIdx=" + ourAgentIdx);
+                  System.out.println("ourAgentIdx=" + ourAgentIdx);
                   double start = System.currentTimeMillis(); //time the prediction time on this instance
 
                   int ourImps = reducedImps[ourAgentIdx];
@@ -523,8 +528,8 @@ public class ImpressionEstimatorTest {
                         model = new ImpressionEstimator(inst);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      } else {
-                    	 model = new ImpressionEstimator(inst);
-                    	 fullModel = new LDSImpressionAndRankEstimator(model);
+                        model = new ImpressionEstimator(inst);
+                        fullModel = new LDSImpressionAndRankEstimator(model);
                      }
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
@@ -551,7 +556,7 @@ public class ImpressionEstimatorTest {
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
                   } else {
-                	  System.out.println("Result is null.");
+                     System.out.println("Result is null.");
                      predictedImpsPerAgent = new int[reducedImps.length];
                      Arrays.fill(predictedImpsPerAgent, -1);
                   }
@@ -1239,11 +1244,11 @@ public class ImpressionEstimatorTest {
       double[] meanOrStdevImps = new double[agents.length];
       for (int a = 0; a < agents.length; a++) {
          String agentName = agents[a];
-         int imps = status.getQueryReports().get(agentName).get(d).getImpressions(query);         
+         int imps = status.getQueryReports().get(agentName).get(d).getImpressions(query);
 
-    	 //Potentially add some noise to the mean imps prior
-    	 Random r = new Random();
-    	 double noisyImps = Math.max(0, imps + r.nextGaussian() * imps * noiseFactor);
+         //Potentially add some noise to the mean imps prior
+         Random r = new Random();
+         double noisyImps = Math.max(0, imps + r.nextGaussian() * imps * noiseFactor);
 
          if (getMean) {
             meanOrStdevImps[a] = noisyImps;
