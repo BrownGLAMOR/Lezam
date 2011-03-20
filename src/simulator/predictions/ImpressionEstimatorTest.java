@@ -29,6 +29,14 @@ public class ImpressionEstimatorTest {
       USE_WATERFALL_PRIORS = useWaterfallPriors;
    }
 
+   private static boolean DEBUG = false;
+
+   private static void debug(String s) {
+      if (DEBUG) {
+         System.out.println(s);
+      }
+   }
+
    private double PRIOR_STDEV_MULTIPLIER = .5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    private boolean SAMPLED_AVERAGE_POSITIONS = true;
    public static boolean PERFECT_IMPS = true;
@@ -123,7 +131,7 @@ public class ImpressionEstimatorTest {
                Query query = queryArr[queryIdx];
                Integer[] imps = getAgentImpressions(status, d, query);
                Integer[] promotedImps = getAgentPromotedImpressions(status, d, query);
-               System.out.println("promotedImps=" + Arrays.toString(promotedImps) + "\timps=" + Arrays.toString(imps));
+               debug("promotedImps=" + Arrays.toString(promotedImps) + "\timps=" + Arrays.toString(imps));
             }
          }
       }
@@ -289,7 +297,7 @@ public class ImpressionEstimatorTest {
 
          // Make predictions for each day/query in this game
          int numReports = 57; //TODO: Why?
-//			for (int d=0; d<=10; d++) {
+//			for (int d=5; d<=5; d++) {
          for (int d = 0; d < numReports; d++) {
 
 //				for (int queryIdx=11; queryIdx<=11; queryIdx++) {
@@ -301,7 +309,7 @@ public class ImpressionEstimatorTest {
 //               if(!"pg".equals(query.getManufacturer()) ||
 //                       !"audio".equals(query.getComponent())) continue;
 
-               System.out.println("Game " + (gameIdx + 1) + "/" + filenames.size() + ", Day " + d + "/" + numReports + ", query=" + queryIdx);
+               debug("Game " + (gameIdx + 1) + "/" + filenames.size() + ", Day " + d + "/" + numReports + ", query=" + queryIdx);
 
                // Get avg position for each agent
                Double[] actualAveragePositions = getAveragePositions(status, d, query);
@@ -400,14 +408,14 @@ public class ImpressionEstimatorTest {
                // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
                // For now, we'll drop any instances with duplicate squashed bids.
                if (duplicateSquashedBids(reducedBids, ordering)) {
-                  System.out.println("Duplicate squashed bids found. Skipping instance.");
+                  debug("Duplicate squashed bids found. Skipping instance.");
                   numSkips++;
                   continue;
                }
 
                //More generally, make sure our data isn't corrupt
                if (!validData(reducedBids)) {
-                  System.out.println("Invalid data. Skipping instance.");
+                  debug("Invalid data. Skipping instance.");
                   numSkips++;
                   continue;
                }
@@ -436,38 +444,38 @@ public class ImpressionEstimatorTest {
 
 
                // DEBUG: Print out some game values.
-               System.out.println("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
-               System.out.println("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
-               System.out.println("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
-               System.out.println("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
-               System.out.println("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
-               System.out.println("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
-               System.out.println("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
-               System.out.println("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
-               System.out.println("d=" + d + "\tq=" + query + "\thitBudget=" + Arrays.toString(hitBudget));
-               System.out.println("d=" + d + "\tq=" + query + "\tqueryBudgets=" + Arrays.toString(budgets));
-               System.out.println("d=" + d + "\tq=" + query + "\tquerySpend=" + Arrays.toString(getAgentQuerySpend(status, d, query)));
-               System.out.println("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
-               System.out.println("d=" + d + "\tq=" + query + "\tglobalBudgets=" + Arrays.toString(globalBudgets));
-               System.out.println("d=" + d + "\tq=" + query + "\tglobalSpend=" + Arrays.toString(getAgentGlobalSpend(status, d)));
-               System.out.println("d=" + d + "\tq=" + query + "\tglobalBids=" + Arrays.toString(getAgentGlobalMaxAvgCPC(status, d)));
-               System.out.println("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
-               System.out.println("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
-               System.out.println("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
-               System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
-               System.out.println("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
-               System.out.println();
+               debug("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
+               debug("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
+               debug("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
+               debug("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
+               debug("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
+               debug("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
+               debug("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
+               debug("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
+               debug("d=" + d + "\tq=" + query + "\thitBudget=" + Arrays.toString(hitBudget));
+               debug("d=" + d + "\tq=" + query + "\tqueryBudgets=" + Arrays.toString(budgets));
+               debug("d=" + d + "\tq=" + query + "\tquerySpend=" + Arrays.toString(getAgentQuerySpend(status, d, query)));
+               debug("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
+               debug("d=" + d + "\tq=" + query + "\tglobalBudgets=" + Arrays.toString(globalBudgets));
+               debug("d=" + d + "\tq=" + query + "\tglobalSpend=" + Arrays.toString(getAgentGlobalSpend(status, d)));
+               debug("d=" + d + "\tq=" + query + "\tglobalBids=" + Arrays.toString(getAgentGlobalMaxAvgCPC(status, d)));
+               debug("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
+               debug("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
+               debug("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
+               debug("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
+               debug("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
+               debug("");
 
-               System.out.println("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
-               System.out.println("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
-               System.out.println("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
-               System.out.println("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
+               debug("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
+               debug("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
+               debug("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
+               debug("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
 
 
                // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
                for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
-                  System.out.println("ourAgentIdx=" + ourAgentIdx);
+                  debug("ourAgentIdx=" + ourAgentIdx);
                   double start = System.currentTimeMillis(); //time the prediction time on this instance
 
                   int ourImps = reducedImps[ourAgentIdx];
@@ -556,7 +564,7 @@ public class ImpressionEstimatorTest {
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
                   } else {
-                     System.out.println("Result is null.");
+                     debug("Result is null.");
                      predictedImpsPerAgent = new int[reducedImps.length];
                      Arrays.fill(predictedImpsPerAgent, -1);
                   }
@@ -589,7 +597,7 @@ public class ImpressionEstimatorTest {
                   sb.append("imps=" + Arrays.toString(reducedImps) + " ");
                   sb.append("order=" + Arrays.toString(ordering) + " ");
                   sb.append(((impressionEstimatorIdx == SolverType.CP) ? "CP" : "MIP"));
-                  System.out.println(sb);
+                  debug(sb.toString());
 
 
                   //Save all relevant data to file
@@ -626,6 +634,8 @@ public class ImpressionEstimatorTest {
                   writeToLog(sb.toString());
                }
             }
+            System.out.println("End Day " + d);
+            outputPerformanceMetrics();
          }
       }
 
@@ -684,7 +694,7 @@ public class ImpressionEstimatorTest {
             }
          }
 
-         System.out.println("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
+         debug("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null);
@@ -1443,10 +1453,10 @@ public class ImpressionEstimatorTest {
          numCorrectlyOrderedInstances++;
       }
 
-      System.out.println("    (predicted ordering): " + Arrays.toString(predictedOrdering));
-      System.out.println("       (actual ordering): " + Arrays.toString(actualOrdering));
-      System.out.println("   (is correct ordering): " + isCorrectOrdering);
-      System.out.println();
+      debug("    (predicted ordering): " + Arrays.toString(predictedOrdering));
+      debug("       (actual ordering): " + Arrays.toString(actualOrdering));
+      debug("   (is correct ordering): " + isCorrectOrdering);
+      debug("");
 
 
    }
@@ -1513,7 +1523,7 @@ public class ImpressionEstimatorTest {
             throw new RuntimeException("Exception when getting sampled average positions");
          }
       }
-      System.out.println("sampleAvgPos=" + Arrays.toString(sampledAveragePositions) + ", agent=" + arbitraryAgentName + ", d=" + d + ", q=" + query);
+      debug("sampleAvgPos=" + Arrays.toString(sampledAveragePositions) + ", agent=" + arbitraryAgentName + ", d=" + d + ", q=" + query);
 
       return sampledAveragePositions;
    }

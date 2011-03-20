@@ -8,7 +8,7 @@ import java.util.*;
 
 public class ImpressionEstimator implements AbstractImpressionEstimator {
 
-   private boolean IE_DEBUG = true;
+   private boolean IE_DEBUG = false;
    QAInstance _instance;
    int MIN_PADDED_AGENT_ID = 100;
 
@@ -23,7 +23,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private ObjFun objectiveFun = ObjFun.NONE;
 
    private boolean EXACT_AVGPOS = false;
-   private boolean PR_SAMPLE = false;
+   private boolean PR_SAMPLE = true;
    private boolean PAD_AGENTS = false;
    private boolean MIN_NONSAMP_IMPS = true; //minimize the impressions seen by agents not sampled
    private boolean BRANCH_AROUND_PRIOR = true;
@@ -341,14 +341,15 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       _agentImpressionDistributionMean = newAgentImpressionDistributionMean;
       _agentImpressionDistributionStdev = newAgentImpressionDistributionStdev;
       _agentSawSample = newAgentSawSample;
-
-      System.out.println(
-              "advertisers=" + _advertisers +
-                      ", trueAvgPos=" + Arrays.toString(_trueAvgPos) +
-                      ", isPadded=" + Arrays.toString(_agentIsPadded) +
-                      ", sawSample=" + Arrays.toString(_agentSawSample) +
-                      ", impsMeanPrior=" + Arrays.toString(_agentImpressionDistributionMean) +
-                      ", impsStdDevPrior=" + Arrays.toString(_agentImpressionDistributionStdev));
+      if (IE_DEBUG) {
+         System.out.println(
+                 "advertisers=" + _advertisers +
+                         ", trueAvgPos=" + Arrays.toString(_trueAvgPos) +
+                         ", isPadded=" + Arrays.toString(_agentIsPadded) +
+                         ", sawSample=" + Arrays.toString(_agentSawSample) +
+                         ", impsMeanPrior=" + Arrays.toString(_agentImpressionDistributionMean) +
+                         ", impsStdDevPrior=" + Arrays.toString(_agentImpressionDistributionStdev));
+      }
    }
 
 
@@ -423,13 +424,17 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
       IESolution sol = _solutions.get(_bestNode);
       if (sol == null) {
-         System.out.println("IE Solution is null");
+         if (IE_DEBUG) {
+            System.out.println("IE Solution is null");
+         }
          //System.exit(-1);
          return null;
       } else {
          IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, copyArray(order), sol._slotImpr);
          IEResult reducedResult = reduceIEResult(result);
-         System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result + "\nReduced " + reducedResult);
+         if (IE_DEBUG) {
+            System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result + "\nReduced " + reducedResult);
+         }
          return reducedResult;
       }
    }
@@ -440,11 +445,11 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 //      System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
       //+ ", slotImps=" + Arrays.toString(slotImpr) );
 
-      double stop = System.currentTimeMillis();
-      double elapsed = (stop - _startTime) / 1000.0;
-      if (elapsed > _timeOut) {
-         return;
-      }
+//      double stop = System.currentTimeMillis();
+//      double elapsed = (stop - _startTime) / 1000.0;
+//      if (elapsed > _timeOut) {
+//         return;
+//      }
 
       if (slotImpr[0] > _imprUB) {
          return; //this is infeasible
@@ -536,7 +541,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
          //System.out.println("combinedObj=" + combinedObj + ", imprObjVal=" + imprObjVal + ", probWaterfall=" + probWaterfall + ", sampleProb=" + sampleProb);
 
-         if (combinedObj < _combinedObjectiveBound || ((combinedObj == _combinedObjectiveBound) && (!PAD_AGENTS && (!MIN_NONSAMP_IMPS || totImpsForNonSampled < _totImpsForNonSampled)))) {
+         if (combinedObj < _combinedObjectiveBound || ((combinedObj == _combinedObjectiveBound) && (!EXACT_AVGPOS && !PAD_AGENTS && (!MIN_NONSAMP_IMPS || totImpsForNonSampled < _totImpsForNonSampled)))) {
             if (!EXACT_AVGPOS && PR_SAMPLE) {
                double prSample;
                try {
