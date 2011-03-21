@@ -634,8 +634,8 @@ public class ImpressionEstimatorTest {
                   writeToLog(sb.toString());
                }
             }
-            System.out.println("End Day " + d);
-            outputPerformanceMetrics();
+//            System.out.println("End Day " + d);
+//            outputPerformanceMetrics();
          }
       }
 

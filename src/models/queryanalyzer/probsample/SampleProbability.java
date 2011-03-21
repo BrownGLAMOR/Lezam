@@ -237,7 +237,7 @@ public class SampleProbability {
          String vals = "";
          double innerProb = 1.0;
          for (int j = 0; j < val.length; ++j) {
-            double curVal = val[j];
+            int curVal = (int) (val[j] + .5);
             if (curVal > 0) {
                innerProb *= Math.pow(impsBetweenDropout[j], curVal);
             }
@@ -246,11 +246,40 @@ public class SampleProbability {
          probability += innerProb;
          debug(vals);
       }
-      probability /= Math.pow(impressionUpperBound, numSamples);
+
+      if (probability != 0) {
+         probability /= Math.pow(impressionUpperBound, numSamples);
+      }
+
       debug("Probability: " + probability);
       debug("\n\n");
 //      _cplex.end();
       return probability;
+   }
+
+   /*
+    * Returns a double since ints and longs are too small
+    *
+    * this is *much* slower than using powers and assuming sampling
+    * with replacement
+    *
+    */
+   private static double binomCoeff(final int n, final int m) {
+      if (n < m) {
+         return 0;
+      } else if (n == m) {
+         return 1;
+      }
+
+      double[] binom = new double[n + 1];
+      binom[0] = 1;
+      for (int i = 1; i <= n; i++) {
+         binom[i] = 1;
+         for (int j = i - 1; j > 0; j--) {
+            binom[j] += binom[j - 1];
+         }
+      }
+      return binom[m];
    }
 
    private void debug(String s) {
