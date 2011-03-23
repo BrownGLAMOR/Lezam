@@ -27,6 +27,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private boolean MIN_NONSAMP_IMPS = true; //minimize the impressions seen by agents not sampled
    private boolean BRANCH_AROUND_PRIOR = true;
    private boolean SIMPLE_PR_SAMP = true;
+   private boolean LOG_GAUSSIAN_PDF = true;
    private boolean FULL_SELF_POS;
    private double FILL_SLOTS_AVG; //this contains the value of the average position of the person last added using fillSlots
    private int MIN_TOT_IMPR = 50;
@@ -508,7 +509,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                      double waterfallAvgPos = weightedImps / imps;
                      double agentDiff = Math.abs(waterfallAvgPos - trueAvgPos);
 
-                     if (currAgent == _ourIndex && FULL_SELF_POS) {
+                     if ((currAgent == _ourIndex) && FULL_SELF_POS) {
                         bestAvgPosDiff = agentDiff;
                      }
                      avgPosDiff += agentDiff;
@@ -681,6 +682,10 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          }
       } else {
 
+         if (bestImpr == -3) {
+            return;
+         }
+
          // BestImpr <= 0, i.e. avgPos is an integer for this agent (and thus #imps is not well specified).
          // Iterate through different possible #imps.
          // Iterate increasing/decreasing depending on whether or not this agent is in the 1st position.
@@ -769,7 +774,12 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    }
 
    private double getImpressionModelObjective(int[] agentImpr, int[] order, int numSlotsFilled) {
-      double obj = 1.0;
+      double obj;
+      if (LOG_GAUSSIAN_PDF) {
+         obj = 0.0;
+      } else {
+         obj = 1.0;
+      }
       numSlotsFilled = Math.min(numSlotsFilled, agentImpr.length);
       for (int i = 0; i < numSlotsFilled; i++) {
          int currAgent = order[i];
@@ -777,27 +787,43 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          double stdDev = _agentImpressionDistributionStdev[currAgent];
          if (mean != -1 && stdDev != -1) {
             double imps = agentImpr[currAgent];
-            double prob = gaussianPDF(imps, mean, stdDev);
-            obj *= prob;
+            if (LOG_GAUSSIAN_PDF) {
+               double prob = logGaussianPDF(imps, mean, stdDev);
+               obj += prob;
+            } else {
+               double prob = gaussianPDF(imps, mean, stdDev);
+               obj *= prob;
+            }
             //System.out.println("currAgent=" + currAgent + ", gaussianPDF(imps=" + imps +", mean="+ mean + ", stdDev=" + stdDev + ") = " + prob);
          }
       }
 
-//      if (obj == 1.0) {
-//         //This means we didn't place anyone with a prediction yet
-//         //so return a bad objective
-//         return 1.0;
-//      } else {
-//         return (1.0 - obj);
-//      }
-      return obj;
+//      System.out.println(obj);
+
+      if (LOG_GAUSSIAN_PDF) {
+         return obj;
+      } else {
+         if (obj == 1.0) {
+            //This means we didn't place anyone with a prediction yet
+            //so return a bad objective
+            return 1.0;
+         } else {
+            return (1.0 - obj);
+         }
+      }
+   }
+
+   private double logGaussianPDF(double x, double mean, double sigma) {
+      double diff = x - mean;
+      double sigma2 = sigma * sigma;
+//      return (.5 * Math.log(2.0 * Math.PI * sigma2) + (diff * diff) / (2.0 * sigma2));
+      return (diff * diff) / (2.0 * sigma2);
    }
 
    private double gaussianPDF(double x, double mean, double sigma) {
       double diff = x - mean;
       double sigma2 = sigma * sigma;
-      return Math.abs(.5 * Math.log(2.0 * Math.PI * sigma2) + (diff * diff) / (2.0 * sigma2));
-//      return (diff * diff) / (2.0 * sigma2);
+      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
    }
 
    private int calcMinImpressions(int[] slotImpr, int currIndex, double trueAvgPos) {
@@ -807,52 +833,60 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
       int firstSlot = currIndex + 1;
       if (currIndex + 1 > _slots) {
-         //Calculate the number of people who simultaneously dropped if any
-         HashSet<Integer> duplicateMap = new HashSet<Integer>();
-         for (int i = 0; i < slotImpr.length - 1; i++) {
-            for (int j = i + 1; j < slotImpr.length; j++) {
-               if (slotImpr[i] == slotImpr[j]) {
-                  duplicateMap.add(slotImpr[i]);
-               }
-            }
-         }
-
-         //Duplicates of the # of imps seen in slot 1 do not indicate simultaneous dropouts
-         if (duplicateMap.contains(slotImpr[0])) {
-            duplicateMap.remove(slotImpr[0]);
-         }
-
-         //Make sure the dupes have happened
-         ArrayList<Integer> toRemoveList = new ArrayList<Integer>();
-         for (Integer dupe : duplicateMap) {
-            if (dupe > slotImpr[slotImpr.length - (currIndex + 1 - _slots)]) {
-               toRemoveList.add(dupe);
-            }
-         }
-
-         for (Integer toRemove : toRemoveList) {
-            duplicateMap.remove(toRemove);
-         }
-
-         if (duplicateMap.size() > 0) {
-            int dupeCount = 0;
-            for (Integer dupe : duplicateMap) {
-               for (int i = 0; i < slotImpr.length; i++) {
-                  if (slotImpr[i] == dupe) {
-                     dupeCount++;
+         if (trueAvgPos == _slots) {
+            firstSlot = _slots;
+         } else {
+            //Calculate the number of people who simultaneously dropped if any
+            HashSet<Integer> duplicateMap = new HashSet<Integer>();
+            for (int i = 0; i < slotImpr.length - 1; i++) {
+               for (int j = i + 1; j < slotImpr.length; j++) {
+                  if (slotImpr[i] == slotImpr[j]) {
+                     duplicateMap.add(slotImpr[i]);
                   }
                }
             }
 
-            firstSlot = _slots - dupeCount + 1;
-         } else {
-            firstSlot = _slots;
+            //Duplicates of the # of imps seen in slot 1 do not indicate simultaneous dropouts
+            if (duplicateMap.contains(slotImpr[0])) {
+               duplicateMap.remove(slotImpr[0]);
+            }
+
+            //Make sure the dupes have happened
+            ArrayList<Integer> toRemoveList = new ArrayList<Integer>();
+            for (Integer dupe : duplicateMap) {
+               if (dupe > slotImpr[slotImpr.length - (currIndex + 1 - _slots)]) {
+                  toRemoveList.add(dupe);
+               }
+            }
+
+            for (Integer toRemove : toRemoveList) {
+               duplicateMap.remove(toRemove);
+            }
+
+            if (duplicateMap.size() > 0) {
+               int dupeCount = 0;
+               for (Integer dupe : duplicateMap) {
+                  for (int i = 0; i < slotImpr.length; i++) {
+                     if (slotImpr[i] == dupe) {
+                        dupeCount++;
+                     }
+                  }
+               }
+
+               firstSlot = _slots - dupeCount + 1;
+            } else {
+               firstSlot = _slots;
+            }
          }
       }
 
       double approxAvgPos = firstSlot;
       if (approxAvgPos == trueAvgPos) {
          return -1;
+      }
+
+      if (trueAvgPos > firstSlot) {
+         return -3;
       }
 
       int fullSlots = firstSlot;
@@ -884,6 +918,11 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          //TODO this is bad and it happens... so this is an ugly hack to fix it,
          fullSlotImp = 1;
          wImp = firstSlot;
+//         throw new RuntimeException();
+      }
+
+      if (trueAvgPos <= finalSlot) {
+         return -2;
       }
 
       double finalSlotImpFloat = (wImp - fullSlotImp * trueAvgPos) / (trueAvgPos - finalSlot);
