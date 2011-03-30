@@ -26,10 +26,12 @@ public class ImpressionEstimatorTest {
       _rand = new Random(_seed);
    }
 
-   public ImpressionEstimatorTest(boolean sampleAvgPositions, boolean perfectImps, boolean useWaterfallPriors) {
+   public ImpressionEstimatorTest(boolean sampleAvgPositions, boolean perfectImps, boolean useWaterfallPriors, double noiseFactor, boolean orderingKnown) {
       SAMPLED_AVERAGE_POSITIONS = sampleAvgPositions;
       PERFECT_IMPS = perfectImps;
       USE_WATERFALL_PRIORS = useWaterfallPriors;
+      PRIOR_STDEV_MULTIPLIER = noiseFactor; //this only matters if useWaterfallPriors=true
+      this.ORDERING_KNOWN = orderingKnown;
    }
 
    private static boolean DEBUG = false;
@@ -50,6 +52,7 @@ public class ImpressionEstimatorTest {
    boolean USE_WATERFALL_PRIORS = false;
    boolean USE_HISTORIC_PRIORS = true;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
+   boolean ORDERING_KNOWN = false;
    GameSet GAMES_TO_TEST = GameSet.test2010;
 
    //if we're sampling average positions, do we want to remove agents that received no samples?
@@ -76,7 +79,7 @@ public class ImpressionEstimatorTest {
    double aggregateAbsError = 0;
 
    private enum SolverType {
-      CP, MIP, LDSMIP
+      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP
    }
 
    private enum GameSet {
@@ -161,6 +164,7 @@ public class ImpressionEstimatorTest {
          sb.append("agent\t");
          sb.append("query\t");
          sb.append("day\t");
+         sb.append("approx.searchers\t");
          sb.append("bid\t");
          sb.append("squashed.bid\t");
          sb.append("budget\t");
@@ -168,6 +172,7 @@ public class ImpressionEstimatorTest {
          sb.append("clicks\t");
          sb.append("convs\t");
          sb.append("avg.pos\t");
+         sb.append("sampled.avg.pos\t");
          sb.append("cost");
 
          //Start writing to the output stream
@@ -218,16 +223,18 @@ public class ImpressionEstimatorTest {
                Integer[] conversions = getAgentConversions(status, d, query);
                Double[] actualAveragePositions = getAveragePositions(status, d, query);
                Double[] cost = getAgentCosts(status, d, query);
-               //Double[] sampledAveragePositions = getSampledAveragePositions(status, d, query);
+               Double[] sampledAveragePositions = getSampledAveragePositions(status, d, query);
                //Integer[] promotedImpressions = getAgentPromotedImpressions(status, d, query);
                //Boolean[] promotionEligibility = getAgentPromotionEligibility(status, d, query, promotedReserveScore.get(query.getType()));
-
+               int approxSearchers = getApproximateNumSearchersInQuery(status, d, query);
+               
                StringBuffer sb = new StringBuffer();
                for (int a = 0; a < agents.length; a++) {
                   sb.append(filename + "\t");
                   sb.append(agents[a] + "\t");
                   sb.append(query + "\t");
                   sb.append(d + "\t");
+                  sb.append(approxSearchers + "\t");
                   sb.append(bids[a] + "\t");
                   sb.append(squashedBids[a] + "\t");
                   sb.append(budgets[a] + "\t");
@@ -235,6 +242,7 @@ public class ImpressionEstimatorTest {
                   sb.append(clicks[a] + "\t");
                   sb.append(conversions[a] + "\t");
                   sb.append(actualAveragePositions[a] + "\t");
+                  sb.append(sampledAveragePositions[a] + "\t");
                   sb.append(cost[a] + "\n");
                }
                writeToLog(sb.toString());
@@ -258,7 +266,7 @@ public class ImpressionEstimatorTest {
     * @throws IOException
     * @throws ParseException
     */
-   public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx, boolean orderingKnown) throws IOException, ParseException {
+   public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx) throws IOException, ParseException {
       //printGameLogInfo();
 
       if (USE_HISTORIC_PRIORS && USE_WATERFALL_PRIORS) {
@@ -269,11 +277,12 @@ public class ImpressionEstimatorTest {
       int sampFrac = 80;
 
       StringBuffer sb1 = new StringBuffer();
-      sb1.append("iePred");
-      sb1.append("." + impressionEstimatorIdx);
+      sb1.append(impressionEstimatorIdx);
+      sb1.append(ORDERING_KNOWN ? ".ie" : ".rie");
       sb1.append(SAMPLED_AVERAGE_POSITIONS ? ".sampled" : ".exact");
       sb1.append(PERFECT_IMPS ? ".impsPerfect" : ".impsUB");
       sb1.append(USE_WATERFALL_PRIORS ? ".prior" : ".noPrior");
+      sb1.append(".noise" + PRIOR_STDEV_MULTIPLIER);
       sb1.append("." + GAMES_TO_TEST);
       sb1.append(".txt");
       String logFilename = sb1.toString();
@@ -406,6 +415,7 @@ public class ImpressionEstimatorTest {
                }
 
                // Reduce to only auction participants
+               String[] reducedAgents = new String[numParticipants];
                double[] reducedAvgPos = new double[numParticipants];
                double[] reducedSampledAvgPos = new double[numParticipants];
                double[] reducedBids = new double[numParticipants];
@@ -419,7 +429,8 @@ public class ImpressionEstimatorTest {
                int rIdx = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
                   if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
-                     reducedAvgPos[rIdx] = actualAveragePositions[a];
+                     reducedAgents[rIdx] = status.getAdvertisers()[a];
+                	  reducedAvgPos[rIdx] = actualAveragePositions[a];
                      reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
                      reducedBids[rIdx] = squashedBids[a];
                      reducedImps[rIdx] = impressions[a];
@@ -432,18 +443,44 @@ public class ImpressionEstimatorTest {
                      rIdx++;
                   }
                }
+               
+               
+//               //DEBUG
+//               double[] reducedAvgPos = {2, 1, 2};
+//               double[] reducedSampledAvgPos = {-1, -1, -1};
+//               double[] reducedBids = {80, 100, 90};
+//               int[] reducedImps = {20, 10, 10};
+//               int[] reducedPromotedImps = {-1, -1, -1};
+//               boolean[] reducedPromotionEligibility = {false, false, false};
+//               boolean[] reducedHitBudget = {false, false, false};
+//               double[] reducedImpsDistMean = {20, 10, 10};
+//               double[] reducedImpsDistStdev = {1, 1, 1};
+//               numParticipants = 3;
+//               //END DEBUG
+               
+               
+               
+               
+               
+               
 
 
                // Get ordering of remaining squashed bids
+               int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
                int[] ordering;
-               if (orderingKnown) {
-                  ordering = getIndicesForDescendingOrder(reducedBids);
+               if (ORDERING_KNOWN) {
+                  ordering = trueOrdering.clone();
                } else {
                   ordering = new int[reducedBids.length];
                   for (int i = 0; i < ordering.length; i++) {
                      ordering[i] = i;
                   }
                }
+//               int[] actualBidOrdering = getActualBidOrdering(ordering, reducedImps); //[a b c d] means the agent with index 0 has rank a
+//               int[] sampledBidOrdering = getSampledBidOrdering(ordering, reducedImps, reducedSampledAvgPos); //The initial positions of agents that had at least one sample
+//               int[] sampledBidRelativeOrdering = getRelativeOrdering(sampledBidOrdering); //The ordering for agents that had at least one sample
+
+               
 
                int impressionsUB = getAgentImpressionsUpperBound(status, d, query, reducedImps, ordering);
 
@@ -513,7 +550,7 @@ public class ImpressionEstimatorTest {
                debug("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
                debug("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
                debug("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
-               debug("d=" + d + "\tq=" + query + "\tordering=" + Arrays.toString(ordering));
+               debug("d=" + d + "\tq=" + query + "\ttrueOrdering=" + Arrays.toString(trueOrdering));
 
                // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
@@ -569,7 +606,9 @@ public class ImpressionEstimatorTest {
                      reducedImpsDistStdev = reducedPredImpressionsStdDev;
                   }
 
-                  debug("ourAgentIdx=" + ourAgentIdx);
+            	   String ourAgentName = reducedAgents[ourAgentIdx];
+            	   
+            	   debug("ourAgentIdx=" + ourAgentIdx + ", ourAgentName=" + ourAgentName);
                   double start = System.currentTimeMillis(); //time the prediction time on this instance
 
                   int ourImps = reducedImps[ourAgentIdx];
@@ -612,7 +651,7 @@ public class ImpressionEstimatorTest {
 
                   //Remove any ordering information that the agent doesn't have access to.
                   int[] knownInitialPositions = ordering.clone();
-                  if (!orderingKnown) {
+                  if (!ORDERING_KNOWN) {
                      Arrays.fill(knownInitialPositions, -1);
                   }
 
@@ -626,7 +665,7 @@ public class ImpressionEstimatorTest {
 
                   //---------------- SOLVE INSTANCE ----------------------
                   if (impressionEstimatorIdx == SolverType.CP) {
-                     if (orderingKnown) {
+                     if (ORDERING_KNOWN) {
                         model = new ImpressionEstimator(inst, sampFrac, fractionalBran);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      } else {
@@ -635,14 +674,25 @@ public class ImpressionEstimatorTest {
                      }
                   }
                   if (impressionEstimatorIdx == SolverType.MIP) {
-                     boolean useRankingConstraints = !orderingKnown; //Only use ranking constraints if you don't know the ordering
-                     model = new EricImpressionEstimator(inst, useRankingConstraints);
+                     boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                     model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
                      fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                   }
+                  if (impressionEstimatorIdx == SolverType.MULTI_MIP) {
+                      boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                      model = new EricImpressionEstimator(inst, useRankingConstraints, true, true);
+                      fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                   }
+                  if (impressionEstimatorIdx == SolverType.MIP_LP) {
+                      boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                      model = new EricImpressionEstimator(inst, useRankingConstraints, false, false);
+                      fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                   }
+                   
                   if (impressionEstimatorIdx == SolverType.LDSMIP) {
                      boolean useRankingConstraints = false;
-                     model = new EricImpressionEstimator(inst, useRankingConstraints);
-                     if (orderingKnown) {
+                     model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
+                     if (ORDERING_KNOWN) {
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      } else {
                         fullModel = new LDSImpressionAndRankEstimator(model);
@@ -654,13 +704,21 @@ public class ImpressionEstimatorTest {
                   IEResult result = fullModel.getBestSolution();
                   //Get predictions (also provide dummy values for failure)
                   int[] predictedImpsPerAgent;
+                  int[] predictedOrdering;
 
                   if (result != null) {
                      predictedImpsPerAgent = result.getSol();
+                     predictedOrdering = result.getOrder();
+                     //int[] predictedRelativeOrdering = getRelativeOrdering(predictedOrdering);
+                     
+                     
                   } else {
                      debug("Result is null.");
                      predictedImpsPerAgent = new int[reducedImps.length];
                      Arrays.fill(predictedImpsPerAgent, -1);
+
+                     predictedOrdering = new int[reducedImps.length];
+                     Arrays.fill(predictedOrdering, -1);
                   }
 
                   double stop = System.currentTimeMillis();
@@ -669,9 +727,6 @@ public class ImpressionEstimatorTest {
                   //System.out.println("predicted: " + Arrays.toString(predictedImpsPerAgent));
                   //System.out.println("actual: " + Arrays.toString(reducedImps));
 
-                  //Update performance metrics
-                  updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, ordering, ordering);
-                  //outputPerformanceMetrics();
 
                   if (USE_HISTORIC_PRIORS) {
                      //Update forecast models
@@ -711,28 +766,48 @@ public class ImpressionEstimatorTest {
                   sb.append(((impressionEstimatorIdx == SolverType.CP) ? "CP" : "MIP"));
                   debug(sb.toString());
 
+                  
+                  
+                  //Update performance metrics
+                  updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedOrdering, trueOrdering);
+                  //outputPerformanceMetrics();
+
+                  
 
                   //Save all relevant data to file
                   sb = new StringBuffer();
+                  
+                  //Go through all participating agents, (each "opponent" we want to make a prediction for)
                   for (int predictingAgentIdx = 0; predictingAgentIdx < numParticipants; predictingAgentIdx++) {
-                     int ourBidRank = -1;
+
+                	  //get the actual bid rank of the opponent, as well as the rank of ourselves.
+                	  int ourBidRank = -1;
                      int oppBidRank = -1;
-                     for (int i = 0; i < ordering.length; i++) {
-                        if (ordering[i] == ourAgentIdx) {
+                     int predictedOppBidRank = -1;
+                     for (int i = 0; i < trueOrdering.length; i++) {
+                        if (trueOrdering[i] == ourAgentIdx) {
                            ourBidRank = i;
                         }
-                        if (ordering[i] == predictingAgentIdx) {
+                        if (trueOrdering[i] == predictingAgentIdx) {
                            oppBidRank = i;
                         }
+
+                        //Also get the predicted bid rank of the given opponent.
+                        if (predictedOrdering[i] == predictingAgentIdx) {
+                        	predictedOppBidRank = i;
+                        }
+
                      }
 
 
                      sb.append(model.getName() + ",");
                      sb.append(gameIdx + ",");
                      sb.append(d + ",");
-                     sb.append(queryIdx + ",");
-                     sb.append(ourBidRank + ",");
-                     sb.append(oppBidRank + ",");
+                     sb.append(queryIdx + ","); 
+                     sb.append(ourAgentName + ","); //our agent name
+                     sb.append(ourBidRank + ","); //our bid rank (i.e. our initial position)
+                     sb.append(oppBidRank + ","); //opponent bid rank  (i.e. opponent initial position)
+                     sb.append(predictedOppBidRank + ","); //predicted opponent bid rank (i.e. predicted opponent initial position)
                      sb.append(reducedAvgPos[ourAgentIdx] + ","); //our avgPos
                      sb.append(reducedAvgPos[predictingAgentIdx] + ","); //opponent avgPos
                      sb.append(reducedSampledAvgPos[predictingAgentIdx] + ","); //opponent sampleAvgPos
@@ -1316,6 +1391,48 @@ public class ImpressionEstimatorTest {
    }
 
 
+   
+   
+   
+   
+   
+   
+   
+   private int getApproximateNumSearchersInQuery(GameStatus status, int d, Query q) {
+	      int imps = 0;
+
+	      if (PERFECT_IMPS) {
+	         for (Product product : status.getRetailCatalog()) {
+	            HashMap<UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
+	            if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+	               imps += userDist.get(UserState.F0);
+	               imps += (1.25 / 3.0) * userDist.get(UserState.IS);
+	            } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+	               if (product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
+	                  imps += (1.25 / 2.0) * userDist.get(UserState.F1);
+	                  imps += (1.25 / 6.0) * userDist.get(UserState.IS);
+	               }
+	            } else {
+	               if (product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
+	                  imps += userDist.get(UserState.F2);
+	                  imps += (1.25 / 3.0) * userDist.get(UserState.IS);
+	               }
+	            }
+	         }
+	      } else {
+	         if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+	            imps = MAX_F0_IMPS;
+	         } else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+	            imps = MAX_F1_IMPS;
+	         } else {
+	            imps = MAX_F2_IMPS;
+	         }
+	      }
+	     return imps;
+   }
+   
+   
+   
    private int getAgentImpressionsUpperBound(GameStatus status, int d, Query q, int[] impressions, int[] order) {
       int imps = 0;
 
@@ -1512,8 +1629,10 @@ public class ImpressionEstimatorTest {
          sb.append("game.idx,");
          sb.append("day.idx,");
          sb.append("query.idx,");
+         sb.append("our.agent,");
          sb.append("our.bid.rank,");
          sb.append("opp.bid.rank,");
+         sb.append("predicted.opp.bid.rank,");
          sb.append("our.avg.pos,");
          sb.append("opp.avg.pos,");
          sb.append("opp.sample.avg.pos,");
@@ -1587,6 +1706,7 @@ public class ImpressionEstimatorTest {
       debug("   (is correct ordering): " + isCorrectOrdering);
       debug("");
 
+      //if (!isCorrectOrdering) System.exit(0);
 
    }
 
@@ -2028,6 +2148,41 @@ public class ImpressionEstimatorTest {
    }
 
 
+   public static void runAllTests() throws IOException, ParseException {
+	   boolean[] trueArr = {true};
+	   boolean[] falseArr = {false};
+      boolean[] trueOrFalseArr = {false, true};
+      double[] noiseFactorArr = {0, .5, 1, 1.5};
+      //SolverType[] solverArr = SolverType.values();
+      SolverType[] solverArr = {SolverType.CP, SolverType.MIP, SolverType.MIP_LP, SolverType.LDSMIP}; //, SolverType.MULTI_MIP};
+      for (boolean orderingKnown : trueOrFalseArr) {
+         for (boolean sampledAvgPositions : falseArr) {
+            for (boolean perfectImps : trueArr) {
+               for (boolean useWaterfallPriors : trueArr) {
+            	   for (double noiseFactor : noiseFactorArr) {
+            		   //If we're not using priors, don't iterate through a bunch of noise factors (just use the first)
+            		   if (!useWaterfallPriors && noiseFactor != noiseFactorArr[0]) continue;
+            	   
+                  ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest(sampledAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, orderingKnown);
+                  double start;
+                  double stop;
+                  double secondsElapsed;
+
+                  for (SolverType solverType : solverArr) {
+                     System.out.println("SUMMARY: ---------------");
+                     System.out.println("SUMMARY: STARTING TEST: sampled=" + sampledAvgPositions + ", perfectImps=" + perfectImps + ", usePrior=" + useWaterfallPriors + ", noiseFactor=" + noiseFactor + ", solver=" + solverType);
+                     start = System.currentTimeMillis();
+                     evaluator.impressionEstimatorPredictionChallenge(solverType);
+                     stop = System.currentTimeMillis();
+                     secondsElapsed = (stop - start) / 1000.0;
+                     System.out.println("SUMMARY: Seconds elapsed: " + secondsElapsed);
+                  }
+            	   }
+               }
+            }
+         }
+      }
+   }
 //   public static void runAllTests() throws IOException, ParseException {
 //      boolean[] trueOrFalseArr = {false, true};
 //      for (boolean orderingKnown : trueOrFalseArr) {
@@ -2057,10 +2212,13 @@ public class ImpressionEstimatorTest {
 
    public static void main(String[] args) throws IOException, ParseException {
 
+//     evaluator.logGameData();
 
+	   
 //	   ImpressionEstimatorTest.runAllTests();
-      boolean ORDERING_KNOWN = true;
-      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
+	   
+	   
+      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();      
       double start;
       double stop;
       double secondsElapsed;
@@ -2068,13 +2226,15 @@ public class ImpressionEstimatorTest {
       start = System.currentTimeMillis();
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP, ORDERING_KNOWN);
-      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN);
+//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MULTI_MIP, ORDERING_KNOWN);
+      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
 //      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
 //      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
       stop = System.currentTimeMillis();
       secondsElapsed = (stop - start) / 1000.0;
       System.out.println("SECONDS ELAPSED: " + secondsElapsed);
 
+	   
 
 //      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
 //      double start;

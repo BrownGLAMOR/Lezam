@@ -21,9 +21,9 @@ public class LDSearchIESmart extends LDSearchSmart {
 	@Override
 	protected boolean evalPerm(int[] perm) {
 		
-		System.out.println("Evaluating order: "+Arrays.toString(perm));
+		//System.out.println("Evaluating order: "+Arrays.toString(perm));
 		IEResult best = _ie.search(perm);
-		System.out.println("Result: " + best);
+		//System.out.println("Result: " + best);
 		
 		if (_ie.getObjectiveGoal() == AbstractImpressionEstimator.ObjectiveGoal.MINIMIZE) {
 			if(best != null && (_best == null || best.getObj() < _best.getObj())){

@@ -24,12 +24,15 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    private double[] _agentImpressionDistributionMean;
    private double[] _agentImpressionDistributionStdev;
 
-   boolean INTEGER_PROGRAM = true;
+   boolean INTEGER_PROGRAM;
    boolean USE_EPSILON = false;
    int NUM_SAMPLES = 10;
    boolean USE_RANKING_CONSTRAINTS;
+   boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
    
-   public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints) {
+   public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions) {
+	   MULTIPLE_SOLUTIONS = multipleSolutions;
+	   INTEGER_PROGRAM = integerProgram;
 	   USE_RANKING_CONSTRAINTS = useRankingConstraints;
 	   _instance = inst;
       _advertisers = inst.getNumAdvetisers();
@@ -96,21 +99,37 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       //Get mu_a values, given impressions
       WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
                                           _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
-                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS);
+                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS);
 
       WaterfallILP.WaterfallResult result = ilp.solve();
       double[][] I_a_s = result.getI_a_s();
 
+      //relativeRanking[i]: the agent in initial position i had index relativeRanking[i]
+      int[] relativeRanking = result.getOrdering();
+
       //Convert this into the IEResult that Carleton's QueryAnalyzer likes.
-      int obj = 0;
+      double obj = result.getTrueObjectiveVal();
       int[] impsPerAgent = getImpsPerAgent(I_a_s);
       int[] impsPerSlot = getImpsPerSlot(I_a_s);
 
 //		System.out.println("agents=" + _advertisers + "\tslots=" + _slots + "\tI_a_s size=" + I_a_s.length + " " + I_a_s[0].length);
       //TODO: do we have to undo the ordering?
       int[] unorderedImpsPerAgent = unorder(impsPerAgent, order);
+      
+      //TODO: WHY IS ORDER CALLED??? 
+      //This is pretty confusing. When impsPerAgent is ordered, the impressions each agent saw are shuffled.
+      //The end result has each index corresponding to an agent.
+      //However, the result.getOrdering() does not have its slots corresponding to agent indices.
+      //So calling unorder doesn't work.
+      //But somehow, calling order() works?? (at least it seems to be empirically)
+      //Confusing.
+      //FIXME: This is probably a dormant bug that will break things if the LDS is used with the 
+      //unranked version of the problem (which we never do). (verify?) [yes, it does.]
+      int[] unorderedRelativeRanking = order(relativeRanking, order); 
 
-      return new IEResult(obj, unorderedImpsPerAgent, order, impsPerSlot);
+      System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
+      
+      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot);
    }
 
 
@@ -214,7 +233,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
     */
    public static void main(String[] args) {
 
-//		EricImpressionEstimator.testOrdering();
+		EricImpressionEstimator.testOrdering();
 
       //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
 
@@ -269,7 +288,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 //			System.out.println("Eric Instance:\n" + ericInst);
 
          ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
-         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false);
+         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          int[] cOrder = QAInstance.getAvgPosOrder(cPos);

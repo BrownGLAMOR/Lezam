@@ -24,7 +24,7 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 		IEResult bestSol;
 		int numActualAgents = inst.getNumAdvetisers(); //regardless of any padding
 		
-		System.out.println("avgPos=" + Arrays.toString(avgPos) + ", avgPosOrder=" + Arrays.toString(avgPosOrder));
+		//System.out.println("avgPos=" + Arrays.toString(avgPos) + ", avgPosOrder=" + Arrays.toString(avgPosOrder));
 		if(inst.getImpressions() > 0) {
 			if(avgPosOrder.length > 0) {
 				LDSearchIESmart smartIESearcher = new LDSearchIESmart(NUM_ITERATIONS_2, ie);

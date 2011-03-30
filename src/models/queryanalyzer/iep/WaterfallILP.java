@@ -2,6 +2,10 @@ package models.queryanalyzer.iep;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.PriorityQueue;
+
+import models.queryanalyzer.search.LDSPerm;
 
 import se.sics.tasim.is.AgentInfo;
 import ilog.concert.IloException;
@@ -11,6 +15,7 @@ import ilog.concert.IloNumVar;
 import ilog.concert.IloIntVar;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.IntParam;
+import ilog.cplex.IloCplex.UnknownObjectException;
 
 
 
@@ -48,14 +53,14 @@ public class WaterfallILP {
 
 	//************************************ CONFIG ************************************
 	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES;
-	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
+	private boolean RETURN_MULTIPLE_SOLUTIONS = true;
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
-	private double TIMEOUT_IN_SECONDS = 30;
-	private boolean SUPPRESS_OUTPUT = true;
+	private double TIMEOUT_IN_SECONDS = 15;
+	private boolean SUPPRESS_OUTPUT = false;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
-	private boolean USE_RANKING_CONSTRAINTS;
+	private boolean USE_RANKING_CONSTRAINTS; //If this is true, we don't actually know the rankings of agents, so we'll have to add constraints. (If false, agent in element i has the ith highest rank)
 	private boolean USE_BUDGET_CONSTRAINTS = false; //If someone didn't hit budget, nobody else can have more total imps than that person did.
 	
 	//************************************ FIELD DECLARATIONS ************************************
@@ -92,7 +97,26 @@ public class WaterfallILP {
 	double[] knownI_aDistributionMean; 
 	double[] knownI_aDistributionStdev;
 	boolean[] isKnownI_aDistributionMean;
-
+	
+	//If minimizing impression error, this is the maximum number of standard deviations away
+	//that the predicted number of agent impressions can be from the mean of the prior.
+	//(Since our impression predictions won't necessarily be good, it's probably a good idea 
+	// to make this a high value)
+	double MAX_ERROR = 100000; 
+	
+	
+	//If we are returning multiple solutions and then evaluating by a separate objective, these
+	//parameters determine the size of the solution pool and how optimal a solution has to be to 
+	//remain in the pool.
+	//(Actually, for now we won't put any restrictions on optimality. We have two options here:
+	//  1. Only consider solutions within X of optimal, and get N diverse solutions from this pool.
+	//  2. Get the N most optimal solutions
+	//Right now we are taking approach (2).
+	int SOLUTION_POOL_SIZE = 100; //When returning multiple solutions, this is the maximum number that can be returned
+	int POPULATE_LIM = 1000; //Number of solutions to populate (some of which may be replaced due to a smaller solution pool size)
+	int SOLUTION_POOL_INTENSITY = 4; //1-4, 4 being slowest but most exhaustive
+	
+	
 	//************************************ CONSTRUCTORS ************************************
 
 
@@ -111,8 +135,9 @@ public class WaterfallILP {
 			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
-			boolean useRankingConstraints) {
+			boolean useRankingConstraints, boolean multipleSolutions) {
 		
+		this.RETURN_MULTIPLE_SOLUTIONS = multipleSolutions;
 		this.USE_RANKING_CONSTRAINTS = useRankingConstraints;
 		this.INTEGER_PROGRAM = integerProgram;
 		this.USE_EPSILON = useEpsilon;
@@ -202,10 +227,11 @@ public class WaterfallILP {
 			boolean integerProgram, boolean useEpsilon, 
 			double[] knownSampledMu_a, int numSamples, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
-			boolean useRankingConstraints) {
+			boolean useRankingConstraints, boolean multipleSolutions) {
 		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget,
 				numSlots, numPromotedSlots, integerProgram, useEpsilon, maxImpsPerAgent,
-				knownI_aDistributionMean, knownI_aDistributionStdev, useRankingConstraints);
+				knownI_aDistributionMean, knownI_aDistributionStdev, useRankingConstraints, 
+				multipleSolutions);
 		this.knownSampledMu_a = knownSampledMu_a;
 		this.isKnownSampledMu_a = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
@@ -240,10 +266,8 @@ public class WaterfallILP {
 		sb1.append("I_aDistMean="+Arrays.toString(knownI_aDistributionMean) +", I_aDistStdev=" + Arrays.toString(knownI_aDistributionStdev));
 		System.out.println(sb1);
 
+		WaterfallResult result = null; //The solution that will ultimately be returned.
 
-		double objectiveVal = 0;
-		double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
-		double[] U_kDouble = new double[numSamples];
 
 		try {
 			IloCplex cplex = new IloCplex();
@@ -252,9 +276,18 @@ public class WaterfallILP {
 			if (SUPPRESS_OUTPUT) cplex.setOut(null);
 			cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
 			if (RETURN_MULTIPLE_SOLUTIONS) {
-				cplex.setParam(IntParam.SolnPoolIntensity, 4);
-				cplex.setParam(IntParam.SolnPoolReplace, 2);
-				cplex.setParam(IntParam.SolnPoolCapacity, 1000000);
+			      //Setup solution pool to enumerate all solutions
+			     //cplex.setParam(IloCplex.DoubleParam.SolnPoolAGap, 100); //Set the absolute gap in objective value for solutions in pool
+			      cplex.setParam(IloCplex.IntParam.SolnPoolIntensity, SOLUTION_POOL_INTENSITY); //This will enumerate all solutions
+			      cplex.setParam(IloCplex.IntParam.SolnPoolReplace, 1); //How to replace when pool capacity is reached. 1=Keep best sols, 2=diversify sols, 0=fifo
+			      cplex.setParam(IloCplex.IntParam.SolnPoolCapacity, SOLUTION_POOL_SIZE);  //Set size of solution pool
+			      cplex.setParam(IloCplex.IntParam.PopulateLim, POPULATE_LIM); //Set number of solutions to get in each populate step
+			     // cplex.setParam(IloCplex.DoubleParam.WorkMem, 1000); //Give it 1GB of RAM
+								
+				
+				//cplex.setParam(IntParam.SolnPoolIntensity, 4);
+				//cplex.setParam(IntParam.SolnPoolReplace, 2);
+				//cplex.setParam(IntParam.SolnPoolCapacity, maxSols);
 			}
 
 
@@ -300,7 +333,8 @@ public class WaterfallILP {
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SAMPLE_MU_DIFF) {
 				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, I_a);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
-				addObjective_minimizeImpressionPriorError(cplex, I_a);
+				if (!USE_RANKING_CONSTRAINTS) addObjective_minimizeImpressionPriorError(cplex, I_a);
+				else addObjective_minimizeImpressionPriorErrorRankingUnknown(cplex, I_a, r_a_agent);
 			}
 
 
@@ -383,98 +417,19 @@ public class WaterfallILP {
 			 */
 //			System.out.println("Constraints added.");
 			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
-			if ( cplex.solve() ) {
-				cplex.output().println("Solution status = " + cplex.getStatus());
-				cplex.output().println("Solution value = " + cplex.getObjValue());
-				cplex.output().println("Objective function = " + cplex.getObjective());
+			
+			
+			if (!RETURN_MULTIPLE_SOLUTIONS) result = getSingleSolutionResult(cplex, I_a_s, I_a, U_k, r_a_agent);
+			else result = getMultiSolutionResult(cplex, I_a_s, I_a, U_k, r_a_agent);
 
-				objectiveVal = cplex.getObjValue();
-				
-				//Create double array to return
-				for (int a=0; a<numAgents; a++) {
-					for (int s=0; s<=a; s++) {
-						I_a_sDouble[a][s] = cplex.getValue(I_a_s[a][s]);
-					}
-				}
-
-				if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
-					for (int k=0; k<numSamples; k++) {
-						U_kDouble[k] = cplex.getValue(U_k[k]);
-					}
-				}
-				
-				if (USE_RANKING_CONSTRAINTS) {
-					//Re-arrange I_a_s double to be in the proper order
-					double[][] r_a_agentDouble = new double[numAgents][];
-					for (int a=0; a<numAgents; a++) r_a_agentDouble[a] = cplex.getValues(r_a_agent[a]);
-					
-					double[][] I_a_sDoubleReordered = new double[numAgents][];
-					for (int agent=0; agent<numAgents; agent++) {
-						for (int a=0; a<numAgents; a++) {
-							//If this agent was in initial position a
-							if (Math.round(r_a_agentDouble[a][agent]) == 1) {
-								I_a_sDoubleReordered[agent] = I_a_sDouble[a];
-							}
-						}
-					}
-					I_a_sDouble = I_a_sDoubleReordered;
-				}
-
-				
-//				System.out.println("BEST SOLUTION:\n" + arrayString(I_a_sDouble));
-
-				//Get total imps per agent
-				StringBuffer sb = new StringBuffer();
-				sb.append("Total imps per agent: ");
-				for (int a=0; a<numAgents;a++) {
-					sb.append(cplex.getValue(I_a[a]) + " ");
-				}
-//				System.out.println(sb);
-
-			} else {
-				System.out.println("Solve returned false");
-			}
-
-
-
-
-
-//			/**
-//			* Find multiple solutions
-//			*/
-//			int lastNumSols = 0;
-//			int numSols = 50;
-//			while(cplex.getSolnPoolNsolns() < numSols) {
-//			cplex.populate();
-//			if(lastNumSols == cplex.getSolnPoolNsolns()) {
-//			break;
-//			}
-//			lastNumSols = cplex.getSolnPoolNsolns();
-//			}
-
-//			double[][][] solution = new double[cplex.getSolnPoolNsolns()][][];
-//			for(int i = 0; i < solution.length; i++) {
-//			solution[i] = new double[numAgents][numAgents];
-//			}
-//			for(int i = 0; i < cplex.getSolnPoolNsolns(); i++) {
-//			System.out.println("Solution " + i + " value  = " + cplex.getObjValue(i));
-//			//Create double array to return
-//			for (int a=0; a<numAgents; a++) {
-//			for (int s=0; s<=a; s++) {
-//			solution[i][a][s] = cplex.getValue(I_a_s[a][s],i);
-//			}
-//			}
-//			}
-//			System.out.println("HERE ARE ALL SOLUTIONS:\n" + arrayString(solution));
-//			//----------------------
-
+			
 			cplex.end();
 		}
 		catch (IloException e) {
 			System.err.println("Concert exception '" + e + "' caught");
 		}
 
-		return new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble);
+		return result;
 	}
 
 
@@ -487,6 +442,269 @@ public class WaterfallILP {
 
 
 
+
+
+	private WaterfallResult getMultiSolutionResult(IloCplex cplex,
+			IloNumVar[][] I_a_s, IloNumVar[] I_a, IloNumVar[] U_k,
+			IloIntVar[][] r_a_agent) throws IloException {
+
+		//The current solution will be kept here
+//		double objectiveVal = 0;
+//		double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
+//		double[] U_kDouble = new double[numSamples];
+		
+		//The best solution will be kept here
+		double bestObjectiveVal = Double.POSITIVE_INFINITY;
+		double[][] bestI_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
+		double[] bestU_kDouble = new double[numSamples];
+
+		//Call Populate() to get as many solutions as possible.
+		int lastNumSols = 0;
+		while(cplex.getSolnPoolNsolns() < SOLUTION_POOL_SIZE) {
+			cplex.populate();
+			if(lastNumSols == cplex.getSolnPoolNsolns()) {
+				break;
+			}
+			lastNumSols = cplex.getSolnPoolNsolns();
+		}
+
+		//TODO: First order solutions by approximated objective value
+		//Then, instead of computing objective value for EVERY solution in the pool,
+		//Skip solutions that are nearly identical (only looking at the dupe with the highest approximated objective).
+		//[For now, we'll just compute the true objective value for every solution in the pool.]
+		
+		//For debugging
+		PriorityQueue<WaterfallResult> allResults = new PriorityQueue<WaterfallResult>();
+		
+		//Compute true objective value of each solution
+		for (int i=0; i<cplex.getSolnPoolNsolns(); i++) {			
+			double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
+			double[] U_kDouble = new double[numSamples];
+			
+			//Get I_a_s values for this solution
+			for (int a=0; a<numAgents; a++) {
+				for (int s=0; s<=a; s++) {
+					I_a_sDouble[a][s] = cplex.getValue(I_a_s[a][s],i);
+				}
+			}
+			
+			//Compute true objective value of this solution
+			//FIXME: For unranked problem, we need to sort these I_a_s values first
+			double trueObjective = getTrueObjectiveValue(I_a_sDouble);
+			
+			//If this is the best solution so far, save it.
+			//NOTE: "Best" means smallest objective
+			//FIXME: Make sure all our objective functions adhere to this. (They should all be minimization problems)
+			if (trueObjective < bestObjectiveVal) {
+				bestObjectiveVal = trueObjective;
+				bestI_a_sDouble = I_a_sDouble;
+				bestU_kDouble = U_kDouble;
+			}
+			
+			double objectiveVal = cplex.getObjValue(i);
+			allResults.add(new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble, trueObjective));
+			//System.out.println(i + ": I_a_s=" + arrayString(I_a_sDouble) + ", value=" + objectiveVal + ", trueValue=" + trueObjective);
+		}
+		
+		
+		//Output all solutions in order
+		while(!allResults.isEmpty()) {
+			System.out.println(allResults.poll());
+		}
+		//TODO: Output #sols with better approximateVals than the trueBestSol
+		//TODO: Output #sols with better trueVals than the approximateBestSol
+		//TODO: Output approximateBestSolsTrueSol/trueBestSolsTrueSol //(how far off optimal would we have been?)
+		//TODO: Output trueBestSolsApproxSol/approximateBestSolsApproxSol //(how far away was the true opt from also being the approximate opt?)
+		
+		
+//		//Get a set of solutions to evaluate (potentially pruning near-duplicates)
+//		double[][][] solution = new double[cplex.getSolnPoolNsolns()][][];
+//		for(int i = 0; i < solution.length; i++) {
+//			solution[i] = new double[numAgents][numAgents];
+//		}
+//		for(int i = 0; i < cplex.getSolnPoolNsolns(); i++) {
+//			System.out.println("Solution " + i + " value  = " + cplex.getObjValue(i));
+//			//Create double array to return
+//			for (int a=0; a<numAgents; a++) {
+//				for (int s=0; s<=a; s++) {
+//					solution[i][a][s] = cplex.getValue(I_a_s[a][s],i);
+//				}
+//			}
+//		}
+//		System.out.println("HERE ARE ALL SOLUTIONS:\n" + arrayString(solution));
+//		//----------------------
+		
+		return new WaterfallResult(bestObjectiveVal, bestI_a_sDouble, bestU_kDouble);
+	}
+
+
+	/**
+	 * Get true objective value, based on how close impressions for each advertiser came to their priors.
+	 * ASSUMING I_a_s is ordered in the same way as impression models!
+	 * @param I_a_s
+	 * @return
+	 */
+	private double getTrueObjectiveValue(double[][] I_a_s) {
+		//Get total impressions for each agent
+		int numAgents = I_a_s.length;
+		double[] I_a = new double[numAgents];
+		for (int a=0; a<numAgents; a++) {
+			for (int s=0; s<I_a_s[a].length; s++) {
+				I_a[a] += I_a_s[a][s];
+			}
+		}
+
+		//Get order (for now we'll assume the proper order is given)
+		//FIXME: Can't assume this in unranked problem
+		int[] order = new int[numAgents];
+		for (int a=0; a<numAgents; a++) order[a] = a;
+		
+		int numSlotsFilled = numAgents; //TODO: Get rid of this altogether.
+		
+		double obj = getImpressionModelObjective(I_a, order, numSlotsFilled);
+		
+		//System.out.println("I_a=" + Arrays.toString(I_a) + ", obj=" + obj);
+		return obj;
+	}
+
+
+
+	private double getImpressionModelObjective(double[] agentImpr, int[] order, int numSlotsFilled) {
+		boolean LOG_GAUSSIAN_PDF = true;
+		
+		double obj;
+		if (LOG_GAUSSIAN_PDF) {
+			obj = 0.0;
+		} else {
+			obj = 1.0;
+		}
+		numSlotsFilled = Math.min(numSlotsFilled, agentImpr.length);
+		for (int i = 0; i < numSlotsFilled; i++) {
+			int currAgent = order[i];
+			double mean = knownI_aDistributionMean[currAgent];
+			double stdDev = knownI_aDistributionStdev[currAgent];
+			if (mean != -1 && stdDev != -1) {
+				double imps = agentImpr[currAgent];
+				double prob;
+				if (LOG_GAUSSIAN_PDF) {
+					prob = logGaussianPDF(imps, mean, stdDev);
+					obj += prob;
+				} else {
+					prob = gaussianPDF(imps, mean, stdDev);
+					obj *= prob;
+				}
+				//System.out.println("currAgent=" + currAgent + ", gaussianPDF(imps=" + imps +", mean="+ mean + ", stdDev=" + stdDev + ") = " + prob);
+			}
+		}
+
+//		System.out.println(obj);
+
+		if (LOG_GAUSSIAN_PDF) {
+			return obj;
+		} else {
+			if (obj == 1.0) {
+				//This means we didn't place anyone with a prediction yet
+				//so return a bad objective
+				return 1.0;
+			} else {
+				return (1.0 - obj);
+			}
+		}
+	}
+
+	private double logGaussianPDF(double x, double mean, double sigma) {
+		double diff = x - mean;
+		double sigma2 = sigma * sigma;
+//		return (.5 * Math.log(2.0 * Math.PI * sigma2) + (diff * diff) / (2.0 * sigma2));
+		return (diff * diff) / (2.0 * sigma2);
+	}
+
+	private double gaussianPDF(double x, double mean, double sigma) {
+		double diff = x - mean;
+		double sigma2 = sigma * sigma;
+		return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
+	}
+
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	private WaterfallResult getSingleSolutionResult(IloCplex cplex, IloNumVar[][] I_a_s, IloNumVar[] I_a, IloNumVar[] U_k, IloIntVar[][] r_a_agent) throws UnknownObjectException, IloException {
+		double objectiveVal = Double.POSITIVE_INFINITY; //Initially give an arbitrarily high (i.e. bad) objective value
+		double[][] I_a_sDouble = new double[numAgents][Math.max(numAgents, numSlots)]; //[numAgents][numSlots]?
+		double[] U_kDouble = new double[numSamples];
+		int[][] r_a_agentInt = new int[numAgents][numAgents];
+		
+		if ( cplex.solve() ) {
+			cplex.output().println("Solution status = " + cplex.getStatus());
+			cplex.output().println("Solution value = " + cplex.getObjValue());
+			cplex.output().println("Objective function = " + cplex.getObjective());
+
+			objectiveVal = cplex.getObjValue();
+			
+			//Create double array to return
+			for (int a=0; a<numAgents; a++) {
+				for (int s=0; s<=a; s++) {
+					I_a_sDouble[a][s] = cplex.getValue(I_a_s[a][s]);
+				}
+			}
+			
+
+			if (USE_SAMPLING_CONSTRAINTS && samplingAnyAveragePositions) {
+				for (int k=0; k<numSamples; k++) {
+					U_kDouble[k] = cplex.getValue(U_k[k]);
+				}
+			}
+			
+			if (USE_RANKING_CONSTRAINTS) {
+				//Re-arrange I_a_s double to be in the proper order
+				for (int a=0; a<numAgents; a++) {
+					for (int agent=0; agent<numAgents; agent++) {
+						double rVal = cplex.getValue(r_a_agent[a][agent]);
+						r_a_agentInt[a][agent] = (int) Math.round(rVal);
+					}
+				}
+								
+				double[][] I_a_sDoubleReordered = new double[numAgents][];
+				for (int agent=0; agent<numAgents; agent++) {
+					for (int a=0; a<numAgents; a++) {
+						//If this agent was in initial position a
+						if (r_a_agentInt[a][agent] == 1) {
+							I_a_sDoubleReordered[agent] = I_a_sDouble[a];
+						}
+					}
+				}
+				I_a_sDouble = I_a_sDoubleReordered;
+			}
+
+			
+//			System.out.println("BEST SOLUTION:\n" + arrayString(I_a_sDouble));
+
+			//Get total imps per agent
+			StringBuffer sb = new StringBuffer();
+			sb.append("Total imps per agent: ");
+			for (int a=0; a<numAgents;a++) {
+				sb.append(cplex.getValue(I_a[a]) + " ");
+			}
+//			System.out.println(sb);
+
+		} else {
+			System.out.println("Solve returned false");
+		}
+		
+		if (USE_RANKING_CONSTRAINTS) return new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble, r_a_agentInt);
+		else return new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble);
+		
+	}
 
 
 	//************************************ CREATE DECISION VARIABLES ************************************
@@ -814,8 +1032,8 @@ public class WaterfallILP {
 	 */
 	private void addObjective_minimizeImpressionPriorError(IloCplex cplex, IloNumVar[] I_a) throws IloException {
 		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
-		double maxError = 5; //Place some limit on how many standard deviations away we can be?
-		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, maxError);				
+		
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, MAX_ERROR);				
 		
 		// This constraint ensures that any difference between the waterfall's predicted impressions and 
 		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
@@ -832,8 +1050,77 @@ public class WaterfallILP {
 	}
 	
 	
+	
+	private void addObjective_minimizeImpressionPriorErrorRankingUnknown(IloCplex cplex, IloNumVar[] I_a, IloIntVar[][] r_a_agent) throws IloException {
+		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
+		boolean USE_SIMPLIFIED_ERROR = true; //ignore standard deviation. TODO: Implement true objective
+		
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, MAX_ERROR);				
 
+		
+		// This constraint ensures that any difference between the waterfall's predicted impressions and 
+		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			//Only consider this agent's impressions model if we don't know its exact impressions.
+			if (!isKnownI_a[a]) {
+				
+				
+				if (USE_SIMPLIFIED_ERROR) {
+					//In the simplified version, we don't consider that each agent has a different I_aStdev prior. 
+					//This reduces the number of constraints we need to add to the problem.
+					IloLinearNumExpr I_aMean = cplex.linearNumExpr();
+					for (int agent=0; agent<numAgents; agent++) {
+						if (isKnownI_aDistributionMean[agent]) I_aMean.addTerm(knownI_aDistributionMean[agent], r_a_agent[a][agent]);
+					}
+					double I_aStdev = 1; //TODO: Make this more complex when using non-simplified error. (Note we'll have to add more constraints, otherwise we'll be multiplying two decision variables)
+					
+					cplex.addLe(I_a[a], cplex.sum( I_aMean , cplex.prod(I_aStdev, I_aError[a])  )  );
+					cplex.addGe(I_a[a], cplex.diff( I_aMean , cplex.prod(I_aStdev, I_aError[a])  )  );
+					relevantErrors.addTerm(1, I_aError[a]);
+				}
+				
+				
+				
+			}
+		}
+		cplex.addMinimize(relevantErrors);
+	}
 
+	
+//	/**
+//	 * This constraint ensures that if we know any agents' total impressions, the total 
+//	 * impressions CPLEX decides on will match this value. Ranking is unknown.
+//	 * @param cplex
+//	 * @param I_a
+//	 * @throws IloException
+//	 */
+//	private void addConstraint_totalImpressionsKnownRankingUnknown(IloCplex cplex, IloNumVar[] I_a, IloIntVar[][] r_a_agent) throws IloException {
+//		int LARGE_CONSTANT = maxImpsPerAgent + 1;
+//		for (int agent=0; agent<numAgents; agent++) { 
+//			if (isKnownI_a[agent]) {
+//				for (int a=0; a<numAgents; a++) {
+//					IloLinearNumExpr rhs1 = cplex.linearNumExpr();
+//					rhs1.setConstant(knownI_a[agent] - LARGE_CONSTANT);
+//					rhs1.addTerm(LARGE_CONSTANT, r_a_agent[a][agent]);
+//
+//					IloLinearNumExpr rhs2 = cplex.linearNumExpr();
+//					rhs2.setConstant(knownI_a[agent] + LARGE_CONSTANT);
+//					rhs2.addTerm(-LARGE_CONSTANT, r_a_agent[a][agent]);
+//
+//					if (USE_EPSILON) {
+//						cplex.addGe(I_a[a], cplex.sum(rhs1, -epsilon));
+//						cplex.addLe(I_a[a], cplex.sum(rhs2, epsilon));
+//					} else {
+//						cplex.addGe(I_a[a], rhs1);
+//						cplex.addLe(I_a[a], rhs2);
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	
 	
 	
 	
@@ -1530,19 +1817,62 @@ public class WaterfallILP {
 
 
 	//************************************ RESULT DATA STRUCTURE ************************************
-	public class WaterfallResult {
+	public class WaterfallResult implements Comparable<WaterfallResult>{
+		private double trueObjectiveVal; //for when objective is recomputed after MIP completes.
 		private final double objectiveVal;
 		private final double[][] I_a_s;
 		private final double[] U_k;
+		private int[] ordering; //ordering[a] specifies the index of the agent in the ath position
 
+		public WaterfallResult(double objectiveVal, double[][] I_a_s, double[] U_k, double trueObjectiveVal, int[][] r_a_agent) {
+			this(objectiveVal, I_a_s, U_k, r_a_agent);
+			this.trueObjectiveVal = trueObjectiveVal;
+		}
+
+		public WaterfallResult(double objectiveVal, double[][] I_a_s, double[] U_k, double trueObjectiveVal) {
+			this(objectiveVal, I_a_s, U_k);
+			this.trueObjectiveVal = trueObjectiveVal;
+		}
+
+		public WaterfallResult(double objectiveVal, double[][] I_a_s, double[] U_k, int[][] r_a_agent) {
+			this(objectiveVal, I_a_s, U_k);
+
+			this.ordering = new int[r_a_agent.length];
+			for (int a=0; a<r_a_agent.length; a++) {
+				for (int agent=0; agent<r_a_agent[a].length; agent++) {
+					if (r_a_agent[a][agent] == 1) ordering[a] = agent;
+				}
+			}
+		}
+		
 		public WaterfallResult(double objectiveVal, double[][] I_a_s, double[] U_k) {
 			this.objectiveVal = objectiveVal;
+			this.trueObjectiveVal = objectiveVal; //default true objective value
 			this.I_a_s = I_a_s;
 			this.U_k = U_k;
+			
+			//Default ordering
+			this.ordering = new int[I_a_s.length];
+			for (int a=0; a<I_a_s.length; a++) {
+				ordering[a] = a;
+			}			
 		}
 
 		public double[][] getI_a_s() {return I_a_s;}
 		public double[] getU_k() {return U_k;}
+		public double getObjectiveVal() {return objectiveVal;}
+		public double getTrueObjectiveVal() {return trueObjectiveVal;}
+		public int[] getOrdering() {return ordering;}
+
+		public int compareTo(WaterfallResult o) {
+			if (o.trueObjectiveVal < trueObjectiveVal) return 1;
+			if (o.trueObjectiveVal > trueObjectiveVal) return -1;
+			return 0;
+		}
+		
+		public String toString() {
+			return "trueObj=" + trueObjectiveVal + ", approxObj=" + objectiveVal + ", I_a_s=" + arrayString(I_a_s);
+		}
 	}
 
 
@@ -1578,27 +1908,27 @@ public class WaterfallILP {
 		
 		
 		
-		//  double[] I_a = {742, 742, 556, 589, 222, 520, 186, 153};
-		double[] I_a = {75, -1};
-		double[] mu_a = {1, 1.75};
-//		double[] I_a = {589, -1, -1, -1, -1, -1, -1, -1};
-//		double[] mu_a = {3.94397284, 1, 4.34807692, 3, 5, 4.17741935, 5, 2};
-
-		//double[] mu_a = {1.0, 2.0, 3.0, 4.0, 5.0, 5.0, 5.0, 5.0};
-		double[] I_aPromoted = {-1, -1};
-		boolean[] isKnownPromotionEligible = {false, false};
-		int[] hitBudget = {0, -1};
-		double[] knownSampledMu_a = {-1, -1};
+		double[] I_a = {10, -1, -1};
+		double[] mu_a = {1, 2, 2};
+//		double[] mu_a = {1, 3, 2};
+		
+		double[] I_aPromoted = {-1, -1, -1};
+		boolean[] isKnownPromotionEligible = {false, false, false};
+		int[] hitBudget = {-1, -1, -1};
+		double[] knownSampledMu_a = {-1, -1, -1};
 		int numSamples = 5;
-		double[] knownI_aDistributionMean = {-1, -1};
-		double[] knownI_aDistributionStdev = {-1, -1};
+		double[] knownI_aDistributionMean = {-1, 20, 10};
+		double[] knownI_aDistributionStdev = {-1, 1, 1};
+//		double[] knownI_aDistributionMean = {-1, -1, -1};
+//		double[] knownI_aDistributionStdev = {-1, -1, -1};
+		
 		int numSlots = 5;
 		int numPromotedSlots = 0;
 		boolean integerProgram = true;
 		boolean useEpsilon = false;
-		int maxImpsPerAgent = 10000;
-		boolean useRankingConstraints = false;
-		
+		int maxImpsPerAgent = 1000;
+		boolean useRankingConstraints = true;
+		boolean multipleSolutions = false;
 		
 		
 		
@@ -1611,13 +1941,16 @@ public class WaterfallILP {
 				I_a, mu_a, I_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
 				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
 				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev,
-				useRankingConstraints);
+				useRankingConstraints, multipleSolutions);
 
 		WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();
 		double[] U_k = result.getU_k();
+		int[] ordering = result.getOrdering();
 		System.out.println("I_a_s = " + arrayString(I_a_s));
 		System.out.println("U_k = " + Arrays.toString(U_k));
+		System.out.println("ordering = " + Arrays.toString(ordering));
+		System.out.println("objective = " + result.getObjectiveVal());
 		System.out.println("Done");
 
 

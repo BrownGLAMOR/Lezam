@@ -22,7 +22,7 @@ abstract class LDSearchSmart {
    }
 
    public void search(int[] startPerm, double[] avgPos) {
-	   System.out.println("Starting LDS Search. startPerm=" + Arrays.toString(startPerm) + ", avgPos=" + Arrays.toString(avgPos));
+	   //System.out.println("Starting LDS Search. startPerm=" + Arrays.toString(startPerm) + ", avgPos=" + Arrays.toString(avgPos));
       _best = null;
       _iterations = 0;
       int Indexs = startPerm.length;
@@ -31,11 +31,11 @@ abstract class LDSearchSmart {
 
       while (!_LDSQueue.isEmpty()) {
 
-    	  //DEBUG Print queue contents
-    	  LDSPerm[] qContents = new LDSPerm[_LDSQueue.size()]; 
-    	  _LDSQueue.toArray(qContents);
-    	  System.out.println("LDSQueue: " + Arrays.toString(qContents));
-    	  //END DEBUG
+//    	  //DEBUG Print queue contents
+//    	  LDSPerm[] qContents = new LDSPerm[_LDSQueue.size()]; 
+//    	  _LDSQueue.toArray(qContents);
+//    	  System.out.println("LDSQueue: " + Arrays.toString(qContents));
+//    	  //END DEBUG
     	  
          _iterations += 1;
          LDSPerm perm = _LDSQueue.poll();
