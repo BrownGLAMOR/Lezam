@@ -73,11 +73,12 @@ public class QAData {
       //--------------
 
 
-      return new QAInstance(_slots, numPromotedSlots, usedAgents,
-                            avgPos, dummySampledAvgPositions, agentIds, advIndex,
-                            usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
-                            true, promotionEligibiltyVerified,
-                            agentImpressionDistributionMean, agentImpressionDistributionStdev, true);
+//      return new QAInstance(_slots, numPromotedSlots, usedAgents,
+//                            avgPos, dummySampledAvgPositions, agentIds, advIndex,
+//                            usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
+//                            true, promotionEligibiltyVerified,
+//                            agentImpressionDistributionMean, agentImpressionDistributionStdev, true);
+      return null;
    }
 
    public String toString() {

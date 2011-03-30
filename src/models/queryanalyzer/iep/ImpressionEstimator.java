@@ -22,7 +22,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    private ObjFun objectiveFun = ObjFun.NONE;
 
-   private boolean EXACT_AVGPOS = false;
+   private boolean EXACT_AVGPOS;
    private boolean PAD_AGENTS = false;
    private boolean MIN_NONSAMP_IMPS = true; //minimize the impressions seen by agents not sampled
    private boolean BRANCH_AROUND_PRIOR = true;
@@ -76,6 +76,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
       _ourIndex = inst.getAgentIndex();
+      EXACT_AVGPOS = !inst.isSampled();
 
       //_trueAvgPos should contain exact average positions whenever possible.
       //If there is no exact average position, use sampled average position.
@@ -788,7 +789,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          if (mean != -1 && stdDev != -1) {
             double imps = agentImpr[currAgent];
             if (LOG_GAUSSIAN_PDF) {
-               double prob = logGaussianPDF(imps, mean, stdDev);
+               double prob = Math.log(gaussianPDF(imps, mean, stdDev));
                obj += prob;
             } else {
                double prob = gaussianPDF(imps, mean, stdDev);
@@ -800,25 +801,19 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
 //      System.out.println(obj);
 
-      if (LOG_GAUSSIAN_PDF) {
-         return obj;
+      if (obj == 1.0) {
+         //This means we didn't place anyone with a prediction yet
+         //so return a bad objective
+         return 1.0;
       } else {
-         if (obj == 1.0) {
-            //This means we didn't place anyone with a prediction yet
-            //so return a bad objective
-            return 1.0;
+         if (LOG_GAUSSIAN_PDF) {
+            return (1.0 - Math.exp(obj));
          } else {
             return (1.0 - obj);
          }
       }
    }
 
-   private double logGaussianPDF(double x, double mean, double sigma) {
-      double diff = x - mean;
-      double sigma2 = sigma * sigma;
-//      return (.5 * Math.log(2.0 * Math.PI * sigma2) + (diff * diff) / (2.0 * sigma2));
-      return (diff * diff) / (2.0 * sigma2);
-   }
 
    private double gaussianPDF(double x, double mean, double sigma) {
       double diff = x - mean;

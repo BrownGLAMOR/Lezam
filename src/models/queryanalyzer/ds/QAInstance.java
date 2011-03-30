@@ -18,7 +18,7 @@ public class QAInstance {
    private int _impressionsUB;
    private boolean _considerPaddingAgents;
    private boolean _promotionEligibilityVerified;
-	private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
+   private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
    private double[] _agentImpressionDistributionMean; //prior on agent impressions
    private double[] _agentImpressionDistributionStdev; //prior on agent impressions
    private boolean _isSampled;
@@ -28,7 +28,7 @@ public class QAInstance {
    public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
                      boolean hitOurBudget,
-                     double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled, 
+                     double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
                      int[] initialPosition) {
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
@@ -144,15 +144,19 @@ public class QAInstance {
    }
 
    public boolean getHitOurBudget() {
-	   return _hitOurBudget;
+      return _hitOurBudget;
    }
-	
+
    public double[] getAgentImpressionDistributionMean() {
       return _agentImpressionDistributionMean;
    }
 
    public double[] getAgentImpressionDistributionStdev() {
       return _agentImpressionDistributionStdev;
+   }
+
+   public boolean isSampled() {
+      return _isSampled;
    }
 
    public boolean[] isPadded() {
@@ -164,22 +168,25 @@ public class QAInstance {
       }
       return padded;
    }
-   
+
    //The ith index contains the index of the agent that started in the ith position.
    //TODO: This is confusing, since for all the other "get" arrays, the ith index refers to the ith agent.
    public int[] getInitialPositionOrdering() {
-	   return _initialPosition;
+      return _initialPosition;
    }
 
    /**
     * If any initial positions are not known (i.e. they are -1), return false.
+    *
     * @return
     */
    public boolean allInitialPositionsKnown() {
-	   for (int i=0; i<_advetisers; i++) {
-		   if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) return false;
-	   }
-	   return true;
+      for (int i = 0; i < _advetisers; i++) {
+         if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
+            return false;
+         }
+      }
+      return true;
    }
 
    public int[] getBidOrder(QAData data) {
@@ -213,7 +220,7 @@ public class QAInstance {
       int[] posOrder = new int[averagePositions.length];
       for (int i = 0; i < averagePositions.length; i++) {
 //         pos[i] = -_avgPos[i];
-    	  pos[i] = -averagePositions[i];
+         pos[i] = -averagePositions[i];
          posOrder[i] = i;
       }
 
@@ -233,7 +240,7 @@ public class QAInstance {
    }
 
    public static int[] getCarletonOrder(double[] averagePositions, int numSlots) {
-	   int numAdvertisers = averagePositions.length;
+      int numAdvertisers = averagePositions.length;
       int[] avgPosOrder = getAvgPosOrder(averagePositions);
       boolean[] avdAssigned = new boolean[numAdvertisers];
       //boolean[] posAssigned = new boolean[_advetisers];
@@ -252,7 +259,7 @@ public class QAInstance {
          if ((((int) (averagePositions[i] * 100000) % 100000)) == 0) {
             int slot = (int) averagePositions[i];
             if (slot < numSlots) { //very important not to keep the last slot
-            	//System.out.println("slot=" + slot + ", slots=" + numSlots);
+               //System.out.println("slot=" + slot + ", slots=" + numSlots);
                HashSet<Integer> advs = advWholePos.get(slot - 1);
                advs.add(i);
             }
