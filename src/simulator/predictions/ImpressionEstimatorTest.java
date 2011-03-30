@@ -8,8 +8,6 @@ import models.queryanalyzer.forecast.AbstractImpressionForecaster;
 import models.queryanalyzer.forecast.EMAImpressionForecaster;
 import models.queryanalyzer.iep.*;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 
@@ -316,13 +314,6 @@ public class ImpressionEstimatorTest {
          ArrayList<AbstractImpressionForecaster> naiveImpressionForecasters = null;
          if (USE_HISTORIC_PRIORS) {
             naiveImpressionForecasters = new ArrayList<AbstractImpressionForecaster>();
-            RConnection _rConnection = null;
-            try {
-               _rConnection = new RConnection();
-            } catch (RserveException e) {
-               e.printStackTrace();
-               throw new RuntimeException();
-            }
             for (int i = 0; i < agents.length; i++) {
 //               AbstractImpressionForecaster impressionForecaster = new NaiveImpressionForecaster(querySpace,agents,i);
 //               AbstractImpressionForecaster impressionForecaster = new LastNonZeroImpressionForecaster(querySpace,agents,i);
