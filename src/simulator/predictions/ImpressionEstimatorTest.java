@@ -3,7 +3,7 @@ package simulator.predictions;
 import edu.umich.eecs.tac.props.*;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.forecast.AbstractImpressionForecaster;
-import models.queryanalyzer.forecast.EMAImpressionForecaster;
+import models.queryanalyzer.forecast.LastNonZeroImpressionForecaster;
 import models.queryanalyzer.iep.*;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
@@ -49,12 +49,13 @@ public class ImpressionEstimatorTest {
    private double PRIOR_STDEV_MULTIPLIER = 0.5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
-   boolean USE_WATERFALL_PRIORS = false;
+   boolean USE_WATERFALL_PRIORS = true;
    boolean USE_HISTORIC_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
    boolean ORDERING_KNOWN = true;
-   boolean TEST_USER_MODEL = false;
-   boolean USER_MODEL_PERF_IMPS = false;
+   boolean TEST_USER_MODEL = true;  //Turns user model testing on
+   boolean USER_MODEL_PERF_IMPS = false; //User model is perfect, not based on QA output
+   boolean USER_MODEL_PERF_WHEN_IN_AUCTION = false; //this only gives us estimates in the auctions we were in (like when we use it in the game) but they are perfect
    GameSet GAMES_TO_TEST = GameSet.test2010;
 
    //if we're sampling average positions, do we want to remove agents that received no samples?
@@ -329,9 +330,9 @@ public class ImpressionEstimatorTest {
             naiveImpressionForecasters = new ArrayList<AbstractImpressionForecaster>();
             for (int i = 0; i < agents.length; i++) {
 //               AbstractImpressionForecaster impressionForecaster = new NaiveImpressionForecaster(querySpace,agents,i);
-//               AbstractImpressionForecaster impressionForecaster = new LastNonZeroImpressionForecaster(querySpace,agents,i);
+               AbstractImpressionForecaster impressionForecaster = new LastNonZeroImpressionForecaster(querySpace, agents, i);
 //               AbstractImpressionForecaster impressionForecaster = new SMAImpressionForecaster(15,querySpace,agents,i);
-               AbstractImpressionForecaster impressionForecaster = new EMAImpressionForecaster(.1, querySpace, agents, i);
+//               AbstractImpressionForecaster impressionForecaster = new EMAImpressionForecaster(.1, querySpace, agents, i);
 //               AbstractImpressionForecaster impressionForecaster = new TimeSeriesImpressionForecaster(_rConsnection,i,querySpace,agents,i);
                naiveImpressionForecasters.add(impressionForecaster);
             }
@@ -523,6 +524,13 @@ public class ImpressionEstimatorTest {
                   agentIds[i] = -(i + 1);
                }
 
+               int userModelUB;
+               if (!PERFECT_IMPS && USER_MODEL_PERF_IMPS) {
+                  userModelUB = getAgentImpressionsUpperBound(status, true, d, query, reducedImps, ordering);
+                  ;
+               } else {
+                  userModelUB = impressionsUB;
+               }
 
 //               //FIXME DEBUG
 //               //For now, skip anything with a NaN in sampled impressions
@@ -577,6 +585,10 @@ public class ImpressionEstimatorTest {
                      impPredMapList = impPredMapLists.get(nonReducedIdx);
                   }
 
+                  if (USER_MODEL_PERF_IMPS) {
+                     totalImpsMapList.get(nonReducedIdx).put(query, userModelUB);
+                  }
+
                   int ourAgentIdx = -1;
                   for (int i = 0; i < reducedIndices.length; i++) {
                      if (nonReducedIdx == reducedIndices[i]) {
@@ -590,6 +602,13 @@ public class ImpressionEstimatorTest {
                         for (int i = 0; i < agents.length; i++) {
                            Map<Query, Integer> impPredMap = impPredMapList.get(i);
                            impPredMap.put(query, -1);
+                        }
+                     }
+
+                     if (TEST_USER_MODEL) {
+                        if (!USER_MODEL_PERF_IMPS) {
+                           //We weren't in the auction so we have no prediction
+                           totalImpsMapList.get(nonReducedIdx).put(query, -1);
                         }
                      }
                      continue;
@@ -762,10 +781,10 @@ public class ImpressionEstimatorTest {
                      }
                   }
 
-                  if (TEST_USER_MODEL) {
+                  if (TEST_USER_MODEL && !USER_MODEL_PERF_IMPS) {
                      Map<Query, Integer> totalImpsMap = totalImpsMapList.get(nonReducedIdx);
-                     if (USER_MODEL_PERF_IMPS) {
-                        totalImpsMap.put(query, getAgentImpressionsUpperBound(status, true, d, query, reducedImps, ordering));
+                     if (USER_MODEL_PERF_WHEN_IN_AUCTION) {
+                        totalImpsMap.put(query, userModelUB);
                      } else {
                         if (result == null) {
                            totalImpsMap.put(query, -1);

@@ -423,13 +423,13 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
                _particles.put(prod, particles);
                updatePredictionMaps(prod, false);
             } else {
-               //					totalImps = 0;
-               //					totalImps += getCurrentEstimate(prod,UserState.F2);
-               //					totalImps += (1.0/3.0)*getCurrentEstimate(prod,UserState.IS);
-               //					Particle[] particles = _particles.get(prod);
-               //					updateParticles(totalImps, particles);
-               //					particles = resampleParticles(particles);
-               //					_particles.put(prod, particles);
+//               totalImps = 0;
+//               totalImps += getCurrentEstimate(prod,UserState.F2);
+//               totalImps += (1.0/3.0)*getCurrentEstimate(prod,UserState.IS);
+//               Particle[] particles = _particles.get(prod);
+//               updateParticles(totalImps, particles);
+//               particles = resampleParticles(particles);
+//               _particles.put(prod, particles);
                updatePredictionMaps(prod, true);
             }
 
