@@ -8,10 +8,7 @@ import org.apache.commons.math.distribution.BinomialDistributionImpl;
 import org.apache.commons.math.random.RandomDataImpl;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 
 //import org.apache.commons.math.*;
 //import org.apache.commons.math.distribution.NormalDistributionImpl;
@@ -197,7 +194,7 @@ public class DavidandVinitParticleFilter extends ParticleFilterAbstractUserModel
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
 
       //for each product
       for (Product product : _products) {

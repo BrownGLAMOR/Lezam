@@ -9,10 +9,7 @@ import edu.umich.eecs.tac.props.Query;
 import models.AbstractModel;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 
 
 public class DavidLParticleFilter extends ParticleFilterAbstractUserModel {
@@ -448,7 +445,7 @@ public class DavidLParticleFilter extends ParticleFilterAbstractUserModel {
      * update or a probability adjustment should happen first (I think it's
      * the update)
      */
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       int s = _products.size();
       int states = UserState.values().length;
       int NS = 0;

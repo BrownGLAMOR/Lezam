@@ -411,7 +411,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       for (Query q : totalImpressions.keySet()) {
          Product prod = new Product(q.getManufacturer(), q.getComponent());
          if (_products.contains(prod)) {

@@ -5,10 +5,7 @@ import edu.umich.eecs.tac.props.Query;
 import models.AbstractModel;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 
 
 public class MyParticleFilter extends ParticleFilterAbstractUserModel {
@@ -101,7 +98,7 @@ public class MyParticleFilter extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       /*
          * Don't worry about this until week 2
          */

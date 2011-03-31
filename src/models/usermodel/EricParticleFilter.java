@@ -5,10 +5,7 @@ import edu.umich.eecs.tac.props.Query;
 import models.AbstractModel;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 
 
 public class EricParticleFilter extends ParticleFilterAbstractUserModel {
@@ -198,7 +195,7 @@ public class EricParticleFilter extends ParticleFilterAbstractUserModel {
     * Problems: _particles.get
     */
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       //for(Iterator<Query> i = theKeys.iterator(); i.hasNext(); ){
       for (Product prod : _products) {
          //Query curQuery = i.next();
@@ -616,8 +613,8 @@ public class EricParticleFilter extends ParticleFilterAbstractUserModel {
    /**
     * Generates a random number form a normal distribution with mean and variance and a number that is between 1 and 0
     *
-    * @param mean     the mean of the norm dist
-    * @param variance the variance the norm dist
+    * @param numTrials    the mean of the norm dist
+    * @param curTransProb the variance the norm dist
     * @return a normally distributed random double that is between 1 and 0
     */
    public double randBinomToNorm(int numTrials, double curTransProb) throws IndexOutOfBoundsException {

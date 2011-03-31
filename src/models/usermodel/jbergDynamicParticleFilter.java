@@ -415,7 +415,7 @@ public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel 
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       HashMap<Product, HashMap<UserState, Double>> currentEstimateCopy = new HashMap<Product, HashMap<UserState, Double>>();
 
       for (Product prod : _products) {

@@ -9,6 +9,7 @@ import models.AbstractModel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author jberg
@@ -36,7 +37,6 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
       NS, IS, F0, F1, F2, T
    }
 
-   ;
 
    /**
     * These particles represent the current estimate of each of the user population
@@ -53,7 +53,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
     * total impressions for every query.  Specifically you should use
     * this information to update your current estimation in particles
     */
-   public abstract boolean updateModel(HashMap<Query, Integer> totalImpressions);
+   public abstract boolean updateModel(Map<Query, Integer> totalImpressions);
 
    /**
     * When this method is called you should return you prediction for the user

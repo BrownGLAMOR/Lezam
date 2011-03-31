@@ -357,7 +357,7 @@ public class GregFilter extends ParticleFilterAbstractUserModel {
 
    public class particleComp implements Comparator<Particle> {
 
-      @Override
+
       public int compare(Particle o1, Particle o2) {
          if (o2.getWeight() - o1.getWeight() > 0) {
             return 1;
@@ -405,7 +405,7 @@ public class GregFilter extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       /*
          * Don't worry about this until week 2
          */

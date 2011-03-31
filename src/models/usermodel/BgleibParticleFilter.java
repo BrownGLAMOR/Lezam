@@ -417,7 +417,7 @@ public class BgleibParticleFilter extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       double sum, val;
       for (Product product : _products) {
          Query q = new Query(product.getManufacturer(), product.getComponent());

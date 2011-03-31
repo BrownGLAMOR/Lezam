@@ -9,7 +9,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import models.AbstractModel;
 
-import java.util.HashMap;
+import java.util.Map;
 
 public class OldUserModel extends ParticleFilterAbstractUserModel {
 
@@ -59,7 +59,7 @@ public class OldUserModel extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Integer> totalImpressions) {
+   public boolean updateModel(Map<Query, Integer> totalImpressions) {
       return true;
    }
 
