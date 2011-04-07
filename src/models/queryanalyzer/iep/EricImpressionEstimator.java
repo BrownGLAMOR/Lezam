@@ -25,7 +25,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    private double[] _agentImpressionDistributionStdev;
 
    boolean INTEGER_PROGRAM;
-   boolean USE_EPSILON = false;
+   boolean USE_EPSILON = true;
    int NUM_SAMPLES = 10;
    boolean USE_RANKING_CONSTRAINTS;
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
@@ -127,7 +127,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       //unranked version of the problem (which we never do). (verify?) [yes, it does.]
       int[] unorderedRelativeRanking = order(relativeRanking, order); 
 
-      System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
+      //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
       
       return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot);
    }
