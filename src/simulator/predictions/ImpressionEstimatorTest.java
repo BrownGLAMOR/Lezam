@@ -49,11 +49,11 @@ public class ImpressionEstimatorTest {
    private double PRIOR_STDEV_MULTIPLIER = 0.5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    private boolean SAMPLED_AVERAGE_POSITIONS = false;
    public static boolean PERFECT_IMPS = true;
-   boolean USE_WATERFALL_PRIORS = true;
+   boolean USE_WATERFALL_PRIORS = false;
    boolean USE_HISTORIC_PRIORS = false;
    boolean CONSIDER_ALL_PARTICIPANTS = true;
    boolean ORDERING_KNOWN = true;
-   boolean TEST_USER_MODEL = true;  //Turns user model testing on
+   boolean TEST_USER_MODEL = false;  //Turns user model testing on
    boolean USER_MODEL_PERF_IMPS = false; //User model is perfect, not based on QA output
    boolean USER_MODEL_PERF_WHEN_IN_AUCTION = false; //this only gives us estimates in the auctions we were in (like when we use it in the game) but they are perfect
    GameSet GAMES_TO_TEST = GameSet.test2010;
@@ -302,6 +302,8 @@ public class ImpressionEstimatorTest {
 
       double totalUserModelMAE = 0.0;
       int totalUserModelPts = 0;
+      int totalFracPreds = 0;
+      int totalFracCorrect = 0;
       for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
          String filename = filenames.get(gameIdx);
 
@@ -527,10 +529,30 @@ public class ImpressionEstimatorTest {
                int userModelUB;
                if (!PERFECT_IMPS && USER_MODEL_PERF_IMPS) {
                   userModelUB = getAgentImpressionsUpperBound(status, true, d, query, reducedImps, ordering);
-                  ;
                } else {
                   userModelUB = impressionsUB;
                }
+
+//               for(int i = 0; i < reducedAgents.length; i++) {
+//                  double tmpAvgPos = reducedAvgPos[i];
+//                  double tmpImps = reducedImps[i];
+//                  long intPartAvgPos = (long) tmpAvgPos;
+//                  double fracPartAvgPos = tmpAvgPos-intPartAvgPos;
+//                  if(tmpImps > 0 && fracPartAvgPos > 0) {
+//                     totalFracPreds++;
+//                     Fraction frac;
+//                     try {
+//                        frac = new Fraction(tmpAvgPos,0,20);
+//                     } catch (FractionConversionException e) {
+//                        e.printStackTrace();
+//                        throw new RuntimeException("Could not convert fraction");
+//                     }
+//                     if(tmpImps % frac.getDenominator() == 0) {
+//                        totalFracCorrect++;
+//                     }
+//                     System.out.println(tmpAvgPos + ", " + tmpImps + ", " + frac.getNumerator() + "/" + frac.getDenominator());
+//                  }
+//               }
 
 //               //FIXME DEBUG
 //               //For now, skip anything with a NaN in sampled impressions
@@ -921,6 +943,7 @@ public class ImpressionEstimatorTest {
 
       outputPerformanceMetrics();
       System.out.println("User Model Error: " + totalUserModelMAE / totalUserModelPts);
+      System.out.println("Continued Fraction Error: " + totalFracCorrect / ((double) totalFracPreds));
       closeLog();
    }
 

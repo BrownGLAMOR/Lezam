@@ -3,6 +3,8 @@ package models.queryanalyzer.iep;
 import ilog.concert.IloException;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.probsample.SampleProbability;
+import org.apache.commons.math.fraction.Fraction;
+import org.apache.commons.math.fraction.FractionConversionException;
 
 import java.util.*;
 
@@ -28,6 +30,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private boolean BRANCH_AROUND_PRIOR = true;
    private boolean SIMPLE_PR_SAMP = true;
    private boolean LOG_GAUSSIAN_PDF = true;
+   private boolean DPARDOE_MODE = false;
    private boolean FULL_SELF_POS;
    private double FILL_SLOTS_AVG; //this contains the value of the average position of the person last added using fillSlots
    private int MIN_TOT_IMPR = 50;
@@ -613,50 +616,99 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          LinkedList<Integer> branches = new LinkedList<Integer>();
          branches.add(bestImpr);
 
-         if (!EXACT_AVGPOS && _fractionalBranches > 0) {
-            int maxImpr = _agentImprUB[currAgent];
-            LinkedList<Integer> upBranches = new LinkedList<Integer>();
-            for (int i = bestImpr + 1; i <= maxImpr; i++) {
-               if (i % _samplingImpressions == 0 || i == maxImpr) {
-                  upBranches.add(i);
-                  if (upBranches.size() >= _fractionalBranches) {
-                     break;
+         int maxImpr = _agentImprUB[currAgent];
+         if (EXACT_AVGPOS && DPARDOE_MODE) {
+            int rank = currIndex + 1;
+            int numSlots = slotImpr.length;
+            double tmpAvgPos = _trueAvgPos[currAgent];
+            long intPartAvgPos = (long) tmpAvgPos;
+            double fracPartAvgPos = tmpAvgPos - intPartAvgPos;
+            if (fracPartAvgPos != 0) {
+               Fraction frac;
+               try {
+                  frac = new Fraction(tmpAvgPos, 0, 20);
+               } catch (FractionConversionException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException("Could not convert fraction");
+               }
+               int numerator = frac.getNumerator();
+               int denominator = frac.getDenominator();
+
+               int[] dropoutPoints = getDropoutPoints(agentImpr, order, numSlots);
+
+               int starta;
+               if (rank <= numSlots) {
+                  starta = 0;
+               } else {
+                  starta = dropoutPoints[rank - numSlots - 1];
+               }
+
+               int sum = 0;
+               for (int limitOrder = 2; limitOrder <= agentImpr.length; limitOrder++) {
+                  if ((rank - (limitOrder - 1)) >= numSlots) {
+                     //not in auction yet
+                     continue;
                   }
+
+                  if (limitOrder - 2 < dropoutPoints.length) {
+                     int endb = dropoutPoints[limitOrder - 2];
+                     sum += (endb - starta);
+                  }
+
+                  double gcd = sum / (numerator - denominator * (rank - limitOrder + 1));
+
+                  if (gcd < 1) {
+                     continue;
+                  }
+
+                  branches.add((int) (gcd * denominator));
+               }
+            }
+         } else {
+            if (!EXACT_AVGPOS && _fractionalBranches > 0) {
+               LinkedList<Integer> upBranches = new LinkedList<Integer>();
+               for (int i = bestImpr + 1; i <= maxImpr; i++) {
+                  if (i % _samplingImpressions == 0 || i == maxImpr) {
+                     upBranches.add(i);
+                     if (upBranches.size() >= _fractionalBranches) {
+                        break;
+                     }
+                  }
+               }
+
+
+               int minImpr = _agentImprLB[currAgent];
+               LinkedList<Integer> downBranches = new LinkedList<Integer>();
+               for (int i = bestImpr - 1; i >= minImpr; i--) {
+                  if (i % _samplingImpressions == 0 || i == minImpr) {
+                     downBranches.add(i);
+                     if (downBranches.size() >= _fractionalBranches) {
+                        break;
+                     }
+                  }
+               }
+
+               if (BRANCH_AROUND_PRIOR) {
+                  for (int i = 0; i < Math.max(upBranches.size(), downBranches.size()); i++) {
+                     if (i < upBranches.size()) {
+                        branches.add(upBranches.get(i));
+                     }
+                     if (i < downBranches.size()) {
+                        branches.add(downBranches.get(i));
+                     }
+                  }
+               } else {
+                  branches.addAll(upBranches);
+                  branches.addAll(downBranches);
                }
             }
 
 
-            int minImpr = _agentImprLB[currAgent];
-            LinkedList<Integer> downBranches = new LinkedList<Integer>();
-            for (int i = bestImpr - 1; i >= minImpr; i--) {
-               if (i % _samplingImpressions == 0 || i == minImpr) {
-                  downBranches.add(i);
-                  if (downBranches.size() >= _fractionalBranches) {
-                     break;
-                  }
+            Integer impPred = (int) _agentImpressionDistributionMean[currAgent];
+            if (impPred >= 0) {
+               if (!branches.contains(impPred)) {
+                  branches.addFirst(impPred);
                }
-            }
-
-            if (BRANCH_AROUND_PRIOR) {
-               for (int i = 0; i < Math.max(upBranches.size(), downBranches.size()); i++) {
-                  if (i < upBranches.size()) {
-                     branches.add(upBranches.get(i));
-                  }
-                  if (i < downBranches.size()) {
-                     branches.add(downBranches.get(i));
-                  }
-               }
-            } else {
-               branches.addAll(upBranches);
-               branches.addAll(downBranches);
-            }
-         }
-
-
-         Integer impPred = (int) _agentImpressionDistributionMean[currAgent];
-         if (impPred >= 0) {
-            if (!branches.contains(impPred)) {
-               branches.addFirst(impPred);
             }
          }
 
@@ -970,6 +1022,40 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          newArr[i] = arr[i];
       }
       return newArr;
+   }
+
+   public int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
+      ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
+      PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
+      int nonZeroImps = 0;
+      for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
+         if (impsPerAgent[order[i]] > 0) {
+            queue.add(impsPerAgent[order[i]]);
+            nonZeroImps++;
+         }
+      }
+
+      int lastIdx = queue.size();
+
+      while (!queue.isEmpty()) {
+         int val = queue.poll();
+         impsBeforeDropout.add(val);
+
+         if (lastIdx < nonZeroImps) {
+            queue.add(impsPerAgent[order[lastIdx]] + val);
+            lastIdx++;
+         }
+      }
+
+      return convertListToArr(impsBeforeDropout);
+   }
+
+   public static int[] convertListToArr(List<Integer> integers) {
+      int[] ret = new int[integers.size()];
+      for (int i = 0; i < ret.length; i++) {
+         ret[i] = integers.get(i);
+      }
+      return ret;
    }
 
    /*
