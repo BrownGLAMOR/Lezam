@@ -3,42 +3,204 @@
 library(plotrix)
 library(hexbin)
 library(splus2R)
+library(xtable)
 
-#==============CONFIGUATION================
-INPUT.DIR = "~/mydocs/workspace/AA-new2/analysis/"
-CJC.FILENAME = paste(INPUT.DIR, "iePred1.txt", sep="");
-IP.FILENAME = paste(INPUT.DIR, "iePred2.txt", sep="");
-LP.FILENAME = paste(INPUT.DIR, "iePred2.txt", sep="");
+TEST.SET = "test2010"
+
+# Create the list of algorithms
+ALGORITHMS = c("CP", "MIP", "MIP_LP", "LDSMIP")
+
+
+# These are the options for the different problems
+RANKING.OPTIONS = c("ie", "rie")
+#SAMPLING.OPTIONS = c("exact", "sampled")
+SAMPLING.OPTIONS = "exact"
+#UB.OPTIONS = c("impsPerfect", "impsUB")
+UB.OPTIONS = "impsPerfect"
+#PRIOR.OPTIONS = c("prior", "noPrior")
+PRIOR.OPTIONS = "prior"
+NOISE.OPTIONS = c("0.0", "0.5", "1.0", "1.5")
+
+
+INPUT.DIR = "../" #"~/mydocs/workspace/AA-new2/analysis/input/"
 OUTPUT.DIR = "~/mydocs/workspace/AA-new2/analysis/output/"
-WATERFALL.OUTPUT.DIR = "~/Desktop/analysis/output/waterfall/"
+LATEX.OUTPUT.DIR = paste(OUTPUT.DIR, "latex/", sep="")
+WATERFALL.OUTPUT.DIR = "~/mydocs/workspace/AA-new2/analysis/output/waterfall/"
 NUM.SLOTS = 5
 COLORS = c("red", "blue", "green", "black", "yellow", "magenta", "brown", "purple")
 
 
-#==============DATA MANIPULATION================
-create.table = function(filename) {
-	data = read.table(filename, sep=",", header=TRUE)
-	data$err = data$predicted.imps - data$actual.imps
-	data$abs.err = abs(data$predicted.imps - data$actual.imps)
-	data$log.abs.err = log10(data$abs.err+1)
-	data$our.bid.rank = data$our.bid.rank + 1 #get rid of 0-indexing
-	data$opp.bid.rank = data$opp.bid.rank + 1 #get rid of 0-indexing
-	data$key = paste(data$model,"-",data$game.idx,"-",data$day.idx,"-",data$query.idx,"-",data$our.bid.rank,sep="")
-	data
+
+
+
+
+# Create the list of possible problems, based on the given options
+PROBLEMS = NULL
+for (ranking in RANKING.OPTIONS) {
+	for (sampling in SAMPLING.OPTIONS) {
+		for (ub in UB.OPTIONS) {
+			for (prior in PRIOR.OPTIONS) {
+				for (noise in NOISE.OPTIONS) {
+					if (prior=="noPrior" && noise!=NOISE.OPTIONS[1]) {
+						#skip these -- noise doesn't matter if no priors
+					} else {
+						noiseStr = paste("noise", noise, sep="")
+						problem = paste(ranking, sampling, ub, prior, noiseStr, sep=".")
+						PROBLEMS = c(PROBLEMS, problem)
+					}
+				}
+			}
+		}
+	}
 }
+
+
+
+#Get statistics on each problem/algorithm combination
+all.stats = NULL
+for (problem in PROBLEMS) {
+	#Keep track of errors for each problem so we can record which error was best
+	all.errors.I = NULL
+	all.errors.I.a = NULL
+	all.errors.I.a.s = NULL
+	all.times = NULL
+	all.rank.abs.error = NULL
+	all.perfect.ranking = NULL
+	for (algorithm in ALGORITHMS) {
+		file = paste(algorithm, problem, TEST.SET, "txt", sep=".")
+		full.file = paste(INPUT.DIR, file, sep="")
+		I.a = create.table(full.file)
+		I.a.s = compute.slot.prediction.error(I.a) #Are these sorted?
+		I = compute.I(I.a.s)
+
+		#Get times
+		times = I.a$seconds[I.a$opp.bid.rank==1]
+		
+		#Append the errors of these predictions to the all.errors matrix
+		all.errors.I.a = cbind(all.errors.I.a, I.a$abs.err)
+		all.errors.I = cbind(all.errors.I, I$abs.err)
+		all.errors.I.a.s = cbind(all.errors.I.a.s, I.a.s$abs.err[I.a.s$opp.bid.rank >= I.a.s$slot]) #Only look at slot predictions that were non-obvious (e.g. 1st slot agent can never be in 2nd slot)
+		
+		all.times = cbind(all.times, times)
+		all.rank.abs.error = cbind(all.rank.abs.error, I.a$rank.abs.err)
+		all.perfect.ranking = cbind(all.perfect.ranking, I.a$perfect.ranking)
+	}
+	
+	#Now that we have all errors for this problem (for every algorithm), compute stats.
+	for (algorithm.idx in 1:length(ALGORITHMS)) {
+		algorithm = ALGORITHMS[algorithm.idx]
+
+		I.stats = quantiles.and.mean(all.errors.I, algorithm.idx)
+		I.a.stats = quantiles.and.mean(all.errors.I.a, algorithm.idx)
+		I.a.s.stats = quantiles.and.mean(all.errors.I.a.s, algorithm.idx)
+		time.stats = sum( all.times[,algorithm.idx] )
+		
+		
+		pct.perfect.rank = sum(all.perfect.ranking[,algorithm.idx] == TRUE) / nrow(all.perfect.ranking)
+		avg.rank.dist = mean(all.rank.abs.error[,algorithm.idx])
+		
+		imperfect.rows = all.perfect.ranking[,algorithm.idx] == FALSE
+		imperfect.avg.rank.dist = mean(all.rank.abs.error[imperfect.rows,algorithm.idx])
+
+		names(problem) = "problem"
+		names(algorithm) = "algorithm"
+		names(time.stats) = "mean.seconds"
+		names(pct.perfect.rank) = "pct.perfect.rank"
+		names(avg.rank.dist) = "avg.rank.dist"
+		names(imperfect.avg.rank.dist) = "imperfect.avg.rank.dist"
+		stats = c(problem, algorithm, I.stats, I.a.stats, I.a.s.stats, time.stats, pct.perfect.rank, avg.rank.dist, imperfect.avg.rank.dist)
+		all.stats = rbind(all.stats, stats)
+	}
+}
+rownames(all.stats) = NULL
+all.stats = as.data.frame(all.stats, stringsAsFactors=FALSE)
+for (col in 3:ncol(all.stats)) {
+	all.stats[,col] = as.numeric(all.stats[,col])
+}
+
+
+for (algorithm in ALGORITHMS) {
+	latex.table(all.stats, algorithm)
+}
+
+#Make a table of the PROBLEMS
+print(xtable(as.matrix(PROBLEMS)), include.colnames=FALSE, append=TRUE, file=paste(LATEX.OUTPUT.DIR,"tables.tex",sep=""))
+
+
+
+latex.table = function(all.stats, algorithm) {
+	mat = NULL
+	for (problem in PROBLEMS) {
+		stats = all.stats[all.stats$problem==problem & all.stats$algorithm==algorithm , c(-2)]
+		
+		#Shorten problem names to just be an index
+		stats$problem = which(PROBLEMS == stats$problem)
+		
+		mat = rbind(mat, stats)
+	}
+	
+	
+	rownames(mat) = NULL
+	latex.mat = xtable(mat)
+	clean.algorithm = sub("_", "-", algorithm)
+	caption(latex.mat) = clean.algorithm
+	digits(latex.mat) = 2
+	hlines = c(-1,0,nrow(mat), length(PROBLEMS)/2)
+	align(latex.mat) = "l|l|ccccc|ccccc|ccccc|c|ccc|"
+	header.sub = "mean & med & max & \\%$C$ & \\%$B$"
+	header.multi = "& \\multicolumn{5}{c|}{Total Imps} & \\multicolumn{5}{c|}{Per Agent Imps} & \\multicolumn{5}{c|}{Per Slot Imps} & Time & \\multicolumn{3}{c|}{Rank Error} \\\\"
+	header=paste(header.multi, " & ", header.sub, " & ", header.sub, " & ", header.sub, " & ", "secs &  \\%C & d1 & d2 \\\\", sep="")
+	print(latex.mat, file=paste(LATEX.OUTPUT.DIR,"tables.tex",sep=""), hline.after=hlines, append=TRUE, include.rownames=FALSE, include.colnames=FALSE, floating=TRUE, add.to.row=list(pos=list(0), command=c(header)))
+}
+
+
+
+
+#Input: vector v
+#Output: (mean, median, min, max)
+quantiles.and.mean = function(val.matrix, col.idx) {
+
+	v = val.matrix[,col.idx]
+	val.min = apply(val.matrix, 1, function(x) min(x))
+	
+	pct.lowest = sum(v==val.min) / length(v)
+	pct.zero = sum(v==0) / length(v)
+	#stats = c(mean(v), median(v), min(v), max(v), pct.zero)
+	#names(stats) = c("mean", "median", "min", "max", "pct.zero")
+	stats = c(mean(v), median(v), max(v), pct.zero, pct.lowest)
+	names(stats) = c("mean", "median", "max", "pct.zero", "pct.lowest")
+	stats
+}
+
+
+
+
+
+compute.I = function(I.a.s) {
+	#Get I predictions (i.e. total imps in the 1st slot)
+	I = aggregate(I.a.s[,c("predicted.imps", "actual.imps")], list(game.idx=I.a.s$game.idx, day.idx=I.a.s$day.idx, query.idx=I.a.s$query.idx, 	our.bid.rank=I.a.s$our.bid.rank, slot=I.a.s$slot), sum)
+	I = I[I$slot==1,]
+	I$abs.err = abs(I$predicted.imps - I$actual.imps)
+	I
+}
+
+
 
 
 
 
 #output: g, d, q, myRank, oppRank, slotPredictionError
 #where slotPredictionError = mean_{slot} abs(I_a_S - predI_a_s)
-compute.slot.prediction.error = function(data, g, d, q, r, NUM.SLOTS, filename) {
+compute.slot.prediction.error = function(data) {
 	
 	#For each game, day, query, ourRank:
 	#compute predicted waterfall
 	#compute actual waterfall
 	#Create summary stat for each predicted agent: mean absolute impsPerSlot error
 	#Return a data frame containing (g, d, q, r, oppRank, impsPerSlotErrorMetric)
+	#NO: instead, return a data frame containing (g, d, q, r, oppRank, oppPossibleSlot, oppPredictedImps, oppActualImps)
+	#  should oppPossibleSlot always be <= oppRank? (The agent can't possibly be in slots above where it started)
+	#  (but if you incorrectly guess it's starting rank, it could actually see some there)
 
 	error.summary = NULL
 	games = unique(data$game.idx)
@@ -57,39 +219,147 @@ compute.slot.prediction.error = function(data, g, d, q, r, NUM.SLOTS, filename) 
 					actual.waterfall = greedy.waterfall.alg(data5$actual.imps, NUM.SLOTS)
 					predicted.waterfall = greedy.waterfall.alg(data5$predicted.imps, NUM.SLOTS)
 					
-					opp.bid.ranks = unique(data5$opp.bid.rank)
-					for (o in opp.bid.ranks) {
-						slot.errors = actual.waterfall[o,] - predicted.waterfall[o,]
-
-						#Compute the mean absolute error for relevant predictions
-						#(Predicting agent w/ initial slot 1 got no imps in slot 2 is not interesting)
-						#TODO: What about once we can't assume we got the slot correct?
-						#Let's just compute both values.
-						#I.a.s.err.ma = mean(abs(slot.errors))
-						#I.a.s.err.ma.excluding.obvious = sum(abs(slot.errors))/o
-						I.a.s.error.L1 = sum(abs(slot.errors)) #sum of (absolute) error
-						I.a.s.error.L2 = vecnorm(slot.errors, 2) #RMSE
-						I.a.s.error.LInf = max(abs(slot.errors)) #max error
-
-
-						#Also keep track of total imps error (and other stats that we already have, but might want in this summary table)
-						I.a.error = data5$abs.err[which(data5$opp.bid.rank==o)]
-						I.a.predicted = data5$predicted.imps[which(data5$opp.bid.rank==o)]
-						I.a.actual = data5$actual.imps[which(data5$opp.bid.rank==o)]
-						focus.level = data5$focus.level[which(data5$opp.bid.rank==o)]
-						
-						#Add this data to our summary
-						error.summary = rbind(error.summary, c(g, d, q, r, o, I.a.s.error.L1, I.a.s.error.L2, I.a.s.error.LInf, I.a.error, I.a.predicted, I.a.actual, focus.level))
-					}
-					print(actual.waterfall)
-					print(predicted.waterfall)
+					opponent.vector = rep(1:nrow(actual.waterfall), times=ncol(actual.waterfall))
+					slot.vector = rep(1:ncol(actual.waterfall), each=nrow(actual.waterfall))
+					predicted.vector = as.vector(predicted.waterfall)
+					actual.vector = as.vector(actual.waterfall)
+					abs.err.vector = abs(predicted.vector - actual.vector)
+					
+					new.error.data = cbind(g, d, q, r, opponent.vector, slot.vector, predicted.vector, actual.vector, abs.err.vector)
+					error.summary = rbind(error.summary, new.error.data)					
 				}	
 			}
 		}
 	}
-	colnames(error.summary) = c("game.idx", "day.idx", "query.idx", "our.bid.rank", "opp.bid.rank", "I.a.s.error.L1", "I.a.s.error.L2", "I.a.s.error.LInf", "I.a.error", "I.a.predicted", "I.a.actual", "focus.level")
+	colnames(error.summary) = c("game.idx", "day.idx", "query.idx", "our.bid.rank", "opp.bid.rank", "slot", "predicted.imps", "actual.imps", "abs.err")
 	error.summary = as.data.frame(error.summary)
 }
+
+
+
+
+
+
+
+#################################
+# MAKE TABLE OF RESULTS
+
+get.output.table.row = function(I.a) {
+#Make sure results are sorted (note: we only really have to do this when comparing across predictors. And we could just merge)
+I.a = I.a[order(I.a$game.idx, I.a$day.idx, I.a$query.idx, I.a$our.bid.rank, I.a$opp.bid.rank),]
+
+#Get times 
+times = I.a$seconds[I.a$opp.bid.rank==1]
+
+#Get slot predictions
+I.a.s = compute.slot.prediction.error(I.a) #Are these sorted?
+
+#Get I predictions (i.e. total imps in the 1st slot)
+I = aggregate(I.a.s[,c("predicted.imps", "actual.imps")], list(game.idx=I.a.s$game.idx, day.idx=I.a.s$day.idx, query.idx=I.a.s$query.idx, our.bid.rank=I.a.s$our.bid.rank, slot=I.a.s$slot), sum)
+I = I[I$slot==1,]
+I$abs.err = abs(I$predicted.imps - I$actual.imps)
+
+#sanity check. should give the same as the original I.a data file
+#I.a = aggregate(I.a.s[,c("predicted.imps", "actual.imps")], list(game.idx=I.a.s$game.idx, day.idx=I.a.s$day.idx, query.idx=I.a.s$query.idx, our.bid.rank=I.a.s$our.bid.rank, opp.bid.rank=I.a.s$opp.bid.rank), sum)
+#I.a$abs.err = abs(I.a$predicted.imps - I.a$actual.imps)
+#I.a[order(I.a$game.idx, I.a$day.idx, I.a$query.idx, I.a$our.bid.rank, I.a$opp.bid.rank),]
+
+I.stats = quantiles.and.mean(I$abs.err)
+I.a.stats = quantiles.and.mean(I.a$abs.err)
+I.a.s.stats = quantiles.and.mean( I.a.s$abs.err[I.a.s$opp.bid.rank >= I.a.s$slot] ) #Only look at slot predictions that were non-obvious (e.g. 1st slot agent can never be in 2nd slot)
+time.stats = mean(times)
+names(time.stats) = "mean.seconds"
+
+stats = c(I.stats, I.a.stats, I.a.s.stats, time.stats)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#iePred.CP.exact.impsPerfect.noPrior.test2010.txt
+#iePred.CP.exact.impsPerfect.prior.test2010.txt
+#iePred.CP.exact.impsUB.noPrior.test2010.txt
+#iePred.CP.exact.impsUB.prior.test2010.txt
+#iePred.CP.sampled.impsPerfect.noPrior.test2010.txt
+#iePred.CP.sampled.impsPerfect.prior.test2010.txt
+#iePred.CP.sampled.impsUB.noPrior.test2010.txt
+#iePred.CP.sampled.impsUB.prior.test2010.txt
+#iePred.MIP.exact.impsPerfect.noPrior.test2010.txt
+#iePred.MIP.exact.impsPerfect.prior.test2010.txt
+#iePred.MIP.exact.impsUB.noPrior.test2010.txt
+#iePred.MIP.exact.impsUB.prior.test2010.txt
+#iePred.MIP.sampled.impsPerfect.noPrior.test2010.txt
+#iePred.MIP.sampled.impsPerfect.prior.test2010.txt
+#iePred.MIP.sampled.impsUB.noPrior.test2010.txt
+#iePred.MIP.sampled.impsUB.prior.test2010.txt
+
+#==============CONFIGUATION================
+cjc.filename.part = "CP.ie.sampled.impsPerfect.noPrior.noise0.5.test2010.txt"
+ip.filename.part = "MIP_LP.ie.sampled.impsPerfect.noPrior.noise0.5.test2010.txt"
+lp.filename.part = "MIP_LP.ie.sampled.impsPerfect.noPrior.noise0.5.test2010.txt"
+
+#======= INFERRED BY CONFIGURATION =====
+CJC.FILENAME = paste(INPUT.DIR, cjc.filename.part, sep="");
+IP.FILENAME = paste(INPUT.DIR, ip.filename.part, sep="");
+LP.FILENAME = paste(INPUT.DIR, lp.filename.part, sep="");
+
+
+
+#==============DATA MANIPULATION================
+create.table = function(filename) {
+	data = read.table(filename, sep=",", header=TRUE)
+	data$err = data$predicted.imps - data$actual.imps
+	data$abs.err = abs(data$predicted.imps - data$actual.imps)
+	data$log.abs.err = log10(data$abs.err+1)
+	data$our.bid.rank = data$our.bid.rank + 1 #get rid of 0-indexing
+	data$opp.bid.rank = data$opp.bid.rank + 1 #get rid of 0-indexing
+	data$predicted.opp.bid.rank = data$predicted.opp.bid.rank + 1 #get rid of 0-indexing
+	data$key = paste(data$model,"-",data$game.idx,"-",data$day.idx,"-",data$query.idx,"-",data$our.bid.rank,sep="")
+	data$rank.abs.err = abs(data$opp.bid.rank - data$predicted.opp.bid.rank)
+	
+	#Determine if the ordering was perfect
+	a = aggregate(data$rank.abs.err, list(game.idx=data$game.idx, day.idx=data$day.idx, query.idx=data$query.idx, our.bid.rank=data$our.bid.rank), mean)
+	a$perfect.ranking = (a$x == 0)
+	a = subset(a, select = -x)
+	data = merge(data, a) #merge by common variable names
+
+	#Determine if any predictions were made
+	a = aggregate(data$predicted.imps, list(game.idx=data$game.idx, day.idx=data$day.idx, query.idx=data$query.idx, our.bid.rank=data$our.bid.rank), mean)
+	a$made.predictions = (a$x > 0)
+	a = subset(a, select = -x)
+	data = merge(data, a) #merge by common variable names
+
+	#Determine how many impressions were seen by any agents in this auction
+	
+	
+	data
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -134,6 +404,8 @@ plot.waterfalls = function(data, g, d, q, r, NUM.SLOTS, filename) {
 greedy.waterfall.alg = function(imps, NUM.SLOTS) {
 	#Input: Impressions for agents (sorted by decreasing squashed bid)
 	#Output: waterfall data
+	#Row i corresponds to the agent that started in position i
+	#Column j corresponds to slot j
 	
 	#Add to the impressions of anyone starting out of the slots.
 	if (length(imps) > NUM.SLOTS) {
@@ -141,7 +413,7 @@ greedy.waterfall.alg = function(imps, NUM.SLOTS) {
 			imps[NUM.SLOTS+i] = imps[NUM.SLOTS+i] + sort(imps[1:(NUM.SLOTS+i-1)])[i]
 		}
 	}
-	print(imps)
+	#print(imps)
 
 	tot = matrix(0, length(imps), length(imps))
 	for(a in 1:length(imps)) {
@@ -244,6 +516,12 @@ dev.off()
 pdf(paste(OUTPUT.DIR, "participants.vs.runtime.pdf", sep=""))
 plot(as.factor(ip$num.participants), log10(ip$seconds+1), main="Num participants vs. runtime", xlab="Num participants", ylab="log10(seconds+1)")
 dev.off()
+
+
+plot(as.factor(ip$num.participants), ip$abs.err, main="Num participants vs. runtime", xlab="Num participants", ylab="log10(seconds+1)")
+
+#plot(as.factor(cjc$num.participants), log10(cjc$seconds+1), main="Num participants vs. runtime", xlab="Num participants", ylab="log10(seconds+1)", ylim=c(0,.05))
+#hist(cjc$num.participants)
 
 pdf(paste(OUTPUT.DIR, "runtime.vs.error.pdf", sep=""))
 plot(log10(ip$seconds+1), log10(ip$abs.err+1))
@@ -362,9 +640,6 @@ for (row in worst.rows) {
 	plot.waterfalls(ip, ip.summary$game.idx[row], ip.summary$day.idx[row], ip.summary$query.idx[row], ip.summary$our.bid.rank[row], NUM.SLOTS, ip.filename)
 	plot.waterfalls(cjc, cjc.summary$game.idx[row], cjc.summary$day.idx[row], cjc.summary$query.idx[row], cjc.summary$our.bid.rank[row], NUM.SLOTS, cjc.filename)
 }
-
-
-
 
 
 

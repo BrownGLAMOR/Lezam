@@ -1484,7 +1484,7 @@ public class ImpressionEstimatorTest {
       debug("   (is correct ordering): " + isCorrectOrdering);
       debug("");
 
-      if (!isCorrectOrdering) System.exit(0);
+      //if (!isCorrectOrdering) System.exit(0);
 
    }
 
