@@ -34,7 +34,7 @@ public class ImpressionEstimatorTest {
 	   SAMPLED_AVERAGE_POSITIONS = sampleAvgPositions;
       PERFECT_IMPS = perfectImps;
       USE_WATERFALL_PRIORS = useWaterfallPriors;      
-      PRIOR_STDEV_MULTIPLIER = noiseFactor; //this only matters if useWaterfallPriors=true
+      PRIOR_NOISE_MULTIPLIER = noiseFactor; //this only matters if useWaterfallPriors=true
       this.USE_HISTORIC_PRIORS = useHistoricPriors;
       this.HISTORIC_PRIOR_TO_USE = historicPriorsType;
       this.ORDERING_KNOWN = orderingKnown;
@@ -51,24 +51,32 @@ public class ImpressionEstimatorTest {
    Random _rand;
    long _seed = 61686;
 
-   private double PRIOR_NOISE_MULTIPLIER = 0; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
+   boolean CHEATING = false; //By cheating, we mean that we only pass the solver the auction participants
    private double PRIOR_STDEV_MULTIPLIER = 0.5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
-   private boolean SAMPLED_AVERAGE_POSITIONS = false;
-   public static boolean PERFECT_IMPS = true;
-   boolean USE_WATERFALL_PRIORS = false;
-   boolean USE_HISTORIC_PRIORS = true;
-   boolean CONSIDER_ALL_PARTICIPANTS = true;
-   boolean ORDERING_KNOWN = true;
    boolean TEST_USER_MODEL = false;  //Turns user model testing on
    boolean USER_MODEL_PERF_IMPS = false; //User model is perfect, not based on QA output
    boolean USER_MODEL_PERF_WHEN_IN_AUCTION = false; //this only gives us estimates in the auctions we were in (like when we use it in the game) but they are perfect
    //GameSet GAMES_TO_TEST;
-   HistoricalPriorsType HISTORIC_PRIOR_TO_USE = HistoricalPriorsType.LastNonZero;
    
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
    boolean REMOVE_SAMPLE_NANS = false;
 
+   
+   
+   //////////////////
+   //NOTE: THESE ARE SET IN THE MAIN METHOD.
+   //SETTING THEM HERE WILL JUST GET OVERRIDDEN (unless the default constructor is called)
+   private boolean SAMPLED_AVERAGE_POSITIONS = false;
+   public static boolean PERFECT_IMPS = true;
+   boolean USE_WATERFALL_PRIORS = false;
+   private double PRIOR_NOISE_MULTIPLIER = 0; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
+   boolean USE_HISTORIC_PRIORS = true;
+   HistoricalPriorsType HISTORIC_PRIOR_TO_USE = HistoricalPriorsType.LastNonZero;
+   boolean ORDERING_KNOWN = true;
+   //////////////////
+   
+   
 
    BufferedWriter bufferedWriter = null;
 
@@ -86,7 +94,9 @@ public class ImpressionEstimatorTest {
    int numSkipsDuplicateBid = 0;
    int numSkipsInvalidData = 0;
    int numImprsPredictions = 0;
-   int numOrderingPredictions = 0;
+   int numCorrectNumParticipants = 0; //#times the number of participants was correct
+   int numCorrectParticipants = 0; //#times the list of participants was correct
+   int numOrderingPredictions = 0; //#times the list of participants was correctly ordered
    int numCorrectlyOrderedInstances = 0;
    double aggregateAbsError = 0;
 
@@ -488,7 +498,9 @@ public class ImpressionEstimatorTest {
                int numParticipants = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
                   //if (!actualAveragePositions[a].isNaN()) numParticipants++;
-                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
+                  if ( !CHEATING ||
+                		(   !Double.isNaN(actualAveragePositions[a]) && 
+                			(!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
                      numParticipants++;
                   }
                }
@@ -507,7 +519,13 @@ public class ImpressionEstimatorTest {
                int[] reducedIndices = new int[numParticipants];
                int rIdx = 0;
                for (int a = 0; a < actualAveragePositions.length; a++) {
-                  if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
+            	   //If agent's actualPosition isn't NaN, AND 
+            	   //  we're not removing sampled nans, OR we're not in the problem of sampled average positions, OR the sampledPosition isn't NaN
+            	   //Then add this agent.
+            	   //Note: Also add this agent if we're adding everybody (i.e. if we're not cheating)
+                  if ( !CHEATING || 
+                		  (  !Double.isNaN(actualAveragePositions[a]) && 
+                		     ( !Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
                      reducedAgents[rIdx] = status.getAdvertisers()[a];
                      reducedAvgPos[rIdx] = actualAveragePositions[a];
                      reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
@@ -540,6 +558,17 @@ public class ImpressionEstimatorTest {
 
                // Get ordering of remaining squashed bids
                int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
+               
+               
+               //If we added everybody, we don't want the true ordering to contain an ordering over non-participants.
+               //Remove agents that didn't participate from the true ordering.
+               int[] reducedTrueOrdering = trueOrdering.clone();
+               if (!CHEATING) reducedTrueOrdering = reduceTrueOrderingToParticipants(trueOrdering, impressions);
+               
+               
+               
+               // Create the ordering that will be used by the agent
+               // (This is the true ordering if the ordering is known; otherwise it's an arbitrary ordering)
                int[] ordering;
                if (ORDERING_KNOWN) {
                   ordering = trueOrdering.clone();
@@ -554,13 +583,13 @@ public class ImpressionEstimatorTest {
 //               int[] sampledBidRelativeOrdering = getRelativeOrdering(sampledBidOrdering); //The ordering for agents that had at least one sample
 
 
-               int impressionsUB = getAgentImpressionsUpperBound(status, PERFECT_IMPS, d, query, reducedImps, ordering);
+               int impressionsUB = getAgentImpressionsUpperBound(status, PERFECT_IMPS, d, query, reducedImps, trueOrdering);
 
 
                // If any agents have the same squashed bids, we won't know the definitive ordering.
                // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
                // For now, we'll drop any instances with duplicate squashed bids.
-               if (duplicateSquashedBids(reducedBids, ordering)) {
+               if (duplicateSquashedBids(reducedBids, trueOrdering)) {
                   debug("Duplicate squashed bids found. Skipping instance.");
                   numSkips++;
                   numSkipsDuplicateBid++;
@@ -585,7 +614,7 @@ public class ImpressionEstimatorTest {
 
                int userModelUB;
                if (!PERFECT_IMPS && USER_MODEL_PERF_IMPS) {
-                  userModelUB = getAgentImpressionsUpperBound(status, true, d, query, reducedImps, ordering);
+                  userModelUB = getAgentImpressionsUpperBound(status, true, d, query, reducedImps, trueOrdering);
                } else {
                   userModelUB = impressionsUB;
                }
@@ -654,15 +683,18 @@ public class ImpressionEstimatorTest {
                debug("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
                debug("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
                debug("d=" + d + "\tq=" + query + "\ttrueOrdering=" + Arrays.toString(trueOrdering));
+               debug("d=" + d + "\tq=" + query + "\treducedTrueOrdering=" + Arrays.toString(reducedTrueOrdering));
 
                // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
 //               for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
                for (int nonReducedIdx = 0; nonReducedIdx < agents.length; nonReducedIdx++) {
 
-            	   //DEBUG: Only run predictions for a certain agent.
+            	   //Optionally only run predictions for a certain agent.
             	   if (!AGENT_TO_TEST.equals("all") && !status.getAdvertisers()[nonReducedIdx].equalsIgnoreCase(AGENT_TO_TEST)) continue;
             	   
+            	   //Only run predictions for agents that actually participated in the auction
+            	   if (impressions[nonReducedIdx] == 0 ) continue;
 
             	   
                   List<Map<Query, Integer>> impPredMapList = null;
@@ -769,7 +801,7 @@ public class ImpressionEstimatorTest {
                   }
 
                   //Remove any ordering information that the agent doesn't have access to.
-                  int[] knownInitialPositions = ordering.clone();
+                  int[] knownInitialPositions = trueOrdering.clone();
                   if (!ORDERING_KNOWN) {
                      Arrays.fill(knownInitialPositions, -1);
                   }
@@ -782,6 +814,12 @@ public class ImpressionEstimatorTest {
                                         reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, knownInitialPositions);
 
 
+                  
+                  
+                  
+                  
+                  //System.exit(0); //DEBUG
+                  
                   //---------------- SOLVE INSTANCE ----------------------
                   if (impressionEstimatorIdx == SolverType.CP) {
                      if (ORDERING_KNOWN) {
@@ -900,7 +938,7 @@ public class ImpressionEstimatorTest {
 
 
                   //Update performance metrics
-                  updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedOrdering, trueOrdering);
+                  updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedOrdering, reducedTrueOrdering);
                   //outputPerformanceMetrics();
 
 
@@ -1011,7 +1049,36 @@ public class ImpressionEstimatorTest {
    }
 
 
+   
    /**
+    * Input: a squashed bid ordering of all agents (where ordering[i] is the agent index that has the ith highest bid)
+    *   the number of impressions each agent saw. (where impressions[a] is the number of impressions seen by agentIdx a)
+    * Output: a squashed bid ordering of participants (where reducedOrdering[i] is the agent index that has the ith highest bid, out of all participants)
+    * @param trueOrdering
+    * @param impressions
+    * @return
+    */
+   private int[] reduceTrueOrderingToParticipants(int[] trueOrdering,
+		Integer[] impressions) {
+	   ArrayList<Integer> reducedOrdering = new ArrayList<Integer>();
+	   for (int i=0; i<trueOrdering.length; i++) {
+		   int agentIdx = trueOrdering[i];
+		   if (impressions[agentIdx] > 0) {
+			   reducedOrdering.add(agentIdx);
+		   }
+	   }
+	   
+	   int[] reducedOrderingArr = new int[reducedOrdering.size()];
+	   for (int i=0; i<reducedOrdering.size(); i++) {
+		   reducedOrderingArr[i] = reducedOrdering.get(i);
+	   }
+
+	   return reducedOrderingArr;
+   }
+
+   
+   
+/**
     * Gets a QAInstance in the format that Carleton's algorithm wants.
     *
     * @param NUM_SLOTS
@@ -1463,38 +1530,46 @@ public class ImpressionEstimatorTest {
          aggregateAbsError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
       }
 
-      //Keep track of the number of times the ordering was perfect
-      //(defined to be "perfect" if every agent that actually saw an impression is in its proper order)
-      //(the agent doesn't need to properly order agents that didn't even appear)
+      
       numOrderingPredictions++;
-      boolean isCorrectOrdering = true;
-      for (int a = 0; a < actualImpsPerAgent.length; a++) {
-         if (actualImpsPerAgent[a] > 0) {
-            if (predictedOrdering[a] != actualOrdering[a]) {
-               isCorrectOrdering = false;
-            }
-         }
+      //Keep track of the number of times that:
+      //1. the predicted number of participants was correct
+      //2. the predicted list of participants was correct
+      //3. the predicted ordering was correct
+      if (predictedOrdering.length == actualOrdering.length) {
+    	  numCorrectNumParticipants++;
+    	  
+    	  int[] predictedOrderingSorted = predictedOrdering.clone();
+    	  int[] actualOrderingSorted = actualOrdering.clone();
+    	  Arrays.sort(predictedOrderingSorted);
+    	  Arrays.sort(actualOrderingSorted);
+    	  boolean isCorrectParticipants = true;
+    	  boolean isCorrectOrdering = true;
+    	  for (int a=0; a<actualOrderingSorted.length; a++) {
+    		  if (predictedOrderingSorted[a] != actualOrderingSorted[a]) isCorrectParticipants = false;
+    		  if (predictedOrdering[a] != actualOrdering[a]) isCorrectOrdering = false;
+    	  }
+    	  if (isCorrectParticipants) numCorrectParticipants++;
+    	  if (isCorrectOrdering) numCorrectlyOrderedInstances++;    	  
       }
-      if (isCorrectOrdering) {
-         numCorrectlyOrderedInstances++;
-      }
-
+            
       debug("    (predicted ordering): " + Arrays.toString(predictedOrdering));
-      debug("       (actual ordering): " + Arrays.toString(actualOrdering));
-      debug("   (is correct ordering): " + isCorrectOrdering);
-      debug("");
-
-      //if (!isCorrectOrdering) System.exit(0);
-
+      debug("       (actual ordering): " + Arrays.toString(actualOrdering));  
    }
+   
 
    private void outputPerformanceMetrics() {
       double meanAbsError = aggregateAbsError / numImprsPredictions;
+      double pctCorrectNumParticipants = numCorrectNumParticipants / (double) numOrderingPredictions;
+      double pctCorrectParticipants = numCorrectParticipants / (double) numOrderingPredictions;
       double pctCorrectOrdering = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
       double pctSkipped = (numSkips) / ((double) numInstances);
       System.out.println("Pct Instances Skipped: " + pctSkipped + " (duplicateBids=" + numSkipsDuplicateBid + ", invalidData=" + numSkipsInvalidData);
       System.out.println("Mean absolute error: " + meanAbsError);
+      System.out.println("Pct correct num participants: " + numCorrectNumParticipants + "/" + numOrderingPredictions + "=" + pctCorrectNumParticipants);
+      System.out.println("Pct correct participants: " + numCorrectParticipants + "/" + numOrderingPredictions + "=" + pctCorrectParticipants);      
       System.out.println("Pct correctly ordered instances: " + numCorrectlyOrderedInstances + "/" + numOrderingPredictions + "=" + pctCorrectOrdering);
+      
    }
 
 
@@ -2003,17 +2078,17 @@ public class ImpressionEstimatorTest {
 	   double noiseFactor = 0;
 	   boolean useHistoricPriors = false;
 	   HistoricalPriorsType historicPriorsType = null; //Naive, LastNonZero, SMA, EMA,
-	   boolean orderingKnown = true;
+	   boolean orderingKnown = false;
 	   SolverType solverToUse = SolverType.CP;
 	   
 	   GameSet GAMES_TO_TEST = GameSet.test2010;
 	   int START_GAME = 1;
 	   int END_GAME = 1;
-	   int START_DAY = 0;
-	   int END_DAY = 57;
-	   int START_QUERY = 0;
-	   int END_QUERY = 15;
-	   String AGENT_NAME = "all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, all)
+	   int START_DAY = 22; //0
+	   int END_DAY = 22; //57
+	   int START_QUERY = 2; //0
+	   int END_QUERY = 2; //15
+	   String AGENT_NAME = "all"; //"all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, all)
 
 	   
 	   ImpressionEstimatorTest evaluator;
