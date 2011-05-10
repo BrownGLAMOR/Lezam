@@ -5,12 +5,12 @@
 
 
 ############# CONFIG ##############
-dir = "/home/sodomka/workspace/trunk/" #"~/Desktop/" #
-FILE = "null" #"CP.ie.exact.historic-EMA.finals2010.games-15127-15137.days-0-57.queries-0-15.agents-all.txt"
+dir = "~/Desktop/" #"/home/sodomka/workspace/trunk/" #"~/Desktop/" #
+FILE = "CP.rie.exact.noPrior.finals2010.games-15127-15136.days-0-57.queries-0-15.agents-all.txt" #"null" 
 OUTFILE = "out.txt"
 MIN.GAME.TO.FILTER = 15127
-MAX.GAME.TO.FILTER = 15127
-AGENTS.TO.FILTER = c("Schlemazl", "McCon")
+MAX.GAME.TO.FILTER = 15136
+AGENTS.TO.FILTER = c("Schlemazl")
 NUM.SLOTS = 5
 
 
@@ -210,7 +210,8 @@ names(time.stats) = paste("t.", names(time.stats), sep="")
 total.time = sum(times)
 names(total.time) = "total.time"
 
-pct.perfect.rank = sum(I.a$perfect.ranking == TRUE) / nrow(I.a)
+
+pct.perfect.rank = sum(I.a$perfect.ranking[I.a$opp.bid.rank==1]) / sum(I.a$opp.bid.rank==1) #Only look at 1st slot (since other values will be identical)
 names(pct.perfect.rank) = "pct.rank"
 
 avg.rank.dist = mean(I.a$rank.abs.err)
