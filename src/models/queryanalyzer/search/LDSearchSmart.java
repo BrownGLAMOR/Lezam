@@ -2,9 +2,7 @@ package models.queryanalyzer.search;
 
 import models.queryanalyzer.iep.IEResult;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
+import java.util.*;
 
 abstract class LDSearchSmart {
    private int _distFactor;
@@ -22,33 +20,32 @@ abstract class LDSearchSmart {
    }
 
    public void search(int[] startPerm, double[] avgPos) {
-	   //System.out.println("Starting LDS Search. startPerm=" + Arrays.toString(startPerm) + ", avgPos=" + Arrays.toString(avgPos));
+      //System.out.println("Starting LDS Search. startPerm=" + Arrays.toString(startPerm) + ", avgPos=" + Arrays.toString(avgPos));
       _best = null;
       _iterations = 0;
       int Indexs = startPerm.length;
       _LDSQueue.clear();
       _LDSQueue.add(new LDSPerm(0, startPerm, new LinkedList<LDSSwap>()));
 
+      Set<String> alreadySearched = new HashSet<String>();
+
       while (!_LDSQueue.isEmpty()) {
 
-//    	  //DEBUG Print queue contents
-//    	  LDSPerm[] qContents = new LDSPerm[_LDSQueue.size()]; 
-//    	  _LDSQueue.toArray(qContents);
-//    	  System.out.println("LDSQueue: " + Arrays.toString(qContents));
-//    	  //END DEBUG
-    	  
-         _iterations += 1;
          LDSPerm perm = _LDSQueue.poll();
 
-         if (evalPerm(perm._perm)) {
-            return;
-         }
+         if(!alreadySearched.contains(Arrays.toString(perm._perm))) {
 
-         for (int i1 = 0; i1 < Indexs; i1++) {
-            for (int i2 = i1 + 1; i2 < Indexs; i2++) {
-               LDSSwap nextSwap = new LDSSwap(i1, i2);
-               //System.out.println("nextSwap: " + nextSwap + " contained in " + perm + " ? " + perm._swapped.contains(nextSwap));
-               if (!perm._swapped.contains(nextSwap)) {
+            _iterations += 1;
+
+            alreadySearched.add(Arrays.toString(perm._perm));
+
+            if (evalPerm(perm._perm)) {
+               return;
+            }
+
+            for (int i1 = 0; i1 < Indexs; i1++) {
+               for (int i2 = i1 + 1; i2 < Indexs; i2++) {
+                  LDSSwap nextSwap = new LDSSwap(i1, i2);
                   int[] nextPerm = new int[Indexs];
                   for (int j = 0; j < Indexs; j++) {
                      nextPerm[j] = perm._perm[j];
@@ -56,13 +53,14 @@ abstract class LDSearchSmart {
 
                   LinkedList<LDSSwap> nextSwapSet = new LinkedList<LDSSwap>();
                   nextSwapSet.addAll(perm._swapped);
-                  nextSwapSet.add(new LDSSwap(i1, i2));
+                  nextSwapSet.add(nextSwap);
 
                   int temp = nextPerm[i1];
                   nextPerm[i1] = nextPerm[i2];
                   nextPerm[i2] = temp;
 
-                  if (feasibleOrder(nextPerm, avgPos)) {
+                  if (feasibleOrder(nextPerm, avgPos) &&
+                          !alreadySearched.contains(Arrays.toString(nextPerm))) {
 
                      double[] avgPosClone = (double[]) avgPos.clone();
                      double val = 0.0;

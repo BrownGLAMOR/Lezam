@@ -645,11 +645,15 @@ public class GameStatusHandler {
 
       String baseFile = "./game"; //games 1425-1464
       int min = 1;
-      int max = 9;
+      int max = 2;
       for (int i = min; i < max; i++) {
          String file = baseFile + i + ".slg";
          System.out.println("PARSING " + file);
+         double start = System.currentTimeMillis();
          GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
+         double stop = System.currentTimeMillis();
+         double secondsElapsed = (stop - start) / 1000.0;
+         System.out.println("SECONDS ELAPSED: " + secondsElapsed);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
          Set<Query> querySpace = gameStatus.getQuerySpace();
          LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get("McCon");

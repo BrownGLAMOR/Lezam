@@ -53,11 +53,13 @@ public class GameLogParser extends Parser {
     * @param receiver the receiver of the message
     * @param content  the message content
     */
+   @Override
    protected void message(int sender, int receiver, Transportable content) {
       SimParserMessage parseMessage = new SimParserMessage(sender, receiver, _day, content);
       _messages.addLast(parseMessage);
    }
 
+   @Override
    protected void dataUpdated(int agent, int type, Transportable content) {
       if (content instanceof UserPopulationState) {
          SimParserMessage parseMessage = new SimParserMessage(agent, type, _day, content);
