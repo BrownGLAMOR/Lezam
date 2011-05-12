@@ -817,9 +817,9 @@ public class ImpressionEstimatorTest {
 
                   //---------------- Create new QAInstance --------------
                   boolean considerPaddingAgents = false;
-                  inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, sAvgPos, agentIds, ourAgentIdx,
-                                        ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
-                                        reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, knownInitialPositions);
+                  inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
+                          ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
+                          reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone());
 
 
 
