@@ -59,7 +59,7 @@ public class WaterfallILP {
 	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
-	private double TIMEOUT_IN_SECONDS = 60;
+	private double TIMEOUT_IN_SECONDS = 3;
 	private boolean SUPPRESS_OUTPUT = true;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
@@ -149,10 +149,10 @@ public class WaterfallILP {
 			boolean[] isKnownPromotionEligible, int[] hitBudget, int numSlots, int numPromotedSlots, 
 			boolean integerProgram, boolean useEpsilon, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
-			boolean useRankingConstraints, boolean multipleSolutions) {
+			boolean useRankingConstraints, boolean multipleSolutions, double timeoutInSeconds) {
 		
 
-		
+		this.TIMEOUT_IN_SECONDS = timeoutInSeconds;
 		this.RETURN_MULTIPLE_SOLUTIONS = multipleSolutions;
 		this.USE_RANKING_CONSTRAINTS = useRankingConstraints;
 		this.INTEGER_PROGRAM = integerProgram;
@@ -249,11 +249,11 @@ public class WaterfallILP {
 			boolean integerProgram, boolean useEpsilon, 
 			double[] knownSampledMu_a, int numSamples, int maxImpsPerAgent,
 			double[] knownI_aDistributionMean, double[] knownI_aDistributionStdev,
-			boolean useRankingConstraints, boolean multipleSolutions) {
+			boolean useRankingConstraints, boolean multipleSolutions, double timeoutInSeconds) {
 		this(knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget,
 				numSlots, numPromotedSlots, integerProgram, useEpsilon, maxImpsPerAgent,
 				knownI_aDistributionMean, knownI_aDistributionStdev, useRankingConstraints, 
-				multipleSolutions);
+				multipleSolutions, timeoutInSeconds);
 		
 
 //		//DEBUG
@@ -2444,7 +2444,7 @@ public class WaterfallILP {
 		double[] knownI_aDistributionStdev = {-1.0, -1.0, -1.0, -1.0, -1.0};
 		boolean useRankingConstraints = false;
 		boolean multipleSolutions = false;
-		
+		double timeoutInSeconds = 3;
 		
 		
 		//Get mu_a values, given impressions
@@ -2452,7 +2452,7 @@ public class WaterfallILP {
 				knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
 				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
 				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev,
-				useRankingConstraints, multipleSolutions);
+				useRankingConstraints, multipleSolutions, timeoutInSeconds);
 
 		WaterfallResult result = ilp.solve();
 		double[][] I_a_s = result.getI_a_s();

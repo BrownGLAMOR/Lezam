@@ -29,8 +29,11 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    int NUM_SAMPLES = 10;
    boolean USE_RANKING_CONSTRAINTS;
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
+   double TIMEOUT_IN_SECONDS;
    
-   public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions) {
+   
+   public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
+	   TIMEOUT_IN_SECONDS = timeoutInSeconds;
 	   MULTIPLE_SOLUTIONS = multipleSolutions;
 	   INTEGER_PROGRAM = integerProgram;
 	   USE_RANKING_CONSTRAINTS = useRankingConstraints;
@@ -99,7 +102,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       //Get mu_a values, given impressions
       WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
                                           _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
-                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS);
+                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS, TIMEOUT_IN_SECONDS);
 
       WaterfallILP.WaterfallResult result = ilp.solve();
       double[][] I_a_s = result.getI_a_s();
@@ -288,7 +291,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 //			System.out.println("Eric Instance:\n" + ericInst);
 
          ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
-         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false);
+         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          int[] cOrder = QAInstance.getAvgPosOrder(cPos);

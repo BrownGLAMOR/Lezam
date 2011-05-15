@@ -37,7 +37,7 @@ public class ImpressionEstimatorTest {
    }
 
    private static boolean DEBUG = false;
-   private static boolean LOGGING = false;
+   private static boolean LOGGING = true;
    private static boolean SUMMARY = true;
 
    private static boolean NO_F0 = true;
@@ -118,7 +118,7 @@ public class ImpressionEstimatorTest {
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/sodomka/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -328,9 +328,10 @@ public class ImpressionEstimatorTest {
                                                           GameSet GAMES_TO_TEST, int START_GAME, int END_GAME,
                                                           int START_DAY, int END_DAY, int START_QUERY, int END_QUERY, String AGENT_TO_TEST,
                                                           double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
-                                                          double avgpospower, double ouravgpospower, double imppriorpower, double ourimppriorpower) throws IOException, ParseException {
+                                                          double avgpospower, double ouravgpospower, double imppriorpower, double ourimppriorpower,
+                                                          double IP_TIMEOUT_IN_SECONDS) throws IOException, ParseException {
       //printGameLogInfo();
-
+	   
       if (USE_HISTORIC_PRIORS && USE_WATERFALL_PRIORS) {
          throw new RuntimeException("Cannot use more than 1 type of prior");
       }
@@ -340,6 +341,7 @@ public class ImpressionEstimatorTest {
 
       StringBuffer sb1 = new StringBuffer();
       sb1.append(impressionEstimatorIdx);
+      if (!impressionEstimatorIdx.equals(SolverType.CP)) sb1.append("-" + (int)(1000*IP_TIMEOUT_IN_SECONDS) + "msec");
       sb1.append(ORDERING_KNOWN ? ".ie" : ".rie");
       sb1.append(SAMPLED_AVERAGE_POSITIONS ? ".sampled" : ".exact");
       //sb1.append(PERFECT_IMPS ? ".impsPerfect" : ".impsUB");
@@ -854,23 +856,23 @@ public class ImpressionEstimatorTest {
                      }
                      if (impressionEstimatorIdx == SolverType.MIP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      }
                      if (impressionEstimatorIdx == SolverType.MULTI_MIP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, true);
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, true, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      }
                      if (impressionEstimatorIdx == SolverType.MIP_LP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                        model = new EricImpressionEstimator(inst, useRankingConstraints, false, false);
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, false, false, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      }
 
                      if (impressionEstimatorIdx == SolverType.LDSMIP) {
                         boolean useRankingConstraints = false;
-                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false, IP_TIMEOUT_IN_SECONDS);
                         if (ORDERING_KNOWN) {
                            fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                         } else {
@@ -2133,13 +2135,14 @@ public class ImpressionEstimatorTest {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
 //      int END_GAME = 15130;
-      int END_GAME = 15136;
+      int END_GAME = 15127;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
-      int START_QUERY = 0; //0
+      int START_QUERY = 15; //0
       int END_QUERY = 15; //15
-      String AGENT_NAME = "Schlemazl"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
-
+      String AGENT_NAME = "all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
+      double IP_TIMEOUT_IN_SECONDS = 3;
+      
 
       ImpressionEstimatorTest evaluator;
 
@@ -2171,7 +2174,7 @@ public class ImpressionEstimatorTest {
             }
          }
 
-         if (args.length == 15) {
+         if (args.length == 16) {
             //Add game/day/query constraints if they were passed
 
             GameSet[] gameSets = GameSet.values();
@@ -2188,6 +2191,7 @@ public class ImpressionEstimatorTest {
             START_QUERY = new Integer(args[12]);
             END_QUERY = new Integer(args[13]);
             AGENT_NAME = args[14];
+            IP_TIMEOUT_IN_SECONDS = new Double(args[15]);
          }
       } else {
          System.out.println("Failed to read command line arguments. Will use defaults.");
@@ -2216,6 +2220,7 @@ public class ImpressionEstimatorTest {
       System.out.println("START_QUERY=" + START_QUERY);
       System.out.println("END_QUERY=" + END_QUERY);
       System.out.println("AGENT_NAME=" + AGENT_NAME);
+      System.out.println("IP_TIMEOUT_IN_SECONDS=" + IP_TIMEOUT_IN_SECONDS);
       System.out.println();
       //
 
@@ -2232,26 +2237,30 @@ public class ImpressionEstimatorTest {
       evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
                                                        START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
                                                        0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
-                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
+                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908,
+                                                       IP_TIMEOUT_IN_SECONDS
       );
 
-      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
-                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
-                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
-      );
-
-      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
-                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
-                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
-      );
-
-      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
-                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
-                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
-      );
+//      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+//                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+//                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+//                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908,
+//                                                       IP_TIMEOUT_IN_SECONDS
+//      );
+//
+//      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+//                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+//                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+//                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908,
+//                                                       IP_TIMEOUT_IN_SECONDS
+//      );
+//
+//      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+//                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+//                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+//                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908,
+//                                                       IP_TIMEOUT_IN_SECONDS
+//      );
 
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);
