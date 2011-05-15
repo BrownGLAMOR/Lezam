@@ -2,11 +2,7 @@ package simulator.predictions;
 
 import edu.umich.eecs.tac.props.*;
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.forecast.AbstractImpressionForecaster;
-import models.queryanalyzer.forecast.EMAImpressionForecaster;
-import models.queryanalyzer.forecast.LastNonZeroImpressionForecaster;
-import models.queryanalyzer.forecast.NaiveImpressionForecaster;
-import models.queryanalyzer.forecast.SMAImpressionForecaster;
+import models.queryanalyzer.forecast.*;
 import models.queryanalyzer.iep.*;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
@@ -41,8 +37,10 @@ public class ImpressionEstimatorTest {
    }
 
    private static boolean DEBUG = false;
-   private static boolean LOGGING = true;
+   private static boolean LOGGING = false;
    private static boolean SUMMARY = true;
+
+   private static boolean NO_F0 = true;
 
    private static void debug(String s) {
       if (DEBUG) {
@@ -65,17 +63,18 @@ public class ImpressionEstimatorTest {
    boolean REMOVE_SAMPLE_NANS = false;
 
 
+   private double IMP_UB_FACTOR = 1.4;
 
    //////////////////
    //NOTE: THESE ARE SET IN THE MAIN METHOD.
    //SETTING THEM HERE WILL JUST GET OVERRIDDEN (unless the default constructor is called)
-   private boolean SAMPLED_AVERAGE_POSITIONS = false;
-   public static boolean PERFECT_IMPS = true;
-   boolean USE_WATERFALL_PRIORS = false;
-   private double PRIOR_NOISE_MULTIPLIER = 0; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
-   boolean USE_HISTORIC_PRIORS = true;
-   HistoricalPriorsType HISTORIC_PRIOR_TO_USE = HistoricalPriorsType.LastNonZero;
-   boolean ORDERING_KNOWN = true;
+   private boolean SAMPLED_AVERAGE_POSITIONS;
+   public boolean PERFECT_IMPS = true;
+   boolean USE_WATERFALL_PRIORS;
+   private double PRIOR_NOISE_MULTIPLIER; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
+   boolean USE_HISTORIC_PRIORS;
+   HistoricalPriorsType HISTORIC_PRIOR_TO_USE;
+   boolean ORDERING_KNOWN;
    //////////////////
 
 
@@ -86,8 +85,6 @@ public class ImpressionEstimatorTest {
    public static final int MAX_F0_IMPS = 10969;
    public static final int MAX_F1_IMPS = 1801;
    public static final int MAX_F2_IMPS = 1468;
-   public static int LDS_ITERATIONS_1 = 10;
-   public static int LDS_ITERATIONS_2 = 10;
    private static boolean REPORT_FULLPOS_FORSELF = true;
 
    //Performance metrics
@@ -96,11 +93,13 @@ public class ImpressionEstimatorTest {
    int numSkipsDuplicateBid = 0;
    int numSkipsInvalidData = 0;
    int numImprsPredictions = 0;
+   int numTotImprPredictions = 0;
    int numCorrectNumParticipants = 0; //#times the number of participants was correct
    int numCorrectParticipants = 0; //#times the list of participants was correct
    int numOrderingPredictions = 0; //#times the list of participants was correctly ordered
    int numCorrectlyOrderedInstances = 0;
-   double aggregateAbsError = 0;
+   double aggregateAbsImprError = 0;
+   double aggregateAbsTotImprError = 0;
 
    public enum SolverType {
       CP, MIP, MIP_LP, LDSMIP, MULTI_MIP
@@ -118,8 +117,8 @@ public class ImpressionEstimatorTest {
 
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
-      if (GAMES_TO_TEST == GameSet.test2010) baseFile = "../../game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";//"/pro/aa/finals2010/game-tacaa1-"; //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -337,7 +336,7 @@ public class ImpressionEstimatorTest {
       }
 
       int fractionalBran = 0;
-      int sampFrac = 100;
+      int sampFrac = 200;
 
       StringBuffer sb1 = new StringBuffer();
       sb1.append(impressionEstimatorIdx);
@@ -364,9 +363,12 @@ public class ImpressionEstimatorTest {
       numSkipsDuplicateBid = 0;
       numSkipsInvalidData = 0;
       numImprsPredictions = 0;
+      numTotImprPredictions = 0;
       numOrderingPredictions = 0;
       numCorrectlyOrderedInstances = 0;
-      aggregateAbsError = 0;
+      aggregateAbsImprError = 0;
+      aggregateAbsTotImprError = 0;
+
       ArrayList<String> filenames = getGameStrings(GAMES_TO_TEST, START_GAME, END_GAME);
 
       double totalUserModelMAE = 0.0;
@@ -375,12 +377,14 @@ public class ImpressionEstimatorTest {
       int totalFracCorrect = 0;
       for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
          String filename = filenames.get(gameIdx);
-         if(SUMMARY)
+         if(SUMMARY) {
             System.out.println("Game " + gameIdx + ", " + filename);
+         }
 
          // Load this game and its basic parameters
          GameStatus status = new GameStatusHandler(filename).getGameStatus();
          int NUM_PROMOTED_SLOTS = status.getSlotInfo().getPromotedSlots();
+         int NUM_SLOTS = status.getSlotInfo().getRegularSlots();
          HashMap<QueryType, Double> promotedReserveScore = getApproximatePromotedReserveScore(status);
 
          // Make the query space
@@ -450,104 +454,107 @@ public class ImpressionEstimatorTest {
 
             for (int queryIdx=START_QUERY; queryIdx<=END_QUERY; queryIdx++) {
 //            for (int queryIdx = 0; queryIdx < numQueries; queryIdx++) {
-               numInstances++;
 
                Query query = queryArr[queryIdx];
 
+               if(!NO_F0 || !(query.getComponent() == null &&
+                                      query.getManufacturer() == null)) {
+
+                  numInstances++;
 //               if(!"pg".equals(query.getManufacturer()) ||
 //                       !(query.getComponent() == null)) continue;
 
-               debug("Game " + (gameIdx + 1) + "/" + filenames.size() + ", Day " + d + "/" + numReports + ", query=" + queryIdx);
+                  debug("Game " + (gameIdx + 1) + "/" + filenames.size() + ", Day " + d + "/" + numReports + ", query=" + queryIdx);
 
-               // Get avg position for each agent
-               Double[] actualAveragePositions = getAveragePositions(status, d, query);
+                  // Get avg position for each agent
+                  Double[] actualAveragePositions = getAveragePositions(status, d, query);
 
-               // Get avg position for each agent
-               Double[] sampledAveragePositions = getSampledAveragePositions(status, d, query);
+                  // Get avg position for each agent
+                  Double[] sampledAveragePositions = getSampledAveragePositions(status, d, query);
 
-               Double[] bids = getBids(status, d, query);
+                  Double[] bids = getBids(status, d, query);
 
-               Double[] advertiserEffects = getAdvertiserEffects(status, d, query);
+                  Double[] advertiserEffects = getAdvertiserEffects(status, d, query);
 
-               // Get squashed bids for each agent
-               Double[] squashedBids = getSquashedBids(status, d, query);
+                  // Get squashed bids for each agent
+                  Double[] squashedBids = getSquashedBids(status, d, query);
 
-               Double[] budgets = getBudgets(status, d, query);
+                  Double[] budgets = getBudgets(status, d, query);
 
-               Double[] globalBudgets = getGlobalBudgets(status, d);
+                  Double[] globalBudgets = getGlobalBudgets(status, d);
 
-               // Get total number of impressions for each agent
-               Integer[] impressions = getAgentImpressions(status, d, query);
+                  // Get total number of impressions for each agent
+                  Integer[] impressions = getAgentImpressions(status, d, query);
 
-               Integer[] clicks = getAgentClicks(status, d, query);
+                  Integer[] clicks = getAgentClicks(status, d, query);
 
-               Integer[] conversions = getAgentConversions(status, d, query);
+                  Integer[] conversions = getAgentConversions(status, d, query);
 
-               Integer[] promotedImpressions = getAgentPromotedImpressions(status, d, query);
+                  Integer[] promotedImpressions = getAgentPromotedImpressions(status, d, query);
 
-               Boolean[] promotionEligibility = getAgentPromotionEligibility(status, d, query, promotedReserveScore.get(query.getType()));
+                  Boolean[] promotionEligibility = getAgentPromotionEligibility(status, d, query, promotedReserveScore.get(query.getType()));
 
-               //Determine whether each agent hit their query or global budget (1 if yes, 0 if not)
-               Boolean[] hitBudget = getAgentHitBudget(status, d, query);
+                  //Determine whether each agent hit their query or global budget (1 if yes, 0 if not)
+                  Boolean[] hitBudget = getAgentHitBudget(status, d, query);
 
-               double[] impsDistMean;
-               double[] impsDistStdev;
-               if (!USE_WATERFALL_PRIORS) {
-                  impsDistMean = new double[numReports];
-                  impsDistStdev = new double[numReports];
-                  Arrays.fill(impsDistMean, -1);
-                  Arrays.fill(impsDistStdev, -1);
-               } else {
-                  impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
-                  impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false);
-               }
-
-               // Determine how many agents actually participated
-               int numParticipants = 0;
-               for (int a = 0; a < actualAveragePositions.length; a++) {
-                  //if (!actualAveragePositions[a].isNaN()) numParticipants++;
-                  if ( !CHEATING ||
-                          (   !Double.isNaN(actualAveragePositions[a]) &&
-                                      (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
-                     numParticipants++;
+                  double[] impsDistMean;
+                  double[] impsDistStdev;
+                  if (!USE_WATERFALL_PRIORS) {
+                     impsDistMean = new double[numReports];
+                     impsDistStdev = new double[numReports];
+                     Arrays.fill(impsDistMean, -1);
+                     Arrays.fill(impsDistStdev, -1);
+                  } else {
+                     impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status, query, d, true);
+                     impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, query, d, false);
                   }
-               }
 
-               // Reduce to only auction participants
-               String[] reducedAgents = new String[numParticipants];
-               double[] reducedAvgPos = new double[numParticipants];
-               double[] reducedSampledAvgPos = new double[numParticipants];
-               double[] reducedBids = new double[numParticipants];
-               int[] reducedImps = new int[numParticipants];
-               int[] reducedPromotedImps = new int[numParticipants];
-               boolean[] reducedPromotionEligibility = new boolean[numParticipants];
-               boolean[] reducedHitBudget = new boolean[numParticipants];
-               double[] reducedImpsDistMean = new double[numParticipants];
-               double[] reducedImpsDistStdev = new double[numParticipants];
-               int[] reducedIndices = new int[numParticipants];
-               int rIdx = 0;
-               for (int a = 0; a < actualAveragePositions.length; a++) {
-                  //If agent's actualPosition isn't NaN, AND
-                  //  we're not removing sampled nans, OR we're not in the problem of sampled average positions, OR the sampledPosition isn't NaN
-                  //Then add this agent.
-                  //Note: Also add this agent if we're adding everybody (i.e. if we're not cheating)
-                  if ( !CHEATING ||
-                          (  !Double.isNaN(actualAveragePositions[a]) &&
-                                     ( !Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
-                     reducedAgents[rIdx] = status.getAdvertisers()[a];
-                     reducedAvgPos[rIdx] = actualAveragePositions[a];
-                     reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
-                     reducedBids[rIdx] = squashedBids[a];
-                     reducedImps[rIdx] = impressions[a];
-                     reducedPromotedImps[rIdx] = promotedImpressions[a];
-                     reducedPromotionEligibility[rIdx] = promotionEligibility[a];
-                     reducedHitBudget[rIdx] = hitBudget[a];
-                     reducedImpsDistMean[rIdx] = impsDistMean[a];
-                     reducedImpsDistStdev[rIdx] = impsDistStdev[a];
-                     reducedIndices[rIdx] = a;
-                     rIdx++;
+                  // Determine how many agents actually participated
+                  int numParticipants = 0;
+                  for (int a = 0; a < actualAveragePositions.length; a++) {
+                     //if (!actualAveragePositions[a].isNaN()) numParticipants++;
+                     if ( !CHEATING ||
+                             (   !Double.isNaN(actualAveragePositions[a]) &&
+                                         (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
+                        numParticipants++;
+                     }
                   }
-               }
+
+                  // Reduce to only auction participants
+                  String[] reducedAgents = new String[numParticipants];
+                  double[] reducedAvgPos = new double[numParticipants];
+                  double[] reducedSampledAvgPos = new double[numParticipants];
+                  double[] reducedBids = new double[numParticipants];
+                  int[] reducedImps = new int[numParticipants];
+                  int[] reducedPromotedImps = new int[numParticipants];
+                  boolean[] reducedPromotionEligibility = new boolean[numParticipants];
+                  boolean[] reducedHitBudget = new boolean[numParticipants];
+                  double[] reducedImpsDistMean = new double[numParticipants];
+                  double[] reducedImpsDistStdev = new double[numParticipants];
+                  int[] reducedIndices = new int[numParticipants];
+                  int rIdx = 0;
+                  for (int a = 0; a < actualAveragePositions.length; a++) {
+                     //If agent's actualPosition isn't NaN, AND
+                     //  we're not removing sampled nans, OR we're not in the problem of sampled average positions, OR the sampledPosition isn't NaN
+                     //Then add this agent.
+                     //Note: Also add this agent if we're adding everybody (i.e. if we're not cheating)
+                     if ( !CHEATING ||
+                             (  !Double.isNaN(actualAveragePositions[a]) &&
+                                        ( !Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
+                        reducedAgents[rIdx] = status.getAdvertisers()[a];
+                        reducedAvgPos[rIdx] = actualAveragePositions[a];
+                        reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
+                        reducedBids[rIdx] = squashedBids[a];
+                        reducedImps[rIdx] = impressions[a];
+                        reducedPromotedImps[rIdx] = promotedImpressions[a];
+                        reducedPromotionEligibility[rIdx] = promotionEligibility[a];
+                        reducedHitBudget[rIdx] = hitBudget[a];
+                        reducedImpsDistMean[rIdx] = impsDistMean[a];
+                        reducedImpsDistStdev[rIdx] = impsDistStdev[a];
+                        reducedIndices[rIdx] = a;
+                        rIdx++;
+                     }
+                  }
 
 
 //               //DEBUG
@@ -564,89 +571,100 @@ public class ImpressionEstimatorTest {
 //               //END DEBUG
 
 
-               // Get ordering of remaining squashed bids
-               int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
+                  // Get ordering of remaining squashed bids
+                  int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
 
 
-               //If we added everybody, we don't want the true ordering to contain an ordering over non-participants.
-               //Remove agents that didn't participate from the true ordering.
-               int[] reducedTrueOrdering = trueOrdering.clone();
-               if (!CHEATING) reducedTrueOrdering = reduceTrueOrderingToParticipants(trueOrdering, impressions);
+                  //If we added everybody, we don't want the true ordering to contain an ordering over non-participants.
+                  //Remove agents that didn't participate from the true ordering.
+                  int[] reducedTrueOrdering = trueOrdering.clone();
+                  if (!CHEATING) reducedTrueOrdering = reduceTrueOrderingToParticipants(trueOrdering, impressions);
 
 
 
-               // Create the ordering that will be used by the agent
-               // (This is the true ordering if the ordering is known; otherwise it's an arbitrary ordering)
-               int[] ordering;
-               if (ORDERING_KNOWN) {
-                  ordering = trueOrdering.clone();
-               } else {
-                  ordering = new int[reducedBids.length];
-                  for (int i = 0; i < ordering.length; i++) {
-                     ordering[i] = i;
+                  // Create the ordering that will be used by the agent
+                  // (This is the true ordering if the ordering is known; otherwise it's an arbitrary ordering)
+                  int[] ordering;
+                  if (ORDERING_KNOWN) {
+                     ordering = trueOrdering.clone();
+                  } else {
+                     ordering = new int[reducedBids.length];
+                     for (int i = 0; i < ordering.length; i++) {
+                        ordering[i] = i;
+                     }
                   }
-               }
 //               int[] actualBidOrdering = getActualBidOrdering(ordering, reducedImps); //[a b c d] means the agent with index 0 has rank a
 //               int[] sampledBidOrdering = getSampledBidOrdering(ordering, reducedImps, reducedSampledAvgPos); //The initial positions of agents that had at least one sample
 //               int[] sampledBidRelativeOrdering = getRelativeOrdering(sampledBidOrdering); //The ordering for agents that had at least one sample
 
 
-               int impressionsUB = getAgentImpressionsUpperBound(status, PERFECT_IMPS, d, query, reducedImps, trueOrdering);
+                  int impressionsUB = getAgentImpressionsUpperBound(status, PERFECT_IMPS, d, query, reducedImps, trueOrdering);
+
+                  int impsInFirstSlot;
+                  if(PERFECT_IMPS) {
+                     impsInFirstSlot = impressionsUB;
+                     impressionsUB = (int)(impressionsUB * (1.0 + (IMP_UB_FACTOR - 1.0) * _rand.nextDouble()));
+//                  impressionsUB = (int)(impressionsUB * IMP_UB_FACTOR);
+                  }
+                  else {
+                     impsInFirstSlot = getMaxImps(NUM_SLOTS, reducedImps.length, trueOrdering,reducedImps);
+                  }
+
+//                  LDSearchSmartTest ldsSearch = new LDSearchSmartTest(trueOrdering.clone());
+//                  int[] avgPosOrder = QAInstance.getCarletonOrder(reducedAvgPos,5);
+//                  ldsSearch.search(avgPosOrder,reducedAvgPos);
+
+                  // If any agents have the same squashed bids, we won't know the definitive ordering.
+                  // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
+                  // For now, we'll drop any instances with duplicate squashed bids.
+                  if (duplicateSquashedBids(reducedBids, trueOrdering)) {
+                     debug("Duplicate squashed bids found. Skipping instance.");
+                     numSkips++;
+                     numSkipsDuplicateBid++;
+                     continue;
+                  }
+
+                  //More generally, make sure our data isn't corrupt
+                  if (!validData(reducedBids)) {
+                     debug("Invalid data. Skipping instance.");
+                     numSkips++;
+                     numSkipsInvalidData++;
+                     continue;
+                  }
 
 
-               // If any agents have the same squashed bids, we won't know the definitive ordering.
-               // (TODO: Run the waterfall to determine the correct ordering (or at least a feasible one).)
-               // For now, we'll drop any instances with duplicate squashed bids.
-               if (duplicateSquashedBids(reducedBids, trueOrdering)) {
-                  debug("Duplicate squashed bids found. Skipping instance.");
-                  numSkips++;
-                  numSkipsDuplicateBid++;
-                  continue;
-               }
+                  // Some params needed for the QA instance
+                  // TODO: Have some of these configurable.
+                  int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
+                  for (int i = 0; i < agentIds.length; i++) {
+                     agentIds[i] = -(i + 1);
+                  }
 
-               //More generally, make sure our data isn't corrupt
-               if (!validData(reducedBids)) {
-                  debug("Invalid data. Skipping instance.");
-                  numSkips++;
-                  numSkipsInvalidData++;
-                  continue;
-               }
+                  int userModelUB = 0;
+                  if(TEST_USER_MODEL) {
+                     userModelUB = getApproximateNumSearchersInQuery(status, d, query);
+                  }
 
-
-               // Some params needed for the QA instance
-               // TODO: Have some of these configurable.
-               int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
-               for (int i = 0; i < agentIds.length; i++) {
-                  agentIds[i] = -(i + 1);
-               }
-
-               int userModelUB;
-               if (!PERFECT_IMPS && USER_MODEL_PERF_IMPS) {
-                  userModelUB = getAgentImpressionsUpperBound(status, true, d, query, reducedImps, trueOrdering);
-               } else {
-                  userModelUB = impressionsUB;
-               }
-
-               //               for(int i = 0; i < reducedAgents.length; i++) {
-               //                  double tmpAvgPos = reducedAvgPos[i];
-               //                  double tmpImps = reducedImps[i];
-               //                  long intPartAvgPos = (long) tmpAvgPos;
-               //                  double fracPartAvgPos = tmpAvgPos-intPartAvgPos;
-               //                  if(tmpImps > 0 && fracPartAvgPos > 0) {
-               //                     totalFracPreds++;
-               //                     Fraction frac;
-               //                     try {
-               //                        frac = new Fraction(tmpAvgPos,0,20);
-               //                     } catch (FractionConversionException e) {
-               //                        e.printStackTrace();
-               //                        throw new RuntimeException("Could not convert fraction");
-               //                     }
-               //                     if(tmpImps % frac.getDenominator() == 0) {
-               //                        totalFracCorrect++;
-               //                     }
-               //                     System.out.println(tmpAvgPos + ", " + tmpImps + ", " + frac.getNumerator() + "/" + frac.getDenominator());
-               //                  }
-               //               }
+                  //               for(int i = 0; i < reducedAgents.length; i++) {
+                  //                  double tmpAvgPos = reducedAvgPos[i];
+                  //                  double tmpImps = reducedImps[i];
+                  //                  long intPartAvgPos = (long) tmpAvgPos;
+                  //                  double fracPartAvgPos = tmpAvgPos-intPartAvgPos;
+                  //                  if(tmpImps > 0 && fracPartAvgPos > 0) {
+                  //                     totalFracPreds++;
+                  //                     Fraction frac;
+                  //                     try {
+                  //                        frac = new Fraction(tmpAvgPos,0,20);
+                  //                     } catch (FractionConversionException e) {
+                  //                        e.printStackTrace();
+                  //                        throw new RuntimeException("Could not convert fraction");
+                  //                     }
+                  //                     if(tmpImps % frac.getDenominator() == 0) {
+                  //                        totalFracCorrect++;
+                  //                     }
+                  //                     System.out.println(tmpAvgPos + ", " + tmpImps + ", " + frac.getNumerator() + "/" + frac.getDenominator());
+                  //                  }
+                  //               }
 
 
 //               //FIXME DEBUG
@@ -664,337 +682,336 @@ public class ImpressionEstimatorTest {
 //               //FIXME END DEBUG
 
 
-               // DEBUG: Print out some game values.
-               debug("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
-               debug("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
-               debug("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
-               debug("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
-               debug("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
-               debug("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
-               debug("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
-               debug("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
-               debug("d=" + d + "\tq=" + query + "\thitBudget=" + Arrays.toString(hitBudget));
-               debug("d=" + d + "\tq=" + query + "\tqueryBudgets=" + Arrays.toString(budgets));
-               debug("d=" + d + "\tq=" + query + "\tquerySpend=" + Arrays.toString(getAgentQuerySpend(status, d, query)));
-               debug("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
-               debug("d=" + d + "\tq=" + query + "\tglobalBudgets=" + Arrays.toString(globalBudgets));
-               debug("d=" + d + "\tq=" + query + "\tglobalSpend=" + Arrays.toString(getAgentGlobalSpend(status, d)));
-               debug("d=" + d + "\tq=" + query + "\tglobalBids=" + Arrays.toString(getAgentGlobalMaxAvgCPC(status, d)));
-               debug("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
-               debug("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
-               debug("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
-               debug("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
-               debug("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
-               debug("");
+                  // DEBUG: Print out some game values.
+                  debug("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
+                  debug("d=" + d + "\tq=" + query + "\tagents=" + Arrays.toString(status.getAdvertisers()));
+                  debug("d=" + d + "\tq=" + query + "\taveragePos=" + Arrays.toString(actualAveragePositions));
+                  debug("d=" + d + "\tq=" + query + "\tsampledAveragePos=" + Arrays.toString(sampledAveragePositions));
+                  debug("d=" + d + "\tq=" + query + "\tsquashing=" + status.getPubInfo().getSquashingParameter());
+                  debug("d=" + d + "\tq=" + query + "\tadvertiserEffects=" + Arrays.toString(advertiserEffects));
+                  debug("d=" + d + "\tq=" + query + "\tsquashedBids=" + Arrays.toString(squashedBids));
+                  debug("d=" + d + "\tq=" + query + "\timpressions=" + Arrays.toString(impressions));
+                  debug("d=" + d + "\tq=" + query + "\thitBudget=" + Arrays.toString(hitBudget));
+                  debug("d=" + d + "\tq=" + query + "\tqueryBudgets=" + Arrays.toString(budgets));
+                  debug("d=" + d + "\tq=" + query + "\tquerySpend=" + Arrays.toString(getAgentQuerySpend(status, d, query)));
+                  debug("d=" + d + "\tq=" + query + "\tbids=" + Arrays.toString(bids));
+                  debug("d=" + d + "\tq=" + query + "\tglobalBudgets=" + Arrays.toString(globalBudgets));
+                  debug("d=" + d + "\tq=" + query + "\tglobalSpend=" + Arrays.toString(getAgentGlobalSpend(status, d)));
+                  debug("d=" + d + "\tq=" + query + "\tglobalBids=" + Arrays.toString(getAgentGlobalMaxAvgCPC(status, d)));
+                  debug("d=" + d + "\tq=" + query + "\tpromotedImpressions=" + Arrays.toString(promotedImpressions));
+                  debug("d=" + d + "\tq=" + query + "\tpromotionEligibility=" + Arrays.toString(promotionEligibility));
+                  debug("d=" + d + "\tq=" + query + "\timpressionsUB=" + impressionsUB);
+                  debug("d=" + d + "\tq=" + query + "\timpressionsDistMean=" + Arrays.toString(impsDistMean));
+                  debug("d=" + d + "\tq=" + query + "\timpressionsDistStdev=" + Arrays.toString(impsDistStdev));
+                  debug("");
 
-               debug("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
-               debug("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
-               debug("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
-               debug("d=" + d + "\tq=" + query + "\ttrueOrdering=" + Arrays.toString(trueOrdering));
-               debug("d=" + d + "\tq=" + query + "\treducedTrueOrdering=" + Arrays.toString(reducedTrueOrdering));
+                  debug("d=" + d + "\tq=" + query + "\treducedAvgPos=" + Arrays.toString(reducedAvgPos));
+                  debug("d=" + d + "\tq=" + query + "\treducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
+                  debug("d=" + d + "\tq=" + query + "\treducedBids=" + Arrays.toString(reducedBids));
+                  debug("d=" + d + "\tq=" + query + "\ttrueOrdering=" + Arrays.toString(trueOrdering));
+                  debug("d=" + d + "\tq=" + query + "\treducedTrueOrdering=" + Arrays.toString(reducedTrueOrdering));
 
-               // For each agent, make a prediction (each agent sees a different num impressions)
+                  // For each agent, make a prediction (each agent sees a different num impressions)
 //					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
 //               for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
-               for (int nonReducedIdx = 0; nonReducedIdx < agents.length; nonReducedIdx++) {
+                  for (int nonReducedIdx = 0; nonReducedIdx < agents.length; nonReducedIdx++) {
 
-                  //Optionally only run predictions for a certain agent.
-                  if (!AGENT_TO_TEST.equals("all") && !status.getAdvertisers()[nonReducedIdx].equalsIgnoreCase(AGENT_TO_TEST)) continue;
+                     //Optionally only run predictions for a certain agent.
+                     if (!AGENT_TO_TEST.equals("all") && !status.getAdvertisers()[nonReducedIdx].equalsIgnoreCase(AGENT_TO_TEST)) continue;
 
-                  //Only run predictions for agents that actually participated in the auction
-                  if (impressions[nonReducedIdx] == 0 ) continue;
+                     //Only run predictions for agents that actually participated in the auction
+                     if (impressions[nonReducedIdx] == 0 ) continue;
 
 
-                  List<Map<Query, Integer>> impPredMapList = null;
-                  if (USE_HISTORIC_PRIORS) {
-                     impPredMapList = impPredMapLists.get(nonReducedIdx);
-                  }
-
-                  if (USER_MODEL_PERF_IMPS) {
-                     totalImpsMapList.get(nonReducedIdx).put(query, userModelUB);
-                  }
-
-                  int ourAgentIdx = -1;
-                  for (int i = 0; i < reducedIndices.length; i++) {
-                     if (nonReducedIdx == reducedIndices[i]) {
-                        ourAgentIdx = i;
-                     }
-                  }
-
-                  if (ourAgentIdx == -1) {
+                     List<Map<Query, Integer>> impPredMapList = null;
                      if (USE_HISTORIC_PRIORS) {
-                        //This agent wasn't in the auction therefore we have no predictions for anyone
+                        impPredMapList = impPredMapLists.get(nonReducedIdx);
+                     }
+
+                     if (TEST_USER_MODEL && USER_MODEL_PERF_IMPS) {
+                        totalImpsMapList.get(nonReducedIdx).put(query, userModelUB);
+                     }
+
+                     int ourAgentIdx = -1;
+                     for (int i = 0; i < reducedIndices.length; i++) {
+                        if (nonReducedIdx == reducedIndices[i]) {
+                           ourAgentIdx = i;
+                        }
+                     }
+
+                     if (ourAgentIdx == -1) {
+                        if (USE_HISTORIC_PRIORS) {
+                           //This agent wasn't in the auction therefore we have no predictions for anyone
+                           for (int i = 0; i < agents.length; i++) {
+                              Map<Query, Integer> impPredMap = impPredMapList.get(i);
+                              impPredMap.put(query, -1);
+                           }
+                        }
+
+                        if (TEST_USER_MODEL) {
+                           if (!USER_MODEL_PERF_IMPS) {
+                              //We weren't in the auction so we have no prediction
+                              totalImpsMapList.get(nonReducedIdx).put(query, -1);
+                           }
+                        }
+                        continue;
+                     }
+
+                     if (USE_HISTORIC_PRIORS) {
+                        int[] predImpressions = new int[agents.length];
+                        AbstractImpressionForecaster impressionForecaster = naiveImpressionForecasters.get(nonReducedIdx);
+                        for (int i = 0; i < agents.length; i++) {
+                           predImpressions[i] = (int) impressionForecaster.getPrediction(i, query);
+                        }
+
+                        double[] reducedPredImpressions = new double[numParticipants];
+                        double[] reducedPredImpressionsStdDev = new double[numParticipants];
+                        int rIdx2 = 0;
+                        for (int a = 0; a < actualAveragePositions.length; a++) {
+                           if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
+                              if (predImpressions[a] > 0) {
+                                 reducedPredImpressions[rIdx2] = predImpressions[a];
+                              } else {
+                                 reducedPredImpressions[rIdx2] = -1;
+                              }
+                              reducedPredImpressionsStdDev[rIdx2] = reducedPredImpressions[rIdx2] * .3;
+                              rIdx2++;
+                           }
+                        }
+
+                        reducedImpsDistMean = reducedPredImpressions;
+                        reducedImpsDistStdev = reducedPredImpressionsStdDev;
+                     }
+
+                     String ourAgentName = reducedAgents[ourAgentIdx];
+
+                     debug("ourAgentIdx=" + ourAgentIdx + ", ourAgentName=" + ourAgentName);
+                     double start = System.currentTimeMillis(); //time the prediction time on this instance
+
+                     int ourImps = reducedImps[ourAgentIdx];
+                     int ourPromotedImps = reducedPromotedImps[ourAgentIdx];
+                     boolean ourPromotionEligibility = reducedPromotionEligibility[ourAgentIdx];
+                     boolean ourHitBudget = reducedHitBudget[ourAgentIdx];
+
+                     //DEBUG TEMP FIXME: Just want to see how much promotion constraint helps.
+                     //if (ourPromotedImps <= 0) continue;
+                     //ourPromotionEligibility = false; //FIXME just temporary
+                     //if (ourPromotionEligibility == false) continue;
+
+
+                     //FIXME: we should be able to choose more elegantly at runtime what class we're going to load.
+                     //This is annoying... ImpressionEstimator requires a QAInstance in the constructor,
+                     //but this QAInstance isn't ready until now.
+                     //Terrible, band-aid solution is to have an integer corresponding to each test.
+                     QAInstance inst;
+                     ImpressionAndRankEstimator fullModel = null;
+                     AbstractImpressionEstimator model = null;
+
+
+                     //Remove any average position information that the agent doesn't have access to.
+                     double[] avgPos;
+                     double[] sAvgPos;
+                     if (SAMPLED_AVERAGE_POSITIONS) {
+                        //Avg position is -1 except for our agent.
+                        avgPos = new double[reducedAvgPos.length];
+                        Arrays.fill(avgPos, -1);
+                        avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
+                        //Sampled avgPositions are their actual values
+                        sAvgPos = reducedSampledAvgPos.clone();
+                     } else {
+                        //Avg positions are their actual values
+                        avgPos = reducedAvgPos.clone();
+                        //Sampled avgPositions are -1
+                        sAvgPos = new double[reducedAvgPos.length];
+                        Arrays.fill(sAvgPos, -1);
+                     }
+
+                     //Remove any ordering information that the agent doesn't have access to.
+                     int[] knownInitialPositions = trueOrdering.clone();
+                     if (!ORDERING_KNOWN) {
+                        Arrays.fill(knownInitialPositions, -1);
+                     }
+
+
+                     //---------------- Create new QAInstance --------------
+                     boolean considerPaddingAgents = false;
+                     inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
+                                           ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
+                                           reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone());
+
+
+                     //System.exit(0); //DEBUG
+
+                     //---------------- SOLVE INSTANCE ----------------------
+                     if (impressionEstimatorIdx == SolverType.CP) {
+                        if (ORDERING_KNOWN) {
+                           model = new ImpressionEstimator(inst, sampFrac, fractionalBran, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,avgpospower,ouravgpospower,imppriorpower,ourimppriorpower);
+                           fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                        } else {
+                           model = new ImpressionEstimator(inst, sampFrac, fractionalBran, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,avgpospower,ouravgpospower,imppriorpower,ourimppriorpower);
+                           fullModel = new LDSImpressionAndRankEstimator(model);
+                        }
+                     }
+                     if (impressionEstimatorIdx == SolverType.MIP) {
+                        boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
+                        fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                     }
+                     if (impressionEstimatorIdx == SolverType.MULTI_MIP) {
+                        boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, true);
+                        fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                     }
+                     if (impressionEstimatorIdx == SolverType.MIP_LP) {
+                        boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, false, false);
+                        fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                     }
+
+                     if (impressionEstimatorIdx == SolverType.LDSMIP) {
+                        boolean useRankingConstraints = false;
+                        model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
+                        if (ORDERING_KNOWN) {
+                           fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                        } else {
+                           fullModel = new LDSImpressionAndRankEstimator(model);
+                        }
+                     }
+
+
+                     //---------------- SOLVE FOR RESULT -----------------------
+                     IEResult result = fullModel.getBestSolution();
+                     //Get predictions (also provide dummy values for failure)
+                     int[] predictedImpsPerAgent;
+                     int[] predictedOrdering;
+                     int predictedTotImpr;
+
+                     if (result != null) {
+                        predictedImpsPerAgent = result.getSol();
+                        predictedOrdering = result.getOrder();
+                        predictedTotImpr = result.getSlotImpressions()[0];
+                        //int[] predictedRelativeOrdering = getRelativeOrdering(predictedOrdering);
+                     } else {
+                        debug("Result is null.");
+                        predictedImpsPerAgent = new int[reducedImps.length];
+                        Arrays.fill(predictedImpsPerAgent, -1);
+
+                        predictedOrdering = new int[reducedImps.length];
+                        Arrays.fill(predictedOrdering, -1);
+
+                        predictedTotImpr = -1;
+                     }
+
+                     double stop = System.currentTimeMillis();
+                     double secondsElapsed = (stop - start) / 1000.0;
+
+                     //System.out.println("predicted: " + Arrays.toString(predictedImpsPerAgent));
+                     //System.out.println("actual: " + Arrays.toString(reducedImps));
+
+
+                     if (USE_HISTORIC_PRIORS) {
+                        //Update forecast models
                         for (int i = 0; i < agents.length; i++) {
                            Map<Query, Integer> impPredMap = impPredMapList.get(i);
-                           impPredMap.put(query, -1);
-                        }
-                     }
+                           int agentIdx = -1;
+                           for (int j = 0; j < reducedIndices.length; j++) {
+                              if (i == reducedIndices[j]) {
+                                 agentIdx = j;
+                              }
+                           }
 
-                     if (TEST_USER_MODEL) {
-                        if (!USER_MODEL_PERF_IMPS) {
-                           //We weren't in the auction so we have no prediction
-                           totalImpsMapList.get(nonReducedIdx).put(query, -1);
-                        }
-                     }
-                     continue;
-                  }
-
-                  if (USE_HISTORIC_PRIORS) {
-                     int[] predImpressions = new int[agents.length];
-                     AbstractImpressionForecaster impressionForecaster = naiveImpressionForecasters.get(nonReducedIdx);
-                     for (int i = 0; i < agents.length; i++) {
-                        predImpressions[i] = (int) impressionForecaster.getPrediction(i, query);
-                     }
-
-                     double[] reducedPredImpressions = new double[numParticipants];
-                     double[] reducedPredImpressionsStdDev = new double[numParticipants];
-                     int rIdx2 = 0;
-                     for (int a = 0; a < actualAveragePositions.length; a++) {
-                        if (!Double.isNaN(actualAveragePositions[a]) && (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS)) {
-                           if (predImpressions[a] > 0) {
-                              reducedPredImpressions[rIdx2] = predImpressions[a];
+                           if (agentIdx > -1) {
+                              impPredMap.put(query, predictedImpsPerAgent[agentIdx]);
                            } else {
-                              reducedPredImpressions[rIdx2] = -1;
-                           }
-                           reducedPredImpressionsStdDev[rIdx2] = reducedPredImpressions[rIdx2] * .3;
-                           rIdx2++;
-                        }
-                     }
-
-                     reducedImpsDistMean = reducedPredImpressions;
-                     reducedImpsDistStdev = reducedPredImpressionsStdDev;
-                  }
-
-                  String ourAgentName = reducedAgents[ourAgentIdx];
-
-                  debug("ourAgentIdx=" + ourAgentIdx + ", ourAgentName=" + ourAgentName);
-                  double start = System.currentTimeMillis(); //time the prediction time on this instance
-
-                  int ourImps = reducedImps[ourAgentIdx];
-                  int ourPromotedImps = reducedPromotedImps[ourAgentIdx];
-                  boolean ourPromotionEligibility = reducedPromotionEligibility[ourAgentIdx];
-                  boolean ourHitBudget = reducedHitBudget[ourAgentIdx];
-
-                  //DEBUG TEMP FIXME: Just want to see how much promotion constraint helps.
-                  //if (ourPromotedImps <= 0) continue;
-                  //ourPromotionEligibility = false; //FIXME just temporary
-                  //if (ourPromotionEligibility == false) continue;
-
-
-                  //FIXME: we should be able to choose more elegantly at runtime what class we're going to load.
-                  //This is annoying... ImpressionEstimator requires a QAInstance in the constructor,
-                  //but this QAInstance isn't ready until now.
-                  //Terrible, band-aid solution is to have an integer corresponding to each test.
-                  QAInstance inst;
-                  ImpressionAndRankEstimator fullModel = null;
-                  AbstractImpressionEstimator model = null;
-
-
-                  //Remove any average position information that the agent doesn't have access to.
-                  double[] avgPos;
-                  double[] sAvgPos;
-                  if (SAMPLED_AVERAGE_POSITIONS) {
-                     //Avg position is -1 except for our agent.
-                     avgPos = new double[reducedAvgPos.length];
-                     Arrays.fill(avgPos, -1);
-                     avgPos[ourAgentIdx] = reducedAvgPos[ourAgentIdx];
-                     //Sampled avgPositions are their actual values
-                     sAvgPos = reducedSampledAvgPos.clone();
-                  } else {
-                     //Avg positions are their actual values
-                     avgPos = reducedAvgPos.clone();
-                     //Sampled avgPositions are -1
-                     sAvgPos = new double[reducedAvgPos.length];
-                     Arrays.fill(sAvgPos, -1);
-                  }
-
-                  //Remove any ordering information that the agent doesn't have access to.
-                  int[] knownInitialPositions = trueOrdering.clone();
-                  if (!ORDERING_KNOWN) {
-                     Arrays.fill(knownInitialPositions, -1);
-                  }
-
-
-                  //---------------- Create new QAInstance --------------
-                  boolean considerPaddingAgents = false;
-                  inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
-                          ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
-                          reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone());
-
-
-
-
-
-
-                  //System.exit(0); //DEBUG
-
-                  //---------------- SOLVE INSTANCE ----------------------
-                  if (impressionEstimatorIdx == SolverType.CP) {
-                     if (ORDERING_KNOWN) {
-                        model = new ImpressionEstimator(inst, sampFrac, fractionalBran, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,avgpospower,ouravgpospower,imppriorpower,ourimppriorpower);
-                        fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                     } else {
-                        model = new ImpressionEstimator(inst, sampFrac, fractionalBran, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,avgpospower,ouravgpospower,imppriorpower,ourimppriorpower);
-                        fullModel = new LDSImpressionAndRankEstimator(model);
-                     }
-                  }
-                  if (impressionEstimatorIdx == SolverType.MIP) {
-                     boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                     model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
-                     fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                  }
-                  if (impressionEstimatorIdx == SolverType.MULTI_MIP) {
-                     boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                     model = new EricImpressionEstimator(inst, useRankingConstraints, true, true);
-                     fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                  }
-                  if (impressionEstimatorIdx == SolverType.MIP_LP) {
-                     boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
-                     model = new EricImpressionEstimator(inst, useRankingConstraints, false, false);
-                     fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                  }
-
-                  if (impressionEstimatorIdx == SolverType.LDSMIP) {
-                     boolean useRankingConstraints = false;
-                     model = new EricImpressionEstimator(inst, useRankingConstraints, true, false);
-                     if (ORDERING_KNOWN) {
-                        fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                     } else {
-                        fullModel = new LDSImpressionAndRankEstimator(model);
-                     }
-                  }
-
-
-                  //---------------- SOLVE FOR RESULT -----------------------
-                  IEResult result = fullModel.getBestSolution();
-                  //Get predictions (also provide dummy values for failure)
-                  int[] predictedImpsPerAgent;
-                  int[] predictedOrdering;
-
-                  if (result != null) {
-                     predictedImpsPerAgent = result.getSol();
-                     predictedOrdering = result.getOrder();
-                     //int[] predictedRelativeOrdering = getRelativeOrdering(predictedOrdering);
-
-
-                  } else {
-                     debug("Result is null.");
-                     predictedImpsPerAgent = new int[reducedImps.length];
-                     Arrays.fill(predictedImpsPerAgent, -1);
-
-                     predictedOrdering = new int[reducedImps.length];
-                     Arrays.fill(predictedOrdering, -1);
-                  }
-
-                  double stop = System.currentTimeMillis();
-                  double secondsElapsed = (stop - start) / 1000.0;
-
-                  //System.out.println("predicted: " + Arrays.toString(predictedImpsPerAgent));
-                  //System.out.println("actual: " + Arrays.toString(reducedImps));
-
-
-                  if (USE_HISTORIC_PRIORS) {
-                     //Update forecast models
-                     for (int i = 0; i < agents.length; i++) {
-                        Map<Query, Integer> impPredMap = impPredMapList.get(i);
-                        int agentIdx = -1;
-                        for (int j = 0; j < reducedIndices.length; j++) {
-                           if (i == reducedIndices[j]) {
-                              agentIdx = j;
+                              impPredMap.put(query, -1);
                            }
                         }
+                     }
 
-                        if (agentIdx > -1) {
-                           impPredMap.put(query, predictedImpsPerAgent[agentIdx]);
+                     if (TEST_USER_MODEL && !USER_MODEL_PERF_IMPS) {
+                        Map<Query, Integer> totalImpsMap = totalImpsMapList.get(nonReducedIdx);
+                        if (USER_MODEL_PERF_WHEN_IN_AUCTION) {
+                           totalImpsMap.put(query, userModelUB);
                         } else {
-                           impPredMap.put(query, -1);
+                           if (result == null) {
+                              totalImpsMap.put(query, -1);
+                           } else {
+                              totalImpsMap.put(query, result.getSlotImpressions()[0]);
+                           }
                         }
                      }
-                  }
 
-                  if (TEST_USER_MODEL && !USER_MODEL_PERF_IMPS) {
-                     Map<Query, Integer> totalImpsMap = totalImpsMapList.get(nonReducedIdx);
-                     if (USER_MODEL_PERF_WHEN_IN_AUCTION) {
-                        totalImpsMap.put(query, userModelUB);
-                     } else {
-                        if (result == null) {
-                           totalImpsMap.put(query, -1);
-                        } else {
-                           totalImpsMap.put(query, result.getSlotImpressions()[0]);
-                        }
+                     //LOGGING
+                     double[] err = new double[predictedImpsPerAgent.length];
+                     for (int a = 0; a < predictedImpsPerAgent.length; a++) {
+                        err[a] = Math.abs(predictedImpsPerAgent[a] - reducedImps[a]);
                      }
-                  }
-
-                  //LOGGING
-                  double[] err = new double[predictedImpsPerAgent.length];
-                  for (int a = 0; a < predictedImpsPerAgent.length; a++) {
-                     err[a] = Math.abs(predictedImpsPerAgent[a] - reducedImps[a]);
-                  }
-                  StringBuffer sb = new StringBuffer();
-                  sb.append("result=" + result + "\n");
-                  sb.append("err=" + Arrays.toString(err) + "\t");
-                  sb.append("pred=" + Arrays.toString(predictedImpsPerAgent) + "\t");
-                  sb.append("actual=" + Arrays.toString(reducedImps) + "\t");
-                  sb.append("g=" + gameIdx + " ");
-                  sb.append("d=" + d + " a=" + ourAgentIdx + " q=" + query + " avgPos=" + Arrays.toString(reducedAvgPos) + " ");
-                  sb.append("sampAvgPos=" + Arrays.toString(reducedSampledAvgPos) + " ");
-                  sb.append("bids=" + Arrays.toString(reducedBids) + " ");
-                  sb.append("imps=" + Arrays.toString(reducedImps) + " ");
-                  sb.append("order=" + Arrays.toString(ordering) + " ");
-                  sb.append(((impressionEstimatorIdx == SolverType.CP) ? "CP" : "MIP"));
-                  debug(sb.toString());
+                     StringBuffer sb = new StringBuffer();
+                     sb.append("result=" + result + "\n");
+                     sb.append("err=" + Arrays.toString(err) + "\t");
+                     sb.append("pred=" + Arrays.toString(predictedImpsPerAgent) + "\t");
+                     sb.append("actual=" + Arrays.toString(reducedImps) + "\t");
+                     sb.append("g=" + gameIdx + " ");
+                     sb.append("d=" + d + " a=" + ourAgentIdx + " q=" + query + " avgPos=" + Arrays.toString(reducedAvgPos) + " ");
+                     sb.append("sampAvgPos=" + Arrays.toString(reducedSampledAvgPos) + " ");
+                     sb.append("bids=" + Arrays.toString(reducedBids) + " ");
+                     sb.append("imps=" + Arrays.toString(reducedImps) + " ");
+                     sb.append("order=" + Arrays.toString(ordering) + " ");
+                     sb.append(((impressionEstimatorIdx == SolverType.CP) ? "CP" : "MIP"));
+                     debug(sb.toString());
 
 
-                  //Update performance metrics
-                  updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedOrdering, reducedTrueOrdering);
-                  //outputPerformanceMetrics();
+                     //Update performance metrics
+                     updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedTotImpr, impsInFirstSlot, predictedOrdering, reducedTrueOrdering);
+                     //outputPerformanceMetrics();
 
-                  if(LOGGING) {
-                     //Save all relevant data to file
-                     sb = new StringBuffer();
+                     if(LOGGING) {
+                        //Save all relevant data to file
+                        sb = new StringBuffer();
 
-                     //Go through all participating agents, (each "opponent" we want to make a prediction for)
-                     for (int predictingAgentIdx = 0; predictingAgentIdx < numParticipants; predictingAgentIdx++) {
+                        //Go through all participating agents, (each "opponent" we want to make a prediction for)
+                        for (int predictingAgentIdx = 0; predictingAgentIdx < numParticipants; predictingAgentIdx++) {
 
-                        //get the actual bid rank of the opponent, as well as the rank of ourselves.
-                        int ourBidRank = -1;
-                        int oppBidRank = -1;
-                        int predictedOppBidRank = -1;
-                        for (int i = 0; i < trueOrdering.length; i++) {
-                           if (trueOrdering[i] == ourAgentIdx) {
-                              ourBidRank = i;
-                           }
-                           if (trueOrdering[i] == predictingAgentIdx) {
-                              oppBidRank = i;
-                           }
+                           //get the actual bid rank of the opponent, as well as the rank of ourselves.
+                           int ourBidRank = -1;
+                           int oppBidRank = -1;
+                           int predictedOppBidRank = -1;
+                           for (int i = 0; i < trueOrdering.length; i++) {
+                              if (trueOrdering[i] == ourAgentIdx) {
+                                 ourBidRank = i;
+                              }
+                              if (trueOrdering[i] == predictingAgentIdx) {
+                                 oppBidRank = i;
+                              }
 
-                           //Also get the predicted bid rank of the given opponent.
-                           if (predictedOrdering[i] == predictingAgentIdx) {
-                              predictedOppBidRank = i;
+                              //Also get the predicted bid rank of the given opponent.
+                              if (predictedOrdering[i] == predictingAgentIdx) {
+                                 predictedOppBidRank = i;
+                              }
+
                            }
 
+
+                           sb.append(model.getName() + ",");
+                           sb.append(START_GAME + gameIdx + ",");
+                           sb.append(d + ",");
+                           sb.append(queryIdx + ",");
+                           sb.append(ourAgentName + ","); //our agent name
+                           sb.append(ourBidRank + ","); //our bid rank (i.e. our initial position)
+                           sb.append(oppBidRank + ","); //opponent bid rank  (i.e. opponent initial position)
+                           sb.append(predictedOppBidRank + ","); //predicted opponent bid rank (i.e. predicted opponent initial position)
+                           sb.append(reducedAvgPos[ourAgentIdx] + ","); //our avgPos
+                           sb.append(reducedAvgPos[predictingAgentIdx] + ","); //opponent avgPos
+                           sb.append(reducedSampledAvgPos[predictingAgentIdx] + ","); //opponent sampleAvgPos
+                           sb.append(query.getType() + ",");
+                           sb.append(numParticipants + ",");
+                           sb.append(reducedImps[predictingAgentIdx] + ","); //actual
+                           sb.append(predictedImpsPerAgent[predictingAgentIdx] + ","); //prediction
+                           sb.append(secondsElapsed + "\n");
                         }
-
-
-                        sb.append(model.getName() + ",");
-                        sb.append(START_GAME + gameIdx + ",");
-                        sb.append(d + ",");
-                        sb.append(queryIdx + ",");
-                        sb.append(ourAgentName + ","); //our agent name
-                        sb.append(ourBidRank + ","); //our bid rank (i.e. our initial position)
-                        sb.append(oppBidRank + ","); //opponent bid rank  (i.e. opponent initial position)
-                        sb.append(predictedOppBidRank + ","); //predicted opponent bid rank (i.e. predicted opponent initial position)
-                        sb.append(reducedAvgPos[ourAgentIdx] + ","); //our avgPos
-                        sb.append(reducedAvgPos[predictingAgentIdx] + ","); //opponent avgPos
-                        sb.append(reducedSampledAvgPos[predictingAgentIdx] + ","); //opponent sampleAvgPos
-                        sb.append(query.getType() + ",");
-                        sb.append(numParticipants + ",");
-                        sb.append(reducedImps[predictingAgentIdx] + ","); //actual
-                        sb.append(predictedImpsPerAgent[predictingAgentIdx] + ","); //prediction
-                        sb.append(secondsElapsed + "\n");
+                        //Log the result (for later loading into R)
+                        writeToLog(sb.toString());
                      }
-                     //Log the result (for later loading into R)
-                     writeToLog(sb.toString());
                   }
                }
             }
@@ -1056,6 +1073,7 @@ public class ImpressionEstimatorTest {
          System.out.println("User Model Error: " + totalUserModelMAE / totalUserModelPts);
          System.out.println("Continued Fraction Error: " + totalFracCorrect / ((double) totalFracPreds));
       }
+
       if(LOGGING) {
          closeLog();
       }
@@ -1064,6 +1082,64 @@ public class ImpressionEstimatorTest {
       return impRankErr;
    }
 
+
+   /*
+  Function input
+  number of slots: int slots
+
+  number of agents: int agents
+
+  order of agents: int[]
+  example: order = {1, 6, 0, 4, 3, 5, 2} means agent 1 was 1st, agent 6 2nd, 0 3rd, 4 4th, 3 5th, 5 6th, 2 7th
+  NOTE: these agents are zero numbered 0 is first... other note agents that are not in the "auction" are
+  ommitted so there might be less than 8 agents but that means the numbering must go up to the last agents
+  number -1 so if there are 6 agents in the auction the ordering numbers are 0...5
+
+  impressions: int[] impressions
+  example: impressions  = {294,22, 8, 294,294,272,286} agent 0 (not the highest slot) has 294 impressions agent 1 22... agent 6 286 impressions
+  NOTE: same as order of agents they only reflect the agents in the auction
+  *
+   */
+   public int getMaxImps(int slots, int agents, int[] order, int[] impressions) {
+      int[][] impressionsBySlot = new int[agents][slots];
+
+      int[] slotStart = new int[slots];
+      int a;
+
+      for (int i = 0; i < agents; ++i) {
+         a = order[i];
+         //System.out.println(a);
+         int remainingImp = impressions[a];
+         //System.out.println("remaining impressions "+ impressions[a]);
+         for (int s = Math.min(i + 1, slots) - 1; s >= 0; --s) {
+            if (s == 0) {
+               impressionsBySlot[a][0] = remainingImp;
+               slotStart[0] += remainingImp;
+            } else {
+
+               int r = slotStart[s - 1] - slotStart[s];
+               //System.out.println("agent " +a + " r = "+(slotStart[s-1] - slotStart[s]));
+               assert (r >= 0);
+               if (r < remainingImp) {
+                  remainingImp -= r;
+                  impressionsBySlot[a][s] = r;
+                  slotStart[s] += r;
+               } else {
+                  impressionsBySlot[a][s] = remainingImp;
+                  slotStart[s] += remainingImp;
+                  break;
+               }
+            }
+         }
+      }
+
+      int totImps = 0;
+      for(int i = 0; i < impressionsBySlot.length; i++) {
+         totImps += impressionsBySlot[i][0];
+      }
+
+      return totImps;
+   }
 
 
    /**
@@ -1261,31 +1337,21 @@ public class ImpressionEstimatorTest {
    private int getApproximateNumSearchersInQuery(GameStatus status, int d, Query q) {
       int imps = 0;
 
-      if (PERFECT_IMPS) {
-         for (Product product : status.getRetailCatalog()) {
-            HashMap<UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
-            if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               imps += userDist.get(UserState.F0);
-               imps += (1.25 / 3.0) * userDist.get(UserState.IS);
-            } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-               if (product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
-                  imps += (1.25 / 2.0) * userDist.get(UserState.F1);
-                  imps += (1.25 / 6.0) * userDist.get(UserState.IS);
-               }
-            } else {
-               if (product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
-                  imps += userDist.get(UserState.F2);
-                  imps += (1.25 / 3.0) * userDist.get(UserState.IS);
-               }
+      for (Product product : status.getRetailCatalog()) {
+         HashMap<UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
+         if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+            imps += userDist.get(UserState.F0);
+            imps += (1.0 / 3.0) * userDist.get(UserState.IS);
+         } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+            if (product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
+               imps += (1.0 / 2.0) * userDist.get(UserState.F1);
+               imps += (1.0 / 6.0) * userDist.get(UserState.IS);
             }
-         }
-      } else {
-         if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            imps = MAX_F0_IMPS;
-         } else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-            imps = MAX_F1_IMPS;
          } else {
-            imps = MAX_F2_IMPS;
+            if (product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
+               imps += userDist.get(UserState.F2);
+               imps += (1.0 / 3.0) * userDist.get(UserState.IS);
+            }
          }
       }
       return imps;
@@ -1293,26 +1359,10 @@ public class ImpressionEstimatorTest {
 
 
    private int getAgentImpressionsUpperBound(GameStatus status, boolean perfectImps, int d, Query q, int[] impressions, int[] order) {
-      int imps = 0;
+      int imps;
 
       if (perfectImps) {
-         for (Product product : status.getRetailCatalog()) {
-            HashMap<UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
-            if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               imps += userDist.get(UserState.F0);
-               imps += (1.0 / 3.0) * userDist.get(UserState.IS);
-            } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-               if (product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
-                  imps += (1.0 / 2.0) * userDist.get(UserState.F1);
-                  imps += (1.0 / 6.0) * userDist.get(UserState.IS);
-               }
-            } else {
-               if (product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
-                  imps += userDist.get(UserState.F2);
-                  imps += (1.0 / 3.0) * userDist.get(UserState.IS);
-               }
-            }
-         }
+         imps = getMaxImps(status.getSlotInfo().getRegularSlots(),order.length,order,impressions);;
       } else {
          if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
             imps = MAX_F0_IMPS;
@@ -1320,49 +1370,6 @@ public class ImpressionEstimatorTest {
             imps = MAX_F1_IMPS;
          } else {
             imps = MAX_F2_IMPS;
-         }
-      }
-
-      if (impressions.length > 0) {
-
-         int numWithImps = 0;
-         for(int i = 0; i < impressions.length; i++) {
-            if(impressions[i] > 0) {
-               numWithImps++;
-            }
-         }
-
-         int numSlots = status.getSlotInfo().getRegularSlots();
-
-         PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
-         for (int i = 0; i < numSlots && i < impressions.length; i++) {
-            if(impressions[order[i]] > 0) {
-               queue.add(impressions[order[i]]);
-            }
-         }
-
-         int lastIdx = queue.size();
-
-         ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
-         while (!queue.isEmpty()) {
-            int val = queue.poll();
-            impsBeforeDropout.add(val);
-
-            if (lastIdx < numWithImps) {
-               queue.add(impressions[order[lastIdx]] + val);
-               lastIdx++;
-            }
-         }
-
-         if(impsBeforeDropout.size() > 0) {
-            int maxImps = impsBeforeDropout.get(impsBeforeDropout.size() - 1);
-
-
-            //If any agent had more impressions than this upper bound, clearly the upper bound
-            //was not high enough.
-            if (imps < maxImps) {
-               imps = maxImps;
-            }
          }
       }
 
@@ -1550,14 +1557,16 @@ public class ImpressionEstimatorTest {
     * @param predictedImpsPerAgent
     * @param actualImpsPerAgent
     */
-   private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int[] predictedOrdering, int[] actualOrdering) {
+   private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int predTotImpr, int actualTotImpr, int[] predictedOrdering, int[] actualOrdering) {
       assert (predictedImpsPerAgent.length == actualImpsPerAgent.length);
 
       for (int a = 0; a < predictedImpsPerAgent.length; a++) {
          numImprsPredictions++;
-         aggregateAbsError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
+         aggregateAbsImprError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
       }
 
+      aggregateAbsTotImprError += Math.abs(predTotImpr - actualTotImpr);
+      numTotImprPredictions++;
 
       numOrderingPredictions++;
       //Keep track of the number of times that:
@@ -1587,22 +1596,25 @@ public class ImpressionEstimatorTest {
 
 
    private void outputPerformanceMetrics() {
-      double meanAbsError = aggregateAbsError / numImprsPredictions;
+      double meanAbsImprError = aggregateAbsImprError / numImprsPredictions;
+      double meanAbsTotImprError = aggregateAbsTotImprError / numTotImprPredictions;
       double pctCorrectNumParticipants = numCorrectNumParticipants / (double) numOrderingPredictions;
       double pctCorrectParticipants = numCorrectParticipants / (double) numOrderingPredictions;
       double pctCorrectOrdering = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
       double pctSkipped = (numSkips) / ((double) numInstances);
       System.out.println("Pct Instances Skipped: " + pctSkipped + " (duplicateBids=" + numSkipsDuplicateBid + ", invalidData=" + numSkipsInvalidData);
-      System.out.println("Mean absolute error: " + meanAbsError);
+      System.out.println("Mean absolute impr error: " + meanAbsImprError);
+      System.out.println("Mean absolute tot impr error: " + meanAbsTotImprError);
       System.out.println("Pct correct num participants: " + numCorrectNumParticipants + "/" + numOrderingPredictions + "=" + pctCorrectNumParticipants);
       System.out.println("Pct correct participants: " + numCorrectParticipants + "/" + numOrderingPredictions + "=" + pctCorrectParticipants);
       System.out.println("Pct correctly ordered instances: " + numCorrectlyOrderedInstances + "/" + numOrderingPredictions + "=" + pctCorrectOrdering);
    }
 
    private double[] getPerformanceMetrics() {
-      double[] impRankErr = new double[2];
-      impRankErr[0] = aggregateAbsError / numImprsPredictions;
-      impRankErr[1] = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
+      double[] impRankErr = new double[3];
+      impRankErr[0] = aggregateAbsImprError / numImprsPredictions;
+      impRankErr[1] = aggregateAbsTotImprError / numTotImprPredictions;
+      impRankErr[2] = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
       return impRankErr;
    }
 
@@ -2111,21 +2123,22 @@ public class ImpressionEstimatorTest {
       boolean useWaterfallPriors = false;
       double noiseFactor = 0;
       boolean useHistoricPriors = false;
-      HistoricalPriorsType historicPriorsType = HistoricalPriorsType.SMA; //Naive, LastNonZero, SMA, EMA,
+      HistoricalPriorsType historicPriorsType = HistoricalPriorsType.LastNonZero; //Naive, LastNonZero, SMA, EMA,
       boolean orderingKnown = false;
       SolverType solverToUse = SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
 //      int START_GAME = 1;
-//      int END_GAME = 2;
+//      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
+//      int END_GAME = 15130;
       int END_GAME = 15136;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
-      String AGENT_NAME = "McCon"; //"all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, all)
+      String AGENT_NAME = "Schlemazl"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
 
 
       ImpressionEstimatorTest evaluator;
@@ -2218,8 +2231,26 @@ public class ImpressionEstimatorTest {
 
       evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
                                                        START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
-                                                       0.014986793059288406,0.43215469385635796,0.2629132832344606,0.7734170330921204,
-                                                       1.4731325155160757,0.12500499588638359,1.6641796064301957,1.6643104188922846
+                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
+      );
+
+      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
+      );
+
+      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
+      );
+
+      evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+                                                       START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
+                                                       0.05386394861131105,1.28075640147771,1.8331475827818784,0.09204717280811181,
+                                                       0.11606008307677329,0.07672316666621426,0.6288039033754862,1.048491072346908
       );
 
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);

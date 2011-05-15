@@ -6,7 +6,7 @@ import models.queryanalyzer.search.LDSearchIESmart;
 public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator {
 
    public final static int NUM_SLOTS = 5;
-   public int NUM_ITERATIONS_2 = 40;
+   public int NUM_ITERATIONS_2 = 20;
    private QAInstance inst;
    private AbstractImpressionEstimator ie;
 
@@ -17,8 +17,8 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 
    public IEResult getBestSolution() {
       double[] avgPos = ie.getApproximateAveragePositions();
-      int[] avgPosOrder = inst.getAvgPosOrder(avgPos);
-//		int[] avgPosOrder = inst.getCarletonOrder(avgPos, NUM_SLOTS);
+//      int[] avgPosOrder = inst.getAvgPosOrder(avgPos);
+		int[] avgPosOrder = inst.getCarletonOrder(avgPos, NUM_SLOTS);
       IEResult bestSol;
       int numActualAgents = inst.getNumAdvetisers(); //regardless of any padding
 
