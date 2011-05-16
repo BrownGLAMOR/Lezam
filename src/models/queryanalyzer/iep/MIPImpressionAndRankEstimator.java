@@ -7,9 +7,9 @@ public class MIPImpressionAndRankEstimator implements ImpressionAndRankEstimator
    QAInstance instance;
    EricImpressionEstimator estimator;
 
-   public MIPImpressionAndRankEstimator(QAInstance instance, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions) {
+   public MIPImpressionAndRankEstimator(QAInstance instance, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeout) {
       this.instance = instance;
-      this.estimator = new EricImpressionEstimator(instance, useRankingConstraints, integerProgram, multipleSolutions);
+      this.estimator = new EricImpressionEstimator(instance, useRankingConstraints, integerProgram, multipleSolutions,timeout);
    }
 
    public IEResult getBestSolution() {
