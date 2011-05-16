@@ -16,8 +16,10 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
    private boolean EXACT_AVGPOS;
    private boolean PAD_AGENTS = false;
-   private boolean MIN_NONSAMP_IMPS = true; //minimize the impressions seen by agents not sampled
+   private boolean MIN_NONSAMP_IMPS = false; //minimize the impressions seen by agents not sampled
    private boolean BRANCH_AROUND_PRIOR = false;
+   private boolean SEARCH_ON_PRIOR = true;
+   private boolean OPP_PRIOR_TIE_BREAK = true;
    private boolean SIMPLE_PR_SAMP = false;
    private boolean GAUSSIAN_PR_SAMP = true;
    private double AVG_POS_STD_DEV;
@@ -45,6 +47,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private Map<Integer, IESolution> _solutions;
    private int _bestNode;
    private double _ourAvgPosDiff;
+   private double _bestTieBreak;
    private double _combinedObjectiveBound;
    private double _totImpsForNonSampled;
 
@@ -67,7 +70,11 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    private double _timeOut = 5; //in seconds
 
    public ImpressionEstimator(QAInstance inst) {
-      this(inst, 100, 0, .4, .4, .5, .5);
+      this(inst, 200, 0);
+   }
+
+   public ImpressionEstimator(QAInstance inst, int samplingFactor, int fractionalBranches) {
+      this(inst, samplingFactor, fractionalBranches, 0.082111,2.51308611,2.419581,0.8278350);
    }
 
    public ImpressionEstimator(QAInstance inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev) {
@@ -116,8 +123,8 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       _ourImpressions = inst.getImpressions();
       _imprUB = inst.getImpressionsUB();
 
-      _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
-      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
+      _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean().clone();
+      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev().clone();
 
       for(int i = 0; i < _agentImpressionDistributionMean.length; i++) {
          if(i == _ourIndex) {
@@ -441,19 +448,20 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       }
 
       if(order.length == 0) {
-          int j =0;
+         int j =0;
       }
       else if(order.length == 1) {
-          int j =0;
+         int j =0;
       }
       else if(order.length == 2) {
-          int j =0;
+         int j =0;
       }
 
       _nodeId = 0;
       _solutions = new HashMap<Integer, IESolution>();
       _combinedObjectiveBound = Double.MAX_VALUE;
       _ourAvgPosDiff = Double.MAX_VALUE;
+      _bestTieBreak = 0;
       _totImpsForNonSampled = Double.MAX_VALUE;
 
       int[] agentImpr = new int[_advertisers];
@@ -476,7 +484,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          //System.exit(-1);
          return null;
       } else {
-         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, copyArray(order), sol._slotImpr);
+         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr);
          IEResult reducedResult = reduceIEResult(result);
          if (IE_DEBUG) {
             System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result + "\nReduced " + reducedResult);
@@ -514,7 +522,13 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 //            return;
 //         }
 
-         double probWaterfall = getImpressionModelObjective(agentImpr, order);
+         double probWaterfall;
+         if(OPP_PRIOR_TIE_BREAK) {
+            probWaterfall =  getImpressionModelObjective(agentImpr, order,true,false);
+         }
+         else {
+            probWaterfall =  getImpressionModelObjective(agentImpr, order,true,true);
+         }
 
          double sampleProb;
          double totImpsForNonSampled = 0;
@@ -646,9 +660,16 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
          //System.out.println("combinedObj=" + combinedObj + ", imprObjVal=" + imprObjVal + ", probWaterfall=" + probWaterfall + ", sampleProb=" + sampleProb);
 
-         if (combinedObj < _combinedObjectiveBound || ((combinedObj == _combinedObjectiveBound) && (!EXACT_AVGPOS && !PAD_AGENTS && (!MIN_NONSAMP_IMPS || totImpsForNonSampled < _totImpsForNonSampled)))) {
+         double tiebreak = 0.0;
+         if(OPP_PRIOR_TIE_BREAK) {
+            tiebreak =  getImpressionModelObjective(agentImpr, order,false,true);
+         }
+
+         if (combinedObj < _combinedObjectiveBound || ((combinedObj == _combinedObjectiveBound) && ((!EXACT_AVGPOS && !PAD_AGENTS && (!MIN_NONSAMP_IMPS || totImpsForNonSampled < _totImpsForNonSampled)) ||
+                                                                                                            (OPP_PRIOR_TIE_BREAK && tiebreak > _bestTieBreak)))) {
             _combinedObjectiveBound = combinedObj;
             _ourAvgPosDiff = ourAvgPosDiff;
+            _bestTieBreak = tiebreak;
             if (MIN_NONSAMP_IMPS) {
                _totImpsForNonSampled = totImpsForNonSampled;
             }
@@ -738,7 +759,6 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                   }
                }
 
-
                int minImpr = _agentImprLB[currAgent];
                LinkedList<Integer> downBranches = new LinkedList<Integer>();
                for (int i = bestImpr - 1; i >= minImpr; i--) {
@@ -765,13 +785,12 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                }
             }
 
-
-            Integer impPred = (int) _agentImpressionDistributionMean[currAgent];
-            if (impPred >= 0) {
-               if (!branches.contains(impPred)) {
-                  branches.addFirst(impPred);
-               }
-            }
+//            Integer impPred = (int) _agentImpressionDistributionMean[currAgent];
+//            if (SEARCH_ON_PRIOR && impPred >= 0) {
+//               if (!branches.contains(impPred)) {
+//                  branches.addFirst(impPred);
+//               }
+//            }
          }
 
          if (currAgent == _ourIndex) {
@@ -781,7 +800,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          }
 
          for (Integer branch : branches) {
-            int[] agentImprCopy = copyArray(agentImpr);
+            int[] agentImprCopy = agentImpr.clone();
             agentImprCopy[currAgent] = branch;
             int[] newSlotImpr = fillSlots(slotImpr, branch);
 
@@ -842,7 +861,9 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                   }
                }
                branches.clear();
-               branches.add(impPred);
+               if(SEARCH_ON_PRIOR) {
+                  branches.add(impPred);
+               }
                for (int i = 0; i < Math.max(upBranches.size(), downBranches.size()); i++) {
                   if (i < upBranches.size()) {
                      branches.add(upBranches.get(i));
@@ -852,10 +873,12 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                   }
                }
             } else {
-               if (branches.contains(impPred)) {
-                  branches.remove(impPred);
+               if(SEARCH_ON_PRIOR) {
+                  if (branches.contains(impPred)) {
+                     branches.remove(impPred);
+                  }
+                  branches.addFirst(impPred);
                }
-               branches.addFirst(impPred);
             }
          }
 
@@ -867,7 +890,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
          }
 
          for (Integer branch : branches) {
-            int[] agentImprCopy = copyArray(agentImpr);
+            int[] agentImprCopy = agentImpr.clone();
             agentImprCopy[currAgent] = branch;
             int[] newSlotImpr = fillSlots(slotImpr, branch);
 
@@ -907,6 +930,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                double prob;
                if(i == _ourIndex) {
                   prob = OUR_AVG_POS_POWER*Math.log(gaussianPDF(avgpos, mean, stdDev));
+
                }
                else {
                   prob = AVG_POS_POWER*Math.log(gaussianPDF(avgpos, mean, stdDev));
@@ -916,6 +940,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
                double prob;
                if(i == _ourIndex) {
                   prob = Math.pow(gaussianPDF(avgpos, mean, stdDev),OUR_AVG_POS_POWER);
+
                }
                else {
                   prob = Math.pow(gaussianPDF(avgpos, mean, stdDev),AVG_POS_POWER);
@@ -928,31 +953,33 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
 
 //      System.out.println(obj);
 
-      if (obj == 1.0) {
-         //This means we didn't place anyone with a prediction yet
-         //so return a bad objective
-         return 0.0;
-      } else {
-         if (LOG_GAUSSIAN_PDF) {
+      if (LOG_GAUSSIAN_PDF) {
+         if(obj == 0) {
+            return 0;
+         }
+         else {
             return Math.exp(obj);
+         }
+      }
+      else {
+         if (obj == 1.0) {
+            //This means we didn't place anyone with a prediction yet
+            //so return a bad objective
+            return 0.0;
          } else {
             return obj;
          }
       }
    }
 
-   private double getImpressionModelObjective(int[] agentImpr, int[] order) {
-      return getImpressionModelObjective(agentImpr, order, order.length);
-   }
-
-   private double getImpressionModelObjective(int[] agentImpr, int[] order, int numSlotsFilled) {
+   private double getImpressionModelObjective(int[] agentImpr, int[] order, boolean ourPrior, boolean othersPrior) {
       double obj;
       if (LOG_GAUSSIAN_PDF) {
          obj = 0.0;
       } else {
          obj = 1.0;
       }
-      numSlotsFilled = Math.min(numSlotsFilled, agentImpr.length);
+      int numSlotsFilled = agentImpr.length;
       for (int i = 0; i < numSlotsFilled; i++) {
          int currAgent = order[i];
          double mean = _agentImpressionDistributionMean[currAgent];
@@ -962,10 +989,32 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
             if (LOG_GAUSSIAN_PDF) {
                double prob;
                if(currAgent == _ourIndex) {
-                  prob = OUR_IMP_PRIOR_POWER*Math.log(gaussianPDF(imps, mean, stdDev));
+                  if(ourPrior) {
+                     prob = gaussianPDF(imps, mean, stdDev);
+                     if(prob > 0) {
+                        prob = OUR_IMP_PRIOR_POWER*Math.log(prob);
+                     }
+                  }
+                  else {
+                     prob = 0.0;
+                  }
                }
                else {
-                  prob = IMP_PRIOR_POWER*Math.log(gaussianPDF(imps, mean, stdDev));
+                  if(othersPrior) {
+                     double avgPos = _trueAvgPos[currAgent];
+                     if (!Double.isNaN(avgPos) && (((avgPos * 100000) % 100000) == 0)) {
+                        prob = gaussianPDF(imps, mean, stdDev);
+                        if(prob > 0) {
+                           prob = IMP_PRIOR_POWER*Math.log(prob);
+                        }
+                     }
+                     else {
+                        prob = 0;
+                     }
+                  }
+                  else {
+                     prob = 0.0;
+                  }
                }
                obj += prob;
             } else {
@@ -983,14 +1032,19 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       }
 
 //      System.out.println(obj);
-
-      if (obj == 1.0) {
-         //This means we didn't place anyone with a prediction yet
-         //so return a bad objective
-         return 0.0;
-      } else {
-         if (LOG_GAUSSIAN_PDF) {
+      if (LOG_GAUSSIAN_PDF) {
+         if(obj == 0) {
+            return 0;
+         }
+         else {
             return Math.exp(obj);
+         }
+      }
+      else {
+         if (obj == 1.0) {
+            //This means we didn't place anyone with a prediction yet
+            //so return a bad objective
+            return 0.0;
          } else {
             return obj;
          }
@@ -998,7 +1052,10 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    }
 
 
-   private double gaussianPDF(double x, double mean, double sigma) {
+   private static double gaussianPDF(double x, double mean, double sigma) {
+      if(sigma == 0) {
+         return 0;
+      }
       double diff = x - mean;
       double sigma2 = sigma * sigma;
       return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
@@ -1110,7 +1167,7 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
    }
 
    private int[] fillSlots(int[] slotImpr, int newImpr) {
-      int[] newSlotImpr = copyArray(slotImpr);
+      int[] newSlotImpr = slotImpr.clone();
       FILL_SLOTS_AVG = 0;
 
       int firstSlot = 0;
@@ -1147,13 +1204,6 @@ public class ImpressionEstimator implements AbstractImpressionEstimator {
       return newSlotImpr;
    }
 
-   private int[] copyArray(int[] arr) {
-      int[] newArr = new int[arr.length];
-      for (int i = 0; i < arr.length; i++) {
-         newArr[i] = arr[i];
-      }
-      return newArr;
-   }
 
    public int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
       ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();

@@ -1,11 +1,7 @@
 package models.queryanalyzer.search;
 
-import java.util.Arrays;
-
-import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimator;
 
 public class LDSearchIESmart extends LDSearchSmart {
 	int _maxIter;
