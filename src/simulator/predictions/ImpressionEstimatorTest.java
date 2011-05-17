@@ -38,7 +38,7 @@ public class ImpressionEstimatorTest {
    }
 
    private static boolean DEBUG = false;
-   private static boolean LOGGING = false;
+   private static boolean LOGGING = true;
    private static boolean SUMMARY = true;
 
    private static boolean NO_F0 = false;
@@ -65,7 +65,6 @@ public class ImpressionEstimatorTest {
 
 
    private double IMP_UB_FACTOR;
-   private static double IP_TIMEOUT_IN_SECONDS;
 
    //////////////////
    //NOTE: THESE ARE SET IN THE MAIN METHOD.
@@ -120,7 +119,7 @@ public class ImpressionEstimatorTest {
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -328,7 +327,7 @@ public class ImpressionEstimatorTest {
     */
    public double[] impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx,
                                                           GameSet GAMES_TO_TEST, int START_GAME, int END_GAME,
-                                                          int START_DAY, int END_DAY, int START_QUERY, int END_QUERY, String AGENT_TO_TEST, int sampFrac) throws IOException, ParseException {
+                                                          int START_DAY, int END_DAY, int START_QUERY, int END_QUERY, String AGENT_TO_TEST, int sampFrac, double IP_TIMEOUT_IN_SECONDS) throws IOException, ParseException {
       //printGameLogInfo();
 
       if (USE_HISTORIC_PRIORS && USE_WATERFALL_PRIORS) {
@@ -340,6 +339,7 @@ public class ImpressionEstimatorTest {
       StringBuffer sb1 = new StringBuffer();
       sb1.append(impressionEstimatorIdx);
       if (!impressionEstimatorIdx.equals(SolverType.CP)) sb1.append("-" + (int)(1000*IP_TIMEOUT_IN_SECONDS) + "msec");
+      else sb1.append("-" + sampFrac + "sampFrac");
       sb1.append(ORDERING_KNOWN ? ".ie" : ".rie");
       sb1.append(SAMPLED_AVERAGE_POSITIONS ? ".sampled" : ".exact");
       //sb1.append(PERFECT_IMPS ? ".impsPerfect" : ".impsUB");
@@ -2141,15 +2141,18 @@ public class ImpressionEstimatorTest {
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
-      int END_GAME = 15127;
+      int END_GAME = 15136;
 //      int END_GAME = 15136;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
       String AGENT_NAME = "all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
+      double IP_TIMEOUT_IN_SECONDS = 3;
+      int sampFrac = 100;
+      double upperBoundNoise = 1.2;
 
-
+      
       ImpressionEstimatorTest evaluator;
 
       //boolean sampleAvgPositions = true
@@ -2180,7 +2183,7 @@ public class ImpressionEstimatorTest {
             }
          }
 
-         if (args.length == 16) {
+         if (args.length == 18) {
             //Add game/day/query constraints if they were passed
 
             GameSet[] gameSets = GameSet.values();
@@ -2198,16 +2201,16 @@ public class ImpressionEstimatorTest {
             END_QUERY = new Integer(args[13]);
             AGENT_NAME = args[14];
             IP_TIMEOUT_IN_SECONDS = new Double(args[15]);
+            
+            sampFrac = new Integer(args[16]);
+            upperBoundNoise = new Double(args[17]);
+
          }
       } else {
-         if(DEBUG) {
             System.out.println("Failed to read command line arguments. Will use defaults.");
-         }
       }
 
 
-      int sampFrac = 100;
-      double upperBoundNoise = 1.2;
       if(args.length == 2) {
          sampFrac = Integer.parseInt(args[0]);
          upperBoundNoise = Double.parseDouble(args[1]);
@@ -2236,6 +2239,8 @@ public class ImpressionEstimatorTest {
          System.out.println("END_QUERY=" + END_QUERY);
          System.out.println("AGENT_NAME=" + AGENT_NAME);
          System.out.println("IP_TIMEOUT_IN_SECONDS=" + IP_TIMEOUT_IN_SECONDS);
+         System.out.println("sampFrac=" + sampFrac);
+         System.out.println("upperBoundNoise=" + upperBoundNoise);
          System.out.println();
          //
       }
@@ -2248,7 +2253,7 @@ public class ImpressionEstimatorTest {
       double[] results;
 
       results = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac);
+                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS);
 
       System.out.println(sampFrac + "," + upperBoundNoise + "," + results[0] + "," + results[1] + "," + results[2] + "," + results[3]);
 
