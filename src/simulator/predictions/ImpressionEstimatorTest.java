@@ -19,12 +19,6 @@ import java.util.*;
 
 public class ImpressionEstimatorTest {
 
-
-   public ImpressionEstimatorTest() {
-      //Use default configuration
-      _rand = new Random(_seed);
-   }
-
    public ImpressionEstimatorTest(boolean sampleAvgPositions, boolean perfectImps, boolean useWaterfallPriors, double noiseFactor,  boolean useHistoricPriors, HistoricalPriorsType historicPriorsType, boolean orderingKnown, double upperBoundNoise) {
       _rand = new Random(_seed);
       SAMPLED_AVERAGE_POSITIONS = sampleAvgPositions;
@@ -128,31 +122,6 @@ public class ImpressionEstimatorTest {
       }
       return filenames;
    }
-
-//   public ArrayList<String> getGameStrings() {
-//      String baseFile = "./game";
-//      int min;
-//      int max;
-//
-//      if (GAMES_TO_TEST == GameSet.test2010) {
-//         min = 1;
-//         max = 1;
-//      } else if (GAMES_TO_TEST == GameSet.finals2010) {
-//    	  baseFile = "/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
-//    	  min = 15127;
-//    	  max = 15127;
-//      } else {
-//         min = 1;
-//         max = 8;
-//      }
-//
-//      ArrayList<String> filenames = new ArrayList<String>();
-//      for (int i = min; i <= max; i++) {
-//         filenames.add(baseFile + i + ".slg");
-//      }
-//      return filenames;
-//   }
-
 
    /**
     * Debugging method used to print out whatever data I want from the game logs

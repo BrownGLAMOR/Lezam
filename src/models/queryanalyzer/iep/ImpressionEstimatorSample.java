@@ -50,6 +50,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    private int _advertisers;
    private int _slots;
    private double[] _trueAvgPos;
+   private double[] _sampledAvgPos;
    private int _ourIndex;
    private int _ourImpressions;
    private int _imprUB;
@@ -97,20 +98,20 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       //_trueAvgPos should contain exact average positions whenever possible.
       //If there is no exact average position, use sampled average position.
       _trueAvgPos = inst.getAvgPos().clone();
-      double[] sampledAvgPos = inst.getSampledAvgPos().clone();
+      _sampledAvgPos = inst.getSampledAvgPos().clone();
       for (int i = 0; i < _trueAvgPos.length; i++) {
          if (i == _ourIndex) {
             FULL_SELF_POS = !(_trueAvgPos[i] == -1);
          }
          if (_trueAvgPos[i] == -1) {
-            _trueAvgPos[i] = sampledAvgPos[i];
+            _trueAvgPos[i] = _sampledAvgPos[i];
          }
       }
 
       //Determine which agents saw at least one sample
-      _agentSawSample = new boolean[sampledAvgPos.length];
-      for (int i = 0; i < sampledAvgPos.length; i++) {
-         if (!Double.isNaN(sampledAvgPos[i])) {
+      _agentSawSample = new boolean[_sampledAvgPos.length];
+      for (int i = 0; i < _sampledAvgPos.length; i++) {
+         if (!Double.isNaN(_sampledAvgPos[i])) {
             _agentSawSample[i] = true;
          }
       }
@@ -172,7 +173,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       _agentImprUB = new int[_advertisers];
 
       for (int i = 0; i < _advertisers; i++) {
-         _agentImprLB[i] = 1;
+         _agentImprLB[i] = 5;
          _agentImprUB[i] = _imprUB;
       }
 
@@ -460,7 +461,12 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
             }
 
             int oppImps;
-            if(oppAvgPos == 2.0) {
+            if(Double.isNaN(oppAvgPos)) {
+               //Opponent agent did not get sampled, assign 1/2 the maximum
+               //expected imps before seeing an impression
+               oppImps = (int)(.5 * (_imprUB / ((double)_numSamples)));
+            }
+            else if(oppAvgPos == 2.0) {
                //Assume they saw the same amount as us (should probably be something with priors)
                if(oppPrior > 0 && oppPrior < _ourImpressions) {
                   oppImps = Math.min(_imprUB, (int)oppPrior);
@@ -566,28 +572,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       }
 
       _startTime = System.currentTimeMillis();
-      checkImpressions(0, agentImpr, slotImpr, order);
-
-//      if(_solutions.isEmpty()) {
-//         agentImpr = new int[_advertisers];
-//         for (int i = 0; i < _advertisers; i++) {
-//            agentImpr[i] = 0;
-//         }
-//         slotImpr = new int[_slots];
-//         for (int i = 0; i < _slots; i++) {
-//            slotImpr[i] = 0;
-//         }
-//
-//         _imprUB *= 1.2;
-//
-//         for (int i = 0; i < _advertisers; i++) {
-//            if(i != _ourIndex) {
-//               _agentImprUB[i] = _imprUB;
-//            }
-//         }
-//
-//         checkImpressions(0, agentImpr, slotImpr, order);
-//      }
+      checkImpressions(0, agentImpr, slotImpr, order,false);
 
       IESolution sol = _solutions.get(_bestNode);
       if (sol == null) {
@@ -612,7 +597,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       }
    }
 
-   void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order) {
+   void checkImpressions(int currIndex, int[] agentImpr, int[] slotImpr, int[] order, boolean isMult) {
       _nodeId++;
 
 //      System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
@@ -632,14 +617,29 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          // We've come up with feasible impression estimates for all advertisers.
          // Compute objective value for this solution.
 
-         //Prune if we have a waterfall with fewer than minimum impressions
-         if (slotImpr[0] < MIN_TOT_IMPR) {
-            return;
+         if(!isMult && slotImpr[0]*2 < _imprUB) {
+            int multiples = (int)Math.floor(_imprUB / ((double) slotImpr[0]));
+            //Explore around 5 multiples less than the impression upperbound
+            for(int mult = 2; mult <= multiples; mult += (int)Math.ceil(multiples / 5.0)) {
+               int[] newAgentImpr = agentImpr.clone();
+               int[] newSlotImpr = slotImpr.clone();
+               int[] newOrder = order.clone();
+
+               for(int i = 0; i < newAgentImpr.length; i++) {
+                  newAgentImpr[i] = newAgentImpr[i] * mult;
+               }
+
+               fillSlots(newSlotImpr,newAgentImpr,newOrder);
+
+               checkImpressions(currIndex,newAgentImpr,newSlotImpr,newOrder,true);
+            }
          }
 
-//         if (imprObjVal > _bestImprObjVal) {
-//            return;
-//         }
+         //Prune if we have a waterfall with fewer than minimum impressions
+         if (slotImpr[0] < MIN_TOT_IMPR) {
+            int j = 0;
+            return;
+         }
 
          double probWaterfall;
          if(OPP_PRIOR_TIE_BREAK) {
@@ -750,10 +750,12 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          //   If prediction is not close enough, return (and possibly search with some new #imps estimate for opponents)
          // Go on to the next agent (assuming the #imps just found for this agent is true)
 
+         int maxImpr = _agentImprUB[currAgent];
+         bestImpr = Math.min(maxImpr,bestImpr);
+
          LinkedList<Integer> branches = new LinkedList<Integer>();
          branches.add(bestImpr);
 
-         int maxImpr = _agentImprUB[currAgent];
          if (_fractionalBranches > 0) {
             //we don't do fractional branching on ourselves,
             //because we have an exact average
@@ -814,7 +816,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
                }
             }
 
-            checkImpressions(currIndex + 1, agentImprCopy, newSlotImpr, order);
+            checkImpressions(currIndex + 1, agentImprCopy, newSlotImpr, order, false);
          }
       } else {
 
@@ -832,7 +834,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
             //Determine how many directly above us have NaN average position
             int numNaN = 0;
             for(int i = currIndex-1; i >= 0; i--) {
-               if(Double.isNaN(_trueAvgPos[order[i]])) {
+               if(Double.isNaN(_sampledAvgPos[order[i]])) {
                   numNaN++;
                }
             }
@@ -912,7 +914,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
                }
             }
 
-            checkImpressions(currIndex + 1, agentImprCopy, newSlotImpr, order);
+            checkImpressions(currIndex + 1, agentImprCopy, newSlotImpr, order, false);
          }
       }
    }
@@ -1233,8 +1235,28 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       return newSlotImpr;
    }
 
+   public static void fillSlots(int[] slotImpr, int[] newImprs, int[] order) {
+      for (int i = 0; i < newImprs.length; ++i) {
+         int remainingImp = newImprs[order[i]];
+         for (int s = Math.min(i + 1, slotImpr.length) - 1; s >= 0; --s) {
+            if (s == 0) {
+               slotImpr[0] += remainingImp;
+            } else {
+               int r = slotImpr[s - 1] - slotImpr[s];
+               assert (r >= 0);
+               if (r < remainingImp) {
+                  remainingImp -= r;
+                  slotImpr[s] += r;
+               } else {
+                  slotImpr[s] += remainingImp;
+                  break;
+               }
+            }
+         }
+      }
+   }
 
-   public int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
+   public static int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
       ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
       PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
       int nonZeroImps = 0;
@@ -1290,7 +1312,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
   *
   * -gnthomps
    */
-   public int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
+   public static int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
       int[][] impressionsBySlot = new int[agents][slots];
 
       int[] slotStart = new int[slots];
@@ -1338,59 +1360,5 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          _slotImpr = slotImpr;
       }
    }
-
-
-//   public static void main(String[] args) {
-//
-//      for (int ourAgentIdx = 1; ourAgentIdx <= 1; ourAgentIdx++) {
-//         //These aren't actually used; everything is -1 except the current agentIdx
-//         double[] I_aFull = {6, 1009, 1057, 268};
-//         double[] mu_aFull = {2.0, 1.0, 2.2138126773888365, 2.0223880597014925};
-//
-//         //Get priors on impressions
-//         double[] agentImpressionDistributionMean = {-1, -1, -1, -1};
-//         double[] agentImpressionDistributionStdev = {-1, -1, -1, -1};
-//
-//         //Get observed exact average positions (we only see one)
-//         double[] mu_a = new double[mu_aFull.length];
-//         Arrays.fill(mu_a, -1);
-//         mu_a[ourAgentIdx] = mu_aFull[ourAgentIdx];
-//
-//         double[] I_aPromoted = {-1, -1, -1};
-//         boolean[] isKnownPromotionEligible = {false, false, false};
-//         double[] knownSampledMu_a = {Double.NaN, 1.0, 2.3, 2.0};
-//         int numSlots = 5;
-//         int numPromotedSlots = 0;
-//
-//         int ourImpressions = (int) I_aFull[ourAgentIdx];
-//         int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
-//         boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
-//         int impressionsUB = 1500;
-//         int numAgents = mu_a.length;
-//
-//         //Did we hit our budget? (added constraint if we didn't)
-//         boolean hitOurBudget = true;
-//         int[] predictedOrder = {1, 0, 3, 2};
-//
-//         //Give arbitrary agent IDs
-//         int[] agentIds = new int[numAgents];
-//         for (int i = 0; i < agentIds.length; i++) {
-//            agentIds[i] = -(i + 1);
-//         }
-//
-//         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
-//         ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
-//
-//         double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
-//         int[] cOrder = predictedOrder; //QAInstance.getAvgPosOrder(cPos);
-//         //int[] cOrder = {1, 2, 0};
-//         System.out.println("cPos: " + Arrays.toString(cPos) + ", cOrder: " + Arrays.toString(cOrder));
-//         IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
-//
-//         System.out.println("ourAgentIdx=" + ourAgentIdx);
-//         System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
-//      }
-//   }
-
 
 }
