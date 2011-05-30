@@ -27,8 +27,7 @@ public class QAInstance {
 
    public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
-                     boolean hitOurBudget,
-                     double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
+                     boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
                      int[] initialPosition) {
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
@@ -45,6 +44,7 @@ public class QAInstance {
       _impressionsUB = impressionsUB;
       _considerPaddingAgents = considerPaddingAgents;
       _promotionEligibilityVerified = promotionEligibiltyVerified;
+      _hitOurBudget = hitOurBudget;
       _agentImpressionDistributionMean = agentImpressionDistributionMean;
       _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
       _isSampled = isSampled;
@@ -170,7 +170,6 @@ public class QAInstance {
    }
 
    //The ith index contains the index of the agent that started in the ith position.
-   //TODO: This is confusing, since for all the other "get" arrays, the ith index refers to the ith agent.
    public int[] getInitialPositionOrdering() {
       return _initialPosition;
    }

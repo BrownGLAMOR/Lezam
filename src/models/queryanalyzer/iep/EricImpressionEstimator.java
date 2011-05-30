@@ -290,7 +290,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);
 
-         ImpressionEstimator carletonImpressionEstimator = new ImpressionEstimator(carletonInst);
+         ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();

@@ -38,10 +38,10 @@ public class ImpressionEstimatorTest {
    }
 
    private static boolean DEBUG = false;
-   private static boolean LOGGING = true;
+   private static boolean LOGGING = false;
    private static boolean SUMMARY = true;
 
-   private static boolean NO_F0 = false;
+   private static boolean NO_F0 = true;
 
    private static void debug(String s) {
       if (DEBUG) {
@@ -94,6 +94,7 @@ public class ImpressionEstimatorTest {
    int numSkipsDuplicateBid = 0;
    int numSkipsInvalidData = 0;
    int numImprsPredictions = 0;
+   int nullIEResult = 0;
    int numTotImprPredictions = 0;
    int numCorrectNumParticipants = 0; //#times the number of participants was correct
    int numCorrectParticipants = 0; //#times the list of participants was correct
@@ -119,7 +120,7 @@ public class ImpressionEstimatorTest {
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -360,6 +361,7 @@ public class ImpressionEstimatorTest {
       }
       numInstances = 0;
       numSkips = 0;
+      nullIEResult = 0;
       numSkipsDuplicateBid = 0;
       numSkipsInvalidData = 0;
       numImprsPredictions = 0;
@@ -370,6 +372,12 @@ public class ImpressionEstimatorTest {
       aggregateAbsTotImprError = 0;
 
       ArrayList<String> filenames = getGameStrings(GAMES_TO_TEST, START_GAME, END_GAME);
+
+      int numSampWithImp = 0;
+      int numSampWithImpTot = 0;
+      int numSampPadFixed = 0;
+      int numSampPadTried = 0;
+      int[] numSampWithImpDiff = new int[9];
 
       double totalUserModelMAE = 0.0;
       int totalUserModelPts = 0;
@@ -557,31 +565,81 @@ public class ImpressionEstimatorTest {
                      }
                   }
 
-
-//               //DEBUG
-//               double[] reducedAvgPos = {2, 1, 2};
-//               double[] reducedSampledAvgPos = {-1, -1, -1};
-//               double[] reducedBids = {80, 100, 90};
-//               int[] reducedImps = {20, 10, 10};
-//               int[] reducedPromotedImps = {-1, -1, -1};
-//               boolean[] reducedPromotionEligibility = {false, false, false};
-//               boolean[] reducedHitBudget = {false, false, false};
-//               double[] reducedImpsDistMean = {20, 10, 10};
-//               double[] reducedImpsDistStdev = {1, 1, 1};
-//               numParticipants = 3;
-//               //END DEBUG
-
-
                   // Get ordering of remaining squashed bids
                   int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
+
+                  int numSampled = 0;
+                  int numWithImps = 0;
+                  for(int i = 0; i < reducedSampledAvgPos.length; i++) {
+                     if(!Double.isNaN(reducedSampledAvgPos[i])) {
+                        numSampled++;
+                     }
+                     if(reducedImps[i] > 0) {
+                        numWithImps++;
+                     }
+                  }
+
+                  if(numSampled == numWithImps) {
+                     numSampWithImp++;
+                  }
+                  else {
+                     numSampWithImpDiff[Math.abs(numSampled - numWithImps)]++;
+
+                     for(int agent = 0; agent < sampledAveragePositions.length; agent++) {
+                        int foundIdx = -1;
+                        for(int i = 0; i < reducedIndices.length; i++) {
+                           if(reducedIndices[i] == agent) {
+                              if(!Double.isNaN(reducedSampledAvgPos[i])) {
+                                 foundIdx = i;
+                              }
+                              break;
+                           }
+                        }
+
+                        if(foundIdx > -1) {
+                           //remove nans
+                           double[] nonNaNAvgPos = new double[reducedSampledAvgPos.length - (numWithImps - numSampled)];
+                           int idx = 0;
+                           for(int i = 0; i < reducedSampledAvgPos.length; i++) {
+                              if(!Double.isNaN(reducedSampledAvgPos[i])) {
+                                 nonNaNAvgPos[idx] = reducedSampledAvgPos[i];
+                                 if(foundIdx == idx) {
+                                    nonNaNAvgPos[idx] = reducedAvgPos[i];
+                                 }
+                                 idx++;
+                              }
+                           }
+
+                           int[] nonNaNOrder = QAInstance.getAvgPosOrder(nonNaNAvgPos);
+
+                           int foundTooBigStart = 0;
+                           int foundTooBigStop = 0;
+                           for (int i = 0; i < NUM_SLOTS && i < nonNaNAvgPos.length; i++) {
+                              if (nonNaNAvgPos[nonNaNOrder[i]] > i + 1) {
+                                 foundTooBigStart = i + 1;
+                                 foundTooBigStop = (int) Math.ceil(nonNaNAvgPos[nonNaNOrder[i]]);
+                                 break;
+                              }
+                           }
+
+                           numSampled += (foundTooBigStop - foundTooBigStart);
+                           numSampPadTried++;
+                           if(numSampled == numWithImps) {
+                              numSampPadFixed++;
+                           }
+                        }
+                     }
+                  }
+
+                  numSampWithImpTot++;
 
 
                   //If we added everybody, we don't want the true ordering to contain an ordering over non-participants.
                   //Remove agents that didn't participate from the true ordering.
                   int[] reducedTrueOrdering = trueOrdering.clone();
-                  if (!CHEATING) reducedTrueOrdering = reduceTrueOrderingToParticipants(trueOrdering, impressions);
-
-
+                  if (!CHEATING) {
+                     reducedTrueOrdering = reduceTrueOrderingToParticipants(trueOrdering, impressions);
+                  }
 
                   // Create the ordering that will be used by the agent
                   // (This is the true ordering if the ordering is known; otherwise it's an arbitrary ordering)
@@ -635,8 +693,7 @@ public class ImpressionEstimatorTest {
 
 
                   // Some params needed for the QA instance
-                  // TODO: Have some of these configurable.
-                  int[] agentIds = new int[numParticipants]; //Just have them all be negative. TODO: Is carleton using this?
+                  int[] agentIds = new int[numParticipants];
                   for (int i = 0; i < agentIds.length; i++) {
                      agentIds[i] = -(i + 1);
                   }
@@ -645,43 +702,6 @@ public class ImpressionEstimatorTest {
                   if(TEST_USER_MODEL) {
                      userModelUB = getApproximateNumSearchersInQuery(status, d, query);
                   }
-
-                  //               for(int i = 0; i < reducedAgents.length; i++) {
-                  //                  double tmpAvgPos = reducedAvgPos[i];
-                  //                  double tmpImps = reducedImps[i];
-                  //                  long intPartAvgPos = (long) tmpAvgPos;
-                  //                  double fracPartAvgPos = tmpAvgPos-intPartAvgPos;
-                  //                  if(tmpImps > 0 && fracPartAvgPos > 0) {
-                  //                     totalFracPreds++;
-                  //                     Fraction frac;
-                  //                     try {
-                  //                        frac = new Fraction(tmpAvgPos,0,20);
-                  //                     } catch (FractionConversionException e) {
-                  //                        e.printStackTrace();
-                  //                        throw new RuntimeException("Could not convert fraction");
-                  //                     }
-                  //                     if(tmpImps % frac.getDenominator() == 0) {
-                  //                        totalFracCorrect++;
-                  //                     }
-                  //                     System.out.println(tmpAvgPos + ", " + tmpImps + ", " + frac.getNumerator() + "/" + frac.getDenominator());
-                  //                  }
-                  //               }
-
-
-//               //FIXME DEBUG
-//               //For now, skip anything with a NaN in sampled impressions
-//               boolean hasNaN = false;
-//               for (int i = 0; i < reducedSampledAvgPos.length; i++) {
-//                  if (Double.isNaN(reducedSampledAvgPos[i])) {
-//                     hasNaN = true;
-//                  }
-//               }
-//               if (!hasNaN) {
-//                  numSkips++;
-//                  continue;
-//               }
-//               //FIXME END DEBUG
-
 
                   // DEBUG: Print out some game values.
                   debug("d=" + d + "\tq=" + query + "\treserve=" + status.getReserveInfo().getRegularReserve() + "\tpromoted=" + status.getReserveInfo().getPromotedReserve() + "\t" + status.getSlotInfo().getPromotedSlots() + "/" + status.getSlotInfo().getRegularSlots());
@@ -713,8 +733,6 @@ public class ImpressionEstimatorTest {
                   debug("d=" + d + "\tq=" + query + "\treducedTrueOrdering=" + Arrays.toString(reducedTrueOrdering));
 
                   // For each agent, make a prediction (each agent sees a different num impressions)
-//					for (int ourAgentIdx=0; ourAgentIdx<=0; ourAgentIdx++) {
-//               for (int ourAgentIdx = 0; ourAgentIdx < numParticipants; ourAgentIdx++) {
                   for (int nonReducedIdx = 0; nonReducedIdx < agents.length; nonReducedIdx++) {
 
                      //Optionally only run predictions for a certain agent.
@@ -793,11 +811,6 @@ public class ImpressionEstimatorTest {
                      boolean ourPromotionEligibility = reducedPromotionEligibility[ourAgentIdx];
                      boolean ourHitBudget = reducedHitBudget[ourAgentIdx];
 
-                     //DEBUG TEMP FIXME: Just want to see how much promotion constraint helps.
-                     //if (ourPromotedImps <= 0) continue;
-                     //ourPromotionEligibility = false; //FIXME just temporary
-                     //if (ourPromotionEligibility == false) continue;
-
 
                      //FIXME: we should be able to choose more elegantly at runtime what class we're going to load.
                      //This is annoying... ImpressionEstimator requires a QAInstance in the constructor,
@@ -846,12 +859,23 @@ public class ImpressionEstimatorTest {
 
                      //---------------- SOLVE INSTANCE ----------------------
                      if (impressionEstimatorIdx == SolverType.CP) {
-                        if (ORDERING_KNOWN) {
-                           model = new ImpressionEstimator(inst, sampFrac, fractionalBran);
-                           fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                        } else {
-                           model = new ImpressionEstimator(inst, sampFrac, fractionalBran);
-                           fullModel = new LDSImpressionAndRankEstimator(model);
+                        if(SAMPLED_AVERAGE_POSITIONS) {
+                           if (ORDERING_KNOWN) {
+                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran);
+                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                           } else {
+                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran);
+                              fullModel = new LDSImpressionAndRankEstimator(model);
+                           }
+                        }
+                        else {
+                           if (ORDERING_KNOWN) {
+                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
+                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                           } else {
+                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
+                              fullModel = new LDSImpressionAndRankEstimator(model);
+                           }
                         }
                      }
                      if (impressionEstimatorIdx == SolverType.MIP) {
@@ -902,6 +926,8 @@ public class ImpressionEstimatorTest {
                         Arrays.fill(predictedOrdering, -1);
 
                         predictedTotImpr = -1;
+
+                        nullIEResult++;
                      }
 
                      double stop = System.currentTimeMillis();
@@ -1023,7 +1049,6 @@ public class ImpressionEstimatorTest {
 
             if (USE_HISTORIC_PRIORS) {
                for (int i = 0; i < agents.length; i++) {
-//               impressionForecasters.get(i).updateModel(status.getQueryReports().get(agents[i]).get(d));
                   List<Map<Query, Integer>> impPredMapList = impPredMapLists.get(i);
                   naiveImpressionForecasters.get(i).updateModel(impPredMapList);
 //                  for(Query q : querySpace) {
@@ -1078,6 +1103,16 @@ public class ImpressionEstimatorTest {
          System.out.println("Total QA Runtime: " + totalAlgRunTime / ((double) numOrderingPredictions));
       }
 
+      double[] impDiffPerc = new double[numSampWithImpDiff.length];
+      for(int i = 0; i < numSampWithImpDiff.length; i++) {
+         impDiffPerc[i] = numSampWithImpDiff[i] / ((double) (numSampWithImpTot - numSampWithImp));
+      }
+
+      System.out.println("Percent numSamp == numWithImp: " + numSampWithImp / ((double) numSampWithImpTot));
+      System.out.println("Average  |numSamp - numWithImp|: " + Arrays.toString(impDiffPerc));
+      System.out.println("Percent fixed by padding: " + numSampPadFixed  / ((double) numSampPadTried));
+      System.out.println("Number numSamp tested: " + numSampWithImpTot);
+
       if(LOGGING) {
          closeLog();
       }
@@ -1091,6 +1126,16 @@ public class ImpressionEstimatorTest {
       return results;
    }
 
+
+   private static boolean feasibleOrder(int[] order, double[] avgPos, int slots) {
+      for (int i = 0; i < order.length; i++) {
+         int startPos = Math.min(i + 1, slots);
+         if (startPos < avgPos[order[i]]) {
+            return false;
+         }
+      }
+      return true;
+   }
 
    /*
   Function input
@@ -1612,6 +1657,7 @@ public class ImpressionEstimatorTest {
       double pctCorrectOrdering = numCorrectlyOrderedInstances / (double) numOrderingPredictions;
       double pctSkipped = (numSkips) / ((double) numInstances);
       System.out.println("Pct Instances Skipped: " + pctSkipped + " (duplicateBids=" + numSkipsDuplicateBid + ", invalidData=" + numSkipsInvalidData);
+      System.out.println("Pct null IEResult: " + nullIEResult / ((double) numOrderingPredictions));
       System.out.println("Mean absolute impr error: " + meanAbsImprError);
       System.out.println("Mean absolute tot impr error: " + meanAbsTotImprError);
       System.out.println("Pct correct num participants: " + numCorrectNumParticipants + "/" + numOrderingPredictions + "=" + pctCorrectNumParticipants);
@@ -1671,7 +1717,7 @@ public class ImpressionEstimatorTest {
       //Samples should be the same for every agent. (TODO: verify this)
       String arbitraryAgentName = agents[0];
       for (int a = 0; a < agents.length; a++) {
-         String agentName = "adv" + (a + 1); //TODO: does this correspond to names of agents?
+         String agentName = "adv" + (a + 1);
          try {
             sampledAveragePositions[a] = status.getQueryReports().get(arbitraryAgentName).get(d).getPosition(query, agentName);
          } catch (Exception e) {
@@ -2127,13 +2173,13 @@ public class ImpressionEstimatorTest {
 //	   ImpressionEstimatorTest.runAllTests();
 
 
-      boolean sampleAvgPositions = false;
+      boolean sampleAvgPositions = true;
       boolean perfectImps = true; //NOTE: This is not passed at the command line right now (assume perfect imps)
       boolean useWaterfallPriors = false;
       double noiseFactor = 0.0;
       boolean useHistoricPriors = true;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = false;
+      boolean orderingKnown = true;
       SolverType solverToUse = SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
@@ -2141,8 +2187,9 @@ public class ImpressionEstimatorTest {
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
-      int END_GAME = 15136;
+      int END_GAME = 15127;
 //      int END_GAME = 15136;
+//      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
@@ -2152,7 +2199,7 @@ public class ImpressionEstimatorTest {
       int sampFrac = 100;
       double upperBoundNoise = 1.2;
 
-      
+
       ImpressionEstimatorTest evaluator;
 
       //boolean sampleAvgPositions = true
@@ -2201,13 +2248,15 @@ public class ImpressionEstimatorTest {
             END_QUERY = new Integer(args[13]);
             AGENT_NAME = args[14];
             IP_TIMEOUT_IN_SECONDS = new Double(args[15]);
-            
+
             sampFrac = new Integer(args[16]);
             upperBoundNoise = new Double(args[17]);
 
          }
       } else {
+         if(DEBUG) {
             System.out.println("Failed to read command line arguments. Will use defaults.");
+         }
       }
 
 

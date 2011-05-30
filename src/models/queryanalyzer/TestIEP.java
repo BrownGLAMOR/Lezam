@@ -1,7 +1,7 @@
 package models.queryanalyzer;
 
 import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimator;
+import models.queryanalyzer.iep.ImpressionEstimatorExact;
 
 import java.util.Arrays;
 
@@ -31,7 +31,7 @@ public class TestIEP {
 		int[] bidOrder = inst.getBidOrder(data);
 		System.out.println("Bid order: "+Arrays.toString(bidOrder));
 		
-		ImpressionEstimator IEP = new ImpressionEstimator(inst);
+		ImpressionEstimatorExact IEP = new ImpressionEstimatorExact(inst);
 		IEResult bestSol = IEP.search(bidOrder);
 		System.out.println("Best solution: "+Arrays.toString(bestSol.getSol()));
 		
