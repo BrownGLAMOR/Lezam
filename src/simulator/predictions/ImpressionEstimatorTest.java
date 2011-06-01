@@ -44,7 +44,7 @@ public class ImpressionEstimatorTest {
    }
 
    Random _rand;
-   long _seed = 61686;
+   long _seed = 1616867;
 
    boolean CHEATING = true; //By cheating, we mean that we only pass the solver the auction participants
    private double PRIOR_STDEV_MULTIPLIER = 0.5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
@@ -55,7 +55,7 @@ public class ImpressionEstimatorTest {
 
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
-   boolean REMOVE_SAMPLE_NANS = false;
+   boolean REMOVE_SAMPLE_NANS = true;
 
 
    private double IMP_UB_FACTOR;
@@ -114,7 +114,7 @@ public class ImpressionEstimatorTest {
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/pro/aa/finals2010/game-tacaa1-";   //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -493,7 +493,7 @@ public class ImpressionEstimatorTest {
                      //if (!actualAveragePositions[a].isNaN()) numParticipants++;
                      if ( !CHEATING ||
                              (   !Double.isNaN(actualAveragePositions[a]) &&
-                                         (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
+                                         (!Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || ORDERING_KNOWN || !REMOVE_SAMPLE_NANS))) {
                         numParticipants++;
                      }
                   }
@@ -518,7 +518,7 @@ public class ImpressionEstimatorTest {
                      //Note: Also add this agent if we're adding everybody (i.e. if we're not cheating)
                      if ( !CHEATING ||
                              (  !Double.isNaN(actualAveragePositions[a]) &&
-                                        ( !Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || !REMOVE_SAMPLE_NANS))) {
+                                        ( !Double.isNaN(sampledAveragePositions[a]) || !SAMPLED_AVERAGE_POSITIONS || ORDERING_KNOWN || !REMOVE_SAMPLE_NANS))) {
                         reducedAgents[rIdx] = status.getAdvertisers()[a];
                         reducedAvgPos[rIdx] = actualAveragePositions[a];
                         reducedSampledAvgPos[rIdx] = sampledAveragePositions[a]; //TODO: need to handle double.nan cases...
@@ -536,6 +536,21 @@ public class ImpressionEstimatorTest {
 
                   // Get ordering of remaining squashed bids
                   int[] trueOrdering = getIndicesForDescendingOrder(reducedBids);
+
+                  int numSamples = 10;
+//                  if(SAMPLED_AVERAGE_POSITIONS) {
+//                     int approxSearchers = getApproximateNumSearchersInQuery(status, d, query);
+//                     double[] reSampledAveragePositions = resampleAgents(reducedImps,trueOrdering,numSamples,approxSearchers,false);
+//                     reducedSampledAvgPos = reSampledAveragePositions;
+//                  }
+//                  else {
+//                     DecimalFormat df = new DecimalFormat("#.00000");
+//                     double[] roundedReducedAvgPos = new double[reducedAvgPos.length];
+//                     for(int i = 0; i < reducedAvgPos.length; i++) {
+//                        roundedReducedAvgPos[i] = Double.parseDouble(df.format(reducedAvgPos[i]));
+//                     }
+//                     reducedAvgPos = roundedReducedAvgPos;
+//                  }
 
                   int numSampled = 0;
                   int numWithImps = 0;
@@ -816,7 +831,7 @@ public class ImpressionEstimatorTest {
 
 
                      //---------------- Create new QAInstance --------------
-                     boolean considerPaddingAgents = false;
+                     boolean considerPaddingAgents = true;
                      inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
                                            ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone());
@@ -830,10 +845,10 @@ public class ImpressionEstimatorTest {
                      if (impressionEstimatorIdx == SolverType.CP) {
                         if(SAMPLED_AVERAGE_POSITIONS) {
                            if (ORDERING_KNOWN) {
-                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran);
+                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
                               fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                            } else {
-                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran);
+                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
                               fullModel = new LDSImpressionAndRankEstimator(model);
                            }
                         }
@@ -914,11 +929,19 @@ public class ImpressionEstimatorTest {
                            int agentIdx = -1;
                            for (int j = 0; j < reducedIndices.length; j++) {
                               if (i == reducedIndices[j]) {
-                                 agentIdx = j;
+                                 if(!Double.isNaN(sAvgPos[j])) {
+                                    agentIdx = j;
+                                 }
+                                 else {
+                                    break;
+                                 }
                               }
                            }
 
                            if (agentIdx > -1) {
+                              if(agentIdx >= predictedImpsPerAgent.length) {
+                                 int j = 0;
+                              }
                               impPredMap.put(query, predictedImpsPerAgent[agentIdx]);
                            } else {
                               impPredMap.put(query, -1);
@@ -940,8 +963,8 @@ public class ImpressionEstimatorTest {
                      }
 
                      //LOGGING
-                     double[] err = new double[predictedImpsPerAgent.length];
-                     for (int a = 0; a < predictedImpsPerAgent.length; a++) {
+                     double[] err = new double[reducedImps.length];
+                     for (int a = 0; a < reducedImps.length; a++) {
                         err[a] = Math.abs(predictedImpsPerAgent[a] - reducedImps[a]);
                      }
                      StringBuffer sb = new StringBuffer();
@@ -1077,10 +1100,12 @@ public class ImpressionEstimatorTest {
          impDiffPerc[i] = numSampWithImpDiff[i] / ((double) (numSampWithImpTot - numSampWithImp));
       }
 
-      System.out.println("Percent numSamp == numWithImp: " + numSampWithImp / ((double) numSampWithImpTot));
-      System.out.println("Average  |numSamp - numWithImp|: " + Arrays.toString(impDiffPerc));
-      System.out.println("Percent fixed by padding: " + numSampPadFixed  / ((double) numSampPadTried));
-      System.out.println("Number numSamp tested: " + numSampWithImpTot);
+      if(SUMMARY) {
+         System.out.println("Percent numSamp == numWithImp: " + numSampWithImp / ((double) numSampWithImpTot));
+         System.out.println("Average  |numSamp - numWithImp|: " + Arrays.toString(impDiffPerc));
+         System.out.println("Percent fixed by padding: " + numSampPadFixed  / ((double) numSampPadTried));
+         System.out.println("Number numSamp tested: " + numSampWithImpTot);
+      }
 
       if(LOGGING) {
          closeLog();
@@ -1162,6 +1187,202 @@ public class ImpressionEstimatorTest {
       }
 
       return totImps;
+   }
+
+   public static int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
+      ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
+      PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
+      for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
+         queue.add(impsPerAgent[order[i]]);
+      }
+
+      int lastIdx = queue.size();
+
+      while (!queue.isEmpty()) {
+         int val = queue.poll();
+         impsBeforeDropout.add(val);
+
+         if (lastIdx < impsPerAgent.length) {
+            queue.add(impsPerAgent[order[lastIdx]] + val);
+            lastIdx++;
+         }
+      }
+
+      return convertListToArr(impsBeforeDropout);
+   }
+
+   public static int[] getImpsSeen(int[] impsPerAgent, int[] order, int numSlots) {
+      ArrayList<Integer> impsSeen = new ArrayList<Integer>();
+      PriorityQueue<int[]> queue = new PriorityQueue<int[]>(impsPerAgent.length,new Comparator<int[]>(){
+         public int compare(int[] o1, int[] o2) {
+            return new Integer(o1[0]).compareTo(o2[0]);
+         }
+      });
+
+      for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
+         queue.add(new int[]{impsPerAgent[order[i]],impsPerAgent[order[i]]});
+      }
+
+      int lastIdx = queue.size();
+
+      while (!queue.isEmpty()) {
+         int[] val = queue.poll();
+         impsSeen.add(val[1]);
+
+         if (lastIdx < impsPerAgent.length) {
+            queue.add(new int[]{impsPerAgent[order[lastIdx]] + val[0], impsPerAgent[order[lastIdx]]});
+            lastIdx++;
+         }
+      }
+
+      return convertListToArr(impsSeen);
+   }
+
+   public static int[] convertListToArr(List<Integer> integers) {
+      int[] ret = new int[integers.size()];
+      for (int i = 0; i < ret.length; i++) {
+         ret[i] = integers.get(i);
+      }
+      return ret;
+   }
+
+   public static int[][] makeOrderMatrix(int[] impressions, int[] order, int numSlots) {
+      int[] impsSeenArr = getImpsSeen(impressions,order,numSlots);
+
+      int[][] orderMat = new int[impsSeenArr.length][order.length];
+      for(int i = 0; i < order.length; i++) {
+         orderMat[0][i] = order[i];
+      }
+
+      ArrayList<int[]> impArr = new ArrayList<int[]>(impressions.length);
+      for(int i = 0; i < impressions.length; i++) {
+         impArr.add(new int[]{impressions[i], i});
+      }
+
+      for(int i = 0; i < (impsSeenArr.length - 1); i++) {
+         int impsSeen = impsSeenArr[i];
+
+         int impIdx = -1;
+         int remIdx = -1;
+         for(int j = 0; j < impArr.size(); j++) {
+            if(impsSeen == impArr.get(j)[0]) {
+               impIdx = impArr.get(j)[1];
+               remIdx = j;
+               break;
+            }
+         }
+
+         if(impIdx > -1) {
+            impArr.remove(remIdx);
+            int agentRank = -1;
+            for(int j = 0; j < order.length; j++) {
+               if(impIdx == orderMat[i][j]) {
+                  agentRank = j;
+                  break;
+               }
+            }
+
+            for(int j = 0; j < order.length; j++) {
+               if(j < agentRank) {
+                  orderMat[i+1][j] = orderMat[i][j];
+               }
+               else if(j < (order.length - 1 - i)) {
+                  orderMat[i+1][j] = orderMat[i][j+1];
+               }
+               else {
+                  orderMat[i+1][j] = -1;
+               }
+            }
+         }
+         else {
+            throw new RuntimeException("This shouldn't happen");
+         }
+      }
+
+      return orderMat;
+   }
+
+   /**
+    *
+    * @param impressions
+    * @param order
+    * @return sampled avgpos
+    */
+   private double[] resampleAgents(int[] impressions, int[] order, int numSamples, int approxSearchers, boolean withReplacement) {
+      if(impressions.length == 0) {
+         return new double[]{};
+      }
+
+      int[] dropoutPoints = getDropoutPoints(impressions,order,NUM_SLOTS);
+      int[][] orderMat = makeOrderMatrix(impressions,order,NUM_SLOTS);
+
+
+//      System.out.println(Arrays.toString(dropoutPoints));
+//      for(int i = 0; i < orderMat.length; i++ ){
+//         System.out.println(Arrays.toString(orderMat[i]));
+//      }
+//      System.out.println("***********************");
+
+      int[] samples = new int[impressions.length];
+      int[] posSum = new int[impressions.length];
+
+      int maxImps = dropoutPoints[dropoutPoints.length-1];
+      if(maxImps < .05 * approxSearchers) {
+         maxImps = Math.max(maxImps,approxSearchers);
+      }
+
+      numSamples = Math.min(maxImps,numSamples);
+
+      ArrayList<Integer> sampleArr = new ArrayList<Integer>(numSamples);
+      if(withReplacement) {
+         for(int i = 0; i < numSamples; i++) {
+            sampleArr.add(_rand.nextInt(maxImps));
+         }
+      }
+      else {
+         while(sampleArr.size() < numSamples) {
+            int sample = _rand.nextInt(maxImps);
+            if(!sampleArr.contains(new Integer(sample))) {
+               sampleArr.add(sample);
+            }
+         }
+      }
+
+      for(Integer sample : sampleArr) {
+         int[] sampleOrder = null;
+         for(int j = 0; j < dropoutPoints.length; j++) {
+            if(sample < dropoutPoints[j]) {
+//               if((j != (dropoutPoints.length-1)) &&
+//                       dropoutPoints[j] == dropoutPoints[j+1]) {
+//                  continue;
+//               }
+
+               sampleOrder = orderMat[j];
+               break;
+            }
+         }
+
+         if(sampleOrder != null) {
+            for(int j = 0; j < sampleOrder.length && j < NUM_SLOTS; j++) {
+               int agent = sampleOrder[j];
+               if(agent > -1) {
+                  samples[agent]++;
+                  posSum[agent] += (j+1);
+               }
+               else {
+                  break;
+               }
+            }
+         }
+         //otherwise sample is out of range
+      }
+
+      double[] savg = new double[impressions.length];
+      for(int i = 0; i < impressions.length; i++) {
+         savg[i] = posSum[i] / ((double) samples[i]);
+      }
+
+      return savg;
    }
 
 
@@ -1583,7 +1804,7 @@ public class ImpressionEstimatorTest {
    private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int predTotImpr, int actualTotImpr, int[] predictedOrdering, int[] actualOrdering) {
       assert (predictedImpsPerAgent.length == actualImpsPerAgent.length);
 
-      for (int a = 0; a < predictedImpsPerAgent.length; a++) {
+      for (int a = 0; a < actualImpsPerAgent.length; a++) {
          numImprsPredictions++;
          aggregateAbsImprError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
       }
@@ -1670,18 +1891,6 @@ public class ImpressionEstimatorTest {
    private Double[] getSampledAveragePositions(GameStatus status, int d, Query query) {
       String[] agents = status.getAdvertisers();
       Double[] sampledAveragePositions = new Double[agents.length];
-
-//		//DEBUG
-//		for (int b=0; b<agents.length; b++) {
-//		String arbitraryAgentName = agents[b];
-//		StringBuffer sb = new StringBuffer();
-//		sb.append(arbitraryAgentName + ": ");
-//		for (String advertiser : status.getQueryReports().get(arbitraryAgentName).get(d).advertisers(query)) {
-//		double pos = status.getQueryReports().get(arbitraryAgentName).get(d).getPosition(query, advertiser);
-//		sb.append(advertiser+"=" + pos + ", ");
-//		}
-//		System.out.println(sb);
-//		}
 
       //Samples should be the same for every agent. (TODO: verify this)
       String arbitraryAgentName = agents[0];
@@ -2148,7 +2357,7 @@ public class ImpressionEstimatorTest {
       double noiseFactor = 0.0;
       boolean useHistoricPriors = true;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = true;
+      boolean orderingKnown = false;
       SolverType solverToUse = SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
@@ -2156,7 +2365,7 @@ public class ImpressionEstimatorTest {
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
-      int END_GAME = 15127;
+      int END_GAME = 15130;
 //      int END_GAME = 15136;
 //      int END_GAME = 15170;
       int START_DAY = 0; //0
@@ -2270,10 +2479,15 @@ public class ImpressionEstimatorTest {
 
       double[] results;
 
+      int numSamples = 10;
+      if(args.length == 1) {
+         numSamples = Integer.parseInt(args[0]);
+      }
+
       results = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
                                                                  START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS);
 
-      System.out.println(sampFrac + "," + upperBoundNoise + "," + results[0] + "," + results[1] + "," + results[2] + "," + results[3]);
+      System.out.println(numSamples + "," + results[1] + "," + results[2]);
 
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);

@@ -17,8 +17,13 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 
    public IEResult getBestSolution() {
       double[] avgPos = ie.getApproximateAveragePositions();
-//      int[] avgPosOrder = inst.getAvgPosOrder(avgPos);
-		int[] avgPosOrder = inst.getCarletonOrder(avgPos, NUM_SLOTS);
+      int[] avgPosOrder;
+      if(inst.isPadding()) {
+         avgPosOrder = QAInstance.getAvgPosOrder(avgPos);
+      }
+      else {
+         avgPosOrder = QAInstance.getCarletonOrder(avgPos, NUM_SLOTS);
+      }
       int numActualAgents = inst.getNumAdvetisers(); //regardless of any padding
 
       IEResult bestSol;

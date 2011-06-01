@@ -22,6 +22,7 @@ public class QAInstance {
    private double[] _agentImpressionDistributionMean; //prior on agent impressions
    private double[] _agentImpressionDistributionStdev; //prior on agent impressions
    private boolean _isSampled;
+   private boolean _orderingKnown;
    private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
    int MIN_PADDED_AGENT_ID = 100;
 
@@ -50,53 +51,13 @@ public class QAInstance {
       _isSampled = isSampled;
       _initialPosition = initialPosition;
 
-      if (_considerPaddingAgents) {
-         while (!feasibleOrder(getAvgPosOrder(avgPos))) {
-            int[] apOrder = getAvgPosOrder(avgPos);
-
-            int foundTooBigStart = 0;
-            int foundTooBigStop = 0;
-            for (int i = 0; i < _slots && i < _advetisers; i++) {
-               if (_avgPos[apOrder[i]] > i + 1) {
-                  foundTooBigStart = i + 1;
-                  foundTooBigStop = (int) Math.ceil(_avgPos[apOrder[i]]);
-                  break;
-               }
-            }
-
-            if (foundTooBigStart > 0) {
-               addPaddingAgents(foundTooBigStart, foundTooBigStop);
-            }
+      _orderingKnown = true;
+      for (int i = 0; i < _advetisers; i++) {
+         if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
+            _orderingKnown = false;
+            break;
          }
-         assert (feasibleOrder(getAvgPosOrder(avgPos))) : "addPaddingAgents broke did not work...";
       }
-   }
-
-   //pads the auction with "fake" advertisers so that the instance is feasible
-   //Feasible means every agent starts in a position greater or equal to their avg pos
-   //assumes the highest agent ID is 99
-   private void addPaddingAgents(int startSlot, int stopSlot) {
-      int oldAdvertisers = _advetisers;
-      double[] oldAvgPos = _avgPos;
-      int[] oldAgentIds = _agentIds;
-
-      int newAdvertisers = oldAdvertisers + stopSlot - startSlot;
-      double[] newAvgPos = new double[newAdvertisers];
-      int[] newAgentIds = new int[newAdvertisers];
-
-      for (int i = 0; i < oldAdvertisers; i++) {
-         newAvgPos[i] = oldAvgPos[i];
-         newAgentIds[i] = oldAgentIds[i];
-      }
-
-      for (int i = 0; i < stopSlot - startSlot; i++) {
-         newAvgPos[oldAdvertisers + i] = startSlot + i;
-         newAgentIds[oldAdvertisers + i] = MIN_PADDED_AGENT_ID + i;
-      }
-
-      _advetisers = newAdvertisers;
-      _avgPos = newAvgPos;
-      _agentIds = newAgentIds;
    }
 
    public int getNumSlots() {
@@ -137,6 +98,10 @@ public class QAInstance {
 
    public int getImpressionsUB() {
       return _impressionsUB;
+   }
+
+   public boolean isPadding() {
+      return _considerPaddingAgents;
    }
 
    public boolean getPromotionEligibilityVerified() {
@@ -180,12 +145,7 @@ public class QAInstance {
     * @return
     */
    public boolean allInitialPositionsKnown() {
-      for (int i = 0; i < _advetisers; i++) {
-         if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
-            return false;
-         }
-      }
-      return true;
+      return _orderingKnown;
    }
 
    public int[] getBidOrder(QAData data) {

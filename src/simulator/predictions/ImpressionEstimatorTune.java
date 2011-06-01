@@ -11,13 +11,13 @@ public class ImpressionEstimatorTune {
    public static final double[] runImpressionEstimator(double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
                                                        double avgpospower, double ouravgpospower, double imppriorpower, double ourimppriorpower) {
 
-      boolean sampleAvgPositions = false;
+      boolean sampleAvgPositions = true;
       boolean perfectImps = true; //NOTE: This is not passed at the command line right now (assume perfect imps)
       boolean useWaterfallPriors = false;
       double noiseFactor = 0;
       boolean useHistoricPriors = true;
       ImpressionEstimatorTest.HistoricalPriorsType historicPriorsType = ImpressionEstimatorTest.HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = false;
+      boolean orderingKnown = true;
       ImpressionEstimatorTest.SolverType solverToUse = ImpressionEstimatorTest.SolverType.CP;
 
 //      ImpressionEstimatorTest.GameSet GAMES_TO_TEST = ImpressionEstimatorTest.GameSet.test2010;
@@ -38,13 +38,15 @@ public class ImpressionEstimatorTune {
 
       evaluator = new ImpressionEstimatorTest(sampleAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, useHistoricPriors, historicPriorsType, orderingKnown,1.2);
 
-      double[] err = new double[3];
+      double[] err = new double[4];
       try {
          err = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100);
+                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0);
+
+
 //         err = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-//                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,
-//                                                                avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev);
+//                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0,
+//                                                                avgposstddev,ouravgposstddev,imppriorstddev,ourimppriorstddev);
       } catch (Exception e) {
          e.printStackTrace();
       }
@@ -55,8 +57,8 @@ public class ImpressionEstimatorTune {
    //Comparator that compares based on first element of an array
    static class ChromosomeComparator implements Comparator<double[]> {
       public int compare(double[] o1, double[] o2) {
-         double v1 = ((double[]) o1)[0];
-         double v2 = ((double[]) o2)[0];
+         double v1 = o1[0];
+         double v2 = o2[0];
          if(v1 < v2) {
             return 1;
          }
@@ -232,7 +234,7 @@ public class ImpressionEstimatorTune {
    private static final double[] generateRandomParams(Random rand) {
       double[] params = new double[NUM_PARAMS];
       for(int i = 0; i < NUM_PARAMS; i++) {
-         params[i] = rand.nextDouble()*3;
+         params[i] = rand.nextDouble()*5;
       }
       return params;
    }
@@ -251,11 +253,11 @@ public class ImpressionEstimatorTune {
    }
 
    private static final double uniformMutate(double gene, Random rand) {
-      return rand.nextDouble()*3;
+      return rand.nextDouble()*5;
    }
 
    private static final double gaussianMutate(double gene, Random rand) {
-      return Math.max(Math.min(gene + rand.nextGaussian()*.1,3.0),0.0001);
+      return Math.max(Math.min(gene + rand.nextGaussian()*.1,5.0),0.0001);
    }
 
    private static final double[] mutateParams(double[] params, Random rand) {
@@ -302,7 +304,7 @@ public class ImpressionEstimatorTune {
          double p3 = newParams[2];
          double p4 = newParams[3];
          double[] err = ImpressionEstimatorTune.runImpressionEstimator(p1,p2,p3,p4,1,1,1,1);
-         System.out.println(err[0] + ", " + err[1] + ", " + err[2] + ", " + p1 + "," + p2 + "," + p3 + "," + p4);
+         System.out.println(err[1] + ", " + err[2] + ", " + err[3] + ", " + p1 + "," + p2 + "," + p3 + "," + p4);
       }
 
 //      createNewGeneration(filename,300,rand);
