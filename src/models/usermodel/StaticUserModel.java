@@ -6,12 +6,12 @@ package models.usermodel;
  */
 
 import edu.umich.eecs.tac.props.Product;
-import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
+import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 
-import java.util.Map;
-
-public class OldUserModel extends ParticleFilterAbstractUserModel {
+public class StaticUserModel extends AbstractUserModel {
 
    private double F0users;
    private double F2users;
@@ -20,7 +20,7 @@ public class OldUserModel extends ParticleFilterAbstractUserModel {
    private double Tusers;
    private double NSusers;
 
-   public OldUserModel() {
+   public StaticUserModel() {
       F0users = 570;
       F1users = 412;
       F2users = 444;
@@ -30,12 +30,8 @@ public class OldUserModel extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public AbstractModel getCopy() {
-      return new OldUserModel();
-   }
+   public int getPrediction(Product product, UserState userState, int day) {
 
-   @Override
-   public int getCurrentEstimate(Product product, UserState userState) {
       if (userState == UserState.F0) {
          return (int) F0users;
       } else if (userState == UserState.F1) {
@@ -54,13 +50,13 @@ public class OldUserModel extends ParticleFilterAbstractUserModel {
    }
 
    @Override
-   public int getPrediction(Product product, UserState userState) {
-      return getCurrentEstimate(product, userState);
+   public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+      return true;
    }
 
    @Override
-   public boolean updateModel(Map<Query, Integer> totalImpressions) {
-      return true;
+   public AbstractModel getCopy() {
+      return new StaticUserModel();
    }
 
 }

@@ -20,7 +20,7 @@ import models.targeting.BasicTargetModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.BasicUserModel;
+import models.usermodel.StaticUserModel;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
@@ -68,7 +68,7 @@ public class G4 extends AbstractAgent {
          * so we use a LinkedHashSet
          */
       Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-      AbstractUserModel userModel = new BasicUserModel();
+      AbstractUserModel userModel = new StaticUserModel();
       AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
       AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace, _capacity, _capWindow);
       BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty, _compSpecialty);

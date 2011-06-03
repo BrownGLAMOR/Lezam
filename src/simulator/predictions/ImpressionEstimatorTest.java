@@ -1606,7 +1606,7 @@ public class ImpressionEstimatorTest {
       int imps;
 
       if (perfectImps) {
-         imps = getMaxImps(status.getSlotInfo().getRegularSlots(),order.length,order,impressions);;
+         imps = getMaxImps(status.getSlotInfo().getRegularSlots(),order.length,order,impressions);
       } else {
          if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
             imps = MAX_F0_IMPS;

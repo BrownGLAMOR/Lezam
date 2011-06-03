@@ -32,7 +32,7 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
       int numProds = 9; //FIXME: DON'T HARDCODE!!! Is this data available globally?
       int numDays = 60; //FIXME: DON'T HARDCODE!!! Is this data available globally?
       String filename = "src/newmodels/usermodel/UserDetailData-Finals.csv";
-      ;
+
 
       String[][] rawVals = readCSVData(filename);
 

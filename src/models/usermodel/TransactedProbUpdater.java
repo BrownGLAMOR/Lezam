@@ -1,7 +1,6 @@
 package models.usermodel;
 
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-import simulator.SimMisc;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -338,8 +337,49 @@ public class TransactedProbUpdater {
       return prob;
    }
 
+   	/*
+	 * Kullback Leibler Divergence Test
+	 */
+	public static double KLDivergence(double[] P, double[] Q) {
+		if(P.length != Q.length) {
+			throw new RuntimeException("KL Divergence requires arrays of equal length");
+		}
+
+		double total1 = 0.0;
+		double total2 = 0.0;
+		for(int i = 0; i < P.length; i++) {
+			total1 += P[i];
+			total2 += Q[i];
+		}
+		for(int i = 0; i < P.length; i++) {
+			P[i] /= total1;
+			Q[i] /= total2;
+		}
+
+		double divergence = 0.0;
+
+		for(int i = 0; i < P.length; i++) {
+			if(P[i] > 0 && Q[i] > 0) {
+				divergence += P[i] * (Math.log(P[i])-Math.log(Q[i]));
+			}
+		}
+
+		return divergence;
+	}
+
+	/*
+	 * When P and Q are discrete, we can get the likelihood of Q from
+	 * the KL divergence.  We want to minimize the KL divergence, which will
+	 * in turn maximize the likelihood
+	 */
+	public static double KLLikelihood(double[] P, double[] Q) {
+		double divergence = KLDivergence(P, Q);
+		double likelihood = Math.exp(-1*divergence*P.length);
+		return likelihood;
+	}
+
    public double getLikelihood(double[] newStateFloat, double[] state2Float) {
-      double likelihood = SimMisc.KLLikelihood(state2Float, newStateFloat);
+      double likelihood = KLLikelihood(state2Float, newStateFloat);
       return likelihood;
    }
 

@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -27,13 +24,11 @@ import models.targeting.BasicTargetModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.BasicUserModel;
+import models.usermodel.StaticUserModel;
 import agents.AbstractAgent;
-import agents.AbstractAgent.Predictions;
 import agents.modelbased.mckputil.IncItem;
 import agents.modelbased.mckputil.Item;
 import agents.modelbased.mckputil.ItemComparatorByWeight;
-import edu.umich.eecs.tac.props.AbstractTransportableEntryListBacking;
 import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Product;
@@ -41,7 +36,6 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.QueryType;
 import edu.umich.eecs.tac.props.SalesReport;
-import edu.umich.eecs.tac.props.BidBundle.BidEntry;
 
 /**
  * @author jberg, spucci, vnarodit
@@ -124,7 +118,7 @@ public class SemiEndoMCKPBid extends AbstractAgent {
 		 * so we use a LinkedHashSet
 		 */
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		AbstractUserModel userModel = new BasicUserModel();
+		AbstractUserModel userModel = new StaticUserModel();
 		AbstractQueryToNumImp queryToNumImp = new BasicQueryToNumImp(userModel);
 		AbstractUnitsSoldModel unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		BasicTargetModel basicTargModel = new BasicTargetModel(_manSpecialty,_compSpecialty);
