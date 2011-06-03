@@ -14,7 +14,6 @@ import models.prclicktobid.AbstractPrClickToBid;
 import models.prclicktobid.BidToPrClickInverter;
 import models.prconv.AbstractConversionModel;
 import models.querytonumimp.AbstractQueryToNumImp;
-import models.usermodel.OldUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import models.usermodel.jbergParticleFilter;
@@ -2613,7 +2612,6 @@ public class PredictionEvaluator {
                                                                  0.188113883,
                                                                  0.220140091);
          evaluator.userStatePredictionChallenge(userModel);
-         evaluator.userStatePredictionChallenge(new OldUserModel());
 
          //						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.84, false, false, false, false, false, false));
          //						evaluator.bidToCPCPredictionChallenge( new RegressionBidToCPC(_rConnection, _querySpace, true,1,60, true,0.915, false, false, false, false, false, false));
