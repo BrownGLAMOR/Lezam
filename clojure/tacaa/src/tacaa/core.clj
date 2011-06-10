@@ -1,29 +1,21 @@
-(ns tacaa.simulation
-  (:require (tacaa parser)
-            (incanter core charts stats datasets))
+(ns tacaa.core
+  (:require (tacaa parser))
   (:import (java.util Random)
            (simulator.parser GameStatusHandler)
-           (simulator BasicSimulator)
+           (agents AbstractAgent)
+           (agents.rulebased2010 EquatePPSSimple2010 EquateROISimple2010)
+           (se.sics.tasim.aw Message)
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
                                      Query Product Ad UserClickModel
                                      AdvertiserInfo PublisherInfo
-                                     SlotInfo QueryType)))
+                                     SlotInfo QueryType))
+  (:gen-class
+   :name tacaa.core
+   :methods [^{:static true} [getstatus [String] clojure.lang.PersistentArrayMap]]))
 
 (set! *warn-on-reflection* true)
 
 (def seed 61686)
-
-(def random (java.util.Random. seed))
-
-(defn my-rand [] (.nextDouble ^java.util.Random random))
-
-(defn my-rand-gauss [] (.nextGaussian ^java.util.Random random))
-
-(defn run-seeded-fn
-  [seed fun]
-  (binding [random (java.util.Random. seed)
-            my-rand (fn [] (.nextDouble ^java.util.Random random))]
-    (fun)))
 
 
 (defn calc-mean
@@ -38,12 +30,15 @@
            sumdiff (reduce + diffs)]
        (Math/sqrt (/ sumdiff (dec (count lst)))))))
 
+(defn calc-mean-and-std
+  [lst]
+  (let [mean (calc-mean lst)]
+    [mean (calc-std-dev lst mean)]))
+
 
 ;Borrowed from clojure core, added new param (rnd)
-(defn shuffle
+(defn my-shuffle
   "Return a random permutation of coll"
-  {:added "1.2"
-   :static true}
   ([^java.util.Collection coll]
      (let [al (java.util.ArrayList. coll)]
        (java.util.Collections/shuffle al)
@@ -134,6 +129,14 @@
               (assoc coll val (.getDistributionCapacity ^AdvertiserInfo (adv-info val))))
             {} agents)))
 
+(defn mk-single-budget-map
+  [^BidBundle bundle queryspace]
+  (let [tot-budget (.getCampaignDailySpendLimit bundle)]
+    (reduce (fn [coll ^Query query]
+              (assoc coll query  ; budget cannot be less than tot-budget
+                     (Math/min (.getDailyLimit bundle query) tot-budget)))
+            {:total-budget tot-budget}
+            queryspace)))
 
 (defn mk-budget-map
   [status]
@@ -144,15 +147,18 @@
               (assoc coll agent
                      (let [bundles (bid-bundle agent)]
                        (reduce (fn [coll2 day]
-                                 (let [^BidBundle bundle (bundles day)]
+                                 (let [bundle (bundles day)]
                                    (conj coll2
-                                         (reduce (fn [coll3 ^Query query]
-                                                   (assoc coll3 query
-                                                          (.getDailyLimit bundle query)))
-                                                 {:total-budget (.getCampaignDailySpendLimit bundle)}
-                                                 queryspace))))
+                                         (mk-single-budget-map bundle queryspace))))
                                [] (range 59)))))
             {} agents)))
+
+(defn mk-single-ad-map
+  [^BidBundle bundle queryspace]
+  (reduce (fn [coll ^Query query]
+            (assoc coll query
+                   (.getAd bundle query)))
+          {} queryspace))
 
 (defn mk-ad-map
   [status]
@@ -163,15 +169,21 @@
               (assoc coll agent
                      (let [bundles (bid-bundle agent)]
                        (reduce (fn [coll2 day]
-                                 (let [^BidBundle bundle (bundles day)]
+                                 (let [bundle (bundles day)]
                                    (conj coll2
-                                         (reduce (fn [coll3 ^Query query]
-                                                   (assoc coll3 query
-                                                          (.getAd bundle query)))
-                                                 {}
-                                                 queryspace))))
+                                         (mk-single-ad-map bundle queryspace))))
                                [] (range 59)))))
             {} agents)))
+
+
+(defn mk-single-squashed-bid-map
+  [^BidBundle bundle adv-effect squash-param queryspace]
+  (reduce (fn [coll ^Query query]
+            (assoc coll query
+                   (* (.getBid bundle query)
+                      (Math/pow (adv-effect query)
+                                squash-param))))
+          {} queryspace))
 
 (defn mk-squashed-bid-map
   [status]
@@ -186,12 +198,11 @@
                            adv-effect ((status :adv-effects) agent)]
                        (reduce (fn [coll2 day]
                                  (conj coll2
-                                       (reduce (fn [coll3 ^Query query]
-                                                 (assoc coll3 query
-                                                        (* (.getBid ^BidBundle (bundles day) query)
-                                                           (Math/pow (adv-effect query)
-                                                                     squash-param))))
-                                               {} queryspace)))
+                                       (mk-single-squashed-bid-map
+                                        (bundles day)
+                                        adv-effect
+                                        squash-param
+                                        queryspace)))
                                [] (range 59)))))
             {} agents)))
 
@@ -205,7 +216,7 @@
                                 (new Query nil comp)
                                 (new Query man nil)
                                 (new Query man comp)])))
-          {} (status :retail-cat)))
+          {} (seq (status :retail-cat))))
 
 (defn mk-query-type-map
   [status]
@@ -256,9 +267,10 @@
                             sb (squashed-bid day)]
                         (find-min
                          (filter identity
-                                 (map (fn [^Query query] (if (> (.getPromotedImpressions qr query) 0)
-                                                   (sb query)
-                                                   nil))
+                                 (map (fn [^Query query]
+                                        (if (> (.getPromotedImpressions qr query) 0)
+                                          (sb query)
+                                          nil))
                                       queryspace)))))
                     (range 59)))))
           agents))))
@@ -299,13 +311,14 @@
             {} agents)))
 
 (defn mk-random-search-pools-map
-  ([status day]
+  ([status day my-rand]
      (mk-random-search-pools-map
       ((status :user-pop) day)
       (status :retail-cat)
-      (status :prod-query)))
-  ([userpops retail-cat prod-query]
-     (loop [retail-cat retail-cat search-maps {}]
+      (status :prod-query)
+      my-rand))
+  ([userpops retail-cat prod-query my-rand]
+     (loop [retail-cat (seq retail-cat) search-maps {}]
        (if (not (seq retail-cat))
          search-maps
          (let [prod (first retail-cat)
@@ -364,7 +377,7 @@
   ([status day]
      (mk-expected-search-pools-map
       ((status :user-pop) day)
-      (status :retail-cat)
+      (seq (status :retail-cat))
       (status :prod-query)))
   ([userpops retail-cat prod-query]
      (reduce (fn [coll prod]
@@ -402,15 +415,26 @@
 
 
 (defn mk-search-queue
-  [search-maps]
-  (shuffle
-   (flatten (map (fn [[prod search-map]]
-                   (map (fn [[q [uis us]]]
-                          [(replicate uis {:is q :prod prod})
-                           (replicate us {:s q :prod prod})])
-                        search-map))
-                 search-maps))
-   random))
+  [search-maps random singleq?]
+  (if (not singleq?)
+    (my-shuffle
+     (flatten (map (fn [[prod search-map]]
+                     (map (fn [[q [uis us]]]
+                            [(replicate uis {:is q :prod prod})
+                             (replicate us {:s q :prod prod})])
+                          search-map))
+                   search-maps))
+     random)
+    (my-shuffle
+     (flatten (map (fn [[prod search-map]]
+                     (map (fn [[q [uis us]]]
+                            (if (= q singleq?)
+                              [(replicate uis {:is q :prod prod})
+                               (replicate us {:s q :prod prod})]
+                              []))
+                          search-map))
+                   search-maps))
+     random)))
 
 
 (defn init-sim-info
@@ -489,8 +513,9 @@
                 qagents)))
 
 (defn rank-agents
-  ([status day]
+  ([status day singleq?]
      (rank-agents day
+                  singleq?
                   (status :squashed-bids)
                   (status :budgets)
                   (status :ads)
@@ -502,24 +527,39 @@
                   (status :agents)
                   (status :query-space)
                   (status :query-type)))
-  ([day squashed-bids budgets ads adv-effects prom-slots reg-res prom-res squash-param agents queryspace query-type]
-     (reduce (fn [coll query]
-               (assoc coll query
-                      (asgn-rank-meta
-                       (rank-agents-query
-                        (map (fn [agent] [agent
-                                         ((adv-effects agent) query)
-                                         (((ads agent) day) query)
-                                         (((budgets agent) day) query)
-                                         (((squashed-bids agent) day) query)])
-                             agents)
-                        (reg-res (query-type query)))
-                       query
-                       prom-slots
-                       (reg-res (query-type query))
-                       (prom-res (query-type query))
-                       squash-param)))
-             {} queryspace)))
+  ([day singleq? squashed-bids budgets ads adv-effects prom-slots reg-res prom-res squash-param agents queryspace query-type]
+     (if (not singleq?)
+       (reduce (fn [coll query]
+                 (assoc coll query
+                        (asgn-rank-meta
+                         (rank-agents-query
+                          (map (fn [agent] [agent
+                                           ((adv-effects agent) query)
+                                           (((ads agent) day) query)
+                                           (((budgets agent) day) query)
+                                           (((squashed-bids agent) day) query)])
+                               agents)
+                          (reg-res (query-type query)))
+                         query
+                         prom-slots
+                         (reg-res (query-type query))
+                         (prom-res (query-type query))
+                         squash-param)))
+               {} queryspace)
+       {singleq? (asgn-rank-meta
+                  (rank-agents-query
+                   (map (fn [agent] [agent
+                                    ((adv-effects agent) singleq?)
+                                    (((ads agent) day) singleq?)
+                                    (((budgets agent) day) singleq?)
+                                    (((squashed-bids agent) day) singleq?)])
+                        agents)
+                   (reg-res (query-type singleq?)))
+                  singleq?
+                  prom-slots
+                  (reg-res (query-type singleq?))
+                  (prom-res (query-type singleq?))
+                  squash-param)})))
 
 
 (defn remove-from-query
@@ -637,7 +677,7 @@
 
 
 (defn re-rank-agents
-  [ranked-agents queryspace stats budgets prom-slots reg-res prom-res squash-param q day query-type]
+  [ranked-agents singleq? queryspace stats budgets prom-slots reg-res prom-res squash-param q day query-type]
   (let [re-ranked-agents (re-rank-query ranked-agents
                                      stats
                                      budgets
@@ -648,10 +688,12 @@
                                      q
                                      day
                                      query-type)
-        re-ranked-agents (if (== (count ranked-agents)
-                                 (count re-ranked-agents))
-                           ;check total budgets if we didn't
-                           ;already remove query
+        re-ranked-agents (if (and (== (count ranked-agents)
+                                      (count re-ranked-agents))
+                                  (not singleq?))
+                                        ;check total budgets if we didn't
+                                        ;already remove query and we are
+                                        ; evaluating more than 1 query
                            (check-total-budgets re-ranked-agents
                                                 queryspace
                                                 stats
@@ -674,13 +716,10 @@
 
 
 (defn simulate-day
-  ([status day search-queue]
+  ([status day search-queue my-rand singleq?]
      (let [agents (status :agents)
            queryspace (status :query-space)
-           user-pop ((status :user-pop) day)
-           prod-query (status :prod-query)
            query-type (status :query-type)
-           retail-cat (status :retail-cat)
            bids (status :squashed-bids)
            budgets (status :budgets)
            ads (status :ads)
@@ -704,7 +743,7 @@
            man-bonus (status :man-bonus)
            USP (status :USP)
            ;;;;;;;;;;;;;;;;;;
-           ranked-agents (rank-agents day bids budgets ads adv-effects prom-slots
+           ranked-agents (rank-agents day singleq? bids budgets ads adv-effects prom-slots
                                       reg-res prom-res squash-param agents queryspace query-type)]
        (loop [search-queue search-queue
               ranked-agents ranked-agents
@@ -733,7 +772,7 @@
                      (smap :is)
                      (smap :s))
                  ^Product prod (smap :prod)                 
-                 ranked-agents (re-rank-agents ranked-agents queryspace stats
+                 ranked-agents (re-rank-agents ranked-agents singleq? queryspace stats
                                                budgets prom-slots reg-res
                                                prom-res squash-param q day
                                                query-type)                 
@@ -844,7 +883,7 @@
                                         astats (assoc! astats q aqstats)
                                         stats (assoc! stats agent astats)]
                                    (recur (rest qagents) stats cont?))
-                                 (let [agent (first qagent) ;agent out of auction
+                                 (let [agent (first qagent) ;agent not continuing
                                        is-prom (metadata :is-prom)
                                        astats (stats agent)
                                        aqstats (astats q)
@@ -867,19 +906,304 @@
 
 (defn simulate-expected-day
   ([status day]
-     (let [search-pool (mk-expected-search-pools-map status day)
-           search-queue (mk-search-queue search-pool)]
-       (simulate-day status day search-queue))))
+     (let [random (java.util.Random.)
+           my-rand (fn [] (.nextDouble ^java.util.Random random))
+           search-pool (mk-expected-search-pools-map status day)
+           search-queue (mk-search-queue search-pool random false)]
+       (simulate-day status day search-queue my-rand false))))
 
 (defn simulate-random-day
   ([status day]
-     (let [search-pool (mk-random-search-pools-map status day)
-           search-queue (mk-search-queue search-pool)]
-       (simulate-day status day search-queue))))
+     (let [random (java.util.Random.)
+           my-rand (fn [] (.nextDouble ^java.util.Random random))
+           search-pool (mk-random-search-pools-map status day my-rand)
+           search-queue (mk-search-queue search-pool random false)]
+       (simulate-day status day search-queue my-rand false))))
+
+
+(defn simulate-query
+  [status day query]
+  (let [random (java.util.Random.)
+        my-rand (fn [] (.nextDouble ^java.util.Random random))
+        search-pool (mk-expected-search-pools-map status day)
+        search-queue (mk-search-queue search-pool random query)]
+    (simulate-day status day search-queue my-rand query)))
+
+(defn combine-queries
+  [stats]
+  (reduce (fn [coll [agent astats]]
+            (assoc coll agent
+                   (reduce
+                    (fn [coll2 [query qstats]]
+                      (if (keyword? query)
+                        coll2
+                        {:imps (+ (qstats :imps)
+                                 (coll2 :imps)),
+                        :prom-imps (+ (qstats :prom-imps)
+                                      (coll2 :prom-imps)),
+                        :clicks (+ (qstats :clicks)
+                                   (coll2 :clicks)),
+                        :cost (+ (qstats :cost)
+                                 (coll2 :cost)),
+                        :convs (+ (qstats :convs)
+                                  (coll2 :convs)),
+                        :revenue (+ (qstats :revenue)
+                                    (coll2 :revenue))}))
+                    (peek (first astats)) (rest astats))))
+          {} stats))
+
+(defn combine-stats-days
+  [statslst]
+  (reduce (fn [coll vals1]
+            (reduce (fn [coll2 [agent vals2]]
+                      (assoc coll2 agent
+                             {:imps (+ ((coll agent) :imps)
+                                       (vals2 :imps)),
+                              :prom-imps (+ ((coll agent) :prom-imps)
+                                            (vals2 :prom-imps)),
+                              :clicks (+ ((coll agent) :clicks)
+                                         (vals2 :clicks)),
+                              :cost (+ ((coll agent) :cost)
+                                       (vals2 :cost)),
+                              :convs (+ ((coll agent) :convs)
+                                        (vals2 :convs)),
+                              :revenue (+ ((coll agent) :revenue)
+                                          (vals2 :revenue))}))
+                    {} vals1))
+          (first statslst) (rest statslst)))
+
+
+(defn mk-query-report
+  [status stats agent day]
+  (let [astats (stats agent)
+        agents (status :agents)
+        num-agents (count agents)
+        qs (status :query-space)
+        bid-bundle (status :bid-bundle)
+        ^BidBundle bundle ((bid-bundle agent) day)
+        qr (new QueryReport)]
+    (do
+      (doall (map (fn [^Query query]
+                                        ;Add our own info
+                    (let [aqstats (astats query)]
+                      (.addQuery qr query
+                                 (int (- (aqstats :imps)
+                                         (aqstats :prom-imps)))
+                                 (int (aqstats :prom-imps))
+                                 (int (aqstats :clicks))
+                                 (double (aqstats :cost))
+                                 (double (aqstats :pos-sum))))
+                    (.setAd qr query ^Ad (.getAd bundle query))
+                                        ;Add opp avg pos info
+                    (loop [agent-idx 0]
+                      (if (not (< agent-idx num-agents))
+                        nil
+                        (let [agent (agents agent-idx)
+                              aqstats ((stats agent) query)]
+                          (.setAd qr query (str "adv" (inc agent-idx))
+                                  (.getAd ^BidBundle ((bid-bundle agent) day) query))
+                          (.setPosition qr query (str "adv" (inc agent-idx)) (if (== 0 (aqstats :imps))
+                                                                               Double/NaN
+                                                                               (double (/ (aqstats :pos-sum)
+                                                                                          (aqstats :imps)))))
+                          (recur (inc agent-idx))))))
+                  qs))
+      qr)))
+
+(defn mk-sales-report
+  [status stats agent day]
+  (let [astats (stats agent)
+        qs (status :query-space)
+        sr (new SalesReport)]
+    (do
+      (doall (map (fn [^Query query]
+                    (.addQuery sr query)
+                    (.addConversions sr query (int ((astats query) :convs)))
+                    (.addRevenue sr query (double ((astats query) :revenue))))
+                  qs))
+      sr)))
+
+
+(defn stats-get-convs
+  [status stats agent]
+  (let [astats (stats agent)]
+    (reduce + (map (fn [query]
+                     ((astats query) :convs))
+                   (status :query-space)))))
+
+(defn simulate-game-with-agent
+  [status ^AbstractAgent agent agent-to-replace]
+  (if (not (some #{agent-to-replace} (status :agents)))
+    (prn "There is no such agent(" agent-to-replace "to replace")
+    (let [adv-effect ((status :adv-effects) agent-to-replace)
+          squash-param (status :squash-param)
+          queryspace (status :query-space)]
+      (do
+        (.sendSimMessage agent
+                         (new Message "blank" "blank" (status :publish-info)))
+        (.sendSimMessage agent
+                         (new Message "blank" "blank" (status :slot-info)))
+        (.sendSimMessage agent
+                         (new Message "blank" "blank" (status :retail-cat)))
+        (.sendSimMessage agent
+                         (new Message "blank" "blank" (status :slot-info))) ;do we really need this 2x?
+        (.sendSimMessage agent
+                         (new Message "blank" "blank" ((status :adv-info) agent-to-replace)))
+        (.initBidder agent)
+        (.setModels agent (.initModels agent))
+        (loop [day 0
+               statslst []
+               status status]
+          (if (>= day 59)
+            (combine-stats-days (map combine-queries statslst))
+            (do
+              (.setDay agent day)
+              (when (>= day 2)
+                (let [oldday (- day 2)
+                      oldstats (statslst oldday)
+                      qr (mk-query-report status oldstats agent-to-replace oldday)
+                      sr (mk-sales-report status oldstats agent-to-replace oldday)]
+                  (.handleQueryReport agent qr)
+                  (.handleSalesReport agent sr)
+                  (.updateModels agent sr qr)
+                  (prn "Updating Models on day " day)))
+              (prn "Getting agent bids on day " day)
+              (let [bundle (.getBidBundle agent (.getModels agent))
+                    status (assoc status :bid-bundle
+                                 (assoc (status :bid-bundle) agent-to-replace
+                                        (assoc ((status :bid-bundle) agent-to-replace) day bundle)))
+                    status (assoc status :budgets
+                                  (assoc (status :budgets) agent-to-replace
+                                         (assoc ((status :budgets) agent-to-replace) day
+                                                (mk-single-budget-map bundle queryspace))))
+                    status (assoc status :ads
+                                  (assoc (status :ads) agent-to-replace
+                                         (assoc ((status :ads) agent-to-replace) day
+                                                (mk-single-ad-map bundle queryspace))))
+                    status (assoc status :squashed-bids
+                                  (assoc (status :squashed-bids) agent-to-replace
+                                         (assoc ((status :squashed-bids) agent-to-replace) day
+                                                (mk-single-squashed-bid-map bundle
+                                                                            adv-effect
+                                                                            squash-param
+                                                                            queryspace))))
+                    stats (simulate-expected-day status day)
+                    convs (stats-get-convs status stats agent-to-replace)
+                    sales-window (status :sales-window)
+                    oldconvs (if (< day 5)
+                               (/ ((status :capacities) agent-to-replace)
+                                  sales-window)
+                               (stats-get-convs status (statslst (- day sales-window)) agent-to-replace))
+                    convdiff (- convs oldconvs)
+                    status (assoc status :start-sales
+                                  (assoc (status :start-sales) agent-to-replace
+                                         (assoc ((status :start-sales) agent-to-replace) (inc day)
+                                                (+ convdiff
+                                                   (((status :start-sales) agent-to-replace) day)))))]
+                (recur (inc day) (conj statslst stats) status)))))))))
 
 
 (defn simulate-game
-  ([]))
+  [status]
+  (let [statslst (map (fn [day] (combine-queries (simulate-expected-day status day))) (range 59))]
+    (combine-stats-days statslst)))
+
+(defn game-full-summary
+  [status]
+  (let [agents (status :agents)
+        queryspace (status :query-space)
+        queryreports (status :query-report)
+        salesreports (status :sales-report)]
+    (reduce (fn [coll1 agent]
+              (assoc coll1 agent
+                     (let [aqueryreports (queryreports agent)
+                           asalesreports (salesreports agent)]
+                       (reduce (fn [coll2 day]
+                                 (let [^QueryReport qrs (aqueryreports day)
+                                       ^SalesReport srs (asalesreports day)]
+                                   (reduce (fn [coll3 ^Query query]
+                                             {:imps (+ (coll3 :imps)
+                                                       (.getImpressions qrs query)),
+                                              :prom-imps (+ (coll3 :prom-imps)
+                                                            (.getPromotedImpressions qrs query)),
+                                              :clicks (+ (coll3 :clicks)
+                                                         (.getClicks qrs query)),
+                                              :convs (+ (coll3 :convs)
+                                                        (.getConversions srs query)),
+                                              :cost (+ (coll3 :cost)
+                                                       (.getCost qrs query)),
+                                              :revenue (+ (coll3 :revenue)
+                                                          (.getRevenue srs query))})
+                                           coll2 queryspace)))
+                               {:imps 0,
+                                :prom-imps 0,
+                                :clicks 0,
+                                :convs 0,
+                                :cost 0,
+                                :revenue 0}
+                               (range 59)))))
+            {} agents)))
+
+
+(defn game-full-dists
+  [status numests]
+  (let [actualstats (game-full-summary status)
+        statsmaplst (map (fn [_] (simulate-game status)) (range numests))
+        statslst (reduce (fn [coll agent]
+                           (assoc coll agent
+                                  (reduce (fn [coll2 statsmap]
+                                            (let [stats (statsmap agent)]
+                                              {:imps (conj (coll2 :imps)
+                                                        (stats :imps)),
+                                               :prom-imps (conj (coll2 :prom-imps)
+                                                             (stats :prom-imps)),
+                                               :clicks (conj (coll2 :clicks)
+                                                          (stats :clicks)),
+                                               :convs (conj (coll2 :convs)
+                                                         (stats :convs)),
+                                               :cost (conj (coll2 :cost)
+                                                        (stats :cost)),
+                                               :revenue (conj (coll2 :revenue)
+                                                           (stats :revenue))}))
+                                          (let [stats ((first statsmaplst) agent)]
+                                            (reduce (fn [coll key]
+                                                      (assoc coll key [(stats key)]))
+                                                    {} (keys stats)))
+                                          (rest statsmaplst))))
+                         {} (status :agents))
+        statsdists (reduce (fn [coll [agent statsmap]]
+                             (assoc coll agent
+                                    {:imps (calc-mean-and-std (statsmap :imps)),
+                                     :prom-imps (calc-mean-and-std (statsmap :prom-imps)),
+                                     :clicks (calc-mean-and-std (statsmap :clicks)),
+                                     :convs (calc-mean-and-std (statsmap :convs)),
+                                     :cost (calc-mean-and-std (statsmap :cost)),
+                                     :revenue (calc-mean-and-std (statsmap :revenue))}))
+                           {} statslst)
+        samplst (loop [agents (status :agents)
+                       samplst []]
+                  (if (not (seq agents))
+                    samplst
+                    (recur (rest agents)
+                           (let [agent (first agents)
+                                 aactualstats (actualstats agent)
+                                 astatsdists (statsdists agent)]
+                             (loop [;allkeys (keys astatsdists)
+                                    allkeys #{:imps}
+                                    samplst samplst]
+                               (if (not (seq allkeys))
+                                 samplst
+                                 (recur (rest allkeys)
+                                        (let [key (first allkeys)
+                                              stat (aactualstats key)
+                                              statdist (astatsdists key)]
+                                          (conj samplst
+                                                (let [std-dev (peek statdist)]
+                                                  (if (== std-dev 0.0)
+                                                    0.0
+                                                    (/ (- stat (first statdist))
+                                                      std-dev))))))))))))]
+    (calc-mean-and-std samplst)))
 
 
 (defn stats-summary
@@ -913,6 +1237,7 @@
                                                   (.getCost queryreport query)))
                                     queryspace)))))
             {} agents)))
+
 
 (defn map-to-map-of-vecs
   [map]
@@ -971,41 +1296,23 @@
     (* (/ 1.0 (Math/sqrt (* 2 Math/PI var)))
        (Math/exp (- (/ mdsq (* 2 var)))))))
 
-(defn plot-dists
-  [status day num-ests]
-  (let [stats-maps-expected (map (fn [_] (stats-summary-expected status day)) (range num-ests))
-        stats-maps-random (map (fn [_] (stats-summary-random status day)) (range num-ests))
-        map-of-vecs-expected (maps-to-map-of-vecs stats-maps-expected)
-        map-of-vecs-random (maps-to-map-of-vecs stats-maps-random)
-        sampled-stats (day-summary status day)]
-    (map (fn [[k1 v1] [k2 v2]]
-           (let [mean1 (calc-mean v1)
-                 sd1 (calc-std-dev v1 mean1)
-                 mean2 (calc-mean v2)
-                 sd2 (calc-std-dev v2 mean2)
-                 actual (sampled-stats k1)
-                 actualv (double 0.0)
-                 allv (concat v1 v2 [actual])
-                 xmin (find-min allv)
-                 xmax (find-max allv)]
-             (doto (incanter.charts/function-plot (partial gauss-pdf mean1 sd1)
-                                                  xmin
-                                                  xmax
-                                                  :series-label "expected"
-                                                  :legend true
-                                                  :title k1)
-               (incanter.charts/add-function (partial gauss-pdf mean2 sd2)
-                                             xmin
-                                             xmax
-                                             :series-label "random")
-               (incanter.charts/add-pointer actual actualv :text "actual")
-               incanter.core/view)))
-         map-of-vecs-expected
-         map-of-vecs-random)))
 
-
-(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15135.slg")
+(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
 
 (def status1 (init-sim-info (tacaa.parser/parse-file file1)))
 
+(defn getstatus
+  [file]
+  (simulate-game (init-sim-info (tacaa.parser/parse-file file))))
+
+(defn -getstatus
+  [file]
+  (getstatus file))
+
+
 ;(use 'criterium.core)
+
+
+                                        ;TODO
+                                        ; add sampling to simulation
+                                        ; simulate queries at a time

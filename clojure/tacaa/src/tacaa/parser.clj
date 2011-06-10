@@ -206,7 +206,7 @@
                                               (assoc status :bank-stat {to [content]}))
                                             status)
            (instance? UserPopulationState content) (if (> day 0)
-                                                     (let [retail (status :retail-cat)
+                                                     (let [retail (seq (status :retail-cat))
                                                            contvec (reduce (fn [coll val]
                                                                              (assoc coll val
                                                                                     (seq (. ^UserPopulationState content (getDistribution ^Product val)))))
@@ -228,7 +228,7 @@
            (instance? RetailCatalog content) (if (status :retail-cat)
                                                status
                                                (let [queryspace (mk-queryspace content)]
-                                                 (merge status {:retail-cat (seq content),
+                                                 (merge status {:retail-cat content,
                                                                 :query-space queryspace,
                                                                 :qsf0 #{(new Query)},
                                                                 :qsf1 (into #{} (filter (fn [^Query query] (= (.getType query)
