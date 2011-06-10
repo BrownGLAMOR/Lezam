@@ -21,8 +21,5 @@ public abstract class AbstractQueryToNumImp extends AbstractModel {
      */
    public abstract int getPrediction(Query query, int day);
 
-   public abstract int getPredictionWithBid(Query query, double bid, int day);
-
-   public abstract int getPredictionWithPos(Query query, double pos, int day);
 
 }

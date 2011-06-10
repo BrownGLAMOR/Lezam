@@ -44,7 +44,7 @@ public class IndependentBidModel extends AbstractBidModel {
    /**
     * ***********************************************************************************************************************************
     * HOW DO YOU SELECT Y advertiser (equation 8) currently random and not the same as the current advertiser
-    * MAKE SURE THEY GIVE US EVERYONE AT SAME RANK WHEN THEY HAVE NOT YETGOTTEN RANK INFO
+    * MAKE SURE THEY GIVE US EVERYONE AT SAME RANK WHEN THEY HAVE NOT YET GOTTEN RANK INFO
     * *************************************************************************************************************************************
     */
    private static final double aStep = Math.pow(2, (1.0 / 25.0));
@@ -328,16 +328,11 @@ public class IndependentBidModel extends AbstractBidModel {
                      if (printlns) {
                         System.out.print("Updating: " + s + "(" + ranks.get(q).get(s) + ") with advertiser: " + curAdv + "(" + ranks.get(q).get(curAdv) + ") [");
                      }
-
-                     for (int i = 0; i < numBidValues; i++) {
-                        if (printlns) {
+                     if (printlns) {
+                        for (int i = 0; i < numBidValues; i++) {
                            System.out.print(curStrHM.get(curAdv).get(curStrHM.get(curAdv).size() - 1).get(i) + ", ");
                         }
-                     }
-                     if (printlns) {
                         System.out.println("]");
-                     }
-                     if (printlns) {
                         System.out.print("Updated probs: [");
                      }
                      for (int i = 0; i < numBidValues; i++) {
@@ -455,7 +450,7 @@ public class IndependentBidModel extends AbstractBidModel {
                if (printlns) {
                   System.out.println("MY RANK: " + ranks.get(q).get(s).intValue() + "MY BID DISC = " + theIndex + ",  MY BID = " + myBid);
                }
-            } else if (!Double.isNaN(cpc.get(q)) && (nextSpot) == (ranks.get(q).get(s).intValue())) {
+            } else if (!Double.isNaN(cpc.get(q)) && (nextSpot == (ranks.get(q).get(s).intValue()))) {
                ArrayList<Double> myALD = new ArrayList<Double>();
                for (int i = 0; i < numBidValues; i++) {
                   myALD.add(0.0);

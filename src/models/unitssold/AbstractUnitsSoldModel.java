@@ -14,12 +14,6 @@ public abstract class AbstractUnitsSoldModel extends AbstractModel {
    public abstract void update(SalesReport salesReport);
 
    public abstract double getWindowSold();
-
-   public abstract double getLatestSample();
-
-   public abstract double getEstimate();
-
-   public abstract double getThreeDaysSold();
-
+   
 }
 

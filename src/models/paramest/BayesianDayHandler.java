@@ -27,9 +27,7 @@ import java.util.LinkedList;
 
 public class BayesianDayHandler extends ConstantsAndFunctions {
 
-   public final static int numSlots = 5;
    double _otherAdvertiserEffects;
-   double _curProbClick;
    double _currentEstimate;
    ArrayList<Double> _contProbDist;
    ArrayList<Double> _contProbWeights;
@@ -51,8 +49,9 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
    boolean _targeted;
    Product _target;
    private double[] _c;
+   int _numSlots;
 
-   public BayesianDayHandler(Query q, int totalClicks, int numberPromotedSlots,
+   public BayesianDayHandler(Query q, int totalClicks, int numSlots, int numberPromotedSlots,
                              LinkedList<Integer> impressionsPerSlot,
                              double ourAdvertiserEffect,
                              LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot < their slots <ad>>
@@ -61,6 +60,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 
       _q = q;
       _totalClicks = totalClicks;
+      _numSlots = numSlots;
       _numberPromotedSlots = numberPromotedSlots;
       _impressionsPerSlot = impressionsPerSlot;
       _ourAdvertiserEffect = ourAdvertiserEffect;
@@ -78,8 +78,8 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
          _otherAdvertiserEffects = _advertiserEffectBoundsAvg[2];
       }
 
-      _saw = new boolean[numSlots];
-      for (int i = 0; i < numSlots; i++) {
+      _saw = new boolean[_numSlots];
+      for (int i = 0; i < _numSlots; i++) {
          _saw[i] = (_impressionsPerSlot.get(i) > 0);
       }
 
@@ -114,14 +114,14 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 
    public void updateEstimate(double ourAdvertiserEffect, double[] c) {
       _c = c;
-      double[] coeff = new double[numSlots];
-      for (int i = 0; i < numSlots; i++) {
+      double[] coeff = new double[_numSlots];
+      for (int i = 0; i < _numSlots; i++) {
          coeff[i] = 0;
       }
       double views = 0;
       for (Product p : _userStatesOfSearchingUsers.keySet()) {
          int ft = getFTargetIndex(_targeted, p, _target);
-         for (int ourSlot = 0; ourSlot < numSlots; ourSlot++) {
+         for (int ourSlot = 0; ourSlot < _numSlots; ourSlot++) {
             if (_saw[ourSlot]) {
                LinkedList<Ad> advertisersAboveUs = _advertisersAdsAbovePerSlot.get(ourSlot);
                double ftfp = fTargetfPro[ft][bool2int(_numberPromotedSlots >= ourSlot + 1)];
@@ -140,7 +140,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
                      double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
                      nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
                   }
-                  coeff[(numSlots - 1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
+                  coeff[(_numSlots - 1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
                }
             }
          }

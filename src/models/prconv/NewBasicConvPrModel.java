@@ -23,8 +23,11 @@ public class NewBasicConvPrModel extends AbstractConversionModel {
 
    @Override
    public double getPrediction(Query q) {
+      /*
+      * Return baseline probs including the IS effect
+       */
       double ISeffect;
-      Product prod = new Product("pg", "tv");
+      Product prod = new Product(q.getManufacturer(), q.getComponent());
       if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
          double F0Users = _userModel.getPrediction(prod, UserState.F0);
          double ISUsers = _userModel.getPrediction(prod, UserState.IS);

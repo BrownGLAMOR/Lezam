@@ -25,16 +25,6 @@ public class BasicUnitsSoldLambdaModel extends AbstractUnitsSoldModel {
    }
 
    @Override
-   public double getEstimate() {
-      throw new RuntimeException("Do not use this method");
-   }
-
-   @Override
-   public double getLatestSample() {
-      throw new RuntimeException("Do not use this method");
-   }
-
-   @Override
    public double getWindowSold() {
       double total = 0;
       for (int i = 0; i < _window - 2; i++) {
@@ -46,19 +36,6 @@ public class BasicUnitsSoldLambdaModel extends AbstractUnitsSoldModel {
          }
       }
       total = (total + _capacity / ((double) _window) * _dailyCapacityLambda) / 4.0 + total;
-      return total;
-   }
-
-   public double getThreeDaysSold() {
-      double total = 0;
-      for (int i = 0; i < _window - 2; i++) {
-         int index = _sold.size() - i - 1;
-         if (index >= 0) {
-            total += _sold.get(index);
-         } else {
-            total += _capacity / ((double) _window);
-         }
-      }
       return total;
    }
 

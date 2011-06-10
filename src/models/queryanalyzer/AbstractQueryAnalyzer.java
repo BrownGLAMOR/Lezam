@@ -3,28 +3,22 @@ package models.queryanalyzer;
 import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
-import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
-import models.queryanalyzer.iep.IEResult;
 
 import java.util.HashMap;
 
 public abstract class AbstractQueryAnalyzer extends AbstractModel {
 
 
-   public abstract int getOrderPrediction(Query query, String adv);
-
-   public abstract int getImpressionsPrediction(Query query, String adv);
+   public abstract int getTotImps(Query query);
 
    public abstract int[] getOrderPrediction(Query query);
 
    public abstract int[] getImpressionsPrediction(Query query);
 
-   public abstract int[] getImpressionRangePrediction(Query query, String adv);
-
    public abstract int[][] getImpressionRangePrediction(Query query);
 
-   public abstract boolean updateModel(QueryReport queryReport, SalesReport salesReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps);
+   public abstract boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps);
 
    public abstract void setAdvertiser(String ourAdv);
 

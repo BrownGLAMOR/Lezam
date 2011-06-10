@@ -21,6 +21,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private long _seed = 61686;
    private Random _R;
    private ArrayList<Product> _products;
+   private HashSet<Query> _querySpace;
    private Particle[] initParticle;
    private static final double _burstProb = .1;
    private static final double _successiveBurstProb = .2;
@@ -177,6 +178,19 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
       _products.add(new Product("lioneer", "dvd"));
       _products.add(new Product("lioneer", "tv"));
       _products.add(new Product("lioneer", "audio"));
+
+      _querySpace = new HashSet<Query>();
+      _querySpace.add(new Query(null, null));
+      for (Product product : _products) {
+         // The F1 query classes
+         // F1 Manufacturer only
+         _querySpace.add(new Query(product.getManufacturer(), null));
+         // F1 Component only
+         _querySpace.add(new Query(null, product.getComponent()));
+
+         // The F2 query class
+         _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
+      }
 
       initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
 //		initializeParticlesFromFile("/u/jberg/initUserParticles");
@@ -412,9 +426,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
    @Override
    public boolean updateModel(Map<Query, Integer> totalImpressions) {
-      for (Query q : totalImpressions.keySet()) {
-         Product prod = new Product(q.getManufacturer(), q.getComponent());
-         if (_products.contains(prod)) {
+      for (Query q : _querySpace) {
+         String man = q.getManufacturer();
+         String comp = q.getComponent();
+         if (man != null && comp != null) {
+            Product prod = new Product(man, comp);
             int totalImps = totalImpressions.get(q);
             if (totalImps > 0) {
                Particle[] particles = _particles.get(prod);

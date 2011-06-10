@@ -20,6 +20,7 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
    private Set<Product> _products;
    private HashMap<Query, Integer> _numImps;
    private Set<Query> _querySpace;
+   private int _lastDay;
 
    public BasicQueryToNumImp(AbstractUserModel userModel) {
       _userModel = userModel;
@@ -50,48 +51,38 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
          // The F2 query class
          _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
       }
+
+      _lastDay = -1;
    }
 
    @Override
    public int getPrediction(Query q, int day) {
-      //Set num impressions per query
-      for (Query query : _querySpace) {
-         int numImps = 0;
-         for (Product product : _products) {
-            if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               numImps += _userModel.getPrediction(product, UserState.F0, day);
-               numImps += _userModel.getPrediction(product, UserState.IS, day) / 3;
-            } else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
-               if (product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-                  numImps += _userModel.getPrediction(product, UserState.F1, day) / 2;
-                  numImps += _userModel.getPrediction(product, UserState.IS, day) / 6;
-               }
-            } else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
-               if (product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-                  numImps += _userModel.getPrediction(product, UserState.F2, day);
+      if(_lastDay != day) {
+         //Set num impressions per query
+         for (Query query : _querySpace) {
+            int numImps = 0;
+            for (Product product : _products) {
+               if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+                  numImps += _userModel.getPrediction(product, UserState.F0, day);
                   numImps += _userModel.getPrediction(product, UserState.IS, day) / 3;
+               } else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
+                  if (product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
+                     numImps += _userModel.getPrediction(product, UserState.F1, day) / 2;
+                     numImps += _userModel.getPrediction(product, UserState.IS, day) / 6;
+                  }
+               } else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
+                  if (product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
+                     numImps += _userModel.getPrediction(product, UserState.F2, day);
+                     numImps += _userModel.getPrediction(product, UserState.IS, day) / 3;
+                  }
                }
             }
+            _numImps.put(query, numImps);
          }
-         _numImps.put(query, numImps);
+
+         _lastDay = day;
       }
       return _numImps.get(q);
-   }
-
-   @Override
-   public int getPredictionWithBid(Query query, double bid, int day) {
-      /*
-         * We have no use for the bid in this specific model
-         */
-      return getPrediction(query, day);
-   }
-
-   @Override
-   public int getPredictionWithPos(Query query, double pos, int day) {
-      /*
-         * We have no use for the pos in this specific model
-         */
-      return getPrediction(query, day);
    }
 
    @Override

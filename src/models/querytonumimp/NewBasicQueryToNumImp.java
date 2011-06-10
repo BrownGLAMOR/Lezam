@@ -58,22 +58,6 @@ public class NewBasicQueryToNumImp extends AbstractQueryToNumImp {
    }
 
    @Override
-   public int getPredictionWithBid(Query query, double bid, int day) {
-      /*
-         * We have no use for the bid in this specific model
-         */
-      return getPrediction(query, day);
-   }
-
-   @Override
-   public int getPredictionWithPos(Query query, double pos, int day) {
-      /*
-         * We have no use for the pos or day in this specific model
-         */
-      return getPrediction(query, day);
-   }
-
-   @Override
    public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
       //Set num impressions per query
       for (Query query : _querySpace) {

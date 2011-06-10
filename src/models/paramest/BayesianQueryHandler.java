@@ -30,10 +30,14 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
    double[] _lastPredictions;
 
    double[] _c;
+   int _numSlots;
+   int _numPromSlots;
 
-   public BayesianQueryHandler(Query q, double[] c) {
+   public BayesianQueryHandler(Query q, double[] c, int numSlots, int numPromSlots) {
 
       _c = c;
+      _numSlots = numSlots;
+      _numPromSlots = numPromSlots;
 
       _query = q;
       _queryType = q.getType();
@@ -66,7 +70,6 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
    }
 
    public boolean update(String ourAgent, QueryReport queryReport,
-                         SalesReport salesReport, int numberPromotedSlots,
                          LinkedList<Integer> impressionsPerSlot,
                          LinkedList<LinkedList<String>> advertisersAbovePerSlot,
                          HashMap<String, Ad> ads,
@@ -77,8 +80,6 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
       int totClicks = queryReport.getClicks(_query);
 
       if (totImpressions > MIN_IMPS && totClicks > MIN_CLICKS) {
-
-         assert impressionsPerSlot.size() == advertisersAbovePerSlot.size();
 
          // Were we ever not in a top slot
          boolean notinslot1 = false;
@@ -119,8 +120,8 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
             HashMap<Product, Double> imprdist = getImpressionDist(userStates, queryReport.getImpressions(_query));
             HashMap<Product, LinkedList<double[]>> statesSearchingUsers = getStatesOfSearchingUsers(userStates, impressionsPerSlot, imprdist);
 
-            BayesianDayHandler latestday = new BayesianDayHandler(_query, totalClicks,
-                                                                  numberPromotedSlots, impressionsPerSlot, _lastPredictions[0],
+            BayesianDayHandler latestday = new BayesianDayHandler(_query, totalClicks, _numSlots,
+                                                                  _numPromSlots, impressionsPerSlot, _lastPredictions[0],
                                                                   adsAbovePerSlot, statesSearchingUsers, (ourAdTargeted),
                                                                   ourAdProduct, _c);
 

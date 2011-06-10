@@ -64,7 +64,7 @@ public class ImpressionEstimatorTest {
    //NOTE: THESE ARE SET IN THE MAIN METHOD.
    //SETTING THEM HERE WILL JUST GET OVERRIDDEN (unless the default constructor is called)
    private boolean SAMPLED_AVERAGE_POSITIONS;
-   public boolean PERFECT_IMPS = true;
+   public boolean PERFECT_IMPS;
    boolean USE_WATERFALL_PRIORS;
    private double PRIOR_NOISE_MULTIPLIER; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
    boolean USE_HISTORIC_PRIORS;
@@ -2352,7 +2352,7 @@ public class ImpressionEstimatorTest {
 
 
       boolean sampleAvgPositions = true;
-      boolean perfectImps = true; //NOTE: This is not passed at the command line right now (assume perfect imps)
+      boolean perfectImps = true;
       boolean useWaterfallPriors = false;
       double noiseFactor = 0.0;
       boolean useHistoricPriors = true;

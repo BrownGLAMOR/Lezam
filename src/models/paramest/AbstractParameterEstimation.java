@@ -37,11 +37,10 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
      * the same as in the advertisersAbovePerSlot
      */
    public abstract boolean updateModel(QueryReport queryReport,
-                                       SalesReport salesReport,
                                        BidBundle bidBundle,
-                                       int numberPromotedSlots,
                                        HashMap<Query, int[]> order,
                                        HashMap<Query, int[]> impressions,
+                                       HashMap<Query, int[][]> allWaterfalls,
                                        HashMap<Product, HashMap<UserState, Integer>> userStates,
                                        double[] c);
 

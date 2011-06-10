@@ -17,9 +17,12 @@ public class SalesDistributionModel extends AbstractModel {
       _querySpace = querySpace;
       _conversions = new HashMap<Query, Integer>();
       for (Query query : _querySpace) {
-         _conversions.put(query, 0);
+         /*
+          * Starts as a uniform dist
+          */
+         _conversions.put(query, 1);
       }
-      _totConversions = 0;
+      _totConversions = _querySpace.size();
    }
 
    public double getPrediction(Query q) {

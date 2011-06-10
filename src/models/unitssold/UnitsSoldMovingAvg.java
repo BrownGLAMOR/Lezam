@@ -56,30 +56,6 @@ public class UnitsSoldMovingAvg extends AbstractUnitsSoldModel {
       }
    }
 
-   public double getEstimate() {
-      return estimate;
-   }
-
-   public double getLatestSample() {
-      return latestSample;
-   }
-
-
-   @Override
-   public double getThreeDaysSold() {
-      double total = 0;
-      for (int i = 0; i < _distributionWindow - 2; i++) {
-         int index = _sold.size() - i - 1;
-         if (index >= 0) {
-            total += _sold.get(index);
-         } else {
-            total += _distributionCapacity / ((double) _distributionWindow);
-         }
-      }
-      return total;
-   }
-
-
    @Override
    public AbstractModel getCopy() {
       return new UnitsSoldMovingAvg(_querySpace, _distributionCapacity, _distributionWindow);
