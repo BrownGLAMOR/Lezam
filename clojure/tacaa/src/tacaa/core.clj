@@ -8,14 +8,35 @@
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
                                      Query Product Ad UserClickModel
                                      AdvertiserInfo PublisherInfo
-                                     SlotInfo QueryType))
+                                     SlotInfo QueryType RetailCatalog))
   (:gen-class
    :name tacaa.core
-   :methods [^{:static true} [getstatus [String] clojure.lang.PersistentArrayMap]]))
+   :methods [^{:static true} [initClojureSim [edu.umich.eecs.tac.props.PublisherInfo,
+                                              edu.umich.eecs.tac.props.SlotInfo,
+                                              edu.umich.eecs.tac.props.AdvertiserInfo,
+                                              edu.umich.eecs.tac.props.RetailCatalog,
+                                              java.util.ArrayList] clojure.lang.PersistentHashMap]
+             ^{:static true} [mkFullStatus [clojure.lang.PersistentHashMap,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map,
+                                            java.util.Map] clojure.lang.PersistentHashMap]
+             ^{:static true} [simQuery [clojure.lang.PersistentHashMap,
+                                        edu.umich.eecs.tac.props.Query,
+                                        String,
+                                        double,
+                                        double,
+                                        edu.umich.eecs.tac.props.Ad] java.util.ArrayList]]))
 
 (set! *warn-on-reflection* true)
-
-(def seed 61686)
 
 
 (defn calc-mean
@@ -208,27 +229,29 @@
 
 
 (defn mk-prod-query-map
-  [status]
-  (reduce (fn [coll ^Product prod]
-            (let [man (.getManufacturer prod)
-                  comp (.getComponent prod)]
-              (assoc coll prod [(new Query)
-                                (new Query nil comp)
-                                (new Query man nil)
-                                (new Query man comp)])))
-          {} (seq (status :retail-cat))))
+  ([status] (mk-prod-query-map (status :retail-cat) 0))
+  ([retail-cat dummy]
+     (reduce (fn [coll ^Product prod]
+               (let [man (.getManufacturer prod)
+                     comp (.getComponent prod)]
+                 (assoc coll prod [(new Query)
+                                   (new Query nil comp)
+                                   (new Query man nil)
+                                   (new Query man comp)])))
+             {} (seq retail-cat))))
 
 (defn mk-query-type-map
-  [status]
-  (reduce (fn [coll ^Query query]
-            (assoc coll query
-                  (let [qtype (.getType query)]
-                    (if (= qtype QueryType/FOCUS_LEVEL_ZERO)
-                      :qsf0
-                      (if (= qtype QueryType/FOCUS_LEVEL_ONE)
-                        :qsf1
-                        :qsf2)))))
-          {} (status :query-space)))
+  ([status] (mk-query-type-map (status :query-space) 0))
+  ([query-space dummy]
+     (reduce (fn [coll ^Query query]
+               (assoc coll query
+                      (let [qtype (.getType query)]
+                        (if (= qtype QueryType/FOCUS_LEVEL_ZERO)
+                          :qsf0
+                          (if (= qtype QueryType/FOCUS_LEVEL_ONE)
+                            :qsf1
+                            :qsf2)))))
+             {} query-space)))
 
 (defn min-reg-res
   [status queryspace]
@@ -979,8 +1002,8 @@
         agents (status :agents)
         num-agents (count agents)
         qs (status :query-space)
-        bid-bundle (status :bid-bundle)
-        ^BidBundle bundle ((bid-bundle agent) day)
+        ads (status :ads)
+        ad ((ads agent) day)
         qr (new QueryReport)]
     (do
       (doall (map (fn [^Query query]
@@ -993,15 +1016,14 @@
                                  (int (aqstats :clicks))
                                  (double (aqstats :cost))
                                  (double (aqstats :pos-sum))))
-                    (.setAd qr query ^Ad (.getAd bundle query))
+                    (.setAd qr query ^Ad (ad query))
                                         ;Add opp avg pos info
                     (loop [agent-idx 0]
                       (if (not (< agent-idx num-agents))
                         nil
                         (let [agent (agents agent-idx)
                               aqstats ((stats agent) query)]
-                          (.setAd qr query (str "adv" (inc agent-idx))
-                                  (.getAd ^BidBundle ((bid-bundle agent) day) query))
+                          (.setAd qr query (str "adv" (inc agent-idx)) ^Ad (((ads agent) day) query))
                           (.setPosition qr query (str "adv" (inc agent-idx)) (if (== 0 (aqstats :imps))
                                                                                Double/NaN
                                                                                (double (/ (aqstats :pos-sum)
@@ -1297,17 +1319,128 @@
        (Math/exp (- (/ mdsq (* 2 var)))))))
 
 
-(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
+;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
 
-(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
 
-(defn getstatus
-  [file]
-  (simulate-game (init-sim-info (tacaa.parser/parse-file file))))
+(defn initClojureSim
+  [^PublisherInfo pub-info,
+   ^SlotInfo slot-info,
+   ^AdvertiserInfo adv-info,
+   ^RetailCatalog retail-cat,
+   ^java.util.ArrayList agents]
+  (let [agents (into [] agents)
+        query-space (tacaa.parser/mk-queryspace retail-cat)]
+    (hash-map :publish-info pub-info
+              :slot-info slot-info
+              :adv-info (reduce (fn [coll agent]
+                                  (assoc coll agent adv-info))
+                                {} agents)
+              :retail-cat retail-cat
+              :agents agents
+              :query-space query-space
+              :qsf0 (into #{} (filter (fn [^Query query] (= (.getType query)
+                                                           QueryType/FOCUS_LEVEL_ZERO)) query-space))
+              :qsf1 (into #{} (filter (fn [^Query query] (= (.getType query)
+                                                           QueryType/FOCUS_LEVEL_ONE)) query-space))
+              :qsf2 (into #{} (filter (fn [^Query query] (= (.getType query)
+                                                           QueryType/FOCUS_LEVEL_TWO)) query-space))
+              :squash-param (.getSquashingParameter pub-info)
+              :prod-query (mk-prod-query-map retail-cat 0)
+              :query-type (mk-query-type-map query-space 0)
+              :conv-probs (mk-convpr-map)
+              :man-bonus (.getManufacturerBonus adv-info)
+              :comp-bonus (.getComponentBonus adv-info)
+              :lam (.getDistributionCapacityDiscounter adv-info)
+              :sales-window (.getDistributionWindow adv-info)
+              :targ-effect (.getTargetEffect adv-info)
+              :num-slots (.getRegularSlots slot-info)
+              :prom-slots (.getPromotedSlots slot-info)
+              :prom-bonus (.getPromotedSlotBonus slot-info)
+              :USP 10)))
 
-(defn -getstatus
-  [file]
-  (getstatus file))
+(defn -initClojureSim
+  [pub-info
+   slot-info
+   adv-info
+   retail-cat
+   agents]
+  (initClojureSim pub-info slot-info adv-info retail-cat agents))
+
+
+(defn mkFullStatus
+  [^PersistentHashMap status
+   ^java.util.Map squashed-bids,
+   ^java.util.Map budgets,
+   ^java.util.Map user-pop,
+   ^java.util.Map adv-effects,
+   ^java.util.Map cont-probs,
+   ^java.util.Map reg-res,
+   ^java.util.Map prom-res,
+   ^java.util.Map capacities,
+   ^java.util.Map start-sales,
+   ^java.util.Map man-specialties,
+   ^java.util.Map comp-specialties,
+   ^java.util.Map ads]
+  (let [agents (status :agents)]
+    (merge status
+           {:squashed-bids (reduce (fn [coll ^String agent]
+                                     (assoc coll agent
+                                            [(into {} ^java.util.Map (.get squashed-bids agent))]))
+                                   {} (keys squashed-bids)),
+            :budgets (reduce (fn [coll ^String agent]
+                               (assoc coll agent
+                                      [(into {} ^java.util.Map (.get budgets agent))]))
+                             {} (keys budgets)),
+            :user-pop [(into {} user-pop)],
+            :reg-res (into {} reg-res),
+            :prom-res (into {} prom-res),
+            :capacities (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} capacities),
+            :start-sales (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} start-sales),
+            :man-specialties (into {} man-specialties),
+            :comp-specialties (into {} comp-specialties),
+            :ads (reduce (fn [coll ^String agent]
+                           (assoc coll agent
+                                  [(into {} ^java.util.Map (.get ads agent))]))
+                         {} (keys ads))})))
+
+(defn -mkFullStatus
+  [status squashed-bids budgets user-pop adv-effects
+   cont-probs reg-res prom-res capacities start-sales
+   man-specialties comp-specialties ads]
+  (mkFullStatus status squashed-bids budgets user-pop adv-effects
+                cont-probs reg-res prom-res capacities start-sales
+                man-specialties comp-specialties ads))
+
+
+(defn simQuery
+  [status ^Query query agent bid budget ^Ad ad]
+  (let [status (assoc status :squashed-bids
+                      (assoc (status :squashed-bids) agent
+                             (assoc ((status :squashed-bids) agent) 0
+                                    (assoc (((status :squashed-bids) agent) 0) query
+                                           ((((status :squashed-bids) agent) 0) query) bid))))
+        status (assoc status :budgets
+                      (assoc (status :budgets) agent
+                             (assoc ((status :budgets) agent) 0
+                                    (assoc (((status :bugets) agent) 0) query
+                                           ((((status :budgets) agent) 0) query) budget))))
+        status (assoc status :ads
+                      (assoc (status :ads) agent
+                             (assoc ((status :ads) agent) 0
+                                    (assoc (((status :ads) agent) 0) query
+                                           ((((status :ads) agent) 0) query) budget))))
+        ;Pass in day 0 because all arrays are length 1
+        stats (simulate-query status 0 query)
+        aqstats ((stats agent) query)]
+    (doto (new java.util.ArrayList)
+      (.add (aqstats :imps))
+      (.add (aqstats :clicks))
+      (.add (aqstats :cost)))))
+
+(defn -simQuery
+  [status query agent bid budget ad]
+  (simQuery status query agent bid budget ad))
 
 
 ;(use 'criterium.core)
@@ -1315,4 +1448,3 @@
 
                                         ;TODO
                                         ; add sampling to simulation
-                                        ; simulate queries at a time

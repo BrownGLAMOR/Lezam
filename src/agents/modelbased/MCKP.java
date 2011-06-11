@@ -4,6 +4,7 @@ import agents.AbstractAgent;
 import agents.modelbased.mckputil.IncItem;
 import agents.modelbased.mckputil.Item;
 import agents.modelbased.mckputil.ItemComparatorByWeight;
+import clojure.lang.PersistentHashMap;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.bidmodel.AbstractBidModel;
@@ -23,6 +24,7 @@ import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import models.usermodel.jbergParticleFilter;
+import tacaa.core;
 
 import java.util.*;
 
@@ -82,6 +84,7 @@ public class MCKP extends AbstractAgent {
    private AbstractParameterEstimation _paramEstimation;
    private AbstractBudgetEstimator _budgetEstimator;
    private SalesDistributionModel _salesDist;
+   private PersistentHashMap _baseCljSim;
 
    double[][] _advertiserEffectBounds;
 
@@ -103,20 +106,6 @@ public class MCKP extends AbstractAgent {
    // 1 - promoted
    double[][] fTargetfPro;
 
-
-   // returns the corresponding index for the targeting part of fTargetfPro
-   int getFTargetIndex(boolean targeted, Product p, Product target) {
-      if (!targeted || p == null || target == null) {
-         return 0; //untargeted
-      }
-      else if(p.equals(target)) {
-         return 1; //targeted correctly
-      }
-      else {
-         return 2; //targeted incorrectly
-      }
-   }
-
    public MCKP() {
       this(0.10753988514063796,0.187966273,0.339007416);
    }
@@ -128,6 +117,120 @@ public class MCKP extends AbstractAgent {
       _c[0] = c1;
       _c[1] = c2;
       _c[2] = c3;
+   }
+
+   public PersistentHashMap initClojureSim() {
+      return core.initClojureSim(_publisherInfo,_slotInfo,_advertiserInfo,_retailCatalog,_advertisers);
+   }
+
+   public PersistentHashMap setupSimForDay() {
+      HashMap<String,HashMap<Query,Double>> squashedBids = new HashMap<String, HashMap<Query, Double>>();
+      HashMap<String,HashMap<Query,Double>> budgets = new HashMap<String, HashMap<Query, Double>>();
+      HashMap<Product,double[]> userPop = new HashMap<Product, double[]>();
+      HashMap<String,HashMap<Query,Double>> advAffects = new HashMap<String, HashMap<Query, Double>>();
+      HashMap<Query,Double> contProbs = new HashMap<Query, Double>();
+      HashMap<Query,Double> regReserves = new HashMap<Query, Double>();
+      HashMap<Query,Double> promReserves = new HashMap<Query, Double>();
+      HashMap<String,Integer> capacities = new HashMap<String, Integer>();
+      HashMap<String,Integer> startSales = new HashMap<String, Integer>();
+      HashMap<String,String> manSpecialties = new HashMap<String, String>();
+      HashMap<String,String> compSpecialties = new HashMap<String, String>();
+      HashMap<String,HashMap<Query,Ad>> ads = new HashMap<String, HashMap<Query, Ad>>();
+
+      for(Query q : _querySpace) {
+         contProbs.put(q,_paramEstimation.getPrediction(q)[1]);
+         regReserves.put(q,_regReserve[queryTypeToInt(q.getType())]);
+         promReserves.put(q,_proReserve[queryTypeToInt(q.getType())]);
+      }
+
+      for(int i = 0; i < _advertisers.size(); i++) {
+         String agent = _advertisers.get(i);
+         if(i != _advIdx) {
+            HashMap<Query,Double> aSquashedBids = new HashMap<Query, Double>();
+            HashMap<Query,Double> aBudgets = new HashMap<Query, Double>();
+            HashMap<Query,Double> aAdvAffects = new HashMap<Query, Double>();
+            int aCapacities = 450;  //TODO estimate opponent capacity
+            int aStartSales = (int)((4.0*(aCapacities / ((double) _capWindow)) + aCapacities) / 2.0);  //TODO Estimate opponent start-sales
+            Query maxQuery = null;
+            double maxBid = 0.0;
+            for(Query q : _querySpace) {
+               double bid = _bidModel.getPrediction("adv" + (i+1), q);
+               aSquashedBids.put(q, bid);
+               aBudgets.put(q, _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1)));
+               aAdvAffects.put(q,_advertiserEffectBoundsAvg[queryTypeToInt(q.getType())]);  //TODO estimate opponent advEffect
+               if(q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
+                  if(bid >= maxBid) {
+                     maxBid = bid;
+                     maxQuery = q;
+                  }
+               }
+            }
+
+            //Assume specialty is the prod of F2 query they are bidding most in
+            String aManSpecialties = maxQuery.getManufacturer();
+            String aCompSpecialties = maxQuery.getComponent();
+            HashMap<Query,Ad> aAds = new HashMap<Query, Ad>();
+            for(Query q : _querySpace) {
+               aAds.put(q,getTargetedAd(q,aManSpecialties,aCompSpecialties));
+            }
+
+            squashedBids.put(agent,aSquashedBids);
+            budgets.put(agent,aBudgets);
+            advAffects.put(agent,aAdvAffects);
+            capacities.put(agent,aCapacities);
+            startSales.put(agent,aStartSales);
+            manSpecialties.put(agent,aManSpecialties);
+            compSpecialties.put(agent,aCompSpecialties);
+            ads.put(agent,aAds);
+         }
+         else {
+            HashMap<Query,Double> aAdvAffects = new HashMap<Query, Double>();
+            int aCapacities = _capacity;
+            double remainingCap;
+            if(_day < 4) {
+               remainingCap = _capacity/_capWindow;
+            }
+            else {
+               remainingCap = _capacity - _unitsSold.getWindowSold();
+            }
+            int aStartSales = _capacity - (int)remainingCap;
+            String aManSpecialties = _manSpecialty;
+            String aCompSpecialties = _compSpecialty;
+
+            for(Query q : _querySpace) {
+               aAdvAffects.put(q,_paramEstimation.getPrediction(q)[0]);
+            }
+
+            advAffects.put(agent,aAdvAffects);
+            capacities.put(agent,aCapacities);
+            startSales.put(agent,aStartSales);
+            manSpecialties.put(agent,aManSpecialties);
+            compSpecialties.put(agent,aCompSpecialties);
+         }
+      }
+
+      for(Product p : _products) {
+         double[] userState = new double[UserState.values().length];
+         userState[0] = _userModel.getPrediction(p, UserState.NS);
+         userState[1] = _userModel.getPrediction(p, UserState.IS);
+         userState[2] = _userModel.getPrediction(p, UserState.F0);
+         userState[3] = _userModel.getPrediction(p, UserState.F1);
+         userState[4] = _userModel.getPrediction(p, UserState.F2);
+         userState[5] = _userModel.getPrediction(p, UserState.T);
+         userPop.put(p, userState);
+      }
+
+      return core.mkFullStatus(_baseCljSim,squashedBids,budgets,userPop,advAffects,contProbs,regReserves,
+                               promReserves, capacities, startSales, manSpecialties, compSpecialties, ads);
+   }
+
+   public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
+      ArrayList<Double> result = core.simQuery(cljSim,query,_advId,bid,budget,ad);
+      double[] resultArr = new double[result.size()];
+      for(int i = 0; i < result.size(); i++) {
+         resultArr[i] = result.get(i);
+      }
+      return resultArr;
    }
 
    @Override
@@ -220,6 +323,11 @@ public class MCKP extends AbstractAgent {
             throw new RuntimeException("Malformed query");
          }
       }
+
+      /*
+       * Initialize Simulator
+       */
+      _baseCljSim = initClojureSim();
    }
 
    @Override
@@ -328,7 +436,6 @@ public class MCKP extends AbstractAgent {
                for(int i = 0; i < tot; i++) {
                   newBids.add(min+(i*increment));
                }
-
             }
             else {
                double increment  = .2;
@@ -355,21 +462,13 @@ public class MCKP extends AbstractAgent {
             budgetLists.put(q,budgetList);
          }
 
-         HashMap<Product,HashMap<UserState,Integer>> userStates = new HashMap<Product,HashMap<UserState,Integer>>();
-         for(Product p : _products) {
-            HashMap<UserState,Integer> userState = new HashMap<UserState,Integer>();
-            for(UserState s : UserState.values()) {
-               userState.put(s, _userModel.getPrediction(p, s));
-            }
-            userStates.put(p, userState);
-         }
-
          ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
 
          //want the queries to be in a guaranteed order - put them in an array
          //index will be used as the id of the query
          double penalty = getPenalty(remainingCap, 0);
          HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
+         PersistentHashMap querySim = setupSimForDay();
          for(Query q : _querySpace) {
             ArrayList<Item> itemList = new ArrayList<Item>();
             ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
@@ -384,10 +483,10 @@ public class MCKP extends AbstractAgent {
                      boolean targeting = (k == 0) ? false : true;
                      double bid = bidLists.get(q).get(i);
                      double budget = budgetLists.get(q).get(j);
+                     Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
 
-//							double[] impsClicksAndCost = getImpsClicksAndCost(q,bid,budget,targeting,userStates);
                      //TODO ADD NEW SIMULATION
-                     double[] impsClicksAndCost = new double[3];
+                     double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
                      double numImps = impsClicksAndCost[0];
                      double numClicks = impsClicksAndCost[1];
                      double CPC = impsClicksAndCost[2] / impsClicksAndCost[1];
@@ -457,7 +556,7 @@ public class MCKP extends AbstractAgent {
 
                if(solution.get(q).targ()) {
                   bidBundle.setBid(q, bid);
-                  bidBundle.setAd(q, getTargetedAd(q));
+                  bidBundle.setAd(q, getTargetedAd(q,_manSpecialty,_compSpecialty));
                }
                else {
                   bidBundle.addQuery(q, bid, new Ad());
@@ -559,12 +658,16 @@ public class MCKP extends AbstractAgent {
    }
 
    private Ad getTargetedAd(Query q) {
+      return getTargetedAd(q, _manSpecialty, _compSpecialty);
+   }
+
+   private Ad getTargetedAd(Query q, String manSpecialty, String compSpecialty) {
       Ad ad;
       if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
          /*
              * F0 Query, target our specialty
              */
-         ad = new Ad(new Product(_manSpecialty, _compSpecialty));
+         ad = new Ad(new Product(manSpecialty, compSpecialty));
       }
       else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
          if(q.getComponent() == null) {
@@ -572,14 +675,14 @@ public class MCKP extends AbstractAgent {
                  * F1 Query (comp = null), so target the subgroup that searches for this and our
                  * component specialty
                  */
-            ad = new Ad(new Product(q.getManufacturer(), _compSpecialty));
+            ad = new Ad(new Product(q.getManufacturer(), compSpecialty));
          }
          else {
             /*
                  * F1 Query (man = null), so target the subgroup that searches for this and our
                  * manufacturer specialty
                  */
-            ad = new Ad(new Product(_manSpecialty, q.getComponent()));
+            ad = new Ad(new Product(manSpecialty, q.getComponent()));
          }
       }
       else  {
@@ -1163,15 +1266,28 @@ public class MCKP extends AbstractAgent {
       return convPr;
    }
 
-   public void debug(Object str) {
-      if(DEBUG) {
-         System.out.println(str);
+   // returns the corresponding index for the targeting part of fTargetfPro
+   private int getFTargetIndex(boolean targeted, Product p, Product target) {
+      if (!targeted || p == null || target == null) {
+         return 0; //untargeted
+      }
+      else if(p.equals(target)) {
+         return 1; //targeted correctly
+      }
+      else {
+         return 2; //targeted incorrectly
       }
    }
 
    private double randDouble(double a, double b) {
       double rand = _R.nextDouble();
       return rand * (b - a) + a;
+   }
+
+   public void debug(Object str) {
+      if(DEBUG) {
+         System.out.println(str);
+      }
    }
 
    @Override
