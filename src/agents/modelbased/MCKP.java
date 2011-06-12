@@ -285,13 +285,13 @@ public class MCKP extends AbstractAgent {
             _salesPrices.put(q, 10.0);
          }
 
-         if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+         if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
             _baseConvProbs.put(q, _piF0);
          }
-         else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+         else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
             _baseConvProbs.put(q, _piF1);
          }
-         else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+         else if(q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
             _baseConvProbs.put(q, _piF2);
          }
          else {
@@ -310,13 +310,13 @@ public class MCKP extends AbstractAgent {
              * we can consider replacing these with our predicted clickPrs
              *
              */
-         if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
+         if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
             _baseClickProbs.put(q, .3);
          }
-         else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
+         else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
             _baseClickProbs.put(q, .4);
          }
-         else if(q.getType() == QueryType.FOCUS_LEVEL_TWO) {
+         else if(q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
             _baseClickProbs.put(q, .5);
          }
          else {
@@ -386,80 +386,87 @@ public class MCKP extends AbstractAgent {
          HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
          HashMap<Query,ArrayList<Double>> budgetLists = new HashMap<Query,ArrayList<Double>>();
          for(Query q : _querySpace) {
-            ArrayList<Double> bids = new ArrayList<Double>();
-            double unSquash = 1.0 / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing);
+            if(!q.equals(new Query())) {
+               ArrayList<Double> bids = new ArrayList<Double>();
+               double unSquash = 1.0 / Math.pow(_paramEstimation.getPrediction(q)[0],_squashing);
 
-            for(int i = 0; i < _advertisers.size(); i++) {
-               /*
-                     * We need to unsquash opponent bids
-                     */
-               if(i != _advIdx) { //only care about opponent bids
-                  bids.add(_bidModel.getPrediction("adv" + (i+1), q) * unSquash);
-               }
-            }
-
-            /*
-                 * This sorts low to high
-                 */
-            Collections.sort(bids);
-
-            ArrayList<Double> noDupeBids = removeDupes(bids);
-
-            ArrayList<Double> newBids = new ArrayList<Double>();
-            int NUM_SAMPLES = 2;
-            for(int i = 0; i < noDupeBids.size(); i++) {
-               newBids.add(noDupeBids.get(i) - .01);
-               //					newBids.add(noDupeBids.get(i)); //TODO may want to include this since we requash
-               newBids.add(noDupeBids.get(i) + .01);
-
-               if((i == 0 && noDupeBids.size() > 1) || (i > 0 && i != noDupeBids.size()-1)) {
-                  for(int j = 1; j < NUM_SAMPLES+1; j++) {
-                     newBids.add(noDupeBids.get(i) + (noDupeBids.get(i+1) - noDupeBids.get(i)) * (j / ((double)(NUM_SAMPLES+1))));
+               for(int i = 0; i < _advertisers.size(); i++) {
+                  /*
+                  * We need to unsquash opponent bids
+                  */
+                  if(i != _advIdx) { //only care about opponent bids
+                     bids.add(_bidModel.getPrediction("adv" + (i+1), q) * unSquash);
                   }
                }
-            }
 
-            if(q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               double increment  = .2;
-               double min = .08;
-               double max = 1.0;
-               int tot = (int) Math.ceil((max-min) / increment);
-               for(int i = 0; i < tot; i++) {
-                  newBids.add(min+(i*increment));
+               /*
+               * This sorts low to high
+               */
+               Collections.sort(bids);
+
+               ArrayList<Double> noDupeBids = removeDupes(bids);
+
+               ArrayList<Double> newBids = new ArrayList<Double>();
+               int NUM_SAMPLES = 0;
+               for(int i = 0; i < noDupeBids.size(); i++) {
+                  newBids.add(noDupeBids.get(i) - .01);
+                  //					newBids.add(noDupeBids.get(i)); //TODO may want to include this since we requash
+//                  newBids.add(noDupeBids.get(i) + .01);
+
+                  if((i == 0 && noDupeBids.size() > 1) || (i > 0 && i != noDupeBids.size()-1)) {
+                     for(int j = 1; j < NUM_SAMPLES+1; j++) {
+                        newBids.add(noDupeBids.get(i) + (noDupeBids.get(i+1) - noDupeBids.get(i)) * (j / ((double)(NUM_SAMPLES+1))));
+                     }
+                  }
                }
-            }
-            else if(q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-               double increment  = .2;
-               double min = .29;
-               double max = 1.95;
-               int tot = (int) Math.ceil((max-min) / increment);
-               for(int i = 0; i < tot; i++) {
-                  newBids.add(min+(i*increment));
+
+               if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+                  double increment  = .4;
+                  double min = .08;
+                  double max = 1.0;
+                  int tot = (int) Math.ceil((max-min) / increment);
+                  for(int i = 0; i < tot; i++) {
+                     newBids.add(min+(i*increment));
+                  }
                }
+               else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+                  double increment  = .5;
+                  double min = .29;
+                  double max = 1.95;
+                  int tot = (int) Math.ceil((max-min) / increment);
+                  for(int i = 0; i < tot; i++) {
+                     newBids.add(min+(i*increment));
+                  }
+               }
+               else {
+                  double increment  = .9;
+                  double min = .46;
+                  double max = 2.35;
+                  int tot = (int) Math.ceil((max-min) / increment);
+                  for(int i = 0; i < tot; i++) {
+                     newBids.add(min+(i*increment));
+                  }
+               }
+
+               Collections.sort(newBids);
+               bidLists.put(q, newBids);
+
+
+               ArrayList<Double> budgetList = new ArrayList<Double>();
+//            budgetList.add(35.0);
+               budgetList.add(50.0);
+//            budgetList.add(75.0);
+//            budgetList.add(100.0);
+//               budgetList.add(150.0);
+               budgetList.add(250.0);
+//               budgetList.add(350.0);
+
+               budgetLists.put(q,budgetList);
             }
             else {
-               double increment  = .2;
-               double min = .46;
-               double max = 2.35;
-               int tot = (int) Math.ceil((max-min) / increment);
-               for(int i = 0; i < tot; i++) {
-                  newBids.add(min+(i*increment));
-               }
+               bidLists.put(q,new ArrayList<Double>());
+               budgetLists.put(q,new ArrayList<Double>());
             }
-
-            Collections.sort(newBids);
-            bidLists.put(q, newBids);
-
-
-            ArrayList<Double> budgetList = new ArrayList<Double>();
-            budgetList.add(35.0);
-            budgetList.add(50.0);
-            budgetList.add(75.0);
-            budgetList.add(100.0);
-            budgetList.add(200.0);
-            budgetList.add(300.0);
-
-            budgetLists.put(q,budgetList);
          }
 
          ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
@@ -470,70 +477,80 @@ public class MCKP extends AbstractAgent {
          HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
          PersistentHashMap querySim = setupSimForDay();
          for(Query q : _querySpace) {
-            ArrayList<Item> itemList = new ArrayList<Item>();
-            ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
-            debug("Query: " + q);
-            double convProbWithPen = getConversionPrWithPenalty(q, penalty);
-            double convProb = _convPrModel.getPrediction(q);
-            double salesPrice = _salesPrices.get(q);
-            int itemCount = 0;
-            for(int i = 0; i < bidLists.get(q).size(); i++) {
-               for(int j = 0; j < budgetLists.get(q).size(); j++) {
-                  for(int k = 0; k < 2; k++) {
-                     boolean targeting = (k == 0) ? false : true;
-                     double bid = bidLists.get(q).get(i);
-                     double budget = budgetLists.get(q).get(j);
-                     Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
+            if(!q.equals(new Query())) {
+               ArrayList<Item> itemList = new ArrayList<Item>();
+               ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
+               debug("Query: " + q);
+               double convProbWithPen = getConversionPrWithPenalty(q, penalty);
+               double convProb = _convPrModel.getPrediction(q);
+               double salesPrice = _salesPrices.get(q);
+               int itemCount = 0;
+               for(int k = 0; k < 1; k++) {
+//                  for(int k = 0; k < 2; k++) {
+                  for(int i = 0; i < bidLists.get(q).size(); i++) {
+                     for(int j = 0; j < budgetLists.get(q).size(); j++) {
+                        boolean targeting = (k == 0) ? false : true;
+                        double bid = bidLists.get(q).get(i);
+                        double budget = budgetLists.get(q).get(j);
+                        Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
 
-                     //TODO ADD NEW SIMULATION
-                     double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
-                     double numImps = impsClicksAndCost[0];
-                     double numClicks = impsClicksAndCost[1];
-                     double CPC = impsClicksAndCost[2] / impsClicksAndCost[1];
 
-                     double clickPr = numClicks / numImps;
+                        double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
+                        double numImps = impsClicksAndCost[0];
+                        double numClicks = impsClicksAndCost[1];
+                        double cost = impsClicksAndCost[2];
+                        double CPC = cost / numClicks;
+                        double clickPr = numClicks / numImps;
 
-                     //							System.out.println("Bid: " + bid);
-                     //							System.out.println("Budget: " + budget);
-                     //							System.out.println("Targetting: " + targeting);
-                     //							System.out.println("numImps: " + numImps);
-                     //							System.out.println("numClicks: " + numClicks);
-                     //							System.out.println("CPC: " + CPC);
-                     //							System.out.println("clickPr: " + clickPr);
-                     //							System.out.println();
+                        if(cost + bid*2 < budget) {
+                           //If we don't hit our budget, we do not need to consider
+                           //higher budgets, since we will have the same result
+                           //so we break out of the budget loop
+                           break;
+                        }
 
-                     if(Double.isNaN(CPC)) {
-                        CPC = 0.0;
+                        //							System.out.println("Bid: " + bid);
+                        //							System.out.println("Budget: " + budget);
+                        //							System.out.println("Targetting: " + targeting);
+                        //							System.out.println("numImps: " + numImps);
+                        //							System.out.println("numClicks: " + numClicks);
+                        //							System.out.println("CPC: " + CPC);
+                        //							System.out.println("clickPr: " + clickPr);
+                        //							System.out.println();
+
+                        if(Double.isNaN(CPC)) {
+                           CPC = 0.0;
+                        }
+
+                        if(Double.isNaN(clickPr)) {
+                           clickPr = 0.0;
+                        }
+
+                        if(Double.isNaN(convProb)) {
+                           convProb = 0.0;
+                        }
+
+                        debug("\tBid: " + bid);
+                        debug("\tCPC: " + CPC);
+                        debug("\tNumImps: " + numImps);
+                        debug("\tNumClicks: " + numClicks);
+                        debug("\tClickPr: " + clickPr);
+                        debug("\tConv Prob: " + convProb + "\n\n");
+
+                        double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
+                        double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+                        itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
+                        queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
+                        itemCount++;
                      }
-
-                     if(Double.isNaN(clickPr)) {
-                        clickPr = 0.0;
-                     }
-
-                     if(Double.isNaN(convProb)) {
-                        convProb = 0.0;
-                     }
-
-                     debug("\tBid: " + bid);
-                     debug("\tCPC: " + CPC);
-                     debug("\tNumImps: " + numImps);
-                     debug("\tNumClicks: " + numClicks);
-                     debug("\tClickPr: " + clickPr);
-                     debug("\tConv Prob: " + convProb + "\n\n");
-
-                     double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
-                     double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-                     itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
-                     queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps));
-                     itemCount++;
                   }
                }
+               debug("Items for " + q);
+               Item[] items = itemList.toArray(new Item[0]);
+               IncItem[] iItems = getIncremental(items);
+               allIncItems.addAll(Arrays.asList(iItems));
+               allPredictionsMap.put(q, queryPredictions);
             }
-            debug("Items for " + q);
-            Item[] items = itemList.toArray(new Item[0]);
-            IncItem[] iItems = getIncremental(items);
-            allIncItems.addAll(Arrays.asList(iItems));
-            allPredictionsMap.put(q, queryPredictions);
          }
 
          Collections.sort(allIncItems);
@@ -612,8 +629,10 @@ public class MCKP extends AbstractAgent {
                bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
             }
             else {
-               double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
-               bidBundle.addQuery(q, bid, new Ad(), bid*20);
+               if(!q.equals(new Query())) {
+                  double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
+                  bidBundle.addQuery(q, bid, new Ad(), bid*20);
+               }
             }
          }
          bidBundle.setCampaignDailySpendLimit(925);
@@ -732,45 +751,49 @@ public class MCKP extends AbstractAgent {
             //this means something bad happened
             totalImps = -1;
          }
-         totalImpressions.put(q, totalImps);
 
-         HashMap<String, Integer> perQRanks = new HashMap<String,Integer>();
-         int numNaN = 0;
-         for(int i = 0; i < _advertisers.size(); i++) {
-            double avgPos;
-            if(i == _advIdx) {
-               avgPos = queryReport.getPosition(q);
-            }
-            else {
-               avgPos = queryReport.getPosition(q, "adv" + (i+1));
-            }
-
-            if(!Double.isNaN(avgPos)) {
-               /*
-               * If the agent had a non-NaN avgPosition then
-               * they were in the auction, and can use there
-               * rank
-               */
-               for(int j = 0; j < ranksPred.length; j++) {
-                  if(ranksPred[j] == i) {
-                     perQRanks.put("adv" + (i+1), j);
-                  }
-               }
-            }
-            else {
-               /*
-               * If the agent has NaN for an average position
-               * then they weren't in the auction and we will
-               * order them by their agent ID
-                */
-               perQRanks.put("adv" + (i+1), ranksPred.length + numNaN);
-               numNaN++;
-            }
-         }
-         ranks.put(q, perQRanks);
          fullOrders.put(q, ranksPred);
          fullImpressions.put(q, impsPred);
          fullWaterfalls.put(q,waterfallPred);
+         totalImpressions.put(q, totalImps);
+
+         HashMap<String, Integer> perQRanks = null;
+         if(waterfallPred != null) {
+            perQRanks = new HashMap<String,Integer>();
+            int numNaN = 0;
+            for(int i = 0; i < _advertisers.size(); i++) {
+               double avgPos;
+               if(i == _advIdx) {
+                  avgPos = queryReport.getPosition(q);
+               }
+               else {
+                  avgPos = queryReport.getPosition(q, "adv" + (i+1));
+               }
+
+               if(!Double.isNaN(avgPos)) {
+                  /*
+                  * If the agent had a non-NaN avgPosition then
+                  * they were in the auction, and can use there
+                  * rank
+                  */
+                  for(int j = 0; j < ranksPred.length; j++) {
+                     if(ranksPred[j] == i) {
+                        perQRanks.put("adv" + (i+1), j);
+                     }
+                  }
+               }
+               else {
+                  /*
+                 * If the agent has NaN for an average position
+                 * then they weren't in the auction and we will
+                 * order them by their agent ID
+                  */
+                  perQRanks.put("adv" + (i+1), ranksPred.length + numNaN);
+                  numNaN++;
+               }
+            }
+         }
+         ranks.put(q, perQRanks);
       }
 
       _userModel.updateModel(totalImpressions);

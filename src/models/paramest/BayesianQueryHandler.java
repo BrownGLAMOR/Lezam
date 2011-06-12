@@ -254,11 +254,14 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
       // for every slot
       for (LinkedList<String> thoseAbove : advertisersAbovePerSlot) {
          // make a linked list of Ads
-         LinkedList<Ad> adsAbove = new LinkedList<Ad>();
-         // for each advertiser above
-         for (String advertiser : thoseAbove) {
-            // add their add to the list
-            adsAbove.add(ads.get(advertiser));
+         LinkedList<Ad> adsAbove = null;
+         if(thoseAbove != null) {
+            adsAbove = new LinkedList<Ad>();
+            // for each advertiser above
+            for (String advertiser : thoseAbove) {
+               // add their add to the list
+               adsAbove.add(ads.get(advertiser));
+            }
          }
          adsAbovePerSlot.add(adsAbove);
       }

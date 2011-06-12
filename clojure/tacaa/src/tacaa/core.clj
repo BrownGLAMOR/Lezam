@@ -3,6 +3,7 @@
   (:import (java.util Random)
            (simulator.parser GameStatusHandler)
            (agents AbstractAgent)
+           (agents.modelbased MCKP)
            (agents.rulebased2010 EquatePPSSimple2010 EquateROISimple2010)
            (se.sics.tasim.aw Message)
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
@@ -11,30 +12,34 @@
                                      SlotInfo QueryType RetailCatalog))
   (:gen-class
    :name tacaa.core
-   :methods [^{:static true} [initClojureSim [edu.umich.eecs.tac.props.PublisherInfo,
-                                              edu.umich.eecs.tac.props.SlotInfo,
-                                              edu.umich.eecs.tac.props.AdvertiserInfo,
-                                              edu.umich.eecs.tac.props.RetailCatalog,
-                                              java.util.ArrayList] clojure.lang.PersistentHashMap]
-             ^{:static true} [mkFullStatus [clojure.lang.PersistentHashMap,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map,
-                                            java.util.Map] clojure.lang.PersistentHashMap]
-             ^{:static true} [simQuery [clojure.lang.PersistentHashMap,
-                                        edu.umich.eecs.tac.props.Query,
-                                        String,
-                                        double,
-                                        double,
-                                        edu.umich.eecs.tac.props.Ad] java.util.ArrayList]]))
+   :methods[^{:static true} [simulateAgent [clojure.lang.PersistentHashMap,
+                                            agents.AbstractAgent,
+                                            String] clojure.lang.PersistentArrayMap]
+            ^{:static true} [setupClojureSim [String] clojure.lang.PersistentHashMap]
+            ^{:static true} [initClojureSim [edu.umich.eecs.tac.props.PublisherInfo,
+                                             edu.umich.eecs.tac.props.SlotInfo,
+                                             edu.umich.eecs.tac.props.AdvertiserInfo,
+                                             edu.umich.eecs.tac.props.RetailCatalog,
+                                             java.util.ArrayList] clojure.lang.PersistentHashMap]
+            ^{:static true} [mkFullStatus [clojure.lang.PersistentHashMap,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map,
+                                           java.util.Map] clojure.lang.PersistentHashMap]
+            ^{:static true} [simQuery [clojure.lang.PersistentHashMap,
+                                       edu.umich.eecs.tac.props.Query,
+                                       String,
+                                       double,
+                                       double,
+                                       edu.umich.eecs.tac.props.Ad] java.util.ArrayList]]))
 
 (set! *warn-on-reflection* true)
 
@@ -532,7 +537,7 @@
   [qagents reg-res]
   (sort (fn [key1 key2] (compare (peek key2) (peek key1)))
         (filter (fn [key] (and (>= (peek key) reg-res) ;bid >= reg-res
-                              (<= (peek key) (nth key 3)))); bid <= budget
+                              (<= (peek key) (nth key 3)))) ; bid <= budget
                 qagents)))
 
 (defn rank-agents
@@ -1078,7 +1083,7 @@
                status status]
           (if (>= day 59)
             (combine-stats-days (map combine-queries statslst))
-            (do
+            (let [start-time (. System (nanoTime))]
               (.setDay agent day)
               (when (>= day 2)
                 (let [oldday (- day 2)
@@ -1092,8 +1097,8 @@
               (prn "Getting agent bids on day " day)
               (let [bundle (.getBidBundle agent (.getModels agent))
                     status (assoc status :bid-bundle
-                                 (assoc (status :bid-bundle) agent-to-replace
-                                        (assoc ((status :bid-bundle) agent-to-replace) day bundle)))
+                                  (assoc (status :bid-bundle) agent-to-replace
+                                         (assoc ((status :bid-bundle) agent-to-replace) day bundle)))
                     status (assoc status :budgets
                                   (assoc (status :budgets) agent-to-replace
                                          (assoc ((status :budgets) agent-to-replace) day
@@ -1122,7 +1127,10 @@
                                          (assoc ((status :start-sales) agent-to-replace) (inc day)
                                                 (+ convdiff
                                                    (((status :start-sales) agent-to-replace) day)))))]
-                (recur (inc day) (conj statslst stats) status)))))))))
+                (do
+                  (.handleBidBundle agent bundle)
+                  (prn "Time Spent on Day: " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
+                  (recur (inc day) (conj statslst stats) status))))))))))
 
 
 (defn simulate-game
@@ -1319,9 +1327,25 @@
        (Math/exp (- (/ mdsq (* 2 var)))))))
 
 
-;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
+(defn setupClojureSim
+  [^String file]
+  (init-sim-info (tacaa.parser/parse-file file)))
 
-;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+
+(defn -setupClojureSim
+  [file]
+  (setupClojureSim file))
+
+
+(defn simulateAgent
+  [^PersistentHashMap status
+   ^AbstractAgent agent
+   ^String agent-to-replace]
+  (simulate-game-with-agent status agent agent-to-replace))
+
+(defn -simulateAgent
+  [status agent agent-to-replace]
+  (simulateAgent status agent agent-to-replace))
 
 (defn initClojureSim
   [^PublisherInfo pub-info,
@@ -1392,10 +1416,19 @@
                                (assoc coll agent
                                       [(into {} ^java.util.Map (.get budgets agent))]))
                              {} (keys budgets)),
+            :adv-effects (reduce (fn [coll ^String agent]
+                                   (assoc coll agent
+                                          (into {} ^java.util.Map (.get adv-effects agent))))
+                                 {} (keys adv-effects)),
+            :cont-probs (into {} cont-probs),
             :user-pop [(into {} user-pop)],
-            :reg-res (into {} reg-res),
-            :prom-res (into {} prom-res),
-            :capacities (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} capacities),
+            :reg-res {:qsf0 (.get reg-res (new Query nil nil)),
+                      :qsf1 (.get reg-res (new Query "pg" nil)),
+                      :qsf2 (.get reg-res (new Query "pg" "tv"))},
+            :prom-res {:qsf0 (.get prom-res (new Query nil nil)),
+                      :qsf1 (.get prom-res (new Query "pg" nil)),
+                      :qsf2 (.get prom-res (new Query "pg" "tv"))},
+            :capacities (reduce (fn [coll [agent val]] (assoc coll agent val)) {} capacities),
             :start-sales (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} start-sales),
             :man-specialties (into {} man-specialties),
             :comp-specialties (into {} comp-specialties),
@@ -1417,26 +1450,20 @@
   [status ^Query query agent bid budget ^Ad ad]
   (let [status (assoc status :squashed-bids
                       (assoc (status :squashed-bids) agent
-                             (assoc ((status :squashed-bids) agent) 0
-                                    (assoc (((status :squashed-bids) agent) 0) query
-                                           ((((status :squashed-bids) agent) 0) query) bid))))
+                             [{query bid}]))
         status (assoc status :budgets
                       (assoc (status :budgets) agent
-                             (assoc ((status :budgets) agent) 0
-                                    (assoc (((status :bugets) agent) 0) query
-                                           ((((status :budgets) agent) 0) query) budget))))
+                             [{query budget}]))
         status (assoc status :ads
                       (assoc (status :ads) agent
-                             (assoc ((status :ads) agent) 0
-                                    (assoc (((status :ads) agent) 0) query
-                                           ((((status :ads) agent) 0) query) budget))))
-        ;Pass in day 0 because all arrays are length 1
+                             [{query ad}]))
+                                        ;Pass in day 0 because all arrays are length 1
         stats (simulate-query status 0 query)
         aqstats ((stats agent) query)]
     (doto (new java.util.ArrayList)
-      (.add (aqstats :imps))
-      (.add (aqstats :clicks))
-      (.add (aqstats :cost)))))
+      (.add (double (aqstats :imps)))
+      (.add (double (aqstats :clicks)))
+      (.add (double (aqstats :cost))))))
 
 (defn -simQuery
   [status query agent bid budget ad]
@@ -1448,3 +1475,11 @@
 
                                         ;TODO
                                         ; add sampling to simulation
+
+(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
+(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+
+(defmacro time-ms [n expr]
+   `(let [start# (. System (nanoTime))]
+     (dotimes i# ~n ~expr)
+     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))

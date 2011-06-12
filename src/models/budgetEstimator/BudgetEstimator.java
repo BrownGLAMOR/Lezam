@@ -139,7 +139,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            } else {
                               if (BUDGETINDOLLARS) {
                                  HashMap<String, Ad> query_ads = new HashMap<String, Ad>();
-                                 for (int j = 0; j < 8; j++) {
+                                 for (int j = 0; j < numAdvertisers; j++) {
                                     if (j == _ourAdvIdx) {
                                        query_ads.put("adv" + (j + 1), bidBundle.getAd(q));
                                     } else {
@@ -160,28 +160,31 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
                                  LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
                                  LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
-                                 int[][] impressionMatrix = waterfall;
 
                                  //where are we in bid pair matrix?
-                                 ArrayList<ImprPair> higherthanus = new ArrayList<ImprPair>();
-                                 for (int j = 0; j < order.length; j++) {
-                                    if (order[j] == i) {
+                                 ArrayList<Integer> aboveUs = new ArrayList<Integer>();
+                                 for (int agentID : order) {
+                                    if (agentID == _ourAdvIdx) {
+                                       //We only want advertisers above us so exit loop
                                        break;
                                     } else {
-                                       higherthanus.add(new ImprPair(order[j], impressions[order[j]]));
+                                       aboveUs.add(agentID);
                                     }
                                  }
 
-                                 Collections.sort(higherthanus);
                                  for (int j = 0; j < _numSlots; j++) {
-                                    int numImpressions = impressionMatrix[i][j];
+                                    int numImpressions = waterfall[_ourAdvIdx][j];
                                     impressionsPerSlot.add(numImpressions);
 
-                                    LinkedList<String> advsAbove = new LinkedList<String>();
-                                    if (!(numImpressions == 0 || _numSlots == 0)) {
-                                       List<ImprPair> sublist = higherthanus.subList(0, j);
-                                       for (ImprPair imp : sublist) {
-                                          advsAbove.add("adv" + (imp.getID() + 1));
+                                    LinkedList<String> advsAbove = null;
+                                    if (numImpressions != 0) {
+                                       advsAbove = new LinkedList<String>();
+                                       if(j > 0) {
+                                          //TODO actually find the people above us...
+                                          List<Integer> sublist = aboveUs.subList(0, j);
+                                          for (Integer id : sublist) {
+                                             advsAbove.add("adv" + (id + 1));
+                                          }
                                        }
                                     }
 
@@ -240,9 +243,10 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                                     int advBelowUsDrop = 0;
                                     for (int j = ourOrder; j >= 0; j--) {
                                        if (impressionsPerSlot.get(j) > 0) {
-                                          if (ourOrder + 1 + advBelowUsDrop < order.length) {
+                                          if (ourOrder + 1 + advBelowUsDrop < order.length &&
+                                                  order[ourOrder + 1 + advBelowUsDrop] < waterfall.length) {
                                              if (j == _numSlots - 1 ||
-                                                     impressionsPerSlot.get(j) <= impressionMatrix[order[ourOrder + 1 + advBelowUsDrop]][j + 1]) {
+                                                     impressionsPerSlot.get(j) <= waterfall[order[ourOrder + 1 + advBelowUsDrop]][j + 1]) {
                                                 /*
                                                 * All impressions in this slot were seen with the same person below us
                                                 */
@@ -266,7 +270,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                                                 * those impressions and clicks from the list, and rerun the current slot
                                                 * with a new advertiser below us
                                                 */
-                                                int numImpSeen = impressionMatrix[order[ourOrder + 1 + advBelowUsDrop]][j + 1];
+                                                int numImpSeen = waterfall[order[ourOrder + 1 + advBelowUsDrop]][j + 1];
                                                 int impPercentage = numImpSeen / (impressionsPerSlot.get(j));
                                                 double bidBelow = bids[order[ourOrder + 1 + advBelowUsDrop]];
                                                 if (ourOrder < _numPromSlots) {
@@ -493,11 +497,14 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
       // for every slot
       for (LinkedList<String> thoseAbove : advertisersAbovePerSlot) {
          // make a linked list of Ads
-         LinkedList<Ad> adsAbove = new LinkedList<Ad>();
-         // for each advertiser above
-         for (String advertiser : thoseAbove) {
-            // add their add to the list
-            adsAbove.add(ads.get(advertiser));
+         LinkedList<Ad> adsAbove = null;
+         if(thoseAbove != null) {
+            adsAbove = new LinkedList<Ad>();
+            // for each advertiser above
+            for (String advertiser : thoseAbove) {
+               // add their add to the list
+               adsAbove.add(ads.get(advertiser));
+            }
          }
          adsAbovePerSlot.add(adsAbove);
       }

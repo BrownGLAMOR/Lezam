@@ -67,7 +67,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
    @Override
    public int getTotImps(Query query) {
-      IEResult result = _allResults.get(query).get(_allResults.size()-1);
+      IEResult result = _allResults.get(query).get(_allResults.get(query).size()-1);
       if(result != null) {
          return result.getSlotImpressions()[0];
       }
@@ -156,7 +156,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       int latestResultIdx = _allResults.get(q).size() - 1;
       IEResult result = _allResults.get(q).get(latestResultIdx);
       if(result != null) {
-         return _allImpRanges.get(q).get(_allResults.get(q).size() - 1);
+         return _allImpRanges.get(q).get(latestResultIdx);
       }
       else {
          return null;
@@ -250,7 +250,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                _allAgentNames.get(q).add(agentNamesArr);
                _allAgentIDs.get(q).add(agentIdsArr); //these are the IDs of each agent that was in the QAInstance for the given query. Corresponds to indices of IEResults
 
-               System.out.println("Done solving. " + bestSol + "\t agentNames:" + Arrays.toString(agentNamesArr));
+//               System.out.println("Done solving. " + bestSol + "\t agentNames:" + Arrays.toString(agentNamesArr));
             }
             else {
                _allResults.get(q).add(null);
