@@ -21,6 +21,10 @@
                                              edu.umich.eecs.tac.props.AdvertiserInfo,
                                              edu.umich.eecs.tac.props.RetailCatalog,
                                              java.util.ArrayList] clojure.lang.PersistentHashMap]
+            ^{:static true} [mkPerfectFullStatus [clojure.lang.PersistentHashMap,
+                                                  int,
+                                                  String,
+                                                  int] clojure.lang.PersistentHashMap]
             ^{:static true} [mkFullStatus [clojure.lang.PersistentHashMap,
                                            java.util.Map,
                                            java.util.Map,
@@ -37,9 +41,17 @@
             ^{:static true} [simQuery [clojure.lang.PersistentHashMap,
                                        edu.umich.eecs.tac.props.Query,
                                        String,
+                                       int,
                                        double,
                                        double,
-                                       edu.umich.eecs.tac.props.Ad] java.util.ArrayList]]))
+                                       edu.umich.eecs.tac.props.Ad,
+                                       int,
+                                       boolean] java.util.ArrayList]
+            ^{:static true} [getActualResults [clojure.lang.PersistentHashMap] clojure.lang.PersistentArrayMap]
+            ^{:static true} [printResults [clojure.lang.PersistentArrayMap] void]
+            ^{:static true} [compareResults [clojure.lang.PersistentArrayMap
+                                             clojure.lang.PersistentArrayMap
+                                             String] void]]))
 
 (set! *warn-on-reflection* true)
 
@@ -339,13 +351,13 @@
             {} agents)))
 
 (defn mk-random-search-pools-map
-  ([status day my-rand]
+  ([status day random]
      (mk-random-search-pools-map
       ((status :user-pop) day)
       (status :retail-cat)
       (status :prod-query)
-      my-rand))
-  ([userpops retail-cat prod-query my-rand]
+      random))
+  ([userpops retail-cat prod-query ^java.util.Random random]
      (loop [retail-cat (seq retail-cat) search-maps {}]
        (if (not (seq retail-cat))
          search-maps
@@ -364,12 +376,12 @@
                                    search-map
                                    (recur (dec users)
                                           (cond
-                                           (= utype :is) (let [rnum (my-rand)
+                                           (= utype :is) (let [rnum (.nextDouble random)
                                                                q (if (< rnum (/ 1 3))
                                                                    f0q
                                                                    (if (< rnum (/ 2 3))
                                                                      f2q
-                                                                     (if (< (my-rand) 0.5)
+                                                                     (if (< (.nextDouble random) 0.5)
                                                                        f1cq
                                                                        f1mq)))]
                                                            (assoc search-map q
@@ -384,7 +396,7 @@
                                                                     [(first coll)
                                                                      (inc (peek coll))])
                                                                   [0 1]))
-                                           (= utype :f1) (let [q (if (< (my-rand) 0.5)
+                                           (= utype :f1) (let [q (if (< (.nextDouble random) 0.5)
                                                                    f1cq
                                                                    f1mq)]
                                                            (assoc search-map q
@@ -742,9 +754,79 @@
      (+ (* p x)
         (- 1 p))))
 
+(defn sample-without-rep
+  [num-samp max-val ^java.util.Random random]
+  (if (> max-val num-samp)
+    (loop [samps []]
+      (if (== (count samps) num-samp)
+        samps
+        (recur (let [samp (.nextInt random (int max-val))]
+                 (if (some #{samp} samps)
+                   samps
+                   (conj samps samp))))))
+    (vec (range max-val))))
+
+(defn sample-avg-pos
+  [stats queryspace random]
+  (reduce (fn [coll query]
+            (let [lenlst (map (fn [[agent astats]]
+                                (count ((astats query) :pos-vec)))
+                              coll)
+                  max-imps (find-max lenlst)
+                  samps (sample-without-rep 10 max-imps random)]
+              (loop [agents (keys coll)
+                     allstats coll]
+                (if (not (seq agents))
+                  allstats
+                  (let [agent (first agents)
+                        astats (allstats agent)]
+                    (recur (rest agents)
+                           (assoc allstats agent
+                                  (assoc astats query
+                                         (let [aqstats (astats query)
+                                               pos-vec (aqstats :pos-vec)
+                                               pos-vec-len (count pos-vec)
+                                               imps (int (aqstats :imps))
+                                               possum (double (aqstats :pos-sum))]
+                                           {:imps imps,
+                                            :prom-imps (aqstats :prom-imps),
+                                            :pos-sum possum,
+                                            :avg-pos (if (== imps 0)
+                                                       Double/NaN
+                                                       (/ possum
+                                                          imps)),
+                                            :savg-pos (if (or (== imps 0)
+                                                              (== pos-vec-len 0))
+                                                        Double/NaN
+                                                        (loop [allsamps samps
+                                                              pos-sum (double 0)
+                                                              num-imps (int 0)]
+                                                         (if (not (seq allsamps))
+                                                           (if (== num-imps 0)
+                                                             Double/NaN
+                                                             (/ pos-sum num-imps))
+                                                           (let [samp (first allsamps)]
+                                                             (if (< samp pos-vec-len)
+                                                               (let [pos (int (pos-vec samp))]
+                                                                 (if (> pos 0)
+                                                                   (recur (rest allsamps)
+                                                                          (+ pos-sum
+                                                                             pos)
+                                                                          (inc num-imps))
+                                                                   (recur (rest allsamps)
+                                                                          pos-sum
+                                                                          num-imps)))
+                                                               (recur (rest allsamps)
+                                                                      pos-sum
+                                                                      num-imps)))))),
+                                            :clicks (aqstats :clicks),
+                                            :cost (aqstats :cost),
+                                            :convs (aqstats :convs),
+                                            :revenue (aqstats :revenue)})))))))))
+          stats queryspace))
 
 (defn simulate-day
-  ([status day search-queue my-rand singleq?]
+  ([status day search-queue ^java.util.Random random singleq?]
      (let [agents (status :agents)
            queryspace (status :query-space)
            query-type (status :query-type)
@@ -782,6 +864,7 @@
                                                        {:imps 0,
                                                         :prom-imps 0,
                                                         :pos-sum 0,
+                                                        :pos-vec [],
                                                         :clicks 0,
                                                         :cost 0,
                                                         :convs 0,
@@ -791,9 +874,12 @@
                                                          :total-convs 0}) queryspace)))
                             (transient {}) agents)]
          (if (not (seq search-queue))
-           (reduce (fn [coll [agent astats]]
-                     (assoc coll agent (persistent! astats)))
-                   {} (persistent! stats))
+           (sample-avg-pos
+            (reduce (fn [coll [agent astats]]
+                      (assoc coll agent (persistent! astats)))
+                    {} (persistent! stats))
+            queryspace
+            random)
            (let [smap (first search-queue)
                  isis (contains? smap :is)
                  q (if isis
@@ -814,7 +900,21 @@
                                  metadata (meta qagent)
                                  pos (metadata :pos)]
                              (if (> pos num-slots)
-                               stats ;auction is over after num-slots
+                                        ;out of auction, but add to pos-vec for sampling
+                               (let [agent (first qagent)
+                                     astats (stats agent)
+                                     aqstats (astats q)
+                                     aqstats {:imps (aqstats :imps),
+                                              :prom-imps (aqstats :prom-imps),
+                                              :pos-sum (aqstats :pos-sum),
+                                              :pos-vec (conj (aqstats :pos-vec) -1),
+                                              :clicks (aqstats :clicks),
+                                              :cost (aqstats :cost),
+                                              :convs (aqstats :convs),
+                                              :revenue (aqstats :revenue)}
+                                     astats (assoc! astats q aqstats)
+                                     stats (assoc! stats agent astats)]
+                                 (recur (rest qagents) stats cont?))
                                (if cont?
                                  (let [[agent ;still in auction
                                         adv-effect
@@ -836,7 +936,7 @@
                                         clickpr (if (> ftargprom 1)
                                                   (eta adv-effect ftargprom)
                                                   adv-effect)
-                                        click? (< (my-rand) clickpr)
+                                        click? (< (.nextDouble random) clickpr)
                                         conv? (if (and click? (not isis))
                                                 (let [convpr (conv-probs (query-type q))
                                                       cap (capacities agent)
@@ -853,7 +953,7 @@
                                                                     (.getComponent prod))
                                                                (eta convpr (+ 1 comp-bonus))
                                                                convpr)]
-                                                  (< (my-rand) convpr))
+                                                  (< (.nextDouble random) convpr))
                                                 false)
                                         USP (if conv?
                                               (if (= (man-specs agent)
@@ -862,7 +962,7 @@
                                                 USP)
                                              USP)
                                         cont? (if (not conv?)
-                                                (< (my-rand) (cont-probs q))
+                                                (< (.nextDouble random) (cont-probs q))
                                                 false)
                                         astats (if conv?
                                                  (assoc!
@@ -881,6 +981,7 @@
                                                                (aqstats :prom-imps)),
                                                    :pos-sum (+ (aqstats :pos-sum)
                                                                pos),
+                                                   :pos-vec (conj (aqstats :pos-vec) pos),
                                                    :clicks (inc (aqstats :clicks)),
                                                    :cost (+ (aqstats :cost)
                                                             cpc),
@@ -893,6 +994,7 @@
                                                                   (aqstats :prom-imps)),
                                                      :pos-sum (+ (aqstats :pos-sum)
                                                                  pos),
+                                                     :pos-vec (conj (aqstats :pos-vec) pos),
                                                      :clicks (inc (aqstats :clicks)),
                                                      :cost (+ (aqstats :cost)
                                                               cpc),
@@ -904,6 +1006,7 @@
                                                                   (aqstats :prom-imps)),
                                                      :pos-sum (+ (aqstats :pos-sum)
                                                                  pos),
+                                                     :pos-vec (conj (aqstats :pos-vec) pos),
                                                      :clicks (aqstats :clicks),
                                                      :cost (aqstats :cost),
                                                      :convs (aqstats :convs),
@@ -921,6 +1024,7 @@
                                                              (aqstats :prom-imps)),
                                                 :pos-sum (+ (aqstats :pos-sum)
                                                             pos),
+                                                :pos-vec (conj (aqstats :pos-vec) pos),
                                                 :clicks (aqstats :clicks),
                                                 :cost (aqstats :cost),
                                                 :convs (aqstats :convs),
@@ -935,27 +1039,24 @@
 (defn simulate-expected-day
   ([status day]
      (let [random (java.util.Random.)
-           my-rand (fn [] (.nextDouble ^java.util.Random random))
            search-pool (mk-expected-search-pools-map status day)
            search-queue (mk-search-queue search-pool random false)]
-       (simulate-day status day search-queue my-rand false))))
+       (simulate-day status day search-queue random false))))
 
 (defn simulate-random-day
   ([status day]
      (let [random (java.util.Random.)
-           my-rand (fn [] (.nextDouble ^java.util.Random random))
-           search-pool (mk-random-search-pools-map status day my-rand)
+           search-pool (mk-random-search-pools-map status day random)
            search-queue (mk-search-queue search-pool random false)]
-       (simulate-day status day search-queue my-rand false))))
+       (simulate-day status day search-queue random false))))
 
 
 (defn simulate-query
   [status day query]
   (let [random (java.util.Random.)
-        my-rand (fn [] (.nextDouble ^java.util.Random random))
         search-pool (mk-expected-search-pools-map status day)
         search-queue (mk-search-queue search-pool random query)]
-    (simulate-day status day search-queue my-rand query)))
+    (simulate-day status day search-queue random query)))
 
 (defn combine-queries
   [stats]
@@ -1000,7 +1101,6 @@
                     {} vals1))
           (first statslst) (rest statslst)))
 
-
 (defn mk-query-report
   [status stats agent day]
   (let [astats (stats agent)
@@ -1010,32 +1110,28 @@
         ads (status :ads)
         ad ((ads agent) day)
         qr (new QueryReport)]
-    (do
-      (doall (map (fn [^Query query]
-                                        ;Add our own info
-                    (let [aqstats (astats query)]
-                      (.addQuery qr query
-                                 (int (- (aqstats :imps)
-                                         (aqstats :prom-imps)))
-                                 (int (aqstats :prom-imps))
-                                 (int (aqstats :clicks))
-                                 (double (aqstats :cost))
-                                 (double (aqstats :pos-sum))))
-                    (.setAd qr query ^Ad (ad query))
+    (doall (map (fn [^Query query]
+                  (let [aqstats (astats query)]  ;Add our own info
+                    (.addQuery qr
+                               query
+                               (int (- (aqstats :imps)
+                                       (aqstats :prom-imps)))
+                               (int (aqstats :prom-imps))
+                               (int (aqstats :clicks))
+                               (double (aqstats :cost))
+                               (double (aqstats :pos-sum))))
+                  (.setAd qr query ^Ad (ad query))
                                         ;Add opp avg pos info
-                    (loop [agent-idx 0]
-                      (if (not (< agent-idx num-agents))
-                        nil
-                        (let [agent (agents agent-idx)
-                              aqstats ((stats agent) query)]
-                          (.setAd qr query (str "adv" (inc agent-idx)) ^Ad (((ads agent) day) query))
-                          (.setPosition qr query (str "adv" (inc agent-idx)) (if (== 0 (aqstats :imps))
-                                                                               Double/NaN
-                                                                               (double (/ (aqstats :pos-sum)
-                                                                                          (aqstats :imps)))))
-                          (recur (inc agent-idx))))))
-                  qs))
-      qr)))
+                  (loop [agent-idx (int 0)]
+                    (if (not (< agent-idx num-agents))
+                      nil
+                      (let [^String agent2 (agents agent-idx)
+                            aqstats2 ((stats agent2) query)]
+                        (.setAd qr query (str "adv" (inc agent-idx)) ^Ad (((ads agent2) day) query))
+                        (.setPosition qr query (str "adv" (inc agent-idx)) (double (aqstats2 :savg-pos)))
+                        (recur (inc agent-idx))))))
+                qs))
+    qr))
 
 (defn mk-sales-report
   [status stats agent day]
@@ -1073,8 +1169,6 @@
         (.sendSimMessage agent
                          (new Message "blank" "blank" (status :retail-cat)))
         (.sendSimMessage agent
-                         (new Message "blank" "blank" (status :slot-info))) ;do we really need this 2x?
-        (.sendSimMessage agent
                          (new Message "blank" "blank" ((status :adv-info) agent-to-replace)))
         (.initBidder agent)
         (.setModels agent (.initModels agent))
@@ -1092,10 +1186,25 @@
                       sr (mk-sales-report status oldstats agent-to-replace oldday)]
                   (.handleQueryReport agent qr)
                   (.handleSalesReport agent sr)
-                  (.updateModels agent sr qr)
-                  (prn "Updating Models on day " day)))
-              (prn "Getting agent bids on day " day)
-              (let [bundle (.getBidBundle agent (.getModels agent))
+                  (.updateModels agent sr qr)))
+              (let [sales-window (int (status :sales-window))
+                    startconvs (if (< day (- sales-window 1))
+                                 (+ (* (- (- sales-window 1) day)
+                                       (/ ((status :capacities) agent-to-replace)
+                                          sales-window))
+                                    (reduce + (map (fn [past-day]
+                                                     (stats-get-convs status
+                                                                      (statslst past-day)
+                                                                      agent-to-replace))
+                                                   (range day))))
+                                 (reduce +(map (fn [past-day]
+                                                 (stats-get-convs status
+                                                                  (statslst past-day)
+                                                                  agent-to-replace))
+                                               (range (- day (- sales-window 1)) day))))
+                    bundle (do
+                             (.handleStartSales agent (int startconvs))
+                             (.getBidBundle agent (.getModels agent)))
                     status (assoc status :bid-bundle
                                   (assoc (status :bid-bundle) agent-to-replace
                                          (assoc ((status :bid-bundle) agent-to-replace) day bundle)))
@@ -1114,22 +1223,15 @@
                                                                             adv-effect
                                                                             squash-param
                                                                             queryspace))))
-                    stats (simulate-expected-day status day)
-                    convs (stats-get-convs status stats agent-to-replace)
-                    sales-window (status :sales-window)
-                    oldconvs (if (< day 5)
-                               (/ ((status :capacities) agent-to-replace)
-                                  sales-window)
-                               (stats-get-convs status (statslst (- day sales-window)) agent-to-replace))
-                    convdiff (- convs oldconvs)
                     status (assoc status :start-sales
                                   (assoc (status :start-sales) agent-to-replace
-                                         (assoc ((status :start-sales) agent-to-replace) (inc day)
-                                                (+ convdiff
-                                                   (((status :start-sales) agent-to-replace) day)))))]
+                                         (assoc ((status :start-sales) agent-to-replace)
+                                           day
+                                           startconvs)))
+                    stats (simulate-expected-day status day)]
                 (do
                   (.handleBidBundle agent bundle)
-                  (prn "Time Spent on Day: " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
+                  ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
                   (recur (inc day) (conj statslst stats) status))))))))))
 
 
@@ -1392,6 +1494,29 @@
   (initClojureSim pub-info slot-info adv-info retail-cat agents))
 
 
+(defn mkPerfectFullStatus
+  [^PersistentHashMap status
+   day
+   ^String agent-to-replace
+   start-sales]
+  (reduce (fn [coll agent]
+            (assoc coll :start-sales
+                   (assoc (coll :start-sales) agent
+                          (assoc ((coll :start-sales) agent)
+                            day
+                            (if (= agent-to-replace agent)
+                              start-sales
+                              ((status :capacities) agent))))))
+          status (status :agents)))
+
+(defn -mkPerfectFullStatus
+  [status
+   day
+   agent-to-replace
+   start-sales]
+  (mkPerfectFullStatus status day agent-to-replace start-sales))
+
+
 (defn mkFullStatus
   [^PersistentHashMap status
    ^java.util.Map squashed-bids,
@@ -1447,27 +1572,103 @@
 
 
 (defn simQuery
-  [status ^Query query agent bid budget ^Ad ad]
-  (let [status (assoc status :squashed-bids
+  [status ^Query query agent day bid budget ^Ad ad num-ests perfectsim?]
+  (let [squashed-bid (* bid
+                        (Math/pow (((status :adv-effects) agent) query)
+                                (status :squash-param)))
+        status (assoc status :squashed-bids
                       (assoc (status :squashed-bids) agent
-                             [{query bid}]))
+                             (if perfectsim?
+                               (assoc ((status :squashed-bids) agent) day
+                                      (assoc (((status :squashed-bids) agent) day) query squashed-bid))
+                                 [{query squashed-bid}])))
         status (assoc status :budgets
                       (assoc (status :budgets) agent
-                             [{query budget}]))
+                             (if perfectsim?
+                               (assoc ((status :budgets) agent) day
+                                      (assoc (assoc (((status :budgets) agent) day) query budget)
+                                        :total-budget
+                                        budget))
+                               [{query budget,
+                                :total-budget budget}])))
         status (assoc status :ads
                       (assoc (status :ads) agent
-                             [{query ad}]))
+                             (if perfectsim?
+                               (assoc ((status :ads) agent) day
+                                      (assoc (((status :ads) agent) day) query ad))
+                               [{query ad}])))
                                         ;Pass in day 0 because all arrays are length 1
-        stats (simulate-query status 0 query)
-        aqstats ((stats agent) query)]
+        aqstatv (loop [n (int 0)
+                       aqstatsvec []]
+                  (if (not (< n num-ests))
+                    aqstatsvec
+                    (recur (inc n)
+                           (conj aqstatsvec
+                                 (((simulate-query status (if perfectsim? day 0) query) agent) query)))))]
     (doto (new java.util.ArrayList)
-      (.add (double (aqstats :imps)))
-      (.add (double (aqstats :clicks)))
-      (.add (double (aqstats :cost))))))
+      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :imps)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :clicks)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :cost)) aqstatv))
+                       num-ests))))))
 
 (defn -simQuery
-  [status query agent bid budget ad]
-  (simQuery status query agent bid budget ad))
+  [status query agent day bid budget ad num-ests perfectsim?]
+  (simQuery status query agent day bid budget ad num-ests perfectsim?))
+
+(defn getActualResults
+  [status]
+  (game-full-summary status))
+
+(defn -getActualResults
+  [status]
+  (getActualResults status))
+
+(defn printResults
+  [results]
+  (do
+    (doall
+     (map (fn [[agent resultmap]]
+            (prn agent ": "
+                 (assoc resultmap :profit
+                        (- (resultmap :revenue)
+                           (resultmap :cost)))))
+          (sort (fn [key1 key2]
+                  (compare
+                   (let [statmap (peek key2)
+                         profit (- (statmap :revenue)
+                                   (statmap :cost))]
+                     profit)
+                   (let [statmap (peek key1)
+                         profit (- (statmap :revenue)
+                                   (statmap :cost))]
+                     profit))) results)))
+    nil))
+
+(defn -printResults
+  [results]
+  (printResults results))
+
+
+(defn compareResults
+  [results
+   actual
+   agent]
+  (let [act-prof (double (- ((actual agent) :revenue)
+                            ((actual agent) :cost)))
+        res-prof (double (- ((results agent) :revenue)
+                            ((results agent) :cost)))
+        perc-diff (double (/ (- res-prof act-prof)
+                             act-prof))]
+    (prn agent "  " act-prof "->" res-prof "(" perc-diff  "%)")
+    nil))
+
+(defn -compareResults
+  [results
+   actual
+   agent]
+  (compareResults results actual agent))
 
 
 ;(use 'criterium.core)
@@ -1476,10 +1677,5 @@
                                         ;TODO
                                         ; add sampling to simulation
 
-(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
-(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
-
-(defmacro time-ms [n expr]
-   `(let [start# (. System (nanoTime))]
-     (dotimes i# ~n ~expr)
-     (/ (double (- (. System (nanoTime)) start#)) 1000000.0)))
+;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
+;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))

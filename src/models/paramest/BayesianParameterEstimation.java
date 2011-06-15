@@ -89,7 +89,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
                      advsAbove = new LinkedList<String>();
                      if(j > 0) {
                         //TODO actually find the people above us...
-                        List<Integer> sublist = aboveUs.subList(0, j);
+                        List<Integer> sublist = aboveUs.subList(0, Math.min(j,aboveUs.size()));
                         for (Integer id : sublist) {
                            advsAbove.add("adv" + (id + 1));
                         }

@@ -46,7 +46,7 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
      */
 
 
-   public int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
+   public static int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
       int[][] impressionsBySlot = new int[agents][slots];
 
       int[] slotStart = new int[slots];

@@ -130,15 +130,17 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
                double nonIS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
                if (IS + nonIS > 0) {
                   views += IS + nonIS;
-                  for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-                     Ad otherAd = advertisersAboveUs.get(prevSlot);
-                     int ftOther = 0;
-                     if (otherAd != null) {
-                        ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+                  if(advertisersAboveUs.size() > 0) {
+                     for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
+                        Ad otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
+                        int ftOther = 0;
+                        if (otherAd != null) {
+                           ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+                        }
+                        double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= prevSlot + 1)];
+                        double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
+                        nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
                      }
-                     double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= prevSlot + 1)];
-                     double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
-                     nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
                   }
                   coeff[(_numSlots - 1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
                }

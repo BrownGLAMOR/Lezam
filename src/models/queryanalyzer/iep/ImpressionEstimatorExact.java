@@ -28,7 +28,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    private boolean FULL_SELF_POS;
    private double FILL_SLOTS_AVG; //this contains the value of the average position of the person last added using fillSlots
    private int MIN_TOT_IMPR = 25;
-   
+
    private int SAMPLING_FACTOR;
    private static int MAX_PROBE_IMPRESSIONS = 1; //warning this must be greater than 0
    private int _samplingImpressions;
@@ -208,7 +208,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          }
       }
 
-      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions);
+      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions,result.getWaterfall());
    }
 
 
@@ -288,7 +288,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          //System.exit(-1);
          return null;
       } else {
-         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr);
+         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr, sol._waterfall);
          IEResult reducedResult = reduceIEResult(result);
          if (IE_DEBUG) {
             System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result + "\nReduced " + reducedResult);
@@ -337,8 +337,8 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          double sampleProb;
          double totImpsForNonSampled = 0;
          double ourAvgPosDiff = Double.MAX_VALUE;
+         int[][] impsPerSlot = greedyAssign(_slots, agentImpr.length, order, agentImpr);
          if (GAUSSIAN_PR_SAMP) {
-            int[][] impsPerSlot = greedyAssign(_slots, agentImpr.length, order, agentImpr);
             double[] avgPosPred = new double[_trueAvgPos.length];
             for (int i = 0; i < order.length; i++) {
                int currAgent = order[i];
@@ -367,7 +367,6 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          }
          else {
             double avgPosDiff = 0.0;
-            int[][] impsPerSlot = greedyAssign(_slots, agentImpr.length, order, agentImpr);
             for (int i = 0; i < order.length; i++) {
                int currAgent = order[i];
                double trueAvgPos = _trueAvgPos[currAgent];
@@ -402,7 +401,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
             _combinedObjectiveBound = combinedObj;
             _ourAvgPosDiff = ourAvgPosDiff;
             _bestTieBreak = tiebreak;
-            _solutions.put(_nodeId, new IESolution(agentImpr, slotImpr));
+            _solutions.put(_nodeId, new IESolution(agentImpr, slotImpr,impsPerSlot));
             _bestNode = _nodeId;
          }
 
@@ -996,10 +995,12 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    private class IESolution {
       public int[] _agentImpr;
       public int[] _slotImpr;
+      public int[][] _waterfall;
 
-      public IESolution(int[] agentImpr, int[] slotImpr) {
+      public IESolution(int[] agentImpr, int[] slotImpr, int[][] waterfall) {
          _agentImpr = agentImpr;
          _slotImpr = slotImpr;
+         _waterfall = waterfall;
       }
    }
 

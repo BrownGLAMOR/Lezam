@@ -30,17 +30,34 @@ public class AgentSimulator {
       return core.setupClojureSim(filename);
    }
 
-   public static void simulateAgent(ArrayList<String> filenames, AbstractAgent agent) {
-      for(String filename : filenames) {
-         PersistentHashMap cljSim = setupSimulator(filename);
-         PersistentArrayMap results = core.simulateAgent(cljSim, agent, "TacTex");
-         System.out.println("Results of " + filename + ": \n\n" + results + "\n\n");
+   public static void simulateAgent(ArrayList<String> filenames) {
+      String[] agentsToReplace = new String[] {"tau", "TacTex", "MetroClick", "Schlemazl", "Nanda_AA", "Mertacor" };
+      for(String agentToReplace : agentsToReplace) {
+         for(String filename : filenames) {
+            PersistentHashMap cljSim = setupSimulator(filename);
+
+            boolean PERFECT_SIM = true;
+            AbstractAgent agent;
+            if(PERFECT_SIM) {
+               agent = new MCKP(cljSim, agentToReplace);
+            }
+            else {
+               agent = new MCKP();
+            }
+            PersistentArrayMap results = core.simulateAgent(cljSim, agent, agentToReplace);
+            PersistentArrayMap actual = core.getActualResults(cljSim);
+//            System.out.println("Results of " + filename + " Sim: \n");
+//            core.printResults(results);
+//            System.out.println("Results of " + filename + " Actual: \n");
+//            core.printResults(actual);
+            core.compareResults(results,actual,agentToReplace);
+         }
       }
    }
 
    public static void main(String[] args) {
-      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15127, 15127);
-      simulateAgent(filenames,new MCKP());
+      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15128, 15128);
+      simulateAgent(filenames);
    }
 
 }

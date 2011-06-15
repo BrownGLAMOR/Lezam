@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
-	private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
+   private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
    private QAInstance _instance;
    private int _advertisers;
    private int _slots;
@@ -30,14 +30,14 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    boolean USE_RANKING_CONSTRAINTS;
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
    double TIMEOUT_IN_SECONDS;
-   
-   
+
+
    public EricImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
-	   TIMEOUT_IN_SECONDS = timeoutInSeconds;
-	   MULTIPLE_SOLUTIONS = multipleSolutions;
-	   INTEGER_PROGRAM = integerProgram;
-	   USE_RANKING_CONSTRAINTS = useRankingConstraints;
-	   _instance = inst;
+      TIMEOUT_IN_SECONDS = timeoutInSeconds;
+      MULTIPLE_SOLUTIONS = multipleSolutions;
+      INTEGER_PROGRAM = integerProgram;
+      USE_RANKING_CONSTRAINTS = useRankingConstraints;
+      _instance = inst;
       _advertisers = inst.getNumAdvetisers();
       _slots = inst.getNumSlots();
       _promotedSlots = inst.getNumPromotedSlots();
@@ -55,7 +55,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    }
 
    public ObjectiveGoal getObjectiveGoal() {
-	   return _objectiveGoal;
+      return _objectiveGoal;
    }
 
    public String getName() {
@@ -65,9 +65,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          return "LP";
       }
    }
-   
+
    public QAInstance getInstance() {
-	   return _instance;
+      return _instance;
    }
 
    public IEResult search(int[] order) {
@@ -107,6 +107,13 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       WaterfallILP.WaterfallResult result = ilp.solve();
       double[][] I_a_s = result.getI_a_s();
 
+      int[][] waterfall = new int[I_a_s.length][I_a_s[0].length];
+      for(int i = 0; i < waterfall.length; i++) {
+         for(int j = 0; j < waterfall[i].length; j++) {
+            waterfall[i][j] = (int) I_a_s[i][j];
+         }
+      }
+
       //relativeRanking[i]: the agent in initial position i had index relativeRanking[i]
       int[] relativeRanking = result.getOrdering();
 
@@ -118,7 +125,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 //		System.out.println("agents=" + _advertisers + "\tslots=" + _slots + "\tI_a_s size=" + I_a_s.length + " " + I_a_s[0].length);
       //TODO: do we have to undo the ordering?
       int[] unorderedImpsPerAgent = unorder(impsPerAgent, order);
-      
+
       //TODO: WHY IS ORDER CALLED??? 
       //This is pretty confusing. When impsPerAgent is ordered, the impressions each agent saw are shuffled.
       //The end result has each index corresponding to an agent.
@@ -128,11 +135,11 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       //Confusing.
       //FIXME: This is probably a dormant bug that will break things if the LDS is used with the 
       //unranked version of the problem (which we never do). (verify?) [yes, it does.]
-      int[] unorderedRelativeRanking = order(relativeRanking, order); 
+      int[] unorderedRelativeRanking = order(relativeRanking, order);
 
       //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
-      
-      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot);
+
+      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall);
    }
 
 
@@ -175,12 +182,12 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    }
 
    private static int[] order(int[] arr, int[] order) {
-	      int[] orderedArr = new int[arr.length];
-	      for (int i = 0; i < order.length; i++) {
-	         orderedArr[i] = arr[order[i]];
-	      }
-	      return orderedArr;
-	   }
+      int[] orderedArr = new int[arr.length];
+      for (int i = 0; i < order.length; i++) {
+         orderedArr[i] = arr[order[i]];
+      }
+      return orderedArr;
+   }
 
    private static int[] unorder(int[] orderedArr, int[] order) {
       int[] arr = new int[orderedArr.length];
@@ -236,7 +243,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
     */
    public static void main(String[] args) {
 
-		EricImpressionEstimator.testOrdering();
+      EricImpressionEstimator.testOrdering();
 
       //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
 
@@ -273,9 +280,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
          //Did we hit our budget? (added constraint if we didn't)
          boolean hitOurBudget = true;
-			
+
          int[] predictedOrder = {-1, -1};
-         
+
          //Give arbitrary agent IDs
          int[] agentIds = new int[numAgents];
          for (int i = 0; i < agentIds.length; i++) {
@@ -306,15 +313,15 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       }
    }
 
-public double[] getApproximateAveragePositions() {
-	double[] avgPos = new double[_advertisers];
-	for (int i=0; i<_advertisers; i++) {
-		if (_trueAvgPos[i] != -1) avgPos[i] = _trueAvgPos[i];
-		else if (_sampledAvgPos[i] != -1) avgPos[i] = _sampledAvgPos[i];
-		else avgPos[i] = -1; //FIXME: Make this something other than a negative value!
-	}
-	return avgPos;
-}
+   public double[] getApproximateAveragePositions() {
+      double[] avgPos = new double[_advertisers];
+      for (int i=0; i<_advertisers; i++) {
+         if (_trueAvgPos[i] != -1) avgPos[i] = _trueAvgPos[i];
+         else if (_sampledAvgPos[i] != -1) avgPos[i] = _sampledAvgPos[i];
+         else avgPos[i] = -1; //FIXME: Make this something other than a negative value!
+      }
+      return avgPos;
+   }
 
 
 }

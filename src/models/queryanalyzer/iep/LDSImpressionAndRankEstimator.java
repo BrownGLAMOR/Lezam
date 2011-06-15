@@ -36,19 +36,22 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
             if(bestSol == null || bestSol.getSol() == null) {
                int[] imps = new int[numActualAgents];
                int[] slotimps = new int[NUM_SLOTS];
-               bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
+               int[][] waterfall = new int[numActualAgents][NUM_SLOTS];
+               bestSol = new IEResult(0, imps, avgPosOrder, slotimps,waterfall);
             }
          }
          else {
             int[] imps = new int[numActualAgents];
             int[] slotimps = new int[NUM_SLOTS];
-            bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
+               int[][] waterfall = new int[numActualAgents][NUM_SLOTS];
+            bestSol = new IEResult(0, imps, avgPosOrder, slotimps,waterfall);
          }
       }
       else {
          int[] imps = new int[numActualAgents];
          int[] slotimps = new int[NUM_SLOTS];
-         bestSol = new IEResult(0, imps, avgPosOrder, slotimps);
+               int[][] waterfall = new int[numActualAgents][NUM_SLOTS];
+         bestSol = new IEResult(0, imps, avgPosOrder, slotimps,waterfall);
       }
 
 

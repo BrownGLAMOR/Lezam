@@ -239,6 +239,8 @@ public abstract class AbstractAgent extends Agent {
    public static final int MAX_F0_IMPS = 10753;
    public static final int MAX_F1_IMPS = 2325;
    public static final int MAX_F2_IMPS = 2221;
+
+   protected Integer _perfectStartSales = null;
    
    /**
     *
@@ -357,6 +359,10 @@ public abstract class AbstractAgent extends Agent {
       _bidBundles.add(bidBundle);
    }
 
+   public void handleStartSales(int startSales) {
+      _perfectStartSales = startSales;
+   }
+
    /**
     * Processes a simulation status notification.  Each simulation day the {@link SimulationStatus simulation status }
     * notification is sent after the other daily messages ({@link QueryReport} {@link SalesReport} have been sent.
@@ -375,7 +381,7 @@ public abstract class AbstractAgent extends Agent {
     */
    protected void handlePublisherInfo(PublisherInfo publisherInfo) {
       _squashing = publisherInfo.getSquashingParameter();
-      System.out.println("Squashing Parameter: " + _squashing);
+//      System.out.println("Squashing Parameter: " + _squashing);
       this._publisherInfo = publisherInfo;
    }
 
@@ -390,9 +396,9 @@ public abstract class AbstractAgent extends Agent {
       _numSlots = slotInfo.getRegularSlots();
       this._slotInfo = slotInfo;
 
-      System.out.println("Number of Slots: " + _numSlots);
-      System.out.println("Number of Promoted Slots: " + _numPS);
-      System.out.println("Promoted Slot Bonus: " + _PSB);
+//      System.out.println("Number of Slots: " + _numSlots);
+//      System.out.println("Number of Promoted Slots: " + _numPS);
+//      System.out.println("Promoted Slot Bonus: " + _PSB);
    }
 
    /**
@@ -450,19 +456,19 @@ public abstract class AbstractAgent extends Agent {
          }
       }
 
-      System.out.println("Advertiser ID: " + _advId);
-      System.out.println("Advertiser Index: " + _advIdx);
-      System.out.println("Capacity: " + _capacity);
-      System.out.println("Capacity Window: " + _capWindow);
-      System.out.println("Capacity Lambda: " + _lambda);
-      System.out.println("Component Specialty: " + _compSpecialty);
-      System.out.println("Manufacturer Specialty: " + _manSpecialty);
-      System.out.println("Component Specialty Bonus: " + _CSB);
-      System.out.println("Manufacturer Specialty Bonus: " + _MSB);
-      System.out.println("F0 Baseline ConvPr: " + _piF0);
-      System.out.println("F1 Baseline ConvPr: " + _piF1);
-      System.out.println("F2 Baseline ConvPr: " + _piF2);
-      System.out.println("Target Effect: " + _targEffect);
+//      System.out.println("Advertiser ID: " + _advId);
+//      System.out.println("Advertiser Index: " + _advIdx);
+//      System.out.println("Capacity: " + _capacity);
+//      System.out.println("Capacity Window: " + _capWindow);
+//      System.out.println("Capacity Lambda: " + _lambda);
+//      System.out.println("Component Specialty: " + _compSpecialty);
+//      System.out.println("Manufacturer Specialty: " + _manSpecialty);
+//      System.out.println("Component Specialty Bonus: " + _CSB);
+//      System.out.println("Manufacturer Specialty Bonus: " + _MSB);
+//      System.out.println("F0 Baseline ConvPr: " + _piF0);
+//      System.out.println("F1 Baseline ConvPr: " + _piF1);
+//      System.out.println("F2 Baseline ConvPr: " + _piF2);
+//      System.out.println("Target Effect: " + _targEffect);
    }
 
    /**

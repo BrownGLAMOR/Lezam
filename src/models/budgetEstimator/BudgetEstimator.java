@@ -181,7 +181,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                                        advsAbove = new LinkedList<String>();
                                        if(j > 0) {
                                           //TODO actually find the people above us...
-                                          List<Integer> sublist = aboveUs.subList(0, j);
+                                          List<Integer> sublist = aboveUs.subList(0, Math.min(j,aboveUs.size()));
                                           for (Integer id : sublist) {
                                              advsAbove.add("adv" + (id + 1));
                                           }
@@ -391,15 +391,17 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                double theoreticalClickProb = etaClickPr(ourAdvertiserEffect, ftfp);
                double IS = userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
                double nonIS = userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
-               for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-                  Ad otherAd = advertisersAboveUs.get(prevSlot);
-                  int ftOther = 0;
-                  if (otherAd != null) {
-                     ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+               if(advertisersAboveUs.size() > 0) {
+                  for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
+                     Ad otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
+                     int ftOther = 0;
+                     if (otherAd != null) {
+                        ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+                     }
+                     double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
+                     double otherAdvertiserClickProb = etaClickPr(otherAdvertiserEffects, ftfpOther);
+                     nonIS *= (1.0 - otherAdvertiserConvProb(q) * otherAdvertiserClickProb);
                   }
-                  double ftfpOther = fTargetfPro[ftOther][bool2int(numberPromotedSlots >= prevSlot + 1)];
-                  double otherAdvertiserClickProb = etaClickPr(otherAdvertiserEffects, ftfpOther);
-                  nonIS *= (1.0 - otherAdvertiserConvProb(q) * otherAdvertiserClickProb);
                }
                coeff[(_numSlots - 1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
             }

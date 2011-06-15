@@ -422,6 +422,9 @@ public class IndependentBidModel extends AbstractBidModel {
             int nextSpot = -1;
             for (String s : curStrKey) {
                if (s.equals(ourAgent)) {
+                  if(ranksMap.get(s) == null) {
+                     System.out.println(ranksMap);
+                  }
                   nextSpot = ranksMap.get(s) + 1;
                }
             }

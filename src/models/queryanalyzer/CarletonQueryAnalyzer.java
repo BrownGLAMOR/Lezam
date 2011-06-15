@@ -116,6 +116,19 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          //Get most recent impressions predictions (IEResult)
          int[] orderPredictionsReduced = result.getOrder();
 
+         int numPadded = 0;
+         ArrayList<Integer> padRanks = new ArrayList<Integer>();
+         for(int i = 0; i < orderPredictionsReduced.length; i++) {
+            if(orderPredictionsReduced[i] == -1) {
+               padRanks.add(i);
+               numPadded++;
+            }
+         }
+
+         if(numPadded > 0) {
+            System.out.println("Padded " + numPadded + " agents in " + q);
+         }
+
          //Get names of agents that appear in the IEResult
          String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
 
@@ -130,8 +143,23 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
             for (int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
                if (adv.equals(agentNamesReduced[aReduced])) {
-                  orderPredictions[a] = orderPredictionsReduced[aReduced];
-                  numAdded++;
+                  for(int i = 0; i < orderPredictionsReduced.length; i++) {
+                     if(orderPredictionsReduced[i] == aReduced) {
+
+                        //Determine num padded removed
+                        int numPadRem = 0;
+                        for(Integer padRank : padRanks) {
+                           if(padRank <= i) {
+                              numPadRem++;
+                           }
+                        }
+
+                        orderPredictions[i-numPadRem] = aReduced;
+                        numAdded++;
+                        break;
+                     }
+                  }
+                  break;
                }
             }
          }
@@ -206,7 +234,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                }
             }
 
-            //No distinguishing between exact and sampled positions.
+            //Add our true average position in
             double[] trueAvgPos = new double[agentIds.size()];
             Arrays.fill(trueAvgPos, -1);
             trueAvgPos[ourNewIdx] = queryReport.getPosition(q);
@@ -245,7 +273,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
             if(bestSol != null ) {
                _allResults.get(q).add(bestSol);
-               _allImpRanges.get(q).add(greedyAssign(5, bestSol.getSol().length, bestSol.getOrder(), bestSol.getSol()));
+               _allImpRanges.get(q).add(bestSol.getWaterfall());
 
                _allAgentNames.get(q).add(agentNamesArr);
                _allAgentIDs.get(q).add(agentIdsArr); //these are the IDs of each agent that was in the QAInstance for the given query. Corresponds to indices of IEResults
