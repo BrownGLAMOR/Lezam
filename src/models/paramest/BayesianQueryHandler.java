@@ -11,8 +11,11 @@ import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
-public class BayesianQueryHandler extends ConstantsAndFunctions {
+import static models.paramest.ConstantsAndFunctions.*;
+
+public class BayesianQueryHandler {
    final Query _query;
    final QueryType _queryType;
 
@@ -35,7 +38,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
    public BayesianQueryHandler(Query q, double[] c, int numSlots, int numPromSlots) {
 
-      _c = c;
+      _c = c.clone();
       _numSlots = numSlots;
       _numPromSlots = numPromSlots;
 
@@ -44,13 +47,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
       _dayHandlers = new LinkedList<BayesianDayHandler>();
 
-      if (_query.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-         _qTypeIdx = 0;
-      } else if (_query.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-         _qTypeIdx = 1;
-      } else {
-         _qTypeIdx = 2;
-      }
+      _qTypeIdx = queryTypeToInt(_queryType);
 
       _advEffDist = new ArrayList<Double>(NUM_DISCRETE_PROBS);
       _advEfWeights = new ArrayList<Double>(NUM_DISCRETE_PROBS);
@@ -69,21 +66,23 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
       return _lastPredictions;
    }
 
-   public boolean update(String ourAgent, QueryReport queryReport,
-                         LinkedList<Integer> impressionsPerSlot,
-                         LinkedList<LinkedList<String>> advertisersAbovePerSlot,
-                         HashMap<String, Ad> ads,
-                         HashMap<Product, HashMap<UserState, Integer>> userStates, double[] c) {
-      _c = c;
+   public boolean update(int ourIdx, BidBundle bundle, QueryReport queryReport, int[][] impressionMatrix,
+                         int[] order, HashMap<Product, HashMap<UserState, Integer>> userStates, double[] c) {
+      _c = c.clone();
 
       int totImpressions = queryReport.getImpressions(_query);
       int totClicks = queryReport.getClicks(_query);
 
       if (totImpressions > MIN_IMPS && totClicks > MIN_CLICKS) {
 
+         LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
+         for (int j = 0; j < _numSlots; j++) {
+            impressionsPerSlot.add(impressionMatrix[ourIdx][j]);
+         }
+
          // Were we ever not in a top slot
          boolean notinslot1 = false;
-         for (int i = 1; i < 5; i++) {
+         for (int i = 1; i < _numSlots; i++) {
             if (impressionsPerSlot.get(i) > 0) {
                notinslot1 = true;
                break;
@@ -96,8 +95,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
             inslot1 = true;
          }
 
-
-         Ad ourAd = ads.get(ourAgent);
+         Ad ourAd = bundle.getAd(_query);
          boolean ourAdTargeted = true;
          if (ourAd == null || ourAd.isGeneric()) {
             ourAdTargeted = false;
@@ -111,6 +109,45 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
          // If we were not in top slot for any part of the day, make day handler (to estimate cont prob)
          if (notinslot1) {
 
+            HashMap<String, Ad> ads = new HashMap<String, Ad>();
+            for (int i = 0; i < 8; i++) {
+               if (i == ourIdx) {
+                  ads.put("adv" + (i + 1), bundle.getAd(_query));
+               } else {
+                  ads.put("adv" + (i + 1), queryReport.getAd(_query, "adv" + (i + 1)));
+               }
+            }
+
+            LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
+
+            //where are we in bid pair matrix?
+            ArrayList<Integer> aboveUs = new ArrayList<Integer>();
+            for (int agentID : order) {
+               if (agentID == ourIdx) {
+                  //We only want advertisers above us so exit loop
+                  break;
+               } else {
+                  aboveUs.add(agentID);
+               }
+            }
+
+            for (int j = 0; j < _numSlots; j++) {
+               int numImpressions = impressionMatrix[ourIdx][j];
+
+               LinkedList<String> advsAbove = null;
+               if (numImpressions != 0) {
+                  advsAbove = new LinkedList<String>();
+                  if(j > 0) {
+                     List<Integer> sublist = aboveUs.subList(0, Math.min(j,aboveUs.size()));
+                     for (Integer id : sublist) {
+                        advsAbove.add("adv" + (id + 1));
+                     }
+                  }
+               }
+
+               advertisersAbovePerSlot.add(advsAbove);
+            }
+
             int totalClicks = queryReport.getClicks(_query);
 
             // Make list of Ads above
@@ -122,7 +159,7 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
 
             BayesianDayHandler latestday = new BayesianDayHandler(_query, totalClicks, _numSlots,
                                                                   _numPromSlots, impressionsPerSlot, _lastPredictions[0],
-                                                                  adsAbovePerSlot, statesSearchingUsers, (ourAdTargeted),
+                                                                  adsAbovePerSlot, statesSearchingUsers, ourAdTargeted,
                                                                   ourAdProduct, _c);
 
             _dayHandlers.add(latestday);
@@ -137,25 +174,25 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
                promoted = 1;
             }
 
+            double imps = 0.0;
+            double trueClicks = 0.0;
+            for (Product p : userStates.keySet()) {
+               imps += imprdist.get(p);
+               trueClicks += clickdist.get(p);
+            }
+
             double total = 0.0;
             for (int i = 0; i < NUM_DISCRETE_PROBS; i++) {
                double advEff = _advEffDist.get(i);
 
-               double imps = 0.0;
-               double trueClicks = 0.0;
                double estClicks = 0.0;
                for (Product p : userStates.keySet()) {
                   int targeted = getFTargetIndex(ourAdTargeted, p, ourAdProduct);
                   double ftargfpro = fTargetfPro[targeted][promoted];
                   double clickPr = etaClickPr(advEff, ftargfpro);
-
-                  trueClicks += clickdist.get(p);
-                  imps += imprdist.get(p);
                   estClicks += clickPr * imprdist.get(p);
                }
 
-               assert (imps > trueClicks);
-               assert (imps > estClicks);
                double prob = getBinomialProb(imps, trueClicks, estClicks);
                double newProb = _advEfWeights.get(i) * prob;
 
@@ -190,25 +227,33 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
                      currentEstimate += _advEfWeights.get(i) * _advEffDist.get(i);
                   }
                }
-            } else {
+            }
+            else {
                for (int i = 0; i < NUM_DISCRETE_PROBS; i++) {
                   currentEstimate += _advEfWeights.get(i) * _advEffDist.get(i);
                }
             }
 
-            if (Double.isNaN(currentEstimate)) {
+            if (!Double.isNaN(currentEstimate)) {
+
+               if(currentEstimate > _advertiserEffectBounds[_qTypeIdx][1]) {
+                  currentEstimate = _advertiserEffectBounds[_qTypeIdx][1];
+               }
+               else if(currentEstimate < _advertiserEffectBounds[_qTypeIdx][0]) {
+                  currentEstimate = _advertiserEffectBounds[_qTypeIdx][0];
+               }
+
+               _lastPredictions[0] = currentEstimate;
+
+               // Update all previous continuation probability estimates
+               for (BayesianDayHandler dh : _dayHandlers) {
+                  dh.updateEstimate(_lastPredictions[0],_c);
+               }
+            }
+            else {
                System.out.println("bad estimate!!!!!!");
             }
 
-            _lastPredictions[0] = currentEstimate;
-
-            // Update all previous continuation probability estimates
-            for (BayesianDayHandler dh : _dayHandlers) {
-               dh.updateEstimate(_lastPredictions[0], _c);
-            }
-
-         } else {
-            // do nothing if we saw no impressions
          }
 
          if (notinslot1 || inslot1) {
@@ -229,19 +274,14 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
          }
       }
 
-      //TODO: take me out for the competition
-      if (Double.isNaN(_lastPredictions[0]) || Double.isNaN(_lastPredictions[1])) {
-         throw new RuntimeException();
-      }
-
       return true;
    }
 
-   public double getBinomialProb(double numImps, double numClicks, double observedClicks) {
-      return getBinomialProbUsingGaussian(numImps, numClicks / ((double) numImps), observedClicks);
+   public static double getBinomialProb(double numImps, double numClicks, double observedClicks) {
+      return getBinomialProbUsingGaussian(numImps, numClicks / numImps, observedClicks);
    }
 
-   public double getBinomialProbUsingGaussian(double n, double p, double k) {
+   public static double getBinomialProbUsingGaussian(double n, double p, double k) {
       double mean = n * p;
       double sigma2 = mean * (1.0 - p);
       double diff = k - mean;
@@ -283,16 +323,17 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
          if (_queryType.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  _query.getComponent().equals(p.getComponent()) &&
                  _query.getManufacturer().equals(p.getManufacturer())) {
-            searching = 1.0 / 3.0 * states.get(UserState.IS) + states.get(UserState.F2);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
          }
-         if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
+         else if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
                  ((_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
                           (_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))) {
-            searching = 1.0 / 6.0 * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
          }
-         if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            searching = 1.0 / 3.0 * states.get(UserState.IS) + states.get(UserState.F0);
+         else if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
          }
+
          total += searching;
          userDist.put(p, searching);
          if (ourAdTargeted) {
@@ -326,15 +367,15 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
          if (_queryType.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  _query.getComponent().equals(p.getComponent()) &&
                  _query.getManufacturer().equals(p.getManufacturer())) {
-            searching = 1.0 / 3.0 * states.get(UserState.IS) + states.get(UserState.F2);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
          }
-         if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
+         else if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
                  ((_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
                           (_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))) {
-            searching = 1.0 / 6.0 * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
          }
-         if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            searching = 1.0 / 3.0 * states.get(UserState.IS) + states.get(UserState.F0);
+         else if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
          }
          total += searching;
          userDist.put(p, searching);
@@ -363,43 +404,57 @@ public class BayesianQueryHandler extends ConstantsAndFunctions {
             if (_queryType.equals(QueryType.FOCUS_LEVEL_TWO) &&
                     _query.getComponent().equals(p.getComponent()) &&
                     _query.getManufacturer().equals(p.getManufacturer())) {
-               ISusers = 1.0 / 3.0 * states.get(UserState.IS);
+               ISusers = (1.0 / 3.0) * states.get(UserState.IS);
                nonISusers = states.get(UserState.F2);
             }
-            if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
+            else if (_queryType.equals(QueryType.FOCUS_LEVEL_ONE) &&
                     ((_query.getComponent() != null && _query.getComponent().equals(p.getComponent())) ||
                              (_query.getManufacturer() != null && _query.getManufacturer().equals(p.getManufacturer())))) {
-               ISusers = 1.0 / 6.0 * states.get(UserState.IS);
+               ISusers = (1.0 / 6.0) * states.get(UserState.IS);
                nonISusers = 0.5 * states.get(UserState.F1);
             }
-            if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-               ISusers = 1.0 / 3.0 * states.get(UserState.IS);
+            else if (_queryType.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+               ISusers = (1.0 / 3.0) * states.get(UserState.IS);
                nonISusers = states.get(UserState.F0);
             }
-            // double nonISusers =
-            // states.get(UserState.F0)+states.get(UserState.F1)+states.get(UserState.F2);
+
             // make a list of Is, non Is users arrays, one for each slot
             LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
             double sum = ISusers + nonISusers;
-            for (Integer integer : impressionsPerSlot) {
+            for (int slot = 0; slot < _numSlots; slot++) {
+               int imps = impressionsPerSlot.get(slot);
                double ISusersPerSlot = 0.0;
                double nonISusersPerSlot = 0.0;
                if (sum > 0.0) {
-                  ISusersPerSlot = (((double) ISusers * ((double) integer)) / sum) * (imprdist.get(p) / impressions);
-                  nonISusersPerSlot = (((double) nonISusers * ((double) integer)) / sum) * (imprdist.get(p) / impressions);
+                  ISusersPerSlot = imps * (ISusers / sum) * (imprdist.get(p) / impressions);
+                  nonISusersPerSlot = imps * (nonISusers / sum) * (imprdist.get(p) / impressions);
                }
-               double[] statesOfSearchingUsersPerSlot = {ISusersPerSlot, nonISusersPerSlot};
+               double[] statesOfSearchingUsersPerSlot = new double[] {ISusersPerSlot, nonISusersPerSlot};
                userSlotDist.add(statesOfSearchingUsersPerSlot);
+
+               //Adjust the IS/NS distribution based on conversions
+               //TODO add better estimate of clickPR
+//               Ad otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
+//               int ftOther = 0;
+//               if (otherAd != null) {
+//                  ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+//               }
+//               double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= (prevSlot + 1))];
+//               double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
+               double numConvs = ISusersPerSlot * (1.0 / 3.0) * _c[_qTypeIdx];
+               ISusers -= numConvs;
+               sum -= numConvs;
             }
             toreturn.put(p, userSlotDist);
-         } else {
+         }
+         else {
             /*
                  * These will always be zero, because we are not getting any
                  * impressions from this product
                  */
             LinkedList<double[]> userSlotDist = new LinkedList<double[]>();
             for (Integer imps : impressionsPerSlot) {
-               double[] statesOfSearchingUsersPerSlot = {0.0, 0.0};
+               double[] statesOfSearchingUsersPerSlot = new double[] {0.0, 0.0};
                userSlotDist.add(statesOfSearchingUsersPerSlot);
             }
             toreturn.put(p, userSlotDist);

@@ -24,7 +24,7 @@ import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import models.usermodel.jbergParticleFilter;
-import tacaa.core;
+import tacaa.javasim;
 
 import java.util.*;
 
@@ -48,7 +48,7 @@ public class MCKP extends AbstractAgent {
    private boolean UPDATE_WITH_ITEM = false;
 
    private double _safetyBudget = 950;
-   private int lagDays = 4;
+   private int lagDays = 2;
 
    private double[] _regReserveLow = {.08, .29, .46};
    private double[] _regReserveHigh = {.29, .46, .6};
@@ -135,7 +135,7 @@ public class MCKP extends AbstractAgent {
    }
 
    public PersistentHashMap initClojureSim() {
-      return core.initClojureSim(_publisherInfo,_slotInfo,_advertiserInfo,_retailCatalog,_advertisers);
+      return javasim.initClojureSim(_publisherInfo,_slotInfo,_advertiserInfo,_retailCatalog,_advertisers);
    }
 
    public PersistentHashMap setupSimForDay() {
@@ -154,7 +154,7 @@ public class MCKP extends AbstractAgent {
          HashMap<String,HashMap<Query,Ad>> ads = new HashMap<String, HashMap<Query, Ad>>();
 
          for(Query q : _querySpace) {
-            contProbs.put(q,_paramEstimation.getPrediction(q)[1]);
+            contProbs.put(q,_paramEstimation.getContProbPrediction(q));
             regReserves.put(q,_regReserve[queryTypeToInt(q.getType())]);
             promReserves.put(q,_proReserve[queryTypeToInt(q.getType())]);
          }
@@ -216,7 +216,7 @@ public class MCKP extends AbstractAgent {
                String aCompSpecialties = _compSpecialty;
 
                for(Query q : _querySpace) {
-                  aAdvAffects.put(q,_paramEstimation.getPrediction(q)[0]);
+                  aAdvAffects.put(q,_paramEstimation.getAdvEffectPrediction(q));
                }
 
                advAffects.put(agent,aAdvAffects);
@@ -238,21 +238,21 @@ public class MCKP extends AbstractAgent {
             userPop.put(p, userState);
          }
 
-         return core.mkFullStatus(_baseCljSim,squashedBids,budgets,userPop,advAffects,contProbs,regReserves,
-                                  promReserves, capacities, startSales, manSpecialties, compSpecialties, ads);
+         return javasim.mkFullStatus(_baseCljSim, squashedBids, budgets, userPop, advAffects, contProbs, regReserves,
+                                     promReserves, capacities, startSales, manSpecialties, compSpecialties, ads);
       }
       else {
-         return core.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace,(int)(_capacity - _capacity / ((double) _capWindow)));
+         return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace,(int)(_capacity - _capacity / ((double) _capWindow)));
       }
    }
 
    public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
       ArrayList<Double> result;
       if(_perfectCljSim != null) {
-         result = core.simQuery(cljSim,query,_agentToReplace,(int)_day,bid,budget,ad,1,true);
+         result = javasim.simQuery(cljSim,query,_agentToReplace,(int)_day,bid,budget,ad,1,true);
       }
       else {
-         result = core.simQuery(cljSim,query,_advId,(int)_day,bid,budget,ad,1,false);
+         result = javasim.simQuery(cljSim,query,_advId,(int)_day,bid,budget,ad,1,false);
       }
       double[] resultArr = new double[result.size()];
       for(int i = 0; i < result.size(); i++) {
@@ -399,23 +399,29 @@ public class MCKP extends AbstractAgent {
          bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
       }
 
-      if(_day > lagDays){
-
-         if(_perfectStartSales != null) {
-            double unitsSold = _unitsSold.getWindowSold();
-            int yestSales = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
-            int salesDiff = (int)(unitsSold - yestSales);
-            int newYestSales = _perfectStartSales - salesDiff;
-            ((BasicUnitsSoldModel) _unitsSold).expectedConvsTomorrow(newYestSales);
-         }
+      if(_day >= lagDays){
 
          double remainingCap;
-         if(_day < 4) {
-            remainingCap = _capacity/((double)_capWindow);
+         if(_perfectStartSales == null) {
+            if(_day < lagDays) {
+               remainingCap = _capacity/((double)_capWindow);
+            }
+            else {
+               remainingCap = _capacity - _unitsSold.getWindowSold();
+               debug("Unit Sold Model Budget "  +remainingCap);
+            }
          }
          else {
-            remainingCap = _capacity - _unitsSold.getWindowSold();
-            debug("Unit Sold Model Budget "  +remainingCap);
+            remainingCap = _capacity;
+
+            int saleslen = _perfectStartSales.length;
+            for(int i = saleslen-1; i >= 0 && i > saleslen-_capWindow; i--) {
+               remainingCap -= _perfectStartSales[i];
+            }
+
+            if(saleslen < (_capWindow-1)) {
+               remainingCap -= _capacity/((double)_capWindow) * (_capacity - 1 - saleslen);
+            }
          }
 
          debug("Budget: "+ remainingCap);
@@ -519,7 +525,7 @@ public class MCKP extends AbstractAgent {
                double convProb = _convPrModel.getPrediction(q);
                double salesPrice = _salesPrices.get(q);
                int itemCount = 0;
-               for(int k = 0; k < 1; k++) {
+               for(int k = 0; k < 2; k++) {
 //                  for(int k = 0; k < 2; k++) {
                   for(int i = 0; i < bidLists.get(q).size(); i++) {
                      for(int j = 0; j < budgetLists.get(q).size(); j++) {
@@ -749,7 +755,6 @@ public class MCKP extends AbstractAgent {
    public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
 //      System.out.println("Updating models on day " + _day);
-      _unitsSold.update(salesReport);
       if(_perfectCljSim == null) {
          BidBundle bidBundle = _bidBundles.get(_bidBundles.size()-2);
 
@@ -835,19 +840,19 @@ public class MCKP extends AbstractAgent {
          HashMap<Query, Double> cpc = new HashMap<Query,Double>();
          HashMap<Query, Double> ourBid = new HashMap<Query,Double>();
          for(Query q : _querySpace) {
-            cpc.put(q, queryReport.getCPC(q)* Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
-            ourBid.put(q, bidBundle.getBid(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing));
+            cpc.put(q, queryReport.getCPC(q)* Math.pow(_paramEstimation.getAdvEffectPrediction(q), _squashing));
+            ourBid.put(q, bidBundle.getBid(q) * Math.pow(_paramEstimation.getAdvEffectPrediction(q), _squashing));
          }
          _bidModel.updateModel(cpc, ourBid, ranks);
 
          HashMap<Query,Double> contProbs = new HashMap<Query,Double>();
          HashMap<Query, double[]> allbids = new HashMap<Query,double[]>();
          for(Query q : _querySpace) {
-            contProbs.put(q, _paramEstimation.getPrediction(q)[1]);
+            contProbs.put(q, _paramEstimation.getContProbPrediction(q));
             double[] bids = new double[_advertisers.size()];
             for(int j = 0; j < bids.length; j++) {
                if(j == _advIdx) {
-                  bids[j] = bidBundle.getBid(q) * Math.pow(_paramEstimation.getPrediction(q)[0], _squashing);
+                  bids[j] = bidBundle.getBid(q) * Math.pow(_paramEstimation.getAdvEffectPrediction(q), _squashing);
                }
                else {
                   bids[j] = _bidModel.getPrediction("adv" + (j+1), q);
@@ -859,21 +864,26 @@ public class MCKP extends AbstractAgent {
          _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, fullOrders, fullImpressions, fullWaterfalls, allbids, userStates);
 
          _salesDist.updateModel(salesReport);
+         _unitsSold.update(salesReport);
       }
    }
 
-   private double getPenalty(double remainingCap, double solutionWeight) {
+   public double getPenalty(double remainingCap, double solutionWeight) {
+      return getPenalty(remainingCap,solutionWeight,_lambda);
+   }
+
+   public static double getPenalty(double remainingCap, double solutionWeight, double lambda) {
       double penalty;
       solutionWeight = Math.max(0,solutionWeight);
       if(remainingCap < 0) {
          if(solutionWeight <= 0) {
-            penalty = Math.pow(_lambda, Math.abs(remainingCap));
+            penalty = Math.pow(lambda, Math.abs(remainingCap));
          }
          else {
             penalty = 0.0;
             int num = 0;
             for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
-               penalty += Math.pow(_lambda, j);
+               penalty += Math.pow(lambda, j);
                num++;
             }
             penalty /= (num);
@@ -887,7 +897,7 @@ public class MCKP extends AbstractAgent {
             if(solutionWeight > remainingCap) {
                penalty = remainingCap;
                for(int j = 1; j <= solutionWeight-remainingCap; j++) {
-                  penalty += Math.pow(_lambda, j);
+                  penalty += Math.pow(lambda, j);
                }
                penalty /= (solutionWeight);
             }
@@ -917,20 +927,36 @@ public class MCKP extends AbstractAgent {
 
       double daysLookahead = Math.max(0, Math.min(numDays, 58 - _day));
       if(daysLookahead > 0 && totalWeight > 0) {
-         ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
-         ArrayList<Integer> soldArray = getCopy(soldArrayTMP);
+         ArrayList<Integer> soldArray;
+         if(_perfectStartSales == null) {
+            ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+            soldArray = getCopy(soldArrayTMP);
 
-         Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
-         if(expectedConvsYesterday == null) {
-            expectedConvsYesterday = 0;
-            int counter2 = 0;
-            for(int j = 0; j < 5 && j < soldArray.size(); j++) {
-               expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
-               counter2++;
+            Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+            if(expectedConvsYesterday == null) {
+               expectedConvsYesterday = 0;
+               int counter2 = 0;
+               for(int j = 0; j < 5 && j < soldArray.size(); j++) {
+                  expectedConvsYesterday += soldArray.get(soldArray.size()-1-j);
+                  counter2++;
+               }
+               expectedConvsYesterday = (int) (expectedConvsYesterday / (double) counter2);
             }
-            expectedConvsYesterday = (int) (expectedConvsYesterday / (double) counter2);
+            soldArray.add(expectedConvsYesterday);
          }
-         soldArray.add(expectedConvsYesterday);
+         else {
+            soldArray = new ArrayList<Integer>(_perfectStartSales.length);
+
+            if(_perfectStartSales.length < (_capWindow-1)) {
+               for(int i = 0; i < (_capWindow - 1 - _perfectStartSales.length); i++) {
+                  soldArray.add((int)(_capacity / ((double) _capWindow)));
+               }
+            }
+
+            for(Integer numConvs : _perfectStartSales) {
+               soldArray.add(numConvs);
+            }
+         }
          soldArray.add((int) totalWeight);
 
          for(int i = 0; i < daysLookahead; i++) {
@@ -1179,6 +1205,10 @@ public class MCKP extends AbstractAgent {
          }
       }
       return solution;
+   }
+
+   private HashMap<Query,Item> fillKnapsackTacTex(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+      return null;
    }
 
    /**

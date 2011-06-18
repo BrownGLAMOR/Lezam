@@ -1,5 +1,6 @@
 (ns tacaa.core
-  (:require (tacaa parser))
+  (:require (tacaa parser)
+            (criterium core stats well))
   (:import (java.util Random)
            (simulator.parser GameStatusHandler)
            (agents AbstractAgent)
@@ -9,49 +10,7 @@
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
                                      Query Product Ad UserClickModel
                                      AdvertiserInfo PublisherInfo
-                                     SlotInfo QueryType RetailCatalog))
-  (:gen-class
-   :name tacaa.core
-   :methods[^{:static true} [simulateAgent [clojure.lang.PersistentHashMap,
-                                            agents.AbstractAgent,
-                                            String] clojure.lang.PersistentArrayMap]
-            ^{:static true} [setupClojureSim [String] clojure.lang.PersistentHashMap]
-            ^{:static true} [initClojureSim [edu.umich.eecs.tac.props.PublisherInfo,
-                                             edu.umich.eecs.tac.props.SlotInfo,
-                                             edu.umich.eecs.tac.props.AdvertiserInfo,
-                                             edu.umich.eecs.tac.props.RetailCatalog,
-                                             java.util.ArrayList] clojure.lang.PersistentHashMap]
-            ^{:static true} [mkPerfectFullStatus [clojure.lang.PersistentHashMap,
-                                                  int,
-                                                  String,
-                                                  int] clojure.lang.PersistentHashMap]
-            ^{:static true} [mkFullStatus [clojure.lang.PersistentHashMap,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map,
-                                           java.util.Map] clojure.lang.PersistentHashMap]
-            ^{:static true} [simQuery [clojure.lang.PersistentHashMap,
-                                       edu.umich.eecs.tac.props.Query,
-                                       String,
-                                       int,
-                                       double,
-                                       double,
-                                       edu.umich.eecs.tac.props.Ad,
-                                       int,
-                                       boolean] java.util.ArrayList]
-            ^{:static true} [getActualResults [clojure.lang.PersistentHashMap] clojure.lang.PersistentArrayMap]
-            ^{:static true} [printResults [clojure.lang.PersistentArrayMap] void]
-            ^{:static true} [compareResults [clojure.lang.PersistentArrayMap
-                                             clojure.lang.PersistentArrayMap
-                                             String] void]]))
+                                     SlotInfo QueryType RetailCatalog)))
 
 (set! *warn-on-reflection* true)
 
@@ -1173,8 +1132,7 @@
         (.initBidder agent)
         (.setModels agent (.initModels agent))
         (loop [day 0
-               statslst []
-               status status]
+               statslst []]
           (if (>= day 59)
             (combine-stats-days (map combine-queries statslst))
             (let [start-time (. System (nanoTime))]
@@ -1188,22 +1146,23 @@
                   (.handleSalesReport agent sr)
                   (.updateModels agent sr qr)))
               (let [sales-window (int (status :sales-window))
-                    startconvs (if (< day (- sales-window 1))
-                                 (+ (* (- (- sales-window 1) day)
-                                       (/ ((status :capacities) agent-to-replace)
-                                          sales-window))
-                                    (reduce + (map (fn [past-day]
-                                                     (stats-get-convs status
-                                                                      (statslst past-day)
-                                                                      agent-to-replace))
-                                                   (range day))))
-                                 (reduce +(map (fn [past-day]
-                                                 (stats-get-convs status
-                                                                  (statslst past-day)
-                                                                  agent-to-replace))
-                                               (range (- day (- sales-window 1)) day))))
+                    startconvslst (if (< day (- sales-window 1))
+                                    (concat (replicate (- (- sales-window 1) day)
+                                                       (/ ((status :capacities) agent-to-replace)
+                                                          sales-window))
+                                            (map (fn [past-day]
+                                                   (stats-get-convs status
+                                                                    (statslst past-day)
+                                                                    agent-to-replace))
+                                                 (range day)))
+                                    (map (fn [past-day]
+                                           (stats-get-convs status
+                                                            (statslst past-day)
+                                                            agent-to-replace))
+                                         (range (- day (- sales-window 1)) day)))
+                    startconvs (reduce + startconvslst)
                     bundle (do
-                             (.handleStartSales agent (int startconvs))
+                             (.handleStartSales agent (into-array Integer/TYPE startconvslst))
                              (.getBidBundle agent (.getModels agent)))
                     status (assoc status :bid-bundle
                                   (assoc (status :bid-bundle) agent-to-replace
@@ -1232,7 +1191,7 @@
                 (do
                   (.handleBidBundle agent bundle)
                   ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
-                  (recur (inc day) (conj statslst stats) status))))))))))
+                  (recur (inc day) (conj statslst stats)))))))))))
 
 
 (defn simulate-game
@@ -1429,247 +1388,183 @@
        (Math/exp (- (/ mdsq (* 2 var)))))))
 
 
-(defn setupClojureSim
-  [^String file]
-  (init-sim-info (tacaa.parser/parse-file file)))
+(defn convpr-penalty
+  [lam rem-cap sol-weight]
+  (let [rem-cap (double rem-cap)
+        sol-weight (double sol-weight)]
+    (if (< rem-cap 0)
+      (let [arem-cap (Math/abs rem-cap)]
+        (if (<= sol-weight 0)
+          (Math/pow lam
+                    arem-cap)
+          (loop [psum (double 0.0)
+                 n (double (+ arem-cap 1))]
+            (if (not (<= n (+ arem-cap sol-weight)))
+              (/ psum sol-weight)
+              (recur (+ psum
+                        (Math/pow lam
+                                  n))
+                     (inc n))))))
+      (if (<= sol-weight 0)
+        1.0
+        (if (>= rem-cap sol-weight)
+          1.0
+          (loop [psum (double rem-cap)
+                 n (int 1)]
+            (if (not (<= n (- sol-weight rem-cap)))
+              (/ psum sol-weight)
+              (recur (+ psum
+                        (Math/pow lam
+                                  n))
+                     (inc n)))))))))
 
 
-(defn -setupClojureSim
-  [file]
-  (setupClojureSim file))
+(defn solution-weight
+  [stats convprs query-type rem-cap comp-spec comp-bonus lam]
+  (loop [weight 0]
+    (let [penalty (convpr-penalty lam rem-cap weight)
+          new-weight (reduce
+                      +
+                      (map (fn [[^Query query stat]]
+                             (let [convpr (* (convprs (query-type query))
+                                             penalty)
+                                   qcomp (.getComponent query)]
+                               (* (stat :clicks)
+                                  (if (= comp-spec
+                                         qcomp)
+                                    (eta convpr
+                                         (+ 1 comp-bonus))
+                                    (if (= nil
+                                           qcomp)
+                                      (+ (* (eta convpr
+                                                 (+ 1 comp-bonus))
+                                            (/ 1.0 3.0))
+                                         (* convpr
+                                            (/ 2.0 3.0)))
+                                      convpr)))))
+                           stats))]
+      (if (< (Math/abs (double (- new-weight
+                                  weight)))
+             1.0)
+        new-weight
+        (recur new-weight)))))
 
 
-(defn simulateAgent
-  [^PersistentHashMap status
-   ^AbstractAgent agent
-   ^String agent-to-replace]
-  (simulate-game-with-agent status agent agent-to-replace))
-
-(defn -simulateAgent
-  [status agent agent-to-replace]
-  (simulateAgent status agent agent-to-replace))
-
-(defn initClojureSim
-  [^PublisherInfo pub-info,
-   ^SlotInfo slot-info,
-   ^AdvertiserInfo adv-info,
-   ^RetailCatalog retail-cat,
-   ^java.util.ArrayList agents]
-  (let [agents (into [] agents)
-        query-space (tacaa.parser/mk-queryspace retail-cat)]
-    (hash-map :publish-info pub-info
-              :slot-info slot-info
-              :adv-info (reduce (fn [coll agent]
-                                  (assoc coll agent adv-info))
-                                {} agents)
-              :retail-cat retail-cat
-              :agents agents
-              :query-space query-space
-              :qsf0 (into #{} (filter (fn [^Query query] (= (.getType query)
-                                                           QueryType/FOCUS_LEVEL_ZERO)) query-space))
-              :qsf1 (into #{} (filter (fn [^Query query] (= (.getType query)
-                                                           QueryType/FOCUS_LEVEL_ONE)) query-space))
-              :qsf2 (into #{} (filter (fn [^Query query] (= (.getType query)
-                                                           QueryType/FOCUS_LEVEL_TWO)) query-space))
-              :squash-param (.getSquashingParameter pub-info)
-              :prod-query (mk-prod-query-map retail-cat 0)
-              :query-type (mk-query-type-map query-space 0)
-              :conv-probs (mk-convpr-map)
-              :man-bonus (.getManufacturerBonus adv-info)
-              :comp-bonus (.getComponentBonus adv-info)
-              :lam (.getDistributionCapacityDiscounter adv-info)
-              :sales-window (.getDistributionWindow adv-info)
-              :targ-effect (.getTargetEffect adv-info)
-              :num-slots (.getRegularSlots slot-info)
-              :prom-slots (.getPromotedSlots slot-info)
-              :prom-bonus (.getPromotedSlotBonus slot-info)
-              :USP 10)))
-
-(defn -initClojureSim
-  [pub-info
-   slot-info
-   adv-info
-   retail-cat
-   agents]
-  (initClojureSim pub-info slot-info adv-info retail-cat agents))
+(defn eval-per-q-sol
+  [stats agent convprs query-type capacity start-sales comp-spec man-spec comp-bonus man-bonus usp lam]
+  (let [stats (reduce (fn [coll [query stat]]
+                        (assoc coll query ((stat agent) query)))
+                      {} stats)
+        rem-cap (- capacity start-sales)
+        weight (solution-weight stats convprs query-type rem-cap
+                                comp-spec comp-bonus lam)
+        penalty (convpr-penalty lam rem-cap weight)]
+    (reduce + (map (fn [[^Query query stat]]
+                     (- (* (* (stat :clicks)
+                              (* (convprs (query-type query))
+                                 penalty))
+                           (let [qman (.getManufacturer query)]
+                             (if (= man-spec
+                                    qman)
+                               (* usp
+                                  (+ 1 man-bonus))
+                               (if (= nil
+                                      qman)
+                                 (+ (* (* usp
+                                          (+ 1 man-bonus))
+                                       (/ 1.0 3.0))
+                                    (* usp
+                                       (/ 2.0 3.0)))
+                                 usp))))
+                        (stat :cost)))
+                   stats))))
 
 
-(defn mkPerfectFullStatus
-  [^PersistentHashMap status
-   day
-   ^String agent-to-replace
-   start-sales]
-  (reduce (fn [coll agent]
-            (assoc coll :start-sales
-                   (assoc (coll :start-sales) agent
-                          (assoc ((coll :start-sales) agent)
-                            day
-                            (if (= agent-to-replace agent)
-                              start-sales
-                              ((status :capacities) agent))))))
-          status (status :agents)))
+(defn simq-indep
+  [status day]
+  (let [stats (reduce (fn [coll query]
+                     (assoc coll query (simulate-query status day query)))
+                      {} (status :query-space))
+        qprofits (reduce (fn [coll agent]
+                          (assoc coll agent (eval-per-q-sol stats agent (status :conv-probs)
+                                                            (status :query-type)
+                                                            ((status :capacities) agent)
+                                                            (((status :start-sales) agent) day)
+                                                            ((status :comp-specialties) agent)
+                                                            ((status :man-specialties) agent)
+                                                            (status :comp-bonus)
+                                                            (status :man-bonus)
+                                                            (status :USP)
+                                                            (status :lam))))
+                         {} (status :agents))
+        dprofits (stats-summary-expected status day)
+        actual (day-summary status day)]
+    [(map (fn [agent] (let [actprof (actual agent)]
+                       (if (not (== actprof 0.0))
+                         (double (/ (- (qprofits agent)
+                                       actprof)
+                                    actprof))
+                         (if (not (== (qprofits agent) 0.0))
+                           (if (< (qprofits agent) 0.0)
+                             -1
+                             1)
+                           0.0))))
+          (status :agents))
+     (map (fn [agent] (let [actprof (actual agent)]
+                       (if (not (== actprof 0.0))
+                         (double (/ (- (dprofits agent)
+                                       actprof)
+                                    actprof))
+                         (if (not (== (dprofits agent) 0.0))
+                           (if (< (dprofits agent) 0.0)
+                             -1
+                             1)
+                           0.0))))
+          (status :agents))]))
 
-(defn -mkPerfectFullStatus
-  [status
-   day
-   agent-to-replace
-   start-sales]
-  (mkPerfectFullStatus status day agent-to-replace start-sales))
-
-
-(defn mkFullStatus
-  [^PersistentHashMap status
-   ^java.util.Map squashed-bids,
-   ^java.util.Map budgets,
-   ^java.util.Map user-pop,
-   ^java.util.Map adv-effects,
-   ^java.util.Map cont-probs,
-   ^java.util.Map reg-res,
-   ^java.util.Map prom-res,
-   ^java.util.Map capacities,
-   ^java.util.Map start-sales,
-   ^java.util.Map man-specialties,
-   ^java.util.Map comp-specialties,
-   ^java.util.Map ads]
-  (let [agents (status :agents)]
-    (merge status
-           {:squashed-bids (reduce (fn [coll ^String agent]
-                                     (assoc coll agent
-                                            [(into {} ^java.util.Map (.get squashed-bids agent))]))
-                                   {} (keys squashed-bids)),
-            :budgets (reduce (fn [coll ^String agent]
-                               (assoc coll agent
-                                      [(into {} ^java.util.Map (.get budgets agent))]))
-                             {} (keys budgets)),
-            :adv-effects (reduce (fn [coll ^String agent]
-                                   (assoc coll agent
-                                          (into {} ^java.util.Map (.get adv-effects agent))))
-                                 {} (keys adv-effects)),
-            :cont-probs (into {} cont-probs),
-            :user-pop [(into {} user-pop)],
-            :reg-res {:qsf0 (.get reg-res (new Query nil nil)),
-                      :qsf1 (.get reg-res (new Query "pg" nil)),
-                      :qsf2 (.get reg-res (new Query "pg" "tv"))},
-            :prom-res {:qsf0 (.get prom-res (new Query nil nil)),
-                      :qsf1 (.get prom-res (new Query "pg" nil)),
-                      :qsf2 (.get prom-res (new Query "pg" "tv"))},
-            :capacities (reduce (fn [coll [agent val]] (assoc coll agent val)) {} capacities),
-            :start-sales (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} start-sales),
-            :man-specialties (into {} man-specialties),
-            :comp-specialties (into {} comp-specialties),
-            :ads (reduce (fn [coll ^String agent]
-                           (assoc coll agent
-                                  [(into {} ^java.util.Map (.get ads agent))]))
-                         {} (keys ads))})))
-
-(defn -mkFullStatus
-  [status squashed-bids budgets user-pop adv-effects
-   cont-probs reg-res prom-res capacities start-sales
-   man-specialties comp-specialties ads]
-  (mkFullStatus status squashed-bids budgets user-pop adv-effects
-                cont-probs reg-res prom-res capacities start-sales
-                man-specialties comp-specialties ads))
+(defn bootstrap-mean-and-std
+  [lst]
+  (let [stats (criterium.core/bootstrap-bca
+               lst
+               (juxt criterium.stats/mean criterium.stats/variance)
+               1000
+               [0.5 0.95 0.05]
+               criterium.well/well-rng-1024a)]
+    (do
+      (prn (criterium.core/outliers lst))
+      [(first (first stats)) (Math/sqrt (first (second stats)))])))
 
 
-(defn simQuery
-  [status ^Query query agent day bid budget ^Ad ad num-ests perfectsim?]
-  (let [squashed-bid (* bid
-                        (Math/pow (((status :adv-effects) agent) query)
-                                (status :squash-param)))
-        status (assoc status :squashed-bids
-                      (assoc (status :squashed-bids) agent
-                             (if perfectsim?
-                               (assoc ((status :squashed-bids) agent) day
-                                      (assoc (((status :squashed-bids) agent) day) query squashed-bid))
-                                 [{query squashed-bid}])))
-        status (assoc status :budgets
-                      (assoc (status :budgets) agent
-                             (if perfectsim?
-                               (assoc ((status :budgets) agent) day
-                                      (assoc (assoc (((status :budgets) agent) day) query budget)
-                                        :total-budget
-                                        budget))
-                               [{query budget,
-                                :total-budget budget}])))
-        status (assoc status :ads
-                      (assoc (status :ads) agent
-                             (if perfectsim?
-                               (assoc ((status :ads) agent) day
-                                      (assoc (((status :ads) agent) day) query ad))
-                               [{query ad}])))
-                                        ;Pass in day 0 because all arrays are length 1
-        aqstatv (loop [n (int 0)
-                       aqstatsvec []]
-                  (if (not (< n num-ests))
-                    aqstatsvec
-                    (recur (inc n)
-                           (conj aqstatsvec
-                                 (((simulate-query status (if perfectsim? day 0) query) agent) query)))))]
-    (doto (new java.util.ArrayList)
-      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :imps)) aqstatv))
-                       num-ests)))
-      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :clicks)) aqstatv))
-                       num-ests)))
-      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :cost)) aqstatv))
-                       num-ests))))))
+(defn remove-outliers
+  [lst]
+  (let [mean (calc-mean lst)
+        std-dev (calc-std-dev lst mean)
+        newlst (filter (fn [x] (and (> x
+                                      (- mean
+                                         (* std-dev
+                                            4)))
+                                   (< x
+                                      (+ mean
+                                         (* std-dev
+                                            4)))))
+                       lst)]
+    (if (== (count lst) (count newlst))
+      newlst
+      (remove-outliers newlst))))
 
-(defn -simQuery
-  [status query agent day bid budget ad num-ests perfectsim?]
-  (simQuery status query agent day bid budget ad num-ests perfectsim?))
 
-(defn getActualResults
+(defn simq-dists
   [status]
-  (game-full-summary status))
-
-(defn -getActualResults
-  [status]
-  (getActualResults status))
-
-(defn printResults
-  [results]
-  (do
-    (doall
-     (map (fn [[agent resultmap]]
-            (prn agent ": "
-                 (assoc resultmap :profit
-                        (- (resultmap :revenue)
-                           (resultmap :cost)))))
-          (sort (fn [key1 key2]
-                  (compare
-                   (let [statmap (peek key2)
-                         profit (- (statmap :revenue)
-                                   (statmap :cost))]
-                     profit)
-                   (let [statmap (peek key1)
-                         profit (- (statmap :revenue)
-                                   (statmap :cost))]
-                     profit))) results)))
-    nil))
-
-(defn -printResults
-  [results]
-  (printResults results))
-
-
-(defn compareResults
-  [results
-   actual
-   agent]
-  (let [act-prof (double (- ((actual agent) :revenue)
-                            ((actual agent) :cost)))
-        res-prof (double (- ((results agent) :revenue)
-                            ((results agent) :cost)))
-        perc-diff (double (/ (- res-prof act-prof)
-                             act-prof))]
-    (prn agent "  " act-prof "->" res-prof "(" perc-diff  "%)")
-    nil))
-
-(defn -compareResults
-  [results
-   actual
-   agent]
-  (compareResults results actual agent))
-
+  (let [results (map (fn [day] (simq-indep status day)) (range 59))
+        qdiffs (flatten (map first results))
+        qdiffsrem (remove-outliers qdiffs)
+        ddiffs (vec (flatten (map peek results)))
+        ddiffsrem (remove-outliers ddiffs)]
+    (do
+      [(calc-mean-and-std ddiffsrem)
+       (calc-mean-and-std ddiffs)
+       (calc-mean-and-std qdiffsrem)
+       (calc-mean-and-std qdiffs)])))
 
 ;(use 'criterium.core)
 
@@ -1677,5 +1572,14 @@
                                         ;TODO
                                         ; add sampling to simulation
 
-;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15128.slg")
-;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15129.slg")
+(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+
+
+(defn crap
+  []
+  (doall
+   (for [x (range 15127 15150) :let [file (str "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-" x ".slg")]]
+     (do
+       (prn "File: " file)
+       (prn (doall (simq-dists (init-sim-info (tacaa.parser/parse-file file)))))))))

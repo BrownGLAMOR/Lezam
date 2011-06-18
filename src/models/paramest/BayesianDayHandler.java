@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-public class BayesianDayHandler extends ConstantsAndFunctions {
+import static models.paramest.ConstantsAndFunctions.*;
+
+public class BayesianDayHandler {
 
    double _otherAdvertiserEffects;
    double _currentEstimate;
@@ -40,21 +42,23 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
 
    // inputs defined by constructor
    Query _q;
+   QueryType _qType;
+   int _qTypeIdx;
    int _totalClicks;
    int _numberPromotedSlots;
    LinkedList<Integer> _impressionsPerSlot;
    double _ourAdvertiserEffect;
-   LinkedList<LinkedList<Ad>> _advertisersAdsAbovePerSlot;
+   LinkedList<LinkedList<Ad>> _adsAbovePerSlot;
    HashMap<Product, LinkedList<double[]>> _userStatesOfSearchingUsers; // [IS, non-IS]
    boolean _targeted;
    Product _target;
-   private double[] _c;
    int _numSlots;
+   double _weight;
+   double[] _c;
 
    public BayesianDayHandler(Query q, int totalClicks, int numSlots, int numberPromotedSlots,
                              LinkedList<Integer> impressionsPerSlot,
-                             double ourAdvertiserEffect,
-                             LinkedList<LinkedList<Ad>> advertisersAdsAbovePerSlot, // <our slot < their slots <ad>>
+                             double ourAdvertiserEffect, LinkedList<LinkedList<Ad>> adsAbovePerSlot,
                              HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers,
                              boolean targeted, Product target, double[] c) {
 
@@ -64,18 +68,21 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
       _numberPromotedSlots = numberPromotedSlots;
       _impressionsPerSlot = impressionsPerSlot;
       _ourAdvertiserEffect = ourAdvertiserEffect;
-      _advertisersAdsAbovePerSlot = advertisersAdsAbovePerSlot;
+      _adsAbovePerSlot = adsAbovePerSlot;
       _userStatesOfSearchingUsers = userStatesOfSearchingUsers;
       _targeted = targeted;
       _target = target;
-      _c = c;
+      _c = c.clone();
+      _qType = _q.getType();
+      _qTypeIdx = queryTypeToInt(_qType);
+      _otherAdvertiserEffects = _advertiserEffectBoundsAvg[_qTypeIdx];
 
-      if (_q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-         _otherAdvertiserEffects = _advertiserEffectBoundsAvg[0];
-      } else if (_q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-         _otherAdvertiserEffects = _advertiserEffectBoundsAvg[1];
-      } else {
-         _otherAdvertiserEffects = _advertiserEffectBoundsAvg[2];
+      /*
+         * Weight by the number of impressions in the sample
+         */
+      _weight = 0.0;
+      for (int i = 0; i < _impressionsPerSlot.size(); i++) {
+         _weight += _impressionsPerSlot.get(i);
       }
 
       _saw = new boolean[_numSlots];
@@ -83,37 +90,23 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
          _saw[i] = (_impressionsPerSlot.get(i) > 0);
       }
 
-      int qTypeIdx;
-      if (_q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-         qTypeIdx = 0;
-      } else if (_q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-         qTypeIdx = 1;
-      } else {
-         qTypeIdx = 2;
-      }
-
       _contProbDist = new ArrayList<Double>(NUM_DISCRETE_PROBS);
       _contProbWeights = new ArrayList<Double>(NUM_DISCRETE_PROBS);
       for (int i = 0; i < NUM_DISCRETE_PROBS; i++) {
-         _contProbDist.add(_continuationProbBounds[qTypeIdx][0] + (_continuationProbBounds[qTypeIdx][1] - _continuationProbBounds[qTypeIdx][0]) * (1.0 / (NUM_DISCRETE_PROBS - 1.0)) * i);
+         _contProbDist.add(_continuationProbBounds[_qTypeIdx][0] + (_continuationProbBounds[_qTypeIdx][1] - _continuationProbBounds[_qTypeIdx][0]) * (1.0 / (NUM_DISCRETE_PROBS - 1.0)) * i);
          _contProbWeights.add(BASE_WEIGHT);
       }
 
-      updateEstimate(_ourAdvertiserEffect, _c);
+      updateEstimate(_ourAdvertiserEffect,_c);
    }
 
-   private double otherAdvertiserConvProb() {
-      if (_q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-         return _c[0];
-      } else if (_q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-         return _c[1];
-      } else {
-         return _c[2];
-      }
+   public double otherAdvertiserConvProb() {
+      return _c[_qTypeIdx];
    }
 
    public void updateEstimate(double ourAdvertiserEffect, double[] c) {
-      _c = c;
+      _ourAdvertiserEffect = ourAdvertiserEffect;
+      _c = c.clone();
       double[] coeff = new double[_numSlots];
       for (int i = 0; i < _numSlots; i++) {
          coeff[i] = 0;
@@ -123,38 +116,37 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
          int ft = getFTargetIndex(_targeted, p, _target);
          for (int ourSlot = 0; ourSlot < _numSlots; ourSlot++) {
             if (_saw[ourSlot]) {
-               LinkedList<Ad> advertisersAboveUs = _advertisersAdsAbovePerSlot.get(ourSlot);
                double ftfp = fTargetfPro[ft][bool2int(_numberPromotedSlots >= ourSlot + 1)];
-               double theoreticalClickProb = etaClickPr(ourAdvertiserEffect, ftfp);
+               double theoreticalClickProb = etaClickPr(_ourAdvertiserEffect, ftfp);
                double IS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
                double nonIS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
+               LinkedList<Ad> advertisersAboveUs = _adsAbovePerSlot.get(ourSlot);
+               for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
+                  Ad otherAd = null;
+                  if(advertisersAboveUs.size() > 0) {
+                     otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
+                  }
+                  int ftOther = 0;
+                  if (otherAd != null) {
+                     ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
+                  }
+                  double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= (prevSlot + 1))];
+                  double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
+                  nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
+               }
                if (IS + nonIS > 0) {
                   views += IS + nonIS;
-                  if(advertisersAboveUs.size() > 0) {
-                     for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-                        Ad otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
-                        int ftOther = 0;
-                        if (otherAd != null) {
-                           ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
-                        }
-                        double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= prevSlot + 1)];
-                        double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
-                        nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
-                     }
-                  }
-                  coeff[(_numSlots - 1) - ourSlot] += (theoreticalClickProb * (IS + nonIS));
+                  coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));
                }
             }
          }
       }
 
       if (views > _totalClicks) {
-
          double total = 0.0;
          for (int i = 0; i < NUM_DISCRETE_PROBS; i++) {
             double contProb = _contProbDist.get(i);
             double clicks = calculateNumClicks(coeff, contProb);
-            assert (views > clicks);
             double prob = getBinomialProb(views, _totalClicks, clicks);
             double newProb = _contProbWeights.get(i) * prob;
             _contProbWeights.set(i, newProb);
@@ -195,8 +187,16 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
                _currentEstimate += _contProbWeights.get(i) * _contProbDist.get(i);
             }
          }
-      } else {
-         _currentEstimate = Double.NaN;
+      }
+      else {
+         _currentEstimate = _continuationProbBoundsAvg[_qTypeIdx];
+      }
+
+      if(_currentEstimate > _continuationProbBounds[_qTypeIdx][1]) {
+         _currentEstimate = _continuationProbBounds[_qTypeIdx][1];
+      }
+      else if(_currentEstimate < _continuationProbBounds[_qTypeIdx][0]) {
+         _currentEstimate = _continuationProbBounds[_qTypeIdx][0];
       }
    }
 
@@ -205,7 +205,7 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
    }
 
    public double getBinomialProb(double numImps, double numClicks, double observedClicks) {
-      return getBinomialProbUsingGaussian(numImps, numClicks / ((double) numImps), observedClicks);
+      return getBinomialProbUsingGaussian(numImps, numClicks /  numImps, observedClicks);
    }
 
    public double getBinomialProbUsingGaussian(double n, double p, double k) {
@@ -220,22 +220,15 @@ public class BayesianDayHandler extends ConstantsAndFunctions {
       double contProb2 = contProb * contProb;
       double contProb3 = contProb2 * contProb;
       double contProb4 = contProb3 * contProb;
-      clicks += coeff[4];
-      clicks += contProb * coeff[3];
+      clicks += coeff[0];
+      clicks += contProb * coeff[1];
       clicks += contProb2 * coeff[2];
-      clicks += contProb3 * coeff[1];
-      clicks += contProb4 * coeff[0];
+      clicks += contProb3 * coeff[3];
+      clicks += contProb4 * coeff[4];
       return clicks;
    }
 
    public double getInformationWeight() {
-      /*
-         * Weight by the number of impressions in the sample
-         */
-      double weight = 0.0;
-      for (int i = 0; i < _impressionsPerSlot.size(); i++) {
-         weight += _impressionsPerSlot.get(i);
-      }
-      return weight;
+      return _weight;
    }
 }

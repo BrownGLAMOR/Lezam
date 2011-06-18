@@ -4,7 +4,7 @@ import agents.AbstractAgent;
 import agents.modelbased.MCKP;
 import clojure.lang.PersistentArrayMap;
 import clojure.lang.PersistentHashMap;
-import tacaa.core;
+import tacaa.javasim;
 
 import java.util.ArrayList;
 
@@ -27,7 +27,7 @@ public class AgentSimulator {
    }
 
    public static PersistentHashMap setupSimulator(String filename) {
-      return core.setupClojureSim(filename);
+      return javasim.setupClojureSim(filename);
    }
 
    public static void simulateAgent(ArrayList<String> filenames) {
@@ -44,19 +44,19 @@ public class AgentSimulator {
             else {
                agent = new MCKP();
             }
-            PersistentArrayMap results = core.simulateAgent(cljSim, agent, agentToReplace);
-            PersistentArrayMap actual = core.getActualResults(cljSim);
+            PersistentArrayMap results = javasim.simulateAgent(cljSim, agent, agentToReplace);
+            PersistentArrayMap actual = javasim.getActualResults(cljSim);
 //            System.out.println("Results of " + filename + " Sim: \n");
 //            core.printResults(results);
 //            System.out.println("Results of " + filename + " Actual: \n");
 //            core.printResults(actual);
-            core.compareResults(results,actual,agentToReplace);
+            javasim.compareResults(results,actual,agentToReplace);
          }
       }
    }
 
    public static void main(String[] args) {
-      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15128, 15128);
+      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15129, 15129);
       simulateAgent(filenames);
    }
 

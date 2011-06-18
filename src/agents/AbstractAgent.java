@@ -240,7 +240,7 @@ public abstract class AbstractAgent extends Agent {
    public static final int MAX_F1_IMPS = 2325;
    public static final int MAX_F2_IMPS = 2221;
 
-   protected Integer _perfectStartSales = null;
+   protected int[] _perfectStartSales = null;
    
    /**
     *
@@ -359,7 +359,7 @@ public abstract class AbstractAgent extends Agent {
       _bidBundles.add(bidBundle);
    }
 
-   public void handleStartSales(int startSales) {
+   public void handleStartSales(int[] startSales) {
       _perfectStartSales = startSales;
    }
 

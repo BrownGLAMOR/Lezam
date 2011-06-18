@@ -13,7 +13,8 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    int _numSlots;
    int _numPromSlots;
    Set<Query> _queryspace;
-   HashMap<Query, BayesianQueryHandler> m_queryHandlers;
+   HashMap<Query, BayesianQueryHandler> _queryHandlers;
+   HashMap<QueryType, ReserveEstimator> _reserveHandlers;
 
    public BayesianParameterEstimation(double[] c, int ourAdvIdx, int numSlots, int numPromSlots, Set<Query> queryspace) {
       _c = c;
@@ -22,16 +23,31 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
       _numPromSlots = numPromSlots;
       _queryspace = queryspace;
 
-      m_queryHandlers = new HashMap<Query, BayesianQueryHandler>();
+      _queryHandlers = new HashMap<Query, BayesianQueryHandler>();
 
       for (Query q : _queryspace) {
-         m_queryHandlers.put(q, new BayesianQueryHandler(q, _c, _numSlots, _numPromSlots));
+         _queryHandlers.put(q, new BayesianQueryHandler(q, _c, _numSlots, _numPromSlots));
       }
+
+      _reserveHandlers = new HashMap<QueryType, ReserveEstimator>();
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(QueryType.FOCUS_LEVEL_ZERO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(QueryType.FOCUS_LEVEL_ONE,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(QueryType.FOCUS_LEVEL_TWO,queryspace));
    }
 
    @Override
-   public double[] getPrediction(Query q) {
-      return m_queryHandlers.get(q).getPredictions();
+   public double getAdvEffectPrediction(Query q) {
+      return _queryHandlers.get(q).getPredictions()[0];
+   }
+
+   @Override
+   public double getContProbPrediction(Query q) {
+      return _queryHandlers.get(q).getPredictions()[1];
+   }
+
+   @Override
+   public double getReservePrediction(QueryType qt) {
+      return _reserveHandlers.get(qt).getPrediction();
    }
 
    @Override
@@ -43,6 +59,11 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
                               HashMap<Product, HashMap<UserState, Integer>> userStates,
                               double[] c) {
 
+      for(QueryType qt : _reserveHandlers.keySet()) {
+         ReserveEstimator reserveEstimator = _reserveHandlers.get(qt);
+         reserveEstimator.updateModel(bidBundle, queryReport);
+      }
+
       for (Query q : _queryspace) {
 
          int[][] impressionMatrix = allWaterfalls.get(q);
@@ -52,54 +73,12 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
             int[] impressions = allImpressions.get(q);
 
             int impSum = 0;
-            for (int i = 0; i < impressions.length; i++) {
-               impSum += impressions[i];
+            for (int impression : impressions) {
+               impSum += impression;
             }
 
             if (impSum > 0) {
-               HashMap<String, Ad> query_ads = new HashMap<String, Ad>();
-               for (int i = 0; i < 8; i++) {
-                  if (i == _ourAdvIdx) {
-                     query_ads.put("adv" + (i + 1), bidBundle.getAd(q));
-                  } else {
-                     query_ads.put("adv" + (i + 1), queryReport.getAd(q, "adv" + (i + 1)));
-                  }
-               }
-
-               LinkedList<LinkedList<String>> advertisersAbovePerSlot = new LinkedList<LinkedList<String>>();
-               LinkedList<Integer> impressionsPerSlot = new LinkedList<Integer>();
-
-               //where are we in bid pair matrix?
-               ArrayList<Integer> aboveUs = new ArrayList<Integer>();
-               for (int agentID : order) {
-                  if (agentID == _ourAdvIdx) {
-                     //We only want advertisers above us so exit loop
-                     break;
-                  } else {
-                     aboveUs.add(agentID);
-                  }
-               }
-
-               for (int j = 0; j < _numSlots; j++) {
-                  int numImpressions = impressionMatrix[_ourAdvIdx][j];
-                  impressionsPerSlot.add(numImpressions);
-
-                  LinkedList<String> advsAbove = null;
-                  if (numImpressions != 0) {
-                     advsAbove = new LinkedList<String>();
-                     if(j > 0) {
-                        //TODO actually find the people above us...
-                        List<Integer> sublist = aboveUs.subList(0, Math.min(j,aboveUs.size()));
-                        for (Integer id : sublist) {
-                           advsAbove.add("adv" + (id + 1));
-                        }
-                     }
-                  }
-
-                  advertisersAbovePerSlot.add(advsAbove);
-               }
-
-               m_queryHandlers.get(q).update("adv" + (_ourAdvIdx + 1), queryReport, impressionsPerSlot, advertisersAbovePerSlot, query_ads, userStates, c);
+               _queryHandlers.get(q).update(_ourAdvIdx, bidBundle, queryReport, impressionMatrix,order,userStates,c);
             }
          }
       }

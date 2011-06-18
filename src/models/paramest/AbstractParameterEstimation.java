@@ -18,7 +18,9 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
    /*
      * Return the advertiser effect and continuation probabilities in the array
      */
-   public abstract double[] getPrediction(Query q);
+   public abstract double getAdvEffectPrediction(Query q);
+   public abstract double getContProbPrediction(Query q);
+   public abstract double getReservePrediction(QueryType qt);
 
    /*
      * QueryReport/SalesReport report contain information about the overall number of
