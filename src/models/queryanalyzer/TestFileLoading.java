@@ -1,8 +1,8 @@
 package models.queryanalyzer;
 
-import models.queryanalyzer.util.LoadData;
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.util.LoadData;
 
 public class TestFileLoading {
 	

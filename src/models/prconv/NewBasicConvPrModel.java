@@ -3,7 +3,7 @@ package models.prconv;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -34,8 +34,8 @@ public class NewBasicConvPrModel extends AbstractConversionModel {
             if(q2.getManufacturer() != null &&
                     q2.getComponent() != null) {
                Product prod = new Product(q2.getManufacturer(), q2.getComponent());
-               F0Users += _userModel.getPrediction(prod, UserState.F0);
-               ISUsers += _userModel.getPrediction(prod, UserState.IS);
+               F0Users += _userModel.getPrediction(prod, GameStatusHandler.UserState.F0);
+               ISUsers += _userModel.getPrediction(prod, GameStatusHandler.UserState.IS);
             }
          }
          ISeffect = F0Users / ((1 / 3.0) * ISUsers + F0Users);
@@ -51,16 +51,16 @@ public class NewBasicConvPrModel extends AbstractConversionModel {
                              q.getComponent().equals(q2.getComponent()) &&
                              q2.getManufacturer() != null)) {
                Product prod = new Product(q2.getManufacturer(), q2.getComponent());
-               F1Users += .5 * _userModel.getPrediction(prod, UserState.F1);
-               ISUsers += .5 * _userModel.getPrediction(prod, UserState.IS);
+               F1Users += .5 * _userModel.getPrediction(prod, GameStatusHandler.UserState.F1);
+               ISUsers += .5 * _userModel.getPrediction(prod, GameStatusHandler.UserState.IS);
             }
          }
          ISeffect = F1Users / ((1 / 3.0) * ISUsers + F1Users);
       }
       else if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
          Product prod = new Product(q.getManufacturer(), q.getComponent());
-         double F2Users = _userModel.getPrediction(prod, UserState.F2);
-         double ISUsers = _userModel.getPrediction(prod, UserState.IS);
+         double F2Users = _userModel.getPrediction(prod, GameStatusHandler.UserState.F2);
+         double ISUsers = _userModel.getPrediction(prod, GameStatusHandler.UserState.IS);
          ISeffect = F2Users / ((1 / 3.0) * ISUsers + F2Users);
       }
       else {

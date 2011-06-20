@@ -41,12 +41,6 @@ public class IndependentBidModel extends AbstractBidModel {
  IndependentBidModel(1	0.015391524	0.468115675	0.516492801	 2.4491271723405497)	0.049766376	1064.232
      */
 
-   /**
-    * ***********************************************************************************************************************************
-    * HOW DO YOU SELECT Y advertiser (equation 8) currently random and not the same as the current advertiser
-    * MAKE SURE THEY GIVE US EVERYONE AT SAME RANK WHEN THEY HAVE NOT YET GOTTEN RANK INFO
-    * *************************************************************************************************************************************
-    */
    private static final double aStep = Math.pow(2, (1.0 / 25.0));
    private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> bidDist;
    //	private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> predDist;
@@ -54,7 +48,7 @@ public class IndependentBidModel extends AbstractBidModel {
    //	private HashMap<Query, HashMap<String, ArrayList<Double>>> predValue;
    private double[] transProbs;
    private int numBidValues;
-   private ArrayList<Query> _query;
+   private Set<Query> _querySpace;
    private double randomJumpProb = 0.0;
    private double yesterdayProb = 0.8;
    private double nDaysAgoProb = 0.2;
@@ -64,7 +58,7 @@ public class IndependentBidModel extends AbstractBidModel {
    Set<String> _advertisers;
    private static final boolean printlns = false;
 
-   public IndependentBidModel(Set<String> advertisers, String me, int iterations, double randJump, double yesterday, double nDaysAgo, double var) {
+   public IndependentBidModel(Set<String> advertisers, String me, int iterations, double randJump, double yesterday, double nDaysAgo, double var, Set<Query> querySpace) {
 
       numIterations = iterations;
       randomJumpProb = randJump;
@@ -74,70 +68,41 @@ public class IndependentBidModel extends AbstractBidModel {
 
       _advertisers = advertisers;
 
-      if (printlns) {
-         System.out.println("Reinitializing");
-      }
-      _query = new ArrayList<Query>();
-      _query.add(new Query("flat", "dvd"));
-      _query.add(new Query("flat", "tv"));
-      _query.add(new Query("flat", "audio"));
-      _query.add(new Query("pg", "dvd"));
-      _query.add(new Query("pg", "tv"));
-      _query.add(new Query("pg", "audio"));
-      _query.add(new Query("lioneer", "dvd"));
-      _query.add(new Query("lioneer", "tv"));
-      _query.add(new Query("lioneer", "audio"));
-      _query.add(new Query(null, null));
-      _query.add(new Query("flat", null));
-      _query.add(new Query("pg", null));
-      _query.add(new Query("lioneer", null));
-      _query.add(new Query(null, "dvd"));
-      _query.add(new Query(null, "tv"));
-      _query.add(new Query(null, "audio"));
+      _querySpace = querySpace;
 
       ourAgent = me;
 
       bidDist = new HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>>();
-      //		predDist = new HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>>();
-      //		predValue = new HashMap<Query, HashMap<String, ArrayList<Double>>>();
       curValue = new HashMap<Query, HashMap<String, ArrayList<Double>>>();
       Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
-      for (Query q : _query) {
-         HashMap<String, ArrayList<ArrayList<Double>>> curStringMap = new HashMap<String, ArrayList<ArrayList<Double>>>();
-         //			HashMap<String, ArrayList<ArrayList<Double>>> curStringMapTwo = new HashMap<String, ArrayList<ArrayList<Double>>>();
-         //			HashMap<String, ArrayList<Double>> curStringMapThree = new HashMap<String, ArrayList<Double>>();
-         HashMap<String, ArrayList<Double>> curStringMapFour = new HashMap<String, ArrayList<Double>>();
-         bidDist.put(q, curStringMap);
-         //			predDist.put(q, curStringMapTwo);
-         //			predValue.put(q, curStringMapThree);
-         curValue.put(q, curStringMapFour);
+      for (Query q : _querySpace) {
+         HashMap<String, ArrayList<ArrayList<Double>>> curStringDistMap = new HashMap<String, ArrayList<ArrayList<Double>>>();
+         HashMap<String, ArrayList<Double>> curStringValMap = new HashMap<String, ArrayList<Double>>();
+         bidDist.put(q, curStringDistMap);
+         curValue.put(q, curStringValMap);
          //System.out.print("Initializing with agents: ");
          for (String s : advertisers) {
             //System.out.print(s+", ");
-            ArrayList<ArrayList<Double>> curDoubleMap = new ArrayList<ArrayList<Double>>();
-            //				ArrayList<ArrayList<Double>> curDoubleMapTwo = new ArrayList<ArrayList<Double>>();
-            //				ArrayList<Double> curDoubleALTwo = new ArrayList<Double>();
-            ArrayList<Double> curDoubleALThree = new ArrayList<Double>();
-            curStringMap.put(s, curDoubleMap);
-            //				curStringMapTwo.put(s, curDoubleMapTwo);
-            //				curStringMapThree.put(s, curDoubleALTwo);
-            curStringMapFour.put(s, curDoubleALThree);
+            ArrayList<ArrayList<Double>> curDists = new ArrayList<ArrayList<Double>>();
+            ArrayList<Double> curVals = new ArrayList<Double>();
+            curStringDistMap.put(s, curDists);
+            curStringValMap.put(s, curVals);
             numBidValues = 0;
-            ArrayList<Double> curDoubleAL = new ArrayList<Double>();
+            ArrayList<Double> curDist = new ArrayList<Double>();
             int index = 0;
             for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * aStep - 0.25) {
                if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-                  curDoubleAL.add(InitDistributions.initDistF0[index]);
+                  curDist.add(InitDistributions.initDistF0[index]);
                } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-                  curDoubleAL.add(InitDistributions.initDistF1[index]);
+                  curDist.add(InitDistributions.initDistF1[index]);
                } else if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
-                  curDoubleAL.add(InitDistributions.initDistF2[index]);
+                  curDist.add(InitDistributions.initDistF2[index]);
                }
 
                numBidValues++;
                index++;
             }
-            curDoubleMap.add(curDoubleAL);
+            curDists.add(curDist);
          }
       }
       normalizeLastDay(bidDist);
@@ -151,7 +116,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private void genCurEst() {
-      for (Query q : _query) {
+      for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
          Set<String> curStrKey = curStrHM.keySet();
          for (String s : curStrKey) {
@@ -172,13 +137,13 @@ public class IndependentBidModel extends AbstractBidModel {
       }
    }
 
-   private void normalizeAL(ArrayList<Double> transProbs2) {
+   private void normalizeAL(ArrayList<Double> transProbs) {
       double sum = 0.0;
-      for (int i = 0; i < transProbs2.size(); i++) {
-         sum += transProbs2.get(i);
+      for (int i = 0; i < transProbs.size(); i++) {
+         sum += transProbs.get(i);
       }
-      for (int i = 0; i < transProbs2.size(); i++) {
-         transProbs2.set(i, transProbs2.get(i) / sum);
+      for (int i = 0; i < transProbs.size(); i++) {
+         transProbs.set(i, transProbs.get(i) / sum);
       }
    }
 
@@ -246,7 +211,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private void normalizeLastDay(HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> toNorm) {
-      for (Query q : _query) {
+      for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> curHM = toNorm.get(q);
          Collection<ArrayList<ArrayList<Double>>> dHMs = curHM.values();
          for (ArrayList<ArrayList<Double>> curDHM : dHMs) {
@@ -302,7 +267,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private void updateProbs(HashMap<Query, HashMap<String, Integer>> ranks) {
-      for (Query q : _query) {
+      for (Query q : _querySpace) {
          HashMap<String, Integer> ranksMap = ranks.get(q);
          if (printlns) {
             System.out.println("Query: " + q.getComponent() + ", " + q.getManufacturer() + " -- ");
@@ -383,14 +348,11 @@ public class IndependentBidModel extends AbstractBidModel {
                      ArrayList<ArrayList<Double>> curDistHist = curStrHM.get(s);
                      ArrayList<Double> lastDist = curDistHist.get(curDistHist.size() - 1);
                      if (printlns) {
-                        System.out.println();
-                        System.out.println();
-                        System.out.print("Updating " + s + "From: [");
+                        System.out.print("\n\nUpdating " + s + "From: [");
                         for (int i = 0; i < numBidValues; i++) {
                            System.out.print(lastDist.get(i) + ", ");
                         }
-                        System.out.println("]");
-                        System.out.print("Updating to: ");
+                        System.out.print("]\nUpdating to: ");
                      }
                      for (int i = 0; i < numBidValues; i++) {
                         if (printlns) {
@@ -399,8 +361,7 @@ public class IndependentBidModel extends AbstractBidModel {
                         lastDist.set(i, Math.max(0, lastDist.get(i) * os.get(s).get(i)));
                      }
                      if (printlns) {
-                        System.out.println("]");
-                        System.out.println();
+                        System.out.println("]\n");
                      }
                   }
                }
@@ -414,7 +375,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private void pushForwardCurEst(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
-      for (Query q : _query) {
+      for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = bidDist.get(q);
          Set<String> curStrKey = curStrHM.keySet();
          HashMap<String, Integer> ranksMap = ranks.get(q);
@@ -508,7 +469,7 @@ public class IndependentBidModel extends AbstractBidModel {
 
    @Override
    public AbstractModel getCopy() {
-      return new IndependentBidModel(_advertisers, ourAgent, numIterations, randomJumpProb, yesterdayProb, nDaysAgoProb, normVar);
+      return new IndependentBidModel(_advertisers, ourAgent, numIterations, randomJumpProb, yesterdayProb, nDaysAgoProb, normVar,_querySpace);
    }
 
    @Override

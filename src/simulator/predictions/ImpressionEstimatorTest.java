@@ -5,7 +5,6 @@ import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.forecast.*;
 import models.queryanalyzer.iep.*;
 import models.usermodel.ParticleFilterAbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import models.usermodel.jbergParticleFilter;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -1056,20 +1055,20 @@ public class ImpressionEstimatorTest {
             }
 
 
-            List<Map<Product, Map<UserState, Integer>>> userPredictionList = null;
+            List<Map<Product, Map<GameStatusHandler.UserState, Integer>>> userPredictionList = null;
             if (TEST_USER_MODEL) {
-               userPredictionList = new ArrayList<Map<Product, Map<UserState, Integer>>>();
-               HashMap<Product, HashMap<UserState, Integer>> userDistributions = status.getUserDistributions().get(d);
+               userPredictionList = new ArrayList<Map<Product, Map<GameStatusHandler.UserState, Integer>>>();
+               HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userDistributions = status.getUserDistributions().get(d);
                for (int i = 0; i < agents.length; i++) {
                   Map<Query, Integer> totalImpMap = totalImpsMapList.get(i);
                   ParticleFilterAbstractUserModel userModel = userModelList.get(i);
                   userModel.updateModel(totalImpMap);
 
-                  Map<Product, Map<UserState, Integer>> userPredictionMap = new HashMap<Product, Map<UserState, Integer>>();
+                  Map<Product, Map<GameStatusHandler.UserState, Integer>> userPredictionMap = new HashMap<Product, Map<GameStatusHandler.UserState, Integer>>();
                   for (Product product : status.getRetailCatalog()) {
-                     HashMap<UserState, Integer> userDistProductMap = userDistributions.get(product);
-                     Map<UserState, Integer> userPredProductMap = new HashMap<UserState, Integer>();
-                     for (UserState state : UserState.values()) {
+                     HashMap<GameStatusHandler.UserState, Integer> userDistProductMap = userDistributions.get(product);
+                     Map<GameStatusHandler.UserState, Integer> userPredProductMap = new HashMap<GameStatusHandler.UserState, Integer>();
+                     for (GameStatusHandler.UserState state : GameStatusHandler.UserState.values()) {
                         int userPred = userModel.getCurrentEstimate(product, state);
                         userPredProductMap.put(state, userPred);
 
@@ -1582,19 +1581,19 @@ public class ImpressionEstimatorTest {
       int imps = 0;
 
       for (Product product : status.getRetailCatalog()) {
-         HashMap<UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
+         HashMap<GameStatusHandler.UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
          if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-            imps += userDist.get(UserState.F0);
-            imps += (1.0 / 3.0) * userDist.get(UserState.IS);
+            imps += userDist.get(GameStatusHandler.UserState.F0);
+            imps += (1.0 / 3.0) * userDist.get(GameStatusHandler.UserState.IS);
          } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
             if (product.getComponent().equals(q.getComponent()) || product.getManufacturer().equals(q.getManufacturer())) {
-               imps += (1.0 / 2.0) * userDist.get(UserState.F1);
-               imps += (1.0 / 6.0) * userDist.get(UserState.IS);
+               imps += (1.0 / 2.0) * userDist.get(GameStatusHandler.UserState.F1);
+               imps += (1.0 / 6.0) * userDist.get(GameStatusHandler.UserState.IS);
             }
          } else {
             if (product.getComponent().equals(q.getComponent()) && product.getManufacturer().equals(q.getManufacturer())) {
-               imps += userDist.get(UserState.F2);
-               imps += (1.0 / 3.0) * userDist.get(UserState.IS);
+               imps += userDist.get(GameStatusHandler.UserState.F2);
+               imps += (1.0 / 3.0) * userDist.get(GameStatusHandler.UserState.IS);
             }
          }
       }

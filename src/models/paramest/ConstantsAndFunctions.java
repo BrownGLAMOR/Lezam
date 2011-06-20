@@ -1,11 +1,14 @@
 package models.paramest;
 
+import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
+import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
 
-/**
- * @author jberg
- */
+import java.util.*;
+
+import static simulator.parser.GameStatusHandler.UserState;
+
 public class ConstantsAndFunctions {
 
    // Target Effect
@@ -37,10 +40,6 @@ public class ConstantsAndFunctions {
 
    public static final double[] _regReserveLow = {.08, .29, .46};
    public static final double[] _regReserveHigh = {.29, .46, .6};
-   
-   public static final double[] _regReserveAvg = {(_regReserveLow[0] + _regReserveHigh[0]) / 2.0,
-           (_regReserveLow[1] + _regReserveHigh[1]) / 2.0,
-           (_regReserveLow[2] + _regReserveHigh[2]) / 2.0};
 
    // first index:
    // 0 - untargeted
@@ -98,4 +97,377 @@ public class ConstantsAndFunctions {
       return probClick / (probClick + fTargetfPro - probClick * fTargetfPro);
    }
 
+   public static double getBinomialProb(double numImps, double numClicks, double observedClicks) {
+      return getBinomialProbUsingGaussian(numImps, numClicks / numImps, observedClicks);
+   }
+
+   public static double getBinomialProbUsingGaussian(double n, double p, double k) {
+      double mean = n * p;
+      double sigma2 = mean * (1.0 - p);
+      double diff = k - mean;
+      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
+   }
+
+   public static LinkedList<LinkedList<Ad>> getAdsAbovePerSlot(LinkedList<LinkedList<String>> advertisersAbovePerSlot, HashMap<String, Ad> ads) {
+      LinkedList<LinkedList<Ad>> adsAbovePerSlot = new LinkedList<LinkedList<Ad>>();
+      // for every slot
+      for (LinkedList<String> thoseAbove : advertisersAbovePerSlot) {
+         // make a linked list of Ads
+         LinkedList<Ad> adsAbove = null;
+         if(thoseAbove != null) {
+            adsAbove = new LinkedList<Ad>();
+            // for each advertiser above
+            for (String advertiser : thoseAbove) {
+               // add their add to the list
+               adsAbove.add(ads.get(advertiser));
+            }
+         }
+         adsAbovePerSlot.add(adsAbove);
+      }
+      return adsAbovePerSlot;
+   }
+
+   // Get Click Distribution
+   public static HashMap<Product, Double> getClickDist(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, int clicks, boolean ourAdTargeted, Product ourAdProduct) {
+      QueryType qt = q.getType();
+      HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
+      // for each product
+      int total = 0;
+      int totalMatching = 0;
+      int totalNotMatching = 0;
+      HashMap<Product, Double> userDist = new HashMap<Product, Double>();
+      for (Product p : userStates.keySet()) {
+         HashMap<UserState, Integer> states = userStates.get(p);
+         // add up the number of searching users
+         double searching = 0;
+         if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
+                 q.getComponent().equals(p.getComponent()) &&
+                 q.getManufacturer().equals(p.getManufacturer())) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
+                 ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
+                          (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
+         }
+
+         total += searching;
+         userDist.put(p, searching);
+         if (ourAdTargeted) {
+            if (p.equals(ourAdProduct)) {
+               totalMatching += searching;
+            } else {
+               totalNotMatching += searching;
+            }
+         }
+      }
+      // TODO split up clicks intelligently if it's targeted, else do for loop
+      // note: use totalMatching and totalNotMatching to determine how to
+      // weight the clicks. I tried to do this on paper, but the eta equation
+      // screws it up and makes it not easy. good luck?
+      for (Product p : userStates.keySet()) {
+         toreturn.put(p, 1.0 * userDist.get(p) * ((double) clicks) / ((double) total));
+      }
+      return toreturn;
+   }
+
+   // Get Impression Distribution
+   public static HashMap<Product, Double> getImpressionDist(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, int impressions) {
+      QueryType qt = q.getType();
+      HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
+      // for each product
+      int total = 0;
+      HashMap<Product, Double> userDist = new HashMap<Product, Double>();
+      for (Product p : userStates.keySet()) {
+         HashMap<UserState, Integer> states = userStates.get(p);
+         // add up the number of searching users
+         double searching = 0;
+         if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
+                 q.getComponent().equals(p.getComponent()) &&
+                 q.getManufacturer().equals(p.getManufacturer())) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
+                 ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
+                          (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
+         }
+         total += searching;
+         userDist.put(p, searching);
+      }
+      for (Product p : userStates.keySet()) {
+         toreturn.put(p, 1.0 * userDist.get(p) * ((double) impressions) / ((double) total));
+      }
+      return toreturn;
+   }
+
+   public static double[] getPrView(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+      return getViewOrIS(false,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
+   }
+
+   public static double[] getISRatio(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+      return getViewOrIS(true,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
+   }
+
+   public static double[] getViewOrIS(boolean isRatio,Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+      QueryType qt = q.getType();
+
+      double ISusers = 0.0;
+      double nonISusers = 0.0;
+      for(Product p : userStates.keySet()) {
+         HashMap<UserState, Integer> states = userStates.get(p);
+         if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
+                 q.getComponent().equals(p.getComponent()) &&
+                 q.getManufacturer().equals(p.getManufacturer())) {
+            ISusers += (1.0 / 3.0) * states.get(UserState.IS);
+            nonISusers += states.get(UserState.F2);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
+                 ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
+                          (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
+            ISusers += (1.0 / 6.0) * states.get(UserState.IS);
+            nonISusers += 0.5 * states.get(UserState.F1);
+         }
+         else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
+            ISusers += (1.0 / 3.0) * states.get(UserState.IS);
+            nonISusers += states.get(UserState.F0);
+         }
+      }
+
+      double[] prView = new double[numSlots];
+      prView[0] = 1.0;
+
+      double[] ISRatio = new double[numSlots];
+      ISRatio[0] = ISusers/(ISusers+nonISusers);
+      for(int i = 1; i < numSlots; i++) {
+         double lastPrView = prView[i-1];
+         double lastClickPr;
+         if((i-1) < numPromSlots) {
+            lastClickPr = clickPrtoE(advEffect,fTargetfPro[0][1]);
+         }
+         else {
+            lastClickPr = advEffect;
+         }
+
+         prView[i] = contProb*(lastPrView*(1-lastClickPr) + lastPrView*lastClickPr*(1.0-convProb*(1.0 - ISRatio[i-1])));
+
+         //Remove non-IS Users that converted
+         nonISusers -= lastPrView*lastClickPr*convProb*(1.0 - ISRatio[i-1]);
+
+         ISRatio[i] = ISusers/(ISusers+nonISusers);
+      }
+
+      if(isRatio) {
+         return ISRatio;
+      }
+      else {
+         return prView;
+      }
+   }
+
+   public static int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
+      ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
+      PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
+      for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
+         queue.add(impsPerAgent[order[i]]);
+      }
+
+      int lastIdx = queue.size();
+
+      while (!queue.isEmpty()) {
+         int val = queue.poll();
+         impsBeforeDropout.add(val);
+
+         if (lastIdx < impsPerAgent.length) {
+            queue.add(impsPerAgent[order[lastIdx]] + val);
+            lastIdx++;
+         }
+      }
+
+      impsBeforeDropout = removeDupes(impsBeforeDropout);
+
+      return convertListToArr(impsBeforeDropout);
+   }
+
+   public static ArrayList<Integer> removeDupes(ArrayList<Integer> list) {
+      ArrayList<Integer> arrNoDupes = new ArrayList<Integer>();
+      for (Integer val : list) {
+         if (!arrNoDupes.contains(val)) {
+            arrNoDupes.add(val);
+         }
+      }
+      return arrNoDupes;
+   }
+
+   public static int[] convertListToArr(List<Integer> integers) {
+      int[] ret = new int[integers.size()];
+      for (int i = 0; i < ret.length; i++) {
+         ret[i] = integers.get(i);
+      }
+      return ret;
+   }
+
+   public static int[][] getOrderMatrix(int[] impsPerAgent, int[] order, int[][] waterfall, int numSlots) {
+      return getOrderMatrix(getDropoutPoints(impsPerAgent,order,numSlots),impsPerAgent,order,waterfall,numSlots);
+   }
+
+   public static int[][] getOrderMatrix(int[] dropouts, int[] impsPerAgent, int[] order, int[][] waterfall, int numSlots) {
+      int[][] orders = new int[dropouts.length][order.length];
+      for (int i = 0; i < order.length; i++) {
+         orders[0][i] = order[i];
+      }
+      for (int i = 0; i < order.length; i++) {
+         int currAgent = order[i];
+         int[] ourImpsPerSlot = waterfall[currAgent];
+         int ourTotImps = impsPerAgent[currAgent];
+
+         int impsBeforeEntry = 0;
+         if(i < numSlots) {
+            int numDropsBeforeEntry = i - (numSlots - 1);
+            int dropIdx = -1;
+            //Since some dropouts have multiplicity, determine
+            //which dropout point they come in on
+            for(int k = 0; k < dropouts.length; k++) {
+               int dropImp = dropouts[k];
+               for(int l = 0; l < impsPerAgent.length; l++) {
+                  if(impsPerAgent[l] == dropImp) {
+                     numDropsBeforeEntry--;
+                  }
+               }
+               if(numDropsBeforeEntry <= 0) {
+                  dropIdx = k;
+               }
+            }
+
+            impsBeforeEntry = dropouts[dropIdx];
+         }
+
+         //Add positions for all future dropout points
+         for (int j = 1; j < dropouts.length; j++) {
+            /*
+             * Initialize all positions to -1, so we
+             * only have to set the positions that have
+             * advertisers
+             */
+            Arrays.fill(orders[j], -1);
+
+            int totalImpsSeen = dropouts[j - 1];
+            if (i < numSlots) {
+               //Started in the auction
+               if (ourTotImps <= totalImpsSeen) {
+                  //We are out of the auction, do nothing
+               } else {
+                  //Still in auction, determine position
+                  int currPos = -1;
+                  int innerImpsSeen = 0;
+                  for (int k = 0; k <= i; k++) {
+                     int idx = i - k;
+                     innerImpsSeen += ourImpsPerSlot[idx];
+                     if (totalImpsSeen < innerImpsSeen) {
+                        currPos = idx;
+                        break;
+                     }
+                  }
+                  orders[j][currPos] = currAgent;
+               }
+            } else {
+               //Started out of the auction
+               if (impsBeforeEntry > totalImpsSeen) {
+                  //We aren't in the auction yet
+                  int numDrops = 0;
+                  for(int k = 0; k < j; k++) {
+                     int dropImp = dropouts[k];
+                     for(int l = 0; l < impsPerAgent.length; l++) {
+                        if(impsPerAgent[l] == dropImp) {
+                           numDrops++;
+                        }
+                     }
+                  }
+                  orders[j][i-numDrops] = currAgent;
+               } else if ((impsBeforeEntry + ourTotImps) <= totalImpsSeen) {
+                  //We are out of the auction, do nothing
+               } else {
+                  //Still in auction, determine position
+                  int currPos = -1;
+                  int innerImpsSeen = impsBeforeEntry;
+                  for (int k = 0; k <= i; k++) {
+                     int idx = i - k;
+                     if (idx < numSlots) {
+                        innerImpsSeen += ourImpsPerSlot[idx];
+                        if (totalImpsSeen < innerImpsSeen) {
+                           currPos = idx;
+                           break;
+                        }
+                     }
+                  }
+                  orders[j][currPos] = currAgent;
+               }
+            }
+         }
+      }
+      return orders;
+   }
+
+   /*
+  Function input
+  number of slots: int slots
+
+  number of agents: int agents
+
+  order of agents: int[]
+  example: order = {1, 6, 0, 4, 3, 5, 2} means agent 1 was 1st, agent 6 2nd, 0 3rd, 4 4th, 3 5th, 5 6th, 2 7th
+  NOTE: these agents are zero numbered 0 is first... other note agents that are not in the "auction" are
+  ommitted so there might be less than 8 agents but that means the numbering must go up to the last agents
+  number -1 so if there are 6 agents in the auction the ordering numbers are 0...5
+
+  impressions: int[] impressions
+  example: impressions  = {294,22, 8, 294,294,272,286} agent 0 (not the highest slot) has 294 impressions agent 1 22... agent 6 286 impressions
+  NOTE: same as order of agents they only reflect the agents in the auction
+
+  Function output
+  This is a matrix where one direction is for each agent and the other direction is for the slot.
+  The matrix represents is the number of impressions observed at that slot for each of the agents.
+  *
+  * -gnthomps
+   */
+   public static int[][] greedyAssign(int slots, int agents, int[] order, int[] impressions) {
+      int[][] impressionsBySlot = new int[agents][slots];
+
+      int[] slotStart = new int[slots];
+      int a;
+
+      for (int i = 0; i < agents; ++i) {
+         a = order[i];
+         //System.out.println(a);
+         int remainingImp = impressions[a];
+         //System.out.println("remaining impressions "+ impressions[a]);
+         for (int s = Math.min(i + 1, slots) - 1; s >= 0; --s) {
+            if (s == 0) {
+               impressionsBySlot[a][0] = remainingImp;
+               slotStart[0] += remainingImp;
+            } else {
+               int r = slotStart[s - 1] - slotStart[s];
+               //System.out.println("agent " +a + " r = "+(slotStart[s-1] - slotStart[s]));
+               assert (r >= 0);
+               if (r < remainingImp) {
+                  remainingImp -= r;
+                  impressionsBySlot[a][s] = r;
+                  slotStart[s] += r;
+               } else {
+                  impressionsBySlot[a][s] = remainingImp;
+                  slotStart[s] += remainingImp;
+                  break;
+               }
+            }
+         }
+      }
+
+      return impressionsBySlot;
+   }
 }

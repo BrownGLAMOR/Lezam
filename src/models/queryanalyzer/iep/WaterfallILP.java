@@ -1,21 +1,11 @@
 package models.queryanalyzer.iep;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.PriorityQueue;
-
-import models.queryanalyzer.search.LDSPerm;
-
-import se.sics.tasim.is.AgentInfo;
-import ilog.concert.IloException;
-import ilog.concert.IloLinearNumExpr;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
-import ilog.concert.IloIntVar;
+import ilog.concert.*;
 import ilog.cplex.IloCplex;
-import ilog.cplex.IloCplex.IntParam;
 import ilog.cplex.IloCplex.UnknownObjectException;
+
+import java.util.Arrays;
+import java.util.PriorityQueue;
 
 
 

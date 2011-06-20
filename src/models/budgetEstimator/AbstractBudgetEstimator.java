@@ -2,7 +2,7 @@ package models.budgetEstimator;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 
@@ -14,10 +14,11 @@ public abstract class AbstractBudgetEstimator extends AbstractModel {
                                     BidBundle bidBundle,
                                     double[] convProbs,
                                     HashMap<Query, Double> contProbs,
-                                    HashMap<Query, int[]> order,
-                                    HashMap<Query, int[]> impressions,
+                                    double[] regReserves,
+                                    HashMap<Query, int[]> allOrders,
+                                    HashMap<Query, int[]> allImps,
                                     HashMap<Query, int[][]> waterfalls,
                                     HashMap<Query, double[]> bids,
-                                    HashMap<Product, HashMap<UserState, Integer>> userStates);
+                                    HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates);
 
 }

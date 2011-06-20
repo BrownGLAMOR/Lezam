@@ -31,12 +31,12 @@ public class AgentSimulator {
    }
 
    public static void simulateAgent(ArrayList<String> filenames) {
-      String[] agentsToReplace = new String[] {"tau", "TacTex", "MetroClick", "Schlemazl", "Nanda_AA", "Mertacor" };
+      String[] agentsToReplace = new String[] {"TacTex", "Schlemazl", "Mertacor" , "MetroClick", "tau", "Nanda_AA"};
       for(String agentToReplace : agentsToReplace) {
          for(String filename : filenames) {
             PersistentHashMap cljSim = setupSimulator(filename);
 
-            boolean PERFECT_SIM = true;
+            boolean PERFECT_SIM = false;
             AbstractAgent agent;
             if(PERFECT_SIM) {
                agent = new MCKP(cljSim, agentToReplace);
@@ -56,7 +56,7 @@ public class AgentSimulator {
    }
 
    public static void main(String[] args) {
-      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15129, 15129);
+      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, 15137, 15137);
       simulateAgent(filenames);
    }
 

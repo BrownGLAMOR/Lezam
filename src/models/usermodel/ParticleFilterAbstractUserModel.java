@@ -6,6 +6,7 @@ package models.usermodel;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import models.AbstractModel;
+import simulator.parser.GameStatusHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,17 +27,6 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
    public static final int NUM_PARTICLES = 1000;
 
    public static final double BASE_WEIGHT = 1.0 / NUM_PARTICLES;
-
-   /**
-    * This enum represents all the states a user
-    * can be in in TAC AA
-    *
-    * @author jberg
-    */
-   public enum UserState {
-      NS, IS, F0, F1, F2, T
-   }
-
 
    /**
     * These particles represent the current estimate of each of the user population
@@ -61,13 +51,13 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
     * two days from the current day, because we are bidding for tomorrow and there
     * is one day of lag
     */
-   public abstract int getPrediction(Product product, UserState userState);
+   public abstract int getPrediction(Product product, GameStatusHandler.UserState userState);
 
    /**
     * This method should return the current estimate for this
     * (product,state) combination given the particles
     */
-   public abstract int getCurrentEstimate(Product product, UserState userState);
+   public abstract int getCurrentEstimate(Product product, GameStatusHandler.UserState userState);
 
 
    /**
@@ -101,7 +91,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
        * particles weight the same amount)
        */
       public Particle() {
-         _state = new int[UserState.values().length];
+         _state = new int[GameStatusHandler.UserState.values().length];
          _state[0] = NUM_USERS_PER_PROD;
          _weight = BASE_WEIGHT;
          _burstHistory = new ArrayList<Boolean>();
@@ -116,15 +106,15 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
       }
 
       public Particle(int[] particle, double weight) {
-         if (particle.length != UserState.values().length) {
-            if (particle.length > UserState.values().length) {
+         if (particle.length != GameStatusHandler.UserState.values().length) {
+            if (particle.length > GameStatusHandler.UserState.values().length) {
                throw new RuntimeException("Why are you passing me a particle if too many states");
             } else {
                throw new RuntimeException("Why are you passing me a particle if too few states");
             }
          }
 
-         _state = new int[UserState.values().length];
+         _state = new int[GameStatusHandler.UserState.values().length];
          int totalUsers = 0;
          for (int i = 0; i < _state.length; i++) {
             _state[i] = particle[i];
@@ -144,15 +134,15 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
       }
 
       public Particle(int[] particle, double weight, ArrayList<Boolean> burstHistory) {
-         if (particle.length != UserState.values().length) {
-            if (particle.length > UserState.values().length) {
+         if (particle.length != GameStatusHandler.UserState.values().length) {
+            if (particle.length > GameStatusHandler.UserState.values().length) {
                throw new RuntimeException("Why are you passing me a particle if too many states");
             } else {
                throw new RuntimeException("Why are you passing me a particle if too few states");
             }
          }
 
-         _state = new int[UserState.values().length];
+         _state = new int[GameStatusHandler.UserState.values().length];
          int totalUsers = 0;
          for (int i = 0; i < _state.length; i++) {
             _state[i] = particle[i];
@@ -203,7 +193,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
          }
       }
 
-      public int getStateCount(UserState state) {
+      public int getStateCount(GameStatusHandler.UserState state) {
          return _state[state.ordinal()];
       }
 

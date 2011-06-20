@@ -12,6 +12,8 @@ import models.AbstractModel;
 import java.io.*;
 import java.util.*;
 
+import static simulator.parser.GameStatusHandler.UserState;
+
 
 public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel {
 

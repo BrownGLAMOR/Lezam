@@ -8,7 +8,7 @@ package models.querytonumimp;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,17 +63,17 @@ public class BasicQueryToNumImp extends AbstractQueryToNumImp {
             int numImps = 0;
             for (Product product : _products) {
                if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-                  numImps += _userModel.getPrediction(product, UserState.F0, day);
-                  numImps += _userModel.getPrediction(product, UserState.IS, day) / 3;
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F0, day);
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 3;
                } else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
                   if (product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-                     numImps += _userModel.getPrediction(product, UserState.F1, day) / 2;
-                     numImps += _userModel.getPrediction(product, UserState.IS, day) / 6;
+                     numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F1, day) / 2;
+                     numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 6;
                   }
                } else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
                   if (product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-                     numImps += _userModel.getPrediction(product, UserState.F2, day);
-                     numImps += _userModel.getPrediction(product, UserState.IS, day) / 3;
+                     numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F2, day);
+                     numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 3;
                   }
                }
             }

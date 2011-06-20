@@ -2,7 +2,7 @@ package models.paramest;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 
@@ -40,10 +40,9 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
      */
    public abstract boolean updateModel(QueryReport queryReport,
                                        BidBundle bidBundle,
-                                       HashMap<Query, int[]> order,
                                        HashMap<Query, int[]> impressions,
                                        HashMap<Query, int[][]> allWaterfalls,
-                                       HashMap<Product, HashMap<UserState, Integer>> userStates,
+                                       HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
                                        double[] c);
 
 }

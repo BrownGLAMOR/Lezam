@@ -1,13 +1,12 @@
 package models.queryanalyzer;
 
-import java.util.Arrays;
-
+import models.queryanalyzer.ds.QAData;
+import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.search.LDSearchOrder;
 import models.queryanalyzer.search.LDSearchOrderSmart;
 import models.queryanalyzer.util.LoadData;
 
-import models.queryanalyzer.ds.QAData;
-import models.queryanalyzer.ds.QAInstance;
+import java.util.Arrays;
 
 public class TestLDSearch {
 	

@@ -3,7 +3,7 @@ package models.prconv;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -26,16 +26,16 @@ public class BasicConvPrModel extends AbstractConversionModel {
       double ISeffect;
       Product prod = new Product("pg", "tv");
       if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-         double F0Users = _userModel.getPrediction(prod, UserState.F0, day);
-         double ISUsers = _userModel.getPrediction(prod, UserState.IS, day);
+         double F0Users = _userModel.getPrediction(prod, GameStatusHandler.UserState.F0, day);
+         double ISUsers = _userModel.getPrediction(prod, GameStatusHandler.UserState.IS, day);
          ISeffect = F0Users / ((1 / 3.0) * ISUsers + F0Users);
       } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
-         double F1Users = _userModel.getPrediction(prod, UserState.F1, day);
-         double ISUsers = _userModel.getPrediction(prod, UserState.IS, day);
+         double F1Users = _userModel.getPrediction(prod, GameStatusHandler.UserState.F1, day);
+         double ISUsers = _userModel.getPrediction(prod, GameStatusHandler.UserState.IS, day);
          ISeffect = F1Users / ((1 / 3.0) * ISUsers + F1Users);
       } else if (q.getType() == QueryType.FOCUS_LEVEL_TWO) {
-         double F2Users = _userModel.getPrediction(prod, UserState.F2, day);
-         double ISUsers = _userModel.getPrediction(prod, UserState.IS, day);
+         double F2Users = _userModel.getPrediction(prod, GameStatusHandler.UserState.F2, day);
+         double ISUsers = _userModel.getPrediction(prod, GameStatusHandler.UserState.IS, day);
          ISeffect = F2Users / ((1 / 3.0) * ISUsers + F2Users);
       } else {
          throw new RuntimeException("Malformed query");

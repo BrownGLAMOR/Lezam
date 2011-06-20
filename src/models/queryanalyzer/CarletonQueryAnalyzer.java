@@ -5,7 +5,10 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.iep.*;
+import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionAndRankEstimator;
+import models.queryanalyzer.iep.ImpressionEstimatorSample;
+import models.queryanalyzer.iep.LDSImpressionAndRankEstimator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,14 +28,14 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    private ArrayList<String> _advertisers;
    private String _ourAdvertiser;
    public final static int NUM_SLOTS = 5;
-   public int NUM_ITERATIONS_1 = 10;
+   public int NUM_ITERATIONS = 10;
    private boolean REPORT_FULLPOS_FORSELF = true;
    private boolean _isSampled;
 
-   public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters1, boolean selfAvgPosFlag, boolean isSampled) {
+   public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters, boolean selfAvgPosFlag, boolean isSampled) {
       _querySpace = querySpace;
 
-      NUM_ITERATIONS_1 = numIters1;
+      NUM_ITERATIONS = numIters;
       REPORT_FULLPOS_FORSELF = selfAvgPosFlag;
       _isSampled = isSampled;
 
@@ -62,7 +65,6 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       for (int i = 0; i < advertisers.size(); i++) {
          _advToIdx.put(advertisers.get(i), i);
       }
-
    }
 
    @Override
@@ -76,37 +78,22 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       }
    }
 
-
    @Override
    public int[] getImpressionsPrediction(Query q) {
-      int latestResultIdx = _allResults.get(q).size() - 1;
-      IEResult result = _allResults.get(q).get(latestResultIdx);
-      if(result != null) {
-         int[] impressionsPredictionsReduced = result.getSol();
-
-         //Get names of agents that appear in the IEResult
-         String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
-
-         //For each advertiser, get the impressions predictions.
-         //If an advertiser doesn't appear, their impressions prediction is 0.
-         //Create the array that we'll return.
-         int[] impressionsPredictions = new int[_advertisers.size()];
-         for (int a = 0; a < _advertisers.size(); a++) {
-            String adv = _advertisers.get(a);
-
-            for (int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
-               if (adv.equals(agentNamesReduced[aReduced])) {
-                  impressionsPredictions[a] = impressionsPredictionsReduced[aReduced];
-               }
+      int[][] waterfallPred = getImpressionRangePrediction(q);
+      if(waterfallPred != null) {
+         int[] impPred = new int[_advertisers.size()];
+         for(int i = 0; i < impPred.length; i++) {
+            for(int slot = 0; slot < NUM_SLOTS; slot++) {
+               impPred[i] += waterfallPred[i][slot];
             }
          }
-         return impressionsPredictions;
+         return impPred;
       }
       else {
          return null;
       }
    }
-
 
    @Override
    public int[] getOrderPrediction(Query q) {
@@ -116,46 +103,27 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          //Get most recent impressions predictions (IEResult)
          int[] orderPredictionsReduced = result.getOrder();
 
-         int numPadded = 0;
-         ArrayList<Integer> padRanks = new ArrayList<Integer>();
-         for(int i = 0; i < orderPredictionsReduced.length; i++) {
-            if(orderPredictionsReduced[i] == -1) {
-               padRanks.add(i);
-               numPadded++;
-            }
-         }
-
-         if(numPadded > 0) {
-            System.out.println("Padded " + numPadded + " agents in " + q);
-         }
-
          //Get names of agents that appear in the IEResult
          String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
+
+         ArrayList<String> advsLeft = new ArrayList<String>(_advertisers.size());
+         for(int i = 0; i < _advertisers.size(); i++) {
+            advsLeft.add("adv" + (i + 1));
+         }
 
          //For each advertiser, get the order predictions.
          //If an advertiser doesn't appear, their order prediction is -1.
          //Create the array that we'll return.
          int[] orderPredictions = new int[_advertisers.size()];
          Arrays.fill(orderPredictions, -1);
-         int numAdded = 0;
          for (int a = 0; a < _advertisers.size(); a++) {
             String adv = _advertisers.get(a);
-
             for (int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
                if (adv.equals(agentNamesReduced[aReduced])) {
                   for(int i = 0; i < orderPredictionsReduced.length; i++) {
                      if(orderPredictionsReduced[i] == aReduced) {
-
-                        //Determine num padded removed
-                        int numPadRem = 0;
-                        for(Integer padRank : padRanks) {
-                           if(padRank <= i) {
-                              numPadRem++;
-                           }
-                        }
-
-                        orderPredictions[i-numPadRem] = aReduced;
-                        numAdded++;
+                        orderPredictions[i] = a;
+                        advsLeft.remove("adv"+(a+1));
                         break;
                      }
                   }
@@ -167,8 +135,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          //Fill in those who weren't in the auction in order of agentID
          for (int a = 0; a < _advertisers.size(); a++) {
             if(orderPredictions[a] == -1) {
-               orderPredictions[a] = numAdded;
-               numAdded++;
+               String adv = advsLeft.remove(0);
+               orderPredictions[a] = _advToIdx.get(adv);
             }
          }
 
@@ -184,13 +152,43 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       int latestResultIdx = _allResults.get(q).size() - 1;
       IEResult result = _allResults.get(q).get(latestResultIdx);
       if(result != null) {
-         return _allImpRanges.get(q).get(latestResultIdx);
+         int[][] waterfallPredReduced = _allImpRanges.get(q).get(latestResultIdx);
+
+         //Get names of agents that appear in the IEResult
+         String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
+
+         ArrayList<String> advsLeft = new ArrayList<String>(_advertisers.size());
+         for(int i = 0; i < _advertisers.size(); i++) {
+            advsLeft.add("adv"+(i+1));
+         }
+
+         //For each advertiser, get the impressions predictions.
+         //If an advertiser doesn't appear, their impressions prediction is 0.
+         //Create the array that we'll return.
+         int[][] waterfallPred = new int[_advertisers.size()][NUM_SLOTS];
+         for(int a = 0; a < _advertisers.size(); a++) {
+            String adv = _advertisers.get(a);
+            for(int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
+               if (adv.equals(agentNamesReduced[aReduced])) {
+                  waterfallPred[a] = waterfallPredReduced[aReduced];
+                  advsLeft.remove(adv);
+                  break;
+               }
+            }
+         }
+
+         int numPadded = waterfallPredReduced.length-agentNamesReduced.length;
+         for(int i = 0; i < numPadded; i++) {
+            String adv = advsLeft.remove(0);
+            waterfallPred[_advToIdx.get(adv)] = waterfallPredReduced[agentNamesReduced.length+i];
+         }
+
+         return waterfallPred;
       }
       else {
          return null;
       }
    }
-
 
    @Override
    public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps) {
@@ -301,12 +299,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
    @Override
    public String toString() {
-      return "CarletonQueryAnalyzer(" + NUM_ITERATIONS_1 + ")";
+      return "CarletonQueryAnalyzer(" + NUM_ITERATIONS + ")";
    }
 
    @Override
    public AbstractModel getCopy() {
-      return new CarletonQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, NUM_ITERATIONS_1, REPORT_FULLPOS_FORSELF, _isSampled);
+      return new CarletonQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, NUM_ITERATIONS, REPORT_FULLPOS_FORSELF, _isSampled);
    }
 
    @Override

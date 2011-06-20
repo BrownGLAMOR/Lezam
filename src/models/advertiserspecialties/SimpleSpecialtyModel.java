@@ -280,8 +280,7 @@ public class SimpleSpecialtyModel extends AbstractModel {
 
    @Override
    public AbstractModel getCopy() {
-      // TODO Auto-generated method stub
-      return null;
+      return new SimpleSpecialtyModel();
    }
 
 }

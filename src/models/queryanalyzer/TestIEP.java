@@ -1,14 +1,12 @@
 package models.queryanalyzer;
 
-import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimatorExact;
-
-import java.util.Arrays;
-
-import models.queryanalyzer.util.LoadData;
-
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionEstimatorExact;
+import models.queryanalyzer.util.LoadData;
+
+import java.util.Arrays;
 
 public class TestIEP {
 	

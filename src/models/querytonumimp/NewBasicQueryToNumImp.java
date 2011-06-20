@@ -8,7 +8,7 @@ package models.querytonumimp;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,17 +64,17 @@ public class NewBasicQueryToNumImp extends AbstractQueryToNumImp {
          int numImps = 0;
          for (Product product : _products) {
             if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               numImps += _userModel.getPrediction(product, UserState.F0);
-               numImps += _userModel.getPrediction(product, UserState.IS) / 3.0;
+               numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F0);
+               numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS) / 3.0;
             } else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
                if (product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-                  numImps += _userModel.getPrediction(product, UserState.F1) / 2.0;
-                  numImps += _userModel.getPrediction(product, UserState.IS) / 6.0;
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F1) / 2.0;
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS) / 6.0;
                }
             } else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
                if (product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-                  numImps += _userModel.getPrediction(product, UserState.F2);
-                  numImps += _userModel.getPrediction(product, UserState.IS) / 3.0;
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.F2);
+                  numImps += _userModel.getPrediction(product, GameStatusHandler.UserState.IS) / 3.0;
                }
             }
          }

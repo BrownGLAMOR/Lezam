@@ -1084,7 +1084,7 @@
                   (loop [agent-idx (int 0)]
                     (if (not (< agent-idx num-agents))
                       nil
-                      (let [^String agent2 (agents agent-idx)
+                      (let [agent2 (agents agent-idx)
                             aqstats2 ((stats agent2) query)]
                         (.setAd qr query (str "adv" (inc agent-idx)) ^Ad (((ads agent2) day) query))
                         (.setPosition qr query (str "adv" (inc agent-idx)) (double (aqstats2 :savg-pos)))
@@ -1132,8 +1132,9 @@
         (.initBidder agent)
         (.setModels agent (.initModels agent))
         (loop [day 0
-               statslst []]
-          (if (>= day 59)
+               statslst []
+               status status]
+          (if (not (< day 59))
             (combine-stats-days (map combine-queries statslst))
             (let [start-time (. System (nanoTime))]
               (.setDay agent day)
@@ -1191,7 +1192,7 @@
                 (do
                   (.handleBidBundle agent bundle)
                   ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
-                  (recur (inc day) (conj statslst stats)))))))))))
+                  (recur (inc day) (conj statslst stats) status))))))))))
 
 
 (defn simulate-game

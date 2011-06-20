@@ -2,9 +2,10 @@ package models.paramest;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Set;
 
 public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
@@ -53,10 +54,9 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    @Override
    public boolean updateModel(QueryReport queryReport,
                               BidBundle bidBundle,
-                              HashMap<Query, int[]> allOrders,
                               HashMap<Query, int[]> allImpressions,
                               HashMap<Query, int[][]> allWaterfalls,
-                              HashMap<Product, HashMap<UserState, Integer>> userStates,
+                              HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
                               double[] c) {
 
       for(QueryType qt : _reserveHandlers.keySet()) {
@@ -69,7 +69,6 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
          int[][] impressionMatrix = allWaterfalls.get(q);
          //We can only update if we have a waterfall prediction
          if(impressionMatrix != null) {
-            int[] order = allOrders.get(q);
             int[] impressions = allImpressions.get(q);
 
             int impSum = 0;
@@ -78,7 +77,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
             }
 
             if (impSum > 0) {
-               _queryHandlers.get(q).update(_ourAdvIdx, bidBundle, queryReport, impressionMatrix,order,userStates,c);
+               _queryHandlers.get(q).update(_ourAdvIdx, bidBundle, queryReport, impressionMatrix,userStates,c);
             }
          }
       }

@@ -5,43 +5,45 @@ package models.usermodel;
  *
  */
 
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import org.apache.commons.math.linear.Array2DRowRealMatrix;
 import org.apache.commons.math.linear.ArrayRealVector;
 import org.apache.commons.math.linear.QRDecomposition;
 import org.apache.commons.math.linear.QRDecompositionImpl;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.Random;
 
+import static simulator.parser.GameStatusHandler.UserState;
+
 public class TransactedLeastSquares {
 
-   public HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
-   public HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
+   public HashMap<GameStatusHandler.UserState, HashMap<GameStatusHandler.UserState, Double>> _standardProbs;
+   public HashMap<GameStatusHandler.UserState, HashMap<GameStatusHandler.UserState, Double>> _burstProbs;
    final static double weight1 = 1.0;
    final static double weight2 = 1.0;
    final static double weight3 = 1.0;
 
 
    public TransactedLeastSquares() {
-      _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
-      _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
+      _standardProbs = new HashMap<GameStatusHandler.UserState, HashMap<GameStatusHandler.UserState, Double>>();
+      _burstProbs = new HashMap<GameStatusHandler.UserState, HashMap<GameStatusHandler.UserState, Double>>();
 
-      HashMap<UserState, Double> standardFromNSProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromISProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF0Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF1Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF2Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromTProbs = new HashMap<UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromNSProbs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromISProbs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromF0Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromF1Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromF2Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> standardFromTProbs = new HashMap<GameStatusHandler.UserState, Double>();
 
-      HashMap<UserState, Double> burstFromNSProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromISProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF0Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF1Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF2Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromTProbs = new HashMap<UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromNSProbs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromISProbs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromF0Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromF1Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromF2Probs = new HashMap<GameStatusHandler.UserState, Double>();
+      HashMap<GameStatusHandler.UserState, Double> burstFromTProbs = new HashMap<GameStatusHandler.UserState, Double>();
 
-      standardFromNSProbs.put(UserState.NS, 0.99);
+      standardFromNSProbs.put(GameStatusHandler.UserState.NS, 0.99);
       standardFromNSProbs.put(UserState.IS, 0.01);
       standardFromNSProbs.put(UserState.F0, 0.0);
       standardFromNSProbs.put(UserState.F1, 0.0);

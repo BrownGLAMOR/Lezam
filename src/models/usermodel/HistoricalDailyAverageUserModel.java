@@ -9,7 +9,7 @@ import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -68,22 +68,22 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 
          //Need to get: day(j=0), userstate(j=1), prod(j=2-3), val(j=4)
          int day = Integer.parseInt(rawVals[i][DAY_IDX].trim());
-         UserState userState = getUserState(rawVals[i][STATE_IDX]);
+         GameStatusHandler.UserState userState = getUserState(rawVals[i][STATE_IDX]);
          int prodIdx = getProdIdx(rawVals[i][MAN_IDX], rawVals[i][COMP_IDX]);//userState
          double avgImpressions = Double.parseDouble(rawVals[i][AVG_IMPS_IDX].trim());
 
 
-         if (userState == UserState.F0) {
+         if (userState == GameStatusHandler.UserState.F0) {
             F0users[prodIdx][day] = avgImpressions;
-         } else if (userState == UserState.F1) {
+         } else if (userState == GameStatusHandler.UserState.F1) {
             F1users[prodIdx][day] = avgImpressions;
-         } else if (userState == UserState.F2) {
+         } else if (userState == GameStatusHandler.UserState.F2) {
             F2users[prodIdx][day] = avgImpressions;
-         } else if (userState == UserState.IS) {
+         } else if (userState == GameStatusHandler.UserState.IS) {
             ISusers[prodIdx][day] = avgImpressions;
-         } else if (userState == UserState.T) {
+         } else if (userState == GameStatusHandler.UserState.T) {
             Tusers[prodIdx][day] = avgImpressions;
-         } else if (userState == UserState.NS) {
+         } else if (userState == GameStatusHandler.UserState.NS) {
             NSusers[prodIdx][day] = avgImpressions;
          } else {
             System.out.println("Error! User state " + userState + " doesn't exist.");
@@ -134,24 +134,24 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
    }
 
 
-   private UserState getUserState(String string) {
+   private GameStatusHandler.UserState getUserState(String string) {
       if (string.equals("F0")) {
-         return UserState.F0;
+         return GameStatusHandler.UserState.F0;
       }
       if (string.equals("F1")) {
-         return UserState.F1;
+         return GameStatusHandler.UserState.F1;
       }
       if (string.equals("F2")) {
-         return UserState.F2;
+         return GameStatusHandler.UserState.F2;
       }
       if (string.equals("Informational Search")) {
-         return UserState.IS;
+         return GameStatusHandler.UserState.IS;
       }
       if (string.equals("Non-Searching")) {
-         return UserState.NS;
+         return GameStatusHandler.UserState.NS;
       }
       if (string.equals("Transacted")) {
-         return UserState.T;
+         return GameStatusHandler.UserState.T;
       }
 
       System.out.println("Bad string! " + string + " is not a valid user state.");
@@ -159,23 +159,23 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
    }
 
    @Override
-   public int getPrediction(Product product, UserState userState, int day) {
+   public int getPrediction(Product product, GameStatusHandler.UserState userState, int day) {
       String manString = product.getManufacturer();
       String compString = product.getComponent();
       int prodIdx = getProdIdx(manString, compString);
 
 
-      if (userState == UserState.F0) {
+      if (userState == GameStatusHandler.UserState.F0) {
          return (int) F0users[prodIdx][day];
-      } else if (userState == UserState.F1) {
+      } else if (userState == GameStatusHandler.UserState.F1) {
          return (int) F1users[prodIdx][day];
-      } else if (userState == UserState.F2) {
+      } else if (userState == GameStatusHandler.UserState.F2) {
          return (int) F2users[prodIdx][day];
-      } else if (userState == UserState.IS) {
+      } else if (userState == GameStatusHandler.UserState.IS) {
          return (int) ISusers[prodIdx][day];
-      } else if (userState == UserState.T) {
+      } else if (userState == GameStatusHandler.UserState.T) {
          return (int) Tusers[prodIdx][day];
-      } else if (userState == UserState.NS) {
+      } else if (userState == GameStatusHandler.UserState.NS) {
          return (int) NSusers[prodIdx][day];
       } else {
          throw new RuntimeException("");
@@ -278,7 +278,7 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
       HistoricalDailyAverageUserModel model = new HistoricalDailyAverageUserModel();
 
       Product p = new Product("lioneer", "tv");
-      UserState u = UserState.T;
+      GameStatusHandler.UserState u = GameStatusHandler.UserState.T;
       int d = 59;
 
       System.out.println("prediction: " + model.getPrediction(p, u, d));

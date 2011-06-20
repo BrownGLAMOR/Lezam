@@ -1,12 +1,12 @@
 package models.usermodel;
 
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+
+import static simulator.parser.GameStatusHandler.UserState;
 
 public class TransactedProbUpdater {
 

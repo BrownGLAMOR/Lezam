@@ -3,7 +3,7 @@ package models.querytousermodel;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.usermodel.AbstractUserModel;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
+import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,14 +13,14 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
 
    private AbstractUserModel _userModel;
    private Set<Product> _products;
-   private HashMap<Query, HashMap<UserState, Integer>> _numUsers;
+   private HashMap<Query, HashMap<GameStatusHandler.UserState, Integer>> _numUsers;
    private Set<Query> _querySpace;
 
    public BasicQueryToUserModel(AbstractUserModel userModel) {
       _userModel = userModel;
       _products = new HashSet<Product>();
       _querySpace = new HashSet<Query>();
-      _numUsers = new HashMap<Query, HashMap<UserState, Integer>>();
+      _numUsers = new HashMap<Query, HashMap<GameStatusHandler.UserState, Integer>>();
 
       //Initialize products
       _products.add(new Product("pg", "tv"));
@@ -48,7 +48,7 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
    }
 
    @Override
-   public int getPrediction(Query q, UserState userState, int day) {
+   public int getPrediction(Query q, GameStatusHandler.UserState userState, int day) {
       //Set num impressions per query
       for (Query query : _querySpace) {
          int numIS = 0;
@@ -57,25 +57,25 @@ public class BasicQueryToUserModel extends AbstractQueryToUserModel {
          int numF2 = 0;
          for (Product product : _products) {
             if (query.getType() == QueryType.FOCUS_LEVEL_ZERO) {
-               numF0 += _userModel.getPrediction(product, UserState.F0, day);
-               numIS += _userModel.getPrediction(product, UserState.IS, day) / 3;
+               numF0 += _userModel.getPrediction(product, GameStatusHandler.UserState.F0, day);
+               numIS += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 3;
             } else if (query.getType() == QueryType.FOCUS_LEVEL_ONE) {
                if (product.getComponent().equals(query.getComponent()) || product.getManufacturer().equals(query.getManufacturer())) {
-                  numF1 += _userModel.getPrediction(product, UserState.F1, day) / 2;
-                  numIS += _userModel.getPrediction(product, UserState.IS, day) / 6;
+                  numF1 += _userModel.getPrediction(product, GameStatusHandler.UserState.F1, day) / 2;
+                  numIS += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 6;
                }
             } else if (query.getType() == QueryType.FOCUS_LEVEL_TWO) {
                if (product.getComponent().equals(query.getComponent()) && product.getManufacturer().equals(query.getManufacturer())) {
-                  numF2 += _userModel.getPrediction(product, UserState.F2, day);
-                  numIS += _userModel.getPrediction(product, UserState.IS, day) / 3;
+                  numF2 += _userModel.getPrediction(product, GameStatusHandler.UserState.F2, day);
+                  numIS += _userModel.getPrediction(product, GameStatusHandler.UserState.IS, day) / 3;
                }
             }
          }
-         HashMap<UserState, Integer> users = new HashMap<UserState, Integer>();
-         users.put(UserState.IS, numIS);
-         users.put(UserState.F0, numF0);
-         users.put(UserState.F1, numF1);
-         users.put(UserState.F2, numF2);
+         HashMap<GameStatusHandler.UserState, Integer> users = new HashMap<GameStatusHandler.UserState, Integer>();
+         users.put(GameStatusHandler.UserState.IS, numIS);
+         users.put(GameStatusHandler.UserState.F0, numF0);
+         users.put(GameStatusHandler.UserState.F1, numF1);
+         users.put(GameStatusHandler.UserState.F2, numF2);
          _numUsers.put(query, users);
       }
       return _numUsers.get(q).get(userState);

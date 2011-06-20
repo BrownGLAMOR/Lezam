@@ -16,10 +16,10 @@ package models.paramest;
  * 
  */
 
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
+import simulator.parser.GameStatusHandler;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -48,8 +48,7 @@ public class BayesianDayHandler {
    int _numberPromotedSlots;
    LinkedList<Integer> _impressionsPerSlot;
    double _ourAdvertiserEffect;
-   LinkedList<LinkedList<Ad>> _adsAbovePerSlot;
-   HashMap<Product, LinkedList<double[]>> _userStatesOfSearchingUsers; // [IS, non-IS]
+   HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> _userStates;
    boolean _targeted;
    Product _target;
    int _numSlots;
@@ -58,8 +57,7 @@ public class BayesianDayHandler {
 
    public BayesianDayHandler(Query q, int totalClicks, int numSlots, int numberPromotedSlots,
                              LinkedList<Integer> impressionsPerSlot,
-                             double ourAdvertiserEffect, LinkedList<LinkedList<Ad>> adsAbovePerSlot,
-                             HashMap<Product, LinkedList<double[]>> userStatesOfSearchingUsers,
+                             double ourAdvertiserEffect,HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
                              boolean targeted, Product target, double[] c) {
 
       _q = q;
@@ -68,8 +66,7 @@ public class BayesianDayHandler {
       _numberPromotedSlots = numberPromotedSlots;
       _impressionsPerSlot = impressionsPerSlot;
       _ourAdvertiserEffect = ourAdvertiserEffect;
-      _adsAbovePerSlot = adsAbovePerSlot;
-      _userStatesOfSearchingUsers = userStatesOfSearchingUsers;
+      _userStates = userStates;
       _targeted = targeted;
       _target = target;
       _c = c.clone();
@@ -100,54 +97,25 @@ public class BayesianDayHandler {
       updateEstimate(_ourAdvertiserEffect,_c);
    }
 
-   public double otherAdvertiserConvProb() {
-      return _c[_qTypeIdx];
-   }
-
    public void updateEstimate(double ourAdvertiserEffect, double[] c) {
       _ourAdvertiserEffect = ourAdvertiserEffect;
       _c = c.clone();
-      double[] coeff = new double[_numSlots];
-      for (int i = 0; i < _numSlots; i++) {
-         coeff[i] = 0;
-      }
-      double views = 0;
-      for (Product p : _userStatesOfSearchingUsers.keySet()) {
-         int ft = getFTargetIndex(_targeted, p, _target);
-         for (int ourSlot = 0; ourSlot < _numSlots; ourSlot++) {
-            if (_saw[ourSlot]) {
-               double ftfp = fTargetfPro[ft][bool2int(_numberPromotedSlots >= ourSlot + 1)];
-               double theoreticalClickProb = etaClickPr(_ourAdvertiserEffect, ftfp);
-               double IS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[0];
-               double nonIS = _userStatesOfSearchingUsers.get(p).get(ourSlot)[1];
-               LinkedList<Ad> advertisersAboveUs = _adsAbovePerSlot.get(ourSlot);
-               for (int prevSlot = 0; prevSlot < ourSlot; prevSlot++) {
-                  Ad otherAd = null;
-                  if(advertisersAboveUs.size() > 0) {
-                     otherAd = advertisersAboveUs.get(Math.min(prevSlot,advertisersAboveUs.size()-1));
-                  }
-                  int ftOther = 0;
-                  if (otherAd != null) {
-                     ftOther = getFTargetIndex(!otherAd.isGeneric(), p, otherAd.getProduct());
-                  }
-                  double ftfpOther = fTargetfPro[ftOther][bool2int(_numberPromotedSlots >= (prevSlot + 1))];
-                  double otherAdvertiserClickProb = etaClickPr(_otherAdvertiserEffects, ftfpOther);
-                  nonIS *= (1.0 - otherAdvertiserConvProb() * otherAdvertiserClickProb);
-               }
-               if (IS + nonIS > 0) {
-                  views += IS + nonIS;
-                  coeff[ourSlot] += (theoreticalClickProb * (IS + nonIS));
-               }
-            }
-         }
+
+      int imps = 0;
+      for (int i = 0; i < _impressionsPerSlot.size(); i++) {
+         imps += _impressionsPerSlot.get(i);
       }
 
-      if (views > _totalClicks) {
+      if (imps > _totalClicks) {
          double total = 0.0;
          for (int i = 0; i < NUM_DISCRETE_PROBS; i++) {
             double contProb = _contProbDist.get(i);
-            double clicks = calculateNumClicks(coeff, contProb);
-            double prob = getBinomialProb(views, _totalClicks, clicks);
+            double[] prView = getPrView(_q,_numSlots,_numberPromotedSlots,_advertiserEffectBoundsAvg[_qTypeIdx],contProb,_c[_qTypeIdx],_userStates);
+            double clicks = 0.0;
+            for(int slot = 0; slot < _numSlots; slot++) {
+               clicks += _impressionsPerSlot.get(slot)*prView[slot]*_ourAdvertiserEffect;
+            }
+            double prob = getBinomialProb(imps, _totalClicks, clicks);
             double newProb = _contProbWeights.get(i) * prob;
             _contProbWeights.set(i, newProb);
             total += newProb;
@@ -213,19 +181,6 @@ public class BayesianDayHandler {
       double sigma2 = mean * (1.0 - p);
       double diff = k - mean;
       return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
-   }
-
-   public double calculateNumClicks(double coeff[], double contProb) {
-      double clicks = 0.0;
-      double contProb2 = contProb * contProb;
-      double contProb3 = contProb2 * contProb;
-      double contProb4 = contProb3 * contProb;
-      clicks += coeff[0];
-      clicks += contProb * coeff[1];
-      clicks += contProb2 * coeff[2];
-      clicks += contProb3 * coeff[3];
-      clicks += contProb4 * coeff[4];
-      return clicks;
    }
 
    public double getInformationWeight() {

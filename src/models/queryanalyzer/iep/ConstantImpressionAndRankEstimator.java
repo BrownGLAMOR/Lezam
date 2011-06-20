@@ -1,7 +1,5 @@
 package models.queryanalyzer.iep;
 
-import models.queryanalyzer.ds.QAInstance;
-
 /**
  * This chooses a constant ordering of squashed bids, and tries to find impressions
  * given this ordering.

@@ -1,7 +1,6 @@
 package simulator.parser;
 
 import edu.umich.eecs.tac.props.*;
-import models.usermodel.ParticleFilterAbstractUserModel.UserState;
 import se.sics.isl.transport.Transportable;
 import se.sics.isl.util.IllegalConfigurationException;
 import se.sics.tasim.logtool.LogReader;
@@ -16,6 +15,16 @@ import java.util.*;
  */
 public class GameStatusHandler {
 
+
+   /**
+    * This enum represents all the states a user
+    * can be in in TAC AA
+    *
+    * @author jberg
+    */
+   public static enum UserState {
+      NS, IS, F0, F1, F2, T
+   }
 
    private GameStatus _gameStatus;
 

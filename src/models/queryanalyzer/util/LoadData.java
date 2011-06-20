@@ -1,11 +1,12 @@
 package models.queryanalyzer.util;
+
+import models.queryanalyzer.ds.AdvertiserInfo;
+import models.queryanalyzer.ds.QAData;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.StringTokenizer;
-
-import models.queryanalyzer.ds.AdvertiserInfo;
-import models.queryanalyzer.ds.QAData;
 
 
 public class LoadData {
