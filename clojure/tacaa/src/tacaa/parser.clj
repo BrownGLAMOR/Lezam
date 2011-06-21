@@ -8,8 +8,6 @@
                                      UserClickModel AdvertiserInfo UserPopulationState
                                      Ad Product Query QueryType)))
 
-(set! *warn-on-reflection* true)
-
 (def file "/Users/jordanberg/Documents/workspace/Clients/game1.slg")
 
 (def messages (atom []))

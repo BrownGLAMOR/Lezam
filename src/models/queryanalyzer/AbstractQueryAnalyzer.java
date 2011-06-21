@@ -18,6 +18,8 @@ public abstract class AbstractQueryAnalyzer extends AbstractModel {
 
    public abstract int[][] getImpressionRangePrediction(Query query);
 
+   public abstract HashMap<String,Boolean> getRankableMap(Query query);
+
    public abstract boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps);
 
    public abstract void setAdvertiser(String ourAdv);

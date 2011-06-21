@@ -101,7 +101,7 @@ public class JointDistBidModel extends AbstractBidModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
+   public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks, HashMap<Query, HashMap<String, Boolean>> allRankable) {
       for (Query q : _queries) {
          if (Double.isNaN(ourBid.get(q)) || ourBid.get(q) < 0) {
             ourBid.put(q, 0.0);

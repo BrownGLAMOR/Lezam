@@ -1,9 +1,6 @@
 (ns tacaa.imptune
   (:import (simulator.predictions ImpressionEstimatorTune)))
 
-(set! *warn-on-reflection* true)
-
-
 (defn random-perm
   [p1 p2 p3 p4 p5 p6 p7 p8]
   (seq (ImpressionEstimatorTune/runImpressionEstimator p1 p2 p3 p4 p5 p6 p7 p8)))

@@ -41,7 +41,7 @@ public class ImpressionEstimatorTune {
       double[] err = new double[4];
       try {
          err = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0);
+                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0,.1);
 
 
 //         err = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,

@@ -28,14 +28,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    private ArrayList<String> _advertisers;
    private String _ourAdvertiser;
    public final static int NUM_SLOTS = 5;
-   public int NUM_ITERATIONS = 10;
    private boolean REPORT_FULLPOS_FORSELF = true;
    private boolean _isSampled;
 
-   public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, int numIters, boolean selfAvgPosFlag, boolean isSampled) {
+   public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean selfAvgPosFlag, boolean isSampled) {
       _querySpace = querySpace;
 
-      NUM_ITERATIONS = numIters;
       REPORT_FULLPOS_FORSELF = selfAvgPosFlag;
       _isSampled = isSampled;
 
@@ -191,6 +189,51 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    }
 
    @Override
+   public HashMap<String,Boolean> getRankableMap(Query q) {
+      int latestResultIdx = _allResults.get(q).size() - 1;
+      IEResult result = _allResults.get(q).get(latestResultIdx);
+      if(result != null) {
+         HashMap<String,Boolean> rankable = new HashMap<String, Boolean>();
+
+         //Get most recent impressions predictions (IEResult)
+         int[] orderPredictionsReduced = result.getOrder();
+
+         //Get names of agents that appear in the IEResult
+         String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
+
+         ArrayList<String> advsLeft = new ArrayList<String>(_advertisers.size());
+         for(int i = 0; i < _advertisers.size(); i++) {
+            advsLeft.add("adv"+(i+1));
+         }
+
+         for (int a = 0; a < _advertisers.size(); a++) {
+            String adv = _advertisers.get(a);
+            for (int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
+               if (adv.equals(agentNamesReduced[aReduced])) {
+                  for(int i = 0; i < orderPredictionsReduced.length; i++) {
+                     if(orderPredictionsReduced[i] == aReduced) {
+                        rankable.put("adv"+(a+1),true);
+                        advsLeft.remove("adv"+(a+1));
+                        break;
+                     }
+                  }
+                  break;
+               }
+            }
+         }
+
+         for(String adv : advsLeft) {
+            rankable.put(adv,false);
+         }
+
+         return rankable;
+      }
+      else {
+         return null;
+      }
+   }
+
+   @Override
    public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps) {
 
       for (Query q : _querySpace) {
@@ -299,12 +342,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
    @Override
    public String toString() {
-      return "CarletonQueryAnalyzer(" + NUM_ITERATIONS + ")";
+      return "CarletonQueryAnalyzer";
    }
 
    @Override
    public AbstractModel getCopy() {
-      return new CarletonQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, NUM_ITERATIONS, REPORT_FULLPOS_FORSELF, _isSampled);
+      return new CarletonQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, REPORT_FULLPOS_FORSELF, _isSampled);
    }
 
    @Override

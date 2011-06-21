@@ -18,7 +18,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    HashMap<QueryType, ReserveEstimator> _reserveHandlers;
 
    public BayesianParameterEstimation(double[] c, int ourAdvIdx, int numSlots, int numPromSlots, Set<Query> queryspace) {
-      _c = c;
+      _c = c.clone();
       _ourAdvIdx = ourAdvIdx;
       _numSlots = numSlots;
       _numPromSlots = numPromSlots;

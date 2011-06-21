@@ -48,14 +48,22 @@
                                        edu.umich.eecs.tac.props.Ad,
                                        int,
                                        boolean] java.util.ArrayList]
+            ^{:static true} [simDay [clojure.lang.PersistentHashMap,
+                                     String,
+                                     int,
+                                     edu.umich.eecs.tac.props.BidBundle,
+                                     int,
+                                     boolean] java.util.ArrayList]
+            ^{:static true} [setStartSales [clojure.lang.PersistentHashMap,
+                                            String,
+                                            int,
+                                            int,
+                                            boolean] clojure.lang.PersistentHashMap]
             ^{:static true} [getActualResults [clojure.lang.PersistentHashMap] clojure.lang.PersistentArrayMap]
             ^{:static true} [printResults [clojure.lang.PersistentArrayMap] void]
             ^{:static true} [compareResults [clojure.lang.PersistentArrayMap
                                              clojure.lang.PersistentArrayMap
-                                             String] void]]))
-
-(set! *warn-on-reflection* true)
-
+                                             String] double]]))
 
 (defn setupClojureSim
   [^String file]
@@ -123,9 +131,9 @@
 
 
 (defn mkPerfectFullStatus
-  [^PersistentHashMap status
+  [status
    day
-   ^String agent-to-replace
+   agent-to-replace
    start-sales]
   (reduce (fn [coll agent]
             (assoc coll :start-sales
@@ -146,7 +154,7 @@
 
 
 (defn mkFullStatus
-  [^PersistentHashMap status
+  [status
    ^java.util.Map squashed-bids,
    ^java.util.Map budgets,
    ^java.util.Map user-pop,
@@ -167,8 +175,12 @@
                                    {} (keys squashed-bids)),
             :budgets (reduce (fn [coll ^String agent]
                                (assoc coll agent
-                                      [(into {} ^java.util.Map (.get budgets agent))]))
+                                      [(into {:total-budget Double/MAX_VALUE} ^java.util.Map (.get budgets agent))]))
                              {} (keys budgets)),
+            :ads (reduce (fn [coll ^String agent]
+                           (assoc coll agent
+                                  [(into {} ^java.util.Map (.get ads agent))]))
+                         {} (keys ads)),
             :adv-effects (reduce (fn [coll ^String agent]
                                    (assoc coll agent
                                           (into {} ^java.util.Map (.get adv-effects agent))))
@@ -184,11 +196,7 @@
             :capacities (reduce (fn [coll [agent val]] (assoc coll agent val)) {} capacities),
             :start-sales (reduce (fn [coll [agent val]] (assoc coll agent [val])) {} start-sales),
             :man-specialties (into {} man-specialties),
-            :comp-specialties (into {} comp-specialties),
-            :ads (reduce (fn [coll ^String agent]
-                           (assoc coll agent
-                                  [(into {} ^java.util.Map (.get ads agent))]))
-                         {} (keys ads))})))
+            :comp-specialties (into {} comp-specialties)})))
 
 (defn -mkFullStatus
   [status squashed-bids budgets user-pop adv-effects
@@ -245,6 +253,77 @@
   [status query agent day bid budget ad num-ests perfectsim?]
   (simQuery status query agent day bid budget ad num-ests perfectsim?))
 
+
+(defn simDay
+  [status,
+   agent,
+   day,
+   ^BidBundle bundle,
+   num-ests,
+   perfectsim?]
+  (let [queryspace (status :query-space)
+        status (assoc status :squashed-bids
+                      (assoc (status :squashed-bids) agent
+                             (if perfectsim?
+                               (assoc ((status :squashed-bids) agent) day
+                                      (mk-single-squashed-bid-map bundle
+                                                                  ((status :adv-effects) agent)
+                                                                  (status :squash-param)
+                                                                  queryspace))
+                               [(mk-single-squashed-bid-map bundle
+                                                                  ((status :adv-effects) agent)
+                                                                  (status :squash-param)
+                                                                  queryspace)])))
+        status (assoc status :budgets
+                      (assoc (status :budgets) agent
+                             (if perfectsim?
+                               (assoc ((status :budgets) agent) day
+                                      (mk-single-budget-map bundle queryspace))
+                               [(mk-single-budget-map bundle queryspace)])))
+        status (assoc status :ads
+                      (assoc (status :ads) agent
+                             (if perfectsim?
+                               (assoc ((status :ads) agent) day
+                                      (mk-single-ad-map bundle queryspace))
+                               [(mk-single-ad-map bundle queryspace)])))
+                                        ;Pass in day 0 because all arrays are length 1
+        astatv (loop [n (int 0)
+                       astatsvec []]
+                  (if (not (< n num-ests))
+                    astatsvec
+                    (recur (inc n)
+                           (conj astatsvec
+                                 ((simulate-expected-day status (if perfectsim? day 0)) agent)))))]
+    (doto (new java.util.ArrayList)
+      (.add (double (/ (reduce + (map (fn [astats] (astats :total-convs)) astatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [astats] (astats :total-convs)) astatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [astats] (astats :total-cost)) astatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [astats] (astats :total-convs)) astatv))
+                       num-ests))))))
+
+
+(defn -simDay
+  [status agent day bundle num-ests perfectsim?]
+  (simDay status agent day bundle num-ests perfectsim?))
+
+
+(defn setStartSales
+  [status agent day start-sales perfectsim?]
+  (assoc status :start-sales
+         (assoc (status :start-sales) agent
+                (if perfectsim?
+                  (assoc ((status :start-sales) agent) day start-sales)
+                  [start-sales]))))
+
+
+(defn -setStartSales
+  [status agent day start-sales perfectsim?]
+  (setStartSales status agent day start-sales perfectsim?))
+
+
 (defn getActualResults
   [status]
   (game-full-summary status))
@@ -286,11 +365,8 @@
   (let [act-prof (double (- ((actual agent) :revenue)
                             ((actual agent) :cost)))
         res-prof (double (- ((results agent) :revenue)
-                            ((results agent) :cost)))
-        perc-diff (double (/ (- res-prof act-prof)
-                             act-prof))]
-    (prn agent "  " act-prof "->" res-prof "(" perc-diff  "%)")
-    nil))
+                            ((results agent) :cost)))]
+    (- res-prof act-prof)))
 
 (defn -compareResults
   [results

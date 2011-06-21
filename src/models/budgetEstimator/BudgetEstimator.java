@@ -19,7 +19,6 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
    private Set<Query> _querySpace;
 
    private int numAdvertisers = 8;
-   private double[] _c;
 
    int _ourAdvIdx;
    int _numSlots;
@@ -66,8 +65,6 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            HashMap<Query, int[][]> allWaterfalls,
                            HashMap<Query, double[]> allBids,
                            HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates) {
-
-      _c = convProbs.clone();
 
       for(Query q : _querySpace) {
          int[][] waterfall = allWaterfalls.get(q);

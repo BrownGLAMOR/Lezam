@@ -32,7 +32,7 @@ public class ImpressionEstimatorTest {
 
    private static boolean DEBUG = false;
    private static boolean LOGGING = false;
-   private static boolean SUMMARY = true;
+   private static boolean SUMMARY = false;
 
    private static boolean NO_F0 = true;
 
@@ -47,7 +47,7 @@ public class ImpressionEstimatorTest {
 
    boolean CHEATING = true; //By cheating, we mean that we only pass the solver the auction participants
    private double PRIOR_STDEV_MULTIPLIER = 0.5; // 0 -> perfectPredictions. 1 -> stdev=1*meanImpsPrior
-   boolean TEST_USER_MODEL = false;  //Turns user model testing on
+   boolean TEST_USER_MODEL = true;  //Turns user model testing on
    boolean USER_MODEL_PERF_IMPS = false; //User model is perfect, not based on QA output
    boolean USER_MODEL_PERF_WHEN_IN_AUCTION = false; //this only gives us estimates in the auctions we were in (like when we use it in the game) but they are perfect
    //GameSet GAMES_TO_TEST;
@@ -108,12 +108,10 @@ public class ImpressionEstimatorTest {
       Naive, LastNonZero, SMA, EMA,
    }
 
-
-
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/pro/aa/finals2010/game-tacaa1-";   //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -296,7 +294,7 @@ public class ImpressionEstimatorTest {
     */
    public double[] impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx,
                                                           GameSet GAMES_TO_TEST, int START_GAME, int END_GAME,
-                                                          int START_DAY, int END_DAY, int START_QUERY, int END_QUERY, String AGENT_TO_TEST, int sampFrac, double IP_TIMEOUT_IN_SECONDS) throws IOException, ParseException {
+                                                          int START_DAY, int END_DAY, int START_QUERY, int END_QUERY, String AGENT_TO_TEST, int sampFrac, double IP_TIMEOUT_IN_SECONDS, double convPrMult) throws IOException, ParseException {
       //printGameLogInfo();
 
       if (USE_HISTORIC_PRIORS && USE_WATERFALL_PRIORS) {
@@ -397,7 +395,7 @@ public class ImpressionEstimatorTest {
          if (TEST_USER_MODEL) {
             userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
             for (int i = 0; i < agents.length; i++) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(0.004932699, 0.263532334, 0.045700011, 0.174371757, 0.188113883, 0.220140091);
+               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, convPrMult);
                userModelList.add(userModel);
             }
          }
@@ -1087,6 +1085,7 @@ public class ImpressionEstimatorTest {
          }
       }
 
+      System.out.println(convPrMult + ", " + totalUserModelMAE / totalUserModelPts);
       if(SUMMARY) {
          outputPerformanceMetrics();
          System.out.println("User Model Error: " + totalUserModelMAE / totalUserModelPts);
@@ -2356,7 +2355,7 @@ public class ImpressionEstimatorTest {
       double noiseFactor = 0.0;
       boolean useHistoricPriors = true;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = false;
+      boolean orderingKnown = true;
       SolverType solverToUse = SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
@@ -2364,8 +2363,8 @@ public class ImpressionEstimatorTest {
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
-      int END_GAME = 15130;
-//      int END_GAME = 15136;
+//      int END_GAME = 15127;
+      int END_GAME = 15136;
 //      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
@@ -2380,67 +2379,67 @@ public class ImpressionEstimatorTest {
       ImpressionEstimatorTest evaluator;
 
       //boolean sampleAvgPositions = true
-      if (args.length >= 7) {
-         sampleAvgPositions = new Boolean(args[0]);
-         useWaterfallPriors = new Boolean(args[1]);
-         noiseFactor = new Double(args[2]);
-         useHistoricPriors = new Boolean(args[3]);
-
-         HistoricalPriorsType[] types = HistoricalPriorsType.values();
-         for (HistoricalPriorsType type : types) {
-            if (args[4].equalsIgnoreCase(type.toString())) {
-               historicPriorsType = type;
-            }
-         }
-         if (useHistoricPriors && historicPriorsType == null) {
-            System.out.println("Error: passed historic priors type not found");
-            System.exit(0);
-         }
-
-         orderingKnown = new Boolean(args[5]);
-
-
-         SolverType[] solverTypes = SolverType.values();
-         for (SolverType solverType : solverTypes) {
-            if (args[6].equalsIgnoreCase(solverType.toString())) {
-               solverToUse = solverType;
-            }
-         }
-
-         if (args.length == 18) {
-            //Add game/day/query constraints if they were passed
-
-            GameSet[] gameSets = GameSet.values();
-            for (GameSet gameSet : gameSets) {
-               if (args[7].equalsIgnoreCase(gameSet.toString())) {
-                  GAMES_TO_TEST = gameSet;
-               }
-            }
-
-            START_GAME = new Integer(args[8]);
-            END_GAME = new Integer(args[9]);
-            START_DAY = new Integer(args[10]);
-            END_DAY = new Integer(args[11]);
-            START_QUERY = new Integer(args[12]);
-            END_QUERY = new Integer(args[13]);
-            AGENT_NAME = args[14];
-            IP_TIMEOUT_IN_SECONDS = new Double(args[15]);
-
-            sampFrac = new Integer(args[16]);
-            upperBoundNoise = new Double(args[17]);
-
-         }
-      } else {
-         if(DEBUG) {
-            System.out.println("Failed to read command line arguments. Will use defaults.");
-         }
-      }
-
-
-      if(args.length == 2) {
-         sampFrac = Integer.parseInt(args[0]);
-         upperBoundNoise = Double.parseDouble(args[1]);
-      }
+//      if (args.length >= 7) {
+//         sampleAvgPositions = new Boolean(args[0]);
+//         useWaterfallPriors = new Boolean(args[1]);
+//         noiseFactor = new Double(args[2]);
+//         useHistoricPriors = new Boolean(args[3]);
+//
+//         HistoricalPriorsType[] types = HistoricalPriorsType.values();
+//         for (HistoricalPriorsType type : types) {
+//            if (args[4].equalsIgnoreCase(type.toString())) {
+//               historicPriorsType = type;
+//            }
+//         }
+//         if (useHistoricPriors && historicPriorsType == null) {
+//            System.out.println("Error: passed historic priors type not found");
+//            System.exit(0);
+//         }
+//
+//         orderingKnown = new Boolean(args[5]);
+//
+//
+//         SolverType[] solverTypes = SolverType.values();
+//         for (SolverType solverType : solverTypes) {
+//            if (args[6].equalsIgnoreCase(solverType.toString())) {
+//               solverToUse = solverType;
+//            }
+//         }
+//
+//         if (args.length == 18) {
+//            //Add game/day/query constraints if they were passed
+//
+//            GameSet[] gameSets = GameSet.values();
+//            for (GameSet gameSet : gameSets) {
+//               if (args[7].equalsIgnoreCase(gameSet.toString())) {
+//                  GAMES_TO_TEST = gameSet;
+//               }
+//            }
+//
+//            START_GAME = new Integer(args[8]);
+//            END_GAME = new Integer(args[9]);
+//            START_DAY = new Integer(args[10]);
+//            END_DAY = new Integer(args[11]);
+//            START_QUERY = new Integer(args[12]);
+//            END_QUERY = new Integer(args[13]);
+//            AGENT_NAME = args[14];
+//            IP_TIMEOUT_IN_SECONDS = new Double(args[15]);
+//
+//            sampFrac = new Integer(args[16]);
+//            upperBoundNoise = new Double(args[17]);
+//
+//         }
+//      } else {
+//         if(DEBUG) {
+//            System.out.println("Failed to read command line arguments. Will use defaults.");
+//         }
+//      }
+//
+//
+//      if(args.length == 2) {
+//         sampFrac = Integer.parseInt(args[0]);
+//         upperBoundNoise = Double.parseDouble(args[1]);
+//      }
 
       evaluator = new ImpressionEstimatorTest(sampleAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, useHistoricPriors, historicPriorsType, orderingKnown, upperBoundNoise);
 
@@ -2478,15 +2477,15 @@ public class ImpressionEstimatorTest {
 
       double[] results;
 
-      int numSamples = 10;
+      double convPrMult = .1;
       if(args.length == 1) {
-         numSamples = Integer.parseInt(args[0]);
+         convPrMult = Double.parseDouble(args[0]);
       }
 
       results = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS);
+                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
 
-      System.out.println(numSamples + "," + results[1] + "," + results[2]);
+//      System.out.println(numSamples + "," + results[1] + "," + results[2]);
 
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
 //	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);

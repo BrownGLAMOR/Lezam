@@ -247,8 +247,10 @@ public class JointDistFilter {
 
    public void simulateDay(double ourBid, double cpc, HashMap<String, Integer> ranks) {
       resample();
-      adjustBids(ourBid, cpc, ranks);
-      recomputeDistribution(ranks);
+      if(ranks != null) {
+         adjustBids(ourBid, cpc, ranks);
+         recomputeDistribution(ranks);
+      }
    }
 
    public double getBid(String player) {

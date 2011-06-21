@@ -56,9 +56,9 @@ public class LinearComboBidModel extends AbstractBidModel {
    }
 
    @Override
-   public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks) {
+   public boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks, HashMap<Query, HashMap<String, Boolean>> allRankable) {
       for (AbstractBidModel model : _models) {
-         model.updateModel(cpc, ourBid, ranks);
+         model.updateModel(cpc, ourBid, ranks, allRankable);
       }
       return true;
    }

@@ -13,20 +13,20 @@ import models.budgetEstimator.AbstractBudgetEstimator;
 import models.budgetEstimator.BudgetEstimator;
 import models.paramest.AbstractParameterEstimation;
 import models.paramest.BayesianParameterEstimation;
-import models.prconv.NewBasicConvPrModel;
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
-import models.querytonumimp.AbstractQueryToNumImp;
-import models.querytonumimp.NewBasicQueryToNumImp;
 import models.sales.SalesDistributionModel;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
-import simulator.parser.GameStatusHandler;
 import tacaa.javasim;
 
 import java.util.*;
+
+import static models.paramest.ConstantsAndFunctions._advertiserEffectBoundsAvg;
+import static models.paramest.ConstantsAndFunctions.queryTypeToInt;
+import static simulator.parser.GameStatusHandler.UserState;
 
 public class MCKP extends AbstractAgent {
 
@@ -47,40 +47,25 @@ public class MCKP extends AbstractAgent {
    private boolean PRICELINES = true;
    private boolean UPDATE_WITH_ITEM = false;
 
+   private boolean USER_MODEL_UB = true;
+   private boolean DAY_SIM_WEIGHT_OPT = false;
+   private boolean DAY_SIM_WEIGHT_END = false;
+   private boolean RANKABLE = true;
+
    private double _safetyBudget = 950;
    private int lagDays = 2;
 
    private double[] _regReserveLow = {.08, .29, .46};
-   private double[] _regReserveHigh = {.29, .46, .6};
-   /*
-     * FIXME:
-     *
-     * We are just assuming that the reserve is half way between max and min
-     */
-   private double[] _regReserve = {(_regReserveLow[0] + _regReserveHigh[0]) / 2.0,
-           (_regReserveLow[1] + _regReserveHigh[1]) / 2.0,
-           (_regReserveLow[2] + _regReserveHigh[2]) / 2.0};
-
-   /*
-     * FIXME
-     *
-     * We are just assuming that the pro reserve is 1/2 of the promoted boost
-     * more than the regular reserve
-     */
    private double _proReserveBoost = .5;
-   private double[] _proReserve = {_regReserve[0] + _proReserveBoost * (1.0/2.0),
-           _regReserve[1] + _proReserveBoost * (1.0/2.0),
-           _regReserve[2] + _proReserveBoost * (1.0/2.0)};
 
    private HashMap<Query, Double> _baseConvProbs;
    private HashMap<Query, Double> _baseClickProbs;
    private HashMap<Query, Double> _salesPrices;
+   private double[] _ISRatio;
 
    private AbstractQueryAnalyzer _queryAnalyzer;
    private ParticleFilterAbstractUserModel _userModel;
-   private AbstractQueryToNumImp _queryToNumImp;
    private AbstractUnitsSoldModel _unitsSold;
-   private NewBasicConvPrModel _convPrModel;
    private AbstractBidModel _bidModel;
    private AbstractParameterEstimation _paramEstimation;
    private AbstractBudgetEstimator _budgetEstimator;
@@ -89,45 +74,23 @@ public class MCKP extends AbstractAgent {
    private PersistentHashMap _perfectCljSim = null;
    private String _agentToReplace;
 
-   double[][] _advertiserEffectBounds;
-
-   // Average advertiser effect
-   double[] _advertiserEffectBoundsAvg;
-
-   // Continuation Probability lower bound <> upper bound
-   double[][] _continuationProbBounds;
-
-   // Average continuation probability
-   double[] _continuationProbBoundsAvg;
-
-   // first index:
-   // 0 - untargeted
-   // 1 - targeted correctly
-   // 2 - targeted incorrectly
-   // second index:
-   // 0 - not promoted
-   // 1 - promoted
-   double[][] fTargetfPro;
-
-
-   public MCKP(String agentToReplace) {
-      this();
+   public MCKP(String agentToReplace, double c1, double c2, double c3) {
+      this(c1,c2,c3);
       _agentToReplace = agentToReplace;
    }
 
-   public MCKP(PersistentHashMap perfectSim, String agentToReplace) {
-      this();
+   public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3) {
+      this(c1,c2,c3);
       _perfectCljSim = perfectSim;
       _agentToReplace = agentToReplace;
    }
 
    public MCKP() {
-      this(0.10753988514063796,0.187966273,0.339007416);
+      this(0.03,0.13,0.25);
    }
 
    public MCKP(double c1, double c2, double c3) {
       _R = new Random();
-//		_R.setSeed(616866);
       _c = new double[3];
       _c[0] = c1;
       _c[1] = c2;
@@ -155,8 +118,9 @@ public class MCKP extends AbstractAgent {
 
          for(Query q : _querySpace) {
             contProbs.put(q,_paramEstimation.getContProbPrediction(q));
-            regReserves.put(q,_regReserve[queryTypeToInt(q.getType())]);
-            promReserves.put(q,_proReserve[queryTypeToInt(q.getType())]);
+            double regReserve = _paramEstimation.getReservePrediction(q.getType());
+            regReserves.put(q,regReserve);
+            promReserves.put(q,regReserve + _proReserveBoost*(2.0/3.0));
          }
 
          for(int i = 0; i < _advertisers.size(); i++) {
@@ -178,8 +142,8 @@ public class MCKP extends AbstractAgent {
                   aBudgets.put(q, _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1)));
                   aAdvAffects.put(q,advEffect);  //TODO estimate opponent advEffect
                   if(q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
-                     if(bid >= maxBid) {
-                        maxBid = bid;
+                     if(squashedBid >= maxBid) {
+                        maxBid = squashedBid;
                         maxQuery = q;
                      }
                   }
@@ -213,7 +177,8 @@ public class MCKP extends AbstractAgent {
 //                  remainingCap = _capacity - _unitsSold.getWindowSold();
 //               }
 //               int aStartSales = _capacity - (int)remainingCap;
-               int aStartSales = (int)(_capacity - _capacity / ((double) _capWindow));
+//               int aStartSales = (int)(_capacity - _capacity / ((double) _capWindow));
+               int aStartSales = 0;
 
                String aManSpecialties = _manSpecialty;
                String aCompSpecialties = _compSpecialty;
@@ -231,13 +196,13 @@ public class MCKP extends AbstractAgent {
          }
 
          for(Product p : _products) {
-            double[] userState = new double[GameStatusHandler.UserState.values().length];
-            userState[0] = _userModel.getPrediction(p, GameStatusHandler.UserState.NS);
-            userState[1] = _userModel.getPrediction(p, GameStatusHandler.UserState.IS);
-            userState[2] = _userModel.getPrediction(p, GameStatusHandler.UserState.F0);
-            userState[3] = _userModel.getPrediction(p, GameStatusHandler.UserState.F1);
-            userState[4] = _userModel.getPrediction(p, GameStatusHandler.UserState.F2);
-            userState[5] = _userModel.getPrediction(p, GameStatusHandler.UserState.T);
+            double[] userState = new double[UserState.values().length];
+            userState[0] = _userModel.getPrediction(p, UserState.NS);
+            userState[1] = _userModel.getPrediction(p, UserState.IS);
+            userState[2] = _userModel.getPrediction(p, UserState.F0);
+            userState[3] = _userModel.getPrediction(p, UserState.F1);
+            userState[4] = _userModel.getPrediction(p, UserState.F2);
+            userState[5] = _userModel.getPrediction(p, UserState.T);
             userPop.put(p, userState);
          }
 
@@ -245,12 +210,12 @@ public class MCKP extends AbstractAgent {
                                      promReserves, capacities, startSales, manSpecialties, compSpecialties, ads);
       }
       else {
-         return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace,(int)(_capacity - _capacity / ((double) _capWindow)));
+         return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace, 0);
       }
    }
 
    public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
-      ArrayList<Double> result;
+      ArrayList result;
       if(_perfectCljSim != null) {
          result = javasim.simQuery(cljSim,query,_agentToReplace,(int)_day,bid,budget,ad,1,true);
       }
@@ -259,49 +224,36 @@ public class MCKP extends AbstractAgent {
       }
       double[] resultArr = new double[result.size()];
       for(int i = 0; i < result.size(); i++) {
-         resultArr[i] = result.get(i);
+         resultArr[i] = (Double)result.get(i);
+      }
+      return resultArr;
+   }
+
+   public double[] simulateDay(PersistentHashMap cljSim, BidBundle bundle) {
+      ArrayList result;
+      if(_perfectCljSim != null) {
+         result = javasim.simDay(cljSim, _agentToReplace, (int) _day, bundle, 1, true);
+      }
+      else {
+         result = javasim.simDay(cljSim, _advId, (int) _day, bundle, 1, false);
+      }
+      double[] resultArr = new double[result.size()];
+      for(int i = 0; i < result.size(); i++) {
+         resultArr[i] = (Double)result.get(i);
       }
       return resultArr;
    }
 
    @Override
    public void initBidder() {
-
-      _advertiserEffectBounds = new double[][]{ { 0.2, 0.3 },
-              { 0.3, 0.4 },
-              { 0.4, 0.5 } };
-
-      // Average advertiser effect
-      _advertiserEffectBoundsAvg = new double[]{
-              (_advertiserEffectBounds[0][0] + _advertiserEffectBounds[0][1]) / 2,
-              (_advertiserEffectBounds[1][0] + _advertiserEffectBounds[1][1]) / 2,
-              (_advertiserEffectBounds[2][0] + _advertiserEffectBounds[2][1]) / 2 };
-
-      // Continuation Probability lower bound <> upper bound
-      _continuationProbBounds = new double[][]{ { 0.2, 0.5 },
-              { 0.3, 0.6 },
-              { 0.4, 0.7 } };
-
-      // Average continuation probability
-      _continuationProbBoundsAvg = new double[]{
-              (_continuationProbBounds[0][0] + _continuationProbBounds[0][1]) / 2,
-              (_continuationProbBounds[1][0] + _continuationProbBounds[1][1]) / 2,
-              (_continuationProbBounds[2][0] + _continuationProbBounds[2][1]) / 2 };
-
-      // first index:
-      // 0 - untargeted
-      // 1 - targeted correctly
-      // 2 - targeted incorrectly
-      // second index:
-      // 0 - not promoted
-      // 1 - promoted
-      fTargetfPro = new double[][]{ { (1.0), (1.0) * (1.0 + _PSB) },
-              { (1.0 + _targEffect), (1.0 + _targEffect) * (1.0 + _PSB) },
-              { (1.0) / (1.0 + _targEffect), ((1.0) / (1.0 + _targEffect)) * (1.0 + _PSB) } };
-
       _baseConvProbs = new HashMap<Query, Double>();
       _baseClickProbs = new HashMap<Query, Double>();
       _salesPrices = new HashMap<Query,Double>();
+
+      _ISRatio = new double[_numSlots];
+      for(int i = 0; i < _numSlots; i++) {
+         _ISRatio[i] = 1.0;
+      }
 
       for(Query q : _querySpace) {
 
@@ -369,21 +321,18 @@ public class MCKP extends AbstractAgent {
          *
          * re-tune all parameters on new data sets
          */
-      _queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,10,true,true);
-      _userModel = new jbergParticleFilter(0.004932699,0.263532334,0.045700011,0.174371757,0.188113883,0.220140091);
-      _queryToNumImp = new NewBasicQueryToNumImp(_userModel);
+      _queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
+      _userModel = new jbergParticleFilter(_c,0.1);
       _unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
-      _convPrModel = new NewBasicConvPrModel(_userModel, _querySpace, _baseConvProbs);
-      _bidModel = new IndependentBidModel(_advertisersSet, _advId,1,0,.8,.2,2.0,_querySpace);
+      _bidModel = new IndependentBidModel(_advertisersSet, _advId,1,.1,.5,.4,1.9,_querySpace);
+//      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
       _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _querySpace);
       _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS);
       _salesDist = new SalesDistributionModel(_querySpace);
 
       models.add(_queryAnalyzer);
       models.add(_userModel);
-      models.add(_queryToNumImp);
       models.add(_unitsSold);
-      models.add(_convPrModel);
       models.add(_bidModel);
       models.add(_paramEstimation);
       models.add(_budgetEstimator);
@@ -471,7 +420,7 @@ public class MCKP extends AbstractAgent {
                   }
                }
                else {
-                  double increment  = .15;
+                  double increment  = .1;
                   double min = _regReserveLow[queryTypeToInt(q.getType())];
                   double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q);
                   int tot = (int) Math.ceil((max-min) / increment);
@@ -488,7 +437,7 @@ public class MCKP extends AbstractAgent {
 
                ArrayList<Double> budgetList = new ArrayList<Double>();
 //               budgetList.add(25.0);
-               budgetList.add(50.0);
+//               budgetList.add(50.0);
 //               budgetList.add(75.0);
                budgetList.add(100.0);
 //               budgetList.add(150.0);
@@ -521,7 +470,7 @@ public class MCKP extends AbstractAgent {
                ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
                debug("Knapsack Building Query: " + q);
                double convProbWithPen = getConversionPrWithPenalty(q, penalty);
-               double convProb = _convPrModel.getPrediction(q);
+               double convProb = getConversionPrWithPenalty(q, 1.0);
                double salesPrice = _salesPrices.get(q);
                int itemCount = 0;
                for(int k = 0; k < 1; k++) {
@@ -532,7 +481,6 @@ public class MCKP extends AbstractAgent {
                         double bid = bidLists.get(q).get(i);
                         double budget = budgetLists.get(q).get(j);
                         Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
-
 
                         double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
                         double numImps = impsClicksAndCost[0];
@@ -563,13 +511,6 @@ public class MCKP extends AbstractAgent {
                            convProb = 0.0;
                         }
 
-                        debug("\tBid: " + bid);
-                        debug("\tCPC: " + CPC);
-                        debug("\tNumImps: " + numImps);
-                        debug("\tNumClicks: " + numClicks);
-                        debug("\tClickPr: " + clickPr);
-                        debug("\tConv Prob: " + convProb + "\n\n");
-
                         double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
                         double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
                         itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
@@ -595,8 +536,16 @@ public class MCKP extends AbstractAgent {
             }
          }
 
+         PersistentHashMap daySim;
+         if(_perfectCljSim != null) {
+            daySim = javasim.setStartSales(querySim, _agentToReplace, (int) _day, (int) (_capacity - remainingCap), true);
+         }
+         else {
+            daySim = javasim.setStartSales(querySim, _advId, (int) _day, (int) (_capacity - remainingCap), false);
+         }
+
          Collections.sort(allIncItems);
-         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap);
+         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
 
          //set bids
          for(Query q : _querySpace) {
@@ -652,8 +601,16 @@ public class MCKP extends AbstractAgent {
          /*
              * Pass expected conversions to unit sales model
              */
-
-         double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
+         double solutionWeight;
+         if(DAY_SIM_WEIGHT_END) {
+            double[] results = simulateDay(daySim,bidBundle);
+            solutionWeight = results[3];
+//            System.out.println("We expect to get " + (int)solutionWeight + "/" + (int)solutionWeight(remainingCap,solution,allPredictionsMap) + " conversions");
+         }
+         else {
+            solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
+//            System.out.println("We expect to get " + (int)solutionWeight + " conversions");
+         }
          ((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) solutionWeight);
       }
       else {
@@ -662,7 +619,7 @@ public class MCKP extends AbstractAgent {
              */
          for(Query q : _querySpace){
             if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-               double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .35, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
+               double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .25, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .85);
                bidBundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
             }
             else {
@@ -687,19 +644,31 @@ public class MCKP extends AbstractAgent {
       return bidBundle;
    }
 
-   // Turns a query type into 0/1/2
-   int queryTypeToInt(QueryType qt) {
-      if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-         return 0;
+   private BidBundle mkBundleFromKnapsack(HashMap<Query,Item> solution) {
+      BidBundle bundle = new BidBundle();
+      for(Query q : _querySpace) {
+         if(solution.containsKey(q)) {
+            Item item = solution.get(q);
+            double bid = item.b();
+            double budget = item.budget();
+
+            if(solution.get(q).targ()) {
+               bundle.setBid(q, bid);
+               bundle.setAd(q, getTargetedAd(q,_manSpecialty,_compSpecialty));
+            }
+            else {
+               bundle.addQuery(q, bid, new Ad());
+            }
+            bundle.setDailyLimit(q, budget);
+         }
+         else {
+            bundle.setBid(q,0.0);
+            bundle.setAd(q, new Ad());
+            bundle.setDailyLimit(q, Double.MAX_VALUE);
+         }
       }
-      if (qt.equals(QueryType.FOCUS_LEVEL_ONE)) {
-         return 1;
-      }
-      if (qt.equals(QueryType.FOCUS_LEVEL_TWO)) {
-         return 2;
-      }
-      System.out.println("Error in queryTypeToInt");
-      return 2;
+      bundle.setCampaignDailySpendLimit(Double.MAX_VALUE);
+      return bundle;
    }
 
    private ArrayList<Double> removeDupes(ArrayList<Double> bids) {
@@ -753,30 +722,36 @@ public class MCKP extends AbstractAgent {
    @Override
    public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
-      System.out.println("Updating models on day " + _day);
+//      System.out.println("Updating models on day " + _day);
       if(_perfectCljSim == null) {
          BidBundle bidBundle = _bidBundles.get(_bidBundles.size()-2);
 
-         //TODO better upper bounds
-         _maxImps = new HashMap<Query,Integer>();
-         for(Query q : _querySpace) {
-            int numImps;
-            if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-               numImps = MAX_F0_IMPS;
+         if(!USER_MODEL_UB) {
+            _maxImps = new HashMap<Query,Integer>();
+            for(Query q : _querySpace) {
+               int numImps;
+               if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+                  numImps = MAX_F0_IMPS;
+               }
+               else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+                  numImps = MAX_F1_IMPS;
+               }
+               else {
+                  numImps = MAX_F2_IMPS;
+               }
+               _maxImps.put(q, numImps);
             }
-            else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
-               numImps = MAX_F1_IMPS;
-            }
-            else {
-               numImps = MAX_F2_IMPS;
-            }
-            _maxImps.put(q, numImps);
+         }
+         else {
+            HashMap<Product,HashMap<UserState,Integer>> preUpdateUserStates = getUserStates(_userModel);
+            _maxImps = getMaxImpsPred(preUpdateUserStates,_querySpace);
          }
 
          _queryAnalyzer.updateModel(queryReport, bidBundle, _maxImps);
 
          HashMap<Query,Integer> totalImpressions = new HashMap<Query,Integer>();
          HashMap<Query, HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
+         HashMap<Query, HashMap<String, Boolean>> rankables = new HashMap<Query,HashMap<String,Boolean>>(); //Agents that are padded or not in the auction are *not* rankable
          HashMap<Query,int[]> fullOrders = new HashMap<Query,int[]>();
          HashMap<Query,int[]> fullImpressions = new HashMap<Query,int[]>();
          HashMap<Query,int[][]> fullWaterfalls = new HashMap<Query, int[][]>();
@@ -818,21 +793,26 @@ public class MCKP extends AbstractAgent {
             }
             ranks.put(q, perQRanks);
 //            System.out.println("perQRanks: " + perQRanks);
+
+
+            HashMap<String, Boolean> rankable = null;
+            if(waterfallPred != null) {
+               if(RANKABLE) {
+                  rankable = _queryAnalyzer.getRankableMap(q);
+               }
+               else {
+                  rankable = new HashMap<String,Boolean>();
+                  for(int i = 0; i < _advertisers.size(); i++) {
+                     rankable.put("adv"+(i+1),true);
+                  }
+               }
+            }
+            rankables.put(q,rankable);
          }
 
          _userModel.updateModel(totalImpressions);
 
-         HashMap<Product,HashMap<GameStatusHandler.UserState,Integer>> userStates = new HashMap<Product,HashMap<GameStatusHandler.UserState,Integer>>();
-         for(Product p : _products) {
-            HashMap<GameStatusHandler.UserState,Integer> userState = new HashMap<GameStatusHandler.UserState,Integer>();
-            for(GameStatusHandler.UserState s : GameStatusHandler.UserState.values()) {
-               userState.put(s, _userModel.getCurrentEstimate(p, s));
-            }
-            userStates.put(p, userState);
-         }
-
-         _queryToNumImp.updateModel(queryReport, salesReport);
-         _convPrModel.updateModel(queryReport, salesReport,bidBundle);
+         HashMap<Product,HashMap<UserState,Integer>> userStates = getUserStates(_userModel);
 
          _paramEstimation.updateModel(queryReport, bidBundle, fullImpressions, fullWaterfalls, userStates, _c);
 
@@ -842,7 +822,7 @@ public class MCKP extends AbstractAgent {
             cpc.put(q, queryReport.getCPC(q));
             ourBid.put(q, bidBundle.getBid(q));
          }
-         _bidModel.updateModel(cpc, ourBid, ranks);
+         _bidModel.updateModel(cpc, ourBid, ranks, rankables);
 
          HashMap<Query,Double> contProbs = new HashMap<Query,Double>();
          HashMap<Query, double[]> allbids = new HashMap<Query,double[]>();
@@ -862,11 +842,53 @@ public class MCKP extends AbstractAgent {
             allbids.put(q, bids);
          }
 
-         _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, _regReserve, fullOrders,fullImpressions,fullWaterfalls, allbids, userStates);
+         double[] regReserve = new double[3];
+         regReserve[0] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_ZERO);
+         regReserve[1] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_ONE);
+         regReserve[2] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_TWO);
+
+         _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, regReserve, fullOrders,fullImpressions,fullWaterfalls, allbids, userStates);
 
          _salesDist.updateModel(salesReport);
          _unitsSold.update(salesReport);
       }
+   }
+
+   public HashMap<Product,HashMap<UserState,Integer>> getUserStates(ParticleFilterAbstractUserModel userModel) {
+      HashMap<Product,HashMap<UserState,Integer>> userStates = new HashMap<Product,HashMap<UserState,Integer>>();
+      for(Product p : _products) {
+         HashMap<UserState,Integer> userState = new HashMap<UserState,Integer>();
+         for(UserState s : UserState.values()) {
+            userState.put(s, userModel.getCurrentEstimate(p, s));
+         }
+         userStates.put(p, userState);
+      }
+      return userStates;
+   }
+
+   public static HashMap<Query,Integer> getMaxImpsPred(HashMap<Product,HashMap<UserState,Integer>> userStates, Set<Query> querySpace) {
+      HashMap<Query,Integer> maxImps = new HashMap<Query, Integer>(querySpace.size());
+      for (Query q : querySpace) {
+         int numImps = 0;
+         for (Product p : userStates.keySet()) {
+            if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+               numImps += userStates.get(p).get(UserState.F0);
+               numImps += 1.2 * userStates.get(p).get(UserState.IS) / 3.0;
+            } else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+               if (p.getComponent().equals(q.getComponent()) || p.getManufacturer().equals(q.getManufacturer())) {
+                  numImps += userStates.get(p).get(UserState.F1) / 2.0;
+                  numImps += 1.2 * userStates.get(p).get(UserState.IS) / 6.0;
+               }
+            } else if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
+               if (p.getComponent().equals(q.getComponent()) && p.getManufacturer().equals(q.getManufacturer())) {
+                  numImps += userStates.get(p).get(UserState.F2);
+                  numImps += 1.2 * userStates.get(p).get(UserState.IS) / 3.0;
+               }
+            }
+         }
+         maxImps.put(q, numImps);
+      }
+      return maxImps;
    }
 
    public double getPenalty(double remainingCap, double solutionWeight) {
@@ -913,8 +935,20 @@ public class MCKP extends AbstractAgent {
       return penalty;
    }
 
-   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int numDays) {
-      double totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int numDays, PersistentHashMap daySim) {
+
+      double totalWeight;
+      double weightMult;
+      if(DAY_SIM_WEIGHT_OPT) {
+         double[] results = simulateDay(daySim,mkBundleFromKnapsack(solution));
+         totalWeight = results[3];
+         weightMult = totalWeight / solutionWeight(remainingCap, solution, allPredictionsMap);
+      }
+      else {
+         totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+         weightMult = 1.0;
+      }
+
       double penalty = getPenalty(remainingCap, totalWeight);
 
       double totalValue = 0;
@@ -966,7 +1000,7 @@ public class MCKP extends AbstractAgent {
                expectedBudget -= soldArray.get(soldArray.size()-1-j);
             }
 
-            double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap);
+            double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap)*weightMult;
             soldArray.add((int) numSales);
 
             double penaltyNew = getPenalty(expectedBudget, numSales);
@@ -1097,32 +1131,38 @@ public class MCKP extends AbstractAgent {
       return solutionWeight(budget, solution, allPredictionsMap, null);
    }
 
-
-   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, PersistentHashMap daySim){
       HashMap<Query,Item> solution = new HashMap<Query, Item>();
-
       int expectedConvs = 0;
-
+      double[] lastSolVal = null;
+      double minOverCap = .2*_capacity;
       for(int i = 0; i < incItems.size(); i++) {
          IncItem ii = incItems.get(i);
          double itemWeight = ii.w();
          //			double itemValue = ii.v();
-         if(budget >= expectedConvs + itemWeight) {
+         if((budget + minOverCap) >= (expectedConvs + itemWeight)) {
             solution.put(ii.item().q(), ii.item());
             expectedConvs += itemWeight;
          }
          else {
-            double[] currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap, 20);
+            double[] currSolVal;
+            if(lastSolVal != null) {
+               currSolVal = lastSolVal;
+            }
+            else {
+               currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap, 10, daySim);
+            }
 
             HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>)solution.clone();
             solutionCopy.put(ii.item().q(), ii.item());
-            double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap, 20);
+            double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap, 10, daySim);
 
             //				System.out.println("[" + _day +"] CurrSolVal: " + currSolVal[0] + ", NewSolVal: " + newSolVal[0]);
 
             if(newSolVal[0] > currSolVal[0]) {
                solution.put(ii.item().q(), ii.item());
-               expectedConvs = (int) newSolVal[1];
+               expectedConvs += ii.w();
+               lastSolVal = newSolVal;
 
                if(i != incItems.size() - 1) {
                   /*
@@ -1138,7 +1178,7 @@ public class MCKP extends AbstractAgent {
                         Predictions prediction1 = allPredictionsMap.get(nextItem.item().q()).get(nextItem.itemLow().idx());
                         Predictions prediction2 = allPredictionsMap.get(nextItem.item().q()).get(nextItem.itemHigh().idx());
                         v = prediction2.getClickPr()*prediction2.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction2.getCPC()) -
-                                (prediction1.getClickPr()*prediction1.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction1.getCPC())) ;
+                                (prediction1.getClickPr()*prediction1.getNumImp()*(getConversionPrWithPenalty(nextItem.item().q(), penalty)*_salesPrices.get(nextItem.item().q()) - prediction1.getCPC()));
                         w = prediction2.getClickPr()*prediction2.getNumImp()*getConversionPrWithPenalty(nextItem.item().q(), penalty) -
                                 (prediction1.getClickPr()*prediction1.getNumImp()*getConversionPrWithPenalty(nextItem.item().q(), penalty));
                      }
@@ -1336,16 +1376,18 @@ public class MCKP extends AbstractAgent {
    public double getConversionPrWithPenalty(Query q, double penalty) {
       double convPr;
       String component = q.getComponent();
-      double pred = _convPrModel.getPrediction(q);
+      double baseConvPr = _baseConvProbs.get(q);
       if(_compSpecialty.equals(component)) {
-         convPr = eta(pred*penalty,1+_CSB);
+         convPr = eta(baseConvPr*penalty,1+_CSB);
       }
       else if(component == null) {
-         convPr = eta(pred*penalty,1+_CSB) * (1/3.0) + pred*penalty*(2/3.0);
+         convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);
       }
       else {
-         convPr = pred*penalty;
+         convPr = baseConvPr*penalty;
       }
+      //TODO use the slot to determine better ISRatio
+      convPr *= _ISRatio[0];
       return convPr;
    }
 

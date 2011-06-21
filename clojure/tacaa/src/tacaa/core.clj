@@ -1,6 +1,8 @@
 (ns tacaa.core
   (:require (tacaa parser)
-            (criterium core stats well))
+            (criterium core stats well)
+            ;(incanter core charts stats datasets)
+            )
   (:import (java.util Random)
            (simulator.parser GameStatusHandler)
            (agents AbstractAgent)
@@ -11,9 +13,6 @@
                                      Query Product Ad UserClickModel
                                      AdvertiserInfo PublisherInfo
                                      SlotInfo QueryType RetailCatalog)))
-
-(set! *warn-on-reflection* true)
-
 
 (defn calc-mean
   [lst]
@@ -1135,7 +1134,24 @@
                statslst []
                status status]
           (if (not (< day 59))
-            (combine-stats-days (map combine-queries statslst))
+            (let [convs (map (fn [stats] (stats-get-convs status stats agent-to-replace)) statslst)
+                  cap ((status :capacities) agent-to-replace)
+                  sales-window (status :sales-window)
+                  convsma (moving-sum sales-window (concat (replicate (dec sales-window)
+                                                                     (/ cap sales-window))
+                                                          convs))]
+              (comment (doto
+                           (incanter.charts/xy-plot
+                            (range 59)
+                            convs)
+                         (incanter.charts/add-lines
+                          (range 59)
+                          convsma)
+                         (incanter.charts/add-lines
+                          [0 58]
+                          [cap cap])
+                         (incanter.core/view)))
+              (combine-stats-days (map combine-queries statslst)))
             (let [start-time (. System (nanoTime))]
               (.setDay agent day)
               (when (>= day 2)
@@ -1191,6 +1207,7 @@
                     stats (simulate-expected-day status day)]
                 (do
                   (.handleBidBundle agent bundle)
+                  ;(prn "Got " (stats-get-convs status stats agent-to-replace) " conversions")
                   ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
                   (recur (inc day) (conj statslst stats) status))))))))))
 
@@ -1573,8 +1590,8 @@
                                         ;TODO
                                         ; add sampling to simulation
 
-(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15129.slg")
-(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
+;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15139.slg")
+;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
 
 
 (defn crap

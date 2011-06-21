@@ -20,34 +20,30 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
    private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
    private HashMap<UserState, Double> _conversionProbs;
-   private long _seed = 61686;
    private Random _R;
    private ArrayList<Product> _products;
    private HashSet<Query> _querySpace;
    private Particle[] initParticle;
    private static final double _burstProb = .1;
    private static final double _successiveBurstProb = .2;
+   private double _convPrMult;
    private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
    private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
    private HashMap<Product, HashMap<UserState, Double>> _predictions, _currentEstimate;
 
    private static final boolean _rules2009 = false;
 
-   public jbergParticleFilter(double convPr1, double convPrVar1,
-                              double convPr2, double convPrVar2,
-                              double convPr3, double convPrVar3) {
-      _baseConvPr1 = convPr1;
-      _convPrVar1 = convPrVar1;
-      _baseConvPr2 = convPr2;
-      _convPrVar2 = convPrVar2;
-      _baseConvPr3 = convPr3;
-      _convPrVar3 = convPrVar3;
-      //		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " +
-      //				_baseConvPr2 + " " + _convPrVar2 + " " +
-      //				_baseConvPr3 + " " + _convPrVar3);
+   public jbergParticleFilter(double[] convPr, double convPrMult) {
+      _convPrMult = convPrMult;
+      _baseConvPr1 = convPr[0];
+      _convPrVar1 = _baseConvPr1*convPrMult;
+      _baseConvPr2 = convPr[1];
+      _convPrVar2 = _baseConvPr2*convPrMult;
+      _baseConvPr3 = convPr[2];
+      _convPrVar3 = _baseConvPr3*convPrMult;
       _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
       _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
-      _R = new Random(_seed);
+      _R = new Random();
       _particles = new HashMap<Product, Particle[]>();
       _conversionProbs = new HashMap<UserState, Double>();
 
@@ -433,8 +429,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
          String comp = q.getComponent();
          if (man != null && comp != null) {
             Product prod = new Product(man, comp);
-            int totalImps = totalImpressions.get(q);
-            if (totalImps > 0) {
+            Integer totalImps = totalImpressions.get(q);
+            if (totalImps != null && totalImps > 0) {
                Particle[] particles = _particles.get(prod);
                updateParticles(totalImps, particles);
                particles = resampleParticles(particles);
@@ -787,7 +783,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
    @Override
    public AbstractModel getCopy() {
-      return new jbergParticleFilter(_baseConvPr1, _convPrVar1, _baseConvPr2, _convPrVar2, _baseConvPr3, _convPrVar3);
+      return new jbergParticleFilter(new double[] {_baseConvPr1, _baseConvPr2, _baseConvPr3},_convPrMult);
    }
 
 }

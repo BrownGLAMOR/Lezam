@@ -1,6 +1,5 @@
 package models.queryanalyzer.iep;
 
-import ilog.concert.IloException;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.probsample.SampleProbability;
 
@@ -654,14 +653,14 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
             sampleProb = getAvgPosObjective(_trueAvgPos,avgPosPred);
          }
          else {
-            double prSample;
-            try {
-               double[] sampleAverages = _instance.getSampledAvgPos();
-               prSample = 1.0 - _sampleP.getProbabilityofSample(sampleAverages, order, agentImpr, _imprUB, _slots, _numSamples);
-            } catch (IloException e) {
-               e.printStackTrace();
-               throw new RuntimeException("CPLEX Failed to Load");
-            }
+            double prSample = 0.0;
+//            try {
+//               double[] sampleAverages = _instance.getSampledAvgPos();
+//               prSample = 1.0 - _sampleP.getProbabilityofSample(sampleAverages, order, agentImpr, _imprUB, _slots, _numSamples);
+//            } catch (IloException e) {
+//               e.printStackTrace();
+//               throw new RuntimeException("CPLEX Failed to Load");
+//            }
             sampleProb = prSample + 1;
          }
 
