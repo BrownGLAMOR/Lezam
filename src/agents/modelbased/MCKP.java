@@ -598,9 +598,9 @@ public class MCKP extends AbstractAgent {
          }
 
          Collections.sort(allIncItems);
-//         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
+         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
 
-         HashMap<Query,Item> solution = fillKnapsackTacTex(bidLists,budgetLists,allPredictionsMap);
+//         HashMap<Query,Item> solution = fillKnapsackTacTex(bidLists,budgetLists,allPredictionsMap);
 
          //set bids
          for(Query q : _querySpace) {
