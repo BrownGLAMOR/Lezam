@@ -14,11 +14,14 @@ import static models.paramest.ConstantsAndFunctions.*;
 
 public class BudgetEstimator extends AbstractBudgetEstimator {
 
-   public HashMap<String, HashMap<Query, Double>> _budgetPredictions;
-   public HashMap<String,Integer> _agentToIdxMap;
-   private Set<Query> _querySpace;
+   HashMap<String, HashMap<Query, Double>> _budgetPredictions;
+   HashMap<String,Integer> _agentToIdxMap;
+   Set<Query> _querySpace;
 
-   private int numAdvertisers = 8;
+   int numAdvertisers = 8;
+
+   int MIN_IMPS = 0;
+   int MIN_COST = 0;
 
    int _ourAdvIdx;
    int _numSlots;
@@ -63,6 +66,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            HashMap<Query, int[]> allOrders,
                            HashMap<Query, int[]> allImps,
                            HashMap<Query, int[][]> allWaterfalls,
+                           HashMap<Query,HashMap<String,Boolean>> rankables,
                            HashMap<Query, double[]> allBids,
                            HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates) {
 
@@ -72,6 +76,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
          if(waterfall != null) {
             int[] imps = allImps.get(q);
             int[] startOrder = allOrders.get(q);
+            HashMap<String,Boolean> rankable = rankables.get(q);
             double[] bids = allBids.get(q);
 
             int qtIdx = queryTypeToInt(q.getType());
@@ -100,7 +105,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                for(int j = 0; j < order.length && j < _numSlots; j++) {
                   int agentIdx = order[j];
 
-                  if(agentIdx < 0) {
+                  if(agentIdx < 0 || !rankable.get("adv"+(agentIdx+1))) {
                      //This is a padded agent, skip it
                      continue;
                   }
@@ -159,11 +164,11 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             }
 
             for(int i = 0; i < numAdvertisers; i++) {
+               String currAdv = "adv" + (i+1);
                double cost = costs[i];
-               if(!droppedOut[i] || cost == 0.0) {
+               if(!droppedOut[i] || cost < MIN_COST || imps[i] < MIN_IMPS || !rankable.get(currAdv)) {
                   cost = Double.MAX_VALUE;
                }
-               String currAdv = "adv" + (i+1);
                HashMap<Query,Double> budgetMap = _budgetPredictions.get(currAdv);
                budgetMap.put(q,cost);
                _budgetPredictions.put(currAdv, budgetMap);

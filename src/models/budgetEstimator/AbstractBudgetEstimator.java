@@ -18,6 +18,7 @@ public abstract class AbstractBudgetEstimator extends AbstractModel {
                                     HashMap<Query, int[]> allOrders,
                                     HashMap<Query, int[]> allImps,
                                     HashMap<Query, int[][]> waterfalls,
+                                    HashMap<Query,HashMap<String,Boolean>> rankables,
                                     HashMap<Query, double[]> bids,
                                     HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates);
 

@@ -63,7 +63,7 @@
             ^{:static true} [printResults [clojure.lang.PersistentArrayMap] void]
             ^{:static true} [compareResults [clojure.lang.PersistentArrayMap
                                              clojure.lang.PersistentArrayMap
-                                             String] double]]))
+                                             String] java.util.ArrayList]]))
 
 (defn setupClojureSim
   [^String file]
@@ -211,13 +211,13 @@
   [status ^Query query agent day bid budget ^Ad ad num-ests perfectsim?]
   (let [squashed-bid (* bid
                         (Math/pow (((status :adv-effects) agent) query)
-                                (status :squash-param)))
+                                  (status :squash-param)))
         status (assoc status :squashed-bids
                       (assoc (status :squashed-bids) agent
                              (if perfectsim?
                                (assoc ((status :squashed-bids) agent) day
                                       (assoc (((status :squashed-bids) agent) day) query squashed-bid))
-                                 [{query squashed-bid}])))
+                               [{query squashed-bid}])))
         status (assoc status :budgets
                       (assoc (status :budgets) agent
                              (if perfectsim?
@@ -226,7 +226,7 @@
                                         :total-budget
                                         budget))
                                [{query budget,
-                                :total-budget budget}])))
+                                 :total-budget budget}])))
         status (assoc status :ads
                       (assoc (status :ads) agent
                              (if perfectsim?
@@ -247,6 +247,28 @@
       (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :clicks)) aqstatv))
                        num-ests)))
       (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :cost)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :pos-dist) 0)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :pos-dist) 1)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :pos-dist) 2)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :pos-dist) 3)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :pos-dist) 4)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :is-ratios) 0)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :is-ratios) 1)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :is-ratios) 2)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :is-ratios) 3)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (nth (aqstats :is-ratios) 4)) aqstatv))
+                       num-ests)))
+      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :is-ratio)) aqstatv))
                        num-ests))))))
 
 (defn -simQuery
@@ -366,7 +388,9 @@
                             ((actual agent) :cost)))
         res-prof (double (- ((results agent) :revenue)
                             ((results agent) :cost)))]
-    (- res-prof act-prof)))
+    (doto (new java.util.ArrayList)
+      (.add (double act-prof))
+      (.add (double res-prof)))))
 
 (defn -compareResults
   [results

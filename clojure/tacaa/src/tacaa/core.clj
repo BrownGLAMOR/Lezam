@@ -14,6 +14,58 @@
                                      AdvertiserInfo PublisherInfo
                                      SlotInfo QueryType RetailCatalog)))
 
+
+
+(defn get-exp-convs
+  [convpr lam remcap clicks]
+  (loop [clicks (double clicks)
+         convs (double 0.0)
+         remcap (int remcap)]
+    (let [convpr (double (if (< remcap 0)
+                           (* convpr (Math/pow lam (Math/abs remcap)))
+                           convpr))
+          clicks-to-conv (double (/ 1.0 convpr))]
+      (if (not (< clicks-to-conv clicks))
+        (+ convs (/ clicks clicks-to-conv))
+        (recur (- clicks clicks-to-conv) (inc convs) (dec remcap))))))
+
+(defn convpr-penalty2
+  ([lam rem-cap sol-weight]
+     (let [rem-cap (int rem-cap)
+           sol-weight (double sol-weight)]
+       (if (< rem-cap 0)
+         (let [arem-cap (int (Math/abs rem-cap))]
+           (if (<= sol-weight 0)
+             (Math/pow lam
+                       arem-cap)
+             (loop [psum (double 0.0)
+                    n (int (+ arem-cap 1))
+                    weightsum (double 0.0)]
+               (if (not (<= n (+ arem-cap sol-weight)))
+                 (/ psum weightsum)
+                 (let [pen (double (Math/pow lam n))
+                       penweight (double (/ 1.0 pen))]
+                   (recur (+ psum (* pen penweight))
+                          (inc n)
+                          (+ weightsum penweight)))))))
+         (if (<= sol-weight 0)
+           1.0
+           (if (>= rem-cap sol-weight)
+             1.0
+             (loop [psum (double rem-cap)
+                    n (int 1)
+                    weightsum (double rem-cap)]
+               (if (not (<= n (- sol-weight rem-cap)))
+                 (/ psum weightsum)
+                 (let [pen (double (Math/pow lam n))
+                       penweight (double (/ 1.0 pen))]
+                   (recur (+ psum (* pen penweight))
+                          (inc n)
+                          (+ weightsum penweight))))))))))
+  ([convpr lam remcap clicks]
+     (/ (/ (get-exp-convs convpr lam remcap clicks) clicks) convpr)))
+
+
 (defn calc-mean
   [lst]
   (/ (reduce + lst) (count lst)))
@@ -745,7 +797,47 @@
                                                pos-vec (aqstats :pos-vec)
                                                pos-vec-len (count pos-vec)
                                                imps (int (aqstats :imps))
-                                               possum (double (aqstats :pos-sum))]
+                                               possum (double (aqstats :pos-sum))
+                                               pos-dist (loop [pos-vec pos-vec
+                                                             imps1 (int 0)
+                                                             imps2 (int 0)
+                                                             imps3 (int 0)
+                                                             imps4 (int 0)
+                                                             imps5 (int 0)]
+                                                        (if (not (seq pos-vec))
+                                                          (let [impsum (+ imps1 (+ imps2 (+ imps3 (+ imps4 imps5))))]
+                                                            (if (== impsum 0)
+                                                              [(double 0.0) (double 0.0) (double 0.0) (double 0.0) (double 1.0)]
+                                                              [(double (/ imps1 impsum))
+                                                              (double (/ imps2 impsum))
+                                                              (double (/ imps3 impsum))
+                                                              (double (/ imps4 impsum))
+                                                              (double (/ imps5 impsum))]))
+                                                          (let [pos (first pos-vec)]
+                                                            (recur (rest pos-vec)
+                                                                   (if (== pos 1)
+                                                                     (inc imps1)
+                                                                     imps1)
+                                                                   (if (== pos 2)
+                                                                     (inc imps2)
+                                                                     imps2)
+                                                                   (if (== pos 3)
+                                                                     (inc imps3)
+                                                                     imps3)
+                                                                   (if (== pos 4)
+                                                                     (inc imps4)
+                                                                     imps4)
+                                                                   (if (== pos 5)
+                                                                     (inc imps5)
+                                                                     imps5)))))
+                                               is-vecs (aqstats :is-vecs)
+                                               is-ratios (vec (map (fn [[is ns]] (if (== 0 (+ is ns)) 0.0 (/ is (+ is ns)))) is-vecs))
+                                               is-ratio (let [click-is (aqstats :click-is)
+                                                              is-clicks (first click-is)
+                                                              all-clicks (+ is-clicks (peek click-is))]
+                                                          (if (> all-clicks 0)
+                                                            (/ is-clicks all-clicks)
+                                                            0.0))]
                                            {:imps imps,
                                             :prom-imps (aqstats :prom-imps),
                                             :pos-sum possum,
@@ -777,6 +869,9 @@
                                                                (recur (rest allsamps)
                                                                       pos-sum
                                                                       num-imps)))))),
+                                            :pos-dist pos-dist,
+                                            :is-ratios is-ratios,
+                                            :is-ratio is-ratio,
                                             :clicks (aqstats :clicks),
                                             :cost (aqstats :cost),
                                             :convs (aqstats :convs),
@@ -823,6 +918,8 @@
                                                         :prom-imps 0,
                                                         :pos-sum 0,
                                                         :pos-vec [],
+                                                        :is-vecs [[0 0] [0 0] [0 0] [0 0] [0 0]],
+                                                        :click-is [0 0],
                                                         :clicks 0,
                                                         :cost 0,
                                                         :convs 0,
@@ -866,6 +963,8 @@
                                               :prom-imps (aqstats :prom-imps),
                                               :pos-sum (aqstats :pos-sum),
                                               :pos-vec (conj (aqstats :pos-vec) -1),
+                                              :is-vecs (aqstats :is-vecs),
+                                              :click-is (aqstats :click-is),
                                               :clicks (aqstats :clicks),
                                               :cost (aqstats :cost),
                                               :convs (aqstats :convs),
@@ -940,6 +1039,14 @@
                                                    :pos-sum (+ (aqstats :pos-sum)
                                                                pos),
                                                    :pos-vec (conj (aqstats :pos-vec) pos),
+                                                   :is-vecs (let [is-vecs (aqstats :is-vecs)
+                                                                  is-vec (nth is-vecs (dec pos))
+                                                                  is-vec (if isis
+                                                                           [(inc (first is-vec)) (peek is-vec)]
+                                                                           [(first is-vec) (inc (peek is-vec))])]
+                                                              (assoc is-vecs (dec pos) is-vec)),
+                                                   :click-is (let [click-is (aqstats :click-is)]
+                                                               [(first click-is) (inc (peek click-is))]),
                                                    :clicks (inc (aqstats :clicks)),
                                                    :cost (+ (aqstats :cost)
                                                             cpc),
@@ -953,6 +1060,16 @@
                                                      :pos-sum (+ (aqstats :pos-sum)
                                                                  pos),
                                                      :pos-vec (conj (aqstats :pos-vec) pos),
+                                                     :is-vecs (let [is-vecs (aqstats :is-vecs)
+                                                                    is-vec (nth is-vecs (dec pos))
+                                                                    is-vec (if isis
+                                                                             [(inc (first is-vec)) (peek is-vec)]
+                                                                             [(first is-vec) (inc (peek is-vec))])]
+                                                                (assoc is-vecs (dec pos) is-vec)),
+                                                     :click-is (let [click-is (aqstats :click-is)]
+                                                                 (if isis
+                                                                   [(inc (first click-is)) (peek click-is)]
+                                                                   [(first click-is) (inc (peek click-is))])),
                                                      :clicks (inc (aqstats :clicks)),
                                                      :cost (+ (aqstats :cost)
                                                               cpc),
@@ -965,6 +1082,13 @@
                                                      :pos-sum (+ (aqstats :pos-sum)
                                                                  pos),
                                                      :pos-vec (conj (aqstats :pos-vec) pos),
+                                                     :is-vecs (let [is-vecs (aqstats :is-vecs)
+                                                                  is-vec (nth is-vecs (dec pos))
+                                                                  is-vec (if isis
+                                                                           [(inc (first is-vec)) (peek is-vec)]
+                                                                           [(first is-vec) (inc (peek is-vec))])]
+                                                                (assoc is-vecs (dec pos) is-vec)),
+                                                     :click-is (aqstats :click-is),
                                                      :clicks (aqstats :clicks),
                                                      :cost (aqstats :cost),
                                                      :convs (aqstats :convs),
@@ -983,6 +1107,8 @@
                                                 :pos-sum (+ (aqstats :pos-sum)
                                                             pos),
                                                 :pos-vec (conj (aqstats :pos-vec) pos),
+                                                :is-vecs (aqstats :is-vecs),
+                                                :click-is (aqstats :click-is),
                                                 :clicks (aqstats :clicks),
                                                 :cost (aqstats :cost),
                                                 :convs (aqstats :convs),
@@ -1112,6 +1238,21 @@
                      ((astats query) :convs))
                    (status :query-space)))))
 
+
+(defn prn-bid-budget-ad
+  [status agent day]
+  (let [squashed-bids (((status :squashed-bids) agent) day)
+        budgets (((status :budgets) agent) day)
+        ads (((status :ads) agent) day)]
+    (doall
+     (map (fn [query]
+            (prn query ", "
+                 (squashed-bids query) ", "
+                 (budgets query) ", "
+                 (ads query)))
+          (status :query-space)))
+    nil))
+
 (defn simulate-game-with-agent
   [status ^AbstractAgent agent agent-to-replace]
   (if (not (some #{agent-to-replace} (status :agents)))
@@ -1207,6 +1348,7 @@
                     stats (simulate-expected-day status day)]
                 (do
                   (.handleBidBundle agent bundle)
+                  ;(prn-bid-budget-ad status agent-to-replace day)
                   ;(prn "Got " (stats-get-convs status stats agent-to-replace) " conversions")
                   ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
                   (recur (inc day) (conj statslst stats) status))))))))))
@@ -1216,6 +1358,43 @@
   [status]
   (let [statslst (map (fn [day] (combine-queries (simulate-expected-day status day))) (range 59))]
     (combine-stats-days statslst)))
+
+(defn day-full-summary
+  [status day]
+  (let [agents (status :agents)
+        queryspace (status :query-space)
+        queryreports (status :query-report)
+        salesreports (status :sales-report)]
+    (reduce (fn [coll1 agent]
+              (assoc coll1 agent
+                     (let [^QueryReport qrs ((queryreports agent) day)
+                           ^SalesReport srs ((salesreports agent) day)
+                           stats (reduce (fn [coll3 ^Query query]
+                                           {:imps (+ (coll3 :imps)
+                                                     (.getImpressions qrs query)),
+                                            :prom-imps (+ (coll3 :prom-imps)
+                                                          (.getPromotedImpressions qrs query)),
+                                            :clicks (+ (coll3 :clicks)
+                                                       (.getClicks qrs query)),
+                                            :convs (+ (coll3 :convs)
+                                                      (.getConversions srs query)),
+                                            :cost (+ (coll3 :cost)
+                                                     (.getCost qrs query)),
+                                            :revenue (+ (coll3 :revenue)
+                                                        (.getRevenue srs query))})
+                                         {:imps 0,
+                                          :prom-imps 0,
+                                          :clicks 0,
+                                          :convs 0,
+                                          :cost 0,
+                                          :revenue 0}
+                                         queryspace)]
+                       (list (stats :imps)
+                             (stats :clicks)
+                             (stats :convs)
+                             (stats :cost)
+                             (stats :revenue)))))
+            {} agents)))
 
 (defn game-full-summary
   [status]
@@ -1439,8 +1618,11 @@
 
 (defn solution-weight
   [stats convprs query-type rem-cap comp-spec comp-bonus lam]
-  (loop [weight 0]
-    (let [penalty (convpr-penalty lam rem-cap weight)
+  (loop [weight 0
+         iters 0
+         breakval 0.5
+         past-sols #{}]
+    (let [penalty (convpr-penalty2 lam rem-cap weight)
           new-weight (reduce
                       +
                       (map (fn [[^Query query stat]]
@@ -1460,12 +1642,15 @@
                                          (* convpr
                                             (/ 2.0 3.0)))
                                       convpr)))))
-                           stats))]
-      (if (< (Math/abs (double (- new-weight
+                           stats))
+          new-weight (if (some #{(int new-weight)} past-sols)
+                       (/ (+ weight new-weight) 2.0)
+                       new-weight)]
+      (if (<= (Math/abs (double (- new-weight
                                   weight)))
-             1.0)
+             breakval)
         new-weight
-        (recur new-weight)))))
+        (recur new-weight (inc iters) (if (== (mod iters 10) 0) (* breakval 1.25) breakval) (conj past-sols (int new-weight)))))))
 
 
 (defn eval-per-q-sol
@@ -1476,13 +1661,31 @@
         rem-cap (- capacity start-sales)
         weight (solution-weight stats convprs query-type rem-cap
                                 comp-spec comp-bonus lam)
-        penalty (convpr-penalty lam rem-cap weight)]
-    (reduce + (map (fn [[^Query query stat]]
-                     (- (* (* (stat :clicks)
-                              (* (convprs (query-type query))
-                                 penalty))
-                           (let [qman (.getManufacturer query)]
-                             (if (= man-spec
+        penalty (convpr-penalty2 lam rem-cap weight)]
+    (reduce (fn [coll val] (map + coll val))
+            (map (fn [[^Query query stat]]
+                   (let [imps (stat :imps)
+                         clicks (stat :clicks)
+                         cost (stat :cost)
+                         qcomp (.getComponent query)
+                         qman (.getManufacturer query)
+                         convpr (* (convprs (query-type query))
+                                   penalty)
+                         convpr (if (= comp-spec
+                                       qcomp)
+                                  (eta convpr
+                                       (+ 1 comp-bonus))
+                                  (if (= nil
+                                         qcomp)
+                                    (+ (* (eta convpr
+                                               (+ 1 comp-bonus))
+                                          (/ 1.0 3.0))
+                                       (* convpr
+                                          (/ 2.0 3.0)))
+                                    convpr))
+                         isratio (stat :is-ratio)
+                         convs (* (* clicks convpr) (- 1.0 isratio))
+                         usp (if (= man-spec
                                     qman)
                                (* usp
                                   (+ 1 man-bonus))
@@ -1493,52 +1696,78 @@
                                        (/ 1.0 3.0))
                                     (* usp
                                        (/ 2.0 3.0)))
-                                 usp))))
-                        (stat :cost)))
-                   stats))))
+                                 usp))
+                         revenue (* convs usp)]
+                     (list imps clicks convs cost revenue)))
+                 stats))))
 
+(defn simulate-query-indep
+  [status day query agent]
+  (let [status (reduce (fn [coll q]
+                               (if (not (= q query))
+                                 (assoc coll :squashed-bids
+                                        (assoc (coll :squashed-bids) agent
+                                               (assoc ((coll :squashed-bids) agent) day
+                                                      (assoc (((coll :squashed-bids) agent) day) q (double 0.0)))))
+                                 coll))
+                             status
+                             (status :query-space))]
+    (simulate-expected-day status day)))
+
+
+(defn perc-err-with-zero
+  [v1 v2]
+  (if (not (== v1 0.0))
+    (double (/ (- v2
+                  v1)
+               v1))
+    (if (not (== v2 0.0))
+      (if (< v2 0.0)
+        -1
+        1)
+      0.0)))
 
 (defn simq-indep
   [status day]
-  (let [stats (reduce (fn [coll query]
-                     (assoc coll query (simulate-query status day query)))
-                      {} (status :query-space))
-        qprofits (reduce (fn [coll agent]
-                          (assoc coll agent (eval-per-q-sol stats agent (status :conv-probs)
-                                                            (status :query-type)
-                                                            ((status :capacities) agent)
-                                                            (((status :start-sales) agent) day)
-                                                            ((status :comp-specialties) agent)
-                                                            ((status :man-specialties) agent)
-                                                            (status :comp-bonus)
-                                                            (status :man-bonus)
-                                                            (status :USP)
-                                                            (status :lam))))
-                         {} (status :agents))
-        dprofits (stats-summary-expected status day)
-        actual (day-summary status day)]
-    [(map (fn [agent] (let [actprof (actual agent)]
-                       (if (not (== actprof 0.0))
-                         (double (/ (- (qprofits agent)
-                                       actprof)
-                                    actprof))
-                         (if (not (== (qprofits agent) 0.0))
-                           (if (< (qprofits agent) 0.0)
-                             -1
-                             1)
-                           0.0))))
-          (status :agents))
-     (map (fn [agent] (let [actprof (actual agent)]
-                       (if (not (== actprof 0.0))
-                         (double (/ (- (dprofits agent)
-                                       actprof)
-                                    actprof))
-                         (if (not (== (dprofits agent) 0.0))
-                           (if (< (dprofits agent) 0.0)
-                             -1
-                             1)
-                           0.0))))
-          (status :agents))]))
+  (let [simq (reduce (fn [coll agent]
+                       (assoc coll agent
+                              (eval-per-q-sol (reduce (fn [coll query]
+                                                        (assoc coll query (simulate-query status day query))
+                                                        ;(assoc coll query (simulate-query-indep status day query agent))
+                                                        )
+                                                      {} (status :query-space))
+                                              agent
+                                              (status :conv-probs)
+                                              (status :query-type)
+                                              ((status :capacities) agent)
+                                              (((status :start-sales) agent) day)
+                                              ((status :comp-specialties) agent)
+                                              ((status :man-specialties) agent)
+                                              (status :comp-bonus)
+                                              (status :man-bonus)
+                                              (status :USP)
+                                              (status :lam))))
+                     {} (status :agents))
+        dstat (simulate-expected-day status day)
+        simd (reduce (fn [coll agent]
+                       (assoc coll agent
+                              (reduce (fn [coll2 val] (map + coll2 val))
+                                      (map (fn [query]
+                                             (let [stat ((dstat agent) query)
+                                                   imps (stat :imps)
+                                                   clicks (stat :clicks)
+                                                   convs (stat :convs)
+                                                   cost (stat :cost)
+                                                   revenue (stat :revenue)]
+                                               (list imps clicks convs cost revenue)))
+                                           (status :query-space)))))
+                     {}
+                     (status :agents))
+        actual (day-full-summary status day)]
+    (map (fn [idx]
+           [(map (fn [agent] (perc-err-with-zero (nth (actual agent) idx) (nth (simq agent) idx))) (status :agents)),
+            (map (fn [agent] (perc-err-with-zero (nth (actual agent) idx) (nth (simd agent) idx))) (status :agents))])
+         (range 5))))
 
 (defn bootstrap-mean-and-std
   [lst]
@@ -1574,30 +1803,26 @@
 (defn simq-dists
   [status]
   (let [results (map (fn [day] (simq-indep status day)) (range 59))
-        qdiffs (flatten (map first results))
-        qdiffsrem (remove-outliers qdiffs)
-        ddiffs (vec (flatten (map peek results)))
-        ddiffsrem (remove-outliers ddiffs)]
-    (do
-      [(calc-mean-and-std ddiffsrem)
-       (calc-mean-and-std ddiffs)
-       (calc-mean-and-std qdiffsrem)
-       (calc-mean-and-std qdiffs)])))
+        qdiffs (map (fn [idx] (flatten (map (fn [result] (first (nth result idx))) results))) (range 5))
+        qdiffsrem (map remove-outliers qdiffs)
+        ddiffs (map (fn [idx] (flatten (map (fn [result] (peek (nth result idx))) results))) (range 5))
+        ddiffsrem (map remove-outliers ddiffs)]
+    (prn "Impression Daily/Query Mean/StdDev: " (calc-mean-and-std (nth ddiffsrem 0)) (calc-mean-and-std (nth qdiffsrem 0)))
+    (prn "Click Daily/Query Mean/StdDev: " (calc-mean-and-std (nth ddiffsrem 1)) (calc-mean-and-std (nth qdiffsrem 1)))
+    (prn "Conversion Daily/Query Mean/StdDev: " (calc-mean-and-std (nth ddiffsrem 2)) (calc-mean-and-std (nth qdiffsrem 2)))
+    (prn "Cost Daily/Query Mean/StdDev: " (calc-mean-and-std (nth ddiffsrem 3)) (calc-mean-and-std (nth qdiffsrem 3)))
+    (prn "Revenue Daily/Query Mean/StdDev: " (calc-mean-and-std (nth ddiffsrem 4)) (calc-mean-and-std (nth qdiffsrem 4)))))
 
 ;(use 'criterium.core)
 
-
-                                        ;TODO
-                                        ; add sampling to simulation
-
-;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15139.slg")
+;(def file1 "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-15148.slg")
 ;(def status1 (init-sim-info (tacaa.parser/parse-file file1)))
 
 
 (defn crap
   []
   (doall
-   (for [x (range 15127 15150) :let [file (str "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-" x ".slg")]]
+   (for [x (range 15147 15150) :let [file (str "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-" x ".slg")]]
      (do
        (prn "File: " file)
        (prn (doall (simq-dists (init-sim-info (tacaa.parser/parse-file file)))))))))

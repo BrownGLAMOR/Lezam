@@ -190,8 +190,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
          _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
       }
 
-      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
-//		initializeParticlesFromFile("/u/jberg/initUserParticles");
+//      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/src/resources/initUserParticles.txt");
+      initializeParticlesFromFile("initUserParticles.txt");
       updatePredictionMaps();
    }
 
@@ -201,11 +201,15 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
       /*
          * Parse Particle Log
          */
-      BufferedReader input = null;
       int count = 0;
       try {
-         input = new BufferedReader(new FileReader(filename));
+         BufferedReader input = new BufferedReader(new FileReader(filename));
          String line;
+
+//         InputStream inputStream = this.getClass().getResourceAsStream(filename);
+//         final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+//         final BufferedReader input = new BufferedReader(inputStreamReader);
+//         String line;
          while ((line = input.readLine()) != null && count < NUM_PARTICLES) {
             StringTokenizer st = new StringTokenizer(line, " ");
             if (st.countTokens() == UserState.values().length) {
@@ -787,29 +791,3 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    }
 
 }
-
-
-/*
-
-
-9.13E-04	0.322757859	0.03073908	0.191880567	0.187458945	0.366898498	186.5540936
-0.004932699	0.263532334	0.045700011	0.174371757	0.188113883	0.220140091	186.7697856
-0.00137587	0.033243062	0.052249038	0.436104127	0.169024453	0.341843764	187.2162768
-0.001004541	0.363593202	0.029031876	0.166947116	0.189067606	0.15234732	188.0296134
-0.005197206	0.362167098	0.027407045	0.150127531	0.204464851	0.059186922	188.3200374
-0.004470606	0.152708964	0.019707097	0.345928109	0.19809	0.207009812	188.8046702
-0.005977345	0.003484737	0.054007691	0.265453547	0.172152857	0.276010655	188.9478476
-0.003556267	0.111575966	0.065888996	0.130363111	0.188318986	0.46448095	189.3403428
-1.47E-04	0.393714485	0.041534959	0.228842583	0.156192607	0.172643107	189.5679581
-0.00394025	0.272837768	0.003960436	0.20564184	0.206756387	0.05615008	190.6669672
-0.001068156	0.069795641	0.009629839	0.409295789	0.251571306	0.370058668	190.7993827
-0.009169542	0.462383102	0.020392133	0.203126828	0.178788577	0.015930587	190.8358756
-0.016361356	0.342006098	0.027478581	0.277848929	0.189073116	0.258146324	191.4164068
-0.009047789	0.063400987	0.061828757	0.433036314	0.161090511	0.222698552	191.4242609
-0.016530646	0.02055777	0.038830311	0.058805199	0.187553857	0.192670387	191.5670809
-0.003178379	0.478498104	0.009151328	0.024975585	0.254086582	0.353953349	191.7099659
-0.015307621	0.365407217	0.034933288	0.009679673	0.205192522	0.322534298	191.9689084
-9.17E-04	0.207878307	0.072797593	0.296011688	0.131309477	0.01807845	192.0322775
-
-
- */

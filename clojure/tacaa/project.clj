@@ -2,7 +2,7 @@
   :description "FIXME: write description"
   :dependencies [[org.clojure/clojure "1.2.1"]
                  [org.clojure/clojure-contrib "1.2.0"]
-                 [incanter "1.2.2"]
+                 ;[incanter "1.2.2"]
                  [org.clojars.jberg/tasim "0.8.0.4.2"]
                  [org.clojars.jberg/aa-common "0.9.6.2"]
                  [org.clojars.jberg/aa-logging "0.9.6.2"]

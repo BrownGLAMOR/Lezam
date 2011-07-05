@@ -241,7 +241,7 @@ public abstract class AbstractAgent extends Agent {
    public static final int MAX_F2_IMPS = 2221;
 
    protected int[] _perfectStartSales = null;
-   
+
    /**
     *
     */
@@ -548,12 +548,19 @@ public abstract class AbstractAgent extends Agent {
       private double _CPC;
       private double _convPr;
       private double _numImp;
+      private double[] _slotDistr;
+      private double[] _ISRatios;
+      private double _ISRatio;
 
-      public Predictions(double clickPr, double CPC, double convPr, double numImp) {
+
+      public Predictions(double clickPr, double CPC, double convPr, double numImp, double[] slotDistr, double[] isRatios, double isRatio) {
          _clickPr = clickPr;
          _CPC = CPC;
          _convPr = convPr;
          _numImp = numImp;
+         _slotDistr = slotDistr.clone();
+         _ISRatios = isRatios.clone();
+         _ISRatio = isRatio;
       }
 
       public void setClickPr(double clickPr) {
@@ -587,6 +594,31 @@ public abstract class AbstractAgent extends Agent {
       public double getNumImp() {
          return _numImp;
       }
+
+      public void setSlotDistr(double[] slotDistr) {
+         this._slotDistr = slotDistr.clone();
+      }
+
+      public double[] getSlotDistr() {
+         return _slotDistr;
+      }
+
+      public void setISRatios(double[] ISRatios) {
+         this._ISRatios = ISRatios.clone();
+      }
+
+      public double[] getISRatios() {
+         return _ISRatios;
+      }
+
+      public void setISRatio(double ISRatio) {
+         _ISRatio = ISRatio;
+      }
+
+      public double getISRatio() {
+         return _ISRatio;
+      }
+
 
    }
 
