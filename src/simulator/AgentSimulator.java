@@ -18,7 +18,7 @@ public class AgentSimulator {
    public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";   //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -64,7 +64,7 @@ public class AgentSimulator {
          PersistentHashMap cljSim = setupSimulator(filename);
          for(String agentToReplace : agentsToReplace) {
 
-            boolean PERFECT_SIM = false;
+            boolean PERFECT_SIM = true;
             AbstractAgent agent;
             if(PERFECT_SIM) {
                agent = new MCKP(cljSim, agentToReplace,c1,c2,c3);
@@ -84,7 +84,7 @@ public class AgentSimulator {
             for(int i = 0; i < profDiff.size(); i++) {
                profDiffArr[i] = (Double)profDiff.get(i);
             }
-            System.out.println(agentToReplace + ", " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
+            System.out.println(agentToReplace + ", Hack, " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
             totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
          }
       }
