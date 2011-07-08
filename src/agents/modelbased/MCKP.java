@@ -1403,7 +1403,7 @@ public class MCKP extends AbstractAgent {
 		int totalCapacityMax = 2*_capacity; //The most capacity we'll ever consider using (across all days)
 		int dailyCapacityUsedMin = 0;
 		int dailyCapacityUsedMax = totalCapacityMax; //The most capacity we'll ever consider using on a single day
-		int dailyCapacityUsedStep = 25;
+		int dailyCapacityUsedStep = 50;
 		int dayStart = (int) _day;
 		int dayEnd = Math.min(58, dayStart + PLANNING_HORIZON); //FIXME: _numDays starts out as 0???
 		
@@ -1452,8 +1452,11 @@ public class MCKP extends AbstractAgent {
 	   for (int dayStartSales=dailyCapacityUsedMin; dayStartSales<= maxStartingSales; dayStartSales+=dailyCapacityUsedStep) {
 			for (int salesForToday=0; salesForToday<=dailyCapacityUsedMax && dayStartSales+salesForToday<=totalCapacityMax; salesForToday+=dailyCapacityUsedStep) {
 				
+				//FIXME!!!!! 
+				//I think the getIncItems is expecting the first param to be free capacity, not total amount of capacity used
+				double remainingCapacity = (_capacity - dayStartSales);
 				//Get solution for this (startCapacity, salesOnDay)
-				HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(dayStartSales,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
+				HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCapacity,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
 		        double profit = 0.0;
 		        for(Query q : solution.keySet()) {
 		        	profit += solution.get(q).v();
@@ -1471,6 +1474,28 @@ public class MCKP extends AbstractAgent {
 			}
 	   }
 	   long endTimerMap = System.currentTimeMillis();
+	   
+	   
+	   //--------------------
+	   //Print out daily profit data
+	   StringBuffer sb = new StringBuffer();
+	   sb.append("\t");
+		for (int salesForToday=0; salesForToday<=dailyCapacityUsedMax && salesForToday<=totalCapacityMax; salesForToday+=dailyCapacityUsedStep) {
+			sb.append(salesForToday + "\t");
+		}
+		sb.append("\n");
+	   for (int dayStartSales=dailyCapacityUsedMin; dayStartSales<= maxStartingSales; dayStartSales+=dailyCapacityUsedStep) {
+		   sb.append(dayStartSales + "\t");
+			for (int salesForToday=0; salesForToday<=dailyCapacityUsedMax && dayStartSales+salesForToday<=totalCapacityMax; salesForToday+=dailyCapacityUsedStep) {
+				double profit = profitMemoizeMap.get(dayStartSales).get(salesForToday);
+				sb.append(profit + "\t");
+			}
+			sb.append("\n");
+	   }
+	   System.out.println("Profit cache for day " + _day + ":\n" + sb);
+	   //--------------------
+
+	   
 	   
 	   
 	   
