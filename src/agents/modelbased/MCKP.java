@@ -600,9 +600,9 @@ public class MCKP extends AbstractAgent {
          }
 
          Collections.sort(allIncItems);
-         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
-
+//         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
 //         HashMap<Query,Item> solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap);
+         HashMap<Query,Item> solution = fillKnapsackDP(bidLists,budgetLists,allPredictionsMap); //asdf
 
          //set bids
          for(Query q : _querySpace) {
@@ -1389,6 +1389,144 @@ public class MCKP extends AbstractAgent {
       return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,salesOnDay[0],bidLists,budgetLists,allPredictionsMap),salesOnDay[0]);
    }
 
+   
+   
+   
+   
+   
+   private HashMap<Query,Item> fillKnapsackDP(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+	   
+	   //CONFIG FOR DP
+	   int PLANNING_HORIZON = 10;
+	   
+		int capacityWindow = _capWindow-1; //Excluding the current day
+		int totalCapacityMax = 2*_capacity; //The most capacity we'll ever consider using (across all days)
+		int dailyCapacityUsedMin = 0;
+		int dailyCapacityUsedMax = totalCapacityMax; //The most capacity we'll ever consider using on a single day
+		int dailyCapacityUsedStep = 25;
+		int dayStart = (int) _day;
+		int dayEnd = Math.min(58, dayStart + PLANNING_HORIZON); //FIXME: _numDays starts out as 0???
+		
+		
+	   
+	   //-------------------------
+	   //Get our current conversion history (amount of conversions on past days within the window)
+	   //-------------------------
+	   ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
+	   ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP);
+
+	   //Add a prediction for how much we think we sold yesterday (since there's a report delay)
+	   Integer expectedConvsYesterday = ((BasicUnitsSoldModel) _unitsSold).getExpectedConvsTomorrow();
+	   soldArray.add(expectedConvsYesterday);
+
+	   int[] preDaySales = new int[_capWindow-1];
+	   for(int daysBack = 0; daysBack < (_capWindow-1); daysBack++) {
+		   int idx = soldArray.size()-1-daysBack; 
+		   if(idx >= 0) {
+			 //soldArray contains all sales data (with most recent sales data appended each day)
+			   //preDaySales has the most recent sales data at the end of its array. [c1, c2, c3, c4] our decision: c5
+			   preDaySales[_capWindow-2-daysBack] = soldArray.get(idx);
+		   }
+		   else {
+			   //If there's no actual sales data (i.e. start of the game), fill in past days sales with some fraction of capacity
+			   preDaySales[_capWindow-2-daysBack] = (int)(_capacity / ((double) _capWindow));
+		   }
+	   }
+	   //System.out.println("preDaySales=" + Arrays.toString(preDaySales));
+
+
+	   
+	   
+	   	   
+	   //-------------------------
+	   //Create list of single-day profits for any given (startCapacity, salesForToday) pairs
+	   //-------------------------
+	   long startTimerMap = System.currentTimeMillis();
+	   HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap = new HashMap<Integer, HashMap<Integer, Double>>(); //TODO: Take size as a parameter
+	   
+	   
+	   //FIXME: Don't need to make multiple computations when we never go over capacity.
+	   
+	   //We put a bound on the action space (e.g. consider selling 1000 if your startCapacity is 0, but not if it's 1000).
+	   int maxStartingSales = Math.min(dailyCapacityUsedMax*capacityWindow, totalCapacityMax);
+	   for (int dayStartSales=dailyCapacityUsedMin; dayStartSales<= maxStartingSales; dayStartSales+=dailyCapacityUsedStep) {
+			for (int salesForToday=0; salesForToday<=dailyCapacityUsedMax && dayStartSales+salesForToday<=totalCapacityMax; salesForToday+=dailyCapacityUsedStep) {
+				
+				//Get solution for this (startCapacity, salesOnDay)
+				HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(dayStartSales,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
+		        double profit = 0.0;
+		        for(Query q : solution.keySet()) {
+		        	profit += solution.get(q).v();
+		        }
+				
+		        //Add solution's profit to the cache
+		        if(profitMemoizeMap.get(dayStartSales) == null) {
+		             HashMap<Integer,Double> profitMap = new HashMap<Integer, Double>();
+		             profitMap.put(salesForToday,profit);
+		             profitMemoizeMap.put(dayStartSales,profitMap);
+		          }
+		          else {
+		             profitMemoizeMap.get(dayStartSales).put(salesForToday,profit);
+		          }
+			}
+	   }
+	   long endTimerMap = System.currentTimeMillis();
+	   
+	   
+	   
+	   //-------------------------
+	   //Create the multiday DP, and solve to get the number of conversions we want for the current day
+	   //-------------------------
+	   long startTimerDP = System.currentTimeMillis();
+	   DPMultiday dp = new DPMultiday(capacityWindow, totalCapacityMax, dailyCapacityUsedMin, dailyCapacityUsedMax, dailyCapacityUsedStep, dayStart, dayEnd, preDaySales.clone());
+	   dp.profitGivenCapacities = profitMemoizeMap;
+	   double salesForToday = dp.solve(); //TODO: Call the DP to get this value
+	   long endTimerDP = System.currentTimeMillis();
+	   
+
+	   System.out.println("MapTime=" + (endTimerMap-startTimerMap)/1000.0 + ", DPTime=" + (endTimerDP-startTimerDP)/1000.0 ) ;
+	   
+	   
+	   //-------------------------
+	   //Get the MCKP solution for this number of targeted conversions
+	   //-------------------------
+
+	   //Get today's remaining capacity
+	   int startRemCap = (int)(_capacity*_capMod.get(_capacity));
+	   for(int i = 0; i < preDaySales.length; i++) {
+		   startRemCap -= preDaySales[i];
+	   }
+
+	   //Get the actual MCKP solution, given today's remaining capacity
+	   return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
+
+   }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
    private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap) {
       double totalProfit = 0.0;
       for(int i = 0; i < salesOnDay.length; i++) {
