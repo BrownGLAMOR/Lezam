@@ -32,17 +32,20 @@ public class DPMultiday {
 	int[] roundedCapacityHistory; //Same as capacityHistory, but rounded to fit the discretization of the DP
 	
 	
+	int actualCapacityLimit; //The actual amount our agent can sell before going over capacity (defined by TAC game)
+	
 	/**
 	 * If this is true, the entire working solution will not be stored, but instead
 	 * only the information that is necessary to output the current day's action.
 	 */
-	boolean STORE_COMPACT_SOLUTION = true; 
+	boolean STORE_COMPACT_ACTIONS = false; 
+	boolean STORE_COMPACT_VALUES = true;
 	
 
 	//======================================= CONSTRUCTORS =======================================
 
 
-	public DPMultiday(int capacityWindow, int totalCapacityMax, int dailyCapacityUsedMin, int dailyCapacityUsedMax, int dailyCapacityUsedStep, int dayStart, int dayEnd, int[] capacityHistory) {
+	public DPMultiday(int capacityWindow, int totalCapacityMax, int dailyCapacityUsedMin, int dailyCapacityUsedMax, int dailyCapacityUsedStep, int dayStart, int dayEnd, int[] capacityHistory, int actualCapacityLimit) {
 
 		this.capacityWindow = capacityWindow;
 		this.totalCapacityMax = totalCapacityMax;
@@ -52,7 +55,8 @@ public class DPMultiday {
 		this.dayStart = dayStart;
 		this.dayEnd = dayEnd;
 		this.capacityHistory = capacityHistory;
-
+		this.actualCapacityLimit = actualCapacityLimit;
+		
 		profitGivenCapacities = new HashMap<Integer, HashMap<Integer, Double>>();		
 		profitForState = new HashMap(); //new TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, Double>>>>>();
 		actionForState = new HashMap(); //new TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, TreeMap<Integer, Double>>>>>();
@@ -133,6 +137,27 @@ public class DPMultiday {
 	}
 
 
+	
+	//Get the amount to sell on each day. 
+	public int[] solveAllDays() {	
+		solve();
+		
+		int[] salesPerDay = new int[dayEnd-dayStart+1];
+		int[] capacityHistory = roundedCapacityHistory.clone();
+		for (int d=dayStart; d<=dayEnd; d++) {
+			salesPerDay[d-dayStart] = (int) getActionOfState(d, capacityHistory);
+			
+			for (int i=1;i<capacityHistory.length; i++) {
+				capacityHistory[i-1] = capacityHistory[i];
+			}
+			capacityHistory[capacityWindow-1] = salesPerDay[d-dayStart];
+		}
+		
+		return salesPerDay;
+	}
+	
+	
+	
 	//======================================= MAIN SOLVER =======================================
 	public double solve() {
 		for (int d=dayEnd; d>=dayStart; d--) {
@@ -178,7 +203,8 @@ public class DPMultiday {
 				
 				//Only set action of state if it is for the starting day? 
 				//(Or only if its for the state we're actually at?)
-				if (STORE_COMPACT_SOLUTION && d==dayStart) setActionOfState(d, capacityHistory, bestC5);
+				//if (STORE_COMPACT_SOLUTION && d==dayStart) 
+				setActionOfState(d, capacityHistory, bestC5);
 
 
 				//System.out.println("State=(" + d + ", " + Arrays.toString(capacityHistory) + "), bestValue=" + bestValue + ", bestAction=" + bestC5);
@@ -221,6 +247,12 @@ public class DPMultiday {
 
 
 	public double getProfitGivenCapacities(int startCap, int amountSold) {
+		//If we will end below capacity, it doesn't matter what the startCap was.
+		//We'll just suppose that startCap=minimumStartCap.
+		//(That way we won't have to have all the other extra values in the map).
+		if (startCap + amountSold <= actualCapacityLimit) {
+			return profitGivenCapacities.get(dailyCapacityUsedMin).get(amountSold);
+		}
 		return profitGivenCapacities.get(startCap).get(amountSold);
 	}
 
@@ -228,12 +260,12 @@ public class DPMultiday {
 
 	public void setValueOfState(int day, int[] caps, double profit) {
 		//System.out.println("Setting value of state (" + day + ", " + Arrays.toString(caps) + ") to " + profit);
-		if(STORE_COMPACT_SOLUTION) day = day % 2;
+		if(STORE_COMPACT_VALUES) day = day % 2;
 		setMapValue(profitForState, day, caps, profit);
 	}
 
 	public void setActionOfState(int day, int[] caps, double profit) {
-		if(STORE_COMPACT_SOLUTION) day = day % 2;
+		if(STORE_COMPACT_ACTIONS) day = day % 2;
 		setMapValue(actionForState, day, caps, profit);
 		 
 	}
@@ -250,7 +282,7 @@ public class DPMultiday {
 				
 				//Print an error message if this key already exists.
 				//(Unless we're storing a compact solution)
-				if(!STORE_COMPACT_SOLUTION && map.containsKey(cap)) System.err.println("Assigning profit for state that already existed. Overriding."); 
+				//if(!STORE_COMPACT_SOLUTION && map.containsKey(cap)) System.err.println("Assigning profit for state that already existed. Overriding."); 
 				map.put(cap, profit);
 			} else {
 				//If we're not on the last dimension, add the new treeMap (if it doesn't yet exist)
@@ -265,7 +297,7 @@ public class DPMultiday {
 		//If the state being considered is beyond the number of days (as is the case for terminal states), return 0
 		if (day > dayEnd) return 0;
 
-		if(STORE_COMPACT_SOLUTION) day = day % 2;
+		if(STORE_COMPACT_VALUES) day = day % 2;
 		return getMapValue(profitForState, day, caps);
 		} catch (Exception e) {
 			System.err.println("Could not find value for day=" + day + ", caps=" + Arrays.toString(caps));
@@ -276,7 +308,7 @@ public class DPMultiday {
 	}
 
 	public double getActionOfState(int day, int[] caps) {
-		if(STORE_COMPACT_SOLUTION) day = day % 2;
+		if(STORE_COMPACT_ACTIONS) day = day % 2;
 		return getMapValue(actionForState, day, caps);
 	}
 
@@ -323,7 +355,7 @@ public class DPMultiday {
 			caps[capacityWindow-1] = (int) c5;
 			
 			//If we didn't store all solutions, don't output anymore.
-			if(STORE_COMPACT_SOLUTION) break;
+			if(STORE_COMPACT_ACTIONS) break;
 		}
 	}
 
@@ -344,10 +376,11 @@ public class DPMultiday {
 		int dayStart = 1;
 		int dayEnd = 3;
 		int[] capacityHistory = new int[capacityWindow];
-		int maxCapacity = 1;
-		Arrays.fill(capacityHistory, maxCapacity/capacityWindow);
+		int actualCapacity = 1;
+		Arrays.fill(capacityHistory, actualCapacity/capacityWindow);
 
-		DPMultiday dp = new DPMultiday(capacityWindow, totalCapacityMax, dailyCapacityUsedMin, dailyCapacityUsedMax, dailyCapacityUsedStep, dayStart, dayEnd, capacityHistory);
+		
+		DPMultiday dp = new DPMultiday(capacityWindow, totalCapacityMax, dailyCapacityUsedMin, dailyCapacityUsedMax, dailyCapacityUsedStep, dayStart, dayEnd, capacityHistory, actualCapacity);
 
 
 

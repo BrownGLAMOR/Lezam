@@ -18,7 +18,7 @@ public class AgentSimulator {
    public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";  //
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -31,7 +31,13 @@ public class AgentSimulator {
       return javasim.setupClojureSim(filename);
    }
 
+   
    public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
+	   MCKP.MultiDay multiDay = MCKP.MultiDay.HillClimbing;
+	   simulateAgent(filenames, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay);
+   }
+   
+   public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh, MCKP.MultiDay multiDay) {
       String[] agentsToReplace;
       if(agentNum == 0) {
          agentsToReplace = new String[] {"TacTex"};
@@ -67,10 +73,10 @@ public class AgentSimulator {
             boolean PERFECT_SIM = true;
             AbstractAgent agent;
             if(PERFECT_SIM) {
-               agent = new MCKP(cljSim, agentToReplace,c1,c2,c3);
+               agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay);
             }
             else {
-               agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh);
+               agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay);
 //               agent = new EquatePPSSimple2010();
             }
             PersistentArrayMap results = javasim.simulateAgent(cljSim, agent, agentToReplace);
@@ -103,14 +109,39 @@ public class AgentSimulator {
       c2 = 1.0;
       c3 = 1.0;
       double simUB = 1.45;
-      int gameNum = 15127;
+      int gameNumStart = 15127;
+      int gameNumEnd = 15127;
       int agentNum = 0;
-      if(args.length > 1) {
-         gameNum = Integer.parseInt(args[0]);
+      
+      //For determining which of our agent configurations we should run.
+      int ourAgentMethod = 3;
+      MCKP.MultiDay multiDay = null;
+      
+      if(args.length == 2) {
+         gameNumStart = Integer.parseInt(args[0]);
+         gameNumEnd = gameNumStart;
          agentNum = Integer.parseInt(args[1]);
       }
-      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, gameNum, gameNum);
-      simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB);
+      if(args.length == 3) {
+          gameNumStart = Integer.parseInt(args[0]);
+          gameNumEnd = gameNumStart;
+          agentNum = Integer.parseInt(args[1]);
+          ourAgentMethod = Integer.parseInt(args[2]);
+       }
+
+            
+      if (ourAgentMethod==0) multiDay = MCKP.MultiDay.OneDayHeuristic;
+      else if (ourAgentMethod==1) multiDay = MCKP.MultiDay.HillClimbing;
+      else if (ourAgentMethod==2) multiDay = MCKP.MultiDay.DP;
+      else if (ourAgentMethod==3) multiDay = MCKP.MultiDay.DPHill;
+
+      
+      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, gameNumStart, gameNumEnd);
+      System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay);
+      long start = System.currentTimeMillis();
+      simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay);
+      long end = System.currentTimeMillis();
+      System.out.println("Total seconds elapsed: " + (end-start)/1000.0 );
    }
 
 }
