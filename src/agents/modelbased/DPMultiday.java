@@ -90,7 +90,11 @@ public class DPMultiday {
 		
 		//Return a default starting capacity state if none is given
 		if (capacityState == null) {
-			capacityState = roundedCapacityHistory.clone();
+			capacityState = new int[capacityWindow];
+			for (int i=0; i<lowestIndexToConsider; i++) {
+				capacityState[i] = roundedCapacityHistory[i+daysIntoFuture];				
+			}
+						
 			//If there are some indices that can be filled with min values, do so now.
 			//(The only reason there wouldn't be is if we're considering possible states for today. Our sales history completely 
 			//constrains in this case. 
