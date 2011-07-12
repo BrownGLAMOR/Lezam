@@ -20,6 +20,7 @@ import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import se.sics.tasim.aw.Message;
+import simulator.AgentSimulator.GameSet;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import tacaa.javasim;
@@ -87,10 +88,23 @@ public class AllModelTest {
       finals2010, semifinals2010, test2010
    }
 
+   
+   public static boolean isMac(){	 
+		String os = System.getProperty("os.name").toLowerCase();
+	    return (os.indexOf( "mac" ) >= 0); //Mac
+	}
+   
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) {
+    	  if (isMac()) {
+    		  String homeDir = System.getProperty("user.home");
+    		  if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-"; 
+    		  if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
+    	  }
+    	  else baseFile = "/pro/aa/finals2010/game-tacaa1-";    
+      }
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -823,6 +837,11 @@ public class AllModelTest {
        * Print Results
        */
       if(SUMMARY) {
+    	  System.out.println("Type I:   We said they had a budget and they did");
+    	  System.out.println("Type II:  We said they had a budget and they didn't");
+    	  System.out.println("Type III: We said they didn't have a budget and they did");
+    	  System.out.println("Type IV:  We said they didn't have a budget and they didn't\n");
+
          System.out.println("Impression MAE: " + results[0] + "(" + stdDevList(impErrorList,results[0]) + ")");
          System.out.println("Impression in order MAE: " + results[1] + "(" + stdDevList(impInOrderErrorList,results[1]) + ")");
          System.out.println("Bid MAE: " + results[2] + "(" + stdDevList(bidErrorList,results[2]) + ")");
@@ -1071,14 +1090,9 @@ public class AllModelTest {
    }
 
    public static void main(String[] args) throws IOException, ParseException {
-//      GameSet GAMES_TO_TEST = GameSet.test2010;
-//      int START_GAME = 1;
-//      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-//      int START_GAME = 15148;
-      int START_GAME = 15160;
+      int START_GAME = 15160; //15148 //15127
       int END_GAME = 15170;
-//      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
