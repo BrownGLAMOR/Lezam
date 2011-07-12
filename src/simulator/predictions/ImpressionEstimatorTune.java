@@ -44,7 +44,7 @@ public class ImpressionEstimatorTune {
                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0,.1);
 
 
-//         err = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+//         err = evaluator.allModelPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
 //                                                                START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,100,0,
 //                                                                avgposstddev,ouravgposstddev,imppriorstddev,ourimppriorstddev);
       } catch (Exception e) {

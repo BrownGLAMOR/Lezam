@@ -54,6 +54,11 @@
                                      edu.umich.eecs.tac.props.BidBundle,
                                      int,
                                      boolean] java.util.ArrayList]
+            ^{:static true} [simDayForReports [clojure.lang.PersistentHashMap,
+                                               String,
+                                               int,
+                                               edu.umich.eecs.tac.props.BidBundle,
+                                               int] java.util.ArrayList]
             ^{:static true} [setStartSales [clojure.lang.PersistentHashMap,
                                             String,
                                             int,
@@ -330,6 +335,39 @@
 (defn -simDay
   [status agent day bundle num-ests perfectsim?]
   (simDay status agent day bundle num-ests perfectsim?))
+
+
+(defn simDayForReports
+  [status agent day bundle startsales]
+  (let [queryspace (status :query-space)
+        status (assoc status :squashed-bids
+                      (assoc (status :squashed-bids) agent
+                             (assoc ((status :squashed-bids) agent) day
+                                    (mk-single-squashed-bid-map bundle
+                                                                ((status :adv-effects) agent)
+                                                                (status :squash-param)
+                                                                queryspace))))
+        status (assoc status :budgets
+                      (assoc (status :budgets) agent
+                             (assoc ((status :budgets) agent) day
+                                    (mk-single-budget-map bundle queryspace))))
+        status (assoc status :ads
+                      (assoc (status :ads) agent
+                             (assoc ((status :ads) agent) day
+                                    (mk-single-ad-map bundle queryspace))))
+        status (assoc status :start-sales
+                      (assoc (status :start-sales) agent
+                             (assoc ((status :start-sales) agent) day startsales)))
+        stats (simulate-expected-day status day)
+        queryreport (mk-query-report status stats agent day)
+        salesreport (mk-sales-report status stats agent day)]
+    (doto (new java.util.ArrayList)
+      (.add queryreport)
+      (.add salesreport))))
+
+(defn -simDayForReports
+  [status agent day bundle startsales]
+  (simDayForReports status agent day bundle startsales))
 
 
 (defn setStartSales

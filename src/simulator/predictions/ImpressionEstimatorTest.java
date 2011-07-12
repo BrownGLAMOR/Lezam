@@ -267,7 +267,7 @@ public class ImpressionEstimatorTest {
 
 
 
-//   public void impressionEstimatorPredictionChallenge(SolverType impressionEstimatorIdx) throws IOException, ParseException {
+//   public void allModelPredictionChallenge(SolverType impressionEstimatorIdx) throws IOException, ParseException {
 //      GameSet gamesToTest= GameSet.test2010;
 //      int startGame = 1;
 //      int endGame = 1;
@@ -276,7 +276,7 @@ public class ImpressionEstimatorTest {
 //      int startQuery = 0; //0
 //      int endQuery = 15; //15
 //      String agentToTest = "all";
-//      impressionEstimatorPredictionChallenge(impressionEstimatorIdx, gamesToTest, startGame, endGame, startDay, endDay, startQuery, endQuery, agentToTest);
+//      allModelPredictionChallenge(impressionEstimatorIdx, gamesToTest, startGame, endGame, startDay, endDay, startQuery, endQuery, agentToTest);
 //   }
 
    /**
@@ -2303,7 +2303,7 @@ public class ImpressionEstimatorTest {
 //                        System.out.println("SUMMARY: ---------------");
 //                        System.out.println("SUMMARY: STARTING TEST: sampled=" + sampledAvgPositions + ", perfectImps=" + perfectImps + ", usePrior=" + useWaterfallPriors + ", noiseFactor=" + noiseFactor + ", solver=" + solverType);
 //                        start = System.currentTimeMillis();
-//                        evaluator.impressionEstimatorPredictionChallenge(solverType);
+//                        evaluator.allModelPredictionChallenge(solverType);
 //                        stop = System.currentTimeMillis();
 //                        secondsElapsed = (stop - start) / 1000.0;
 //                        System.out.println("SUMMARY: Seconds elapsed: " + secondsElapsed);
@@ -2487,13 +2487,13 @@ public class ImpressionEstimatorTest {
 
 //      System.out.println(numSamples + "," + results[1] + "," + results[2]);
 
-//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
-//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);
-//      evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP_LP);
-//	   evaluator.impressionEstimatorPredictionChallenge(SolverType.MULTI_MIP, ORDERING_KNOWN);
-//      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
-//      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
-//      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
+//	   evaluator.allModelPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
+//	   evaluator.allModelPredictionChallenge(SolverType.MIP);
+//      evaluator.allModelPredictionChallenge(SolverType.MIP_LP);
+//	   evaluator.allModelPredictionChallenge(SolverType.MULTI_MIP, ORDERING_KNOWN);
+//      evaluator.allModelPredictionChallenge(SolverType.CP);
+//      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
+//      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
       stop = System.currentTimeMillis();
       secondsElapsed = (stop - start) / 1000.0;
       if(SUMMARY) {
@@ -2514,14 +2514,14 @@ public class ImpressionEstimatorTest {
 
 //      System.out.println("\n\n\n\n\nSTARTING TEST 1");
 //      start = System.currentTimeMillis();
-//      evaluator.impressionEstimatorPredictionChallenge(SolverType.CP);
+//      evaluator.allModelPredictionChallenge(SolverType.CP);
 //      stop = System.currentTimeMillis();
 //      secondsElapsed = (stop - start) / 1000.0;
 //      System.out.println("SECONDS ELAPSED: " + secondsElapsed);
 
 //		System.out.println("\n\n\n\n\nSTARTING TEST 2");
 //		start = System.currentTimeMillis();
-//		evaluator.impressionEstimatorPredictionChallenge(SolverType.MIP);
+//		evaluator.allModelPredictionChallenge(SolverType.MIP);
 //		stop = System.currentTimeMillis();
 //		secondsElapsed = (stop - start)/1000.0;
 //		System.out.println("SECONDS ELAPSED: " + secondsElapsed);

@@ -205,7 +205,6 @@ public class BayesianQueryHandler {
             else {
                System.out.println("bad estimate!!!!!!");
             }
-
          }
 
          if (notinslot1 || inslot1) {
