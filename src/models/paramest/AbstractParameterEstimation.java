@@ -20,7 +20,8 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
      */
    public abstract double getAdvEffectPrediction(Query q);
    public abstract double getContProbPrediction(Query q);
-   public abstract double getReservePrediction(QueryType qt);
+   public abstract double getRegReservePrediction(QueryType qt);
+   public abstract double getPromReservePrediction(QueryType qt);
 
    /*
      * QueryReport/SalesReport report contain information about the overall number of

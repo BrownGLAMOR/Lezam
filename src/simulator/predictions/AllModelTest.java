@@ -12,6 +12,7 @@ import models.budgetEstimator.AbstractBudgetEstimator;
 import models.budgetEstimator.BudgetEstimator;
 import models.paramest.AbstractParameterEstimation;
 import models.paramest.BayesianParameterEstimation;
+import models.paramest.NaiveParameterEstimation;
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
@@ -70,6 +71,7 @@ public class AllModelTest {
     * ParamEst Model Params
     */
    boolean TEST_PARAM_EST = true;
+   boolean PARAM_EST_NAIVE = false;
 
    /*
     * LIVE MODE
@@ -244,7 +246,13 @@ public class AllModelTest {
             paramModelList = new ArrayList<AbstractParameterEstimation>();
             for (int i = 0; i < advertisers.size(); i++) {
                if(i == replaceIdx) {
-                  AbstractParameterEstimation paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, querySpace);
+                  AbstractParameterEstimation paramModel;
+                  if(PARAM_EST_NAIVE) {
+                     paramModel = new NaiveParameterEstimation();
+                  }
+                  else {
+                     paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, querySpace);
+                  }
                   paramModelList.add(paramModel);
                }
                else {
@@ -534,8 +542,8 @@ public class AllModelTest {
                   }
 
                   for(int qtIdx = 0; qtIdx < QueryType.values().length; qtIdx++) {
-                     allRegReservePredictions[qtIdx] = paramModel.getReservePrediction(QueryType.values()[qtIdx]);
-                     allPromReservePredictions[qtIdx] = paramModel.getReservePrediction(QueryType.values()[qtIdx]) + 0.5;
+                     allRegReservePredictions[qtIdx] = paramModel.getRegReservePrediction(QueryType.values()[qtIdx]);
+                     allPromReservePredictions[qtIdx] = paramModel.getPromReservePrediction(QueryType.values()[qtIdx]);
                   }
 
                   budgetModel.updateModel(queryReport, bidBundle, convProbs, allContProbsPredictions, allRegReservePredictions, allRankPredictions,allImpressionPredictions,fullWaterfalls, rankables, allSquashedBidPredictions, allUserStatePredictions);
@@ -1067,15 +1075,15 @@ public class AllModelTest {
 //      int START_GAME = 1;
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15148;
-//      int END_GAME = 15127;
-      int END_GAME = 15148;
+//      int START_GAME = 15148;
+      int START_GAME = 15160;
+      int END_GAME = 15170;
 //      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
-      String agentName = "TacTex";
+      String agentName = "Mertacor";
 
 
       AllModelTest evaluator = new AllModelTest();

@@ -81,7 +81,7 @@ public class MCKP extends AbstractAgent {
    private double _highBidMult;
    private double _randJump,_yestBid,_5DayBid,_bidStdDev;
 
-   private MultiDay _multiDayHeuristic;
+   private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;
    private int _multiDayDiscretization;
    
 
@@ -195,9 +195,10 @@ public class MCKP extends AbstractAgent {
 
          for(Query q : _querySpace) {
             contProbs.put(q,_paramEstimation.getContProbPrediction(q));
-            double regReserve = _paramEstimation.getReservePrediction(q.getType());
+            double regReserve = _paramEstimation.getRegReservePrediction(q.getType());
+            double promReserve = _paramEstimation.getPromReservePrediction(q.getType());
             regReserves.put(q,regReserve);
-            promReserves.put(q,regReserve + _proReserveBoost*(2.0/3.0));
+            promReserves.put(q,promReserve);
          }
 
          for(int i = 0; i < _advertisers.size(); i++) {
@@ -972,9 +973,9 @@ public class MCKP extends AbstractAgent {
          }
 
          double[] regReserve = new double[3];
-         regReserve[0] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_ZERO);
-         regReserve[1] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_ONE);
-         regReserve[2] = _paramEstimation.getReservePrediction(QueryType.FOCUS_LEVEL_TWO);
+         regReserve[0] = _paramEstimation.getRegReservePrediction(QueryType.FOCUS_LEVEL_ZERO);
+         regReserve[1] = _paramEstimation.getRegReservePrediction(QueryType.FOCUS_LEVEL_ONE);
+         regReserve[2] = _paramEstimation.getRegReservePrediction(QueryType.FOCUS_LEVEL_TWO);
 
          _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, regReserve, fullOrders,fullImpressions,fullWaterfalls, rankables, allbids, userStates);
 

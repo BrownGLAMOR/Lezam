@@ -31,9 +31,9 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
       }
 
       _reserveHandlers = new HashMap<QueryType, ReserveEstimator>();
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(QueryType.FOCUS_LEVEL_ZERO,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(QueryType.FOCUS_LEVEL_ONE,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(QueryType.FOCUS_LEVEL_TWO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_ZERO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_ONE,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_TWO,queryspace));
    }
 
    @Override
@@ -47,8 +47,13 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    }
 
    @Override
-   public double getReservePrediction(QueryType qt) {
-      return _reserveHandlers.get(qt).getPrediction();
+   public double getRegReservePrediction(QueryType qt) {
+      return _reserveHandlers.get(qt).getRegPrediction();
+   }
+
+   @Override
+   public double getPromReservePrediction(QueryType qt) {
+      return _reserveHandlers.get(qt).getPromPrediction();
    }
 
    @Override
