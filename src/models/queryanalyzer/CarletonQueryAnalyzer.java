@@ -94,6 +94,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    }
 
    @Override
+   /**
+    * Gives a ranking over all agents.
+    * Output is array orderPredictions[rank], where the array index
+    * is the ranking (index=0 means top slot), and the value is the 
+    * agent index that was predicted to be in that "position".
+    */
    public int[] getOrderPrediction(Query q) {
       int latestResultIdx = _allResults.get(q).size() - 1;
       IEResult result = _allResults.get(q).get(latestResultIdx);
@@ -131,6 +137,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          }
 
          //Fill in those who weren't in the auction in order of agentID
+         //FIXME: Can we do something better than this?
          for (int a = 0; a < _advertisers.size(); a++) {
             if(orderPredictions[a] == -1) {
                String adv = advsLeft.remove(0);
@@ -175,6 +182,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             }
          }
 
+         //FIXME: Is this arbitrarily choosing agents to take the place of padded agents?
          int numPadded = waterfallPredReduced.length-agentNamesReduced.length;
          for(int i = 0; i < numPadded; i++) {
             String adv = advsLeft.remove(0);

@@ -18,7 +18,14 @@ public class AgentSimulator {
    public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+      if (GAMES_TO_TEST == GameSet.finals2010) {
+    	  if (isMac()) {
+    		  String homeDir = System.getProperty("user.home");
+    		  if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-"; 
+    		  if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
+    	  }
+    	  else baseFile = "/pro/aa/finals2010/game-tacaa1-";    
+      }
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -34,10 +41,13 @@ public class AgentSimulator {
    
    public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
 	   MCKP.MultiDay multiDay = MCKP.MultiDay.HillClimbing;
-	   simulateAgent(filenames, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay);
+	   int multiDayDiscretization = 50;
+	   boolean PERFECT_SIM = true;
+	   simulateAgent(filenames, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
    }
    
-   public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh, MCKP.MultiDay multiDay) {
+   public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh, 
+		   MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM) {
       String[] agentsToReplace;
       if(agentNum == 0) {
          agentsToReplace = new String[] {"TacTex"};
@@ -70,13 +80,12 @@ public class AgentSimulator {
          PersistentHashMap cljSim = setupSimulator(filename);
          for(String agentToReplace : agentsToReplace) {
 
-            boolean PERFECT_SIM = false;
             AbstractAgent agent;
             if(PERFECT_SIM) {
-               agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay);
+               agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
             }
             else {
-               agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay);
+               agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
 //               agent = new EquatePPSSimple2010();
             }
             PersistentArrayMap results = javasim.simulateAgent(cljSim, agent, agentToReplace);
@@ -102,7 +111,15 @@ public class AgentSimulator {
       return rand * (b - a) + a;
    }
 
+   
+   public static boolean isMac(){	 
+		String os = System.getProperty("os.name").toLowerCase();
+	    return (os.indexOf( "mac" ) >= 0); //Mac
+	}
+   
+   
    public static void main(String[] args) {
+	   
       Random rand = new Random();
       double c1,c2,c3;
       c1 = .8 + rand.nextDouble() * .4;
@@ -114,22 +131,29 @@ public class AgentSimulator {
       int agentNum = 0;
       
       //For determining which of our agent configurations we should run.
-      int ourAgentMethod = 0;
-      MCKP.MultiDay multiDay = null;
+      int ourAgentMethod = 1;
+      int multiDayDiscretization = 25;
+      
+      //Perfect models?
+      boolean PERFECT_SIM = false;
+
       
       if(args.length == 2) {
          gameNumStart = Integer.parseInt(args[0]);
          gameNumEnd = gameNumStart;
          agentNum = Integer.parseInt(args[1]);
       }
-      if(args.length == 3) {
+      if(args.length == 5) {
           gameNumStart = Integer.parseInt(args[0]);
           gameNumEnd = gameNumStart;
           agentNum = Integer.parseInt(args[1]);
           ourAgentMethod = Integer.parseInt(args[2]);
+          multiDayDiscretization = Integer.parseInt(args[3]);
+          PERFECT_SIM = Boolean.parseBoolean(args[4]);
        }
 
             
+      MCKP.MultiDay multiDay = null;
       if (ourAgentMethod==0) multiDay = MCKP.MultiDay.OneDayHeuristic;
       else if (ourAgentMethod==1) multiDay = MCKP.MultiDay.HillClimbing;
       else if (ourAgentMethod==2) multiDay = MCKP.MultiDay.DP;
@@ -137,9 +161,9 @@ public class AgentSimulator {
 
       
       ArrayList<String> filenames = getGameStrings(GameSet.finals2010, gameNumStart, gameNumEnd);
-      System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay);
+      System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay + ", discretization=" + multiDayDiscretization + ", perfect=" + PERFECT_SIM);
       long start = System.currentTimeMillis();
-      simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay);
+      simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
       long end = System.currentTimeMillis();
       System.out.println("Total seconds elapsed: " + (end-start)/1000.0 );
    }

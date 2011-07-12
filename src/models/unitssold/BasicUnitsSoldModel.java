@@ -39,6 +39,8 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
          }
       }
       if (expectedConvsForMissingDay == null) {
+    	  //expectedConvsForMissingDay = average of each #conversions that occurred within window and the 
+    	  //"expected share" of daily conversions (if evenly distributed across the window) 
          total += (total + _capacity / ((double) _window)) / 4.0;
       } else {
          total += expectedConvsForMissingDay;

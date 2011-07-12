@@ -81,7 +81,9 @@ public class MCKP extends AbstractAgent {
    private double _highBidMult;
    private double _randJump,_yestBid,_5DayBid,_bidStdDev;
 
-   private MultiDay _multiDayHeuristic = MultiDay.OneDayHeuristic;
+   private MultiDay _multiDayHeuristic;
+   private int _multiDayDiscretization;
+   
 
    public enum MultiDay {
 	   OneDayHeuristic, HillClimbing, DP, DPHill
@@ -113,6 +115,12 @@ public class MCKP extends AbstractAgent {
       _c[0] = .03;
       _c[1] = .05;
       _c[2] = .15;
+      
+//      _c[0] = .11;
+//      _c[1] = .23;
+//      _c[2] = .36;
+      
+      
       USER_MODEL_UB_MULT = 1.45;
       USER_MODEL_UB_STD_DEV = .75;
       _totalBudgets = new HashMap<Integer, Double>();
@@ -133,9 +141,10 @@ public class MCKP extends AbstractAgent {
 
 
 
-   public MCKP(double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double lowBidMult, double highBidMult, MultiDay multiDay) {
+   public MCKP(double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double lowBidMult, double highBidMult, MultiDay multiDayHeuristic, int multiDayDiscretization) {
 	   this(c1, c2, c3, budgetL, budgetM, budgetH, lowBidMult, highBidMult);
-	   _multiDayHeuristic = multiDay;
+	   _multiDayHeuristic = multiDayHeuristic;
+	   _multiDayDiscretization = multiDayDiscretization;
 	}
 
 
@@ -154,17 +163,23 @@ public class MCKP extends AbstractAgent {
       _agentToReplace = agentToReplace;
    }
 
-   public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, MultiDay multiDay) {
+   public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, MultiDay multiDay, int multiDayDiscretization) {
 	   this(perfectSim, agentToReplace, c1, c2, c3);
 	   _multiDayHeuristic = multiDay;
+	   _multiDayDiscretization = multiDayDiscretization;
    }
 
+   
+   public boolean hasPerfectModels() {
+	   return (_perfectCljSim != null);
+   }
+   
    public PersistentHashMap initClojureSim() {
       return javasim.initClojureSim(_publisherInfo,_slotInfo,_advertiserInfo,_retailCatalog,_advertisers);
    }
 
    public PersistentHashMap setupSimForDay() {
-      if(_perfectCljSim == null) {
+      if(!hasPerfectModels()) {
          HashMap<String,HashMap<Query,Double>> squashedBids = new HashMap<String, HashMap<Query, Double>>();
          HashMap<String,HashMap<Query,Double>> budgets = new HashMap<String, HashMap<Query, Double>>();
          HashMap<Product,double[]> userPop = new HashMap<Product, double[]>();
@@ -278,7 +293,7 @@ public class MCKP extends AbstractAgent {
 
    public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
       ArrayList result;
-      if(_perfectCljSim != null) {
+      if(hasPerfectModels()) {
          result = javasim.simQuery(cljSim, query, _agentToReplace, (int) _day, bid, budget, ad, 1, true);
       }
       else {
@@ -293,7 +308,7 @@ public class MCKP extends AbstractAgent {
 
    public double[] simulateDay(PersistentHashMap cljSim, BidBundle bundle) {
       ArrayList result;
-      if(_perfectCljSim != null) {
+      if(hasPerfectModels()) {
          result = javasim.simDay(cljSim, _agentToReplace, (int) _day, bundle, 1, true);
       }
       else {
@@ -433,10 +448,10 @@ public class MCKP extends AbstractAgent {
          bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
       }
 
-      if(_day >= lagDays || _perfectCljSim != null){
+      if(_day >= lagDays || hasPerfectModels()){
 
          double remainingCap;
-         if(_perfectStartSales == null) {
+         if(!hasPerfectModels()) {
             if(_day < lagDays) {
                remainingCap = _capacity*_capMod.get(_capacity)/((double)_capWindow);
             }
@@ -603,7 +618,7 @@ public class MCKP extends AbstractAgent {
          }
 
          PersistentHashMap daySim;
-         if(_perfectCljSim != null) {
+         if(hasPerfectModels()) {
             daySim = javasim.setStartSales(querySim, _agentToReplace, (int) _day, (int) (_capacity - remainingCap), true);
          }
          else {
@@ -674,7 +689,7 @@ public class MCKP extends AbstractAgent {
                * We decided that we did not want to be in this query, so we will use it to explore the space
                * no need for exploring if perfect sim though
                */
-               if(_perfectCljSim == null && !q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+               if(!hasPerfectModels() && !q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
                   double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .9);
                   bidBundle.addQuery(q, bid, new Ad(), bid*3);
                }
@@ -820,7 +835,7 @@ public class MCKP extends AbstractAgent {
    public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
 //      System.out.println("Updating models on day " + _day);
-      if(_perfectCljSim == null) {
+      if(!hasPerfectModels()) {
          BidBundle bidBundle = _bidBundles.get(_bidBundles.size()-2);
 
          if(!USER_MODEL_UB) {
@@ -893,6 +908,10 @@ public class MCKP extends AbstractAgent {
 //            System.out.println("perQRanks: " + perQRanks);
 
 
+            
+            
+            //This is checking which agents have an assigned ranking from the QA (for budget and bid estimation). 
+            //If RANKABLE==false, assume everyone was assigned a ranking
             HashMap<String, Boolean> rankable = null;
             HashMap<String, Boolean> rankableBid = null;
             if(waterfallPred != null) {
@@ -959,7 +978,7 @@ public class MCKP extends AbstractAgent {
 
          _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, regReserve, fullOrders,fullImpressions,fullWaterfalls, rankables, allbids, userStates);
 
-         _unitsSold.update(salesReport);
+         _unitsSold.update(salesReport); //FIXME: Move this and salesDist to beginning, in case other models want to use them (e.g. QA)
       }
    }
 
@@ -1074,7 +1093,7 @@ public class MCKP extends AbstractAgent {
       double daysLookahead = Math.max(0, Math.min(numDays, 58 - _day));
       if(daysLookahead > 0 && totalWeight > 0) {
          ArrayList<Integer> soldArray;
-         if(_perfectStartSales == null) {
+         if(!hasPerfectModels()) {
             ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
             soldArray = new ArrayList<Integer>(soldArrayTMP);
 
@@ -1371,7 +1390,8 @@ public class MCKP extends AbstractAgent {
    private HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query, ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int[] initialSales){
 
       int[] preDaySales = new int[_capWindow-1];
-      if(_perfectStartSales == null) {
+      if(!hasPerfectModels()) {
+    	  System.out.println("Perfect start sales is null");
          ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
          ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP);
 
@@ -1389,6 +1409,7 @@ public class MCKP extends AbstractAgent {
          }
       }
       else {
+    	  System.out.println("Perfect start sales is not null");
          for(int i = 0; i < (_capWindow-1); i++) {
             int idx = _perfectStartSales.length-1-i;
             if(idx >= 0) {
@@ -1399,7 +1420,7 @@ public class MCKP extends AbstractAgent {
             }
          }
       }
-      //System.out.println("preDaySales=" + Arrays.toString(preDaySales));
+      System.out.println("day " + _day + ": " + "preDaySales=" + Arrays.toString(preDaySales));
 
       int startRemCap = (int)(_capacity*_capMod.get(_capacity));
       for (int preDaySale : preDaySales) {
@@ -1407,7 +1428,7 @@ public class MCKP extends AbstractAgent {
       }
 
       int daysAhead = Math.max(0,58-(int)_day)+1;
-      int capacityIncrement = 10; //50; //10;
+      int capacityIncrement = _multiDayDiscretization; //10; //50; //10;
       int[] salesOnDay = new int[daysAhead];
       for(int i = 0; i < salesOnDay.length; i++) {
          salesOnDay[i] = initialSales[i];
@@ -1620,7 +1641,7 @@ public class MCKP extends AbstractAgent {
 	   //Get our current conversion history (amount of conversions on past days within the window)
 	   //-------------------------
 	   int[] preDaySales = new int[_capWindow-1];
-	   if(_perfectStartSales == null) {
+	   if(!hasPerfectModels()) {
 		   ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
 		   ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP);
 
