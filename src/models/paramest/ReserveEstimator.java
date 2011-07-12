@@ -49,7 +49,8 @@ public class ReserveEstimator {
             if(queryReport.getImpressions(q) == 0 && bid > _currentRegEstimate) {
                boolean avgPos5 = false;
                for(int i = 0; i < 8; i++) {
-                  if(queryReport.getPosition(q,"adv" + (i+1)) == 5.0) {
+                  double avgPos = queryReport.getPosition(q,"adv" + (i+1));
+                  if(!Double.isNaN(avgPos) && avgPos == 5.0) {
                      avgPos5 = true;
                      break;
                   }
@@ -69,6 +70,7 @@ public class ReserveEstimator {
             */
             if(queryReport.getImpressions(q) > 0 &&
                     queryReport.getPromotedImpressions(q) == 0 &&
+                    !Double.isNaN(queryReport.getPosition(q)) &&
                     queryReport.getPosition(q) <= _numPromSlots &&
                     bid > _currentPromEstimate) {
                _currentPromEstimate = bid;
