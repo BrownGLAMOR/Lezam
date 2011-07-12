@@ -18,7 +18,7 @@ public class AgentSimulator {
    public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-"; //"/pro/aa/finals2010/game-tacaa1-";  //
+      if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";  //"/pro/aa/finals2010/game-tacaa1-";    //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
 
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
@@ -70,7 +70,7 @@ public class AgentSimulator {
          PersistentHashMap cljSim = setupSimulator(filename);
          for(String agentToReplace : agentsToReplace) {
 
-            boolean PERFECT_SIM = true;
+            boolean PERFECT_SIM = false;
             AbstractAgent agent;
             if(PERFECT_SIM) {
                agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay);
@@ -90,11 +90,11 @@ public class AgentSimulator {
             for(int i = 0; i < profDiff.size(); i++) {
                profDiffArr[i] = (Double)profDiff.get(i);
             }
-            System.out.println(agentToReplace + ", Hack, " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
+            System.out.println(agentToReplace + ", " + multiDay + ", " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
             totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
          }
       }
-//      System.out.println(totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
+      System.out.println(totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
    }
 
    private static double randDouble(Random R, double a, double b) {
@@ -105,16 +105,16 @@ public class AgentSimulator {
    public static void main(String[] args) {
       Random rand = new Random();
       double c1,c2,c3;
-      c1 = 1.0;
-      c2 = 1.0;
-      c3 = 1.0;
+      c1 = .8 + rand.nextDouble() * .4;
+      c2 = .8 + rand.nextDouble() * .4;
+      c3 = .8 + rand.nextDouble() * .4;
       double simUB = 1.45;
-      int gameNumStart = 15127;
-      int gameNumEnd = 15127;
+      int gameNumStart = 15134;
+      int gameNumEnd = 15134;
       int agentNum = 0;
       
       //For determining which of our agent configurations we should run.
-      int ourAgentMethod = 3;
+      int ourAgentMethod = 0;
       MCKP.MultiDay multiDay = null;
       
       if(args.length == 2) {
