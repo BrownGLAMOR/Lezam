@@ -1133,7 +1133,7 @@ public class MCKP extends AbstractAgent {
             double expectedBudget = _capacity*_capMod.get(_capacity);
             for(int j = 0; j < _capWindow-1; j++) {
             	int idx = soldArray.size() - 1 - j;
-            	double defaultSales = _capWindow/(double)_capacity; //TODO: The other alternative is to pad soldArray. This might be cleaner.
+            	double defaultSales = _capacity/(double)_capWindow; //TODO: The other alternative is to pad soldArray. This might be cleaner.
             	if (idx<0) expectedBudget -= defaultSales;
             	else expectedBudget -= soldArray.get(idx);
             }
