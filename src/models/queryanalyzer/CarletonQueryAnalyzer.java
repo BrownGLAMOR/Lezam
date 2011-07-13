@@ -5,15 +5,14 @@ import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.forecast.AbstractImpressionForecaster;
+import models.queryanalyzer.forecast.EMAImpressionForecaster;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionAndRankEstimator;
 import models.queryanalyzer.iep.ImpressionEstimatorSample;
 import models.queryanalyzer.iep.LDSImpressionAndRankEstimator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 
 public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
@@ -22,6 +21,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    private HashMap<Query, ArrayList<int[]>> _allAgentIDs;
    private HashMap<Query, ArrayList<String[]>> _allAgentNames;
    private HashMap<Query, ArrayList<int[][]>> _allImpRanges;
+   private AbstractImpressionForecaster _impressionForecaster;
 
    private Set<Query> _querySpace;
    private HashMap<String, Integer> _advToIdx;
@@ -30,12 +30,33 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    public final static int NUM_SLOTS = 5;
    private boolean REPORT_FULLPOS_FORSELF = true;
    private boolean _isSampled;
+   private boolean usePriors = true;
 
    public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean selfAvgPosFlag, boolean isSampled) {
       _querySpace = querySpace;
 
       REPORT_FULLPOS_FORSELF = selfAvgPosFlag;
       _isSampled = isSampled;
+
+      int ourIdx = -1;
+      for(int i = 0; i < advertisers.size(); i++) {
+         if(ourAdvertiser.equals(advertisers.get(i))) {
+            ourIdx = i;
+            break;
+         }
+      }
+
+      if(ourIdx == -1) {
+         System.out.println("PASSED QUERY ANALYZER BAD AGENT ASSUMING IDX 0");
+         ourIdx = 0;
+      }
+
+      String[] agents = new String[advertisers.size()];
+      for(int i = 0; i < agents.length; i++) {
+         agents[i] = advertisers.get(i);
+      }
+
+      _impressionForecaster = new EMAImpressionForecaster(.1, querySpace, agents, ourIdx);
 
       _allResults = new HashMap<Query, ArrayList<IEResult>>();
       _allImpRanges = new HashMap<Query, ArrayList<int[][]>>();
@@ -244,6 +265,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    @Override
    public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps) {
 
+      List<Map<Query, Integer>> impPredMapList = new ArrayList<Map<Query, Integer>>(_advertisers.size());
+      for (int j = 0; j < _advertisers.size(); j++) {
+         Map<Query, Integer> impPredMap = new HashMap<Query, Integer>(_querySpace.size());
+         impPredMapList.add(impPredMap);
+      }
+
       for (Query q : _querySpace) {
 
          /*
@@ -298,10 +325,30 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             boolean hitOurBudget = false;
 
             //Not using any prior knowledge about agent impressions
-            double[] agentImpressionDistributionMean = new double[agentIds.size()];
-            double[] agentImpressionDistributionStdev = new double[agentIds.size()];
-            Arrays.fill(agentImpressionDistributionMean, -1);
-            Arrays.fill(agentImpressionDistributionStdev, -1);
+            double[] agentImpressionDistributionMean = new double[_advertisers.size()];
+            double[] agentImpressionDistributionStdev = new double[_advertisers.size()];
+            if(usePriors) {
+               for (int i = 0; i < _advertisers.size(); i++) {
+                  agentImpressionDistributionMean[i] = (int) _impressionForecaster.getPrediction(i, q);
+                  if(agentImpressionDistributionMean[i] > 0) {
+                     agentImpressionDistributionStdev[i] = agentImpressionDistributionMean[i] * 0.3;
+                  }
+                  else {
+                     agentImpressionDistributionStdev[i] = -1;
+                  }
+               }
+            }
+            else {
+               Arrays.fill(agentImpressionDistributionMean, -1);
+               Arrays.fill(agentImpressionDistributionStdev, -1);
+            }
+
+            double[] reducedImpMean = new double[agentIds.size()];
+            double[] reducedImpStdDev = new double[agentIds.size()];
+            for(int i = 0; i < agentIds.size(); i++) {
+               reducedImpMean[i] = agentImpressionDistributionMean[agentIds.get(i)];
+               reducedImpStdDev[i] = agentImpressionDistributionStdev[agentIds.get(i)];
+            }
 
             //We don't know which agentIdx was in the ith position, for any i.
             int[] ordering = new int[agentIds.size()];
@@ -314,7 +361,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                              trueAvgPos, sampledAvgPos, agentIdsArr, ourNewIdx,
                                              queryReport.getImpressions(q), queryReport.getPromotedImpressions(q), maxImps.get(q),
                                              padAgents, promotionEligibiltyVerified, hitOurBudget,
-                                             agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled, ordering);
+                                             reducedImpMean, reducedImpStdDev, _isSampled, ordering);
 
             ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);
             ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
@@ -327,6 +374,30 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                _allAgentNames.get(q).add(agentNamesArr);
                _allAgentIDs.get(q).add(agentIdsArr); //these are the IDs of each agent that was in the QAInstance for the given query. Corresponds to indices of IEResults
 
+               int[] imps = getImpressionsPrediction(q);
+               int[] ranks = getOrderPrediction(q);
+
+               for (int i = 0; i < _advertisers.size(); i++) {
+                  Map<Query, Integer> impPredMap = impPredMapList.get(i);
+                  int agentIdx = -1;
+                  for (int j = 0; j < imps.length; j++) {
+                     if (i == ranks[j]) {
+                        if(!Double.isNaN(queryReport.getPosition(q, "adv" + (j + 1)))) {
+                           agentIdx = j;
+                        }
+                        else {
+                           break;
+                        }
+                     }
+                  }
+
+                  if (agentIdx > -1) {
+                     impPredMap.put(q, imps[agentIdx]);
+                  } else {
+                     impPredMap.put(q, -1);
+                  }
+               }
+
 //               System.out.println("Done solving. " + bestSol + "\t agentNames:" + Arrays.toString(agentNamesArr));
             }
             else {
@@ -334,6 +405,11 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                _allImpRanges.get(q).add(null);
                _allAgentNames.get(q).add(null);
                _allAgentIDs.get(q).add(null);
+
+               for (int i = 0; i < _advertisers.size(); i++) {
+                  Map<Query, Integer> impPredMap = impPredMapList.get(i);
+                  impPredMap.put(q, -1);
+               }
 
                System.out.println("********Query Analyzer failed to find a solution************");
             }
@@ -343,8 +419,16 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             _allImpRanges.get(q).add(null);
             _allAgentNames.get(q).add(null);
             _allAgentIDs.get(q).add(null);
+
+            for (int i = 0; i < _advertisers.size(); i++) {
+               Map<Query, Integer> impPredMap = impPredMapList.get(i);
+               impPredMap.put(q, -1);
+            }
          }
       }
+
+      _impressionForecaster.updateModel(impPredMapList);
+
       return true;
    }
 
