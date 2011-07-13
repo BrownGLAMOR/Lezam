@@ -22,8 +22,8 @@ public class ReserveEstimator {
    int _numPromSlots;
    double _squashParam;
 
-   boolean AVG_ESTS = false;
-   boolean EST_PROM = false;
+   boolean AVG_ESTS = true;
+   boolean EST_PROM = true;
 
    public ReserveEstimator(int numPromSlots, double squashParam, QueryType qt, Set<Query> querySpace) {
       _numPromSlots = numPromSlots;
@@ -35,8 +35,8 @@ public class ReserveEstimator {
       _currentRegEstimate = _regReserveLow[_qTypeIdx];
       _minRegBidWithImps = _regReserveHigh[_qTypeIdx];
 
-      _currentRegEstimate = _regReserveLow[_qTypeIdx];
-      _minRegBidWithImps = _regReserveHigh[_qTypeIdx] + 0.5;
+      _currentPromEstimate = _regReserveLow[_qTypeIdx];
+      _minPromBidWithImps = _regReserveHigh[_qTypeIdx] + 0.5;
    }
 
    /*
@@ -47,7 +47,7 @@ public class ReserveEstimator {
       for(Query q : _querySpace) {
          if(q.getType().equals(_queryType)) {
             double bid = bundle.getBid(q);
-            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
+            double squashedBid = Math.pow(_advertiserEffectBoundsAvg[_qTypeIdx],_squashParam) * bid;
             /*
             * Check if there are any times that our bid was above what we believe
             * the reserve to be, and we weren't in the auction when we could have been
@@ -91,7 +91,7 @@ public class ReserveEstimator {
       for(Query q : _querySpace) {
          if(q.getType().equals(_queryType)) {
             double bid = bundle.getBid(q);
-            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
+            double squashedBid = Math.pow(_advertiserEffectBoundsAvg[_qTypeIdx],_squashParam) * bid;
             if(queryReport.getImpressions(q) > 0 && squashedBid < _minRegBidWithImps) {
                _minRegBidWithImps = squashedBid;
             }
@@ -102,9 +102,9 @@ public class ReserveEstimator {
       * Find the minimum bid that we received prom imps with
       */
       for(Query q : _querySpace) {
-         if(q.getTransportName().equals(_queryType)) {
+         if(q.getType().equals(_queryType)) {
             double bid  = bundle.getBid(q);
-            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
+            double squashedBid = Math.pow(_advertiserEffectBoundsAvg[_qTypeIdx],_squashParam) * bid;
             if(queryReport.getPromotedImpressions(q) > 0 && squashedBid < _minPromBidWithImps) {
                _minPromBidWithImps = squashedBid;
             }

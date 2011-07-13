@@ -33,9 +33,9 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
       }
 
       _reserveHandlers = new HashMap<QueryType, ReserveEstimator>();
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_ZERO,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_ONE,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_TWO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(_numPromSlots,_squashParam,QueryType.FOCUS_LEVEL_ZERO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(_numPromSlots,_squashParam,QueryType.FOCUS_LEVEL_ONE,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(_numPromSlots,_squashParam,QueryType.FOCUS_LEVEL_TWO,queryspace));
    }
 
    @Override

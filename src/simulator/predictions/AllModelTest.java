@@ -1091,7 +1091,7 @@ public class AllModelTest {
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127; //15148 //15127
-      int END_GAME = 15127;
+      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
