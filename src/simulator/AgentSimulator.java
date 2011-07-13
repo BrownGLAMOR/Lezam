@@ -131,7 +131,7 @@ public class AgentSimulator {
       int agentNum = 0;
       
       //For determining which of our agent configurations we should run.
-      int ourAgentMethod = 1;
+      int ourAgentMethod = 0;
       int multiDayDiscretization = 25;
       
       //Perfect models?

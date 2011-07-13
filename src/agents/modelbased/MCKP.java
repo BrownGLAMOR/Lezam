@@ -451,6 +451,7 @@ public class MCKP extends AbstractAgent {
 
       if(_day >= lagDays || hasPerfectModels()){
 
+    	  //Get remaining capacity
          double remainingCap;
          if(!hasPerfectModels()) {
             if(_day < lagDays) {
@@ -1126,9 +1127,15 @@ public class MCKP extends AbstractAgent {
          soldArray.add((int) totalWeight);
 
          for(int i = 0; i < daysLookahead; i++) {
+        	 //Compute amount that can be sold on this day.
+        	 //Start budget at capacity limit, and subtract off sales
+        	 //from each of the past days within the window excluding today (4 days w/ current game settings)
             double expectedBudget = _capacity*_capMod.get(_capacity);
             for(int j = 0; j < _capWindow-1; j++) {
-               expectedBudget -= soldArray.get(soldArray.size()-1-j);
+            	int idx = soldArray.size() - 1 - j;
+            	double defaultSales = _capWindow/(double)_capacity; //TODO: The other alternative is to pad soldArray. This might be cleaner.
+            	if (idx<0) expectedBudget -= defaultSales;
+            	else expectedBudget -= soldArray.get(idx);
             }
 
             double numSales = solutionWeight(expectedBudget, solution, allPredictionsMap)*weightMult;
@@ -1392,7 +1399,6 @@ public class MCKP extends AbstractAgent {
 
       int[] preDaySales = new int[_capWindow-1];
       if(!hasPerfectModels()) {
-    	  System.out.println("Perfect start sales is null");
          ArrayList<Integer> soldArrayTMP = ((BasicUnitsSoldModel) _unitsSold).getSalesArray();
          ArrayList<Integer> soldArray = new ArrayList<Integer>(soldArrayTMP);
 
@@ -1410,7 +1416,6 @@ public class MCKP extends AbstractAgent {
          }
       }
       else {
-    	  System.out.println("Perfect start sales is not null");
          for(int i = 0; i < (_capWindow-1); i++) {
             int idx = _perfectStartSales.length-1-i;
             if(idx >= 0) {

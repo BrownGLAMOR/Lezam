@@ -35,12 +35,16 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
          if (index >= 0) {
             total += _sold.get(index);
          } else {
+        	 //If there are days in the window that don't have historical sales records
+        	 //(i.e. days that occur before the start of the game),
+        	 //fill in with default values specified by the TAC AA spec.
             total += _capacity / ((double) _window);
          }
       }
       if (expectedConvsForMissingDay == null) {
     	  //expectedConvsForMissingDay = average of each #conversions that occurred within window and the 
     	  //"expected share" of daily conversions (if evenly distributed across the window) 
+    	  //FIXME: When is expectedConvsForMissingDay null? Is there a better default predictor we could use?
          total += (total + _capacity / ((double) _window)) / 4.0;
       } else {
          total += expectedConvsForMissingDay;
