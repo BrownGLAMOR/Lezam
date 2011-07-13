@@ -20,12 +20,14 @@ public class ReserveEstimator {
    double _currentPromEstimate;
    double _minPromBidWithImps;
    int _numPromSlots;
+   double _squashParam;
 
    boolean AVG_ESTS = false;
    boolean EST_PROM = false;
 
-   public ReserveEstimator(int numPromSlots, QueryType qt, Set<Query> querySpace) {
+   public ReserveEstimator(int numPromSlots, double squashParam, QueryType qt, Set<Query> querySpace) {
       _numPromSlots = numPromSlots;
+      _squashParam = squashParam;
       _queryType = qt;
       _querySpace = querySpace;
 
@@ -37,16 +39,20 @@ public class ReserveEstimator {
       _minRegBidWithImps = _regReserveHigh[_qTypeIdx] + 0.5;
    }
 
+   /*
+    * TODO: This should take in adv effects
+    */
    public boolean updateModel(BidBundle bundle, QueryReport queryReport) {
 
       for(Query q : _querySpace) {
          if(q.getType().equals(_queryType)) {
             double bid = bundle.getBid(q);
+            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
             /*
             * Check if there are any times that our bid was above what we believe
             * the reserve to be, and we weren't in the auction when we could have been
             */
-            if(queryReport.getImpressions(q) == 0 && bid > _currentRegEstimate) {
+            if(queryReport.getImpressions(q) == 0 && squashedBid > _currentRegEstimate) {
                boolean avgPos5 = false;
                for(int i = 0; i < 8; i++) {
                   double avgPos = queryReport.getPosition(q,"adv" + (i+1));
@@ -59,7 +65,7 @@ public class ReserveEstimator {
                if(!avgPos5) {
                   //This means that there was no one in slot 5 the whole time
                   //and we weren't in the auction, so our bid is below the reserve
-                  _currentRegEstimate = bid;
+                  _currentRegEstimate = squashedBid;
                }
             }
 
@@ -72,8 +78,8 @@ public class ReserveEstimator {
                     queryReport.getPromotedImpressions(q) == 0 &&
                     !Double.isNaN(queryReport.getPosition(q)) &&
                     queryReport.getPosition(q) <= _numPromSlots &&
-                    bid > _currentPromEstimate) {
-               _currentPromEstimate = bid;
+                    squashedBid > _currentPromEstimate) {
+               _currentPromEstimate = squashedBid;
             }
          }
       }
@@ -85,8 +91,9 @@ public class ReserveEstimator {
       for(Query q : _querySpace) {
          if(q.getType().equals(_queryType)) {
             double bid = bundle.getBid(q);
-            if(queryReport.getImpressions(q) > 0 && bid < _minRegBidWithImps) {
-               _minRegBidWithImps = bid;
+            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
+            if(queryReport.getImpressions(q) > 0 && squashedBid < _minRegBidWithImps) {
+               _minRegBidWithImps = squashedBid;
             }
          }
       }
@@ -97,8 +104,9 @@ public class ReserveEstimator {
       for(Query q : _querySpace) {
          if(q.getTransportName().equals(_queryType)) {
             double bid  = bundle.getBid(q);
-            if(queryReport.getPromotedImpressions(q) > 0 && bid < _minPromBidWithImps) {
-               _minPromBidWithImps = bid;
+            double squashedBid = Math.pow(_squashParam,_advertiserEffectBoundsAvg[_qTypeIdx]) * bid;
+            if(queryReport.getPromotedImpressions(q) > 0 && squashedBid < _minPromBidWithImps) {
+               _minPromBidWithImps = squashedBid;
             }
          }
       }

@@ -20,7 +20,6 @@ import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import se.sics.tasim.aw.Message;
-import simulator.AgentSimulator.GameSet;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import tacaa.javasim;
@@ -265,7 +264,7 @@ public class AllModelTest {
                      paramModel = new NaiveParameterEstimation();
                   }
                   else {
-                     paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, querySpace);
+                     paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, squashParam, querySpace);
                   }
                   paramModelList.add(paramModel);
                }

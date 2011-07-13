@@ -394,7 +394,7 @@ public class MCKP extends AbstractAgent {
       _unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
       _bidModel = new IndependentBidModel(_advertisersSet, _advId,1,_randJump,_yestBid,_5DayBid,_bidStdDev,_querySpace);
 //      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
-      _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _querySpace);
+      _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _squashing, _querySpace);
       _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS);
       _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);
 

@@ -13,16 +13,18 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    int _ourAdvIdx;
    int _numSlots;
    int _numPromSlots;
+   double _squashParam;
    Set<Query> _queryspace;
    HashMap<Query, BayesianQueryHandler> _queryHandlers;
    HashMap<QueryType, ReserveEstimator> _reserveHandlers;
 
-   public BayesianParameterEstimation(double[] c, int ourAdvIdx, int numSlots, int numPromSlots, Set<Query> queryspace) {
+   public BayesianParameterEstimation(double[] c, int ourAdvIdx, int numSlots, int numPromSlots, double squashParam, Set<Query> queryspace) {
       _c = c.clone();
       _ourAdvIdx = ourAdvIdx;
       _numSlots = numSlots;
       _numPromSlots = numPromSlots;
       _queryspace = queryspace;
+      _squashParam = squashParam;
 
       _queryHandlers = new HashMap<Query, BayesianQueryHandler>();
 
@@ -31,9 +33,9 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
       }
 
       _reserveHandlers = new HashMap<QueryType, ReserveEstimator>();
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_ZERO,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_ONE,queryspace));
-      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(_numPromSlots,QueryType.FOCUS_LEVEL_TWO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ZERO, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_ZERO,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_ONE, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_ONE,queryspace));
+      _reserveHandlers.put(QueryType.FOCUS_LEVEL_TWO, new ReserveEstimator(_numPromSlots,squashParam,QueryType.FOCUS_LEVEL_TWO,queryspace));
    }
 
    @Override
@@ -91,6 +93,6 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
    @Override
    public AbstractModel getCopy() {
-      return new BayesianParameterEstimation(_c, _ourAdvIdx,_numSlots,_numPromSlots,_queryspace);
+      return new BayesianParameterEstimation(_c, _ourAdvIdx,_numSlots,_numPromSlots,_squashParam,_queryspace);
    }
 }
