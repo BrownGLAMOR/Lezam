@@ -22,9 +22,6 @@ public class ReserveEstimator {
    int _numPromSlots;
    double _squashParam;
 
-   boolean AVG_ESTS = true;
-   boolean EST_PROM = true;
-
    public ReserveEstimator(int numPromSlots, double squashParam, QueryType qt, Set<Query> querySpace) {
       _numPromSlots = numPromSlots;
       _squashParam = squashParam;
@@ -123,26 +120,10 @@ public class ReserveEstimator {
    }
 
    public double getRegPrediction() {
-      if(AVG_ESTS) {
-         return ((_currentRegEstimate+_minRegBidWithImps)/2.0);
-      }
-      else {
-         return _currentRegEstimate;
-      }
+      return ((_currentRegEstimate+_minRegBidWithImps)/2.0);
    }
 
    public double getPromPrediction() {
-      if(EST_PROM) {
-         if(AVG_ESTS) {
-            return ((_currentPromEstimate+_minPromBidWithImps)/2.0);
-         }
-         else {
-            return _currentPromEstimate;
-
-         }
-      }
-      else {
-         return getRegPrediction()+.25;
-      }
+      return ((_currentPromEstimate+_minPromBidWithImps)/2.0);
    }
 }

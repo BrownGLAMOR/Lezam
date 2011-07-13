@@ -66,6 +66,7 @@ public class AllModelTest {
     * Budget Model Params
     */
    boolean TEST_BUDGET = true;
+   boolean BUDGET_RANKABLE = false;
 
    /*
     * ParamEst Model Params
@@ -77,7 +78,7 @@ public class AllModelTest {
     * LIVE MODE
     *  -Actually bid with our agent instead of using a log!
     */
-   boolean LIVE_MODE = false;
+   boolean LIVE_MODE = true;
 
    public static final int MAX_F0_IMPS = 10969;
    public static final int MAX_F1_IMPS = 1801;
@@ -87,22 +88,22 @@ public class AllModelTest {
       finals2010, semifinals2010, test2010
    }
 
-   
-   public static boolean isMac(){	 
-		String os = System.getProperty("os.name").toLowerCase();
-	    return (os.indexOf( "mac" ) >= 0); //Mac
-	}
-   
+
+   public static boolean isMac(){
+      String os = System.getProperty("os.name").toLowerCase();
+      return (os.indexOf( "mac" ) >= 0); //Mac
+   }
+
    public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
       if (GAMES_TO_TEST == GameSet.finals2010) {
-    	  if (isMac()) {
-    		  String homeDir = System.getProperty("user.home");
-    		  if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-"; 
-    		  if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
-    	  }
-    	  else baseFile = "/pro/aa/finals2010/game-tacaa1-";    
+         if (isMac()) {
+            String homeDir = System.getProperty("user.home");
+            if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
+            if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
+         }
+         else baseFile = "/pro/aa/finals2010/game-tacaa1-";
       }
 
       ArrayList<String> filenames = new ArrayList<String>();
@@ -170,6 +171,7 @@ public class AllModelTest {
 
          if(replaceIdx == -1) {
             System.out.println("BAD AGENT NAME(" + agentToReplace+ " ) quitting");
+            break;
          }
 
          double squashParam = status.getPubInfo().getSquashingParameter();
@@ -299,6 +301,7 @@ public class AllModelTest {
                   agent.sendSimMessage(new Message("bla","bla", status.getSlotInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getRetailCatalog()));
                   agent.sendSimMessage(new Message("bla","bla", status.getAdvertiserInfos().get(statusAgents[i])));
+                  agent.setDay(0);
                   agent.initBidder();
                   agentList.add(agent);
 
@@ -331,6 +334,7 @@ public class AllModelTest {
                   salesList.add(avgCap);
 
                   BidBundle firstBundle = agent.getBidBundle(modelList);
+                  agent.setDay(1);
                   BidBundle secondBundle = agent.getBidBundle(modelList);
                   bidBundles.add(firstBundle);
                   bidBundles.add(secondBundle);
@@ -381,7 +385,7 @@ public class AllModelTest {
          // Make predictions for each day/query in this game
          for (int d=START_DAY; d<=END_DAY; d++) {
             System.out.println("Start day: " + d);
-
+            
             boolean[] totalBudgetHits = hitTotalBudget(status,d);
 
             /*
@@ -462,7 +466,7 @@ public class AllModelTest {
                   HashMap<Query,Integer> totalImpressions = new HashMap<Query,Integer>();
                   HashMap<Query,HashMap<String, Integer>> ranks = new HashMap<Query,HashMap<String,Integer>>();
                   HashMap<Query,HashMap<String, Boolean>> rankablesBid = new HashMap<Query,HashMap<String,Boolean>>();
-                  HashMap<Query,HashMap<String, Boolean>> rankables = new HashMap<Query,HashMap<String,Boolean>>(); //Agents that are padded or not in the auction are *not* rankable
+                  HashMap<Query,HashMap<String, Boolean>> rankablesBudget = new HashMap<Query,HashMap<String,Boolean>>(); //Agents that are padded or not in the auction are *not* rankable
                   HashMap<Query,int[][]> fullWaterfalls = new HashMap<Query, int[][]>();
                   for(Query q : querySpace) {
                      int[] impsPred = queryAnalyzer.getImpressionsPrediction(q);
@@ -489,25 +493,30 @@ public class AllModelTest {
                      }
                      ranks.put(q, perQRanks);
 
-                     HashMap<String, Boolean> rankable = null;
+                     HashMap<String, Boolean> rankableBudget = null;
                      HashMap<String, Boolean> rankableBid = null;
                      if(waterfallPred != null) {
-                        if(BID_RANKABLE) {
-                           rankable = queryAnalyzer.getRankableMap(q);
+                        if(BUDGET_RANKABLE) {
+                           rankableBudget = queryAnalyzer.getRankableMap(q);
                         }
                         else {
-                           rankable = new HashMap<String,Boolean>();
+                           rankableBudget = new HashMap<String,Boolean>();
                            for(int i = 0; i < advertisers.size(); i++) {
-                              rankable.put("adv"+(i+1),true);
+                              rankableBudget.put("adv"+(i+1),true);
                            }
                         }
 
-                        rankableBid = new HashMap<String,Boolean>();
-                        for(int i = 0; i < advertisers.size(); i++) {
-                           rankableBid.put("adv"+(i+1),true);
+                        if(BID_RANKABLE) {
+                           rankableBid = queryAnalyzer.getRankableMap(q);
+                        }
+                        else {
+                           rankableBid = new HashMap<String,Boolean>();
+                           for(int i = 0; i < advertisers.size(); i++) {
+                              rankableBid.put("adv"+(i+1),true);
+                           }
                         }
                      }
-                     rankables.put(q,rankable);
+                     rankablesBudget.put(q,rankableBudget);
                      rankablesBid.put(q,rankableBid);
                   }
 
@@ -528,9 +537,10 @@ public class AllModelTest {
                   HashMap<Query,double[]> ISRatios = new HashMap<Query, double[]>();
                   for(Query q : querySpace) {
                      int qtIdx = queryTypeToInt(q.getType());
-                     ISRatios.put(q,getISRatio(q,NUM_SLOTS,NUM_SLOTS,_advertiserEffectBoundsAvg[qtIdx],paramModel.getContProbPrediction(q),convProbs[qtIdx],allUserStatePredictions));
+                     double[] ISRatio = getISRatio(q,NUM_SLOTS,NUM_SLOTS,_advertiserEffectBoundsAvg[qtIdx],paramModel.getContProbPrediction(q),convProbs[qtIdx],allUserStatePredictions);
+                     ISRatios.put(q,ISRatio);
+                     ISRatioModelList.get(agent).updateISRatio(q,ISRatio);
                   }
-
 
                   HashMap<Query,double[]> allSquashedBidPredictions = new HashMap<Query, double[]>(querySpace.size());
                   for(Query q : querySpace) {
@@ -559,7 +569,7 @@ public class AllModelTest {
                      allPromReservePredictions[qtIdx] = paramModel.getPromReservePrediction(QueryType.values()[qtIdx]);
                   }
 
-                  budgetModel.updateModel(queryReport, bidBundle, convProbs, allContProbsPredictions, allRegReservePredictions, allRankPredictions,allImpressionPredictions,fullWaterfalls, rankables, allSquashedBidPredictions, allUserStatePredictions);
+                  budgetModel.updateModel(queryReport, bidBundle, convProbs, allContProbsPredictions, allRegReservePredictions, allRankPredictions,allImpressionPredictions,fullWaterfalls, rankablesBudget, allSquashedBidPredictions, allUserStatePredictions);
 
                   for(Query q : querySpace) {
                      double[] budgetArr = new double[advertisers.size()];
@@ -598,7 +608,7 @@ public class AllModelTest {
                      AbstractUnitsSoldModel unitsSoldModel = unitSoldModelList.get(agent);
                      unitsSoldModel.update(salesReportsList.get(agent).get(d));
 
-                     int capWindow  = status.getAdvertiserInfos().get(status.getAdvertisers()[agent]).getDistributionWindow();
+                     int capWindow  = status.getAdvertiserInfos().get(statusAgents[agent]).getDistributionWindow();
 
                      Set<AbstractModel> modelList = new HashSet<AbstractModel>();
                      modelList.add(queryAnalyzerList.get(agent));
@@ -606,11 +616,11 @@ public class AllModelTest {
                      modelList.add(budgetModelList.get(agent));
                      modelList.add(bidModelList.get(agent));
                      modelList.add(paramModelList.get(agent));
-                     modelList.add(unitSoldModelList.get(agent));
+                     modelList.add(unitsSoldModel);
                      modelList.add(ISRatioModelList.get(agent));
 
                      AbstractAgent liveAgent = agentList.get(agent);
-                     liveAgent.setDay(d);
+                     liveAgent.setDay(d+2);
 
                      int startSales = 0;
                      ArrayList<Integer> salesList = salesListList.get(agent);
@@ -619,7 +629,7 @@ public class AllModelTest {
                      }
 
                      BidBundle bundle = liveAgent.getBidBundle(modelList);
-                     ArrayList reports = javasim.simDayForReports(cljSim,status.getAdvertisers()[agent],d+2,bundle,startSales);
+                     ArrayList reports = javasim.simDayForReports(cljSim,statusAgents[agent],d+2,bundle,startSales);
                      QueryReport queryReport = (QueryReport) reports.get(0);
                      SalesReport salesReport = (SalesReport) reports.get(1);
                      int sales = 0;
@@ -630,7 +640,7 @@ public class AllModelTest {
                      bidBundlesList.get(agent).add(bundle);
                      queryReportsList.get(agent).add(queryReport);
                      salesReportsList.get(agent).add(salesReport);
-                     salesList.add(sales);
+                     salesListList.get(agent).add(sales);
                   }
                }
             }
@@ -836,10 +846,10 @@ public class AllModelTest {
        * Print Results
        */
       if(SUMMARY) {
-    	  System.out.println("Type I:   We said they had a budget and they did");
-    	  System.out.println("Type II:  We said they had a budget and they didn't");
-    	  System.out.println("Type III: We said they didn't have a budget and they did");
-    	  System.out.println("Type IV:  We said they didn't have a budget and they didn't\n");
+         System.out.println("Type I:   We said they had a budget and they did");
+         System.out.println("Type II:  We said they had a budget and they didn't");
+         System.out.println("Type III: We said they didn't have a budget and they did");
+         System.out.println("Type IV:  We said they didn't have a budget and they didn't\n");
 
          System.out.println("Impression MAE: " + results[0] + "(" + stdDevList(impErrorList,results[0]) + ")");
          System.out.println("Impression in order MAE: " + results[1] + "(" + stdDevList(impInOrderErrorList,results[1]) + ")");
@@ -1090,13 +1100,13 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15127; //15148 //15127
-      int END_GAME = 15170;
+      int START_GAME = 15159; //15148 //15127
+      int END_GAME = 15159;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
-      String agentName = "Mertacor";
+      String agentName = "TacTex";
 
 
       AllModelTest evaluator = new AllModelTest();

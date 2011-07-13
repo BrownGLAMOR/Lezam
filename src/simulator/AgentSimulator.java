@@ -126,17 +126,16 @@ public class AgentSimulator {
       c2 = .8 + rand.nextDouble() * .4;
       c3 = .8 + rand.nextDouble() * .4;
       double simUB = 1.45;
-      int gameNumStart = 15134;
-      int gameNumEnd = 15134;
+      int gameNumStart = 15159;
+      int gameNumEnd = 15159;
       int agentNum = 0;
       
       //For determining which of our agent configurations we should run.
-      int ourAgentMethod = 0;
-      int multiDayDiscretization = 25;
+      int ourAgentMethod = 1;
+      int multiDayDiscretization = 10;
       
       //Perfect models?
       boolean PERFECT_SIM = false;
-
       
       if(args.length == 2) {
          gameNumStart = Integer.parseInt(args[0]);
