@@ -143,7 +143,7 @@ public class AdTypeEstimator extends AbstractAdTypeEstimator {
 	@Override
 	public AbstractModel getCopy() {
 		// TODO Auto-generated method stub
-		return null;
+		return new AdTypeEstimator(_querySpace, _advertisersSet, _products);
 	}
 
 }
