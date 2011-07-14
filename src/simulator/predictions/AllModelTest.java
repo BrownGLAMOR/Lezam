@@ -134,7 +134,9 @@ public class AllModelTest {
       ArrayList<Double> budgetErrorType1List = new ArrayList<Double>(numEstsPerQuery);
       ArrayList<Double> budgetErrorType2List = new ArrayList<Double>(numEstsPerQuery);
       ArrayList<Double> budgetErrorType3List = new ArrayList<Double>(numEstsPerQuery);
+      ArrayList<Double> budgetErrorType5List = new ArrayList<Double>(numEstsPerQuery);
       int numBudgetType4Errs_Tot = 0;
+      int numBudgetType6Errs_Tot = 0;
 
       ArrayList<Double> advEffectErrList = new ArrayList<Double>(numEsts);
 
@@ -728,6 +730,9 @@ public class AllModelTest {
                      /*
                      * Budget Error
                      */
+                     System.out.println("Budgets: " + Arrays.toString(budgets));
+                     System.out.println("Budget Preds: " + Arrays.toString(budgetPredictions));
+                     System.out.println("--------");
                      for(int innerAgent = 0; innerAgent < advertisers.size(); innerAgent++) {
                         if(innerAgent != agent) {
                            double budget = budgets[innerAgent];
@@ -740,6 +745,16 @@ public class AllModelTest {
                               else {
                                  //We said they had a budget and they didn't
                                  budgetErrorType2List.add(Math.abs(budgetPred));
+                              }
+                           }
+                           else if(budget == 0) {
+                              if(Double.isInfinite(budgetPred) || budgetPred == Double.MAX_VALUE) {
+                                 //We said they didn't have a budget and they had a budget of 0
+                                 numBudgetType6Errs_Tot++;
+                              }
+                              else {
+                                 //We said they had a budget and they set it to zero
+                                 budgetErrorType5List.add(Math.abs(budget - budgetPred));
                               }
                            }
                            else {
@@ -824,7 +839,7 @@ public class AllModelTest {
          }
       }
 
-      double[] results = new double[21];
+      double[] results = new double[24];
       results[0] = sumList(impErrorList) / ((double) impErrorList.size());
       results[1] = sumList(impInOrderErrorList) / ((double) impInOrderErrorList.size());
       results[2] = sumList(bidErrorList) / ((double) bidErrorList.size());
@@ -836,16 +851,19 @@ public class AllModelTest {
       results[8] = sumList(budgetErrorType3List) / ((double) budgetErrorType3List.size());
       results[9] = budgetErrorType3List.size();
       results[10] = numBudgetType4Errs_Tot;
-      results[11] = sumList(advEffectErrList) / ((double) advEffectErrList.size());
-      results[12] = sumList(contProbEffectsErrList) / ((double) contProbEffectsErrList.size());
-      results[13] = sumList(userStateErrList) / ((double) userStateErrList.size());
-      results[14] = sumList(f0RegResErrList) / ((double) f0RegResErrList.size());
-      results[15] = sumList(f1RegResErrList) / ((double) f1RegResErrList.size());
-      results[16] = sumList(f2RegResErrList) / ((double) f2RegResErrList.size());
-      results[17] = sumList(f0PromResErrList) / ((double) f0PromResErrList.size());
-      results[18] = sumList(f1PromResErrList) / ((double) f1PromResErrList.size());
-      results[19] = sumList(f2PromResErrList) / ((double) f2PromResErrList.size());
-      results[20] = sumList(agentProfitDiffList) / ((double) ((END_GAME - START_GAME) + 1));
+      results[11] = sumList(budgetErrorType5List) / ((double) budgetErrorType5List.size());
+      results[12] = budgetErrorType5List.size();
+      results[13] = numBudgetType6Errs_Tot;
+      results[14] = sumList(advEffectErrList) / ((double) advEffectErrList.size());
+      results[15] = sumList(contProbEffectsErrList) / ((double) contProbEffectsErrList.size());
+      results[16] = sumList(userStateErrList) / ((double) userStateErrList.size());
+      results[17] = sumList(f0RegResErrList) / ((double) f0RegResErrList.size());
+      results[18] = sumList(f1RegResErrList) / ((double) f1RegResErrList.size());
+      results[19] = sumList(f2RegResErrList) / ((double) f2RegResErrList.size());
+      results[20] = sumList(f0PromResErrList) / ((double) f0PromResErrList.size());
+      results[21] = sumList(f1PromResErrList) / ((double) f1PromResErrList.size());
+      results[22] = sumList(f2PromResErrList) / ((double) f2PromResErrList.size());
+      results[23] = sumList(agentProfitDiffList) / ((double) ((END_GAME - START_GAME) + 1));
 
       /*
        * Print Results
@@ -854,27 +872,31 @@ public class AllModelTest {
          System.out.println("Type I:   We said they had a budget and they did");
          System.out.println("Type II:  We said they had a budget and they didn't");
          System.out.println("Type III: We said they didn't have a budget and they did");
-         System.out.println("Type IV:  We said they didn't have a budget and they didn't\n");
+         System.out.println("Type IV:  We said they didn't have a budget and they didn't");
+         System.out.println("Type V:  We said they had a budget and they set it to zero");
+         System.out.println("Type VI:  We said they didn't have a budget and they had a budget of 0\n");
 
          System.out.println("Impression MAE: " + results[0] + "(" + stdDevList(impErrorList,results[0]) + ")");
          System.out.println("Impression in order MAE: " + results[1] + "(" + stdDevList(impInOrderErrorList,results[1]) + ")");
          System.out.println("Bid MAE: " + results[2] + "(" + stdDevList(bidErrorList,results[2]) + ")");
          System.out.println("Bid in order MAE: " + results[3] + "(" + stdDevList(bidInOrderErrorList,results[3]) + ")");
-         double budgetTot = results[5] + results[7] + results[9] + results[10];
+         double budgetTot = results[5] + results[7] + results[9] + results[10] + results[12] + results[13];
          System.out.println("Budget Type I MAE: " + results[4] + "(" + stdDevList(budgetErrorType1List,results[4]) + ") , % Type I: " + results[5] / budgetTot);
          System.out.println("Budget Type II MAE: " + results[6] + "(" + stdDevList(budgetErrorType2List,results[6]) + ") , % Type II: " + results[7] / budgetTot);
          System.out.println("Budget Type III MAE: " + results[8] + "(" + stdDevList(budgetErrorType3List,results[8]) + ") , % Type III: " + results[9] / budgetTot);
          System.out.println("Budget % Type IV: " + results[10] / budgetTot);
-         System.out.println("Adv Effect MAE: " + results[11] + "(" + stdDevList(advEffectErrList,results[11]) + ")");
-         System.out.println("Cont Prob MAE: " + results[12] + "(" + stdDevList(contProbEffectsErrList,results[12]) + ")");
-         System.out.println("User State MAE: " + results[13] + "(" + stdDevList(userStateErrList,results[13]) + ")");
-         System.out.println("F0 Reg MAE: " + results[14] + "(" + stdDevList(f0RegResErrList,results[14]) + ")");
-         System.out.println("F1 Reg MAE: " + results[15] + "(" + stdDevList(f1RegResErrList,results[15]) + ")");
-         System.out.println("F2 Reg MAE: " + results[16] + "(" + stdDevList(f2RegResErrList,results[16]) + ")");
-         System.out.println("F0 Prom MAE: " + results[17] + "(" + stdDevList(f0PromResErrList,results[17]) + ")");
-         System.out.println("F1 Prom MAE: " + results[18] + "(" + stdDevList(f1PromResErrList,results[18]) + ")");
-         System.out.println("F2 Prom MAE: " + results[19] + "(" + stdDevList(f2PromResErrList,results[19]) + ")");
-         System.out.println("Total Agent Profit Diff: " + results[20]);
+         System.out.println("Budget Type V MAE: " + results[11] + "(" + stdDevList(budgetErrorType3List,results[11]) + ") , % Type III: " + results[12] / budgetTot);
+         System.out.println("Budget % Type VI: " + results[13] / budgetTot);
+         System.out.println("Adv Effect MAE: " + results[14] + "(" + stdDevList(advEffectErrList,results[14]) + ")");
+         System.out.println("Cont Prob MAE: " + results[15] + "(" + stdDevList(contProbEffectsErrList,results[15]) + ")");
+         System.out.println("User State MAE: " + results[16] + "(" + stdDevList(userStateErrList,results[16]) + ")");
+         System.out.println("F0 Reg MAE: " + results[17] + "(" + stdDevList(f0RegResErrList,results[17]) + ")");
+         System.out.println("F1 Reg MAE: " + results[18] + "(" + stdDevList(f1RegResErrList,results[18]) + ")");
+         System.out.println("F2 Reg MAE: " + results[19] + "(" + stdDevList(f2RegResErrList,results[19]) + ")");
+         System.out.println("F0 Prom MAE: " + results[20] + "(" + stdDevList(f0PromResErrList,results[20]) + ")");
+         System.out.println("F1 Prom MAE: " + results[21] + "(" + stdDevList(f1PromResErrList,results[21]) + ")");
+         System.out.println("F2 Prom MAE: " + results[22] + "(" + stdDevList(f2PromResErrList,results[22]) + ")");
+         System.out.println("Total Agent Profit Diff: " + results[23]);
       }
 
       return results;
@@ -985,8 +1007,8 @@ public class AllModelTest {
             double budget = status.getBidBundles().get(agentName).get(d).getDailyLimit(query);
             double cost = status.getQueryReports().get(agentName).get(d).getCost(query);
             double bid = status.getBidBundles().get(agentName).get(d).getBid(query);
-            if((cost+bid)  > budget) {
-               budgets[a] = cost;
+            if((cost+bid) > budget) {
+               budgets[a] = budget;
             }
             else {
                budgets[a] = Double.MAX_VALUE;

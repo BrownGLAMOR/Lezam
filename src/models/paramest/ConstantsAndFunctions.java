@@ -258,7 +258,7 @@ public class ConstantsAndFunctions {
          prView[i] = contProb*(lastPrView*(1-lastClickPr) + lastPrView*lastClickPr*(1.0-convProb*(1.0 - ISRatio[i-1])));
 
          //Remove non-IS Users that converted
-         nonISusers -= lastPrView*lastClickPr*convProb*(1.0 - ISRatio[i-1]);
+         nonISusers -= nonISusers*lastPrView*lastClickPr*convProb*(1.0 - ISRatio[i-1]);
 
          ISRatio[i] = ISusers/(ISusers+nonISusers);
       }
