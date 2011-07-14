@@ -7,7 +7,6 @@
            (simulator.parser GameStatusHandler)
            (agents AbstractAgent)
            (agents.modelbased MCKP)
-           (agents.rulebased2010 EquatePPSSimple2010 EquateROISimple2010)
            (se.sics.tasim.aw Message)
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
                                      Query Product Ad UserClickModel
@@ -1321,7 +1320,7 @@
                     startconvs (reduce + startconvslst)
                     bundle (do
                              (.handleStartSales agent (into-array Integer/TYPE startconvslst))
-                             (.getBidBundle agent (.getModels agent)))
+                             (.getBidBundle agent))
                     status (assoc status :bid-bundle
                                   (assoc (status :bid-bundle) agent-to-replace
                                          (assoc ((status :bid-bundle) agent-to-replace) day bundle)))

@@ -5,7 +5,6 @@
            (simulator.parser GameStatusHandler)
            (agents AbstractAgent)
            (agents.modelbased MCKP)
-           (agents.rulebased2010 EquatePPSSimple2010 EquateROISimple2010)
            (se.sics.tasim.aw Message)
            (edu.umich.eecs.tac.props BidBundle QueryReport SalesReport
                                      Query Product Ad UserClickModel

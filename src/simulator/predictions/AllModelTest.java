@@ -1,11 +1,12 @@
 package simulator.predictions;
 
-import agents.AbstractAgent;
 import agents.modelbased.MCKP;
 import clojure.lang.PersistentHashMap;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.ISratio.ISRatioModel;
+import models.adtype.AdTypeEstimator;
+import models.advertiserspecialties.SimpleSpecialtyModel;
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
 import models.budgetEstimator.AbstractBudgetEstimator;
@@ -54,7 +55,7 @@ public class AllModelTest {
     * User Model Params
     */
    boolean TEST_USER_MODEL = true;  //Turns user model testing on
-   boolean USER_MODEL_PERF_IMPS = false; //User model is perfect, not based on QA output
+   boolean USER_MODEL_UB = true; //User model is perfect, not based on QA output
 
    /*
     * Bid Model Params
@@ -79,6 +80,8 @@ public class AllModelTest {
     *  -Actually bid with our agent instead of using a log!
     */
    boolean LIVE_MODE = true;
+
+   PersistentHashMap cljSim = null;
 
    public static final int MAX_F0_IMPS = 10969;
    public static final int MAX_F1_IMPS = 1801;
@@ -117,33 +120,36 @@ public class AllModelTest {
                                                int START_DAY, int END_DAY, int START_QUERY, int END_QUERY,
                                                String agentToReplace) throws IOException, ParseException {
 
-      ArrayList<Double> impErrorList = new ArrayList<Double>();
+      int numEstsPerQuery = (END_DAY-START_DAY+1)*(END_QUERY-START_QUERY+1)*8;
+      int numEsts = (END_DAY-START_DAY+1);
 
-      ArrayList<Double> impInOrderErrorList = new ArrayList<Double>();
+      ArrayList<Double> impErrorList = new ArrayList<Double>(numEstsPerQuery);
 
-      ArrayList<Double> bidErrorList = new ArrayList<Double>();
+      ArrayList<Double> impInOrderErrorList = new ArrayList<Double>(numEstsPerQuery);
 
-      ArrayList<Double> bidInOrderErrorList = new ArrayList<Double>();
+      ArrayList<Double> bidErrorList = new ArrayList<Double>(numEstsPerQuery);
 
-      ArrayList<Double> budgetErrorType1List = new ArrayList<Double>();
-      ArrayList<Double> budgetErrorType2List = new ArrayList<Double>();
-      ArrayList<Double> budgetErrorType3List = new ArrayList<Double>();
+      ArrayList<Double> bidInOrderErrorList = new ArrayList<Double>(numEstsPerQuery);
+
+      ArrayList<Double> budgetErrorType1List = new ArrayList<Double>(numEstsPerQuery);
+      ArrayList<Double> budgetErrorType2List = new ArrayList<Double>(numEstsPerQuery);
+      ArrayList<Double> budgetErrorType3List = new ArrayList<Double>(numEstsPerQuery);
       int numBudgetType4Errs_Tot = 0;
 
-      ArrayList<Double> advEffectErrList = new ArrayList<Double>();
+      ArrayList<Double> advEffectErrList = new ArrayList<Double>(numEsts);
 
-      ArrayList<Double> contProbEffectsErrList = new ArrayList<Double>();
+      ArrayList<Double> contProbEffectsErrList = new ArrayList<Double>(numEsts);
 
-      ArrayList<Double> userStateErrList = new ArrayList<Double>();
+      ArrayList<Double> userStateErrList = new ArrayList<Double>(numEstsPerQuery);
 
-      ArrayList<Double> f0RegResErrList = new ArrayList<Double>();
-      ArrayList<Double> f1RegResErrList = new ArrayList<Double>();
-      ArrayList<Double> f2RegResErrList = new ArrayList<Double>();
-      ArrayList<Double> f0PromResErrList = new ArrayList<Double>();
-      ArrayList<Double> f1PromResErrList = new ArrayList<Double>();
-      ArrayList<Double> f2PromResErrList = new ArrayList<Double>();
+      ArrayList<Double> f0RegResErrList = new ArrayList<Double>(numEsts);
+      ArrayList<Double> f1RegResErrList = new ArrayList<Double>(numEsts);
+      ArrayList<Double> f2RegResErrList = new ArrayList<Double>(numEsts);
+      ArrayList<Double> f0PromResErrList = new ArrayList<Double>(numEsts);
+      ArrayList<Double> f1PromResErrList = new ArrayList<Double>(numEsts);
+      ArrayList<Double> f2PromResErrList = new ArrayList<Double>(numEsts);
 
-      ArrayList<Double> agentProfitDiffList = new ArrayList<Double>();
+      ArrayList<Double> agentProfitDiffList = new ArrayList<Double>(numEsts);
 
       ArrayList<String> filenames = getGameStrings(GAMES_TO_TEST, START_GAME, END_GAME);
       for (int gameIdx = 0; gameIdx < filenames.size(); gameIdx++) {
@@ -188,7 +194,7 @@ public class AllModelTest {
          querySpace.toArray(queryArr);
 
          double[] convProbs = new double[] {0.03, 0.05, 0.15};
-         LinkedHashSet advertisersSet = new LinkedHashSet<String>();
+         HashSet<String> advertisersSet = new HashSet<String>();
          ArrayList<String> advertisers = new ArrayList<String>();
          for (int i = 1; i <= 8; i++) {
             advertisers.add("adv" + i);
@@ -200,95 +206,84 @@ public class AllModelTest {
          double _bidStdDev = 2.0;
          double USER_MODEL_UB_STD_DEV = .75;
 
-         List<AbstractQueryAnalyzer> queryAnalyzerList = null;
-         if (TEST_QA) {
-            queryAnalyzerList = new ArrayList<AbstractQueryAnalyzer>();
-            for (int i = 0; i < advertisers.size(); i++) {
-               if(i == replaceIdx) {
-                  AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace,advertisers,"adv"+(i+1),true,true);
-                  queryAnalyzerList.add(queryAnalyzer);
-               }
-               else {
-                  queryAnalyzerList.add(null);
-               }
+         List<AbstractQueryAnalyzer> queryAnalyzerList = new ArrayList<AbstractQueryAnalyzer>();
+         for (int i = 0; i < advertisers.size(); i++) {
+            if(i == replaceIdx) {
+               AbstractQueryAnalyzer queryAnalyzer = new CarletonQueryAnalyzer(querySpace,advertisers,"adv"+(i+1),true,true);
+               queryAnalyzerList.add(queryAnalyzer);
+            }
+            else {
+               queryAnalyzerList.add(null);
             }
          }
 
-         List<ParticleFilterAbstractUserModel> userModelList = null;
-         if (TEST_USER_MODEL) {
-            userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
-            for (int i = 0; i < advertisers.size(); i++) {
-               if(i == replaceIdx) {
-                  ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, USER_MODEL_UB_STD_DEV);
-                  userModelList.add(userModel);
-               }
-               else {
-                  userModelList.add(null);
-               }
+         List<ParticleFilterAbstractUserModel> userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
+         for (int i = 0; i < advertisers.size(); i++) {
+            if(i == replaceIdx) {
+               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, USER_MODEL_UB_STD_DEV);
+               userModelList.add(userModel);
+            }
+            else {
+               userModelList.add(null);
             }
          }
 
-         List<AbstractBudgetEstimator> budgetModelList = null;
-         if (TEST_BUDGET) {
-            budgetModelList = new ArrayList<AbstractBudgetEstimator>();
-            for (int i = 0; i < advertisers.size(); i++) {
-               if(i == replaceIdx) {
-                  AbstractBudgetEstimator budgetModel = new BudgetEstimator(querySpace, i, NUM_SLOTS, NUM_PROMOTED_SLOTS);
-                  budgetModelList.add(budgetModel);
-               }
-               else {
-                  budgetModelList.add(null);
-               }
+         List<AbstractBudgetEstimator> budgetModelList = new ArrayList<AbstractBudgetEstimator>();
+         for (int i = 0; i < advertisers.size(); i++) {
+            if(i == replaceIdx) {
+               AbstractBudgetEstimator budgetModel = new BudgetEstimator(querySpace, i, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+               budgetModelList.add(budgetModel);
+            }
+            else {
+               budgetModelList.add(null);
             }
          }
 
-         List<AbstractBidModel> bidModelList = null;
-         if (TEST_BID) {
-            bidModelList = new ArrayList<AbstractBidModel>();
-            for (int i = 0; i < advertisers.size(); i++) {
-               if(i == replaceIdx) {
-                  AbstractBidModel bidModel = new IndependentBidModel(advertisersSet, "adv" + (i+1),1,_randJump,_yestBid,_5DayBid,_bidStdDev,querySpace);
-                  bidModelList.add(bidModel);
-               }
-               else {
-                  bidModelList.add(null);
-               }
+         List<AbstractBidModel> bidModelList = new ArrayList<AbstractBidModel>();
+         for (int i = 0; i < advertisers.size(); i++) {
+            if(i == replaceIdx) {
+               AbstractBidModel bidModel = new IndependentBidModel(advertisersSet, "adv" + (i+1),1,_randJump,_yestBid,_5DayBid,_bidStdDev,querySpace);
+               bidModelList.add(bidModel);
+            }
+            else {
+               bidModelList.add(null);
             }
          }
 
-         List<AbstractParameterEstimation> paramModelList = null;
-         if (TEST_PARAM_EST) {
-            paramModelList = new ArrayList<AbstractParameterEstimation>();
-            for (int i = 0; i < advertisers.size(); i++) {
-               if(i == replaceIdx) {
-                  AbstractParameterEstimation paramModel;
-                  if(PARAM_EST_NAIVE) {
-                     paramModel = new NaiveParameterEstimation();
-                  }
-                  else {
-                     paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, squashParam, querySpace);
-                  }
-                  paramModelList.add(paramModel);
+
+         List<AbstractParameterEstimation> paramModelList = new ArrayList<AbstractParameterEstimation>();
+         for (int i = 0; i < advertisers.size(); i++) {
+            if(i == replaceIdx) {
+               AbstractParameterEstimation paramModel;
+               if(PARAM_EST_NAIVE) {
+                  paramModel = new NaiveParameterEstimation();
                }
                else {
-                  paramModelList.add(null);
+                  paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, squashParam, querySpace);
                }
+               paramModelList.add(paramModel);
+            }
+            else {
+               paramModelList.add(null);
             }
          }
 
          List<AbstractUnitsSoldModel> unitSoldModelList = null;
          List<ISRatioModel> ISRatioModelList = null;
-         List<AbstractAgent> agentList = null;
+         List<AdTypeEstimator> adTypeEstimatorList = null;
+         List<SimpleSpecialtyModel> specialtyModelList = null;
+         List<MCKP> agentList = null;
          List<ArrayList<BidBundle>> bidBundlesList = null;
          List<ArrayList<QueryReport>> queryReportsList = null;
          List<ArrayList<SalesReport>> salesReportsList = null;
          List<ArrayList<Integer>> salesListList = null;
-         PersistentHashMap cljSim = null;
          if(LIVE_MODE) {
             //Fuck it! We'll do it live!
             unitSoldModelList = new ArrayList<AbstractUnitsSoldModel>();
             ISRatioModelList = new ArrayList<ISRatioModel>();
-            agentList = new ArrayList<AbstractAgent>();
+            adTypeEstimatorList = new ArrayList<AdTypeEstimator>();
+            specialtyModelList = new ArrayList<SimpleSpecialtyModel>();
+            agentList = new ArrayList<MCKP>();
             bidBundlesList = new ArrayList<ArrayList<BidBundle>>();
             queryReportsList = new ArrayList<ArrayList<QueryReport>>();
             salesReportsList = new ArrayList<ArrayList<SalesReport>>();
@@ -296,7 +291,7 @@ public class AllModelTest {
             cljSim = setupSimulator(filename);
             for(int i = 0; i < advertisers.size(); i++) {
                if(i == replaceIdx) {
-                  AbstractAgent agent = new MCKP();
+                  MCKP agent = new MCKP(1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
                   agent.sendSimMessage(new Message("bla","bla", status.getPubInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getSlotInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getRetailCatalog()));
@@ -313,6 +308,13 @@ public class AllModelTest {
                   ISRatioModel ISRatioModel = new ISRatioModel(querySpace,NUM_SLOTS);
                   ISRatioModelList.add(ISRatioModel);
 
+
+                  AdTypeEstimator adTypeEstimator = new AdTypeEstimator(querySpace, advertisersSet, products);
+                  adTypeEstimatorList.add(adTypeEstimator);
+
+                  SimpleSpecialtyModel specialtyModel = new SimpleSpecialtyModel(querySpace, advertisersSet, products, NUM_SLOTS);
+                  specialtyModelList.add(specialtyModel);
+
                   Set<AbstractModel> modelList = new HashSet<AbstractModel>();
                   modelList.add(queryAnalyzerList.get(i));
                   modelList.add(userModelList.get(i));
@@ -321,6 +323,10 @@ public class AllModelTest {
                   modelList.add(paramModelList.get(i));
                   modelList.add(unitsSoldModel);
                   modelList.add(ISRatioModel);
+                  modelList.add(adTypeEstimator);
+                  modelList.add(specialtyModel);
+
+                  agent.setModels(modelList);
 
                   ArrayList<BidBundle> bidBundles = new ArrayList<BidBundle>();
                   ArrayList<QueryReport> queryReports = new ArrayList<QueryReport>();
@@ -333,11 +339,13 @@ public class AllModelTest {
                   salesList.add(avgCap);
                   salesList.add(avgCap);
 
-                  BidBundle firstBundle = agent.getBidBundle(modelList);
+                  BidBundle firstBundle = agent.getBidBundle();
                   agent.setDay(1);
-                  BidBundle secondBundle = agent.getBidBundle(modelList);
+                  BidBundle secondBundle = agent.getBidBundle();
                   bidBundles.add(firstBundle);
+                  agent.handleBidBundle(firstBundle);
                   bidBundles.add(secondBundle);
+                  agent.handleBidBundle(secondBundle);
 
                   int startCap = capacity - avgCap;
                   ArrayList firstReports = javasim.simDayForReports(cljSim,statusAgents[i],0,firstBundle,startCap);
@@ -359,7 +367,7 @@ public class AllModelTest {
 
                   int secondDaySales = 0;
                   for(Query q : querySpace) {
-                     secondDaySales += firstSalesReport.getConversions(q);
+                     secondDaySales += secondSalesReport.getConversions(q);
                   }
 
                   queryReports.add(secondQueryReport);
@@ -378,6 +386,10 @@ public class AllModelTest {
                   queryReportsList.add(null);
                   salesReportsList.add(null);
                   salesListList.add(null);
+                  unitSoldModelList.add(null);
+                  ISRatioModelList.add(null);
+                  adTypeEstimatorList.add(null);
+                  specialtyModelList.add(null);
                }
             }
          }
@@ -385,7 +397,7 @@ public class AllModelTest {
          // Make predictions for each day/query in this game
          for (int d=START_DAY; d<=END_DAY; d++) {
             System.out.println("Start day: " + d);
-            
+
             boolean[] totalBudgetHits = hitTotalBudget(status,d);
 
             /*
@@ -440,7 +452,7 @@ public class AllModelTest {
                   AbstractParameterEstimation paramModel = paramModelList.get(agent);
 
                   HashMap<Query,Integer> _maxImps;
-                  if(!USER_MODEL_PERF_IMPS) {
+                  if(!USER_MODEL_UB) {
                      _maxImps = new HashMap<Query,Integer>();
                      for(Query q : querySpace) {
                         int numImps;
@@ -458,7 +470,7 @@ public class AllModelTest {
                   }
                   else {
                      HashMap<Product,HashMap<GameStatusHandler.UserState,Integer>> preUpdateUserStates = getUserStates(userModel,products);
-                     _maxImps = getMaxImpsPred(preUpdateUserStates,querySpace);
+                     _maxImps = getMaxImpsPred(preUpdateUserStates,1.45,querySpace);
                   }
 
                   queryAnalyzer.updateModel(queryReport, bidBundle, _maxImps);
@@ -534,12 +546,12 @@ public class AllModelTest {
 
                   paramModel.updateModel(queryReport, bidBundle, allImpressionPredictions, fullWaterfalls, allUserStatePredictions, convProbs);
 
-                  HashMap<Query,double[]> ISRatios = new HashMap<Query, double[]>();
-                  for(Query q : querySpace) {
-                     int qtIdx = queryTypeToInt(q.getType());
-                     double[] ISRatio = getISRatio(q,NUM_SLOTS,NUM_SLOTS,_advertiserEffectBoundsAvg[qtIdx],paramModel.getContProbPrediction(q),convProbs[qtIdx],allUserStatePredictions);
-                     ISRatios.put(q,ISRatio);
-                     ISRatioModelList.get(agent).updateISRatio(q,ISRatio);
+                  if(LIVE_MODE) {
+                     for(Query q : querySpace) {
+                        int qtIdx = queryTypeToInt(q.getType());
+                        double[] ISRatio = getISRatio(q,NUM_SLOTS,NUM_SLOTS,_advertiserEffectBoundsAvg[qtIdx],paramModel.getContProbPrediction(q),convProbs[qtIdx],allUserStatePredictions);
+                        ISRatioModelList.get(agent).updateISRatio(q,ISRatio);
+                     }
                   }
 
                   HashMap<Query,double[]> allSquashedBidPredictions = new HashMap<Query, double[]>(querySpace.size());
@@ -605,22 +617,15 @@ public class AllModelTest {
                      /*
                      * Update unit sold and IS Ratio
                      */
-                     AbstractUnitsSoldModel unitsSoldModel = unitSoldModelList.get(agent);
-                     unitsSoldModel.update(salesReportsList.get(agent).get(d));
+                     unitSoldModelList.get(agent).update(salesReportsList.get(agent).get(d));
+                     adTypeEstimatorList.get(agent).updateModel(queryReportsList.get(agent).get(d));
+                     specialtyModelList.get(agent).updateModel(queryReportsList.get(agent).get(d));
 
                      int capWindow  = status.getAdvertiserInfos().get(statusAgents[agent]).getDistributionWindow();
 
-                     Set<AbstractModel> modelList = new HashSet<AbstractModel>();
-                     modelList.add(queryAnalyzerList.get(agent));
-                     modelList.add(userModelList.get(agent));
-                     modelList.add(budgetModelList.get(agent));
-                     modelList.add(bidModelList.get(agent));
-                     modelList.add(paramModelList.get(agent));
-                     modelList.add(unitsSoldModel);
-                     modelList.add(ISRatioModelList.get(agent));
-
-                     AbstractAgent liveAgent = agentList.get(agent);
-                     liveAgent.setDay(d+2);
+                     agentList.get(agent).setDay(d+2);
+                     agentList.get(agent).handleQueryReport(queryReportsList.get(agent).get(d));
+                     agentList.get(agent).handleSalesReport(salesReportsList.get(agent).get(d));
 
                      int startSales = 0;
                      ArrayList<Integer> salesList = salesListList.get(agent);
@@ -628,7 +633,8 @@ public class AllModelTest {
                         startSales += salesList.get(salesList.size()-1-i);
                      }
 
-                     BidBundle bundle = liveAgent.getBidBundle(modelList);
+                     BidBundle bundle = agentList.get(agent).getBidBundle();
+                     agentList.get(agent).handleBidBundle(bundle);
                      ArrayList reports = javasim.simDayForReports(cljSim,statusAgents[agent],d+2,bundle,startSales);
                      QueryReport queryReport = (QueryReport) reports.get(0);
                      SalesReport salesReport = (SalesReport) reports.get(1);
@@ -722,7 +728,6 @@ public class AllModelTest {
                      /*
                      * Budget Error
                      */
-                     int numBudgetType4Errs = 0;
                      for(int innerAgent = 0; innerAgent < advertisers.size(); innerAgent++) {
                         if(innerAgent != agent) {
                            double budget = budgets[innerAgent];
@@ -1056,7 +1061,7 @@ public class AllModelTest {
 
       // Make the query space
       Set<Query> querySpace = status.getQuerySpace();
-      int numDays = 57;
+      int numDays = 59;
       for (int d = 0; d < numDays; d++) {
          for (Query q : querySpace) {
             Integer[] promotedImps = getAgentPromotedImpressions(status, d, q);
@@ -1082,7 +1087,7 @@ public class AllModelTest {
 
       // Make the query space
       Set<Query> querySpace = status.getQuerySpace();
-      int numDays = 57;
+      int numDays = 59;
       for (int d = 0; d < numDays; d++) {
          for (Query q : querySpace) {
             Integer[] impressions = getAgentImpressions(status, d, q);
@@ -1100,10 +1105,10 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15127; //15159; //15148 //15127
-      int END_GAME = 15127; //15159;
+      int START_GAME = 15128; //15148 //15127
+      int END_GAME = 15128;
       int START_DAY = 0; //0
-      int END_DAY = 57; //57
+      int END_DAY = 58; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
       String agentName = "TacTex";

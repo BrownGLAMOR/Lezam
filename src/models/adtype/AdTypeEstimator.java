@@ -21,9 +21,9 @@ public class AdTypeEstimator extends AbstractAdTypeEstimator {
 
 
 	Set<Query> _querySpace;
-	LinkedHashSet<String> _advertisersSet;
-	HashSet<Product> _products;
-	HashSet<Ad> _adSpace;
+	Set<String> _advertisersSet;
+	Set<Product> _products;
+	Set<Ad> _adSpace;
 	
 	//Keep track of how many times each (agent,query,adType) occurred
 	//String advertiser, Query query, Ad
@@ -32,7 +32,7 @@ public class AdTypeEstimator extends AbstractAdTypeEstimator {
 	
 	
 
-	public AdTypeEstimator(Set<Query> querySpace, LinkedHashSet<String> advertisersSet, HashSet<Product> products) {
+	public AdTypeEstimator(Set<Query> querySpace, Set<String> advertisersSet, Set<Product> products) {
 		this._querySpace = querySpace;
 		this._advertisersSet = advertisersSet;
 		this._products = products;

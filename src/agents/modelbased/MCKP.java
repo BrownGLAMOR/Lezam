@@ -42,13 +42,13 @@ public class MCKP extends AbstractAgent {
      * 2) Predict opponent ad type
      * 3) Dynamic or at least different capacity numbers
      */
-	
-	
-	//Parameters that can be tweaked:
-	//  Bid/budget lists
-	//  _c (predicted opponent conversion probs for each focus level)
-	
-	
+
+
+   //Parameters that can be tweaked:
+   //  Bid/budget lists
+   //  _c (predicted opponent conversion probs for each focus level)
+
+
    double[] _c;
 
    private boolean DEBUG = false;
@@ -62,8 +62,6 @@ public class MCKP extends AbstractAgent {
    private static double USER_MODEL_UB_MULT;
    private static double USER_MODEL_UB_STD_DEV;
    private boolean USER_MODEL_UB = true;
-   private boolean DAY_SIM_WEIGHT_OPT = false;
-   private boolean DAY_SIM_WEIGHT_END = false;
    private boolean RANKABLE = false;
 
    private double _safetyBudget;
@@ -102,7 +100,6 @@ public class MCKP extends AbstractAgent {
 
    public MCKP() {
       this(0.04,0.14,0.20);
-      System.out.println("Creating Knapsack");
    }
 
    public MCKP(double c1, double c2, double c3) {
@@ -351,22 +348,22 @@ public class MCKP extends AbstractAgent {
 
       for(Query q : _querySpace) {
 
-    	  //Define expected revenue for receiving a conversion for this query
+         //Define expected revenue for receiving a conversion for this query
          String manufacturer = q.getManufacturer();
          if(_manSpecialty.equals(manufacturer)) {
-        	 //If the query is F1 or F2 for our manufacturer specialty, we get a sales bonus for every conversion from this query
+            //If the query is F1 or F2 for our manufacturer specialty, we get a sales bonus for every conversion from this query
             _salesPrices.put(q, 10*(_MSB+1));
          }
          else if(manufacturer == null) {
-        	 //If the query is F0 or F1, we should consider that searchers will have our manufacturer specialty about 1/3 of the time, which will give us a sales bonus when they convert.
+            //If the query is F0 or F1, we should consider that searchers will have our manufacturer specialty about 1/3 of the time, which will give us a sales bonus when they convert.
             _salesPrices.put(q, (10*(_MSB+1)) * (1/3.0) + (10)*(2/3.0));
          }
          else {
-        	 //If the query is F2 and not our manufacturer specialty, we'll never get the sales bonus.
+            //If the query is F2 and not our manufacturer specialty, we'll never get the sales bonus.
             _salesPrices.put(q, 10.0);
          }
 
-         
+
          //Get baseline conversion probabilities.
          //We don't consider component specialty bonus here. They are handled in a method that also considers 
          //our amount over capacity and the fraction of IS users.
@@ -441,8 +438,10 @@ public class MCKP extends AbstractAgent {
       return models;
    }
 
-   public void setAllModels(Set<AbstractModel> models) {
-      for(AbstractModel model : models) {
+   @Override
+   public void setModels(Set<AbstractModel> models) {
+      super.setModels(models);
+      for(AbstractModel model : _models) {
          if(model instanceof AbstractQueryAnalyzer) {
             _queryAnalyzer = (AbstractQueryAnalyzer)model;
          }
@@ -475,8 +474,7 @@ public class MCKP extends AbstractAgent {
    }
 
    @Override
-   public BidBundle getBidBundle(Set<AbstractModel> models) {
-      setAllModels(models);
+   public BidBundle getBidBundle() {
       BidBundle bidBundle = new BidBundle();
 
       //The only campaign-level budget we consider is a constant value. 
@@ -489,7 +487,6 @@ public class MCKP extends AbstractAgent {
          bidBundle.setCampaignDailySpendLimit(Integer.MAX_VALUE);
       }
 
-      
       //If we are past the initial couple days (where we perform a different strategy, since we have no query/sales reports)
       //(Or if we are using perfect models)
       if(_day >= lagDays || hasPerfectModels()){
@@ -512,15 +509,15 @@ public class MCKP extends AbstractAgent {
                remainingCap -= _capacity/((double)_capWindow) * (_capacity - 1 - saleslen);
             }
          }
-         
-         
-         
-         
-         
+
+
+
+
+
          //--------------
          // Create lists of possible bids/budgets we can place for each query
          //-------------
-         
+
          //FIXME: What about basing possible bids on the bids of opponents? Only consider N
          //bids that would put us in each starting position.
 
@@ -542,17 +539,17 @@ public class MCKP extends AbstractAgent {
                else {
                   double increment  = .1;
                   double min = _regReserveLow[queryTypeToInt(q.getType())];
-                  
+
                   //This is roughly the expected revenue we get for a click. Never bid above this.
                   //TODO (low priority): SalesPrice and ConversionPr could be better estimated for the given day. 
                   //We may not want to consider bids this high (e.g. we might start the day with a high penalty).
                   //Note, though, that these bids are considered on future days as well, where we may not have used any capacity.
-                  
+
                   //FIXME: Multiplying by baseClickProbs is not correct, but it was performing better, so only for the time being I'll leave it in.
                   double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q);
                   //double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0);
-                  
-                  
+
+
                   int tot = (int) Math.ceil((max-min) / increment);
                   for(int i = 0; i < tot; i++) {
                      newBids.add(min+(i*increment));
@@ -579,15 +576,15 @@ public class MCKP extends AbstractAgent {
                budgetLists.put(q,new ArrayList<Double>());
             }
          }
-         
-         
-         
-         
-         
-         
-         
-         
-         
+
+
+
+
+
+
+
+
+
          //--------------
          // Create incremental items for the MCKP.
          // Create these items by simulating each query (given some initial capacity, everyone's bids, and everyone's budgets)
@@ -607,14 +604,14 @@ public class MCKP extends AbstractAgent {
          long knapsackStart = System.currentTimeMillis();
          for(Query q : _querySpace) {
             if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query. 
-               ArrayList<Item> itemList = new ArrayList<Item>();
-               ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>();
+               ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
+               ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
                debug("Knapsack Building Query: " + q);
                double convProb = getConversionPrWithPenalty(q, 1.0);
                double salesPrice = _salesPrices.get(q);
                int itemCount = 0;
 
-               
+
                //FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
                for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
                   for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
@@ -628,7 +625,7 @@ public class MCKP extends AbstractAgent {
                         double numImps = impsClicksAndCost[0];
                         double numClicks = impsClicksAndCost[1];
                         double cost = impsClicksAndCost[2];
-                        
+
                         //Amount of impressions our agent sees in each slot
                         double[] slotDistr = new double[] {impsClicksAndCost[3],
                                 impsClicksAndCost[4],
@@ -685,10 +682,10 @@ public class MCKP extends AbstractAgent {
                      }
                   }
                }
-               
-               
-               
-               
+
+
+
+
                debug("Items for " + q);
                if(itemList.size() > 0) {
                   Item[] items = itemList.toArray(new Item[0]);
@@ -704,13 +701,13 @@ public class MCKP extends AbstractAgent {
          System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );
 
 
-         PersistentHashMap daySim;
-         if(hasPerfectModels()) {
-            daySim = javasim.setStartSales(querySim, _agentToReplace, (int) _day, (int) (_capacity - remainingCap), true);
-         }
-         else {
-            daySim = javasim.setStartSales(querySim, _advId, (int) _day, (int) (_capacity - remainingCap), false);
-         }
+//         PersistentHashMap daySim;
+//         if(hasPerfectModels()) {
+//            daySim = javasim.setStartSales(querySim, _agentToReplace, (int) _day, (int) (_capacity - remainingCap), true);
+//         }
+//         else {
+//            daySim = javasim.setStartSales(querySim, _advId, (int) _day, (int) (_capacity - remainingCap), false);
+//         }
 
          Collections.sort(allIncItems);
 
@@ -719,7 +716,7 @@ public class MCKP extends AbstractAgent {
 
          HashMap<Query,Item> solution;
          if (_multiDayHeuristic == MultiDay.OneDayHeuristic) {
-            solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
+            solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap);
          } else if (_multiDayHeuristic == MultiDay.HillClimbing) {
             solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap);
          } else if (_multiDayHeuristic == MultiDay.DP) {
@@ -790,15 +787,15 @@ public class MCKP extends AbstractAgent {
          * Pass expected conversions to unit sales model
          */
          double solutionWeight;
-         if(DAY_SIM_WEIGHT_END) {
-            double[] results = simulateDay(daySim,bidBundle);
-            solutionWeight = results[3];
-//            System.out.println("We expect to get " + (int)solutionWeight + "/" + (int)solutionWeight(remainingCap,solution,allPredictionsMap) + " conversions");
-         }
-         else {
-            solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
+//         if(DAY_SIM_WEIGHT_END) {
+//            double[] results = simulateDay(daySim,bidBundle);
+//            solutionWeight = results[3];
+////            System.out.println("We expect to get " + (int)solutionWeight + "/" + (int)solutionWeight(remainingCap,solution,allPredictionsMap) + " conversions");
+//         }
+//         else {
+         solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 //            System.out.println("We expect to get " + (int)solutionWeight + " conversions");
-         }
+//         }
          ((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) (solutionWeight));
       }
       else {
@@ -947,7 +944,7 @@ public class MCKP extends AbstractAgent {
          }
          else {
             HashMap<Product,HashMap<UserState,Integer>> preUpdateUserStates = getUserStates(_userModel,_products);
-            _maxImps = getMaxImpsPred(preUpdateUserStates,_querySpace);
+            _maxImps = getMaxImpsPred(preUpdateUserStates,USER_MODEL_UB_MULT,_querySpace);
          }
 
          _queryAnalyzer.updateModel(queryReport, bidBundle, _maxImps);
@@ -1085,23 +1082,23 @@ public class MCKP extends AbstractAgent {
       return userStates;
    }
 
-   public static HashMap<Query,Integer> getMaxImpsPred(HashMap<Product,HashMap<UserState,Integer>> userStates, Set<Query> querySpace) {
+   public static HashMap<Query,Integer> getMaxImpsPred(HashMap<Product,HashMap<UserState,Integer>> userStates, double userModelUBMult, Set<Query> querySpace) {
       HashMap<Query,Integer> maxImps = new HashMap<Query, Integer>(querySpace.size());
       for (Query q : querySpace) {
          int numImps = 0;
          for (Product p : userStates.keySet()) {
             if (q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
                numImps += userStates.get(p).get(UserState.F0);
-               numImps += USER_MODEL_UB_MULT * userStates.get(p).get(UserState.IS) / 3.0;
+               numImps += userModelUBMult * userStates.get(p).get(UserState.IS) / 3.0;
             } else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
                if (p.getComponent().equals(q.getComponent()) || p.getManufacturer().equals(q.getManufacturer())) {
                   numImps += userStates.get(p).get(UserState.F1) / 2.0;
-                  numImps += USER_MODEL_UB_MULT * userStates.get(p).get(UserState.IS) / 6.0;
+                  numImps += userModelUBMult * userStates.get(p).get(UserState.IS) / 6.0;
                }
             } else if (q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
                if (p.getComponent().equals(q.getComponent()) && p.getManufacturer().equals(q.getManufacturer())) {
                   numImps += userStates.get(p).get(UserState.F2);
-                  numImps += USER_MODEL_UB_MULT * userStates.get(p).get(UserState.IS) / 3.0;
+                  numImps += userModelUBMult * userStates.get(p).get(UserState.IS) / 3.0;
                }
             }
          }
@@ -1129,21 +1126,21 @@ public class MCKP extends AbstractAgent {
             penalty = Math.pow(lambda, Math.abs(remainingCap));
          }
          else {
-        	 //Average penalty per click:
-        	 //For each conversion, compute its penalty. Use this to get conversion probability at that penalty, 
-        	 //and then use this to get expected number of clicks at that penalty. 
-        	 //There is a different penalty for each conversion. Average penalty is:
-        	 // (\sum_{conversion} penaltyForConversion * expectedClicksAtPenalty) / totalClicks
-        	 // where, for a given conversion (and thus penalty),  expectedClicksAtPenalty = 1 / PrConv(penalty)
-        	 // and totalClicks = \sum_{conversion} expectedClicksAtPenalty
-        	 // i.e. (ignoring component specialties),
-        	 //    avgPenalty = \sum{c} I_c * ( 1/(pi*I_c) ) 
-        	 
-        	 //FIXME: We're currently making the simplifying assumption that PrConv(penalty) = penalty.
-        	 //So the summation becomes \sum_{conversion} penaltyForConversion (1/penaltyForConversion) = #conversions
-        	 //And totalClicks = \sum_{conversion} 1/penaltyForConversion
-        	 //This is probably not affecting things much, but we should use the correct formula at some point. 
-        	 
+            //Average penalty per click:
+            //For each conversion, compute its penalty. Use this to get conversion probability at that penalty,
+            //and then use this to get expected number of clicks at that penalty.
+            //There is a different penalty for each conversion. Average penalty is:
+            // (\sum_{conversion} penaltyForConversion * expectedClicksAtPenalty) / totalClicks
+            // where, for a given conversion (and thus penalty),  expectedClicksAtPenalty = 1 / PrConv(penalty)
+            // and totalClicks = \sum_{conversion} expectedClicksAtPenalty
+            // i.e. (ignoring component specialties),
+            //    avgPenalty = \sum{c} I_c * ( 1/(pi*I_c) )
+
+            //FIXME: We're currently making the simplifying assumption that PrConv(penalty) = penalty.
+            //So the summation becomes \sum_{conversion} penaltyForConversion (1/penaltyForConversion) = #conversions
+            //And totalClicks = \sum_{conversion} 1/penaltyForConversion
+            //This is probably not affecting things much, but we should use the correct formula at some point.
+
             double penWeight = 0.0;
             int convs = 0;
             for(double j = Math.abs(remainingCap)+1; j <= Math.abs(remainingCap)+solutionWeight; j++) {
@@ -1159,7 +1156,7 @@ public class MCKP extends AbstractAgent {
          }
          else {
             if(solutionWeight > remainingCap) {
-            	//FIXME: Same as above.
+               //FIXME: Same as above.
                double penWeight = remainingCap;
                int convs = ((int)remainingCap);
                for(int j = 1; j <= solutionWeight-remainingCap; j++) {
@@ -1179,19 +1176,19 @@ public class MCKP extends AbstractAgent {
       return penalty;
    }
 
-   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int numDays, PersistentHashMap daySim) {
+   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int numDays) {
 
       double totalWeight;
       double weightMult;
-      if(DAY_SIM_WEIGHT_OPT) {
-         double[] results = simulateDay(daySim,mkBundleFromKnapsack(solution));
-         totalWeight = results[3];
-         weightMult = totalWeight / solutionWeight(remainingCap, solution, allPredictionsMap);
-      }
-      else {
-         totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
-         weightMult = 1.0;
-      }
+//      if(DAY_SIM_WEIGHT_OPT) {
+//         double[] results = simulateDay(daySim,mkBundleFromKnapsack(solution));
+//         totalWeight = results[3];
+//         weightMult = totalWeight / solutionWeight(remainingCap, solution, allPredictionsMap);
+//      }
+//      else {
+      totalWeight = solutionWeight(remainingCap, solution, allPredictionsMap);
+      weightMult = 1.0;
+//      }
 
       double penalty = getPenalty(remainingCap, totalWeight);
 
@@ -1372,7 +1369,7 @@ public class MCKP extends AbstractAgent {
       return solutionWeight(budget, solution, allPredictionsMap, null);
    }
 
-   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, PersistentHashMap daySim){
+   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
       HashMap<Query,Item> solution = new HashMap<Query, Item>();
       int expectedConvs = 0;
       double[] lastSolVal = null;
@@ -1390,12 +1387,12 @@ public class MCKP extends AbstractAgent {
                currSolVal = lastSolVal;
             }
             else {
-               currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap, 15, daySim);
+               currSolVal = solutionValueMultiDay(solution, budget, allPredictionsMap, 15);
             }
 
             HashMap<Query, Item> solutionCopy = (HashMap<Query, Item>)solution.clone();
             solutionCopy.put(ii.item().q(), ii.item());
-            double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap, 15, daySim);
+            double[] newSolVal = solutionValueMultiDay(solutionCopy, budget, allPredictionsMap, 15);
 
             //				System.out.println("[" + _day +"] CurrSolVal: " + currSolVal[0] + ", NewSolVal: " + newSolVal[0]);
 
@@ -2205,7 +2202,7 @@ public class MCKP extends AbstractAgent {
          convPr = eta(baseConvPr*penalty,1+_CSB);
       }
       else if(component == null) {
-    	  //If query has no component, searchers who click will have some chance (1/3) of having our component specialty.
+         //If query has no component, searchers who click will have some chance (1/3) of having our component specialty.
          convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);
       }
       else {
@@ -2215,7 +2212,7 @@ public class MCKP extends AbstractAgent {
       //We just computed the conversion probability for someone, assuming they're not an IS user.
       //If an IS user, conversion probability is 0.
       // conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS 
-      convPr *= (1.0 - ISRatio); 
+      convPr *= (1.0 - ISRatio);
       return convPr;
    }
 

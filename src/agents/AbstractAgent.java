@@ -319,7 +319,7 @@ public abstract class AbstractAgent extends Agent {
       if (_day >= 2) {
          updateModels(_salesReport, _queryReport);
       }
-      BidBundle bidBundle = getBidBundle(_models);
+      BidBundle bidBundle = getBidBundle();
       _bidBundles.add(bidBundle);
       String publisherAddress = _advertiserInfo.getPublisherId();
       // Send the bid bundle to the publisher
@@ -530,7 +530,7 @@ public abstract class AbstractAgent extends Agent {
    * This will be called once each day to get the bid bundle for the day, i.e. the bids,
    * budgets, and ad types
    */
-   public abstract BidBundle getBidBundle(Set<AbstractModel> models);
+   public abstract BidBundle getBidBundle();
 
    public void setModels(Set<AbstractModel> models) {
       _models = models;

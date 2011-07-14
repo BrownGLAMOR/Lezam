@@ -30,15 +30,15 @@ public class SimpleSpecialtyModel extends AbstractSpecialtyModel {
 //	int numProducts = 9;
 
    int _numSlots;
-   private HashSet<Product> _products;
+   private Set<Product> _products;
    private Set<Query> _querySpace;
-   LinkedHashSet<String> advertisers;
+   Set<String> advertisers;
 
    //How often did each agent appear in query q?
    HashMap<String, HashMap<Query, Double>> appearanceScore;
    HashMap<String, HashMap<Query, HashMap<Product, Integer>>> numTargets;
 
-   public SimpleSpecialtyModel(Set<Query> querySpace, LinkedHashSet<String> advertisersSet, HashSet<Product> products, int numSlots) {
+   public SimpleSpecialtyModel(Set<Query> querySpace, Set<String> advertisersSet, Set<Product> products, int numSlots) {
 	   _querySpace = querySpace;
 	   _products = products;
 	   advertisers = advertisersSet;
