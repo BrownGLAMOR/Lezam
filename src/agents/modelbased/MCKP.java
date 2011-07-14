@@ -521,7 +521,7 @@ public class MCKP extends AbstractAgent {
          //FIXME: What about basing possible bids on the bids of opponents? Only consider N
          //bids that would put us in each starting position.
          HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
-         //HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();         
+//         HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();         
          HashMap<Query,ArrayList<Double>> budgetLists = getBudgetLists();
          
          for (Query q : _querySpace) {
@@ -859,7 +859,7 @@ public class MCKP extends AbstractAgent {
 			   
 			   //Turn score into bids
 			   for (double score : ourPrunedScores) {
-				   double ourBid = score / ourAdvertiserEffect;
+				   double ourBid = score / Math.pow(ourAdvertiserEffect, _squashing);
 				   ourBids.add(ourBid);
 			   }
 			   

@@ -44,6 +44,7 @@ public class ReserveEstimator {
       for(Query q : _querySpace) {
          if(q.getType().equals(_queryType)) {
             double bid = bundle.getBid(q);
+            //FIXME: Use estimate for our advertiser effect instead of the average?
             double squashedBid = Math.pow(_advertiserEffectBoundsAvg[_qTypeIdx],_squashParam) * bid;
             /*
             * Check if there are any times that our bid was above what we believe
