@@ -20,50 +20,29 @@ import java.util.*;
  *
  * @author sodomka
  */
-public class SimpleSpecialtyModel extends AbstractModel {
+public class SimpleSpecialtyModel extends AbstractSpecialtyModel {
 
-   String[] advertisers = {"adv1", "adv2", "adv3", "adv4", "adv5", "adv6", "adv7", "adv8"};
+  // String[] advertisers = {"adv1", "adv2", "adv3", "adv4", "adv5", "adv6", "adv7", "adv8"};
 //	int numAdvertisers = advertisers.length;
 //	int numQueries = 16;
 //	int numComponents = 3;
 //	int numManufacturers = 3;
 //	int numProducts = 9;
 
-   private Set<Product> _products;
+   int _numSlots;
+   private HashSet<Product> _products;
    private Set<Query> _querySpace;
-
+   LinkedHashSet<String> advertisers;
 
    //How often did each agent appear in query q?
    HashMap<String, HashMap<Query, Double>> appearanceScore;
    HashMap<String, HashMap<Query, HashMap<Product, Integer>>> numTargets;
 
-   public SimpleSpecialtyModel() {
-      _products = new HashSet<Product>();
-      _querySpace = new HashSet<Query>();
-
-      //Initialize products
-      _products.add(new Product("pg", "tv"));
-      _products.add(new Product("pg", "dvd"));
-      _products.add(new Product("pg", "audio"));
-      _products.add(new Product("lioneer", "tv"));
-      _products.add(new Product("lioneer", "dvd"));
-      _products.add(new Product("lioneer", "audio"));
-      _products.add(new Product("flat", "tv"));
-      _products.add(new Product("flat", "dvd"));
-      _products.add(new Product("flat", "audio"));
-
-      //Initialize Query Space
-      _querySpace.add(new Query(null, null));
-      for (Product product : _products) {
-         // The F1 query classes
-         // F1 Manufacturer only
-         _querySpace.add(new Query(product.getManufacturer(), null));
-         // F1 Component only
-         _querySpace.add(new Query(null, product.getComponent()));
-
-         // The F2 query class
-         _querySpace.add(new Query(product.getManufacturer(), product.getComponent()));
-      }
+   public SimpleSpecialtyModel(Set<Query> querySpace, LinkedHashSet<String> advertisersSet, HashSet<Product> products, int numSlots) {
+	   _querySpace = querySpace;
+	   _products = products;
+	   advertisers = advertisersSet;
+	   this._numSlots = numSlots;
 
 
       appearanceScore = new HashMap<String, HashMap<Query, Double>>();
@@ -86,14 +65,13 @@ public class SimpleSpecialtyModel extends AbstractModel {
 
 
    public void updateModel(QueryReport queryReport) {
-      int NUMSLOTS = 5;
       for (String advertiser : advertisers) {
          for (Query query : _querySpace) {
             Ad ad = queryReport.getAd(query, advertiser);
 
             if (ad != null) {
                double avgPos = queryReport.getPosition(query, advertiser);
-               double score = (Double.isNaN(avgPos)) ? 0 : NUMSLOTS - avgPos + 1;
+               double score = (Double.isNaN(avgPos)) ? 0 : _numSlots - avgPos + 1;
                incrementNumAppearances(advertiser, query, score);
                if (!ad.isGeneric()) {
                   //System.out.println("incrementing a=" + advertiser + " q=" + query + " p=" + ad.getProduct());
@@ -130,7 +108,7 @@ public class SimpleSpecialtyModel extends AbstractModel {
    }
 
 
-   public List<String> getComponentSpecialty(String advertiser) {
+   public String getComponentSpecialty(String advertiser) {
       //If they targeted one component more than the rest, make that the specialty
       HashMap<String, Double> numComponentAppearances = getNumComponentAppearances(advertiser);
       HashMap<String, Integer> numComponentTargets = getNumComponentTargets(advertiser);
@@ -138,7 +116,7 @@ public class SimpleSpecialtyModel extends AbstractModel {
       return getMostLikelySpecialty(numComponentTargets, numComponentAppearances);
    }
 
-   public List<String> getManufacturerSpecialty(String advertiser) {
+   public String getManufacturerSpecialty(String advertiser) {
       //If they targeted one component more than the rest, make that the specialty
       HashMap<String, Double> numManufacturerAppearances = getNumManufacturerAppearances(advertiser);
       HashMap<String, Integer> numManufacturerTargets = getNumManufacturerTargets(advertiser);
@@ -240,10 +218,8 @@ public class SimpleSpecialtyModel extends AbstractModel {
    }
 
 
-   private List<String> getMostLikelySpecialty(HashMap<String, Integer> numSpecialtyTargets, HashMap<String, Double> numSpecialtyAppearances) {
+   private String getMostLikelySpecialty(HashMap<String, Integer> numSpecialtyTargets, HashMap<String, Double> numSpecialtyAppearances) {
       //Find most likely component specialty.
-      //FIXME: this is biasing toward component specialties we traverse earlier,
-      //  since ties go to whatever was seen first.
       double targetWeight = 1;
       double appearanceWeight = 1;
 
@@ -265,7 +241,12 @@ public class SimpleSpecialtyModel extends AbstractModel {
       }
 
 
-      return mostLikelySpecialties;
+      //If there are ties, randomly choose from the list of most likely specialties.
+      Random r = new Random();
+      int randomIndex = r.nextInt(mostLikelySpecialties.size());
+      String mostLikelySpecialty = mostLikelySpecialties.get(randomIndex);
+      
+      return mostLikelySpecialty;
    }
 
 
@@ -280,7 +261,10 @@ public class SimpleSpecialtyModel extends AbstractModel {
 
    @Override
    public AbstractModel getCopy() {
-      return new SimpleSpecialtyModel();
+      return new SimpleSpecialtyModel(_querySpace, advertisers, _products, _numSlots);
    }
+
+
+
 
 }

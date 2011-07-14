@@ -8,6 +8,10 @@ import clojure.lang.PersistentHashMap;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
 import models.ISratio.ISRatioModel;
+import models.adtype.AbstractAdTypeEstimator;
+import models.adtype.AdTypeEstimator;
+import models.advertiserspecialties.AbstractSpecialtyModel;
+import models.advertiserspecialties.SimpleSpecialtyModel;
 import models.bidmodel.AbstractBidModel;
 import models.bidmodel.IndependentBidModel;
 import models.budgetEstimator.AbstractBudgetEstimator;
@@ -81,6 +85,8 @@ public class MCKP extends AbstractAgent {
    private PersistentHashMap _baseCljSim;
    private PersistentHashMap _perfectCljSim = null;
    private String _agentToReplace;
+   private AbstractAdTypeEstimator _adTypeEstimator;
+   private AbstractSpecialtyModel _specialtyModel;
 
    private HashMap<Integer,Double> _totalBudgets,_capMod;
    private double _lowBidMult;
@@ -181,26 +187,32 @@ public class MCKP extends AbstractAgent {
          HashMap<String,String> compSpecialties = new HashMap<String, String>();
          HashMap<String,HashMap<Query,Ad>> ads = new HashMap<String, HashMap<Query, Ad>>();
 
+         //Get predictions for continuation probabilities, reserve scores, and promoted reserve scores.
          for(Query q : _querySpace) {
             contProbs.put(q,_paramEstimation.getContProbPrediction(q));
             regReserves.put(q,_paramEstimation.getRegReservePrediction(q.getType()));
             promReserves.put(q, _paramEstimation.getPromReservePrediction(q.getType()));
          }
 
+         //------------
+         //Get predictions for each advertiser's bid, budget, advertiserEffect,
+         //initialConversions, maxCapacity, manufacturer and component specialties,
+         //whether they are targeting
+         //------------
          for(int i = 0; i < _advertisers.size(); i++) {
             String agent = _advertisers.get(i);
-            if(i != _advIdx) {
+            if(i != _advIdx) { //For everyone besides us...
                HashMap<Query,Double> aSquashedBids = new HashMap<Query, Double>();
                HashMap<Query,Double> aBudgets = new HashMap<Query, Double>();
                HashMap<Query,Double> aAdvAffects = new HashMap<Query, Double>();
-               int aCapacities = 450;  //TODO estimate opponent capacity
-//               int aStartSales = (int)((4.0*(aCapacities / ((double) _capWindow)) + aCapacities) / 2.0);  //TODO Estimate opponent start-sales
-               int aStartSales = aCapacities;
+               int aCapacities = 450;  //FIXME estimate opponent capacity
+//               int aStartSales = (int)((4.0*(aCapacities / ((double) _capWindow)) + aCapacities) / 2.0);  //FIXME Estimate opponent start-sales
+               int aStartSales = aCapacities; 
                Query maxQuery = null;
                double maxBid = 0.0;
                for(Query q : _querySpace) {
                   double bid = _bidModel.getPrediction("adv" + (i+1), q);
-                  double advEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
+                  double advEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())]; //FIXME: Get this from an advertiser effect model?
                   double squashedBid = bid*Math.pow(advEffect,_squashing);
                   aSquashedBids.put(q, squashedBid);
                   aBudgets.put(q, _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1)));
@@ -213,14 +225,37 @@ public class MCKP extends AbstractAgent {
                   }
                }
 
+               
+               
+               
+               //---------------
+               //Determine manufacturer/component specialties
+               //---------------
+
                //Assume specialty is the prod of F2 query they are bidding most in
                String aManSpecialties = maxQuery.getManufacturer();
                String aCompSpecialties = maxQuery.getComponent();
+               
+               //String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1)); //TODO: Use this!!!
+               //String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1)); //TODO: Use this!!!
+
+
+               
+               //---------------
+               //Determine ad targeting
+               //---------------
+               
+               //We can either assume the advertiser will target its specialty,
+               //or we can look at its historical targeting.
                HashMap<Query,Ad> aAds = new HashMap<Query, Ad>();
                for(Query q : _querySpace) {
-                  aAds.put(q,getTargetedAd(q,aManSpecialties,aCompSpecialties));
+            	   //Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
+            	   Ad predictedAd = getTargetedAd(q,aManSpecialties,aCompSpecialties);
+            	   aAds.put(q, predictedAd);                  
                }
 
+                              
+               
                squashedBids.put(agent,aSquashedBids);
                budgets.put(agent,aBudgets);
                advAffects.put(agent,aAdvAffects);
@@ -390,8 +425,10 @@ public class MCKP extends AbstractAgent {
 //      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
       _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _squashing, _querySpace);
       _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS);
-      _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);
-
+      _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);      
+      _adTypeEstimator = new AdTypeEstimator(_querySpace, _advertisersSet, _products);
+      _specialtyModel = new SimpleSpecialtyModel(_querySpace, _advertisersSet, _products, _numSlots);
+      
       models.add(_queryAnalyzer);
       models.add(_userModel);
       models.add(_unitsSold);
@@ -399,6 +436,8 @@ public class MCKP extends AbstractAgent {
       models.add(_paramEstimation);
       models.add(_budgetEstimator);
       models.add(_ISRatioModel);
+      models.add(_adTypeEstimator);
+      models.add(_specialtyModel);
       return models;
    }
 
@@ -424,6 +463,10 @@ public class MCKP extends AbstractAgent {
          }
          else if(model instanceof ISRatioModel) {
             _ISRatioModel = (ISRatioModel)model;
+         } else if (model instanceof AbstractAdTypeEstimator) {
+        	 _adTypeEstimator = (AbstractAdTypeEstimator) model;
+         } else if (model instanceof AbstractSpecialtyModel) {
+        	 _specialtyModel = (AbstractSpecialtyModel) model;
          }
          else {
             throw new RuntimeException("Unknown Type of Model");
@@ -880,6 +923,10 @@ public class MCKP extends AbstractAgent {
 
 //      System.out.println("Updating models on day " + _day);
       if(!hasPerfectModels()) {
+    	  
+    	  _adTypeEstimator.updateModel(queryReport);
+    	  _specialtyModel.updateModel(queryReport);
+    	  
          BidBundle bidBundle = _bidBundles.get(_bidBundles.size()-2);
 
          if(!USER_MODEL_UB) {
