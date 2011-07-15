@@ -416,7 +416,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
           * For now we can only solve the auctions we were in
           */
          if(!Double.isNaN(queryReport.getPosition(q))) {
-
+    	 // if(true) {
             // Load data from the query report (specifically, the average position for each advertiser)
             ArrayList<Double> allAvgPos = new ArrayList<Double>();
             ArrayList<Integer> agentIds = new ArrayList<Integer>();
@@ -679,8 +679,8 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 		   medianImpsOfAdvsLeft.add(medianImps);
 	   }
 	   
-	   System.out.println("advsLeft: " + advsLeft);
-	   System.out.println("medianImps: " + medianImpsOfAdvsLeft);
+	   //System.out.println("advsLeft: " + advsLeft);
+	   //System.out.println("medianImps: " + medianImpsOfAdvsLeft);
 	   
 	   //Assign padded agents in order of fewers median impressions
 	   for(int i = 0; i < numPadded; i++) {

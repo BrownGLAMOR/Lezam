@@ -787,7 +787,7 @@ public class MCKP extends AbstractAgent {
 	   HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
 
 	   for(Query q : _querySpace) {
-		   System.out.println("QUERY " + q);
+		   //System.out.println("QUERY " + q);
 		   ArrayList<Double> ourBids = new ArrayList<Double>();
 		   if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Don't hardcode
 
@@ -797,11 +797,11 @@ public class MCKP extends AbstractAgent {
 			   ArrayList<Double> opponentScores = new ArrayList<Double>(); 	   
 			   for (String player : _advertisersSet) {
 				   if (!player.equals(_advId)) { //only get opponent bids
-					   //FIXME: Are the opponent bids we get back squashed or unsquashed? I assume unsquashed.
+					   //The opponent bids we get back are unsquashed.
 					   double opponentBid = _bidModel.getPrediction(player, q);
 					   double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())]; //FIXME: Have a model estimate this
 					   double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing); 
-					   System.out.println(player + " bid=" + opponentBid + ", advEffect=" + opponentAdvertiserEffect + ", score=" + opponentScore);
+					   //System.out.println(player + " bid=" + opponentBid + ", advEffect=" + opponentAdvertiserEffect + ", score=" + opponentScore);
 					   opponentScores.add(opponentScore);
 				   }
 			   }
@@ -811,7 +811,7 @@ public class MCKP extends AbstractAgent {
 			   double promotedReserveScore = _paramEstimation.getPromReservePrediction(q.getType());
 			   opponentScores.add(reserveScore);
 			   opponentScores.add(promotedReserveScore);
-			   System.out.println("reserveScore=" + reserveScore + ", promoted=" + promotedReserveScore);
+			   //System.out.println("reserveScore=" + reserveScore + ", promoted=" + promotedReserveScore);
 
 			   			   
 			   //We will choose to target scores directly between opponent scores.
@@ -828,7 +828,7 @@ public class MCKP extends AbstractAgent {
 				   }				   
 			   }
 
-			   System.out.println("Our targeted scores: " + ourScores);
+			   //System.out.println("Our targeted scores: " + ourScores);
 			   
 			   //Also ad a score to bid directly above the reserve score,
 			   //And directly above the highest score (so we get the 1st slot)
@@ -837,7 +837,7 @@ public class MCKP extends AbstractAgent {
 			   ourScores.add(reserveScore + scoreEpsilon);
 			   ourScores.add(highestOpponentScore + scoreEpsilon);
 			   
-			   System.out.println("After adding min/max, our targeted scores: " + ourScores);
+			   //System.out.println("After adding min/max, our targeted scores: " + ourScores);
 			   
 			   //Remove any duplicate scores, or any scores outside a reasonable boundry
 			   double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
@@ -855,7 +855,7 @@ public class MCKP extends AbstractAgent {
 				   }
 			   }
 			   
-			   System.out.println("Our pruned targeted scores: " + ourPrunedScores);
+			   //System.out.println("Our pruned targeted scores: " + ourPrunedScores);
 			   
 			   //Turn score into bids
 			   for (double score : ourPrunedScores) {
@@ -863,8 +863,8 @@ public class MCKP extends AbstractAgent {
 				   ourBids.add(ourBid);
 			   }
 			   
-			   System.out.println("Our advEffect:" + ourAdvertiserEffect);
-			   System.out.println("Our bids: " + ourBids);
+			   //System.out.println("Our advEffect:" + ourAdvertiserEffect);
+			   //System.out.println("Our bids: " + ourBids);
 		   }
 
 		   bidLists.put(q, ourBids);
