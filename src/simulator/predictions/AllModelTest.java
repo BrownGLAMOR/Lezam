@@ -1142,6 +1142,11 @@ public class AllModelTest {
       int END_QUERY = 15; //15
       String agentName = "TacTex";
 
+      if(args.length == 1) {
+          START_GAME = Integer.parseInt(args[0]);
+          END_GAME = START_GAME;
+       }
+      
 
       AllModelTest evaluator = new AllModelTest();
 

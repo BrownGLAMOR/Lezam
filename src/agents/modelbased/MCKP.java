@@ -230,11 +230,11 @@ public class MCKP extends AbstractAgent {
                //---------------
 
                //Assume specialty is the prod of F2 query they are bidding most in
-               String aManSpecialties = maxQuery.getManufacturer();
-               String aCompSpecialties = maxQuery.getComponent();
+//               String aManSpecialties = maxQuery.getManufacturer();
+//               String aCompSpecialties = maxQuery.getComponent();
                
-               //String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1)); //TODO: Use this!!!
-               //String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1)); //TODO: Use this!!!
+               String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1)); //TODO: Use this!!!
+               String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1)); //TODO: Use this!!!
 
 
                
@@ -246,8 +246,8 @@ public class MCKP extends AbstractAgent {
                //or we can look at its historical targeting.
                HashMap<Query,Ad> aAds = new HashMap<Query, Ad>();
                for(Query q : _querySpace) {
-            	   //Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
-            	   Ad predictedAd = getTargetedAd(q,aManSpecialties,aCompSpecialties);
+            	   Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
+//            	   Ad predictedAd = getTargetedAd(q,aManSpecialties,aCompSpecialties); //Old method
             	   aAds.put(q, predictedAd);                  
                }
 
@@ -520,13 +520,13 @@ public class MCKP extends AbstractAgent {
 
          //FIXME: What about basing possible bids on the bids of opponents? Only consider N
          //bids that would put us in each starting position.
-         HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
-//         HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();         
+//         HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
+         HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();         
          HashMap<Query,ArrayList<Double>> budgetLists = getBudgetLists();
          
-         for (Query q : _querySpace) {
-        	 System.out.println(q + ": " + bidLists.get(q));
-         }
+//         for (Query q : _querySpace) {
+//        	 System.out.println(q + ": " + bidLists.get(q));
+//         }
 
 
          
@@ -817,7 +817,7 @@ public class MCKP extends AbstractAgent {
 			   //We will choose to target scores directly between opponent scores.
 			   //TODO: We could also consider multiple targets between two scores.
 			   Collections.sort(opponentScores);
-			   int BIDS_BETWEEN_SCORES = 3;
+			   int BIDS_BETWEEN_SCORES = 1;
 			   ArrayList<Double> ourScores = new ArrayList<Double>();
 			   for (int i=1; i<opponentScores.size(); i++) {
 				   double lowScore = opponentScores.get(i-1);

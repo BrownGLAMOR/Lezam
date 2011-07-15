@@ -81,17 +81,35 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
          int[][] waterfall = allWaterfalls.get(q);
 
          if(waterfall != null) {
+        	 
+        	//imps[a]: number of impressions seen by agent a
             int[] imps = allImps.get(q);
+            
+            //startOrder[i]: agent that started in the ith position
             int[] startOrder = allOrders.get(q);
             HashMap<String,Boolean> rankable = rankables.get(q);
+
+            //squashedBids[a]: squashed bid of agent a
             double[] squashedBids = allSquashedBids.get(q);
 
+            //Probability of getting a click, given your ad is viewed.
             int qtIdx = queryTypeToInt(q.getType());
             double baseClickPr = _advertiserEffectBoundsAvg[qtIdx];
+            
+            //Probability of seeing a view in each slot.
             double[] prViews = getPrView(q,_numSlots,_numPromSlots,baseClickPr,contProbs.get(q),convProbs[qtIdx],userStates);
+
+            //Number of impressions that occurred before an agent dropped out. 
             int[] dropoutPoints = getDropoutPoints(imps,startOrder,_numSlots);
+            
+            //orders[i][j]: before the ith dropout point, which agent was in the jth position? 
             int[][] orders = getOrderMatrix(dropoutPoints, imps, startOrder, waterfall, _numSlots);
 
+            //FIXME: Maybe the bug is caused by stuff I just did?
+            //dropoutPoints is based on agent impressions, and orders is based on agent orders.
+            //If the impressions and agent order from the QA don't coincide, there could be problems.
+            //(e.g. padded agents are improperly assigned)
+            
             double[] costs = new double[numAdvertisers];
             boolean[] droppedOut = new boolean[numAdvertisers];
             for(int i = 0; i < numAdvertisers; i++) {

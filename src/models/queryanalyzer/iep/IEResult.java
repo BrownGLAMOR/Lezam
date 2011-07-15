@@ -38,6 +38,10 @@ public class IEResult {
    public int[] getOrder() {
       return _order;
    }
+   
+   public void setOrder(int[] order) {
+	   _order = order;
+   }
 
    public int[] getSlotImpressions() {
       return _slotImpr;

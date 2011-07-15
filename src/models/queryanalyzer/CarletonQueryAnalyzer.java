@@ -32,6 +32,14 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    private boolean _isSampled;
    private boolean usePriors = true;
 
+   /**
+    * For each query/agent, this gives the sequence of squashed bid positions that the agent was in.
+    * Note: Any handling of default agent positions should not be included here. 
+    */
+   private HashMap<Query, HashMap<String, ArrayList<Integer>>> _allAgentPositionsPREADJUST; 
+   private HashMap<Query, HashMap<String, ArrayList<Integer>>> _allAgentImpressionsPREADJUST;
+      
+   
    public CarletonQueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean selfAvgPosFlag, boolean isSampled) {
       _querySpace = querySpace;
 
@@ -80,6 +88,20 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
       _ourAdvertiser = ourAdvertiser;
 
+      
+      _allAgentPositionsPREADJUST = new HashMap<Query, HashMap<String, ArrayList<Integer>>>();
+      _allAgentImpressionsPREADJUST = new HashMap<Query, HashMap<String, ArrayList<Integer>>>();
+      for (Query q : _querySpace) {
+    	  _allAgentPositionsPREADJUST.put(q, new HashMap<String, ArrayList<Integer>>());
+    	  _allAgentImpressionsPREADJUST.put(q, new HashMap<String, ArrayList<Integer>>());
+    	  for (String adv : _advertisers) {
+        	  _allAgentPositionsPREADJUST.get(q).put(adv, new ArrayList<Integer>());
+        	  _allAgentImpressionsPREADJUST.get(q).put(adv, new ArrayList<Integer>());
+          }
+      }
+      
+      
+      
       _advToIdx = new HashMap<String, Integer>();
       for (int i = 0; i < advertisers.size(); i++) {
          _advToIdx.put(advertisers.get(i), i);
@@ -114,6 +136,69 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       }
    }
 
+
+   
+   /**
+    * Updates the list of daily agent squashed bid rankings (obtained from the IEResult).
+    * @param q
+    * @return
+    */
+   private void updateObservedAgentPositions(Query q, int[] orderPredictionsReduced, String[] agentNamesReduced) {
+	   //For each advertiser, get the order predictions.
+	   //If an advertiser doesn't appear, their order prediction is -1.
+	   //Create the array that we'll return.
+	   for (int a = 0; a < _advertisers.size(); a++) {
+		   String adv = _advertisers.get(a);
+		   for (int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
+			   if (adv.equals(agentNamesReduced[aReduced])) {
+				   for(int i = 0; i < orderPredictionsReduced.length; i++) {
+					   if(orderPredictionsReduced[i] == aReduced) {
+						   _allAgentPositionsPREADJUST.get(q).get(adv).add(i);
+						   break;
+					   }
+				   }
+				   break;
+			   }
+		   }
+	   }
+	   return;
+   }
+   
+   
+   
+   private void updateObservedAgentImpressions() {
+	   for (Query q : _querySpace) {
+		   updateObservedAgentImpressions(q);
+	   }
+   }
+   private void updateObservedAgentImpressions(Query q) {
+	   int[] impsPerAdvertiser = getImpressionsPrediction(q);
+	   if (impsPerAdvertiser == null) return;
+	   
+	   for (int i=0; i<_advertisers.size(); i++) {
+		   String adv = _advertisers.get(i);
+		   int imps = impsPerAdvertiser[i];
+		   _allAgentImpressionsPREADJUST.get(q).get(adv).add(imps);
+	   }
+   }
+   
+   
+   public double computeAveragePosition(Query q, String advertiser) {
+	   double averagePosition = Double.POSITIVE_INFINITY;
+
+	   ArrayList<Integer> positions = _allAgentPositionsPREADJUST.get(q).get(advertiser);
+	   if (positions != null && positions.size() > 0) {
+		   double sumPosition = 0;
+		   for (Integer position : positions) {
+			   sumPosition += position;
+		   }
+		   averagePosition = sumPosition / positions.size();
+	   }
+	   return averagePosition;
+   }
+   
+   
+   
    @Override
    /**
     * Gives a ranking over all agents.
@@ -156,15 +241,54 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                }
             }
          }
-
-         //Fill in those who weren't in the auction in order of agentID
-         //FIXME: Can we do something better than this?
-         for (int a = 0; a < _advertisers.size(); a++) {
-            if(orderPredictions[a] == -1) {
-               String adv = advsLeft.remove(0);
-               orderPredictions[a] = _advToIdx.get(adv);
-            }
+         
+         
+         //-----------
+         // Fill in those who weren't in the auction with some default order
+         //  (default: in order of historical average ranking)
+         //----------
+         
+//         System.out.println("(Before adjusting) order predictions: " + Arrays.toString(orderPredictions));
+         
+         //FIXME New method
+         //Compute historical average positions of remaining advertisers
+         ArrayList<Double> avgPositionsOfAdvsLeft = new ArrayList<Double>();
+         for (String adv : advsLeft) {
+        	 double avgPos = computeAveragePosition(q, adv);
+        	 avgPositionsOfAdvsLeft.add(avgPos);
          }
+         //System.out.println(" advertisers left: " + advsLeft);
+         //System.out.println(" avgPos of advertisers left: " + avgPositionsOfAdvsLeft);
+         //Assign these remaining advertisers to remaining slots based on average position.
+         for (int a = 0; a < _advertisers.size(); a++) {
+             if(orderPredictions[a] == -1) {
+            	 double lowestPosition = Double.POSITIVE_INFINITY;
+            	 int lowestIdx = 0;
+            	 //Get the remaining advertiser with the lowest average position
+            	 for (int i=0; i<avgPositionsOfAdvsLeft.size(); i++) {
+            		 double avgPos = avgPositionsOfAdvsLeft.get(i);
+            		 if (avgPos < lowestPosition) {
+            			 lowestPosition = avgPos;
+            			 lowestIdx = i;
+            		 }
+            	 }
+            	 String lowestAdvertiser = advsLeft.get(lowestIdx);
+            	 orderPredictions[a] = _advToIdx.get(lowestAdvertiser);
+
+            	 advsLeft.remove(lowestIdx);
+            	 avgPositionsOfAdvsLeft.remove(lowestIdx);
+            	 
+             }
+          }         
+         //System.out.println("order predictions: " + Arrays.toString(orderPredictions));
+         
+         //OLD METHOD: Fill in those who weren't in the auction in order of agentID
+//         for (int a = 0; a < _advertisers.size(); a++) {
+//            if(orderPredictions[a] == -1) {
+//               String adv = advsLeft.remove(0);
+//               orderPredictions[a] = _advToIdx.get(adv);
+//            }
+//         }
 
          return orderPredictions;
       }
@@ -202,14 +326,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                }
             }
          }
-
-         //FIXME: Is this arbitrarily choosing agents to take the place of padded agents?
-         int numPadded = waterfallPredReduced.length-agentNamesReduced.length;
-         for(int i = 0; i < numPadded; i++) {
-            String adv = advsLeft.remove(0);
-            waterfallPred[_advToIdx.get(adv)] = waterfallPredReduced[agentNamesReduced.length+i];
-         }
-
+         
          return waterfallPred;
       }
       else {
@@ -217,6 +334,28 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       }
    }
 
+   
+   
+   
+	private static double getMedian(ArrayList<Integer> values)
+	{
+		if (values == null || values.size() == 0) return Double.NaN;
+		
+	    Collections.sort(values);
+	 
+	    if (values.size() % 2 == 1)
+		return values.get((values.size()+1)/2-1);
+	    else
+	    {
+		double lower = values.get(values.size()/2-1);
+		double upper = values.get(values.size()/2);
+	 
+		return (lower + upper) / 2.0;
+	    }	
+	}
+   
+   
+   
    @Override
    public HashMap<String,Boolean> getRankableMap(Query q) {
       int latestResultIdx = _allResults.get(q).size() - 1;
@@ -368,6 +507,75 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             IEResult bestSol = estimator.getBestSolution();
 
             if(bestSol != null ) {
+            	
+            	//FIXME: I noticed that occasionally, there will be a padded agent, but its identity in the "getOrder()" matrix
+            	//is 1 instead of -1. I've only seen this happen with 2 agents total, 1 padded and 1 unpadded (the unpadded one being us)
+            	//After identifying the agent, we are going to assign it a value of 1 in the order matrix anyway, so this isn't hurting anything.
+            	//But it is suspicious and should be investigated.
+            	//(check for instances where # of -1 values in orderArray != numPadded)
+            	            	
+            	//System.out.println("BEFORE: AGENT NAMES ARR: " + Arrays.toString(agentNamesArr));
+            	//System.out.println("BEFORE: ORDER: " + Arrays.toString(bestSol.getOrder()));
+
+            	//Keep track of which agent is in which initial position (before any padded agents or other adjustments)
+                updateObservedAgentPositions(q, bestSol.getOrder(), agentNamesArr); 
+                
+                //We can either update now, before padded agents have been assigned, or afterwards.
+                //updateObservedAgentImpressions(); //Keep track of how many impressions we think each agent saw (pre-adjustment)
+            	
+            	//Get number of padded agents
+            	int numPadded = bestSol.getWaterfall().length - agentNamesArr.length;
+            	ArrayList<String> paddedAgentNames = getPaddedAgentPredictions(q, numPadded, agentNames);
+            	
+            	//Need to update: 
+            	//  agentNamesArr: add padded agents to the end of the list
+            	//  order[i] array: which agent was at each index i. (agents identified by their position in the agentNamesArr)
+            	//  agentIdsArr????
+
+            	//Update order array
+            	int[] order = bestSol.getOrder();
+            	int paddedIdx=0;
+            	for (int i=0; i<order.length; i++) {
+            		if (order[i] == -1) {
+            			order[i] = agentNamesArr.length + paddedIdx;
+            			paddedIdx++;
+            		}            		
+            	}
+            	bestSol.setOrder(order);
+            	
+            	//Update agentNamesArr
+            	String[] newAgentNamesArr = new String[agentNamesArr.length + numPadded];
+            	for (int a=0; a<agentNamesArr.length; a++) {
+            		newAgentNamesArr[a] = agentNamesArr[a];
+            	}
+            	for (int a=0; a<numPadded; a++) {
+            		newAgentNamesArr[agentNamesArr.length + a] = paddedAgentNames.get(a);
+            	}
+            	agentNamesArr = newAgentNamesArr;
+            	
+            	//FIXME: Update agentIdsArr (doesn't seem to be used anywhere right now...)
+            	            	
+            	//System.out.println("AFTER: AGENT NAMES ARR: " + Arrays.toString(agentNamesArr));
+            	//System.out.println("AFTER: ORDER: " + Arrays.toString(bestSol.getOrder()));
+            	
+//            	//DEBUG
+//            	System.out.println("QUERY=: " + q);
+//            	System.out.println("agents: " + Arrays.toString(agentNamesArr));
+//            	System.out.println("trueAvgPos: " + Arrays.toString(trueAvgPos));
+//            	System.out.println("sampledAvgP: " + Arrays.toString(sampledAvgPos));
+//            	System.out.println("order: " + Arrays.toString(bestSol.getOrder()));
+//            	System.out.println("slotImps: " + Arrays.toString(bestSol.getSlotImpressions()));
+//            	System.out.println("sol: " +  Arrays.toString(bestSol.getSol()));
+//            	int[][] w = bestSol.getWaterfall();
+//            	System.out.println("waterfall:");
+//            	for (int x=0; x<w.length; x++) {
+//            		System.out.println(Arrays.toString(w[x]));
+//            	}
+//            	System.out.println("end waterfall");
+//            	//END DEBUG
+            	
+            	
+            	
                _allResults.get(q).add(bestSol);
                _allImpRanges.get(q).add(bestSol.getWaterfall());
 
@@ -427,12 +635,88 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
          }
       }
 
+      
+      //TODO: Move this above? (before changes made to padded agents)
+      updateObservedAgentImpressions(); //Keep track of how many impressions we think each agent saw (pre-adjustment)
+      
+      
       _impressionForecaster.updateModel(impPredMapList);
 
       return true;
    }
 
-   @Override
+   
+
+   private ArrayList<String> getPaddedAgentPredictions(Query q, int numPadded,
+		   ArrayList<String> agentNamesUsed) {
+
+	   //The "padded agent" is likely someone who was in for a very short amount of time.
+	   //Of the remaining advertisers, look at the one w/ lowest median impressions
+	   //(for the instances in which it appears)
+	   //Fill padded agents in this order.
+
+	   //The list of agents that we determine are padded
+	   ArrayList<String> paddedAgentAssignments = new ArrayList<String>();
+
+	   //The list of candidate padded agents 
+	   ArrayList<String> advsLeft = new ArrayList<String>(_advertisers.size());
+	   for(int i = 0; i < _advertisers.size(); i++) {
+		   advsLeft.add("adv"+(i+1));
+	   }
+	   advsLeft.remove(_ourAdvertiser); //We know we weren't a padded agent.
+	   advsLeft.removeAll(agentNamesUsed); //Nobody already in the auction can be a padded agent.
+
+	   //Get the median amount of impressions each of these candidates has received in this query
+	   ArrayList<Double> medianImpsOfAdvsLeft = new ArrayList<Double>();
+	   ArrayList<Integer> zero = new ArrayList<Integer>();
+	   zero.add(0);
+	   for (String adv : advsLeft) {
+		   //Only get instances where the agent saw some impressions
+		   ArrayList<Integer> imps = new ArrayList<Integer>(_allAgentImpressionsPREADJUST.get(q).get(adv));        		 
+		   imps.removeAll(zero);
+		   double medianImps = getMedian(imps);
+		   if (medianImps == Double.NaN) medianImps = Double.POSITIVE_INFINITY;
+		   medianImpsOfAdvsLeft.add(medianImps);
+	   }
+	   
+	   System.out.println("advsLeft: " + advsLeft);
+	   System.out.println("medianImps: " + medianImpsOfAdvsLeft);
+	   
+	   //Assign padded agents in order of fewers median impressions
+	   for(int i = 0; i < numPadded; i++) {
+		   //Get advertiser w/ smallest median imps
+		   double lowestMedianImps = Double.POSITIVE_INFINITY;
+		   int lowestIdx = 0;
+		   //Get the remaining advertiser with the lowest average position
+		   for (int j=0; j<medianImpsOfAdvsLeft.size(); j++) {
+			   double medianImps = medianImpsOfAdvsLeft.get(j);
+			   if (medianImps < lowestMedianImps) {
+				   lowestMedianImps = medianImps;
+				   lowestIdx = j;
+			   }
+		   }
+		   String adv = advsLeft.get(lowestIdx);
+		   advsLeft.remove(lowestIdx);
+		   medianImpsOfAdvsLeft.remove(lowestIdx);
+
+		   paddedAgentAssignments.add(adv);
+		   //waterfallPred[_advToIdx.get(adv)] = waterfallPredReduced[agentNamesReduced.length+i];
+	   }
+	   
+	   
+//  	 //Old method: This is arbitrarily choosing agents to take the place of padded agents.
+//	   	 //(code will need to be updated if used; it was moved from a different method)
+//  	 int numPadded = waterfallPredReduced.length-agentNamesReduced.length;
+//  	 for(int i = 0; i < numPadded; i++) {
+//  		 String adv = advsLeft.remove(0);
+//  		 waterfallPred[_advToIdx.get(adv)] = waterfallPredReduced[agentNamesReduced.length+i];
+//  	 }
+	   
+	return paddedAgentAssignments;
+}
+
+   
+@Override
    public String toString() {
       return "CarletonQueryAnalyzer";
    }

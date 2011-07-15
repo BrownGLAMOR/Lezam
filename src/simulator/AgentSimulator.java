@@ -126,8 +126,8 @@ public class AgentSimulator {
       c2 = .8 + rand.nextDouble() * .4;
       c3 = .8 + rand.nextDouble() * .4;
       double simUB = 1.45;
-      int gameNumStart = 15160;
-      int gameNumEnd = 15163;
+      int gameNumStart = 15127;
+      int gameNumEnd = 15127;
       int agentNum = 0;
       
       //For determining which of our agent configurations we should run.
