@@ -79,7 +79,7 @@ public class AllModelTest {
     * LIVE MODE
     *  -Actually bid with our agent instead of using a log!
     */
-   boolean LIVE_MODE = true;
+   boolean LIVE_MODE = false;
 
    PersistentHashMap cljSim = null;
 
@@ -233,7 +233,7 @@ public class AllModelTest {
          List<AbstractBudgetEstimator> budgetModelList = new ArrayList<AbstractBudgetEstimator>();
          for (int i = 0; i < advertisers.size(); i++) {
             if(i == replaceIdx) {
-               AbstractBudgetEstimator budgetModel = new BudgetEstimator(querySpace, i, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+               AbstractBudgetEstimator budgetModel = new BudgetEstimator(querySpace, i, NUM_SLOTS, NUM_PROMOTED_SLOTS,squashParam);
                budgetModelList.add(budgetModel);
             }
             else {
@@ -667,6 +667,13 @@ public class AllModelTest {
                Double[] advertiserEffects = getAdvertiserEffects(status, query);
                double contProb = getContProbs(status, query);
 
+
+               for(Double bid : bids) {
+                  if(Double.isNaN(bid)) {
+                     int j = 0;
+                  }
+               }
+
                for(int agent = 0; agent < advertisers.size(); agent++) {
                   if(agent == replaceIdx) {
                      String agentName = advertisers.get(agent);
@@ -730,9 +737,9 @@ public class AllModelTest {
                      /*
                      * Budget Error
                      */
-                     System.out.println("Budgets: " + Arrays.toString(budgets));
-                     System.out.println("Budget Preds: " + Arrays.toString(budgetPredictions));
-                     System.out.println("--------");
+//                     System.out.println("Budgets: " + Arrays.toString(budgets));
+//                     System.out.println("Budget Preds: " + Arrays.toString(budgetPredictions));
+//                     System.out.println("--------");
                      for(int innerAgent = 0; innerAgent < advertisers.size(); innerAgent++) {
                         if(innerAgent != agent) {
                            double budget = budgets[innerAgent];
@@ -1127,8 +1134,8 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15128; //15148 //15127
-      int END_GAME = 15128;
+      int START_GAME = 15160; //15148 //15127
+      int END_GAME = 15163;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0

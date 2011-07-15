@@ -178,7 +178,7 @@ public class GameStatusHandler {
                         BidBundle newBundle = copyBundle(bundleTemp);
                         bidbundlelist.add(newBundle);
                      } else {
-                        bidbundlelist.add(new BidBundle());
+                        bidbundlelist.add(mkEmptyBundle(querySpace));
                      }
                   }
                }
@@ -313,349 +313,25 @@ public class GameStatusHandler {
       return newBundle;
    }
 
+   private BidBundle mkEmptyBundle(Set<Query> querySpace) {
+      BidBundle bundle = new BidBundle();
+      for(Query q : querySpace) {
+         bundle.addQuery(q,0.0,new Ad(),Double.MAX_VALUE);
+      }
+      bundle.setCampaignDailySpendLimit(Double.MAX_VALUE);
+      return bundle;
+   }
+
    public GameStatus getGameStatus() {
       return _gameStatus;
    }
 
-   @SuppressWarnings("unused")
-   private static double[] getStdDevAndMean(ArrayList<Double> list) {
-      double n = list.size();
-      double sum = 0.0;
-      for (Double data : list) {
-         sum += data;
-      }
-      double mean = sum / n;
-
-      double variance = 0.0;
-
-      for (Double data : list) {
-         variance += (data - mean) * (data - mean);
-      }
-
-      variance /= (n - 1);
-
-      double[] stdDev = new double[2];
-      stdDev[0] = mean;
-      stdDev[1] = Math.sqrt(variance);
-      return stdDev;
-   }
-
-   public static String generateWEKADataSet() throws IOException, ParseException {
-      String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-      String output = "";
-      int min = 1425;
-      int max = 1426;
-      for (int i = min; i < max; i++) {
-         String file = filename + i + ".slg";
-         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
-         GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-         output += "%" + "\n";
-         output += "%" + "\n";
-         output += "@RELATION TACAA" + "\n";
-         output += "" + "\n";
-         output += "@ATTRIBUTE bid NUMERIC" + "\n";
-         output += "@ATTRIBUTE position NUMERIC" + "\n";
-         output += "@ATTRIBUTE cpc NUMERIC" + "\n";
-         output += "@ATTRIBUTE prclick NUMERIC" + "\n";
-         output += "@ATTRIBUTE prconv NUMERIC" + "\n";
-         output += "@ATTRIBUTE query {null-null,lioneer-null,null-tv,lioneer-tv,null-audio,lioneer-audio,null-dvd,lioneer-dvd,pg-null,pg-tv,pg-audio,pg-dvd,flat-null,flat-tv,flat-audio,flat-dvd}" + "\n";
-         output += "" + "\n";
-         output += "@DATA" + "\n";
-         for (int j = 0; j < 59; j++) {
-            Iterator<Query> iter = bidBundles.get("Schlemazl").get(j).iterator();
-            while (iter.hasNext()) {
-               Query query = (Query) iter.next();
-               String adv = "Schlemazl";
-               BidBundle bundle = bidBundles.get(adv).get(j);
-               QueryReport qreport = queryReports.get(adv).get(j);
-               SalesReport sreport = salesReports.get(adv).get(j);
-               //bid
-               output += bundle.getBid(query);
-               //position
-               if (Double.isNaN(qreport.getPosition(query))) {
-                  output += ",6.0";
-               } else {
-                  output += "," + qreport.getPosition(query);
-               }
-               //CPC
-               if (Double.isNaN(qreport.getCPC(query))) {
-                  output += ",0.0";
-               } else {
-                  output += "," + qreport.getCPC(query);
-               }
-               //clickpr
-               if (qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
-                  output += ",0.0";
-               } else {
-                  output += "," + (qreport.getClicks(query) / ((double) qreport.getImpressions(query)));
-               }
-               //convPr
-               if (qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
-                  output += ",0.0";
-               } else {
-                  output += "," + (sreport.getConversions(query) / ((double) qreport.getClicks(query)));
-               }
-               output += "," + query.getManufacturer() + "-" + query.getComponent() + "\n";
-            }
-         }
-      }
-      return output;
-   }
-
-   public static HashMap<Query, String> generateRDataSetOnlyBids(int min, int max, String adv) throws IOException, ParseException {
-      String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-      //		int min = 1425;
-      //		int max = 1426;
-      //		String adv = "AstonTAC";
-      //		String adv = "MetroClick";
-      //		String adv = "Schlemazl";
-      //		String adv = "epflagent";
-      //		String adv = "QuakTAC";
-      //		String adv = "UMTac09";
-      //		String adv = "munsey";
-      //		String adv = "TacTex";
-
-      HashMap<Query, String> outputs = new HashMap<Query, String>();
-
-      Set<Query> querySpace = new LinkedHashSet<Query>();
-      querySpace.add(new Query(null, null));
-      querySpace.add(new Query("lioneer", null));
-      querySpace.add(new Query(null, "tv"));
-      querySpace.add(new Query("lioneer", "tv"));
-      querySpace.add(new Query(null, "audio"));
-      querySpace.add(new Query("lioneer", "audio"));
-      querySpace.add(new Query(null, "dvd"));
-      querySpace.add(new Query("lioneer", "dvd"));
-      querySpace.add(new Query("pg", null));
-      querySpace.add(new Query("pg", "tv"));
-      querySpace.add(new Query("pg", "audio"));
-      querySpace.add(new Query("pg", "dvd"));
-      querySpace.add(new Query("flat", null));
-      querySpace.add(new Query("flat", "tv"));
-      querySpace.add(new Query("flat", "audio"));
-      querySpace.add(new Query("flat", "dvd"));
-
-      for (Query query : querySpace) {
-         outputs.put(query, "bid\n");
-      }
-
-      for (int i = min; i < max; i++) {
-         String file = filename + i + ".slg";
-         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
-         GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         for (int j = 0; j < 59; j++) {
-            Iterator<Query> iter = bidBundles.get(adv).get(j).iterator();
-            while (iter.hasNext()) {
-               Query query = (Query) iter.next();
-               BidBundle bundle = bidBundles.get(adv).get(j);
-               String output = outputs.get(query);
-               output += bundle.getBid(query) + "\n";
-               outputs.put(query, output);
-            }
-         }
-      }
-
-      for (Query query : querySpace) {
-         String output = outputs.get(query);
-         outputs.put(query, output.substring(0, output.length() - 1));
-      }
-
-      return outputs;
-   }
-
-   public static String generateRDataSet() throws IOException, ParseException {
-      String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-      String output = "";
-      int min = 1425;
-      int max = 1426;
-      String adv = "Schlemazl";
-      for (int i = min; i < max; i++) {
-         String file = filename + i + ".slg";
-         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
-         GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         HashMap<String, LinkedList<SalesReport>> salesReports = gameStatus.getSalesReports();
-         output += "bid pos cpc prclick prconv query \n";
-         for (int j = 0; j < 59; j++) {
-            Iterator<Query> iter = bidBundles.get(adv).get(j).iterator();
-            while (iter.hasNext()) {
-               Query query = (Query) iter.next();
-               BidBundle bundle = bidBundles.get(adv).get(j);
-               QueryReport qreport = queryReports.get(adv).get(j);
-               SalesReport sreport = salesReports.get(adv).get(j);
-               //bid
-               output += bundle.getBid(query);
-               //position
-               if (Double.isNaN(qreport.getPosition(query))) {
-                  output += " 6.0";
-               } else {
-                  output += " " + qreport.getPosition(query);
-               }
-               //CPC
-               if (Double.isNaN(qreport.getCPC(query))) {
-                  output += " 0.0";
-               } else {
-                  output += " " + qreport.getCPC(query);
-               }
-               //clickpr
-               if (qreport.getClicks(query) == 0 || qreport.getImpressions(query) == 0) {
-                  output += " 0.0";
-               } else {
-                  output += " " + (qreport.getClicks(query) / ((double) qreport.getImpressions(query)));
-               }
-               //convPr
-               if (qreport.getClicks(query) == 0 || sreport.getConversions(query) == 0) {
-                  output += " 0.0";
-               } else {
-                  output += " " + (sreport.getConversions(query) / ((double) qreport.getClicks(query)));
-               }
-               output += " " + query.getManufacturer() + "-" + query.getComponent() + "\n";
-            }
-         }
-      }
-      output = output.substring(0, output.length() - 1);
-      return output;
-   }
-
-   public static void generateCarletonDataSet2() throws IOException, ParseException {
-      String filename = "/Users/jordanberg/Desktop/finalsgames/server1/game";
-      int min = 1425;
-      int max = 1430;
-      int numSlots = 5;
-      System.out.println("Num Advertisers\tNum slots");
-      System.out.println("AgentID\tAvgPos\t#Imps\tBids\tBudgets\n");
-      Random R = new Random();
-      for (int i = min; i < max; i++) {
-         String file = filename + i + ".slg";
-         GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
-         GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         HashMap<String, LinkedList<BidBundle>> bidBundles = gameStatus.getBidBundles();
-         HashMap<String, LinkedList<QueryReport>> queryReports = gameStatus.getQueryReports();
-         String[] advertisers = gameStatus.getAdvertisers();
-         int numAdvs = advertisers.length;
-         ReserveInfo reserveInfo = gameStatus.getReserveInfo();
-         PublisherInfo pubInfo = gameStatus.getPubInfo();
-         double squashing = pubInfo.getSquashingParameter();
-         UserClickModel clickModel = gameStatus.getUserClickModel();
-         for (int j = 0; j < 59; j++) {
-            Iterator<Query> iter = bidBundles.get(advertisers[0]).get(j).iterator();
-            while (iter.hasNext()) {
-               Query query = (Query) iter.next();
-               String output = "";
-               output += numAdvs + " " + numSlots + "\n";
-               for (int k = 0; k < advertisers.length; k++) {
-                  String adv = advertisers[k];
-                  BidBundle bundle = bidBundles.get(adv).get(j);
-                  QueryReport qreport = queryReports.get(adv).get(j);
-                  double avgPos = Double.isNaN(qreport.getPosition(query)) ? -1 : qreport.getPosition(query);
-                  double squashedBid = bundle.getBid(query) * Math.pow(clickModel.getAdvertiserEffect(clickModel.queryIndex(query), k), squashing);
-                  double budget = Double.isNaN(bundle.getDailyLimit(query)) ? -1 : bundle.getDailyLimit(query);
-                  if (Double.isNaN(squashedBid)) {
-                     throw new RuntimeException();
-                  }
-                  int numImps = qreport.getImpressions(query);
-                  output += (k + 1) + " " + avgPos + " " + numImps + " " + squashedBid + " " + budget + "\n";
-               }
-               output = output.substring(0, output.length() - 1);
-               // Stream to write file
-               FileOutputStream fout;
-
-               try {
-                  // Open an output stream
-                  fout = new FileOutputStream("carleton" + R.nextDouble() + ".o");
-
-                  // Print a line of text
-                  new PrintStream(fout).print(output);
-
-                  // Close our output stream
-                  fout.close();
-               }
-               // Catches any error conditions
-               catch (IOException e) {
-                  System.err.println("Unable to write to file");
-                  System.exit(-1);
-               }
-            }
-         }
-      }
-   }
-
-   public static class AdvBidPair implements Comparable<AdvBidPair> {
-
-      private int _advIdx;
-      private double _bid;
-      private int _numImps;
-      private double _avgPos;
-
-      public AdvBidPair(int advIdx, double bid, int numImps, double avgPos) {
-         _advIdx = advIdx;
-         _bid = bid;
-         _numImps = numImps;
-         _avgPos = avgPos;
-      }
-
-      public int getID() {
-         return _advIdx;
-      }
-
-      public void setID(int advIdx) {
-         _advIdx = advIdx;
-      }
-
-      public double getBid() {
-         return _bid;
-      }
-
-      public void setBid(double bid) {
-         _bid = bid;
-      }
-
-      public int getNumImps() {
-         return _numImps;
-      }
-
-      public void setNumImps(int numImps) {
-         _numImps = numImps;
-      }
-
-      public double getAvgPos() {
-         return _avgPos;
-      }
-
-      public void setAvgPos(double avgPos) {
-         _avgPos = avgPos;
-      }
-
-      public int compareTo(AdvBidPair agentBidPair) {
-         double ourBid = this._bid;
-         double otherBid = agentBidPair.getBid();
-         if (ourBid < otherBid) {
-            return 1;
-         }
-         if (otherBid < ourBid) {
-            return -1;
-         } else {
-            return 0;
-         }
-      }
-
-      public String toString() {
-         return _bid + ", " + _avgPos + ", " + _advIdx + ", " + _numImps + "\n";
-      }
-
-   }
-
    public static void main(String[] args) throws IOException, IllegalConfigurationException, ParseException {
 
-      String baseFile = "./game"; //games 1425-1464
-      int min = 1;
-      int max = 2;
-      for (int i = min; i < max; i++) {
+      String baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";
+      int min = 15145;
+      int max = 15145;
+      for (int i = min; i <= max; i++) {
          String file = baseFile + i + ".slg";
          System.out.println("PARSING " + file);
          double start = System.currentTimeMillis();
@@ -665,78 +341,22 @@ public class GameStatusHandler {
          System.out.println("SECONDS ELAPSED: " + secondsElapsed);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
          Set<Query> querySpace = gameStatus.getQuerySpace();
-         LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get("McCon");
-         for (BidBundle bundle : bundles) {
-            for (Query query : querySpace) {
-               if (Double.isNaN(bundle.getBid(query))) {
-                  throw new RuntimeException(query.toString());
-               } else if (Double.isNaN(bundle.getDailyLimit(query))) {
+         for(String agent : gameStatus.getAdvertisers()) {
+            LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get(agent);
+            for (BidBundle bundle : bundles) {
+               for (Query query : querySpace) {
+                  if (Double.isNaN(bundle.getBid(query))) {
+                     throw new RuntimeException(query.toString());
+                  } else if (Double.isNaN(bundle.getDailyLimit(query))) {
+                     throw new RuntimeException();
+                  }
+               }
+               if (Double.isNaN(bundle.getCampaignDailySpendLimit())) {
                   throw new RuntimeException();
                }
-            }
-            if (Double.isNaN(bundle.getCampaignDailySpendLimit())) {
-               throw new RuntimeException();
             }
          }
          System.out.println("FINISHED PARSING " + file);
       }
-
-
-//      int min = 1442;
-//      int max = 1443;
-//      String adv = "AstonTAC";
-      //				String adv = "MetroClick";
-      //				String adv = "Schlemazl";
-      //				String adv = "epflagent";
-      //				String adv = "QuakTAC";
-      //				String adv = "UMTac09";
-      //				String adv = "munsey";
-      //		String adv = "TacTex";
-//      HashMap<Query, String> outputs = generateRDataSetOnlyBids(min, max, adv);
-//      for (Query query : outputs.keySet()) {
-//         FileOutputStream fout;
-//
-//         try {
-//            // Open an output stream
-//            fout = new FileOutputStream("Rdata" + min + adv + query.getComponent() + query.getManufacturer() + ".data");
-//
-//            // Print a line of text
-//            new PrintStream(fout).println(outputs.get(query));
-//
-//            // Close our output stream
-//            fout.close();
-//         }
-//         // Catches any error conditions
-//         catch (IOException e) {
-//            System.err.println("Unable to write to file");
-//            System.exit(-1);
-//         }
-//      }
-
-      //		generateCarletonDataSet2();
-
-
-      //		// Stream to write file
-      //		FileOutputStream fout;
-      //
-      //		try
-      //		{
-      //			// Open an output stream
-      //			fout = new FileOutputStream ("Rdata.data");
-      //
-      //			// Print a line of text
-      //			new PrintStream(fout).println(Rdata);
-      //
-      //			// Close our output stream
-      //			fout.close();
-      //		}
-      //		// Catches any error conditions
-      //		catch (IOException e)
-      //		{
-      //			System.err.println ("Unable to write to file");
-      //			System.exit(-1);
-      //		}
    }
-
-
 }

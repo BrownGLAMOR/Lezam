@@ -275,7 +275,10 @@ public class ConstantsAndFunctions {
       ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
       PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
       for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
-         queue.add(impsPerAgent[order[i]]);
+         int imps = impsPerAgent[order[i]];
+         if(imps > 0) {
+            queue.add(imps);
+         }
       }
 
       int lastIdx = queue.size();
@@ -318,95 +321,109 @@ public class ConstantsAndFunctions {
    }
 
    public static int[][] getOrderMatrix(int[] dropouts, int[] impsPerAgent, int[] order, int[][] waterfall, int numSlots) {
-      int[][] orders = new int[dropouts.length][order.length];
-      for (int i = 0; i < order.length; i++) {
+      int nonZeroImp = 0;
+      for(Integer imps : impsPerAgent) {
+         if(imps > 0) {
+            nonZeroImp++;
+         }
+      }
+
+      int[][] orders = new int[dropouts.length][nonZeroImp];
+      for(int i = 0; i < nonZeroImp; i++) {
          orders[0][i] = order[i];
       }
-      for (int i = 0; i < order.length; i++) {
-         int currAgent = order[i];
-         int[] ourImpsPerSlot = waterfall[currAgent];
-         int ourTotImps = impsPerAgent[currAgent];
 
-         int impsBeforeEntry = 0;
-         if(i < numSlots) {
-            int numDropsBeforeEntry = i - (numSlots - 1);
-            int dropIdx = -1;
-            //Since some dropouts have multiplicity, determine
-            //which dropout point they come in on
-            for(int k = 0; k < dropouts.length; k++) {
-               int dropImp = dropouts[k];
-               for(int l = 0; l < impsPerAgent.length; l++) {
-                  if(impsPerAgent[l] == dropImp) {
-                     numDropsBeforeEntry--;
-                  }
-               }
-               if(numDropsBeforeEntry <= 0) {
-                  dropIdx = k;
-               }
-            }
+      if(orders.length > 1) {
 
-            impsBeforeEntry = dropouts[dropIdx];
+         for(int i = 1; i < orders.length; i++) {
+            /*
+            * Initialize all positions to -1, so we
+            * only have to set the positions that have
+            * advertisers
+            */
+            Arrays.fill(orders[i], -1);
          }
 
-         //Add positions for all future dropout points
-         for (int j = 1; j < dropouts.length; j++) {
-            /*
-             * Initialize all positions to -1, so we
-             * only have to set the positions that have
-             * advertisers
-             */
-            Arrays.fill(orders[j], -1);
+         for (int i = 0; i < nonZeroImp; i++) {
+            int currAgent = order[i];
+            int[] ourImpsPerSlot = waterfall[currAgent];
+            int ourTotImps = impsPerAgent[currAgent];
 
-            int totalImpsSeen = dropouts[j - 1];
-            if (i < numSlots) {
-               //Started in the auction
-               if (ourTotImps <= totalImpsSeen) {
-                  //We are out of the auction, do nothing
-               } else {
-                  //Still in auction, determine position
-                  int currPos = -1;
-                  int innerImpsSeen = 0;
-                  for (int k = 0; k <= i; k++) {
-                     int idx = i - k;
-                     innerImpsSeen += ourImpsPerSlot[idx];
-                     if (totalImpsSeen < innerImpsSeen) {
-                        currPos = idx;
-                        break;
+            int impsBeforeEntry = 0;
+            if(i >= numSlots) {
+               int numDropsBeforeEntry = i - (numSlots - 1);
+               int dropIdx = -1;
+               //Since some dropouts have multiplicity, determine
+               //which dropout point they come in on
+               for(int k = 0; k < dropouts.length; k++) {
+                  int dropImp = dropouts[k];
+                  for(int l = 0; l < impsPerAgent.length; l++) {
+                     if(impsPerAgent[l] == dropImp) {
+                        numDropsBeforeEntry--;
                      }
                   }
-                  orders[j][currPos] = currAgent;
+                  if(numDropsBeforeEntry <= 0) {
+                     dropIdx = k;
+                     break;
+                  }
                }
-            } else {
-               //Started out of the auction
-               if (impsBeforeEntry > totalImpsSeen) {
-                  //We aren't in the auction yet
-                  int numDrops = 0;
-                  for(int k = 0; k < j; k++) {
-                     int dropImp = dropouts[k];
-                     for(int l = 0; l < impsPerAgent.length; l++) {
-                        if(impsPerAgent[l] == dropImp) {
-                           numDrops++;
-                        }
-                     }
-                  }
-                  orders[j][i-numDrops] = currAgent;
-               } else if ((impsBeforeEntry + ourTotImps) <= totalImpsSeen) {
-                  //We are out of the auction, do nothing
-               } else {
-                  //Still in auction, determine position
-                  int currPos = -1;
-                  int innerImpsSeen = impsBeforeEntry;
-                  for (int k = 0; k <= i; k++) {
-                     int idx = i - k;
-                     if (idx < numSlots) {
+
+               impsBeforeEntry = dropouts[dropIdx];
+            }
+
+            //Add positions for all future dropout points
+            for (int j = 1; j < dropouts.length; j++) {
+               int totalImpsSeen = dropouts[j - 1];
+               if (i < numSlots) {
+                  //Started in the auction
+                  if (ourTotImps <= totalImpsSeen) {
+                     //We are out of the auction, do nothing
+                  } else {
+                     //Still in auction, determine position
+                     int currPos = -1;
+                     int innerImpsSeen = 0;
+                     for (int k = 0; k <= i; k++) {
+                        int idx = i - k;
                         innerImpsSeen += ourImpsPerSlot[idx];
                         if (totalImpsSeen < innerImpsSeen) {
                            currPos = idx;
                            break;
                         }
                      }
+                     orders[j][currPos] = currAgent;
                   }
-                  orders[j][currPos] = currAgent;
+               } else {
+                  //Started out of the auction
+                  if (impsBeforeEntry > totalImpsSeen) {
+                     //We aren't in the auction yet
+                     int numDrops = 0;
+                     for(int k = 0; k < j; k++) {
+                        int dropImp = dropouts[k];
+                        for(int l = 0; l < impsPerAgent.length; l++) {
+                           if(impsPerAgent[l] == dropImp) {
+                              numDrops++;
+                           }
+                        }
+                     }
+                     orders[j][i-numDrops] = currAgent;
+                  } else if ((impsBeforeEntry + ourTotImps) <= totalImpsSeen) {
+                     //We are out of the auction, do nothing
+                  } else {
+                     //Still in auction, determine position
+                     int currPos = -1;
+                     int innerImpsSeen = impsBeforeEntry;
+                     for (int k = 0; k <= i; k++) {
+                        int idx = i - k;
+                        if (idx < numSlots) {
+                           innerImpsSeen += ourImpsPerSlot[idx];
+                           if (totalImpsSeen < innerImpsSeen) {
+                              currPos = idx;
+                              break;
+                           }
+                        }
+                     }
+                     orders[j][currPos] = currAgent;
+                  }
                }
             }
          }

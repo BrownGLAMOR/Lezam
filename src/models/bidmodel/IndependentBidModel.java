@@ -126,7 +126,7 @@ public class IndependentBidModel extends AbstractBidModel {
          sum += lst.get(i);
       }
 
-      if(sum > 0) {
+      if(!Double.isNaN(sum) && !Double.isInfinite(sum) && sum > 0) {
          for (int i = 0; i < lst.size(); i++) {
             lst.set(i, lst.get(i) / sum);
          }
@@ -173,6 +173,9 @@ public class IndependentBidModel extends AbstractBidModel {
       double sum = 0.0;
       for (int i = 0; i < newPred.size(); i++) {
          sum += (newPred.get(i) * indexToBidValue(i));
+      }
+      if(Double.isNaN(sum) || Double.isInfinite(sum) || sum < 0) {
+         sum = 0;
       }
       return sum;
    }
@@ -224,7 +227,7 @@ public class IndependentBidModel extends AbstractBidModel {
          toAdd = Math.max(0, toAdd);
          tmpDist.add(toAdd);
       }
-      normalizeAL(tmpDist);
+      normalizeAL(tmpDist,q);
       return tmpDist;
    }
 
@@ -315,7 +318,7 @@ public class IndependentBidModel extends AbstractBidModel {
                            }
                         }
                      }
-                     normalizeAL(ordPrMap.get(agent));
+                     normalizeAL(ordPrMap.get(agent),q);
                   }
                }
                for (String s : agents) {

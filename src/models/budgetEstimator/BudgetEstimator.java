@@ -20,19 +20,25 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
    int numAdvertisers = 8;
 
-   int MIN_IMPS = 0;
-   int MIN_COST = 0;
+   int MIN_IMPS = 30;
+   int MIN_COST = 10;
+
+//   int MIN_IMPS = 0;
+//   int MIN_COST = 0;
 
    int _ourAdvIdx;
    int _numSlots;
    int _numPromSlots;
 
-   public BudgetEstimator(Set<Query> querySpace, int ourAdvIdx, int numSlots, int numPromSlots) {
+   double _squashParam;
+
+   public BudgetEstimator(Set<Query> querySpace, int ourAdvIdx, int numSlots, int numPromSlots, double squashParam) {
       _querySpace = querySpace;
       _budgetPredictions = new HashMap<String, HashMap<Query, Double>>();
       _ourAdvIdx = ourAdvIdx;
       _numSlots = numSlots;
       _numPromSlots = numPromSlots;
+      _squashParam = squashParam;
       for (int i = 0; i < numAdvertisers; i++) {
          HashMap<Query, Double> budgets = new HashMap<Query, Double>();
          for (Query q : _querySpace) {
@@ -49,6 +55,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
    @Override
    public double getBudgetEstimate(Query q, String advertiser) {
+//      return Double.MAX_VALUE;
       return _budgetPredictions.get(advertiser).get(q);
    }
 
@@ -67,7 +74,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            HashMap<Query, int[]> allImps,
                            HashMap<Query, int[][]> allWaterfalls,
                            HashMap<Query,HashMap<String,Boolean>> rankables,
-                           HashMap<Query, double[]> allBids,
+                           HashMap<Query, double[]> allSquashedBids,
                            HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates) {
 
       for(Query q : _querySpace) {
@@ -77,7 +84,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             int[] imps = allImps.get(q);
             int[] startOrder = allOrders.get(q);
             HashMap<String,Boolean> rankable = rankables.get(q);
-            double[] bids = allBids.get(q);
+            double[] squashedBids = allSquashedBids.get(q);
 
             int qtIdx = queryTypeToInt(q.getType());
             double baseClickPr = _advertiserEffectBoundsAvg[qtIdx];
@@ -125,11 +132,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
                      double cpc;
                      if(agentBelowIdx > -1) {
-                        cpc = bids[agentBelowIdx];
+                        cpc = Math.max(regReserves[qtIdx],squashedBids[agentBelowIdx]);
                      }
                      else {
-                        cpc = regReserves[queryTypeToInt(q.getType())];
+                        cpc = regReserves[qtIdx];
                      }
+
+                     cpc /= Math.pow(baseClickPr,_squashParam);
 
                      /*
                      * We only want to assign the number of imps to this
@@ -137,9 +146,32 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                      */
                      costs[agentIdx] += Math.min(slotImps,impsSinceLastDrop)*prClick*cpc;
 
+                     int pastImpsInSlot = 0;
+                     if(i > 0) {
+                        for(int k = i-1; k >= 0; k--) {
+                           if(orders[k][j] == agentIdx) {
+                              int dropOutInner = dropoutPoints[k];
+                              int impsSinceLastDropInner;
+                              if(k > 0) {
+                                 impsSinceLastDropInner = dropOutInner - dropoutPoints[k-1];
+                              }
+                              else {
+                                 impsSinceLastDropInner = dropOutInner;
+                              }
+                              pastImpsInSlot += impsSinceLastDropInner;
+                           }
+                           else {
+                              break;
+                           }
+                        }
+                     }
+                     else {
+                        int f = 0;
+                     }
+
                      //Check if the agent dropped out
                      //If they saw more slotImps in this slot they didn't drop
-                     if(slotImps == impsSinceLastDrop) {
+                     if(slotImps == (impsSinceLastDrop + pastImpsInSlot)) {
                         //If they are in the last round they didn't drop
                         if(i < dropoutPoints.length-1) {
                            int[] nextOrder = orders[i+1];
@@ -187,7 +219,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
    @Override
    public AbstractModel getCopy() {
-      return new BudgetEstimator(_querySpace, _ourAdvIdx, _numSlots, _numPromSlots);
+      return new BudgetEstimator(_querySpace, _ourAdvIdx, _numSlots, _numPromSlots,_squashParam);
    }
 
 }

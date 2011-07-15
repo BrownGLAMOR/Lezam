@@ -421,7 +421,7 @@ public class MCKP extends AbstractAgent {
       _bidModel = new IndependentBidModel(_advertisersSet, _advId,1,_randJump,_yestBid,_5DayBid,_bidStdDev,_querySpace);
 //      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
       _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _squashing, _querySpace);
-      _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS);
+      _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS,_squashing);
       _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);      
       _adTypeEstimator = new AdTypeEstimator(_querySpace, _advertisersSet, _products);
       _specialtyModel = new SimpleSpecialtyModel(_querySpace, _advertisersSet, _products, _numSlots);
@@ -1242,7 +1242,7 @@ public BidBundle getFirst2DaysBundle() {
       for(Product p : products) {
          HashMap<UserState,Integer> userState = new HashMap<UserState,Integer>();
          for(UserState s : UserState.values()) {
-            userState.put(s, userModel.getCurrentEstimate(p, s));
+            userState.put(s, userModel.getPrediction(p, s));
          }
          userStates.put(p, userState);
       }
