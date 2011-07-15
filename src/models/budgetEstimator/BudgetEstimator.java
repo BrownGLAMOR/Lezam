@@ -20,11 +20,11 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
    int numAdvertisers = 8;
 
-   int MIN_IMPS = 30;
-   int MIN_COST = 10;
+//   int MIN_IMPS = 30;
+//   int MIN_COST = 10;
 
-//   int MIN_IMPS = 0;
-//   int MIN_COST = 0;
+   int MIN_IMPS = 0;
+   int MIN_COST = 0;
 
    int _ourAdvIdx;
    int _numSlots;
