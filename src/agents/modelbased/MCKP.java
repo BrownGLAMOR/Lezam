@@ -769,7 +769,6 @@ public class MCKP extends AbstractAgent {
       return bidBundle;
    }
 
-
    private double getRandomProbeBid(Query q) {
       double minBid = _paramEstimation.getRegReservePrediction(q.getType()) / Math.pow(_paramEstimation.getAdvEffectPrediction(q),_squashing);
       double maxBid = Math.min(3.5,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q));
@@ -781,7 +780,7 @@ public class MCKP extends AbstractAgent {
    }
 
    private Ad getProbeAd(Query q, double bid, double budget) {
-      return getIrrelevantAd(q);
+      return new Ad();
    }
 
    private double[] getProbeSlotBidBudget(Query q) {
@@ -842,9 +841,9 @@ public class MCKP extends AbstractAgent {
          ourBids.add(ourBid);
       }
 
-      int numSlots = Math.min(_numSlots,ourScores.size());
+      int numSlots = Math.min(_numSlots,ourBids.size());
       int slot = _R.nextInt(numSlots);
-      double bid = ourScores.get(slot);
+      double bid = ourBids.get(slot);
       bidBudget[0] = bid;
       bidBudget[1] = bid * _probeBidMult;
       return bidBudget;

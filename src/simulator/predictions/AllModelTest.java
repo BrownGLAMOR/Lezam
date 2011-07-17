@@ -79,7 +79,7 @@ public class AllModelTest {
     * LIVE MODE
     *  -Actually bid with our agent instead of using a log!
     */
-   boolean LIVE_MODE = true;
+   boolean LIVE_MODE = false;
 
    PersistentHashMap cljSim = null;
 
@@ -88,25 +88,42 @@ public class AllModelTest {
    public static final int MAX_F2_IMPS = 1468;
 
    public enum GameSet {
-      finals2010, semifinals2010, test2010
+      finals2010, semifinals2010, test2010, semi2011server1, semi2011server2
    }
-
 
    public static boolean isMac(){
       String os = System.getProperty("os.name").toLowerCase();
       return (os.indexOf( "mac" ) >= 0); //Mac
    }
 
-   public ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
+   public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
-      if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) {
+      if (GAMES_TO_TEST == GameSet.test2010) {
+         baseFile = "./game";
+      }
+      else if (GAMES_TO_TEST == GameSet.finals2010) {
          if (isMac()) {
             String homeDir = System.getProperty("user.home");
             if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
             if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
          }
          else baseFile = "/pro/aa/finals2010/game-tacaa1-";
+      }
+      else if (GAMES_TO_TEST == GameSet.semi2011server1) {
+         if (isMac()) {
+            String homeDir = System.getProperty("user.home");
+            if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2011/semi/server1/game";
+            if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2011/semi/server1/game";
+         }
+         else baseFile = "/pro/aa/tacaa2011/semi/server1/game";
+      }
+      else if (GAMES_TO_TEST == GameSet.semi2011server2) {
+         if (isMac()) {
+            String homeDir = System.getProperty("user.home");
+            if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2011/semi/server2/game";
+            if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2011/semi/server2/game";
+         }
+         else baseFile = "/pro/aa/tacaa2011/semi/server2/game";
       }
 
       ArrayList<String> filenames = new ArrayList<String>();
@@ -1133,9 +1150,9 @@ public class AllModelTest {
    }
 
    public static void main(String[] args) throws IOException, ParseException {
-      GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15151; //15148 //15127
-      int END_GAME = 15151;
+      GameSet GAMES_TO_TEST = GameSet.semi2011server1;
+      int START_GAME = 1414;
+      int END_GAME = 1414;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0

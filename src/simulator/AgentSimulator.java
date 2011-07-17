@@ -12,19 +12,37 @@ import java.util.Random;
 public class AgentSimulator {
 
    public enum GameSet {
-      finals2010, semifinals2010, test2010
+      finals2010, semifinals2010, test2010, semi2011server1, semi2011server2
    }
 
    public static ArrayList<String> getGameStrings(GameSet GAMES_TO_TEST, int gameStart, int gameEnd) {
       String baseFile = null;
-      if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
-      if (GAMES_TO_TEST == GameSet.finals2010) {
+      if (GAMES_TO_TEST == GameSet.test2010) {
+         baseFile = "./game";
+      }
+      else if (GAMES_TO_TEST == GameSet.finals2010) {
          if (isMac()) {
             String homeDir = System.getProperty("user.home");
             if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
             if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2010/game-tacaa1-";
          }
          else baseFile = "/pro/aa/finals2010/game-tacaa1-";
+      }
+      else if (GAMES_TO_TEST == GameSet.semi2011server1) {
+         if (isMac()) {
+            String homeDir = System.getProperty("user.home");
+            if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2011/semi/server1/game";
+            if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2011/semi/server1/game";
+         }
+         else baseFile = "/pro/aa/tacaa2011/semi/server1/game";
+      }
+      else if (GAMES_TO_TEST == GameSet.semi2011server2) {
+         if (isMac()) {
+            String homeDir = System.getProperty("user.home");
+            if (homeDir.equals("/Users/sodomka")) baseFile = homeDir + "/Desktop/tacaa2011/semi/server2/game";
+            if (homeDir.equals("/Users/jordanberg"))baseFile = homeDir + "/Desktop/tacaa2011/semi/server2/game";
+         }
+         else baseFile = "/pro/aa/tacaa2011/semi/server2/game";
       }
 
       ArrayList<String> filenames = new ArrayList<String>();
