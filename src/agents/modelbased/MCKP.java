@@ -88,12 +88,16 @@ public class MCKP extends AbstractAgent {
    private double _randJump,_yestBid,_5DayBid,_bidStdDev;
 
    private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;
-   private int _multiDayDiscretization = 10;
+   private int _multiDayDiscretization = 15;
 
    double _probeBidMult;
 
    public enum MultiDay {
       OneDayHeuristic, HillClimbing, DP, DPHill
+   }
+
+   public MCKP() {
+      this(.03,.05,.1);
    }
 
 
@@ -113,19 +117,6 @@ public class MCKP extends AbstractAgent {
 //      _capMod.put(300,c1);
 //      _capMod.put(450,c2);
 //      _capMod.put(600,c3);
-
-      _c = new double[3];
-//      _c[0] = c1;
-//      _c[1] = c2;
-//      _c[2] = c3;
-      _c[0] = .03;
-      _c[1] = .05;
-      _c[2] = .1;
-
-//      _c[0] = .11;
-//      _c[1] = .23;
-//      _c[2] = .36;
-
 
       USER_MODEL_UB_MULT = 1.45;
       USER_MODEL_UB_STD_DEV = .75;
@@ -337,6 +328,18 @@ public class MCKP extends AbstractAgent {
 
    @Override
    public void initBidder() {
+      _c = new double[3];
+      if(_capacity == 600) {
+         _c[0] = .03;
+         _c[1] = .01;
+         _c[2] = .06;
+      }
+      else {
+         _c[0] = .03;
+         _c[1] = .05;
+         _c[2] = .1;
+      }
+
       _baseConvProbs = new HashMap<Query, Double>();
       _baseClickProbs = new HashMap<Query, Double>();
       _salesPrices = new HashMap<Query,Double>();
@@ -360,7 +363,7 @@ public class MCKP extends AbstractAgent {
 
 
          //Get baseline conversion probabilities.
-         //We don't consider component specialty bonus here. They are handled in a method that also considers 
+         //We don't consider component specialty bonus here. They are handled in a method that also considers
          //our amount over capacity and the fraction of IS users.
          if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
             _baseConvProbs.put(q, _piF0);
@@ -472,7 +475,7 @@ public class MCKP extends AbstractAgent {
    public BidBundle getBidBundle() {
       BidBundle bidBundle = new BidBundle();
 
-      //The only campaign-level budget we consider is a constant value. 
+      //The only campaign-level budget we consider is a constant value.
       //FIXME: _safetyBudget needs to be set somewhere.
 //      System.out.println("Bidding on day " + _day);
       if(SAFETYBUDGET) {
@@ -554,7 +557,7 @@ public class MCKP extends AbstractAgent {
 //         System.out.println("Creating Knapsacks");
          long knapsackStart = System.currentTimeMillis();
          for(Query q : _querySpace) {
-            if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query. 
+            if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
                ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
                ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
                debug("Knapsack Building Query: " + q);
@@ -888,7 +891,7 @@ public class MCKP extends AbstractAgent {
 
             //We will choose to target scores directly between opponent scores.
             Collections.sort(opponentScores);
-            int BIDS_BETWEEN_SCORES = 2;
+            int BIDS_BETWEEN_SCORES = 1;
             ArrayList<Double> ourScores = new ArrayList<Double>();
             for (int i=1; i<opponentScores.size(); i++) {
                double lowScore = opponentScores.get(i-1);
@@ -905,7 +908,7 @@ public class MCKP extends AbstractAgent {
             //And directly above the highest score (so we get the 1st slot)
             double scoreEpsilon = .01;
             double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
-            ourScores.add(reserveScore + scoreEpsilon);
+//            ourScores.add(reserveScore + scoreEpsilon); //removed for time reasons for now TODO
             ourScores.add(highestOpponentScore + .1);
 
 //            System.out.println("After adding min/max, our targeted scores: " + ourScores);
@@ -1001,7 +1004,7 @@ public class MCKP extends AbstractAgent {
             budgetList.add(10.0);
             budgetList.add(200.0);
             budgetList.add(300.0);
-            budgetList.add(400.0);
+//            budgetList.add(400.0);
             budgetList.add(Double.MAX_VALUE);
             budgetLists.put(q,budgetList);
          }
@@ -1110,7 +1113,7 @@ public class MCKP extends AbstractAgent {
    /**
     * This gets an ad that users are actually less likely to click on.
     * We may want this if we are either exploring the bid space or trying to bid vindictively.
-    * If there isn't a comp/man to insert into the ad to make users less likely to 
+    * If there isn't a comp/man to insert into the ad to make users less likely to
     * click, we'll return our specialty.
     * @param q
     * @return
@@ -1229,7 +1232,7 @@ public class MCKP extends AbstractAgent {
 
 
 
-            //This is checking which agents have an assigned ranking from the QA (for budget and bid estimation). 
+            //This is checking which agents have an assigned ranking from the QA (for budget and bid estimation).
             //If RANKABLE==false, assume everyone was assigned a ranking
             HashMap<String, Boolean> rankable = null;
             HashMap<String, Boolean> rankableBid = null;
@@ -2446,7 +2449,7 @@ public class MCKP extends AbstractAgent {
 
       //We just computed the conversion probability for someone, assuming they're not an IS user.
       //If an IS user, conversion probability is 0.
-      // conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS 
+      // conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS
       convPr *= (1.0 - ISRatio);
       return convPr;
    }

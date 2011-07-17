@@ -293,7 +293,7 @@ public class AllModelTest {
             cljSim = setupSimulator(filename);
             for(int i = 0; i < advertisers.size(); i++) {
                if(i == replaceIdx) {
-                  MCKP agent = new MCKP(1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
+                  MCKP agent = new MCKP(0.3,0.5,0.1,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
                   agent.sendSimMessage(new Message("bla","bla", status.getPubInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getSlotInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getRetailCatalog()));

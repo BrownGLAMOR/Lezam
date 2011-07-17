@@ -167,7 +167,7 @@ public class AgentSimulator {
 
 
       ArrayList<String> filenames = getGameStrings(GameSet.finals2010, gameNumStart, gameNumEnd);
-//      filenames.add(filenames.get(0)); //play same game 2x
+      filenames.add(filenames.get(0)); //play same game 2x
 //      System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay + ", discretization=" + multiDayDiscretization + ", perfect=" + PERFECT_SIM);
       long start = System.currentTimeMillis();
       simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
