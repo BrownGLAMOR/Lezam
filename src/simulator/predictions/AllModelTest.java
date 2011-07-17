@@ -79,7 +79,7 @@ public class AllModelTest {
     * LIVE MODE
     *  -Actually bid with our agent instead of using a log!
     */
-   boolean LIVE_MODE = false;
+   boolean LIVE_MODE = true;
 
    PersistentHashMap cljSim = null;
 
@@ -1134,8 +1134,8 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15160; //15148 //15127
-      int END_GAME = 15163;
+      int START_GAME = 15151; //15148 //15127
+      int END_GAME = 15151;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0

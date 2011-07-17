@@ -1,6 +1,5 @@
 package models.paramest;
 
-import edu.umich.eecs.tac.props.Ad;
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryType;
@@ -106,25 +105,6 @@ public class ConstantsAndFunctions {
       double sigma2 = mean * (1.0 - p);
       double diff = k - mean;
       return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
-   }
-
-   public static LinkedList<LinkedList<Ad>> getAdsAbovePerSlot(LinkedList<LinkedList<String>> advertisersAbovePerSlot, HashMap<String, Ad> ads) {
-      LinkedList<LinkedList<Ad>> adsAbovePerSlot = new LinkedList<LinkedList<Ad>>();
-      // for every slot
-      for (LinkedList<String> thoseAbove : advertisersAbovePerSlot) {
-         // make a linked list of Ads
-         LinkedList<Ad> adsAbove = null;
-         if(thoseAbove != null) {
-            adsAbove = new LinkedList<Ad>();
-            // for each advertiser above
-            for (String advertiser : thoseAbove) {
-               // add their add to the list
-               adsAbove.add(ads.get(advertiser));
-            }
-         }
-         adsAbovePerSlot.add(adsAbove);
-      }
-      return adsAbovePerSlot;
    }
 
    // Get Click Distribution

@@ -15,7 +15,7 @@ public abstract class AbstractBidModel extends AbstractModel {
 //	protected static final double maxReasonableBidF2 = 3.5;
 
 
-   protected static final double maxBid = 3.75;
+   protected static final double maxBid = 3.5;
 
    public abstract boolean updateModel(HashMap<Query, Double> cpc, HashMap<Query, Double> ourBid, HashMap<Query, HashMap<String, Integer>> ranks, HashMap<Query, HashMap<String, Boolean>> allRankable);
 

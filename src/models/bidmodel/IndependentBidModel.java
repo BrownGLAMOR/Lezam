@@ -11,13 +11,11 @@ import java.util.Set;
 public class IndependentBidModel extends AbstractBidModel {
 
    private boolean MLE = false;
-   private int MLE_MAX_SOLS = 5;
 
    private static final double _aStep = Math.pow(2, (1.0 / 25.0));
    private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> _allBidDists;
-   //	private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> predDist;
    private HashMap<Query, HashMap<String, ArrayList<Double>>> _allBidEsts;
-   //	private HashMap<Query, HashMap<String, ArrayList<Double>>> predValue;
+   private HashMap<Query, HashMap<String, ArrayList<Double>>> _allPredDists;
    private double[] _transProbs;
    private int _numBidValues;
    private Set<Query> _querySpace;
@@ -43,21 +41,16 @@ public class IndependentBidModel extends AbstractBidModel {
 
       _ourAgent = me;
 
-      _allBidDists = new HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>>();
-      _allBidEsts = new HashMap<Query, HashMap<String, ArrayList<Double>>>();
+      _allBidDists = new HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>>(_querySpace.size());
+      _allBidEsts = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
+      _allPredDists = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
       Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
       for (Query q : _querySpace) {
-         HashMap<String, ArrayList<ArrayList<Double>>> bidDistMap = new HashMap<String, ArrayList<ArrayList<Double>>>();
-         HashMap<String, ArrayList<Double>> bidEstMap = new HashMap<String, ArrayList<Double>>();
-         _allBidDists.put(q, bidDistMap);
-         _allBidEsts.put(q, bidEstMap);
-         //System.out.print("Initializing with agents: ");
+         HashMap<String, ArrayList<ArrayList<Double>>> bidDistMap = new HashMap<String, ArrayList<ArrayList<Double>>>(advertisers.size());
+         HashMap<String, ArrayList<Double>> bidEstMap = new HashMap<String, ArrayList<Double>>(advertisers.size());
+         HashMap<String, ArrayList<Double>> predDistMap = new HashMap<String, ArrayList<Double>>(advertisers.size());
          for (String s : advertisers) {
-            //System.out.print(s+", ");
             ArrayList<ArrayList<Double>> bidDists = new ArrayList<ArrayList<Double>>();
-            ArrayList<Double> bidEsts = new ArrayList<Double>();
-            bidDistMap.put(s, bidDists);
-            bidEstMap.put(s, bidEsts);
             ArrayList<Double> curDist = new ArrayList<Double>();
             _numBidValues = 0;
             int index = 0;
@@ -73,7 +66,17 @@ public class IndependentBidModel extends AbstractBidModel {
                index++;
             }
             bidDists.add(curDist);
+            bidDistMap.put(s, bidDists);
+
+            ArrayList<Double> bidEsts = new ArrayList<Double>();
+            bidEstMap.put(s, bidEsts);
+
+            ArrayList<Double> predDists = new ArrayList<Double>();
+            predDistMap.put(s, predDists);
          }
+         _allBidDists.put(q, bidDistMap);
+         _allBidEsts.put(q, bidEstMap);
+         _allPredDists.put(q, predDistMap);
       }
 
       _transProbs = new double[_numBidValues];
@@ -81,7 +84,7 @@ public class IndependentBidModel extends AbstractBidModel {
          _transProbs[i] = normalDensFn(i);
       }
       genCurEst();
-      //		pushPredictionsForward();
+      pushPredictionsForward();
    }
 
    private void genCurEst() {
@@ -132,7 +135,7 @@ public class IndependentBidModel extends AbstractBidModel {
          }
       }
       else {
-         System.out.println("ReInitializing " + q);
+//         System.out.println("ReInitializing " + q);
          int index = 0;
          Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
          for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * _aStep - 0.25) {
@@ -147,27 +150,6 @@ public class IndependentBidModel extends AbstractBidModel {
          }
       }
    }
-
-   private double normalDensFn(double d) {
-      return normalDensFn(d, _normVar);
-   }
-
-   private double normalDensFn(double d, double var) {
-      return Math.exp((-(d * d)) / (2.0 * var)) / (Math.sqrt(2.0 * Math.PI * var));
-   }
-
-   //	private void pushPredictionsForward() {
-   //		for(Query q:_query){
-   //			HashMap<String, ArrayList<ArrayList<Double>>> curStrHM = _allBidDists.get(q);
-   //			Set<String> curStrKey = curStrHM.keySet();
-   //			for(String s:curStrKey){
-   //				ArrayList<ArrayList<Double>> curHist = _allBidDists.get(q).get(s);
-   //				ArrayList<Double> newPred = pushForward(curHist, 2, q);
-   //				predDist.get(q).get(s).add(newPred);
-   //				predValue.get(q).get(s).add(averageAL(newPred));
-   //			}
-   //		}
-   //	}
 
    private Double averageAL(ArrayList<Double> newPred) {
       double sum = 0.0;
@@ -189,7 +171,7 @@ public class IndependentBidModel extends AbstractBidModel {
             maxBids = new ArrayList<Double>();
             maxBids.add(indexToBidValue(i));
          }
-         else if(newPred.get(i) == max && maxBids.size() < MLE_MAX_SOLS) {
+         else if(newPred.get(i) == max) {
             maxBids.add(indexToBidValue(i));
          }
       }
@@ -199,6 +181,31 @@ public class IndependentBidModel extends AbstractBidModel {
       }
       sum = sum / ((double)maxBids.size());
       return sum;
+   }
+
+   private double normalDensFn(double d) {
+      return normalDensFn(d, _normVar);
+   }
+
+   private double normalDensFn(double d, double var) {
+      return Math.exp((-(d * d)) / (2.0 * var)) / (Math.sqrt(2.0 * Math.PI * var));
+   }
+
+   private void pushPredictionsForward() {
+      for(Query q: _querySpace){
+         for(String s : _advertisers){
+            ArrayList<ArrayList<Double>> bidDists = _allBidDists.get(q).get(s);
+
+            //Push Forward Pred 2 Days
+            ArrayList<Double> newPred = pushForward(bidDists, q);
+            bidDists.add(newPred); //temp add new pred
+
+            ArrayList<Double> newPred2 = pushForward(bidDists, q);
+            _allPredDists.get(q).put(s,newPred2);
+
+            bidDists.remove(bidDists.size()-1); //remove the temp added dist
+         }
+      }
    }
 
    private ArrayList<Double> pushForward(ArrayList<ArrayList<Double>> bidDists, Query q) {
@@ -237,7 +244,13 @@ public class IndependentBidModel extends AbstractBidModel {
 
    @Override
    public double getPrediction(String player, Query q) {
-      return getCurrentEstimate(player, q);
+      ArrayList<Double> predDist = _allPredDists.get(q).get(player);
+      if(MLE) {
+         return maxAL(predDist);
+      }
+      else {
+         return averageAL(predDist);
+      }
    }
 
    public double getCurrentEstimate(String player, Query q) {
@@ -250,7 +263,7 @@ public class IndependentBidModel extends AbstractBidModel {
       pushForwardCurEst(ourCPCs, ourBids, ourRanks);
       updateProbs(ourBids, ourRanks, allRankable);
       genCurEst();
-      //		pushPredictionsForward();
+      pushPredictionsForward();
       return true;
    }
 
@@ -383,10 +396,10 @@ public class IndependentBidModel extends AbstractBidModel {
 //                  for (int i = 0; i < _numBidValues; i++) {
 //                     currDist.add(0.0);
 //                  }
-//                  double ourCPC = ourCPCs.get(q).doubleValue();
+//                  double ourCPC = ourCPCs.get(q);
 //                  double theInd = ((((Math.log(ourCPC + 0.25) / Math.log(2.0)) + 2) * 25.0) - 1.0);
 //                  boolean onEdge = false;
-//                  int theIndex = (int) (theInd);
+//                  int theIndex = (int) (theInd); 
 //                  double firstProp = theInd - (double) theIndex;
 //                  if (theIndex <= 0) {
 //                     theIndex = 0;
@@ -402,11 +415,7 @@ public class IndependentBidModel extends AbstractBidModel {
 //                     currDist.set(theIndex, 1.0);
 //                  }
 //
-//                  ArrayList<Double> currDist2 = pushForward(bidDists, q);
-//                  normalizeAL(currDist2,q);
-//                  for(int i = 0; i < currDist.size(); i++) {
-//                     currDist.set(i,(currDist.get(i)+4*currDist2.get(i))/5.0);
-//                  }
+//                  normalizeAL(currDist,q);
 //                  bidDists.add(currDist);
 //               }
                else {

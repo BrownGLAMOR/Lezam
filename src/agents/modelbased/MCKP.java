@@ -28,9 +28,7 @@ import tacaa.javasim;
 
 import java.util.*;
 
-import static models.paramest.ConstantsAndFunctions._advertiserEffectBoundsAvg;
-import static models.paramest.ConstantsAndFunctions.getISRatio;
-import static models.paramest.ConstantsAndFunctions.queryTypeToInt;
+import static models.paramest.ConstantsAndFunctions.*;
 import static simulator.parser.GameStatusHandler.UserState;
 
 public class MCKP extends AbstractAgent {
@@ -87,20 +85,17 @@ public class MCKP extends AbstractAgent {
    private AbstractSpecialtyModel _specialtyModel;
 
    private HashMap<Integer,Double> _totalBudgets,_capMod;
-   private double _lowBidMult;
-   private double _highBidMult;
    private double _randJump,_yestBid,_5DayBid,_bidStdDev;
 
    private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;
    private int _multiDayDiscretization = 10;
 
+   double _probeBidMult;
+
    public enum MultiDay {
       OneDayHeuristic, HillClimbing, DP, DPHill
    }
 
-   public MCKP() {
-      this(0.04,0.14,0.20);
-   }
 
    public MCKP(double c1, double c2, double c3) {
       this(c1,c2,c3,750,1000,1250,.2,.8);
@@ -108,6 +103,8 @@ public class MCKP extends AbstractAgent {
 
    public MCKP(double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double lowBidMult, double highBidMult) {
       _R = new Random();
+
+      _probeBidMult = 2.5;
 
       _capMod = new HashMap<Integer, Double>();
       _capMod.put(300,1.0);
@@ -120,10 +117,10 @@ public class MCKP extends AbstractAgent {
       _c = new double[3];
 //      _c[0] = c1;
 //      _c[1] = c2;
-//      _c[2] = c2;
+//      _c[2] = c3;
       _c[0] = .03;
       _c[1] = .05;
-      _c[2] = .15;
+      _c[2] = .1;
 
 //      _c[0] = .11;
 //      _c[1] = .23;
@@ -139,8 +136,6 @@ public class MCKP extends AbstractAgent {
       _totalBudgets.put(300,750.0);
       _totalBudgets.put(450,1000.0);
       _totalBudgets.put(600,1250.0);
-      _lowBidMult = 0.2;
-      _highBidMult = 0.8;
       _randJump = .1;
       _yestBid = .5;
       _5DayBid = .4;
@@ -204,7 +199,7 @@ public class MCKP extends AbstractAgent {
                HashMap<Query,Double> aAdvAffects = new HashMap<Query, Double>();
                int aCapacities = 450;  //FIXME estimate opponent capacity
 //               int aStartSales = (int)((4.0*(aCapacities / ((double) _capWindow)) + aCapacities) / 2.0);  //FIXME Estimate opponent start-sales
-               int aStartSales = aCapacities; 
+               int aStartSales = aCapacities;
                Query maxQuery = null;
                double maxBid = 0.0;
                for(Query q : _querySpace) {
@@ -222,9 +217,9 @@ public class MCKP extends AbstractAgent {
                   }
                }
 
-               
-               
-               
+
+
+
                //---------------
                //Determine manufacturer/component specialties
                //---------------
@@ -232,27 +227,27 @@ public class MCKP extends AbstractAgent {
                //Assume specialty is the prod of F2 query they are bidding most in
 //               String aManSpecialties = maxQuery.getManufacturer();
 //               String aCompSpecialties = maxQuery.getComponent();
-               
+
                String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1)); //TODO: Use this!!!
                String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1)); //TODO: Use this!!!
 
 
-               
+
                //---------------
                //Determine ad targeting
                //---------------
-               
+
                //We can either assume the advertiser will target its specialty,
                //or we can look at its historical targeting.
                HashMap<Query,Ad> aAds = new HashMap<Query, Ad>();
                for(Query q : _querySpace) {
-            	   Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
+                  Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
 //            	   Ad predictedAd = getTargetedAd(q,aManSpecialties,aCompSpecialties); //Old method
-            	   aAds.put(q, predictedAd);                  
+                  aAds.put(q, predictedAd);
                }
 
-                              
-               
+
+
                squashedBids.put(agent,aSquashedBids);
                budgets.put(agent,aBudgets);
                advAffects.put(agent,aAdvAffects);
@@ -422,10 +417,10 @@ public class MCKP extends AbstractAgent {
 //      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
       _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _squashing, _querySpace);
       _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS,_squashing);
-      _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);      
+      _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);
       _adTypeEstimator = new AdTypeEstimator(_querySpace, _advertisersSet, _products);
       _specialtyModel = new SimpleSpecialtyModel(_querySpace, _advertisersSet, _products, _numSlots);
-      
+
       models.add(_queryAnalyzer);
       models.add(_userModel);
       models.add(_unitsSold);
@@ -463,9 +458,9 @@ public class MCKP extends AbstractAgent {
          else if(model instanceof ISRatioModel) {
             _ISRatioModel = (ISRatioModel)model;
          } else if (model instanceof AbstractAdTypeEstimator) {
-        	 _adTypeEstimator = (AbstractAdTypeEstimator) model;
+            _adTypeEstimator = (AbstractAdTypeEstimator) model;
          } else if (model instanceof AbstractSpecialtyModel) {
-        	 _specialtyModel = (AbstractSpecialtyModel) model;
+            _specialtyModel = (AbstractSpecialtyModel) model;
          }
          else {
             throw new RuntimeException("Unknown Type of Model");
@@ -479,7 +474,7 @@ public class MCKP extends AbstractAgent {
 
       //The only campaign-level budget we consider is a constant value. 
       //FIXME: _safetyBudget needs to be set somewhere.
-      System.out.println("Bidding on day " + _day);
+//      System.out.println("Bidding on day " + _day);
       if(SAFETYBUDGET) {
          bidBundle.setCampaignDailySpendLimit(_safetyBudget);
       }
@@ -521,23 +516,23 @@ public class MCKP extends AbstractAgent {
          //FIXME: What about basing possible bids on the bids of opponents? Only consider N
          //bids that would put us in each starting position.
 //         HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
-         HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();         
+         HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();
          HashMap<Query,ArrayList<Double>> budgetLists = getBudgetLists();
-         
+
 //         for (Query q : _querySpace) {
-//        	 System.out.println(q + ": " + bidLists.get(q));
+//            System.out.println(q + ": " + bidLists.get(q));
 //         }
 
 
-         
-         
-         
-         
+
+
+
+
          //------------
          // Create simulator (to be used for knapsack creation)
          //------------
          PersistentHashMap querySim = setupSimForDay();
-         
+
 
 
 
@@ -555,8 +550,8 @@ public class MCKP extends AbstractAgent {
          double penalty = getPenalty(remainingCap, 0); //Get initial penalty (before any additional conversions today)
          HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
 
-                  
-         System.out.println("Creating Knapsacks");
+
+//         System.out.println("Creating Knapsacks");
          long knapsackStart = System.currentTimeMillis();
          for(Query q : _querySpace) {
             if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query. 
@@ -654,7 +649,7 @@ public class MCKP extends AbstractAgent {
 
 
          long knapsackEnd = System.currentTimeMillis();
-         System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );
+//         System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );
 
 
 //         PersistentHashMap daySim;
@@ -684,7 +679,7 @@ public class MCKP extends AbstractAgent {
          }
 
          long solutionEndTime = System.currentTimeMillis();
-         System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
+//         System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
 //         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
 //         HashMap<Query,Item> solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap);
@@ -732,8 +727,13 @@ public class MCKP extends AbstractAgent {
                * FIXME: What should the budget be when we explore?
                */
                if(!hasPerfectModels() && !q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-                  double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .9);
-                  bidBundle.addQuery(q, bid, new Ad(), bid*3);
+//                  double bid = getRandomProbeBid(q);
+//                  double budget = getProbeBudget(q,bid);
+                  double[] bidBudget = getProbeSlotBidBudget(q);
+                  double bid = bidBudget[0];
+                  double budget = bidBudget[1];
+                  Ad ad = getProbeAd(q,bid,budget);
+                  bidBundle.addQuery(q, bid, ad, budget);
                }
                else {
                   bidBundle.addQuery(q,0.0,new Ad(),0.0);
@@ -744,16 +744,8 @@ public class MCKP extends AbstractAgent {
          /*
          * Pass expected conversions to unit sales model
          */
-         double solutionWeight;
-//         if(DAY_SIM_WEIGHT_END) {
-//            double[] results = simulateDay(daySim,bidBundle);
-//            solutionWeight = results[3];
-////            System.out.println("We expect to get " + (int)solutionWeight + "/" + (int)solutionWeight(remainingCap,solution,allPredictionsMap) + " conversions");
-//         }
-//         else {
-         solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
+         double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 //            System.out.println("We expect to get " + (int)solutionWeight + " conversions");
-//         }
          ((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) (solutionWeight));
       }
       else {
@@ -774,192 +766,264 @@ public class MCKP extends AbstractAgent {
       return bidBundle;
    }
 
-   
+
+   private double getRandomProbeBid(Query q) {
+      double minBid = _paramEstimation.getRegReservePrediction(q.getType()) / Math.pow(_paramEstimation.getAdvEffectPrediction(q),_squashing);
+      double maxBid = Math.min(3.5,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q));
+      return randDouble(minBid,maxBid);
+   }
+
+   private double getProbeBudget(Query q, double bid) {
+      return bid*_probeBidMult;
+   }
+
+   private Ad getProbeAd(Query q, double bid, double budget) {
+      return getIrrelevantAd(q);
+   }
+
+   private double[] getProbeSlotBidBudget(Query q) {
+      double[] bidBudget = new double[2];
+      ArrayList<Double> ourBids = new ArrayList<Double>();
+      ArrayList<Double> opponentScores = new ArrayList<Double>();
+      for (String player : _advertisersSet) {
+         if (!player.equals(_advId)) { //only get opponent bids
+            double opponentBid = _bidModel.getPrediction(player, q);
+            double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
+            double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing);
+            opponentScores.add(opponentScore);
+         }
+      }
+
+      //Add regular/promoted reserve score
+      double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
+      opponentScores.add(reserveScore);
+
+      //We will choose to target scores directly between opponent scores.
+      Collections.sort(opponentScores);
+      int BIDS_BETWEEN_SCORES = 1;
+      ArrayList<Double> ourScores = new ArrayList<Double>();
+      for (int i=1; i<opponentScores.size(); i++) {
+         double lowScore = opponentScores.get(i-1);
+         double highScore = opponentScores.get(i);
+         for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
+            double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);
+            ourScores.add(ourScore);
+         }
+      }
+
+      //Also ad a score to bid directly above the reserve score,
+      //And directly above the highest score (so we get the 1st slot)
+      double scoreEpsilon = .01;
+      double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
+      ourScores.add(highestOpponentScore + scoreEpsilon);
+
+      double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
+      double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;
+      double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
+      double ourSquashedAdvEff = Math.pow(ourAdvertiserEffect,_squashing);
+      double maxScore = ourVPC * ourSquashedAdvEff;
+      ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
+      Collections.sort(ourScores);
+      for (Double score : ourScores) {
+         if (score >= reserveScore && score <= maxScore) { //within bounds
+            int lastAddedIdx = ourPrunedScores.size()-1;
+            if (lastAddedIdx == -1 || !score.equals(ourPrunedScores.get(lastAddedIdx))) { //not just added
+               ourPrunedScores.add(score);
+            }
+         }
+      }
+
+      //Turn score into bids
+      for (double score : ourPrunedScores) {
+         double ourBid = score / ourSquashedAdvEff;
+         ourBids.add(ourBid);
+      }
+
+      int numSlots = Math.min(_numSlots,ourScores.size());
+      int slot = _R.nextInt(numSlots);
+      double bid = ourScores.get(slot);
+      bidBudget[0] = bid;
+      bidBudget[1] = bid * _probeBidMult;
+      return bidBudget;
+   }
+
    /**
     * Get a single bid for each slot (or X bids per slot).
-    * The idea is that our bid models are noisy, so we don't want to 
+    * The idea is that our bid models are noisy, so we don't want to
     * even consider bids on the edges of slots, since we might be getting a completely
     * different slot than we expect.
     * @return
     */
    private HashMap<Query, ArrayList<Double>> getMinimalBidLists() {
 
-	   HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
+      HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
 
-	   for(Query q : _querySpace) {
-		   //System.out.println("QUERY " + q);
-		   ArrayList<Double> ourBids = new ArrayList<Double>();
-		   if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Don't hardcode
+      for(Query q : _querySpace) {
+//         System.out.println("QUERY " + q);
+         ArrayList<Double> ourBids = new ArrayList<Double>();
+         if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Don't hardcode
 
-			   double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
+            double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
+            double ourSquashedAdvEff = Math.pow(ourAdvertiserEffect,_squashing);
 
-			   //Get list of all squashed opponent bids for this query
-			   ArrayList<Double> opponentScores = new ArrayList<Double>(); 	   
-			   for (String player : _advertisersSet) {
-				   if (!player.equals(_advId)) { //only get opponent bids
-					   //The opponent bids we get back are unsquashed.
-					   double opponentBid = _bidModel.getPrediction(player, q);
-					   double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())]; //FIXME: Have a model estimate this
-					   double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing); 
-					   //System.out.println(player + " bid=" + opponentBid + ", advEffect=" + opponentAdvertiserEffect + ", score=" + opponentScore);
-					   opponentScores.add(opponentScore);
-				   }
-			   }
+            //Get list of all squashed opponent bids for this query
+            ArrayList<Double> opponentScores = new ArrayList<Double>();
+            for (String player : _advertisersSet) {
+               if (!player.equals(_advId)) { //only get opponent bids
+                  double opponentBid = _bidModel.getPrediction(player, q);
+                  double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
+                  double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing);
+//                  System.out.println(player + " bid=" + opponentBid + ", advEffect=" + opponentAdvertiserEffect + ", score=" + opponentScore);
+                  opponentScores.add(opponentScore);
+               }
+            }
 
-			   //Add regular/promoted reserve score
-			   double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
-			   double promotedReserveScore = _paramEstimation.getPromReservePrediction(q.getType());
-			   opponentScores.add(reserveScore);
-			   opponentScores.add(promotedReserveScore);
-			   //System.out.println("reserveScore=" + reserveScore + ", promoted=" + promotedReserveScore);
+            //Add regular/promoted reserve score
+            double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
+            double promotedReserveScore = _paramEstimation.getPromReservePrediction(q.getType());
+            opponentScores.add(reserveScore);
+            opponentScores.add(promotedReserveScore);
+//            System.out.println("reserveScore=" + reserveScore + ", promoted=" + promotedReserveScore);
 
-			   			   
-			   //We will choose to target scores directly between opponent scores.
-			   //TODO: We could also consider multiple targets between two scores.
-			   Collections.sort(opponentScores);
-			   int BIDS_BETWEEN_SCORES = 1;
-			   ArrayList<Double> ourScores = new ArrayList<Double>();
-			   for (int i=1; i<opponentScores.size(); i++) {
-				   double lowScore = opponentScores.get(i-1);
-				   double highScore = opponentScores.get(i);
-				   for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
-					   double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);
-					   ourScores.add(ourScore);   
-				   }				   
-			   }
 
-			   //System.out.println("Our targeted scores: " + ourScores);
-			   
-			   //Also ad a score to bid directly above the reserve score,
-			   //And directly above the highest score (so we get the 1st slot)
-			   double scoreEpsilon = .01;
-			   double highestOpponentScore = opponentScores.get(opponentScores.size()-1); 
-			   ourScores.add(reserveScore + scoreEpsilon);
-			   ourScores.add(highestOpponentScore + scoreEpsilon);
-			   
-			   //System.out.println("After adding min/max, our targeted scores: " + ourScores);
-			   
-			   //Remove any duplicate scores, or any scores outside a reasonable boundry
-			   double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
-			   double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION; 
-			   double maxScore = ourVPC * Math.pow(ourAdvertiserEffect, _squashing);
-			   ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
-			   Collections.sort(ourScores);
-			   for (int i=0; i<ourScores.size(); i++) {
-				   double score = ourScores.get(i);
-				   if (score >= reserveScore && score <= maxScore) { //within bounds
-					   int lastAddedIdx = ourPrunedScores.size()-1;
-					   if (lastAddedIdx==-1 || score != ourPrunedScores.get(lastAddedIdx)) { //not just added 
-						   ourPrunedScores.add(score);
-					   }
-				   }
-			   }
-			   
-			   //System.out.println("Our pruned targeted scores: " + ourPrunedScores);
-			   
-			   //Turn score into bids
-			   for (double score : ourPrunedScores) {
-				   double ourBid = score / Math.pow(ourAdvertiserEffect, _squashing);
-				   ourBids.add(ourBid);
-			   }
-			   
-			   //System.out.println("Our advEffect:" + ourAdvertiserEffect);
-			   //System.out.println("Our bids: " + ourBids);
-		   }
+            //We will choose to target scores directly between opponent scores.
+            Collections.sort(opponentScores);
+            int BIDS_BETWEEN_SCORES = 2;
+            ArrayList<Double> ourScores = new ArrayList<Double>();
+            for (int i=1; i<opponentScores.size(); i++) {
+               double lowScore = opponentScores.get(i-1);
+               double highScore = opponentScores.get(i);
+               for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
+                  double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);
+                  ourScores.add(ourScore);
+               }
+            }
 
-		   bidLists.put(q, ourBids);
+//            System.out.println("Our targeted scores: " + ourScores);
 
-	   }
-	   return bidLists;
-   }
+            //Also ad a score to bid directly above the reserve score,
+            //And directly above the highest score (so we get the 1st slot)
+            double scoreEpsilon = .01;
+            double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
+            ourScores.add(reserveScore + scoreEpsilon);
+            ourScores.add(highestOpponentScore + .1);
 
-private HashMap<Query, ArrayList<Double>> getBidLists() {
-       HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
-       
-       for(Query q : _querySpace) {
-          if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Why are we checking this twice? And which is the proper way to check?
-             ArrayList<Double> newBids = new ArrayList<Double>();
+//            System.out.println("After adding min/max, our targeted scores: " + ourScores);
 
-             if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
-                double increment  = .4; //FIXME: Make these class fields
-                double min = .08;
-                double max = 1.0;
-                int tot = (int) Math.ceil((max-min) / increment);
-                for(int i = 0; i < tot; i++) {
-                   newBids.add(min+(i*increment));
-                }
-             }
-             else {
-                double increment  = .1;
-                double min = _regReserveLow[queryTypeToInt(q.getType())];
-                
-                //This is roughly the expected revenue we get for a click. Never bid above this.
-                //TODO (low priority): SalesPrice and ConversionPr could be better estimated for the given day. 
-                //We may not want to consider bids this high (e.g. we might start the day with a high penalty).
-                //Note, though, that these bids are considered on future days as well, where we may not have used any capacity.
-                
-                //FIXME: Multiplying by baseClickProbs is not correct, but it was performing better, so only for the time being I'll leave it in.
-                double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q);
-                //double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0);
-                
-                
-                int tot = (int) Math.ceil((max-min) / increment);
-                for(int i = 0; i < tot; i++) {
-                   newBids.add(min+(i*increment));
-                }
-             }
+            //Remove any duplicate scores, or any scores outside a reasonable boundry
+            double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
+            double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;
+            double maxScore = ourVPC * ourSquashedAdvEff;
+            ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
+            Collections.sort(ourScores);
+            for (Double score : ourScores) {
+               if (score >= reserveScore && score <= maxScore) { //within bounds
+                  int lastAddedIdx = ourPrunedScores.size()-1;
+                  if (lastAddedIdx == -1 || !score.equals(ourPrunedScores.get(lastAddedIdx))) { //not just added
+                     ourPrunedScores.add(score);
+                  }
+               }
+            }
 
-             Collections.sort(newBids);
+//            System.out.println("Our pruned targeted scores: " + ourPrunedScores);
 
-//             System.out.println("Bids for " + q + ": " + newBids);
-             bidLists.put(q, newBids);
-          }
-          else {
-             bidLists.put(q,new ArrayList<Double>());
-          }
-       }
-       
-	return bidLists;
-}
+            //Turn score into bids
+            for (double score : ourPrunedScores) {
+               double ourBid = score / ourSquashedAdvEff;
+               ourBids.add(ourBid);
+            }
 
-private HashMap<Query, ArrayList<Double>> getBudgetLists() {
-       HashMap<Query,ArrayList<Double>> budgetLists = new HashMap<Query,ArrayList<Double>>();
-       
-       for(Query q : _querySpace) {
-          if(!q.equals(new Query())) { //Skip over F0 Query FIXME: Make configurable
-             ArrayList<Double> budgetList = new ArrayList<Double>();
-             budgetList.add(50.0);
-             budgetList.add(100.0);
-             budgetList.add(200.0);
-             budgetList.add(300.0);
-             budgetList.add(Double.MAX_VALUE);
-             budgetLists.put(q,budgetList);
-          }
-          else {
-             budgetLists.put(q,new ArrayList<Double>());
-          }
-       }
-	return budgetLists;
-   }
-   
-
-public BidBundle getFirst2DaysBundle() {
-      BidBundle bundle = new BidBundle();
-      /*
-         * Bound these with the reseve scores
-         */
-      for(Query q : _querySpace){
-         if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
-            double bid = randDouble(_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * _lowBidMult, _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * _highBidMult);
-            bundle.addQuery(q, bid, new Ad(), Double.MAX_VALUE);
+//            System.out.println("Our advEffect:" + ourAdvertiserEffect);
+//            System.out.println("Our bids: " + ourBids);
          }
-         else {
-            if(!q.equals(new Query())) {
-               double bid = randDouble(_regReserveLow[queryTypeToInt(q.getType())],_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q) * .9);
-               bundle.addQuery(q, bid, new Ad(), bid*5);
+
+         bidLists.put(q, ourBids);
+
+      }
+      return bidLists;
+   }
+
+
+   private HashMap<Query, ArrayList<Double>> getBidLists() {
+      HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
+
+      for(Query q : _querySpace) {
+         if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Why are we checking this twice? And which is the proper way to check?
+            ArrayList<Double> newBids = new ArrayList<Double>();
+
+            if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+               double increment  = .4; //FIXME: Make these class fields
+               double min = .08;
+               double max = 1.0;
+               int tot = (int) Math.ceil((max-min) / increment);
+               for(int i = 0; i < tot; i++) {
+                  newBids.add(min+(i*increment));
+               }
             }
             else {
-               bundle.addQuery(q, 0, new Ad(), 0);
+               double increment  = .1;
+               double min = _regReserveLow[queryTypeToInt(q.getType())];
+
+               //This is roughly the expected revenue we get for a click. Never bid above this.
+               //TODO (low priority): SalesPrice and ConversionPr could be better estimated for the given day.
+               //We may not want to consider bids this high (e.g. we might start the day with a high penalty).
+               //Note, though, that these bids are considered on future days as well, where we may not have used any capacity.
+
+               //FIXME: Multiplying by baseClickProbs is not correct, but it was performing better, so only for the time being I'll leave it in.
+               double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q);
+               //double max = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0);
+
+
+               int tot = (int) Math.ceil((max-min) / increment);
+               for(int i = 0; i < tot; i++) {
+                  newBids.add(min+(i*increment));
+               }
+            }
+
+            Collections.sort(newBids);
+
+//             System.out.println("Bids for " + q + ": " + newBids);
+            bidLists.put(q, newBids);
+         }
+         else {
+            bidLists.put(q,new ArrayList<Double>());
+         }
+      }
+
+      return bidLists;
+   }
+
+   private HashMap<Query, ArrayList<Double>> getBudgetLists() {
+      HashMap<Query,ArrayList<Double>> budgetLists = new HashMap<Query,ArrayList<Double>>();
+      for(Query q : _querySpace) {
+         if(!q.equals(new Query())) { //Skip over F0 Query FIXME: Make configurable
+            ArrayList<Double> budgetList = new ArrayList<Double>();
+            budgetList.add(10.0);
+            budgetList.add(200.0);
+            budgetList.add(300.0);
+            budgetList.add(400.0);
+            budgetList.add(Double.MAX_VALUE);
+            budgetLists.put(q,budgetList);
+         }
+         else {
+            budgetLists.put(q,new ArrayList<Double>());
+         }
+      }
+      return budgetLists;
+   }
+
+
+   public BidBundle getFirst2DaysBundle() {
+      BidBundle bundle = new BidBundle();
+      for(Query q : _querySpace){
+         if(_compSpecialty.equals(q.getComponent()) || _manSpecialty.equals(q.getManufacturer())) {
+            if(_compSpecialty.equals(q.getComponent()) && _manSpecialty.equals(q.getManufacturer())) {
+               double bid = randDouble(_paramEstimation.getPromReservePrediction(q.getType()), _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * .7);
+               bundle.addQuery(q, bid, getTargetedAd(q), 200);
+            }
+            else {
+               double bid = randDouble(_paramEstimation.getPromReservePrediction(q.getType()), _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * .7);
+               bundle.addQuery(q, bid, getTargetedAd(q), 100);
             }
          }
       }
@@ -1041,8 +1105,8 @@ public BidBundle getFirst2DaysBundle() {
       }
       return ad;
    }
-   
-   
+
+
    /**
     * This gets an ad that users are actually less likely to click on.
     * We may want this if we are either exploring the bid space or trying to bid vindictively.
@@ -1052,45 +1116,45 @@ public BidBundle getFirst2DaysBundle() {
     * @return
     */
    private Ad getIrrelevantAd(Query q) {
-	   
-	   String componentToUse = _compSpecialty;
-	   String manufacturerToUse = _manSpecialty;
-	   
-	   String qComponent = q.getComponent(); //could be null
-	   if (qComponent != null) {
-		   for (String component : _retailCatalog.getComponents()) {
-			   if (!component.equals(qComponent)) {
-				   componentToUse = component;
-				   break;
-			   }
-		   }
-	   }
 
-	   String qManufacturer = q.getManufacturer(); //could be null
-	   if (qManufacturer != null) {
-		   for (String manufacturer : _retailCatalog.getManufacturers()) {
-			   if (!manufacturer.equals(qManufacturer)) {
-				   manufacturerToUse = manufacturer;
-				   break;
-			   }
-		   }
-	   }
+      String componentToUse = _compSpecialty;
+      String manufacturerToUse = _manSpecialty;
 
-	   return new Ad(new Product(manufacturerToUse, componentToUse));
+      String qComponent = q.getComponent(); //could be null
+      if (qComponent != null) {
+         for (String component : _retailCatalog.getComponents()) {
+            if (!component.equals(qComponent)) {
+               componentToUse = component;
+               break;
+            }
+         }
+      }
+
+      String qManufacturer = q.getManufacturer(); //could be null
+      if (qManufacturer != null) {
+         for (String manufacturer : _retailCatalog.getManufacturers()) {
+            if (!manufacturer.equals(qManufacturer)) {
+               manufacturerToUse = manufacturer;
+               break;
+            }
+         }
+      }
+
+      return new Ad(new Product(manufacturerToUse, componentToUse));
    }
-   
-   
-   
+
+
+
 
    @Override
    public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
 //      System.out.println("Updating models on day " + _day);
       if(!hasPerfectModels()) {
-    	  
-    	  _adTypeEstimator.updateModel(queryReport);
-    	  _specialtyModel.updateModel(queryReport);
-    	  
+
+         _adTypeEstimator.updateModel(queryReport);
+         _specialtyModel.updateModel(queryReport);
+
          BidBundle bidBundle = _bidBundles.get(_bidBundles.size()-2);
 
          if(!USER_MODEL_UB) {
@@ -1702,7 +1766,7 @@ public BidBundle getFirst2DaysBundle() {
             }
          }
       }
-      System.out.println("day " + _day + ": " + "preDaySales=" + Arrays.toString(preDaySales));
+//      System.out.println("day " + _day + ": " + "preDaySales=" + Arrays.toString(preDaySales));
 
       int startRemCap = (int)(_capacity*_capMod.get(_capacity));
       for (int preDaySale : preDaySales) {
@@ -1750,7 +1814,11 @@ public BidBundle getFirst2DaysBundle() {
 
 //      System.out.println("Choosing plan for day " + _day + " : " + Arrays.toString(salesOnDay));
 
-      return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,salesOnDay[0],bidLists,budgetLists,allPredictionsMap),salesOnDay[0]);
+      int salesToday = salesOnDay[0];
+      int probeSales = 10;
+      int knapsackSales = salesToday - probeSales;
+
+      return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,knapsackSales,bidLists,budgetLists,allPredictionsMap),knapsackSales);
    }
 
 
@@ -2078,7 +2146,7 @@ public BidBundle getFirst2DaysBundle() {
    private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap) {
       double totalProfit = 0.0;
       for(int i = 0; i < salesOnDay.length; i++) {
-         int dayStartSales = _capacity;
+         int dayStartSales = (int)(_capacity*_capMod.get(_capacity));
          for(int j = 1; j <= (_capWindow-1); j++) {
             int idx = i-j;
             if(idx >= 0) {

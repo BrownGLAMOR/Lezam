@@ -329,34 +329,45 @@ public class GameStatusHandler {
    public static void main(String[] args) throws IOException, IllegalConfigurationException, ParseException {
 
       String baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-";
-      int min = 15145;
-      int max = 15145;
+      int min = 15127;
+      int max = 15170;
       for (int i = min; i <= max; i++) {
          String file = baseFile + i + ".slg";
-         System.out.println("PARSING " + file);
+//         System.out.println("PARSING " + file);
          double start = System.currentTimeMillis();
          GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
          double stop = System.currentTimeMillis();
          double secondsElapsed = (stop - start) / 1000.0;
-         System.out.println("SECONDS ELAPSED: " + secondsElapsed);
+//         System.out.println("SECONDS ELAPSED: " + secondsElapsed);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
-         Set<Query> querySpace = gameStatus.getQuerySpace();
-         for(String agent : gameStatus.getAdvertisers()) {
-            LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get(agent);
-            for (BidBundle bundle : bundles) {
-               for (Query query : querySpace) {
-                  if (Double.isNaN(bundle.getBid(query))) {
-                     throw new RuntimeException(query.toString());
-                  } else if (Double.isNaN(bundle.getDailyLimit(query))) {
-                     throw new RuntimeException();
-                  }
-               }
-               if (Double.isNaN(bundle.getCampaignDailySpendLimit())) {
-                  throw new RuntimeException();
-               }
-            }
+//         Set<Query> querySpace = gameStatus.getQuerySpace();
+//         for(String agent : gameStatus.getAdvertisers()) {
+//            LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get(agent);
+//            for (BidBundle bundle : bundles) {
+//               for (Query query : querySpace) {
+//                  if (Double.isNaN(bundle.getBid(query))) {
+//                     throw new RuntimeException(query.toString());
+//                  } else if (Double.isNaN(bundle.getDailyLimit(query))) {
+//                     throw new RuntimeException();
+//                  }
+//               }
+//               if (Double.isNaN(bundle.getCampaignDailySpendLimit())) {
+//                  throw new RuntimeException();
+//               }
+//            }
+//         }
+         int capacity = gameStatus.getAdvertiserInfos().get("TacTex").getDistributionCapacity();
+         if(capacity == 300) {
+//            System.out.println("mv Result-" + i + " .txt low");
          }
-         System.out.println("FINISHED PARSING " + file);
+         else if(capacity == 450) {
+//            System.out.println("mv Result-" + i + " .txt med");
+         }
+         else if(capacity == 600) {
+            System.out.println(i);
+//            System.out.println("mv Result-" + i + " .txt high");
+         }
+//         System.out.println("FINISHED PARSING " + file);
       }
    }
 }
