@@ -27,6 +27,7 @@ import models.usermodel.jbergParticleFilter;
 import tacaa.javasim;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static models.paramest.ConstantsAndFunctions.*;
 import static simulator.parser.GameStatusHandler.UserState;
@@ -91,6 +92,9 @@ public class MCKP extends AbstractAgent {
    private int _multiDayDiscretization = 10;
 
    double _probeBidMult;
+
+   private static final boolean THREADING = false;
+   private static final int NTHREDS = Runtime.getRuntime().availableProcessors();
 
    public enum MultiDay {
       OneDayHeuristic, HillClimbing, DP, DPHill
@@ -471,6 +475,125 @@ public class MCKP extends AbstractAgent {
       }
    }
 
+   public class KnapsackQueryResult {
+      ArrayList<Item> _itemList;
+      ArrayList<Predictions> _queryPredictions;
+
+      public KnapsackQueryResult(ArrayList<Item> itemList, ArrayList<Predictions> queryPredictions) {
+         _itemList = itemList;
+         _queryPredictions = queryPredictions;
+      }
+
+      public ArrayList<Item> getItems() {
+         return _itemList;
+      }
+
+      public ArrayList<Predictions> getPredictions() {
+         return _queryPredictions;
+      }
+
+   }
+
+   public class KnapsackQueryCreator implements Callable<KnapsackQueryResult> {
+
+      Query _q;
+      double _penalty;
+      double _convProb;
+      double _salesPrice;
+      ArrayList<Double> _bidList;
+      ArrayList<Double> _budgetList;
+      PersistentHashMap _querySim;
+
+      public KnapsackQueryCreator(Query q, double penalty, double convProb, double salesPrice, ArrayList<Double> bidList, ArrayList<Double> budgetList, PersistentHashMap querySim) {
+         _q = q;
+         _penalty = penalty;
+         _convProb = convProb;
+         _salesPrice = salesPrice;
+         _bidList = bidList;
+         _budgetList = budgetList;
+         _querySim = querySim;
+      }
+
+      public KnapsackQueryResult call() throws Exception {
+         ArrayList<Item> itemList = new ArrayList<Item>(_bidList.size()*_budgetList.size());
+         ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(_bidList.size()*_budgetList.size());
+         int itemCount = 0;
+
+         //FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
+         for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
+            for(int i = 0; i < _bidList.size(); i++) { //For each possible bid
+               for(int j = 0; j < _budgetList.size(); j++) { //For each possible budget
+                  boolean targeting = (k == 0) ? false : true;
+                  double bid = _bidList.get(i);
+                  double budget = _budgetList.get(j);
+                  Ad ad = (k == 0) ? new Ad() : getTargetedAd(_q);
+
+                  double[] impsClicksAndCost = simulateQuery(_querySim,_q,bid,budget,ad);
+                  double numImps = impsClicksAndCost[0];
+                  double numClicks = impsClicksAndCost[1];
+                  double cost = impsClicksAndCost[2];
+
+                  //Amount of impressions our agent sees in each slot
+                  double[] slotDistr = new double[] {impsClicksAndCost[3],
+                          impsClicksAndCost[4],
+                          impsClicksAndCost[5],
+                          impsClicksAndCost[6],
+                          impsClicksAndCost[7]};
+
+                  //Fraction of IS users that occurred in each slot
+                  double[] isRatioArr = new double[] {impsClicksAndCost[8],
+                          impsClicksAndCost[9],
+                          impsClicksAndCost[10],
+                          impsClicksAndCost[11],
+                          impsClicksAndCost[12]};
+                  double ISRatio = impsClicksAndCost[13];
+                  double CPC = cost / numClicks;
+                  double clickPr = numClicks / numImps;
+
+                  double convProbWithPen = getConversionPrWithPenalty(_q, _penalty,ISRatio);
+
+//                        System.out.println("Bid: " + bid);
+//                        System.out.println("Budget: " + budget);
+//                        System.out.println("Targeting: " + targeting);
+//                        System.out.println("numImps: " + numImps);
+//                        System.out.println("numClicks: " + numClicks);
+//                        System.out.println("cost: " + cost);
+//                        System.out.println("CPC: " + CPC);
+//                        System.out.println("clickPr: " + clickPr);
+//                        System.out.println();
+
+                  if(Double.isNaN(CPC)) {
+                     CPC = 0.0;
+                  }
+
+                  if(Double.isNaN(clickPr)) {
+                     clickPr = 0.0;
+                  }
+
+                  if(Double.isNaN(convProbWithPen)) {
+                     convProbWithPen = 0.0;
+                  }
+
+                  double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
+                  double v = numClicks*convProbWithPen*_salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+                  itemList.add(new Item(_q,w,v,bid,budget,targeting,0,itemCount));
+                  queryPredictions.add(new Predictions(clickPr, CPC, _convProb, numImps,slotDistr,isRatioArr,ISRatio));
+                  itemCount++;
+
+                  if(cost + bid*2 < budget) {
+                     //If we don't hit our budget, we do not need to consider
+                     //higher budgets, since we will have the same result
+                     //so we break out of the budget loop
+                     break;
+                  }
+               }
+            }
+         }
+
+         return new KnapsackQueryResult(itemList,queryPredictions);
+      }
+   }
+
    @Override
    public BidBundle getBidBundle() {
       BidBundle bidBundle = new BidBundle();
@@ -551,53 +674,51 @@ public class MCKP extends AbstractAgent {
          //want the queries to be in a guaranteed order - put them in an array
          //index will be used as the id of the query
          double penalty = getPenalty(remainingCap, 0); //Get initial penalty (before any additional conversions today)
-         HashMap<Query,ArrayList<Predictions>> allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
+         Map<Query,ArrayList<Predictions>> allPredictionsMap;
 
-
-//         System.out.println("Creating Knapsacks");
          long knapsackStart = System.currentTimeMillis();
-         for(Query q : _querySpace) {
-            if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
-               ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
-               ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
-               debug("Knapsack Building Query: " + q);
-               double convProb = getConversionPrWithPenalty(q, 1.0);
-               double salesPrice = _salesPrices.get(q);
-               int itemCount = 0;
+         if(!THREADING) {
+            allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
+            for(Query q : _querySpace) {
+               if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
+                  ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
+                  ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
+                  double convProb = getConversionPrWithPenalty(q, 1.0);
+                  double salesPrice = _salesPrices.get(q);
+                  int itemCount = 0;
 
+                  //FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
+                  for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
+                     for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
+                        for(int j = 0; j < budgetLists.get(q).size(); j++) { //For each possible budget
+                           boolean targeting = (k == 0) ? false : true;
+                           double bid = bidLists.get(q).get(i);
+                           double budget = budgetLists.get(q).get(j);
+                           Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
 
-               //FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
-               for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
-                  for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
-                     for(int j = 0; j < budgetLists.get(q).size(); j++) { //For each possible budget
-                        boolean targeting = (k == 0) ? false : true;
-                        double bid = bidLists.get(q).get(i);
-                        double budget = budgetLists.get(q).get(j);
-                        Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);
+                           double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
+                           double numImps = impsClicksAndCost[0];
+                           double numClicks = impsClicksAndCost[1];
+                           double cost = impsClicksAndCost[2];
 
-                        double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
-                        double numImps = impsClicksAndCost[0];
-                        double numClicks = impsClicksAndCost[1];
-                        double cost = impsClicksAndCost[2];
+                           //Amount of impressions our agent sees in each slot
+                           double[] slotDistr = new double[] {impsClicksAndCost[3],
+                                   impsClicksAndCost[4],
+                                   impsClicksAndCost[5],
+                                   impsClicksAndCost[6],
+                                   impsClicksAndCost[7]};
 
-                        //Amount of impressions our agent sees in each slot
-                        double[] slotDistr = new double[] {impsClicksAndCost[3],
-                                impsClicksAndCost[4],
-                                impsClicksAndCost[5],
-                                impsClicksAndCost[6],
-                                impsClicksAndCost[7]};
+                           //Fraction of IS users that occurred in each slot
+                           double[] isRatioArr = new double[] {impsClicksAndCost[8],
+                                   impsClicksAndCost[9],
+                                   impsClicksAndCost[10],
+                                   impsClicksAndCost[11],
+                                   impsClicksAndCost[12]};
+                           double ISRatio = impsClicksAndCost[13];
+                           double CPC = cost / numClicks;
+                           double clickPr = numClicks / numImps;
 
-                        //Fraction of IS users that occurred in each slot
-                        double[] isRatioArr = new double[] {impsClicksAndCost[8],
-                                impsClicksAndCost[9],
-                                impsClicksAndCost[10],
-                                impsClicksAndCost[11],
-                                impsClicksAndCost[12]};
-                        double ISRatio = impsClicksAndCost[13];
-                        double CPC = cost / numClicks;
-                        double clickPr = numClicks / numImps;
-
-                        double convProbWithPen = getConversionPrWithPenalty(q, penalty,ISRatio);
+                           double convProbWithPen = getConversionPrWithPenalty(q, penalty,ISRatio);
 
 //                        System.out.println("Bid: " + bid);
 //                        System.out.println("Budget: " + budget);
@@ -609,50 +730,84 @@ public class MCKP extends AbstractAgent {
 //                        System.out.println("clickPr: " + clickPr);
 //                        System.out.println();
 
-                        if(Double.isNaN(CPC)) {
-                           CPC = 0.0;
-                        }
+                           if(Double.isNaN(CPC)) {
+                              CPC = 0.0;
+                           }
 
-                        if(Double.isNaN(clickPr)) {
-                           clickPr = 0.0;
-                        }
+                           if(Double.isNaN(clickPr)) {
+                              clickPr = 0.0;
+                           }
 
-                        if(Double.isNaN(convProb)) {
-                           convProb = 0.0;
-                        }
+                           if(Double.isNaN(convProbWithPen)) {
+                              convProbWithPen = 0.0;
+                           }
 
-                        double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
-                        double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
-                        itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
-                        queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps,slotDistr,isRatioArr,ISRatio));
-                        itemCount++;
+                           double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
+                           double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
+                           itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));
+                           queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps,slotDistr,isRatioArr,ISRatio));
+                           itemCount++;
 
-                        if(cost + bid*2 < budget) {
-                           //If we don't hit our budget, we do not need to consider
-                           //higher budgets, since we will have the same result
-                           //so we break out of the budget loop
-                           break;
+                           if(cost + bid*2 < budget) {
+                              //If we don't hit our budget, we do not need to consider
+                              //higher budgets, since we will have the same result
+                              //so we break out of the budget loop
+                              break;
+                           }
                         }
                      }
                   }
+
+                  debug("Items for " + q);
+                  if(itemList.size() > 0) {
+                     Item[] items = itemList.toArray(new Item[0]);
+                     IncItem[] iItems = getIncremental(items);
+                     allIncItems.addAll(Arrays.asList(iItems));
+                     allPredictionsMap.put(q, queryPredictions);
+                  }
                }
+            }
+         }
+         else {
+            allPredictionsMap = new ConcurrentHashMap<Query, ArrayList<Predictions>>();
+            ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
 
+            HashMap<Query,Future<KnapsackQueryResult>> results = new HashMap<Query, Future<KnapsackQueryResult>>();
+            for(Query q : _querySpace) {
+               KnapsackQueryCreator kqc = new KnapsackQueryCreator(q, penalty, getConversionPrWithPenalty(q, 1.0), _salesPrices.get(q),
+                                                                   bidLists.get(q),budgetLists.get(q),querySim);
+               Future<KnapsackQueryResult> result = executor.submit(kqc);
+               results.put(q,result);
+            }
 
+            executor.shutdown(); //execute all threads
 
+            for(Query q : _querySpace) {
+               Future<KnapsackQueryResult> result = results.get(q);
+               try {
+                  KnapsackQueryResult kqr = result.get();
+                  ArrayList<Item> itemList = kqr.getItems();
+                  ArrayList<Predictions> queryPredictions = kqr.getPredictions();
 
-               debug("Items for " + q);
-               if(itemList.size() > 0) {
-                  Item[] items = itemList.toArray(new Item[0]);
-                  IncItem[] iItems = getIncremental(items);
-                  allIncItems.addAll(Arrays.asList(iItems));
-                  allPredictionsMap.put(q, queryPredictions);
+                  if(itemList.size() > 0) {
+                     Item[] items = itemList.toArray(new Item[0]);
+                     IncItem[] iItems = getIncremental(items);
+                     allIncItems.addAll(Arrays.asList(iItems));
+                     allPredictionsMap.put(q, queryPredictions);
+                  }
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException();
+               } catch (ExecutionException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException();
                }
             }
          }
 
 
          long knapsackEnd = System.currentTimeMillis();
-//         System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );
+         System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );
 
 
 //         PersistentHashMap daySim;
@@ -682,7 +837,7 @@ public class MCKP extends AbstractAgent {
          }
 
          long solutionEndTime = System.currentTimeMillis();
-//         System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
+         System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
 //         HashMap<Query,Item> solution = fillKnapsackWithCapExt(allIncItems, remainingCap, allPredictionsMap, daySim);
 //         HashMap<Query,Item> solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap);
@@ -1416,7 +1571,7 @@ public class MCKP extends AbstractAgent {
       return penalty;
    }
 
-   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int numDays) {
+   private double[] solutionValueMultiDay(HashMap<Query, Item> solution, double remainingCap, Map<Query, ArrayList<Predictions>> allPredictionsMap, int numDays) {
 
       double totalWeight;
       double weightMult;
@@ -1506,7 +1661,7 @@ public class MCKP extends AbstractAgent {
       return output;
    }
 
-   private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
+   private double solutionWeight(double budget, HashMap<Query, Item> solution, Map<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
       double threshold = .5;
       int maxIters = 15;
       double lastSolWeight = Double.MAX_VALUE;
@@ -1605,11 +1760,11 @@ public class MCKP extends AbstractAgent {
       return solutionWeight;
    }
 
-   private double solutionWeight(double budget, HashMap<Query, Item> solution, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+   private double solutionWeight(double budget, HashMap<Query, Item> solution, Map<Query, ArrayList<Predictions>> allPredictionsMap) {
       return solutionWeight(budget, solution, allPredictionsMap, null);
    }
 
-   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+   private HashMap<Query,Item> fillKnapsackWithCapExt(ArrayList<IncItem> incItems, double budget, Map<Query,ArrayList<Predictions>> allPredictionsMap){
       HashMap<Query,Item> solution = new HashMap<Query, Item>();
       int expectedConvs = 0;
       double[] lastSolVal = null;
@@ -1734,7 +1889,7 @@ public class MCKP extends AbstractAgent {
     * @return
     */
    private HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query,
-           ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, HashMap<Query, ArrayList<Predictions>> allPredictionsMap){
+           ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap){
       int windowSize = 59; //TODO: don't hard code this
       int initSales = (int)(_capacity*_capMod.get(_capacity) / ((double) _capWindow));
       int[] initialSales = new int[windowSize];
@@ -1744,7 +1899,7 @@ public class MCKP extends AbstractAgent {
 
 
 
-   private HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query, ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, HashMap<Query, ArrayList<Predictions>> allPredictionsMap, int[] initialSales){
+   private HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query, ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap, int[] initialSales){
 
       int[] preDaySales = new int[_capWindow-1];
       if(!hasPerfectModels()) {
@@ -1835,7 +1990,7 @@ public class MCKP extends AbstractAgent {
 
 
 
-   private HashMap<Query,Item> fillKnapsackDPHill(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+   private HashMap<Query,Item> fillKnapsackDPHill(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap){
 
       //-------------------------
       //CONFIG FOR DP
@@ -1875,7 +2030,7 @@ public class MCKP extends AbstractAgent {
    }
 
 
-   private HashMap<Query,Item> fillKnapsackDP(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap){
+   private HashMap<Query,Item> fillKnapsackDP(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap){
       System.out.println("Running DP.");
 
       //CONFIG FOR DP
@@ -2074,7 +2229,7 @@ public class MCKP extends AbstractAgent {
 
    private HashMap<Integer, HashMap<Integer, Double>> getSpeedyHashedProfits(int capacityWindow,
                                                                              int totalCapacityMax, int dailyCapacityUsedMin, int dailyCapacityUsedMax, int dailyCapacityUsedStep,
-                                                                             HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap) {
+                                                                             HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap) {
 
 
       //SPEEDUPS:
@@ -2152,7 +2307,7 @@ public class MCKP extends AbstractAgent {
 
 
 
-   private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query,ArrayList<Predictions>> allPredictionsMap, HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap) {
+   private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap, HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap) {
       double totalProfit = 0.0;
       for(int i = 0; i < salesOnDay.length; i++) {
          int dayStartSales = (int)(_capacity*_capMod.get(_capacity));
@@ -2193,7 +2348,7 @@ public class MCKP extends AbstractAgent {
       return totalProfit;
    }
 
-   private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, HashMap<Query, ArrayList<Predictions>> allPredictionsMap) {
+   private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap) {
       ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
       double penalty = getPenalty(remainingCap, desiredSales);
       for (Query q : _querySpace) {
