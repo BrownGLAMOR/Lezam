@@ -195,8 +195,8 @@ public class AllModelTest {
          }
 
          if(replaceIdx == -1) {
-            System.out.println("BAD AGENT NAME(" + agentToReplace+ " ) quitting");
-            break;
+            System.out.println("Agent (" + agentToReplace+ " ) not present, skipping game " + filename);
+            continue;
          }
 
          double squashParam = status.getPubInfo().getSquashingParameter();
@@ -1151,8 +1151,8 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.semi2011server1;
-      int START_GAME = 1414;
-      int END_GAME = 1414;
+      int START_GAME = 1425;
+      int END_GAME = 1426;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0
@@ -1160,10 +1160,9 @@ public class AllModelTest {
       String agentName = "TacTex";
 
       if(args.length == 1) {
-          START_GAME = Integer.parseInt(args[0]);
-          END_GAME = START_GAME;
-       }
-      
+         START_GAME = Integer.parseInt(args[0]);
+         END_GAME = START_GAME;
+      }
 
       AllModelTest evaluator = new AllModelTest();
 

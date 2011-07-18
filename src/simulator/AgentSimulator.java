@@ -56,15 +56,14 @@ public class AgentSimulator {
       return javasim.setupClojureSim(filename);
    }
 
-
-   public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
+   public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
       MCKP.MultiDay multiDay = MCKP.MultiDay.HillClimbing;
       int multiDayDiscretization = 50;
       boolean PERFECT_SIM = true;
-      simulateAgent(filenames, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
+      simulateAgent(filenames, gameSet, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
    }
 
-   public static void simulateAgent(ArrayList<String> filenames, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
+   public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
                                     MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM) {
       String[] agentsToReplace;
       if(agentNum == 0) {
@@ -73,23 +72,8 @@ public class AgentSimulator {
       else if(agentNum == 1) {
          agentsToReplace = new String[] {"Schlemazl"};
       }
-      else if(agentNum == 2) {
-         agentsToReplace = new String[] {"Mertacor"};
-      }
-      else if(agentNum == 3) {
-         agentsToReplace = new String[] {"MetroClick"};
-      }
-      else if(agentNum == 4) {
-         agentsToReplace = new String[] {"tau"};
-      }
-      else if(agentNum == 5) {
-         agentsToReplace = new String[] {"Nanda_AA"};
-      }
-      else if(agentNum == 6) {
-         agentsToReplace = new String[] {"crocodileagent"};
-      }
       else {
-         agentsToReplace = new String[] {"McCon"};
+         agentsToReplace = new String[] {"Schlemazl", "TacTex"};
       }
 //      String[] agentsToReplace = new String[] {"TacTex", "Schlemazl", "Mertacor"};
 //      String[] agentsToReplace = new String[] {"TacTex", "Schlemazl", "Mertacor" , "MetroClick", "tau", "Nanda_AA", "crocodileagent", "McCon"};
@@ -98,6 +82,34 @@ public class AgentSimulator {
          PersistentHashMap cljSim = setupSimulator(filename);
          for(String agentToReplace : agentsToReplace) {
 
+            if(gameSet.equals(GameSet.semi2011server2) && agentToReplace.equals("TacTex")) {
+               String gameString = filename.substring(filename.length()-7);
+               if(gameString.equals("621.slg") ||
+                       gameString.equals("622.slg") ||
+                       gameString.equals("623.slg") ||
+                       gameString.equals("624.slg")) {
+                  continue;
+               }
+            }
+            else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("TacTex")) {
+               String gameString = filename.substring(filename.length()-8);
+               if(gameString.equals("1426.slg") ||
+                       gameString.equals("1427.slg") ||
+                       gameString.equals("1428.slg") ||
+                       gameString.equals("1429.slg")) {
+                  continue;
+               }
+            }
+            else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("Schlemazl")) {
+               String gameString = filename.substring(filename.length()-8);
+               if(gameString.equals("1434.slg") ||
+                       gameString.equals("1435.slg") ||
+                       gameString.equals("1436.slg") ||
+                       gameString.equals("1437.slg")) {
+                  continue;
+               }
+            }
+            
             AbstractAgent agent;
             if(PERFECT_SIM) {
                agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
@@ -144,9 +156,15 @@ public class AgentSimulator {
       c2 = 0;
       c3 = 0;
       double simUB = 1.45;
-      int gameNumStart = 15163;
-      int gameNumEnd = 15163;
-      int agentNum = 0;
+      GameSet gameSet = GameSet.semi2011server1;
+      int gameNumStart = 1414;
+      int gameNumEnd = 1414;
+
+//      GameSet gameSet = GameSet.semi2011server2;
+//      int gameNumStart = 621;
+//      int gameNumEnd = 621;
+
+      int agentNum = 2;
 
       //For determining which of our agent configurations we should run.
       int ourAgentMethod = 1;
@@ -183,12 +201,10 @@ public class AgentSimulator {
       else if (ourAgentMethod==2) multiDay = MCKP.MultiDay.DP;
       else if (ourAgentMethod==3) multiDay = MCKP.MultiDay.DPHill;
 
-
-      ArrayList<String> filenames = getGameStrings(GameSet.finals2010, gameNumStart, gameNumEnd);
-      filenames.add(filenames.get(0)); //play same game 2x
+      ArrayList<String> filenames = getGameStrings(gameSet, gameNumStart, gameNumEnd);
 //      System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay + ", discretization=" + multiDayDiscretization + ", perfect=" + PERFECT_SIM);
       long start = System.currentTimeMillis();
-      simulateAgent(filenames,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
+      simulateAgent(filenames,gameSet,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
       long end = System.currentTimeMillis();
 //      System.out.println("Total seconds elapsed: " + (end-start)/1000.0 );
    }

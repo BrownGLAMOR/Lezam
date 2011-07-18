@@ -20,11 +20,11 @@ import java.util.LinkedList;
 
 public final class BidDistInit {
 
-   public static void buildBidDistribution(String filename, int min, int max) throws IOException, ParseException {
+   public static void buildBidDistribution(ArrayList<String> filenames) throws IOException, ParseException {
       ArrayList<Double> bidDist = new ArrayList<Double>();
       double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
       double aStep = Math.pow(2, (1.0 / 25.0));
-      double maxBid = 3.75;
+      double maxBid = 3.5;
       int count = 0;
       for (double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * aStep - 0.25) {
          bidDist.add(curKey);
@@ -40,8 +40,7 @@ public final class BidDistInit {
       int maxF0 = 0;
       int maxF1 = 0;
       int maxF2 = 0;
-      for (int i = min; i <= max; i++) {
-         String file = filename + i + ".slg";
+      for (String file : filenames) {
          GameStatusHandler gameStatusHandler = new GameStatusHandler(file);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
          String[] advertisers = gameStatus.getAdvertisers();
@@ -143,15 +142,15 @@ public final class BidDistInit {
          }
       }
 
-      outputF0 = outputF0.substring(0, outputF0.length() - 3);
+      outputF0 = outputF0.substring(0, outputF0.length() - 2);
       outputF0 += "};";
       System.out.println("\n\n\n" + outputF0 + "\n");
 
-      outputF1 = outputF1.substring(0, outputF1.length() - 3);
+      outputF1 = outputF1.substring(0, outputF1.length() - 2);
       outputF1 += "};";
       System.out.println(outputF1 + "\n");
 
-      outputF2 = outputF2.substring(0, outputF2.length() - 3);
+      outputF2 = outputF2.substring(0, outputF2.length() - 2);
       outputF2 += "};";
       System.out.println(outputF2);
       System.out.println("\n\n\n" + maxF0 + ", " + maxF1 + ", " + maxF2);
@@ -164,11 +163,23 @@ public final class BidDistInit {
     * @throws IOException
     */
    public static void main(String[] args) throws IOException, ParseException {
-      String baseFile = "/Users/jordanberg/Desktop/tacaa2010/game-tacaa2-";
-      int min = 1297;
-      int max = 1340;
+      ArrayList<String> filenames = new ArrayList<String>();
+      
+      String baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server1/game";
+      int min = 1414;
+      int max = 1445;
+      for(int i = min; i <= max; i++) {
+         filenames.add(baseFile + i + ".slg");
+      }
 
-      buildBidDistribution(baseFile, min, max);
+      baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server2/game";
+      min = 609;
+      max = 640;
+      for(int i = min; i <= max; i++) {
+         filenames.add(baseFile + i + ".slg");
+      }
+
+      buildBidDistribution(filenames);
    }
 
 }

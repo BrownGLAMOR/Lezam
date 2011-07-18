@@ -88,7 +88,7 @@ public class MCKP extends AbstractAgent {
    private double _randJump,_yestBid,_5DayBid,_bidStdDev;
 
    private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;
-   private int _multiDayDiscretization = 15;
+   private int _multiDayDiscretization = 10;
 
    double _probeBidMult;
 
@@ -736,7 +736,7 @@ public class MCKP extends AbstractAgent {
                   double bid = bidBudget[0];
                   double budget = bidBudget[1];
                   Ad ad = getProbeAd(q,bid,budget);
-                  bidBundle.addQuery(q, bid, ad, budget);
+                  bidBundle.addQuery(q, 0, ad, budget);
                }
                else {
                   bidBundle.addQuery(q,0.0,new Ad(),0.0);
@@ -907,13 +907,13 @@ public class MCKP extends AbstractAgent {
             //And directly above the highest score (so we get the 1st slot)
             double scoreEpsilon = .01;
             double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
-//            ourScores.add(reserveScore + scoreEpsilon); //removed for time reasons for now TODO
+            ourScores.add(reserveScore + scoreEpsilon);
             ourScores.add(highestOpponentScore + .1);
 
 //            System.out.println("After adding min/max, our targeted scores: " + ourScores);
 
             //Remove any duplicate scores, or any scores outside a reasonable boundry
-            double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
+            double FRACTION = 2; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
             double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;
             double maxScore = ourVPC * ourSquashedAdvEff;
             ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
@@ -930,9 +930,16 @@ public class MCKP extends AbstractAgent {
 //            System.out.println("Our pruned targeted scores: " + ourPrunedScores);
 
             //Turn score into bids
+            double maxBid = 3.5;
             for (double score : ourPrunedScores) {
                double ourBid = score / ourSquashedAdvEff;
-               ourBids.add(ourBid);
+               if(ourBid <= maxBid) {
+                  ourBids.add(ourBid);
+               }
+               else {
+                  ourBids.add(3.5);
+                  break;
+               }
             }
 
 //            System.out.println("Our advEffect:" + ourAdvertiserEffect);

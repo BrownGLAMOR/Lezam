@@ -328,13 +328,13 @@ public class GameStatusHandler {
 
    public static void main(String[] args) throws IOException, IllegalConfigurationException, ParseException {
 
-//      String baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server1/game";
-//      int min = 1414;
-//      int max = 1445;
+      String baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server1/game";
+      int min = 1414;
+      int max = 1445;
 
-      String baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server2/game";
-      int min = 609;
-      int max = 640;
+//      String baseFile = "/Users/jordanberg/Desktop/tacaa2011/semi/server2/game";
+//      int min = 609;
+//      int max = 640;
 
 
       for (int i = min; i <= max; i++) {
@@ -346,6 +346,7 @@ public class GameStatusHandler {
          double secondsElapsed = (stop - start) / 1000.0;
          System.out.println("SECONDS ELAPSED: " + secondsElapsed);
          GameStatus gameStatus = gameStatusHandler.getGameStatus();
+         System.out.println(i + ": " + Arrays.toString(gameStatus.getAdvertisers()));
          Set<Query> querySpace = gameStatus.getQuerySpace();
          for(String agent : gameStatus.getAdvertisers()) {
             LinkedList<BidBundle> bundles = gameStatus.getBidBundles().get(agent);
