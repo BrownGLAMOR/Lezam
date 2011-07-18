@@ -93,8 +93,10 @@ public class MCKP extends AbstractAgent {
 
    double _probeBidMult;
 
-   private static final boolean THREADING = true;
+   private static final boolean THREADING = false;
    private static final int NTHREDS = Runtime.getRuntime().availableProcessors();
+
+   private double[] _staticCs;
 
    public enum MultiDay {
       OneDayHeuristic, HillClimbing, DP, DPHill
@@ -1047,7 +1049,7 @@ public class MCKP extends AbstractAgent {
 
             //We will choose to target scores directly between opponent scores.
             Collections.sort(opponentScores);
-            int BIDS_BETWEEN_SCORES = 1;
+            int BIDS_BETWEEN_SCORES = 2;
             ArrayList<Double> ourScores = new ArrayList<Double>();
             for (int i=1; i<opponentScores.size(); i++) {
                double lowScore = opponentScores.get(i-1);
@@ -1070,7 +1072,7 @@ public class MCKP extends AbstractAgent {
 //            System.out.println("After adding min/max, our targeted scores: " + ourScores);
 
             //Remove any duplicate scores, or any scores outside a reasonable boundry
-            double FRACTION = 2; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
+            double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb.
             double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;
             double maxScore = ourVPC * ourSquashedAdvEff;
             ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
