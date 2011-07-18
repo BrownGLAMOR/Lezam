@@ -736,7 +736,7 @@ public class MCKP extends AbstractAgent {
                   double bid = bidBudget[0];
                   double budget = bidBudget[1];
                   Ad ad = getProbeAd(q,bid,budget);
-                  bidBundle.addQuery(q, 0, ad, budget);
+                  bidBundle.addQuery(q, bid, ad, budget);
                }
                else {
                   bidBundle.addQuery(q,0.0,new Ad(),0.0);
