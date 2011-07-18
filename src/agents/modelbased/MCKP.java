@@ -93,7 +93,7 @@ public class MCKP extends AbstractAgent {
 
    double _probeBidMult;
 
-   private static final boolean THREADING = false;
+   private static final boolean THREADING = true;
    private static final int NTHREDS = Runtime.getRuntime().availableProcessors();
 
    public enum MultiDay {
@@ -111,6 +111,8 @@ public class MCKP extends AbstractAgent {
 
    public MCKP(double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double lowBidMult, double highBidMult) {
       _R = new Random();
+
+      System.out.println("Num Cores: " + NTHREDS);
 
       _probeBidMult = 2.5;
 
@@ -1897,7 +1899,74 @@ public class MCKP extends AbstractAgent {
       return fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap, initialSales);
    }
 
+   public class HillClimbingResult {
 
+      int _idx;
+      int _increment;
+      double _profit;
+
+      public HillClimbingResult(int idx, int increment, double profit) {
+         _idx = idx;
+         _increment = increment;
+         _profit = profit;
+      }
+
+      public int getIdx() {
+         return _idx;
+      }
+
+      public int getInc() {
+         return _increment;
+      }
+
+      public double getProfit() {
+         return _profit;
+      }
+
+   }
+
+   public class HillClimbingCreator implements Callable<HillClimbingResult> {
+
+      int _idx;
+      int _capInc;
+      int[] _preDaySales;
+      int[] _salesOnDay;
+      HashMap<Query,ArrayList<Double>> _bidLists;
+      HashMap<Query,ArrayList<Double>> _budgetLists;
+      Map<Query,ArrayList<Predictions>> _allPredictionsMap;
+      Map<Integer,Map<Integer, Double>> _profitMemoizeMap;
+
+      public HillClimbingCreator(int idx, int capacityIncrement, int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap, Map<Integer,Map<Integer, Double>> profitMemoizeMap) {
+         _idx = idx;
+         _capInc = capacityIncrement;
+         _preDaySales = preDaySales;
+         _salesOnDay = salesOnDay.clone();
+         _bidLists = bidLists;
+         _budgetLists = budgetLists;
+         _allPredictionsMap = allPredictionsMap;
+         _profitMemoizeMap = profitMemoizeMap;
+      }
+
+      public HillClimbingResult call() throws Exception {
+         double bestProfit = -Double.MAX_VALUE;
+         int bestInc = 0;
+         for(int j = 0; j < 2; j++) {
+            if(!(j == 1 && _salesOnDay[_idx] < _capInc)) { //capacity cannot be negative
+               int increment = _capInc * (j == 0 ? 1 : -1);
+               _salesOnDay[_idx] += increment;
+
+               double profit = findProfitForDays(_preDaySales,_salesOnDay,_bidLists,_budgetLists,_allPredictionsMap,_profitMemoizeMap);
+               if(profit > bestProfit) {
+                  bestProfit = profit;
+                  bestInc = increment;
+               }
+
+               _salesOnDay[_idx] -= increment;
+            }
+         }
+         return new HillClimbingResult(_idx,bestInc,bestProfit);
+      }
+   }
 
    private HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query, ArrayList<Double>> bidLists, HashMap<Query, ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap, int[] initialSales){
 
@@ -1944,37 +2013,81 @@ public class MCKP extends AbstractAgent {
          salesOnDay[i] = initialSales[i];
       }
 
-      HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap = new HashMap<Integer, HashMap<Integer, Double>>(daysAhead);
+      Map<Integer,Map<Integer, Double>> profitMemoizeMap;
+      if(!THREADING) {
+         profitMemoizeMap = new HashMap<Integer, Map<Integer, Double>>(daysAhead);
+         double currProfit;
+         double bestProfit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
+         do {
+            currProfit = bestProfit;
+            int bestIdx = -1;
+            int bestIncrement = 0;
+            for(int i = 0; i < salesOnDay.length; i++) {
+               for(int j = 0; j < 2; j++) {
+                  if(!(j == 1 && salesOnDay[i] < capacityIncrement)) { //capacity cannot be negative
+                     int increment = capacityIncrement * (j == 0 ? 1 : -1);
+                     salesOnDay[i] += increment;
 
-      double currProfit;
-      double bestProfit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
-      do {
-         currProfit = bestProfit;
-         int bestIdx = -1;
-         int bestIncrement = 0;
-         for(int i = 0; i < salesOnDay.length; i++) {
-            for(int j = 0; j < 2; j++) {
-               if(!(j == 1 && salesOnDay[i] < capacityIncrement)) { //capacity cannot be negative
-                  int increment = capacityIncrement * (j == 0 ? 1 : -1);
-                  salesOnDay[i] += increment;
+                     double profit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
+                     if(profit > bestProfit) {
+                        bestProfit = profit;
+                        bestIdx = i;
+                        bestIncrement = increment;
+                     }
 
-                  double profit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
-                  if(profit > bestProfit) {
-                     bestProfit = profit;
-                     bestIdx = i;
-                     bestIncrement = increment;
+                     salesOnDay[i] -= increment;
                   }
-
-                  salesOnDay[i] -= increment;
                }
             }
-         }
 
-         if(bestIdx > -1) {
-            salesOnDay[bestIdx] += bestIncrement;
+            if(bestIdx > -1) {
+               salesOnDay[bestIdx] += bestIncrement;
+            }
          }
+         while(bestProfit > currProfit);
       }
-      while(bestProfit > currProfit);
+      else {
+         ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
+         profitMemoizeMap = new ConcurrentHashMap<Integer, Map<Integer, Double>>(daysAhead);
+         double currProfit;
+         double bestProfit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
+         do {
+            currProfit = bestProfit;
+
+            ArrayList<Future<HillClimbingResult>> results = new ArrayList<Future<HillClimbingResult>>();
+            for(int i = 0; i < salesOnDay.length; i++) {
+               HillClimbingCreator hcc = new HillClimbingCreator(i,capacityIncrement,preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
+               Future<HillClimbingResult> result = executor.submit(hcc);
+               results.add(result);
+            }
+
+            int bestIdx = -1;
+            int bestIncrement = 0;
+            for(Future<HillClimbingResult> result : results) {
+               try {
+                  HillClimbingResult hcr = result.get();
+                  if(hcr.getProfit() > bestProfit) {
+                     bestProfit = hcr.getProfit();
+                     bestIdx = hcr.getIdx();
+                     bestIncrement = hcr.getInc();
+                  }
+               } catch (InterruptedException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException();
+               } catch (ExecutionException e) {
+                  e.printStackTrace();
+                  throw new RuntimeException();
+               }
+            }
+
+            if(bestIdx > -1) {
+               salesOnDay[bestIdx] += bestIncrement;
+            }
+         }
+         while(bestProfit > currProfit);
+
+         executor.shutdown(); //execute all threads
+      }
 
 //      System.out.println("Choosing plan for day " + _day + " : " + Arrays.toString(salesOnDay));
 
@@ -1985,6 +2098,53 @@ public class MCKP extends AbstractAgent {
       return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,knapsackSales,bidLists,budgetLists,allPredictionsMap),knapsackSales);
    }
 
+
+   private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap, Map<Integer,Map<Integer, Double>> profitMemoizeMap) {
+      double totalProfit = 0.0;
+      for(int i = 0; i < salesOnDay.length; i++) {
+         int dayStartSales = (int)(_capacity*_capMod.get(_capacity));
+         for(int j = 1; j <= (_capWindow-1); j++) {
+            int idx = i-j;
+            if(idx >= 0) {
+               dayStartSales -= salesOnDay[idx];
+            }
+            else {
+               dayStartSales -= preDaySales[preDaySales.length+idx];
+            }
+         }
+
+         double profit;
+         if(profitMemoizeMap.get(dayStartSales) != null &&
+                 profitMemoizeMap.get(dayStartSales).get(salesOnDay[i]) != null) {
+            profit = profitMemoizeMap.get(dayStartSales).get(salesOnDay[i]);
+         }
+         else {
+            HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(dayStartSales,salesOnDay[i],bidLists,budgetLists,allPredictionsMap),salesOnDay[i]);
+            profit = 0.0;
+            for(Query q : solution.keySet()) {
+               profit += solution.get(q).v();
+            }
+
+            if(profitMemoizeMap.get(dayStartSales) == null) {
+               Map<Integer,Double> profitMap;
+               if(!THREADING) {
+                  profitMap = new HashMap<Integer, Double>(salesOnDay.length);
+               }
+               else {
+                  profitMap = new ConcurrentHashMap<Integer, Double>(salesOnDay.length);
+               }
+               profitMap.put(salesOnDay[i],profit);
+               profitMemoizeMap.put(dayStartSales,profitMap);
+            }
+            else {
+               profitMemoizeMap.get(dayStartSales).put(salesOnDay[i],profit);
+            }
+         }
+
+         totalProfit += profit;
+      }
+      return totalProfit;
+   }
 
 
 
@@ -2124,30 +2284,6 @@ public class MCKP extends AbstractAgent {
       return fillKnapsack(getIncItemsForOverCapLevel(startRemCap,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
 
    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
    private int[] getPreDaySales() {
@@ -2293,60 +2429,6 @@ public class MCKP extends AbstractAgent {
    }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   private double findProfitForDays(int[] preDaySales, int[] salesOnDay, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap, HashMap<Integer,HashMap<Integer, Double>> profitMemoizeMap) {
-      double totalProfit = 0.0;
-      for(int i = 0; i < salesOnDay.length; i++) {
-         int dayStartSales = (int)(_capacity*_capMod.get(_capacity));
-         for(int j = 1; j <= (_capWindow-1); j++) {
-            int idx = i-j;
-            if(idx >= 0) {
-               dayStartSales -= salesOnDay[idx];
-            }
-            else {
-               dayStartSales -= preDaySales[preDaySales.length+idx];
-            }
-         }
-
-         double profit;
-         if(profitMemoizeMap.get(dayStartSales) != null &&
-                 profitMemoizeMap.get(dayStartSales).get(salesOnDay[i]) != null) {
-            profit = profitMemoizeMap.get(dayStartSales).get(salesOnDay[i]);
-         }
-         else {
-            HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(dayStartSales,salesOnDay[i],bidLists,budgetLists,allPredictionsMap),salesOnDay[i]);
-            profit = 0.0;
-            for(Query q : solution.keySet()) {
-               profit += solution.get(q).v();
-            }
-
-            if(profitMemoizeMap.get(dayStartSales) == null) {
-               HashMap<Integer,Double> profitMap = new HashMap<Integer, Double>(salesOnDay.length);
-               profitMap.put(salesOnDay[i],profit);
-               profitMemoizeMap.put(dayStartSales,profitMap);
-            }
-            else {
-               profitMemoizeMap.get(dayStartSales).put(salesOnDay[i],profit);
-            }
-         }
-
-         totalProfit += profit;
-      }
-      return totalProfit;
-   }
 
    private ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap) {
       ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
