@@ -19,7 +19,6 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
    private HashMap<UserState, HashMap<UserState, Double>> _standardProbs;
    private HashMap<UserState, HashMap<UserState, Double>> _burstProbs;
-   private HashMap<UserState, Double> _conversionProbs;
    private Random _R;
    private ArrayList<Product> _products;
    private HashSet<Query> _querySpace;
@@ -31,28 +30,25 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
    private HashMap<Product, HashMap<UserState, Double>> _predictions, _currentEstimate;
 
+   int _numSlots;
+   int _promSlots;
+
    private static final boolean _rules2009 = false;
 
-   public jbergParticleFilter(double[] convPr, double convPrMult) {
-      _convPrMult = convPrMult;
+   public jbergParticleFilter(double[] convPr, int numSlots, int promSlots) {
+      _convPrMult  = .2;
       _baseConvPr1 = convPr[0];
-      _convPrVar1 = _baseConvPr1*convPrMult;
+      _convPrVar1 = _baseConvPr1*_convPrMult;
       _baseConvPr2 = convPr[1];
-      _convPrVar2 = _baseConvPr2*convPrMult;
+      _convPrVar2 = _baseConvPr2*_convPrMult;
       _baseConvPr3 = convPr[2];
-      _convPrVar3 = _baseConvPr3*convPrMult;
+      _convPrVar3 = _baseConvPr3*_convPrMult;
+      _numSlots = numSlots;
+      _promSlots = promSlots;
       _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
       _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
       _R = new Random();
       _particles = new HashMap<Product, Particle[]>();
-      _conversionProbs = new HashMap<UserState, Double>();
-
-      _conversionProbs.put(UserState.NS, 0.0);
-      _conversionProbs.put(UserState.IS, 0.0);
-      _conversionProbs.put(UserState.F0, _baseConvPr1);
-      _conversionProbs.put(UserState.F1, _baseConvPr2);
-      _conversionProbs.put(UserState.F2, _baseConvPr3);
-      _conversionProbs.put(UserState.T, 0.0);
 
       HashMap<UserState, Double> standardFromNSProbs = new HashMap<UserState, Double>();
       HashMap<UserState, Double> standardFromISProbs = new HashMap<UserState, Double>();
@@ -315,12 +311,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
             particle.setWeight(newWeights.get(i) / totalWeight);
          }
       } else {
-         //DO NOTHING!
-         //			for(int i = 0; i < particles.length; i++) {
-         //				Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
-         //				particles[i] = particle;
-         //			}
-         //			System.out.println("We had to reinitialize the particles...");
+         for(int i = 0; i < particles.length; i++) {
+            Particle particle = new Particle(initParticle[i].getState(),particles[i].getBurstHistory());
+            particles[i] = particle;
+         }
+//         System.out.println("We had to reinitialize the particles...");
       }
    }
 
@@ -456,6 +451,48 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
             _particles.put(prod, particles);
          }
       }
+
+      //Update c's
+//      double[] c = new double[3];
+//      for(Query q : _querySpace) {
+//         if(q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
+//            double convPr = 0.0;
+//            double cf0 = 0.11;
+//            double[] prViews = getPrView(q,_numSlots, _promSlots, _advertiserEffectBoundsAvg[0], _continuationProbBoundsAvg[0], cf0, _predictions);
+//            for(Double prView : prViews) {
+//               convPr += prView * _advertiserEffectBoundsAvg[0] * cf0;
+//            }
+//            c[0] += convPr;
+//         }
+//         else if(q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
+//            double convPr = 0.0;
+//            double cf1 = 0.23;
+//            double[] prViews = getPrView(q,_numSlots, _promSlots, _advertiserEffectBoundsAvg[1], _continuationProbBoundsAvg[1], cf1, _predictions);
+//            for(Double prView : prViews) {
+//               convPr += prView * _advertiserEffectBoundsAvg[1] * cf1;
+//            }
+//            c[1] += convPr;
+//         }
+//         else {
+//            double convPr = 0.0;
+//            double cf2 = 0.36;
+//            double[] prViews = getPrView(q,_numSlots, _promSlots, _advertiserEffectBoundsAvg[2], _continuationProbBoundsAvg[2], cf2, _predictions);
+//            for(Double prView : prViews) {
+//               convPr += prView * _advertiserEffectBoundsAvg[2] * cf2;
+//            }
+//            c[2] += convPr;
+//         }
+//      }
+//
+//      c[1] /= 6;
+//      c[2] /= 9;
+//
+//      _baseConvPr1 = c[0];
+//      _convPrVar1 = _baseConvPr1*_convPrMult;
+//      _baseConvPr2 = c[1];
+//      _convPrVar2 = _baseConvPr2*_convPrMult;
+//      _baseConvPr3 = c[2];
+//      _convPrVar3 = _baseConvPr3*_convPrMult;
 
       return true;
    }
@@ -787,7 +824,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
    @Override
    public AbstractModel getCopy() {
-      return new jbergParticleFilter(new double[] {_baseConvPr1, _baseConvPr2, _baseConvPr3},_convPrMult);
+      return new jbergParticleFilter(new double[] {_baseConvPr1, _baseConvPr2, _baseConvPr3}, _numSlots, _promSlots);
    }
 
 }

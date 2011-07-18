@@ -18,7 +18,7 @@ public class GameStatus {
    private HashMap<String, LinkedList<QueryReport>> _queryReports;
    private HashMap<String, LinkedList<SalesReport>> _salesReports;
    private HashMap<String, AdvertiserInfo> _advertiserInfos;
-   private LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>>> _userDistributions;
+   private LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Double>>> _userDistributions;
    private SlotInfo _slotInfo;
    private ReserveInfo _reserveInfo;
    private PublisherInfo _pubInfo;
@@ -32,7 +32,7 @@ public class GameStatus {
                      HashMap<String, LinkedList<QueryReport>> queryReports,
                      HashMap<String, LinkedList<SalesReport>> salesReports,
                      HashMap<String, AdvertiserInfo> advertiserInfos,
-                     LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>>> userDists,
+                     LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Double>>> userDists,
                      SlotInfo slotInfo,
                      ReserveInfo reserveInfo,
                      PublisherInfo pubInfo,
@@ -75,7 +75,7 @@ public class GameStatus {
       return _advertisers;
    }
 
-   public LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>>> getUserDistributions() {
+   public LinkedList<HashMap<Product, HashMap<GameStatusHandler.UserState, Double>>> getUserDistributions() {
       return _userDistributions;
    }
 

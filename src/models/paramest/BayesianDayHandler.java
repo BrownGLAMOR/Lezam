@@ -48,7 +48,7 @@ public class BayesianDayHandler {
    int _numberPromotedSlots;
    LinkedList<Integer> _impressionsPerSlot;
    double _ourAdvertiserEffect;
-   HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> _userStates;
+   HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> _userStates;
    boolean _targeted;
    Product _target;
    int _numSlots;
@@ -57,7 +57,7 @@ public class BayesianDayHandler {
 
    public BayesianDayHandler(Query q, int totalClicks, int numSlots, int numberPromotedSlots,
                              LinkedList<Integer> impressionsPerSlot,
-                             double ourAdvertiserEffect,HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
+                             double ourAdvertiserEffect,HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates,
                              boolean targeted, Product target, double[] c) {
 
       _q = q;

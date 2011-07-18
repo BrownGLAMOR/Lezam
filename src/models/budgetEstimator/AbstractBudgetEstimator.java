@@ -12,7 +12,6 @@ public abstract class AbstractBudgetEstimator extends AbstractModel {
 
    public abstract void updateModel(QueryReport queryReport,
                                     BidBundle bidBundle,
-                                    double[] convProbs,
                                     HashMap<Query, Double> contProbs,
                                     double[] regReserves,
                                     HashMap<Query, int[]> allOrders,
@@ -20,6 +19,6 @@ public abstract class AbstractBudgetEstimator extends AbstractModel {
                                     HashMap<Query, int[][]> waterfalls,
                                     HashMap<Query,HashMap<String,Boolean>> rankables,
                                     HashMap<Query, double[]> bids,
-                                    HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates);
+                                    HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates);
 
 }

@@ -395,7 +395,7 @@ public class ImpressionEstimatorTest {
          if (TEST_USER_MODEL) {
             userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
             for (int i = 0; i < agents.length; i++) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, convPrMult);
+               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS);
                userModelList.add(userModel);
             }
          }
@@ -1056,7 +1056,7 @@ public class ImpressionEstimatorTest {
             List<Map<Product, Map<GameStatusHandler.UserState, Integer>>> userPredictionList = null;
             if (TEST_USER_MODEL) {
                userPredictionList = new ArrayList<Map<Product, Map<GameStatusHandler.UserState, Integer>>>();
-               HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userDistributions = status.getUserDistributions().get(d);
+               HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userDistributions = status.getUserDistributions().get(d);
                for (int i = 0; i < agents.length; i++) {
                   Map<Query, Integer> totalImpMap = totalImpsMapList.get(i);
                   ParticleFilterAbstractUserModel userModel = userModelList.get(i);
@@ -1064,14 +1064,14 @@ public class ImpressionEstimatorTest {
 
                   Map<Product, Map<GameStatusHandler.UserState, Integer>> userPredictionMap = new HashMap<Product, Map<GameStatusHandler.UserState, Integer>>();
                   for (Product product : status.getRetailCatalog()) {
-                     HashMap<GameStatusHandler.UserState, Integer> userDistProductMap = userDistributions.get(product);
+                     HashMap<GameStatusHandler.UserState, Double> userDistProductMap = userDistributions.get(product);
                      Map<GameStatusHandler.UserState, Integer> userPredProductMap = new HashMap<GameStatusHandler.UserState, Integer>();
                      for (GameStatusHandler.UserState state : GameStatusHandler.UserState.values()) {
                         int userPred = userModel.getCurrentEstimate(product, state);
                         userPredProductMap.put(state, userPred);
 
-                        int users = userDistProductMap.get(state);
-                        int MAE = Math.abs(userPred - users);
+                        double users = userDistProductMap.get(state);
+                        double MAE = Math.abs(userPred - users);
 
                         totalUserModelMAE += MAE;
                         totalUserModelPts++;
@@ -1580,7 +1580,7 @@ public class ImpressionEstimatorTest {
       int imps = 0;
 
       for (Product product : status.getRetailCatalog()) {
-         HashMap<GameStatusHandler.UserState, Integer> userDist = status.getUserDistributions().get(d).get(product);
+         HashMap<GameStatusHandler.UserState, Double> userDist = status.getUserDistributions().get(d).get(product);
          if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
             imps += userDist.get(GameStatusHandler.UserState.F0);
             imps += (1.0 / 3.0) * userDist.get(GameStatusHandler.UserState.IS);

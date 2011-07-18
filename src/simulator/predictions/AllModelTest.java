@@ -212,7 +212,7 @@ public class AllModelTest {
          Query[] queryArr = new Query[querySpace.size()];
          querySpace.toArray(queryArr);
 
-         double[] convProbs = new double[] {0.03, 0.05, 0.15};
+         double[] convProbs = new double[] {0.04, 0.12, 0.29};
          HashSet<String> advertisersSet = new HashSet<String>();
          ArrayList<String> advertisers = new ArrayList<String>();
          for (int i = 1; i <= 8; i++) {
@@ -223,7 +223,6 @@ public class AllModelTest {
          double _yestBid = .5;
          double _5DayBid = .4;
          double _bidStdDev = 2.0;
-         double USER_MODEL_UB_STD_DEV = .75;
 
          List<AbstractQueryAnalyzer> queryAnalyzerList = new ArrayList<AbstractQueryAnalyzer>();
          for (int i = 0; i < advertisers.size(); i++) {
@@ -239,7 +238,7 @@ public class AllModelTest {
          List<ParticleFilterAbstractUserModel> userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
          for (int i = 0; i < advertisers.size(); i++) {
             if(i == replaceIdx) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, USER_MODEL_UB_STD_DEV);
+               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
                userModelList.add(userModel);
             }
             else {
@@ -278,7 +277,7 @@ public class AllModelTest {
                   paramModel = new NaiveParameterEstimation();
                }
                else {
-                  paramModel = new BayesianParameterEstimation(convProbs,i,NUM_SLOTS, NUM_PROMOTED_SLOTS, squashParam, querySpace);
+                  paramModel = new BayesianParameterEstimation(i,NUM_SLOTS, NUM_PROMOTED_SLOTS, squashParam, querySpace);
                }
                paramModelList.add(paramModel);
             }
@@ -426,7 +425,7 @@ public class AllModelTest {
             HashMap<String,HashMap<Query,int[]>> allAgentImpressionPredictions = new HashMap<String, HashMap<Query, int[]>>(advertisers.size());
             HashMap<String,HashMap<Query,double[]>> allAgentBidPredictions = new HashMap<String, HashMap<Query, double[]>>(advertisers.size());
             HashMap<String,HashMap<Query,double[]>> allAgentBudgetPredictions = new HashMap<String, HashMap<Query, double[]>>(advertisers.size());
-            HashMap<String,HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>>> allAgentUserStatePredictions = new HashMap<String, HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>>>(advertisers.size());
+            HashMap<String,HashMap<Product, HashMap<GameStatusHandler.UserState, Double>>> allAgentUserStatePredictions = new HashMap<String, HashMap<Product, HashMap<GameStatusHandler.UserState, Double>>>(advertisers.size());
             HashMap<String,double[]> allAgentRegReservePredictions = new HashMap<String, double[]>(advertisers.size());
             HashMap<String,double[]> allAgentPromReservePredictions = new HashMap<String, double[]>(advertisers.size());
             HashMap<String,HashMap<Query,Double>> allAgentAdvEffectPredictions = new HashMap<String, HashMap<Query, Double>>(advertisers.size());
@@ -443,7 +442,7 @@ public class AllModelTest {
                   HashMap<Query,int[]> allImpressionPredictions = new HashMap<Query, int[]>(querySpace.size());
                   HashMap<Query,double[]> allBidPredictions = new HashMap<Query, double[]>(querySpace.size());
                   HashMap<Query,double[]> allBudgetPredictions = new HashMap<Query, double[]>(querySpace.size());
-                  HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> allUserStatePredictions;
+                  HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> allUserStatePredictions;
                   double[] allRegReservePredictions = new double[QueryType.values().length];
                   double[] allPromReservePredictions = new double[QueryType.values().length];
                   HashMap<Query,Double> allAdvEffectPredictions = new HashMap<Query, Double>(querySpace.size());
@@ -488,7 +487,7 @@ public class AllModelTest {
                      }
                   }
                   else {
-                     HashMap<Product,HashMap<GameStatusHandler.UserState,Integer>> preUpdateUserStates = getUserStates(userModel,products);
+                     HashMap<Product,HashMap<GameStatusHandler.UserState,Double>> preUpdateUserStates = getUserStates(userModel,products);
                      _maxImps = getMaxImpsPred(preUpdateUserStates,1.45,querySpace);
                   }
 
@@ -563,7 +562,7 @@ public class AllModelTest {
 
                   allUserStatePredictions = getUserStates(userModel,products);
 
-                  paramModel.updateModel(queryReport, bidBundle, allImpressionPredictions, fullWaterfalls, allUserStatePredictions, convProbs);
+                  paramModel.updateModel(queryReport, bidBundle, allImpressionPredictions, fullWaterfalls, allUserStatePredictions);
 
                   if(LIVE_MODE) {
                      for(Query q : querySpace) {
@@ -600,7 +599,7 @@ public class AllModelTest {
                      allPromReservePredictions[qtIdx] = paramModel.getPromReservePrediction(QueryType.values()[qtIdx]);
                   }
 
-                  budgetModel.updateModel(queryReport, bidBundle, convProbs, allContProbsPredictions, allRegReservePredictions, allRankPredictions,allImpressionPredictions,fullWaterfalls, rankablesBudget, allSquashedBidPredictions, allUserStatePredictions);
+                  budgetModel.updateModel(queryReport, bidBundle, allContProbsPredictions, allRegReservePredictions, allRankPredictions,allImpressionPredictions,fullWaterfalls, rankablesBudget, allSquashedBidPredictions, allUserStatePredictions);
 
                   for(Query q : querySpace) {
                      double[] budgetArr = new double[advertisers.size()];
@@ -761,6 +760,9 @@ public class AllModelTest {
                         if(innerAgent != agent) {
                            double budget = budgets[innerAgent];
                            double budgetPred = budgetPredictions[innerAgent];
+                           if(!(Double.isInfinite(budgetPred) || budgetPred == Double.MAX_VALUE)) {
+                              budgetPred *= 1.5;
+                           }
                            if(Double.isInfinite(budget) || budget == Double.MAX_VALUE) {
                               if(Double.isInfinite(budgetPred) || budgetPred == Double.MAX_VALUE) {
                                  //We said they didn't have a budget and they didn't
@@ -808,13 +810,13 @@ public class AllModelTest {
             }
 
 
-            HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates = status.getUserDistributions().get(d);
+            HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates = status.getUserDistributions().get(d);
 
             for(int agent = 0; agent < advertisers.size(); agent++) {
                if(agent == replaceIdx) {
                   String agentName = advertisers.get(agent);
 
-                  HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> allUserStatePredictions = allAgentUserStatePredictions.get(agentName);
+                  HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> allUserStatePredictions = allAgentUserStatePredictions.get(agentName);
                   double[] allRegReservePredictions = allAgentRegReservePredictions.get(agentName);
                   double[] allPromReservePredictions = allAgentPromReservePredictions.get(agentName);
 
@@ -1151,13 +1153,13 @@ public class AllModelTest {
 
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.semi2011server1;
-      int START_GAME = 1425;
-      int END_GAME = 1426;
+      int START_GAME = 1414;
+      int END_GAME = 1445;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
-      String agentName = "TacTex";
+      String agentName = "Schlemazl";
 
       if(args.length == 1) {
          START_GAME = Integer.parseInt(args[0]);

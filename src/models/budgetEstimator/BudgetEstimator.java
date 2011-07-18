@@ -32,6 +32,8 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
 
    double _squashParam;
 
+   double[] c;
+
    public BudgetEstimator(Set<Query> querySpace, int ourAdvIdx, int numSlots, int numPromSlots, double squashParam) {
       _querySpace = querySpace;
       _budgetPredictions = new HashMap<String, HashMap<Query, Double>>();
@@ -51,6 +53,11 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
       for(int i = 0; i < numAdvertisers; i++) {
          _agentToIdxMap.put("adv"+(i+1),i);
       }
+
+      c = new double[3];
+      c[0] = .11;
+      c[1] = .23;
+      c[2] = .36;
    }
 
    @Override
@@ -67,7 +74,6 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
    @Override
    public void updateModel(QueryReport queryReport,
                            BidBundle bidBundle,
-                           double[] convProbs,
                            HashMap<Query, Double> contProbs,
                            double[] regReserves,
                            HashMap<Query, int[]> allOrders,
@@ -75,16 +81,16 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            HashMap<Query, int[][]> allWaterfalls,
                            HashMap<Query,HashMap<String,Boolean>> rankables,
                            HashMap<Query, double[]> allSquashedBids,
-                           HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates) {
+                           HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates) {
 
       for(Query q : _querySpace) {
          int[][] waterfall = allWaterfalls.get(q);
 
          if(waterfall != null) {
-        	 
-        	//imps[a]: number of impressions seen by agent a
+
+            //imps[a]: number of impressions seen by agent a
             int[] imps = allImps.get(q);
-            
+
             //startOrder[i]: agent that started in the ith position
             int[] startOrder = allOrders.get(q);
             HashMap<String,Boolean> rankable = rankables.get(q);
@@ -95,13 +101,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             //Probability of getting a click, given your ad is viewed.
             int qtIdx = queryTypeToInt(q.getType());
             double baseClickPr = _advertiserEffectBoundsAvg[qtIdx];
-            
+
             //Probability of seeing a view in each slot.
-            double[] prViews = getPrView(q,_numSlots,_numPromSlots,baseClickPr,contProbs.get(q),convProbs[qtIdx],userStates);
+            double[] prViews = getPrView(q,_numSlots,_numPromSlots,baseClickPr,contProbs.get(q),c[qtIdx],userStates);
 
             //Number of impressions that occurred before an agent dropped out. 
             int[] dropoutPoints = getDropoutPoints(imps,startOrder,_numSlots);
-            
+
             //orders[i][j]: before the ith dropout point, which agent was in the jth position? 
             int[][] orders = getOrderMatrix(dropoutPoints, imps, startOrder, waterfall, _numSlots);
 
@@ -109,7 +115,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             //dropoutPoints is based on agent impressions, and orders is based on agent orders.
             //If the impressions and agent order from the QA don't coincide, there could be problems.
             //(e.g. padded agents are improperly assigned)
-            
+
             double[] costs = new double[numAdvertisers];
             boolean[] droppedOut = new boolean[numAdvertisers];
             for(int i = 0; i < numAdvertisers; i++) {

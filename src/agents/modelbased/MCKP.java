@@ -59,7 +59,6 @@ public class MCKP extends AbstractAgent {
    private boolean UPDATE_WITH_ITEM = false;
 
    private static double USER_MODEL_UB_MULT;
-   private static double USER_MODEL_UB_STD_DEV;
    private boolean USER_MODEL_UB = true;
    private boolean RANKABLE = false;
 
@@ -92,6 +91,7 @@ public class MCKP extends AbstractAgent {
    private int _multiDayDiscretization = 10;
 
    double _probeBidMult;
+   double _budgetMult;
 
    private static final boolean THREADING = false;
    private static final int NTHREDS = Runtime.getRuntime().availableProcessors();
@@ -103,7 +103,7 @@ public class MCKP extends AbstractAgent {
    }
 
    public MCKP() {
-      this(.03,.05,.1);
+      this(.04,.12,.30);
    }
 
 
@@ -118,6 +118,8 @@ public class MCKP extends AbstractAgent {
 
       _probeBidMult = 2.5;
 
+      _budgetMult = 1.0;
+
       _capMod = new HashMap<Integer, Double>();
       _capMod.put(300,1.0);
       _capMod.put(450,1.0);
@@ -127,7 +129,6 @@ public class MCKP extends AbstractAgent {
 //      _capMod.put(600,c3);
 
       USER_MODEL_UB_MULT = 1.45;
-      USER_MODEL_UB_STD_DEV = .75;
       _totalBudgets = new HashMap<Integer, Double>();
 //      _totalBudgets.put(300,Double.MAX_VALUE);
 //      _totalBudgets.put(450,Double.MAX_VALUE);
@@ -199,21 +200,17 @@ public class MCKP extends AbstractAgent {
                int aCapacities = 450;  //FIXME estimate opponent capacity
 //               int aStartSales = (int)((4.0*(aCapacities / ((double) _capWindow)) + aCapacities) / 2.0);  //FIXME Estimate opponent start-sales
                int aStartSales = aCapacities;
-               Query maxQuery = null;
-               double maxBid = 0.0;
                for(Query q : _querySpace) {
                   double bid = _bidModel.getPrediction("adv" + (i+1), q);
                   double advEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())]; //FIXME: Get this from an advertiser effect model?
                   double squashedBid = bid*Math.pow(advEffect,_squashing);
                   aSquashedBids.put(q, squashedBid);
-                  aBudgets.put(q, _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1)));
-                  aAdvAffects.put(q,advEffect);
-                  if(q.getType().equals(QueryType.FOCUS_LEVEL_TWO)) {
-                     if(squashedBid >= maxBid) {
-                        maxBid = squashedBid;
-                        maxQuery = q;
-                     }
+                  double budget = _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1));
+                  if(!(Double.isInfinite(budget) || budget == Double.MAX_VALUE)) {
+                     budget *= _budgetMult;
                   }
+                  aBudgets.put(q, budget);
+                  aAdvAffects.put(q,advEffect);
                }
 
 
@@ -227,8 +224,8 @@ public class MCKP extends AbstractAgent {
 //               String aManSpecialties = maxQuery.getManufacturer();
 //               String aCompSpecialties = maxQuery.getComponent();
 
-               String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1)); //TODO: Use this!!!
-               String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1)); //TODO: Use this!!!
+               String aManSpecialties  = _specialtyModel.getManufacturerSpecialty("adv" + (i+1));
+               String aCompSpecialties = _specialtyModel.getComponentSpecialty("adv" + (i+1));
 
 
 
@@ -240,7 +237,7 @@ public class MCKP extends AbstractAgent {
                //or we can look at its historical targeting.
                HashMap<Query,Ad> aAds = new HashMap<Query, Ad>();
                for(Query q : _querySpace) {
-                  Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); //TODO: Use this!!!
+                  Ad predictedAd = _adTypeEstimator.getAdTypeEstimate(q, "adv" + (i+1)); 
 //            	   Ad predictedAd = getTargetedAd(q,aManSpecialties,aCompSpecialties); //Old method
                   aAds.put(q, predictedAd);
                }
@@ -337,16 +334,9 @@ public class MCKP extends AbstractAgent {
    @Override
    public void initBidder() {
       _c = new double[3];
-      if(_capacity == 600) {
-         _c[0] = .03;
-         _c[1] = .01;
-         _c[2] = .06;
-      }
-      else {
-         _c[0] = .03;
-         _c[1] = .05;
-         _c[2] = .1;
-      }
+      _c[0] = .04;
+      _c[1] = .12;
+      _c[2] = .29;
 
       _baseConvProbs = new HashMap<Query, Double>();
       _baseClickProbs = new HashMap<Query, Double>();
@@ -422,11 +412,11 @@ public class MCKP extends AbstractAgent {
    public Set<AbstractModel> initModels() {
       Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
       _queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
-      _userModel = new jbergParticleFilter(_c,USER_MODEL_UB_STD_DEV);
+      _userModel = new jbergParticleFilter(_c,_numSlots,_numPS);
       _unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
       _bidModel = new IndependentBidModel(_advertisersSet, _advId,1,_randJump,_yestBid,_5DayBid,_bidStdDev,_querySpace);
 //      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
-      _paramEstimation = new BayesianParameterEstimation(_c,_advIdx,_numSlots, _numPS, _squashing, _querySpace);
+      _paramEstimation = new BayesianParameterEstimation(_advIdx,_numSlots, _numPS, _squashing, _querySpace);
       _budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS,_squashing);
       _ISRatioModel = new ISRatioModel(_querySpace,_numSlots);
       _adTypeEstimator = new AdTypeEstimator(_querySpace, _advertisersSet, _products);
@@ -1342,7 +1332,7 @@ public class MCKP extends AbstractAgent {
             }
          }
          else {
-            HashMap<Product,HashMap<UserState,Integer>> preUpdateUserStates = getUserStates(_userModel,_products);
+            HashMap<Product,HashMap<UserState,Double>> preUpdateUserStates = getUserStates(_userModel,_products);
             _maxImps = getMaxImpsPred(preUpdateUserStates,USER_MODEL_UB_MULT,_querySpace);
          }
 
@@ -1423,13 +1413,13 @@ public class MCKP extends AbstractAgent {
 
          _userModel.updateModel(totalImpressions);
 
-         HashMap<Product,HashMap<UserState,Integer>> userStates = getUserStates(_userModel,_products);
+         HashMap<Product,HashMap<UserState,Double>> userStates = getUserStates(_userModel,_products);
 
-         _paramEstimation.updateModel(queryReport, bidBundle, fullImpressions, fullWaterfalls, userStates, _c);
+         _paramEstimation.updateModel(queryReport, bidBundle, fullImpressions, fullWaterfalls, userStates);
 
          for(Query q : _querySpace) {
             int qtIdx = queryTypeToInt(q.getType());
-            _ISRatioModel.updateISRatio(q,getISRatio(q,_numSlots,_numPS,_advertiserEffectBoundsAvg[qtIdx],_paramEstimation.getContProbPrediction(q),_c[qtIdx],userStates));
+            _ISRatioModel.updateISRatio(q,getISRatio(q,_numSlots,_numPS,_advertiserEffectBoundsAvg[qtIdx],_paramEstimation.getContProbPrediction(q),_baseConvProbs.get(q),userStates));
          }
 
          HashMap<Query, Double> cpc = new HashMap<Query,Double>();
@@ -1463,25 +1453,25 @@ public class MCKP extends AbstractAgent {
          regReserve[1] = _paramEstimation.getRegReservePrediction(QueryType.FOCUS_LEVEL_ONE);
          regReserve[2] = _paramEstimation.getRegReservePrediction(QueryType.FOCUS_LEVEL_TWO);
 
-         _budgetEstimator.updateModel(queryReport, bidBundle, _c, contProbs, regReserve, fullOrders,fullImpressions,fullWaterfalls, rankables, allbids, userStates);
+         _budgetEstimator.updateModel(queryReport, bidBundle, contProbs, regReserve, fullOrders,fullImpressions,fullWaterfalls, rankables, allbids, userStates);
 
          _unitsSold.update(salesReport); //FIXME: Move this and salesDist to beginning, in case other models want to use them (e.g. QA)
       }
    }
 
-   public static HashMap<Product,HashMap<UserState,Integer>> getUserStates(ParticleFilterAbstractUserModel userModel, Set<Product> products) {
-      HashMap<Product,HashMap<UserState,Integer>> userStates = new HashMap<Product,HashMap<UserState,Integer>>();
+   public static HashMap<Product,HashMap<UserState,Double>> getUserStates(ParticleFilterAbstractUserModel userModel, Set<Product> products) {
+      HashMap<Product,HashMap<UserState,Double>> userStates = new HashMap<Product,HashMap<UserState,Double>>();
       for(Product p : products) {
-         HashMap<UserState,Integer> userState = new HashMap<UserState,Integer>();
+         HashMap<UserState,Double> userState = new HashMap<UserState,Double>();
          for(UserState s : UserState.values()) {
-            userState.put(s, userModel.getPrediction(p, s));
+            userState.put(s, (double)userModel.getPrediction(p, s));
          }
          userStates.put(p, userState);
       }
       return userStates;
    }
 
-   public static HashMap<Query,Integer> getMaxImpsPred(HashMap<Product,HashMap<UserState,Integer>> userStates, double userModelUBMult, Set<Query> querySpace) {
+   public static HashMap<Query,Integer> getMaxImpsPred(HashMap<Product,HashMap<UserState,Double>> userStates, double userModelUBMult, Set<Query> querySpace) {
       HashMap<Query,Integer> maxImps = new HashMap<Query, Integer>(querySpace.size());
       for (Query q : querySpace) {
          int numImps = 0;

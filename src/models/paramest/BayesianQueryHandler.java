@@ -66,7 +66,7 @@ public class BayesianQueryHandler {
    }
 
    public boolean update(int ourIdx, BidBundle bundle, QueryReport queryReport, int[][] impressionMatrix,
-                         HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates, double[] c) {
+                         HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates, double[] c) {
       _c = c.clone();
 
       int totImpressions = queryReport.getImpressions(_query);

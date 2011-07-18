@@ -43,7 +43,6 @@ public abstract class AbstractParameterEstimation extends AbstractModel {
                                        BidBundle bidBundle,
                                        HashMap<Query, int[]> impressions,
                                        HashMap<Query, int[][]> allWaterfalls,
-                                       HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
-                                       double[] c);
+                                       HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates);
 
 }

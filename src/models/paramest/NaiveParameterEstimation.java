@@ -54,7 +54,7 @@ public class NaiveParameterEstimation extends AbstractParameterEstimation {
    }
 
    @Override
-   public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, int[]> impressions, HashMap<Query, int[][]> allWaterfalls, HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates, double[] c) {
+   public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, int[]> impressions, HashMap<Query, int[][]> allWaterfalls, HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates) {
       return false;
    }
 

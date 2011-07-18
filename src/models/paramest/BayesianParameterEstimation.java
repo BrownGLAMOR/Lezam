@@ -18,13 +18,18 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
    HashMap<Query, BayesianQueryHandler> _queryHandlers;
    HashMap<QueryType, ReserveEstimator> _reserveHandlers;
 
-   public BayesianParameterEstimation(double[] c, int ourAdvIdx, int numSlots, int numPromSlots, double squashParam, Set<Query> queryspace) {
-      _c = c.clone();
+   public BayesianParameterEstimation(int ourAdvIdx, int numSlots, int numPromSlots, double squashParam, Set<Query> queryspace) {
       _ourAdvIdx = ourAdvIdx;
       _numSlots = numSlots;
       _numPromSlots = numPromSlots;
       _queryspace = queryspace;
       _squashParam = squashParam;
+
+      _c = new double[3];
+
+      _c[0] = .11;
+      _c[1] = .23;
+      _c[2] = .36;
 
       _queryHandlers = new HashMap<Query, BayesianQueryHandler>();
 
@@ -63,8 +68,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
                               BidBundle bidBundle,
                               HashMap<Query, int[]> allImpressions,
                               HashMap<Query, int[][]> allWaterfalls,
-                              HashMap<Product, HashMap<GameStatusHandler.UserState, Integer>> userStates,
-                              double[] c) {
+                              HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates) {
 
       for(QueryType qt : _reserveHandlers.keySet()) {
          ReserveEstimator reserveEstimator = _reserveHandlers.get(qt);
@@ -84,7 +88,7 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
             }
 
             if (impSum > 0) {
-               _queryHandlers.get(q).update(_ourAdvIdx, bidBundle, queryReport, impressionMatrix,userStates,c);
+               _queryHandlers.get(q).update(_ourAdvIdx, bidBundle, queryReport, impressionMatrix,userStates,_c);
             }
          }
       }
@@ -93,6 +97,6 @@ public class BayesianParameterEstimation extends AbstractParameterEstimation {
 
    @Override
    public AbstractModel getCopy() {
-      return new BayesianParameterEstimation(_c, _ourAdvIdx,_numSlots,_numPromSlots,_squashParam,_queryspace);
+      return new BayesianParameterEstimation( _ourAdvIdx,_numSlots,_numPromSlots,_squashParam,_queryspace);
    }
 }

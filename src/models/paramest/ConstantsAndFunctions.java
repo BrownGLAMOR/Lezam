@@ -108,7 +108,7 @@ public class ConstantsAndFunctions {
    }
 
    // Get Click Distribution
-   public static HashMap<Product, Double> getClickDist(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, int clicks, boolean ourAdTargeted, Product ourAdProduct) {
+   public static HashMap<Product, Double> getClickDist(Query q, HashMap<Product, HashMap<UserState, Double>> userStates, int clicks, boolean ourAdTargeted, Product ourAdProduct) {
       QueryType qt = q.getType();
       HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
       // for each product
@@ -117,7 +117,7 @@ public class ConstantsAndFunctions {
       int totalNotMatching = 0;
       HashMap<Product, Double> userDist = new HashMap<Product, Double>();
       for (Product p : userStates.keySet()) {
-         HashMap<UserState, Integer> states = userStates.get(p);
+         HashMap<UserState, Double> states = userStates.get(p);
          // add up the number of searching users
          double searching = 0;
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
@@ -155,14 +155,14 @@ public class ConstantsAndFunctions {
    }
 
    // Get Impression Distribution
-   public static HashMap<Product, Double> getImpressionDist(Query q, HashMap<Product, HashMap<UserState, Integer>> userStates, int impressions) {
+   public static HashMap<Product, Double> getImpressionDist(Query q, HashMap<Product, HashMap<UserState, Double>> userStates, int impressions) {
       QueryType qt = q.getType();
       HashMap<Product, Double> toreturn = new HashMap<Product, Double>();
       // for each product
       int total = 0;
       HashMap<Product, Double> userDist = new HashMap<Product, Double>();
       for (Product p : userStates.keySet()) {
-         HashMap<UserState, Integer> states = userStates.get(p);
+         HashMap<UserState, Double> states = userStates.get(p);
          // add up the number of searching users
          double searching = 0;
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
@@ -187,21 +187,21 @@ public class ConstantsAndFunctions {
       return toreturn;
    }
 
-   public static double[] getPrView(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+   public static double[] getPrView(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       return getViewOrIS(false,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
    }
 
-   public static double[] getISRatio(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+   public static double[] getISRatio(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       return getViewOrIS(true,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
    }
 
-   public static double[] getViewOrIS(boolean isRatio,Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Integer>> userStates) {
+   public static double[] getViewOrIS(boolean isRatio,Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       QueryType qt = q.getType();
 
       double ISusers = 0.0;
       double nonISusers = 0.0;
       for(Product p : userStates.keySet()) {
-         HashMap<UserState, Integer> states = userStates.get(p);
+         HashMap<UserState, Double> states = userStates.get(p);
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  q.getComponent().equals(p.getComponent()) &&
                  q.getManufacturer().equals(p.getManufacturer())) {

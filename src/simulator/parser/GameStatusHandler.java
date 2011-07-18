@@ -81,7 +81,7 @@ public class GameStatusHandler {
       HashMap<String, LinkedList<QueryReport>> queryReports = new HashMap<String, LinkedList<QueryReport>>();
       HashMap<String, LinkedList<SalesReport>> salesReports = new HashMap<String, LinkedList<SalesReport>>();
       HashMap<String, AdvertiserInfo> advertiserInfos = new HashMap<String, AdvertiserInfo>();
-      LinkedList<HashMap<Product, HashMap<UserState, Integer>>> userDists = new LinkedList<HashMap<Product, HashMap<UserState, Integer>>>();
+      LinkedList<HashMap<Product, HashMap<UserState, Double>>> userDists = new LinkedList<HashMap<Product, HashMap<UserState, Double>>>();
 
       SlotInfo slotInfo = null;
       ReserveInfo reserveInfo = null;
@@ -256,16 +256,16 @@ public class GameStatusHandler {
          } else if (content instanceof UserPopulationState) {
             if (messageDay >= 1) {
                UserPopulationState userPopState = (UserPopulationState) content;
-               HashMap<Product, HashMap<UserState, Integer>> userDist = new HashMap<Product, HashMap<UserState, Integer>>();
+               HashMap<Product, HashMap<UserState, Double>> userDist = new HashMap<Product, HashMap<UserState, Double>>();
                for (Product p : retailCatalog) {
                   int[] users = userPopState.getDistribution(p);
-                  HashMap<UserState, Integer> userDistperProd = new HashMap<UserState, Integer>();
-                  userDistperProd.put(UserState.NS, users[0]);
-                  userDistperProd.put(UserState.IS, users[1]);
-                  userDistperProd.put(UserState.F0, users[2]);
-                  userDistperProd.put(UserState.F1, users[3]);
-                  userDistperProd.put(UserState.F2, users[4]);
-                  userDistperProd.put(UserState.T, users[5]);
+                  HashMap<UserState, Double> userDistperProd = new HashMap<UserState, Double>();
+                  userDistperProd.put(UserState.NS, (double)users[0]);
+                  userDistperProd.put(UserState.IS, (double)users[1]);
+                  userDistperProd.put(UserState.F0, (double)users[2]);
+                  userDistperProd.put(UserState.F1, (double)users[3]);
+                  userDistperProd.put(UserState.F2, (double)users[4]);
+                  userDistperProd.put(UserState.T, (double)users[5]);
                   userDist.put(p, userDistperProd);
                }
                userDists.add(userDist);
