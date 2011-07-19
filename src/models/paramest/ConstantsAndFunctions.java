@@ -6,6 +6,8 @@ import edu.umich.eecs.tac.props.QueryType;
 
 import java.util.*;
 
+import static models.paramest.ConstantsAndFunctions.getDropoutPoints;
+import static models.paramest.ConstantsAndFunctions.getOrderMatrix;
 import static simulator.parser.GameStatusHandler.UserState;
 
 public class ConstantsAndFunctions {
@@ -254,6 +256,8 @@ public class ConstantsAndFunctions {
    public static int[] getDropoutPoints(int[] impsPerAgent, int[] order, int numSlots) {
       ArrayList<Integer> impsBeforeDropout = new ArrayList<Integer>();
       PriorityQueue<Integer> queue = new PriorityQueue<Integer>();
+      
+      //Add the impressions seen by any agents that started in a slot
       for (int i = 0; i < numSlots && i < impsPerAgent.length; i++) {
          int imps = impsPerAgent[order[i]];
          if(imps > 0) {
@@ -264,15 +268,20 @@ public class ConstantsAndFunctions {
       int lastIdx = queue.size();
 
       while (!queue.isEmpty()) {
+    	 //Get the number of impressions seen before an agent currently in a slot dropped out
          int val = queue.poll();
          impsBeforeDropout.add(val);
 
+         //If there is another agent to consider that dropped in, add that agent to the queue.
+         //(Add some # of impressions to that agent's impressions seen, so that its impressions value
+         // is the number of impressions that occurred before it dropped out.)
          if (lastIdx < impsPerAgent.length) {
             queue.add(impsPerAgent[order[lastIdx]] + val);
             lastIdx++;
          }
       }
 
+      //If two agents dropped out at the same time, we only consider that to be a single dropout point.
       impsBeforeDropout = removeDupes(impsBeforeDropout);
 
       return convertListToArr(impsBeforeDropout);
@@ -296,23 +305,97 @@ public class ConstantsAndFunctions {
       return ret;
    }
 
+   
+   
+
+
+   public static int[][] getOrderMatrix2(int[] impsPerAgent, int[] orderArr, int numSlots) {
+
+	   //This will store order of agents at each dropout point
+	   ArrayList<int[]> orders = new ArrayList<int[]>();
+
+	   //Create initial order list
+	   ArrayList<Integer> order = new ArrayList<Integer>();
+	   for (int i=0; i<orderArr.length; i++) order.add(orderArr[i]);
+	   
+	   //Get imps per agent. This will be modified to be NOT the imps the agent saw,
+	   //but the number of imps that occurred before the agent dropped out.
+	   //(These values are the same unless the agent started outside of a slot)
+	   int[] modifiedImpsPerAgent = impsPerAgent.clone();
+
+	   while (order.size() > 0) {
+		   //Add this ordering
+		   orders.add(convertListToArr(order)); 
+
+		   //i.e. Determine the total number of impressions that occurred before someone new dropped out
+		   //(and the agents who had that number of impressions)
+		   double fewestImps = Integer.MAX_VALUE;
+		   ArrayList<Integer> agentsWithFewestImps = new ArrayList<Integer>();
+		   for (int i=0; i<numSlots && i<order.size(); i++) {
+			   int agent = order.get(i);
+			   int imps = modifiedImpsPerAgent[agent];
+			   if (imps < fewestImps) {
+				   fewestImps = imps;
+				   agentsWithFewestImps.clear();
+			   }
+			   if (imps == fewestImps) {
+				   agentsWithFewestImps.add(agent);
+			   }
+		   }
+
+		   //Add to impsPerAgent of other guys
+		   int numAgentsRemoved = agentsWithFewestImps.size();
+		   for (int i=numSlots; i<numSlots+numAgentsRemoved && i<order.size(); i++) { //for each agent that wasn't previously in the auction that is now being added
+			   int agent = order.get(i);
+			   modifiedImpsPerAgent[agent] += fewestImps;
+		   }
+
+		   //Remove these agents from the order
+		   order.removeAll(agentsWithFewestImps);
+	   }
+
+	   //convert orders into a 2d array
+	   int[][] ordersArr = new int[orders.size()][];
+	   for (int i=0; i<orders.size(); i++) {
+		   ordersArr[i] = orders.get(i);
+	   }
+	   return ordersArr;
+   }
+
+   
+   public static void main(String[] args) {
+	   int[] impsPerAgent = {190, 80, 120, 130};
+	   int[] orderArr = {2, 1, 0, 3};
+	   int numSlots = 2;
+	   
+	   int[][] orders = getOrderMatrix2(impsPerAgent, orderArr, numSlots);
+	   System.out.println("orders:");
+	   for (int[] order : orders) {
+		   System.out.println(Arrays.toString(order));
+	   }
+   
+   }
+   
    public static int[][] getOrderMatrix(int[] impsPerAgent, int[] order, int[][] waterfall, int numSlots) {
       return getOrderMatrix(getDropoutPoints(impsPerAgent,order,numSlots),impsPerAgent,order,waterfall,numSlots);
    }
 
    public static int[][] getOrderMatrix(int[] dropouts, int[] impsPerAgent, int[] order, int[][] waterfall, int numSlots) {
-      int nonZeroImp = 0;
+      //Calculate how how many agents saw some number of impressions
+	  int nonZeroImp = 0;
       for(Integer imps : impsPerAgent) {
          if(imps > 0) {
             nonZeroImp++;
          }
       }
 
+      //The order for before the first dropout point is just the initial order
       int[][] orders = new int[dropouts.length][nonZeroImp];
       for(int i = 0; i < nonZeroImp; i++) {
          orders[0][i] = order[i];
       }
 
+      //Orders.length is the number of dropout points. If there's more than 1, do the following.
       if(orders.length > 1) {
 
          for(int i = 1; i < orders.length; i++) {
@@ -324,17 +407,23 @@ public class ConstantsAndFunctions {
             Arrays.fill(orders[i], -1);
          }
 
+         //For each agent that saw some impressions,
          for (int i = 0; i < nonZeroImp; i++) {
-            int currAgent = order[i];
-            int[] ourImpsPerSlot = waterfall[currAgent];
-            int ourTotImps = impsPerAgent[currAgent];
+            int currAgent = order[i]; //starting with the agent in the 1st slot
+            int[] ourImpsPerSlot = waterfall[currAgent]; //get number of imps this agent saw in each slot
+            int ourTotImps = impsPerAgent[currAgent]; //get total imps this agent saw
 
+            //Compute how many impressions occurred before this agent entered the auction
             int impsBeforeEntry = 0;
             if(i >= numSlots) {
                int numDropsBeforeEntry = i - (numSlots - 1);
                int dropIdx = -1;
                //Since some dropouts have multiplicity, determine
                //which dropout point they come in on
+               //FIXME: This is acting as if impsPerAgent gives the number of impressions
+               // that occurred before an agent dropped out, but actually it is the number
+               // of impressions SEEN by an agent. Problems can occur when multiple agents start
+               // outside of a slot.
                for(int k = 0; k < dropouts.length; k++) {
                   int dropImp = dropouts[k];
                   for(int l = 0; l < impsPerAgent.length; l++) {
@@ -351,6 +440,11 @@ public class ConstantsAndFunctions {
                impsBeforeEntry = dropouts[dropIdx];
             }
 
+            
+            //---------
+            //FOR THIS METHOD, CODE REVIEW LEFT OFF HERE!!!
+            //--------
+            
             //Add positions for all future dropout points
             for (int j = 1; j < dropouts.length; j++) {
                int totalImpsSeen = dropouts[j - 1];

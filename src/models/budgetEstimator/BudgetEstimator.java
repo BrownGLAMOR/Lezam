@@ -14,6 +14,11 @@ import static models.paramest.ConstantsAndFunctions.*;
 
 public class BudgetEstimator extends AbstractBudgetEstimator {
 
+	//the new algorithm improved our budget MAE, but for some reason hurt our overall profit.
+	//I'll set it to false, but at some point the better estimates might be worthwhile.
+	boolean USE_NEW_ORDER_MATRIX_ALG = false;
+	
+	
    HashMap<String, HashMap<Query, Double>> _budgetPredictions;
    HashMap<String,Integer> _agentToIdxMap;
    Set<Query> _querySpace;
@@ -82,9 +87,10 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                            HashMap<Query,HashMap<String,Boolean>> rankables,
                            HashMap<Query, double[]> allSquashedBids,
                            HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userStates) {
-
       for(Query q : _querySpace) {
-         int[][] waterfall = allWaterfalls.get(q);
+   	   try {
+
+    	  int[][] waterfall = allWaterfalls.get(q);
 
          if(waterfall != null) {
 
@@ -108,13 +114,13 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             //Number of impressions that occurred before an agent dropped out. 
             int[] dropoutPoints = getDropoutPoints(imps,startOrder,_numSlots);
 
-            //orders[i][j]: before the ith dropout point, which agent was in the jth position? 
-            int[][] orders = getOrderMatrix(dropoutPoints, imps, startOrder, waterfall, _numSlots);
-
-            //FIXME: Maybe the bug is caused by stuff I just did?
-            //dropoutPoints is based on agent impressions, and orders is based on agent orders.
-            //If the impressions and agent order from the QA don't coincide, there could be problems.
-            //(e.g. padded agents are improperly assigned)
+            //orders[i][j]: before the ith dropout point, which agent was in the jth position?
+            int[][] orders;
+            if (USE_NEW_ORDER_MATRIX_ALG) orders = getOrderMatrix2(imps, startOrder, _numSlots);
+            else orders = getOrderMatrix(dropoutPoints, imps, startOrder, waterfall, _numSlots);
+            
+            //int[][] orders = getOrderMatrix(dropoutPoints, imps, startOrder, waterfall, _numSlots);
+            //int[][] orders = getOrderMatrix2(imps, startOrder, _numSlots);
 
             double[] costs = new double[numAdvertisers];
             boolean[] droppedOut = new boolean[numAdvertisers];
@@ -141,6 +147,12 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                      continue;
                   }
 
+                  //FIXME: Shouldn't this be the number of imps the agent
+                  //saw in this slot FOR THIS DROPOUT PERIOD?
+                  //e.g. an agent that was in the 1st slot for 1000 imps
+                  //may have been there while other agents were dropping out.
+                  //It will be penalized by those slotImps for each dropout point.
+                  //UNFIXME: Never mind. This is accounted for! :D
                   int slotImps = waterfall[agentIdx][j];
                   if(slotImps > 0) {
                      //Determine the probability of click in slot j
@@ -162,44 +174,55 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                         cpc = regReserves[qtIdx];
                      }
 
+                     //FIXME: Use our advertiser effect prediction instead of baseClickPr.
                      cpc /= Math.pow(baseClickPr,_squashParam);
 
                      /*
                      * We only want to assign the number of imps to this
-                     * advertiser as there are before the advertsier drops out
+                     * advertiser as there are before the advertiser drops out
                      */
                      costs[agentIdx] += Math.min(slotImps,impsSinceLastDrop)*prClick*cpc;
 
-                     int pastImpsInSlot = 0;
-                     if(i > 0) {
-                        for(int k = i-1; k >= 0; k--) {
-                           if(orders[k][j] == agentIdx) {
-                              int dropOutInner = dropoutPoints[k];
-                              int impsSinceLastDropInner;
-                              if(k > 0) {
-                                 impsSinceLastDropInner = dropOutInner - dropoutPoints[k-1];
-                              }
-                              else {
-                                 impsSinceLastDropInner = dropOutInner;
-                              }
-                              pastImpsInSlot += impsSinceLastDropInner;
-                           }
-                           else {
-                              break;
-                           }
-                        }
-                     }
-                     else {
-                        int f = 0;
-                     }
+                     
+                     //FIXME: It seems that this entire block can be commented out, 
+                     //And the if condition below [if(slotImps == (impsSinceLastDrop + pastImpsInSlot))] can be removed
+//                     //Compute how many impressions this agent previously spent in the same slot
+//                     //(for different dropout points -- where other agents below this agent dropped out)
+//                     int pastImpsInSlot = 0;
+//                     if(i > 0) { 
+//                    	 //If this is not the first dropout point, look at all past dropout points
+//                        for(int k = i-1; k >= 0; k--) {
+//                        	//If the agent was in the same slot at a previous dropoutPoint
+//                           if(orders[k][j] == agentIdx) { 
+//                              int dropOutInner = dropoutPoints[k];
+//                              int impsSinceLastDropInner;
+//                              if(k > 0) {
+//                                 impsSinceLastDropInner = dropOutInner - dropoutPoints[k-1];
+//                              }
+//                              else {
+//                                 impsSinceLastDropInner = dropOutInner;
+//                              }
+//                              pastImpsInSlot += impsSinceLastDropInner;
+//                           }
+//                           else {
+//                              break;
+//                           }
+//                        }
+//                     }
+//                     else {
+//                        int f = 0;
+//                     }
 
                      //Check if the agent dropped out
                      //If they saw more slotImps in this slot they didn't drop
-                     if(slotImps == (impsSinceLastDrop + pastImpsInSlot)) {
-                        //If they are in the last round they didn't drop
+                     //if(slotImps == (impsSinceLastDrop + pastImpsInSlot)) { //FIXME: What is this?
+                     //If they are in the last round they didn't drop
                         if(i < dropoutPoints.length-1) {
                            int[] nextOrder = orders[i+1];
                            boolean inNextRound = false;
+                           
+                           //(The agent can't later appear in a position higher than he's currently in,
+                           //so we don't have to check every element of nextOrder)
                            for(int k = 0; k <= j; k++) {
                               if((k < nextOrder.length) && (nextOrder[k] == agentIdx)) {
                                  inNextRound = true;
@@ -210,7 +233,6 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                               droppedOut[agentIdx] = true;
                            }
                         }
-                     }
                   }
                   else {
                      //No one is left in the auction
@@ -222,6 +244,12 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             for(int i = 0; i < numAdvertisers; i++) {
                String currAdv = "adv" + (i+1);
                double cost = costs[i];
+               //FIXME: Kind of suspicious that we would assume no budget if imps are below some threshold.
+               // I think this only makes sense if imps[i] is an invalid value, e.g. negative
+               // (MIN_IMPS is currently 0, but if it is increased, I'd take issue).
+               //After conversation w/ Jordan: it is a question of what to do when agents make probe bids.
+               //If an agent makes a probe bid today, does that necessarily mean they'll make a probe bid
+               //tomorrow? If they're more likely to have a high budget the next day, maybe this makes sense.
                if(!droppedOut[i] || cost < MIN_COST || imps[i] < MIN_IMPS || !rankable.get(currAdv)) {
                   cost = Double.MAX_VALUE;
                }
@@ -231,6 +259,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
             }
          }
          else {
+        	 //Waterfall was null. Give default budgets.
             for(int i = 0; i < numAdvertisers; i++) {
                String currAdv = "adv" + (i+1);
                HashMap<Query,Double> budgets = _budgetPredictions.get(currAdv);
@@ -238,9 +267,29 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                _budgetPredictions.put(currAdv, budgets);
             }
          }
-      }
+      } catch (Exception e) {
+	   setDefaultBudgets(q);
+	   e.printStackTrace();
+      } 
    }
-
+   }
+   
+   
+   private void setDefaultBudgets() {
+	   for (Query q : _querySpace) {
+		   setDefaultBudgets(q);
+	   }
+   }
+   
+   private void setDefaultBudgets(Query q) {
+       for(int i = 0; i < numAdvertisers; i++) {
+           String currAdv = "adv" + (i+1);
+           HashMap<Query,Double> budgets = _budgetPredictions.get(currAdv);
+           budgets.put(q,Double.MAX_VALUE);
+           _budgetPredictions.put(currAdv, budgets);
+        }	   
+   }
+   
    @Override
    public AbstractModel getCopy() {
       return new BudgetEstimator(_querySpace, _ourAdvIdx, _numSlots, _numPromSlots,_squashParam);

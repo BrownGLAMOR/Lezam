@@ -178,14 +178,14 @@ public class AgentSimulator {
 //         gameNumEnd = gameNumStart;
 //         agentNum = Integer.parseInt(args[1]);
 //      }
-//      if(args.length == 5) {
-//         gameNumStart = Integer.parseInt(args[0]);
-//         gameNumEnd = gameNumStart;
-//         agentNum = Integer.parseInt(args[1]);
-//         ourAgentMethod = Integer.parseInt(args[2]);
-//         multiDayDiscretization = Integer.parseInt(args[3]);
-//         PERFECT_SIM = Boolean.parseBoolean(args[4]);
-//      }
+      if(args.length == 5) {
+         gameNumStart = Integer.parseInt(args[0]);
+         gameNumEnd = gameNumStart;
+         agentNum = Integer.parseInt(args[1]);
+         ourAgentMethod = Integer.parseInt(args[2]);
+         multiDayDiscretization = Integer.parseInt(args[3]);
+         PERFECT_SIM = Boolean.parseBoolean(args[4]);
+      }
       if(args.length == 4) {
          gameNumStart = Integer.parseInt(args[0]);
          gameNumEnd = gameNumStart;
