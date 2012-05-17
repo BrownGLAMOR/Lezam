@@ -71,7 +71,7 @@ public class MCKP extends AbstractAgent {
    private HashMap<Query, Double> _baseClickProbs;
    private HashMap<Query, Double> _salesPrices;
 
-   private AbstractQueryAnalyzer _queryAnalyzer;
+   private AbstractQueryAnalyzer _queryAnalyzer;  //the following variables are all models 
    private ParticleFilterAbstractUserModel _userModel;
    private AbstractUnitsSoldModel _unitsSold;
    private AbstractBidModel _bidModel;
@@ -119,9 +119,9 @@ public class MCKP extends AbstractAgent {
       _probeBidMult = 2.5;
 
       _budgetMult = 1.0;
-
+     
       _capMod = new HashMap<Integer, Double>();
-      _capMod.put(300,1.0);
+      _capMod.put(300,1.0); //why are these hardcoded in now?
       _capMod.put(450,1.0);
       _capMod.put(600,1.0);
 //      _capMod.put(300,c1);
@@ -166,6 +166,7 @@ public class MCKP extends AbstractAgent {
 
    public PersistentHashMap setupSimForDay() {
       if(!hasPerfectModels()) {
+    	  //String- references agent by Id
          HashMap<String,HashMap<Query,Double>> squashedBids = new HashMap<String, HashMap<Query, Double>>();
          HashMap<String,HashMap<Query,Double>> budgets = new HashMap<String, HashMap<Query, Double>>();
          HashMap<Product,double[]> userPop = new HashMap<Product, double[]>();
@@ -206,6 +207,7 @@ public class MCKP extends AbstractAgent {
                   double squashedBid = bid*Math.pow(advEffect,_squashing);
                   aSquashedBids.put(q, squashedBid);
                   double budget = _budgetEstimator.getBudgetEstimate(q, "adv" + (i+1));
+                  //B: Double.MAX_VALUE is the largest poss finite value of type double
                   if(!(Double.isInfinite(budget) || budget == Double.MAX_VALUE)) {
                      budget *= _budgetMult;
                   }
@@ -296,7 +298,7 @@ public class MCKP extends AbstractAgent {
          return javasim.mkFullStatus(_baseCljSim, squashedBids, budgets, userPop, advAffects, contProbs, regReserves,
                                      promReserves, capacities, startSales, manSpecialties, compSpecialties, ads);
       }
-      else {
+      else { //why is 0 hardcoded?
          return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace, 0);
       }
    }
