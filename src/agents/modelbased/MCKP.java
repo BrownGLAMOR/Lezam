@@ -283,7 +283,7 @@ public class MCKP extends AbstractAgent {
                compSpecialties.put(agent,aCompSpecialties);
             }
          }
-
+         //updating the product state info?
          for(Product p : _products) {
             double[] userState = new double[UserState.values().length];
             userState[0] = _userModel.getPrediction(p, UserState.NS);
@@ -1876,7 +1876,6 @@ public class MCKP extends AbstractAgent {
    }
 
 
-
    /**
     * By default, don't take any initial sales as input. Initial sales will be a default constant.
     * @param bidLists
@@ -2139,9 +2138,6 @@ public class MCKP extends AbstractAgent {
       }
       return totalProfit;
    }
-
-
-
 
 
    private HashMap<Query,Item> fillKnapsackDPHill(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap){
