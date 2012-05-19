@@ -2,6 +2,7 @@ package models.queryanalyzer.search;
 
 
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
 
 public class LDSearchHybrid {
@@ -11,15 +12,15 @@ public class LDSearchHybrid {
 	private int _iterations;
 	private IEResult _best;
 	
-	public LDSearchHybrid(int maxIterAvgPos, int maxIterCarleton, QAInstance inst){
-		_avgPosLDS = new LDSearchIESmart(maxIterAvgPos, inst);
-		_carletonLDS = new LDSearchIESmart(maxIterCarleton, inst);
-		_inst = inst;
+	public LDSearchHybrid(int maxIterAvgPos, int maxIterCarleton, AbstractImpressionEstimator ie){
+		_avgPosLDS = new LDSearchIESmart(maxIterAvgPos, ie);
+		_carletonLDS = new LDSearchIESmart(maxIterCarleton, ie);
+		_inst = ie.getInstance();
 	}
 	
 	public void search(){
-		_avgPosLDS.search(_inst.getAvgPosOrder(), _inst.getAvgPos());
-		_carletonLDS.search(_inst.getCarletonOrder(), _inst.getAvgPos());
+		_avgPosLDS.search(QAInstance.getAvgPosOrder(_inst.getAvgPos()), _inst.getAvgPos());
+		_carletonLDS.search(QAInstance.getCarletonOrder(_inst.getAvgPos(), _inst.getNumSlots()), _inst.getAvgPos());
 		
 		_iterations = _avgPosLDS.getIterations() + _carletonLDS.getIterations();
 		IEResult avgPosResult = _avgPosLDS.getBestSolution();

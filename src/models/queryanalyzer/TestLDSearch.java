@@ -26,10 +26,10 @@ public class TestLDSearch {
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);
 		
-		int[] avgPosOrder = inst.getAvgPosOrder();
+		int[] avgPosOrder = QAInstance.getAvgPosOrder(inst.getAvgPos());
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
-		int[] carletonOrder = inst.getCarletonOrder();
+		int[] carletonOrder = QAInstance.getCarletonOrder(inst.getAvgPos(),inst.getNumSlots());
 		System.out.println("Carleton order: "+Arrays.toString(carletonOrder));
 		
 		int[] bidOrder = inst.getBidOrder(data);

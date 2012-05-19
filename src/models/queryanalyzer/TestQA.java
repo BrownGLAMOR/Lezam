@@ -3,6 +3,7 @@ package models.queryanalyzer;
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.iep.ImpressionEstimatorSample;
 import models.queryanalyzer.search.LDSearchIESmart;
 import models.queryanalyzer.util.LoadData;
 
@@ -26,10 +27,12 @@ public class TestQA {
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);
 		
-		int[] avgPosOrder = inst.getAvgPosOrder();
+		int[] avgPosOrder = QAInstance.getAvgPosOrder(inst.getAvgPos());
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
-		LDSearchIESmart smartIESearcher = new LDSearchIESmart(10, inst);
+		ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);
+
+		LDSearchIESmart smartIESearcher = new LDSearchIESmart(10, ie);
 		smartIESearcher.search(avgPosOrder, inst.getAvgPos());
 		IEResult bestSol = smartIESearcher.getBestSolution();
 		
