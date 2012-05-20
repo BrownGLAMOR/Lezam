@@ -57,16 +57,21 @@ public class CarletonLP {
 			
 			
 			//-------------------------------- CREATE OBJECTIVE FUNCITON -------------------------------------
-			IloLinearNumExpr expr = cplex.linearNumExpr();
+			IloLinearNumExpr allAgentImpressions = cplex.linearNumExpr();
 			for (int a=0; a<numAgents; a++) {
-				expr.addTerm(1, T_a[a]);
+				allAgentImpressions.addTerm(1, T_a[a]);
 			}
-			cplex.addMaximize(expr);
+			cplex.addMaximize(allAgentImpressions);
 			
 			
 			
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
 
+			
+			//Must be better than previously best objective
+			if (bestObj != -1) {
+				cplex.addGe(allAgentImpressions, bestObj);
+			}
 			
 			//Our total impressions constraint
 			cplex.addEq(T_a[us], imp);
