@@ -31,6 +31,11 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
    double TIMEOUT_IN_SECONDS;
 
+   double _bestObj;
+   LPSolution _bestSol;
+   int _checked;
+   int _bestChecked;
+   
 
    public CarletonLPImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
       TIMEOUT_IN_SECONDS = timeoutInSeconds;
@@ -100,17 +105,41 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       double[] orderedI_aDistributionStdev = order(_agentImpressionDistributionStdev, order);
 
       
-      
-      
 
       
       //---------------------------------------------------------------
       //TODO Calling Carleton's search will go here.
       //---------------------------------------------------------------    
+      //this causes pruning, and thus algorithm correctness, 
+      //must be a global variable to share between various branches of the DFS
+      _bestObj = -1; 
+      _bestSol = null; //this is kept in sync with _bestObj so we can recovery the best solution
+      
+      _checked = 0; //just for stats collecting
+      _bestChecked = -1; //just for stats collecting
+      
+      int[] dropout = new int[_advertisers];
+      int[] minDropOut = new int[_advertisers];
+      int[] maxDropOut = new int[_advertisers];
+      
+      //set default values
+      for(int a=0; a < _advertisers; a++){
+    	  dropout[a] = -1;
+    	  minDropOut[a] = 0; //0 becouse 0 is the top slot, slots are 0 indexed like agents?
+    	  maxDropOut[a] = a;
+      }
       
       
+      dropoutDFS(dropout, minDropOut, maxDropOut, 0, _slots, orderedMu_a, _imprUB, _ourIndex, _ourImpressions);
       
+      //_bestSol <== best solution found after the search
       
+      //---------------------------------------------------------------
+      //TODO Calling Carleton's search ends here.
+      //---------------------------------------------------------------    
+      
+      //return null;
+
       //Get mu_a values, given impressions
       WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
                                           _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
@@ -125,7 +154,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
             waterfall[i][j] = (int) I_a_s[i][j];
          }
       }
-
+	
       //relativeRanking[i]: the agent in initial position i had index relativeRanking[i]
       int[] relativeRanking = result.getOrdering();
 
@@ -155,6 +184,152 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    }
 
 
+   //this method will implictly assume length of dropout,minDropOut,maxDropOut,avgPos_a are the same and this is the number of agents.
+   private void dropoutDFS(int[] dropout, int[] minDropOut, int[] maxDropOut, int agent, int numSlots, double[] avgPos_a, int M, int us, int imp){
+	   //System.out.println(agent);
+	   //System.out.println(dropout.length);
+	   //System.out.println(Arrays.toString(dropout));
+	   
+	   int[] minDropOutLocal = Arrays.copyOf(minDropOut, avgPos_a.length);
+	   //System.out.println(Arrays.toString(maxDropOut));
+	   //System.out.println(Arrays.toString(minDropOutLocal));
+	   
+	   
+	   // this is the base case of the tree search, all drop outs are fixed.
+	   if(agent >= dropout.length){
+		   System.out.println("Checking Dropouts: " + Arrays.toString(dropout));
+	
+		   //This is a leaf in the tree search, solve the LP and see if you have a better solution.
+		   LPSolution sol = CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout, _bestObj);
+		   _checked++;
+		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
+		   //If the solution is non-null we know it's the best solution found so far, becouse of the _bestObj bound in the LP.
+		   if(sol != null){
+			   _bestSol = sol;
+			   _bestObj = sol.objectiveVal;
+			   _bestChecked = _checked;
+		   }
+		   
+	   } else {
+
+		   //This if block is the only tricky part of the search.  Omitting it provides a simple test if the DFS is working correctly
+		   //This block should only speed up the finding of good solutions, and should NOT cut off an optimial solution.
+		   //The functions of this if are:
+		   //  1) check if the waterfall is feasible up to this point (with our impressions this can be determined)
+		   //  2) IF the waterfall is feasible, then we can apply the greedy algorithm to all agents below us, until we hit a whole number avg pos.
+		   //  3) the solution to the greedy algorithm provides tight bounds on the drop out of all agents it was applied to.
+		   //*
+		   if(agent-1 == us){
+			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
+			   double[] avgPos_tmp = new double[agent];
+			   for(int i=0; i < agent; i++){
+				   avgPos_tmp[i] = avgPos_a[i];
+			   }
+			   LPSolution sol = CarletonLP.solveIt(agent-1, avgPos_tmp, M, us, imp, dropout, _bestObj);
+			   _checked++;
+			   //Here I assume a null value means the solution is infeasible or some other problem occurred.
+			   if(sol == null){ //if infeasible we can backtrack immidately.
+				   return;
+			   } else {
+				   //we can check if the waterfall may be applied!
+				   //I couldn't test this, so hi-probbality of buggy-ness!
+				   //can be commented out without harm.
+			        
+			        double[] simps = new double[avgPos_a.length];
+			        for(int s=0; s < avgPos_a.length; s++){ //assuming slots are 0 indexed
+			          simps[s] = sol.S_a[s];
+			        }
+			        
+			        for(int a2=agent; a2 < avgPos_a.length; a2++){
+			          //range PSlots = 1..a2;
+			          double[] pimps = new double[a2+1];
+			          for(int s=0; s < a2;  s++){
+			            pimps[s] = simps[s];
+			          }
+			          
+			          double[] slotImps = calcMinDropOut(a2, numSlots, avgPos_a[a2], pimps);
+			          
+			          for(int s=0; s < a2;  s++){
+			            simps[s] += slotImps[s];
+			          }
+
+			          for(int s=0; s < a2;  s++){
+			        	minDropOutLocal[a2] = s;
+			            if(slotImps[s] > 0.1){
+			              break;
+			            }
+			          }
+			          //cout << a2 << " : " << slotImps << " - " << minDropOut[a2] << endl;
+			          if((avgPos_a[a2]-(int)Math.ceil(avgPos_a[a2])) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
+			            break;
+			          }
+			        }
+			   }
+		   }  
+		   //*/
+		   
+		   
+		   //if feasiblity is ok, then lets continue with the search
+		   for(int d=maxDropOut[agent]; d >= minDropOutLocal[agent]; d--){
+			   dropout[agent] = d; //I will modify this arrary in place, but if we parallize we would need to deep copy this
+			   
+			   dropoutDFS(dropout, minDropOutLocal, maxDropOut, agent+1, numSlots, avgPos_a, M, us, imp);
+		   }
+		   
+	   }
+	   
+   }
+   
+   //this function simply applies the waterfall effect to one agent
+   //It assumes slots are 0 based.
+   private double[] calcMinDropOut(int slots, int slotLimit, double avgPos, double[] slotImp){
+	   double[] currSlotImp = new double[slots];
+	   Arrays.fill(currSlotImp, 0);
+	   
+	   if((avgPos-(int)Math.ceil(avgPos)) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
+	     Arrays.fill(currSlotImp, 1);
+	     return currSlotImp;
+	   } 
+
+	   int currSlot = slots;
+	   currSlotImp[currSlot] = 0;
+	   double tmpAvgPos = slots;
+	   while(currSlot > 1){
+	     currSlotImp[currSlot] = slotImp[currSlot-1] - slotImp[currSlot];
+	     double currentImpSum = 0;
+	     for(int s=0; s <= slotLimit && s <= slots; s++){
+	    	 currentImpSum += currSlotImp[s];
+	     }
+	     if(currentImpSum > 0){
+	       double currentImpWeightedSum = 0;
+	       for(int s=0; s <= slotLimit && s <= slots; s++){
+	    	   currentImpWeightedSum += (s+1)*currSlotImp[s];
+		   }
+	       tmpAvgPos = currentImpWeightedSum/currentImpSum;
+	     }
+	     //cout << currSlot << " : " << tmpAvgPos << " - " << avgPos << endl;
+	     if(tmpAvgPos <= avgPos){
+	       break;
+	     } else {
+	       currSlot = currSlot-1;
+	     }
+	   }
+	   
+	   double currentImpSum = 0;
+	   double currentImpWeightedSum = 0;
+	   for(int s=currSlot+1; s <= slotLimit && s <= slots; s++){
+		   currentImpSum += currSlotImp[s];
+		   currentImpWeightedSum += (s+1)*currSlotImp[s];
+	   }
+	   
+	   double finalImps = (avgPos*currentImpSum - currentImpWeightedSum) / (currSlot-avgPos);
+	   //cout << finalImps << endl;
+	   currSlotImp[currSlot] = finalImps;
+	   //cout << currSlotImp << " - " << (sum(s in Slots : s <= slotLimit) s*currSlotImp[s])/(sum(s in Slots : s <= slotLimit) currSlotImp[s]) << " : " << avgPos << endl;
+	   return currSlotImp;
+   }
+   
+   
    public int[] getImpsPerAgent(double[][] I_a_s) {
       int[] impsPerAgent = new int[_advertisers];
       for (int a = 0; a < _advertisers; a++) {
@@ -309,8 +484,8 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);
 
-         ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
-         CarletonLPImpressionEstimator ericImpressionEstimator = new CarletonLPImpressionEstimator(ericInst, false, true, false, 3);
+         ImpressionEstimatorExact exactImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
+         CarletonLPImpressionEstimator carletonImpressionEstimator = new CarletonLPImpressionEstimator(ericInst, false, true, false, 3);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          int[] cOrder = QAInstance.getAvgPosOrder(cPos);
