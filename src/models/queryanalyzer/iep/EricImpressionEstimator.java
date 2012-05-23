@@ -243,7 +243,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
     */
    public static void main(String[] args) {
 
-      EricImpressionEstimator.testOrdering();
+      //EricImpressionEstimator.testOrdering();
 
       //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
 
@@ -251,8 +251,8 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
 
          //These aren't actually used; everything is -1 except the current agentIdx
-         double[] I_aFull = {200, 200};
-         double[] mu_aFull = {1.5, 2.5};
+         double[] I_aFull = {400, 200};
+         double[] mu_aFull = {1.5, 1.0}; //{1.0, 1.5}; //{1.5, 2.5};
 
 
          //Get priors on impressions
@@ -267,7 +267,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
          double[] I_aPromoted = {-1, -1};
          boolean[] isKnownPromotionEligible = {false, false};
-         double[] knownSampledMu_a = {1.5, 2.5};
+         double[] knownSampledMu_a = {1.5, 1.0}; //{1.5, 2.5};
 //         double[] knownSampledMu_a = {1, 1.5, 2.5};
          int numSlots = 5;
          int numPromotedSlots = 0;
@@ -275,7 +275,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          int ourImpressions = (int) I_aFull[ourAgentIdx];
          int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
          boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
-         int impressionsUB = 200;
+         int impressionsUB = 500;
          int numAgents = mu_a.length;
 
          //Did we hit our budget? (added constraint if we didn't)
@@ -299,17 +299,20 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
+         CarletonLPImpressionEstimator carletonLP = new CarletonLPImpressionEstimator(ericInst, false, true, false, 5);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          int[] cOrder = QAInstance.getAvgPosOrder(cPos);
          //int[] cOrder = {1, 2, 0};
          System.out.println("cPos: " + Arrays.toString(cPos) + ", cOrder: " + Arrays.toString(cOrder));
          IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
-         //IEResult ericResult = ericImpressionEstimator.search(order);
+         IEResult ericResult = ericImpressionEstimator.search(cOrder);
+         IEResult carletonLPResult = carletonLP.search(cOrder);
 
          System.out.println("ourAgentIdx=" + ourAgentIdx);
          System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
-         //System.out.println("        IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
+         System.out.println("  IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
+         System.out.println("  CarletonLP: " + carletonLPResult + "\tactual=" + Arrays.toString(I_aFull));
       }
    }
 

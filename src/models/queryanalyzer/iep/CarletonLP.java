@@ -156,6 +156,7 @@ public class CarletonLP {
 				
 			} else {
 				System.out.println("Solver returned false.");
+				//System.out.println("Model: " + cplex.getModel() );
 			}
 			
 			cplex.end();
