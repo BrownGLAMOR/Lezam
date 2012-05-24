@@ -45,7 +45,7 @@ public class BasicUnitsSoldModel extends AbstractUnitsSoldModel {
     	  //expectedConvsForMissingDay = average of each #conversions that occurred within window and the 
     	  //"expected share" of daily conversions (if evenly distributed across the window) 
     	  //FIXME: When is expectedConvsForMissingDay null? Is there a better default predictor we could use?
-         total += (total + _capacity / ((double) _window)) / 4.0;
+         total += (total + _capacity / ((double) _window)) / 4.0; //HC num
       } else {
          total += expectedConvsForMissingDay;
       }

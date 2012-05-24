@@ -911,7 +911,7 @@ public class AllModelTest {
          System.out.println("Budget Type II MAE: " + results[6] + "(" + stdDevList(budgetErrorType2List,results[6]) + ") , % Type II: " + results[7] / budgetTot);
          System.out.println("Budget Type III MAE: " + results[8] + "(" + stdDevList(budgetErrorType3List,results[8]) + ") , % Type III: " + results[9] / budgetTot);
          System.out.println("Budget % Type IV: " + results[10] / budgetTot);
-         System.out.println("Budget Type V MAE: " + results[11] + "(" + stdDevList(budgetErrorType3List,results[11]) + ") , % Type III: " + results[12] / budgetTot);
+         System.out.println("Budget Type V MAE: " + results[11] + "(" + stdDevList(budgetErrorType3List,results[11]) + ") , % Type V: " + results[12] / budgetTot);
          System.out.println("Budget % Type VI: " + results[13] / budgetTot);
          System.out.println("Adv Effect MAE: " + results[14] + "(" + stdDevList(advEffectErrList,results[14]) + ")");
          System.out.println("Cont Prob MAE: " + results[15] + "(" + stdDevList(contProbEffectsErrList,results[15]) + ")");
@@ -1154,7 +1154,7 @@ public class AllModelTest {
    public static void main(String[] args) throws IOException, ParseException {
       GameSet GAMES_TO_TEST = GameSet.semi2011server1;
       int START_GAME = 1414;
-      int END_GAME = 1445;
+      int END_GAME = 1414;
       int START_DAY = 0; //0
       int END_DAY = 58; //57
       int START_QUERY = 0; //0

@@ -23,8 +23,8 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private ArrayList<Product> _products;
    private HashSet<Query> _querySpace;
    private Particle[] initParticle;
-   private static final double _burstProb = .1;
-   private static final double _successiveBurstProb = .2;
+   private static final double _burstProb = .1; //HC num
+   private static final double _successiveBurstProb = .2; //HC num
    private double _convPrMult;
    private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
    private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
@@ -36,7 +36,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private static final boolean _rules2009 = false;
 
    public jbergParticleFilter(double[] convPr, int numSlots, int promSlots) {
-      _convPrMult  = .2;
+      _convPrMult  = .2;//HC num
       _baseConvPr1 = convPr[0];
       _convPrVar1 = _baseConvPr1*_convPrMult;
       _baseConvPr2 = convPr[1];
@@ -64,7 +64,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
       HashMap<UserState, Double> burstFromF2Probs = new HashMap<UserState, Double>();
       HashMap<UserState, Double> burstFromTProbs = new HashMap<UserState, Double>();
 
-      standardFromNSProbs.put(UserState.NS, 0.99);
+      standardFromNSProbs.put(UserState.NS, 0.99); //HC num  all of these are hard coded
       standardFromNSProbs.put(UserState.IS, 0.01);
       standardFromNSProbs.put(UserState.F0, 0.0);
       standardFromNSProbs.put(UserState.F1, 0.0);
@@ -330,10 +330,10 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    }
 
    public double getBinomialProbUsingGaussian(int n, int k) {
-      double mean = n / 3.0;
-      double sigma2 = mean * 2.0 / 3.0;
+      double mean = n / 3.0; //HC num
+      double sigma2 = mean * 2.0 / 3.0;//HC num
       double diff = k - mean;
-      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
+      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));//HC num
    }
 
    public double getRandomBinomial(double n, double p) {
@@ -512,7 +512,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
             boolean successiveBurst = false;
             ArrayList<Boolean> burstHistory = particles[i].getBurstHistory();
             if (burstHistory.size() > 0) {
-               for (int j = 1; j <= 3 || j <= burstHistory.size(); j++) {
+               for (int j = 1; j <= 3 || j <= burstHistory.size(); j++) { //HC num
                   if (burstHistory.size() - j > 0) {
                      if (burstHistory.get(burstHistory.size() - j)) {
                         successiveBurst = true;
@@ -634,7 +634,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
          conversionProbs.put(UserState.F1, _baseConvPr2 * (1 + _convPrVar2 * _R.nextGaussian()));
          conversionProbs.put(UserState.F2, _baseConvPr3 * (1 + _convPrVar3 * _R.nextGaussian()));
          if (_rules2009) {
-            conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2)) / 3.0);
+            conversionProbs.put(UserState.IS, (conversionProbs.get(UserState.F0) + conversionProbs.get(UserState.F1) + conversionProbs.get(UserState.F2)) / 3.0); //HC num
          } else {
             conversionProbs.put(UserState.IS, 0.0);
          }

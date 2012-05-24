@@ -12,7 +12,7 @@ public class IndependentBidModel extends AbstractBidModel {
 
    private boolean MLE = false;
 
-   private static final double _aStep = Math.pow(2, (1.0 / 25.0));
+   private static final double _aStep = Math.pow(2, (1.0 / 25.0));//HC num
    private HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>> _allBidDists;
    private HashMap<Query, HashMap<String, ArrayList<Double>>> _allBidEsts;
    private HashMap<Query, HashMap<String, ArrayList<Double>>> _allPredDists;
@@ -44,7 +44,7 @@ public class IndependentBidModel extends AbstractBidModel {
       _allBidDists = new HashMap<Query, HashMap<String, ArrayList<ArrayList<Double>>>>(_querySpace.size());
       _allBidEsts = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
       _allPredDists = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
-      Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
+      Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;//HC num
       for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> bidDistMap = new HashMap<String, ArrayList<ArrayList<Double>>>(advertisers.size());
          HashMap<String, ArrayList<Double>> bidEstMap = new HashMap<String, ArrayList<Double>>(advertisers.size());
@@ -54,7 +54,7 @@ public class IndependentBidModel extends AbstractBidModel {
             ArrayList<Double> curDist = new ArrayList<Double>();
             _numBidValues = 0;
             int index = 0;
-            for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * _aStep - 0.25) {
+            for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * _aStep - 0.25) {//HC num
                if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
                   curDist.add(InitDistributions.initDistF0[index]);
                } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
@@ -137,8 +137,8 @@ public class IndependentBidModel extends AbstractBidModel {
       else {
 //         System.out.println("ReInitializing " + q);
          int index = 0;
-         Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;
-         for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * _aStep - 0.25) {
+         Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;//HC num
+         for (Double curKey = startVal; curKey <= maxBid + 0.001; curKey = (curKey + 0.25) * _aStep - 0.25) {//HC num
             if (q.getType() == QueryType.FOCUS_LEVEL_ZERO) {
                lst.set(index, InitDistributions.initDistF0[index]);
             } else if (q.getType() == QueryType.FOCUS_LEVEL_ONE) {
@@ -188,7 +188,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private double normalDensFn(double d, double var) {
-      return Math.exp((-(d * d)) / (2.0 * var)) / (Math.sqrt(2.0 * Math.PI * var));
+      return Math.exp((-(d * d)) / (2.0 * var)) / (Math.sqrt(2.0 * Math.PI * var));//HC num
    }
 
    private void pushPredictionsForward() {
@@ -225,8 +225,8 @@ public class IndependentBidModel extends AbstractBidModel {
             toAdd += _yesterdayProb * _transProbs[Math.abs(k - j)] * bidDists.get(bidDists.size() - 1).get(k);
          }
          for (int k = 0; k < _numBidValues; k++) {
-            if (bidDists.size() > 5) {
-               toAdd += _nDaysAgoProb * _transProbs[Math.abs(k - j)] * bidDists.get(bidDists.size() - 6).get(k);
+            if (bidDists.size() > 5) {//HC num
+               toAdd += _nDaysAgoProb * _transProbs[Math.abs(k - j)] * bidDists.get(bidDists.size() - 6).get(k);//HC num
             } else {
                toAdd += _nDaysAgoProb * _transProbs[Math.abs(k - j)] * bidDists.get(0).get(k);
             }
@@ -239,7 +239,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private double indexToBidValue(int index) {
-      return Math.pow(2.0, (((double) (index)) + 1.0) / 25.0 - 2.0) - 0.25;
+      return Math.pow(2.0, (((double) (index)) + 1.0) / 25.0 - 2.0) - 0.25;//HC num
    }
 
    @Override
@@ -280,7 +280,7 @@ public class IndependentBidModel extends AbstractBidModel {
                for (String agent : agents) {
                   ArrayList<Double> ordPr = new ArrayList<Double>();
                   for (int i = 0; i < _numBidValues; i++) {
-                     ordPr.add(1.0);
+                     ordPr.add(1.0); //HC num
                   }
                   ordPrMap.put(agent, ordPr);
                }
@@ -302,14 +302,14 @@ public class IndependentBidModel extends AbstractBidModel {
                                           toSet += yDist.get(j);
                                        }
                                     }
-                                 } else {
+                                 } else {//HC num several in else statement
                                     double bid = indexToBidValue(i);
-                                    if(ourBid < bid) {
+                                    if(ourBid < bid) {//HC num in if block
                                        if(ranksMap.get(agent) > ranksMap.get(curAdv)) {
                                           toSet = 0.0;
                                        }
                                        else if(ranksMap.get(agent) < ranksMap.get(curAdv)) {
-                                          toSet = 1.0;
+                                          toSet = 1.0; 
                                        }
                                     }
                                     else {
@@ -372,7 +372,7 @@ public class IndependentBidModel extends AbstractBidModel {
                      currDist.add(0.0);
                   }
                   double myBid = ourBids.get(q);
-                  double theInd = ((((Math.log(myBid + 0.25) / Math.log(2.0)) + 2) * 25.0) - 1.0);
+                  double theInd = ((((Math.log(myBid + 0.25) / Math.log(2.0)) + 2) * 25.0) - 1.0); //HC num
                   boolean onEdge = false;
                   int theIndex = (int) (theInd);
                   double firstProp = theInd - (double) theIndex;
