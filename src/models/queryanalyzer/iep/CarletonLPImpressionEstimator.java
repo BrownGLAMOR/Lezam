@@ -36,7 +36,12 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    int _checked;
    int _bestChecked;
    
-
+   CarletonLP carletonLP;
+   boolean BRANCH_AND_BOUND = true;
+   
+   
+   static int boundCount = 0;
+   
    public CarletonLPImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
       TIMEOUT_IN_SECONDS = timeoutInSeconds;
       MULTIPLE_SOLUTIONS = multipleSolutions;
@@ -55,8 +60,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       hitOurBudget = inst.getHitOurBudget();
       _imprUB = inst.getImpressionsUB();
       _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
-      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
-
+      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();      
    }
 
    public ObjectiveGoal getObjectiveGoal() {
@@ -134,9 +138,12 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       //---------------------------------------------------------------
       //TODO Calling Carleton's search will go here.
       //---------------------------------------------------------------    
+      carletonLP = new CarletonLP(orderedI_aDistributionMean, orderedI_aDistributionStdev);
+
+      
       //this causes pruning, and thus algorithm correctness, 
       //must be a global variable to share between various branches of the DFS
-      _bestObj = -1; 
+      _bestObj = -1; //FIXME: If we change objective functions, we'll have to make sure objectives can't be negative (since -1 could otherwise naturally arise)
       _bestSol = null; //this is kept in sync with _bestObj so we can recovery the best solution
       
       _checked = 0; //just for stats collecting
@@ -218,7 +225,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	   boolean DEBUG = false;
 	   if (DEBUG) {
 		   int[] correctDropout = {0, 0, 0, 0, 0, 1, 1, 2};
-		   _bestSol = CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, correctDropout, _bestObj);
+		   _bestSol = carletonLP.solveIt(numSlots, avgPos_a, M, us, imp, correctDropout, _bestObj);
 		   return;
 	   }
 	   
@@ -234,7 +241,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	
 		   //This is a leaf in the tree search, solve the LP and see if you have a better solution.
 		   //System.out.println("Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
-		   LPSolution sol = CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout, _bestObj);
+		   LPSolution sol = carletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout, _bestObj);
 		   _checked++;
 		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 		   //If the solution is non-null we know it's the best solution found so far, becouse of the _bestObj bound in the LP.
@@ -264,7 +271,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 				   dropout_tmp[i] = dropout[i];
 			   }
 			   //System.out.println("Tricky Solve: numSlots=" + numSlots + ", avgPos_tmp=" + Arrays.toString(avgPos_tmp) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_tmp=" + Arrays.toString(dropout_tmp) + ", bestObj=" + _bestObj);
-			   LPSolution sol = CarletonLP.solveIt(agent, avgPos_tmp, M, us, imp, dropout_tmp, _bestObj);
+			   LPSolution sol = carletonLP.solveIt(agent, avgPos_tmp, M, us, imp, dropout_tmp, _bestObj);
 			   _checked++;
 			   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 			   if(sol == null){ //if infeasible we can backtrack immidately.
@@ -272,6 +279,24 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 				   //  we could have non-null solutions that are still extremely bad. May want the if condition to check the objective value.
 				   return;
 			   } else {
+				   
+				   //If feasible but a terrible solution (compared to the best found so far), we can also backtrack immediately 
+				   if (BRANCH_AND_BOUND && _bestSol != null) {
+					   
+					   //Note: This may not work if objective values are not monotonically increasing/decreasing as a more complete solution is considered.
+					   //We are assume that, if the objective is to minimize (e.g., error), the objective value of a partial solution will only grow larger that it currently is.
+					   //Similarly, if the objective is to maximize the objective value will only grow smaller as more of the problem is considered.
+					   //  [Note that "Maximizing total impressions" violates this assumption, so we can't use this branch and bound method without bounding later value.]
+					   if (_objectiveGoal==ObjectiveGoal.MINIMIZE && sol.objectiveVal >= _bestObj || 
+							   _objectiveGoal==ObjectiveGoal.MAXIMIZE && sol.objectiveVal <= _bestObj ) {
+						   //Objective value is already worse than best solution, and will only get worse. Stop trying.
+						   boundCount++;
+						   System.out.println("Bound!");
+						   return;
+					   }
+				   }
+				   
+				   
 				   //we can check if the waterfall may be applied!
 				   //I couldn't test this, so hi-probbality of buggy-ness!
 				   //can be commented out without harm.
@@ -592,8 +617,10 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
     	 double[] mu_aFull = {4, 1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558}; 
          
          //Get priors on impressions
-         double[] agentImpressionDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
-         double[] agentImpressionDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
+//         double[] agentImpressionDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
+//         double[] agentImpressionDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
+         double[] agentImpressionDistributionMean = {200, 300, 600, 800, 800, 1000, 700, 400};
+         double[] agentImpressionDistributionStdev = {50, 50, 50, 50, 50, 50, 50, 50};
 
          //Get observed exact average positions (we only see one)
          double[] mu_a = new double[mu_aFull.length];

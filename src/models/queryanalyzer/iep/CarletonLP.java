@@ -2,6 +2,7 @@ package models.queryanalyzer.iep;
 
 import java.util.Arrays;
 
+
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
@@ -16,19 +17,42 @@ import ilog.cplex.IloCplex;
  */
 public class CarletonLP {
 	
-	
+	public enum Objective
+	{
+		CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
+		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
+	}
 	
 	private final static boolean USE_EPSILON = false;
 	private final static double EPSILON = .0001;
 	private final static boolean SUPPRESS_OUTPUT = true;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-
+	private final static Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+	
+	//If minimizing impression error, this is the maximum number of standard deviations away
+	//that the predicted number of agent impressions can be from the mean of the prior.
+	//(Since our impression predictions won't necessarily be good, it's probably a good idea 
+	// to make this a high value)
+	private final static double MAX_ERROR = 100000; 
+	
+	//Predicted agent impressions
+	double[] T_aPriorMean;	
+	double[] T_aPriorStdev;
+	
+	
+	public CarletonLP(double[] T_aPriorMean, double[] T_aPriorStdev) {
+		this.T_aPriorMean = T_aPriorMean;
+		this.T_aPriorStdev = T_aPriorStdev;
+		System.out.println("mean=" + Arrays.toString(T_aPriorMean) + ", stdev=" + Arrays.toString(T_aPriorStdev));
+	}
+	
+	
 	
 	
 	
 	//************************************ MAIN SOLVER METHOD ************************************
-	public static LPSolution solveIt(int numSlots, double[] avgPos_a, 
+	public LPSolution solveIt(int numSlots, double[] avgPos_a, 
 			int M, int us, int imp, int[] dropout_a, double bestObj) {
 		//System.out.println("solveIt: numSlots=" + numSlots + ", avgPos_a=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj);
 		
@@ -46,7 +70,7 @@ public class CarletonLP {
 			//-------------------------------- CREATE DECISION VARIABLES -------------------------------------
 			IloNumVar[][] I_a_s = new IloNumVar[numAgents][]; //(#imps per agent/slot)
 			IloNumVar[] S_a = cplex.numVarArray(numAgents, 0, M);
-			IloNumVar[] T_a = cplex.numVarArray(numAgents, 0, M);
+			IloNumVar[] T_a = cplex.numVarArray(numAgents, 1, M);
 			for (int a=0; a<numAgents; a++) {
 				I_a_s[a] = new IloNumVar[a+1]; //cplex.numVarArray(a+1, 0, M);
 				for (int s=0; s<=a; s++) {
@@ -64,21 +88,19 @@ public class CarletonLP {
 			
 			
 			//-------------------------------- CREATE OBJECTIVE FUNCITON -------------------------------------
-			IloLinearNumExpr allAgentImpressions = cplex.linearNumExpr();
-			for (int a=0; a<numAgents; a++) {
-				allAgentImpressions.addTerm(1, T_a[a]);
-			}
-			cplex.addMaximize(allAgentImpressions);
 			
+			if (DESIRED_OBJECTIVE == Objective.CLOSE_TO_IMPRESSIONS_UPPER_BOUND) {
+				addObjective_closeToImpressionsUpperBound(cplex, T_a, bestObj);
+			}
+			else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
+				addObjective_minimizeImpressionPriorError(cplex, T_a, us, T_aPriorMean, T_aPriorStdev, bestObj);
+			}
 			
 			
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
 
 			
-			//Must be better than previously best objective
-			if (bestObj != -1) {
-				cplex.addGe(allAgentImpressions, bestObj);
-			}
+
 			
 			//Our total impressions constraint
 			cplex.addEq(T_a[us], imp);
@@ -187,12 +209,80 @@ public class CarletonLP {
 	
 	
 	
+	
+	
+	
+	
+	
+
+	private void addObjective_closeToImpressionsUpperBound(IloCplex cplex,
+			IloNumVar[] T_a, double bestObj) throws IloException {
+		int numAgents = T_a.length;
+		IloLinearNumExpr allAgentImpressions = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			allAgentImpressions.addTerm(1, T_a[a]);
+		}
+		cplex.addMaximize(allAgentImpressions);		
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addGe(allAgentImpressions, bestObj);
+		}
+	}
+
+
+
+
+
+	/**
+	 * This will make the predicted agent impressions as close to our priors as possible. 
+	 * @param cplex
+	 * @param T_a
+	 * @throws IloException
+	 */
+	private void addObjective_minimizeImpressionPriorError(IloCplex cplex, IloNumVar[] T_a, int us, double[] T_aPriorMean, double[] T_aPriorStdev, double bestObj) throws IloException {
+		
+		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
+		int numAgents = T_a.length;
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, MAX_ERROR);				
+		
+		// This constraint ensures that any difference between the waterfall's predicted impressions and 
+		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			//Only consider this agent's impressions model if we don't know its exact impressions.
+			if (a != us) {
+				cplex.addLe(T_a[a], cplex.sum( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
+				cplex.addGe(T_a[a], cplex.diff( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
+				relevantErrors.addTerm(1, I_aError[a]);
+			}
+		}
+		cplex.addMinimize(relevantErrors);
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addLe(relevantErrors, bestObj);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 
 	
 	
 	
 	
 	public static void main(String[] args) {
+		
+		
+		
 //		int numSlots = 5;
 //		double[] avgPos_a = {1, 1.5, 1.5}; 
 //		int M = 1500;
@@ -225,14 +315,17 @@ public class CarletonLP {
 
 		
 		int numSlots = 5;
-		double[] avgPos_a = {1.0};
+		double[] avgPos_a = {1.0, 2.0};
 		int M = 1300;
 		int us = 0;
 		int imp = 300;
-		int[] dropout_a = {0};
+		int[] dropout_a = {0, 1};
 		double bestObj = -1;
-		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
-
+		double[] T_aPriorMean = {200, 200};
+		double[] T_aPriorStdev = {50, 50};
+		CarletonLP carletonLP = new CarletonLP(T_aPriorMean, T_aPriorStdev);
+		LPSolution sol = carletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
+		System.out.println(sol);
 		
 	}
 	
