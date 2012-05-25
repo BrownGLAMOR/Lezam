@@ -32,7 +32,7 @@ public class ImpressionEstimatorTest {
 
    private static boolean DEBUG = false;
    private static boolean LOGGING = false;
-   private static boolean SUMMARY = false;
+   private static boolean SUMMARY = true;
 
    private static boolean NO_F0 = true;
 
@@ -97,7 +97,7 @@ public class ImpressionEstimatorTest {
    double aggregateAbsTotImprError = 0;
 
    public enum SolverType {
-      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP
+      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP
    }
 
    public enum GameSet {
@@ -884,7 +884,16 @@ public class ImpressionEstimatorTest {
                            fullModel = new LDSImpressionAndRankEstimator(model);
                         }
                      }
-
+                     if (impressionEstimatorIdx == SolverType.Carleton_LP) {
+                    	 if (ORDERING_KNOWN) {
+                             model = new CarletonLPImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                    	 } else {
+                             model = new CarletonLPImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             fullModel = new LDSImpressionAndRankEstimator(model);
+                    	 }
+                     }
+                     
 
                      //---------------- SOLVE FOR RESULT -----------------------
                      IEResult result = fullModel.getBestSolution();
@@ -2349,28 +2358,28 @@ public class ImpressionEstimatorTest {
 //	   ImpressionEstimatorTest.runAllTests();
 
 
-      boolean sampleAvgPositions = true;
+      boolean sampleAvgPositions = false;
       boolean perfectImps = true;
       boolean useWaterfallPriors = false;
       double noiseFactor = 0.0;
-      boolean useHistoricPriors = true;
+      boolean useHistoricPriors = false;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = true;
-      SolverType solverToUse = SolverType.CP;
+      boolean orderingKnown = false;
+      SolverType solverToUse = SolverType.MIP; //SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
 //      int START_GAME = 1;
 //      int END_GAME = 4;
       GameSet GAMES_TO_TEST = GameSet.finals2010;
       int START_GAME = 15127;
-//      int END_GAME = 15127;
-      int END_GAME = 15136;
+      int END_GAME = 15127;
+//      int END_GAME = 15136;
 //      int END_GAME = 15170;
       int START_DAY = 0; //0
       int END_DAY = 57; //57
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
-      String AGENT_NAME = "all"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
+      String AGENT_NAME = "Schlemazl"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
       double IP_TIMEOUT_IN_SECONDS = 3;
       int sampFrac = 100;
       double upperBoundNoise = 1.2;

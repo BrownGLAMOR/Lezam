@@ -85,17 +85,26 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       
       
       //Modify our index to reflect ordering change
+      // NO!: int us = order[_ourIndex];
       //TODO: Is this correct?
-      int us = order[_ourIndex];
+      //  if order[i]==x, the agent in the ith slot can be found at index x.
+      //  e.g., if order[i]==x, the agent in the ith slot had I_a[x] impressions. Or I_a[order[i]] impressions
+      //  "us" is meant to be the slot that we were in. So we should find the index i s.t. order[i]=_ourIndex 
+      int us = -1;
+      for (int i=0; i<order.length; i++) {
+    	  if (order[i] == _ourIndex) {
+    		  us = i;
+    	  }
+      }
       
       
-      I_a[us] = _ourImpressions;
-      I_aPromoted[us] = _ourPromotedImpressions;
-      promotionEligiblityVerified[us] = _ourPromotedEligibilityVerified;
+      I_a[_ourIndex] = _ourImpressions;
+      I_aPromoted[_ourIndex] = _ourPromotedImpressions;
+      promotionEligiblityVerified[_ourIndex] = _ourPromotedEligibilityVerified;
 
       int[] hitBudget = new int[_advertisers];
       Arrays.fill(hitBudget, -1);
-      hitBudget[us] = (hitOurBudget) ? 1 : 0;
+      hitBudget[_ourIndex] = (hitOurBudget) ? 1 : 0;
 
       //Average position for each agent
       double[] mu_a = _trueAvgPos;
@@ -152,8 +161,11 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       //---------------------------------------------------------------
       //TODO Calling Carleton's search ends here.
       //---------------------------------------------------------------    
-      //return null;
+      if (_bestSol == null) {
+    	  return null;
+      }
 
+      
       double[][] I_a_s = _bestSol.I_a_s;
 
 
@@ -189,15 +201,27 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 
       //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
 
-      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall);
+      return new IEResult(obj, unorderedImpsPerAgent, order.clone(), impsPerSlot, waterfall);
    }
 
 
    //this method will implictly assume length of dropout,minDropOut,maxDropOut,avgPos_a are the same and this is the number of agents.
    private void dropoutDFS(int[] dropout, int[] minDropOut, int[] maxDropOut, int agent, int numSlots, double[] avgPos_a, int M, int us, int imp){
+//	   System.out.println("dropoutDFS: dropout=" + Arrays.toString(dropout) + ", minDropOut=" + Arrays.toString(minDropOut) +
+//			   ", maxDropOut=" + Arrays.toString(maxDropOut) + ", agent=" + agent + ", numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + 
+//			   ", M=" + M + ", us=" + us + ", imp=" + imp);
 	   //System.out.println(agent);
 	   //System.out.println(dropout.length);
 	   //System.out.println(Arrays.toString(dropout));
+	   
+	   
+	   boolean DEBUG = false;
+	   if (DEBUG) {
+		   int[] correctDropout = {0, 0, 0, 0, 0, 1, 1, 2};
+		   _bestSol = CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, correctDropout, _bestObj);
+		   return;
+	   }
+	   
 	   
 	   int[] minDropOutLocal = Arrays.copyOf(minDropOut, avgPos_a.length);
 	   //System.out.println(Arrays.toString(maxDropOut));
@@ -206,12 +230,11 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	   
 	   // this is the base case of the tree search, all drop outs are fixed.
 	   if(agent >= dropout.length){
-		   System.out.println("Checking Dropouts: " + Arrays.toString(dropout));
+		   //System.out.println("Checking Dropouts: " + Arrays.toString(dropout));
 	
 		   //This is a leaf in the tree search, solve the LP and see if you have a better solution.
-		   System.out.println("Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
+		   //System.out.println("Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
 		   LPSolution sol = CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout, _bestObj);
-		   System.out.println("Sol: " + sol);
 		   _checked++;
 		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 		   //If the solution is non-null we know it's the best solution found so far, becouse of the _bestObj bound in the LP.
@@ -230,55 +253,67 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   //  2) IF the waterfall is feasible, then we can apply the greedy algorithm to all agents below us, until we hit a whole number avg pos.
 		   //  3) the solution to the greedy algorithm provides tight bounds on the drop out of all agents it was applied to.
 		   //*
-//		   if(agent-1 == us){
-//			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
-//			   double[] avgPos_tmp = new double[agent];
-//			   for(int i=0; i < agent; i++){
-//				   avgPos_tmp[i] = avgPos_a[i];
-//			   }
-//			   System.out.println("Tricky Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
-//			   LPSolution sol = CarletonLP.solveIt(agent-1, avgPos_tmp, M, us, imp, dropout, _bestObj);
-//			   System.out.println("Sol: " + sol);
-//			   _checked++;
-//			   //Here I assume a null value means the solution is infeasible or some other problem occurred.
-//			   if(sol == null){ //if infeasible we can backtrack immidately.
-//				   return;
-//			   } else {
-//				   //we can check if the waterfall may be applied!
-//				   //I couldn't test this, so hi-probbality of buggy-ness!
-//				   //can be commented out without harm.
-//			        
-//			        double[] simps = new double[avgPos_a.length];
-//			        for(int s=0; s < avgPos_a.length; s++){ //assuming slots are 0 indexed
-//			          simps[s] = sol.S_a[s];
-//			        }
-//			        
-//			        for(int a2=agent; a2 < avgPos_a.length; a2++){
-//			          //range PSlots = 1..a2;
-//			          double[] pimps = new double[a2+1];
-//			          for(int s=0; s < a2;  s++){
-//			            pimps[s] = simps[s];
-//			          }
-//			          
-//			          double[] slotImps = calcMinDropOut(a2, numSlots, avgPos_a[a2], pimps);
-//			          
-//			          for(int s=0; s < a2;  s++){
-//			            simps[s] += slotImps[s];
-//			          }
-//
-//			          for(int s=0; s < a2;  s++){
-//			        	minDropOutLocal[a2] = s;
-//			            if(slotImps[s] > 0.1){
-//			              break;
-//			            }
-//			          }
-//			          //cout << a2 << " : " << slotImps << " - " << minDropOut[a2] << endl;
-//			          if((avgPos_a[a2]-(int)Math.ceil(avgPos_a[a2])) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
-//			            break;
-//			          }
-//			        }
-//			   }
-//		   }  
+		   if(agent-1 == us){
+			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
+			   double[] avgPos_tmp = new double[agent];
+			   for(int i=0; i < agent; i++){
+				   avgPos_tmp[i] = avgPos_a[i];
+			   }
+			   int[] dropout_tmp = new int[agent];
+			   for(int i=0; i < agent; i++){
+				   dropout_tmp[i] = dropout[i];
+			   }
+			   //System.out.println("Tricky Solve: numSlots=" + numSlots + ", avgPos_tmp=" + Arrays.toString(avgPos_tmp) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_tmp=" + Arrays.toString(dropout_tmp) + ", bestObj=" + _bestObj);
+			   LPSolution sol = CarletonLP.solveIt(agent, avgPos_tmp, M, us, imp, dropout_tmp, _bestObj);
+			   _checked++;
+			   //Here I assume a null value means the solution is infeasible or some other problem occurred.
+			   if(sol == null){ //if infeasible we can backtrack immidately.
+				   //TODO: If we change the LP objective so that meeting average positions is not a hard constraint,
+				   //  we could have non-null solutions that are still extremely bad. May want the if condition to check the objective value.
+				   return;
+			   } else {
+				   //we can check if the waterfall may be applied!
+				   //I couldn't test this, so hi-probbality of buggy-ness!
+				   //can be commented out without harm.
+			        
+			        double[] simps = new double[avgPos_a.length];
+			        for(int s=0; s < avgPos_tmp.length; s++){ //assuming slots are 0 indexed
+			          simps[s] = sol.S_a[s];
+			        }
+			        
+			        for(int a2=agent; a2 < avgPos_a.length; a2++){
+			          //range PSlots = 1..a2;
+			          double[] pimps = new double[a2+1];
+			          for(int s=0; s < a2;  s++){
+			            pimps[s] = simps[s];
+			          }
+			          
+			          double[] slotImps = calcMinDropOut(a2, numSlots, avgPos_a[a2], pimps);
+			          
+			          for(int s=0; s <= a2;  s++){
+			            simps[s] += slotImps[s];
+			          }
+
+			          //Find the lowest slot (highest on the page) that this agent saw impressions, according to the waterfall.
+			          //This agent's dropout point is constrained to be no lower than this. 
+			          //TODO: Isn't this agent's dropout point constrained to this exactly?
+			          //  Why just fixing the minDropout? Should the max also be fixed for that agent?
+			          for(int s=0; s < a2;  s++){
+			        	minDropOutLocal[a2] = s;
+			            if(slotImps[s] > 0.1){
+			              break;
+			            }
+			          }
+			          //cout << a2 << " : " << slotImps << " - " << minDropOut[a2] << endl;
+
+			          //Continue running the waterfall for agents starting in higher slots until an agent has an integer average position.
+			          //if((avgPos_a[a2]-(int)Math.ceil(avgPos_a[a2])) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
+			          if (avgPos_a[a2] == (int)avgPos_a[a2]) {
+			            break;
+			          }
+			        }
+			   }
+		   }  
 		   //*/
 		   
 		   
@@ -295,32 +330,41 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    
    //this function simply applies the waterfall effect to one agent
    //It assumes slots are 0 based.
-   private double[] calcMinDropOut(int slots, int slotLimit, double avgPos, double[] slotImp){
-	   double[] currSlotImp = new double[slots];
+   private static double[] calcMinDropOut(int agentInSlot, int slotLimit, double avgPos, double[] slotImp){
+	   //System.out.println("calcMinDropOut: slots=" + agentInSlot + ", slotLimit=" + slotLimit + ", avgPos=" + avgPos + ", slotImp=" + Arrays.toString(slotImp));
+	   
+	   double[] currSlotImp = new double[agentInSlot+1];
 	   Arrays.fill(currSlotImp, 0);
 	   
 	   if((avgPos-(int)Math.ceil(avgPos)) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
-	     Arrays.fill(currSlotImp, 1);
+		   //FIXME: Is filling all slots with value 1 meaningful? And it seems we shouldn't have called this if the agent had integer average position.
+		   Arrays.fill(currSlotImp, 1); 
 	     return currSlotImp;
 	   } 
 
-	   int currSlot = slots;
+	   int currSlot = agentInSlot;
 	   currSlotImp[currSlot] = 0;
-	   double tmpAvgPos = slots;
-	   while(currSlot > 1){
+	   double tmpAvgPos = agentInSlot;
+	   while(currSlot > 0){
 	     currSlotImp[currSlot] = slotImp[currSlot-1] - slotImp[currSlot];
+
+	     //???
 	     double currentImpSum = 0;
-	     for(int s=0; s <= slotLimit && s <= slots; s++){
+	     for(int s=0; s <= slotLimit && s <= agentInSlot; s++){
 	    	 currentImpSum += currSlotImp[s];
 	     }
+	     
 	     if(currentImpSum > 0){
 	       double currentImpWeightedSum = 0;
-	       for(int s=0; s <= slotLimit && s <= slots; s++){
+	       for(int s=0; s <= slotLimit && s <= agentInSlot; s++){
 	    	   currentImpWeightedSum += (s+1)*currSlotImp[s];
 		   }
 	       tmpAvgPos = currentImpWeightedSum/currentImpSum;
 	     }
+	     
+	     
 	     //cout << currSlot << " : " << tmpAvgPos << " - " << avgPos << endl;
+	     //System.out.println("currSlot=" + currSlot + ", tmpAvgPos=" + tmpAvgPos + ", avgPos=" + avgPos);
 	     if(tmpAvgPos <= avgPos){
 	       break;
 	     } else {
@@ -328,17 +372,23 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	     }
 	   }
 	   
+	   //----
+	   //Calculate number of impressions the agent saw in its final slot
+	   //----
+	   
 	   double currentImpSum = 0;
 	   double currentImpWeightedSum = 0;
-	   for(int s=currSlot+1; s <= slotLimit && s <= slots; s++){
+	   for(int s=currSlot+1; s <= slotLimit && s <= agentInSlot; s++){
 		   currentImpSum += currSlotImp[s];
 		   currentImpWeightedSum += (s+1)*currSlotImp[s];
 	   }
+	   //System.out.println("currentImpSum=" + currentImpSum + ", currentImpWeightedSum=" + currentImpWeightedSum);
 	   
-	   double finalImps = (avgPos*currentImpSum - currentImpWeightedSum) / (currSlot-avgPos);
+	   double finalImps = (avgPos*currentImpSum - currentImpWeightedSum) / ((currSlot+1)-avgPos);
 	   //cout << finalImps << endl;
 	   currSlotImp[currSlot] = finalImps;
 	   //cout << currSlotImp << " - " << (sum(s in Slots : s <= slotLimit) s*currSlotImp[s])/(sum(s in Slots : s <= slotLimit) currSlotImp[s]) << " : " << avgPos << endl;
+	   //System.out.println("  currSlotImp=" + Arrays.toString(currSlotImp));
 	   return currSlotImp;
    }
    
@@ -468,53 +518,106 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
     */
    public static void main(String[] args) {
 
+	   
+//	   int agentInSlot=3;
+//	   int slotLimit=5;
+//	   double avgPos=1.5;
+//	   double[] slotImp={500, 300, 200, 0};
+//	   double[] impsPerSlot = CarletonLPImpressionEstimator.calcMinDropOut(agentInSlot, slotLimit, avgPos, slotImp);
+//	   System.out.println(Arrays.toString(impsPerSlot));
+//	   System.exit(0);
+	   
+	   
       //EricImpressionEstimator.testOrdering();
 
       //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
 
-      for (int ourAgentIdx = 0; ourAgentIdx <= 0; ourAgentIdx++) {
-
-
+	   
+//	      for (int ourAgentIdx = 0; ourAgentIdx <= 0; ourAgentIdx++) {
+//	          //These aren't actually used; everything is -1 except the current agentIdx
+//	          double[] I_aFull = {300, 600};
+//	          double[] mu_aFull = {1.0, 1.5};
+//	          double[] agentImpressionDistributionMean = {-1, -1};
+//	          double[] agentImpressionDistributionStdev = {-1, -1};
+//	          double[] mu_a = new double[mu_aFull.length];
+//	          Arrays.fill(mu_a, -1);
+//	          mu_a[ourAgentIdx] = mu_aFull[ourAgentIdx];
+//	          double[] I_aPromoted = {-1, -1};
+//	          boolean[] isKnownPromotionEligible = {false, false};
+//	          double[] knownSampledMu_a = {1.0, 1.5}; 
+//	          int numSlots = 5;
+//	          int numPromotedSlots = 0;
+//	          int ourImpressions = (int) I_aFull[ourAgentIdx];
+//	          int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
+//	          boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
+//	          int impressionsUB = 1300;
+//	          int numAgents = mu_a.length;
+//	          boolean hitOurBudget = true; //Did we hit our budget? (added constraint if we didn't)
+//	          int[] predictedOrder = {-1, -1, -1, -1, -1, -1, -1, -1};
+//	          int[] agentIds = new int[numAgents]; //Give arbitrary agent IDs
+//	          for (int i = 0; i < agentIds.length; i++) {
+//	             agentIds[i] = -(i + 1);
+//	          }
+//
+//	          QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
+//	          QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
+//	          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
+//	          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 10);
+//	          CarletonLPImpressionEstimator carletonLP = new CarletonLPImpressionEstimator(ericInst, false, true, false, 5);
+//	          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
+//	          //int[] cOrder = QAInstance.getAvgPosOrder(cPos);
+//	          int[] cOrder = {0, 1};
+////	          IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
+////	          IEResult ericResult = ericImpressionEstimator.search(cOrder);
+//	          IEResult carletonLPResult = carletonLP.search(cOrder);
+//
+//	          System.out.println("ourAgentIdx=" + ourAgentIdx);
+////	          System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
+////	          System.out.println("  IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
+//	          System.out.println("  CarletonLP: " + carletonLPResult + "\tactual=" + Arrays.toString(I_aFull));
+//	       }
+	   
+	   
+	   
+	   
+	   
+	   
+	   
+//	  for (int ourAgentIdx = 2; ourAgentIdx <= 2; ourAgentIdx++) {
+      for (int ourAgentIdx = 3; ourAgentIdx <= 3; ourAgentIdx++) {
          //These aren't actually used; everything is -1 except the current agentIdx
-         double[] I_aFull = {400, 200};
-         double[] mu_aFull = {1.5, 1.0}; //{1.0, 1.5}; //{1.5, 2.5};
-
-//         double[] I_aFull = {200, 400};
-//         double[] mu_aFull = {1.0, 1.5}; //{1.0, 1.5}; //{1.5, 2.5};
-
+//    	 double[] I_aFull = {304, 603, 805, 841, 1037, 697, 434, 232};
+     	 double[] I_aFull = {232, 304, 603, 805, 841, 1037, 697, 434};
+//    	 double[] mu_aFull = {1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558, 4}; 
+    	 double[] mu_aFull = {4, 1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558}; 
          
          //Get priors on impressions
-         double[] agentImpressionDistributionMean = {-1, -1};
-         double[] agentImpressionDistributionStdev = {-1, -1};
-
+         double[] agentImpressionDistributionMean = {-1, -1, -1, -1, -1, -1, -1, -1};
+         double[] agentImpressionDistributionStdev = {-1, -1, -1, -1, -1, -1, -1, -1};
 
          //Get observed exact average positions (we only see one)
          double[] mu_a = new double[mu_aFull.length];
          Arrays.fill(mu_a, -1);
          mu_a[ourAgentIdx] = mu_aFull[ourAgentIdx];
 
-         double[] I_aPromoted = {-1, -1};
-         boolean[] isKnownPromotionEligible = {false, false};
+         double[] I_aPromoted = {-1, -1, -1, -1, -1, -1, -1, -1};
+         boolean[] isKnownPromotionEligible = {false, false, false, false, false, false, false, false};
 
-         double[] knownSampledMu_a = {1.5, 1.0}; //{1.5, 2.5};
-//         double[] knownSampledMu_a = {1.0, 1.5}; //{1.5, 2.5};
-         
-         
-         
-//         double[] knownSampledMu_a = {1, 1.5, 2.5};
+//         double[] knownSampledMu_a = {1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558, 4}; 
+         double[] knownSampledMu_a = {4, 1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558};
          int numSlots = 5;
          int numPromotedSlots = 0;
 
          int ourImpressions = (int) I_aFull[ourAgentIdx];
          int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
          boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
-         int impressionsUB = 500;
+         int impressionsUB = 1300;
          int numAgents = mu_a.length;
 
          //Did we hit our budget? (added constraint if we didn't)
          boolean hitOurBudget = true;
 
-         int[] predictedOrder = {-1, -1};
+         int[] predictedOrder = {-1, -1, -1, -1, -1, -1, -1, -1};
 
          //Give arbitrary agent IDs
          int[] agentIds = new int[numAgents];
@@ -522,31 +625,33 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
             agentIds[i] = -(i + 1);
          }
 
-
-         //int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified
          QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
          QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
-
-//			System.out.println("Carleton Instance:\n" + carletonInst);
-//			System.out.println("Eric Instance:\n" + ericInst);
-
          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
-         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
+         EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 10);
          CarletonLPImpressionEstimator carletonLP = new CarletonLPImpressionEstimator(ericInst, false, true, false, 5);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
-         int[] cOrder = QAInstance.getAvgPosOrder(cPos);
-         //int[] cOrder = {1, 2, 0};
+         //int[] cOrder = QAInstance.getAvgPosOrder(cPos);
+//         int[] cOrder = {0, 1, 2, 3, 4, 5, 6, 7};
+         int[] cOrder = {1, 2, 3, 4, 5, 6, 7, 0};
          System.out.println("cPos: " + Arrays.toString(cPos) + ", cOrder: " + Arrays.toString(cOrder));
          IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
+         System.out.println("cOrder: " + Arrays.toString(cOrder));
          IEResult ericResult = ericImpressionEstimator.search(cOrder);
+         System.out.println("cOrder: " + Arrays.toString(cOrder));
          IEResult carletonLPResult = carletonLP.search(cOrder);
+         System.out.println("cOrder: " + Arrays.toString(cOrder));
 
          System.out.println("ourAgentIdx=" + ourAgentIdx);
          System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
          System.out.println("  IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
          System.out.println("  CarletonLP: " + carletonLPResult + "\tactual=" + Arrays.toString(I_aFull));
       }
+      
+      
+      
+      
    }
 
 

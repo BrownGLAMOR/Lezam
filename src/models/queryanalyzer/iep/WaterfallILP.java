@@ -201,10 +201,15 @@ public class WaterfallILP {
 			if (!usingPriors && !sampledProblem) {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
 			} else if (!usingPriors && sampledProblem) {
-				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
-				USE_SAMPLING_CONSTRAINTS = true;
-				USE_NEW_SAMPLING_CONSTRAINTS = true;
-				INTEGER_PROGRAM = false;
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
+				USE_SAMPLING_CONSTRAINTS = false;
+				USE_NEW_SAMPLING_CONSTRAINTS = false;
+				INTEGER_PROGRAM = true;
+				
+//				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
+//				USE_SAMPLING_CONSTRAINTS = true;
+//				USE_NEW_SAMPLING_CONSTRAINTS = true;
+//				INTEGER_PROGRAM = false;
 			} else if (usingPriors && !sampledProblem) {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
 			} else { //usingPriors && sampledProblem
@@ -246,25 +251,25 @@ public class WaterfallILP {
 				multipleSolutions, timeoutInSeconds);
 		
 
-//		//DEBUG
-//		System.out.println("Creating IP");
-//		System.out.println("double[] knownI_a = " + replaceBrackets(Arrays.toString(knownI_a)) + ";");
-//		System.out.println("double[] knownMu_a = " + replaceBrackets(Arrays.toString(knownMu_a)) + ";");
-//		System.out.println("double[] knownI_aPromoted= " + replaceBrackets(Arrays.toString(knownI_aPromoted)) + ";");
-//		System.out.println("boolean[] isKnownPromotionEligible = " + replaceBrackets(Arrays.toString(isKnownPromotionEligible)) + ";");
-//		System.out.println("int[] hitBudget = " + replaceBrackets(Arrays.toString(hitBudget)) + ";");
-//		System.out.println("int numSlots = " + numSlots + ";");
-//		System.out.println("int numPromotedSlots = " + numPromotedSlots + ";");
-//		System.out.println("boolean integerProgram = " + integerProgram + ";");
-//		System.out.println("boolean useEpsilon = " + useEpsilon + ";");
-//		System.out.println("double[] knownSampledMu_a = " + replaceBrackets(Arrays.toString(knownSampledMu_a)) + ";");
-//		System.out.println("int numSamples = " + numSamples + ";");
-//		System.out.println("int maxImpsPerAgent = " + maxImpsPerAgent + ";");
-//		System.out.println("double[] knownI_aDistributionMean = " + replaceBrackets(Arrays.toString(knownI_aDistributionMean)) + ";");
-//		System.out.println("double[] knownI_aDistributionStdev = " + replaceBrackets(Arrays.toString(knownI_aDistributionStdev)) + ";");
-//		System.out.println("boolean useRankingConstraints = " + useRankingConstraints + ";");
-//		System.out.println("boolean multipleSolutions = " + multipleSolutions + ";");		
-//		//END DEBUG
+		//DEBUG
+		System.out.println("Creating IP");
+		System.out.println("double[] knownI_a = " + replaceBrackets(Arrays.toString(knownI_a)) + ";");
+		System.out.println("double[] knownMu_a = " + replaceBrackets(Arrays.toString(knownMu_a)) + ";");
+		System.out.println("double[] knownI_aPromoted= " + replaceBrackets(Arrays.toString(knownI_aPromoted)) + ";");
+		System.out.println("boolean[] isKnownPromotionEligible = " + replaceBrackets(Arrays.toString(isKnownPromotionEligible)) + ";");
+		System.out.println("int[] hitBudget = " + replaceBrackets(Arrays.toString(hitBudget)) + ";");
+		System.out.println("int numSlots = " + numSlots + ";");
+		System.out.println("int numPromotedSlots = " + numPromotedSlots + ";");
+		System.out.println("boolean integerProgram = " + integerProgram + ";");
+		System.out.println("boolean useEpsilon = " + useEpsilon + ";");
+		System.out.println("double[] knownSampledMu_a = " + replaceBrackets(Arrays.toString(knownSampledMu_a)) + ";");
+		System.out.println("int numSamples = " + numSamples + ";");
+		System.out.println("int maxImpsPerAgent = " + maxImpsPerAgent + ";");
+		System.out.println("double[] knownI_aDistributionMean = " + replaceBrackets(Arrays.toString(knownI_aDistributionMean)) + ";");
+		System.out.println("double[] knownI_aDistributionStdev = " + replaceBrackets(Arrays.toString(knownI_aDistributionStdev)) + ";");
+		System.out.println("boolean useRankingConstraints = " + useRankingConstraints + ";");
+		System.out.println("boolean multipleSolutions = " + multipleSolutions + ";");		
+		//END DEBUG
 		
 		
 		

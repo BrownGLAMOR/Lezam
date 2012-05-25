@@ -54,6 +54,7 @@ public class IEResult {
    public String toString() {
       StringBuffer sb = new StringBuffer();
       sb.append("Result:\n\tobj=" + _obj + "\n\tsol=" + Arrays.toString(_sol) + "\n\torder=" + Arrays.toString(_order) + "\n\tslotImpr=" + Arrays.toString(_slotImpr));
+      sb.append("Result:\n\tobj=" + _obj + "\n\torder=" + Arrays.toString(_order) + "\n\tslotImpr=" + Arrays.toString(_slotImpr) + "\n\tsol=" + Arrays.toString(_sol));
       //sb.append("Result:\tobj=" + _obj + "\tsol=" + Arrays.toString(_sol));
       return sb.toString();
 

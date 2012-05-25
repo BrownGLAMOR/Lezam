@@ -1,5 +1,7 @@
 package models.queryanalyzer.iep;
 
+import java.util.Arrays;
+
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
@@ -16,22 +18,29 @@ public class CarletonLP {
 	
 	
 	
-	private final static boolean USE_EPSILON = true;
+	private final static boolean USE_EPSILON = false;
 	private final static double EPSILON = .0001;
-	
+	private final static boolean SUPPRESS_OUTPUT = true;
+	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
+	private final static double TIMEOUT_IN_SECONDS = 3;
+
 	
 	
 	
 	//************************************ MAIN SOLVER METHOD ************************************
 	public static LPSolution solveIt(int numSlots, double[] avgPos_a, 
 			int M, int us, int imp, int[] dropout_a, double bestObj) {
-
+		//System.out.println("solveIt: numSlots=" + numSlots + ", avgPos_a=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj);
+		
 		int numAgents = avgPos_a.length;
 		LPSolution solution = null; // The solution that will ultimately be returned.
 
 		try {
 			IloCplex cplex = new IloCplex();
 			
+			//-------------------------------- SET CPLEX PARAMS -------------------------------------
+			if (SUPPRESS_OUTPUT) cplex.setOut(null);
+			cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
 			
 			
 			//-------------------------------- CREATE DECISION VARIABLES -------------------------------------
@@ -139,11 +148,13 @@ public class CarletonLP {
 			
 			
 			//----------------------------- PRINT AND SOLVE MODEL --------------------------------------------------
+			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
 			if ( cplex.solve() ) {
 				cplex.output().println("Solution status = " + cplex.getStatus());
 				cplex.output().println("Solution value = " + cplex.getObjValue());
 				cplex.output().println("Objective function = " + cplex.getObjective());
 
+				
 				double objectiveVal = cplex.getObjValue();	
 				double[] S_aVal = cplex.getValues(S_a);
 				double[] T_aVal = cplex.getValues(T_a);
@@ -155,7 +166,7 @@ public class CarletonLP {
 				
 				
 			} else {
-				System.out.println("Solver returned false.");
+				//System.out.println("Solver returned false.");
 				//System.out.println("Model: " + cplex.getModel() );
 			}
 			
@@ -166,7 +177,7 @@ public class CarletonLP {
 		}
 		
 		
-		System.out.println(solution);
+		//System.out.println(solution);
 		return solution;
 	}
 	
@@ -202,14 +213,26 @@ public class CarletonLP {
 //		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
 		
 		
+//		int numSlots = 5;
+////		double[] avgPos_a = {1, 1.504146, 2.126708, 3.035672, 3.461909, 3.918221, 3.930876, 4}; 
+//		double[] avgPos_a = {1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558, 4};
+//		int M = 1037;
+//		int us = 2;
+//		int imp = 805;
+//		int[] dropout_a = {0, 0, 0, 0, 0, 1, 1, 2};
+//		double bestObj = -1;
+//		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
+
+		
 		int numSlots = 5;
-		double[] avgPos_a = {1, 1.504146, 2.126708, 3.035672, 3.461909, 3.918221, 3.930876, 4}; 
-		int M = 1037;
-		int us = 2;
-		int imp = 805;
-		int[] dropout_a = {0, 0, 0, 0, 0, 1, 1, 2};
+		double[] avgPos_a = {1.0};
+		int M = 1300;
+		int us = 0;
+		int imp = 300;
+		int[] dropout_a = {0};
 		double bestObj = -1;
 		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
+
 		
 	}
 	
