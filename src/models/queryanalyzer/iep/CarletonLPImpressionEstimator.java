@@ -138,7 +138,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       //---------------------------------------------------------------
       //TODO Calling Carleton's search will go here.
       //---------------------------------------------------------------    
-      carletonLP = new CarletonLP(orderedI_aDistributionMean, orderedI_aDistributionStdev);
+      carletonLP = new CarletonLP(orderedMu_a, orderedSampledMu_a, _slots, orderedI_aDistributionMean, orderedI_aDistributionStdev);
 
       
       //this causes pruning, and thus algorithm correctness, 
@@ -225,7 +225,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	   boolean DEBUG = false;
 	   if (DEBUG) {
 		   int[] correctDropout = {0, 0, 0, 0, 0, 1, 1, 2};
-		   _bestSol = carletonLP.solveIt(numSlots, avgPos_a, M, us, imp, correctDropout, _bestObj);
+		   _bestSol = carletonLP.solveIt(M, us, imp, correctDropout, _bestObj);
 		   return;
 	   }
 	   
@@ -241,7 +241,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	
 		   //This is a leaf in the tree search, solve the LP and see if you have a better solution.
 		   //System.out.println("Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
-		   LPSolution sol = carletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout, _bestObj);
+		   LPSolution sol = carletonLP.solveIt(M, us, imp, dropout, _bestObj);
 		   _checked++;
 		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 		   //If the solution is non-null we know it's the best solution found so far, becouse of the _bestObj bound in the LP.
@@ -271,7 +271,8 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 				   dropout_tmp[i] = dropout[i];
 			   }
 			   //System.out.println("Tricky Solve: numSlots=" + numSlots + ", avgPos_tmp=" + Arrays.toString(avgPos_tmp) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_tmp=" + Arrays.toString(dropout_tmp) + ", bestObj=" + _bestObj);
-			   LPSolution sol = carletonLP.solveIt(agent, avgPos_tmp, M, us, imp, dropout_tmp, _bestObj);
+			   int effectiveNumAgents = agent;
+			   LPSolution sol = carletonLP.solveIt(effectiveNumAgents, M, us, imp, dropout_tmp, _bestObj);
 			   _checked++;
 			   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 			   if(sol == null){ //if infeasible we can backtrack immidately.

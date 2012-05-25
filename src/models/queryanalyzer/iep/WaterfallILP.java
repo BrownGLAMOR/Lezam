@@ -44,7 +44,7 @@ public class WaterfallILP {
 	}
 
 	//************************************ CONFIG ************************************
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES;
 	private boolean RETURN_MULTIPLE_SOLUTIONS = false;
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
@@ -277,7 +277,8 @@ public class WaterfallILP {
 		this.knownSampledMu_a = knownSampledMu_a;
 		this.isKnownSampledMu_a = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
-			if(Double.isNaN( knownSampledMu_a[a] )) knownSampledMu_a[a] = 0; //change NaN values to 0
+			//change NaN values to the agent's position (assumes their average position was roughly their starting position
+			if(Double.isNaN( knownSampledMu_a[a] )) knownSampledMu_a[a] = Math.min(numSlots, a+1); 
 			if(knownSampledMu_a[a] != -1) {
 				isKnownSampledMu_a[a] = true; //mark whether it's known
 				samplingAnyAveragePositions = true; //If any sampled avg positions are known, this is true.
@@ -881,6 +882,7 @@ public class WaterfallILP {
 
 		} else {
 			System.out.println("Solve returned false");
+			System.out.println("status: " + cplex.getStatus());
 		}
 		
 		if (USE_RANKING_CONSTRAINTS) return new WaterfallResult(objectiveVal, I_a_sDouble, U_kDouble, V_i_kInt, r_a_agentInt);
@@ -2423,20 +2425,57 @@ public class WaterfallILP {
 	public static void main(String[] args) {
 		
 		
-		double[] knownI_a = {51.0, -1.0, -1.0, -1.0, -1.0};
-		double[] knownMu_a = {1.0, -1.0, -1.0, -1.0, -1.0};
-		double[] knownI_aPromoted= {0.0, -1.0, -1.0, -1.0, -1.0};
-		boolean[] isKnownPromotionEligible = {false, false, false, false, false};
-		int[] hitBudget = {0, -1, -1, -1, -1};
+//		  I_a=[-1.0, 562.0, -1.0], Mu_a=[-1.0, 1.0480427046263345, -1.0], I_aPromoted=[-1.0, 0.0, -1.0], 
+//		promOK=[false, false, false], hitBudget=[-1, 0, -1], numAgents=3, numSlots=5, numPromotedSlots=0, 
+//		sampledMu_a=[0.0, 1.0, 0.0], numSamples=10, I_aDistMean=[-1.0, -1.0, -1.0], I_aDistStdev=[-1.0, -1.0, -1.0], maxImpsPerAgent=674
+//		  Solve returned false
+//		  status: Infeasible
+//		  result=Result:
+//		  	obj=Infinity
+//		  	sol=[0, 0, 0]
+//		  	order=[2, 1, 0]
+//		  	slotImpr=[0, 0, 0, 0, 0]Result:
+//		  	obj=Infinity
+//		  	order=[2, 1, 0]
+//		  	slotImpr=[0, 0, 0, 0, 0]
+//		  	sol=[0, 0, 0]
+//		  err=[9.0, 562.0, 27.0]	pred=[0, 0, 0]	actual=[9, 562, 27]	g=0 d=6 a=1 q=(Query (lioneer,null)) avgPos=[3.0, 1.0480427046263345, 1.0] sampAvgPos=[NaN, 1.0, NaN] bids=[0.4638576360261577, 0.5677197818057882, 1.5461402750119222] imps=[9, 562, 27] order=[2, 1, 0] MIP
+
+		
+//		
+//		  I_a=[-1.0, -1.0, -1.0, 252.0, -1.0, -1.0], Mu_a=[-1.0, -1.0, -1.0, 3.2738095238095237, -1.0, -1.0], I_aPromoted=[-1.0, -1.0, -1.0, 0.0, -1.0, -1.0], promOK=[false, false, false, false, false, false], 
+//		hitBudget=[-1, -1, -1, 0, -1, -1], numAgents=6, numSlots=5, numPromotedSlots=0, sampledMu_a=[1.0, 1.2, 2.2, 3.2, 4.2, 5.0], numSamples=10, I_aDistMean=[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0], 
+//		I_aDistStdev=[-1.0, -1.0, -1.0, -1.0, -1.0, -1.0], maxImpsPerAgent=302
+//		  Solve returned false
+//		  status: Infeasible
+//		  result=Result:
+//		  	obj=Infinity
+//		  	sol=[0, 0, 0, 0, 0, 0]
+//		  	order=[4, 3, 0, 1, 2, 5]
+//		  	slotImpr=[0, 0, 0, 0, 0]Result:
+//		  	obj=Infinity
+//		  	order=[4, 3, 0, 1, 2, 5]
+//		  	slotImpr=[0, 0, 0, 0, 0]
+//		  	sol=[0, 0, 0, 0, 0, 0]
+//		  err=[252.0, 252.0, 252.0, 252.0, 69.0, 5.0]	pred=[0, 0, 0, 0, 0, 0]	actual=[252, 252, 252, 252, 69, 5]	g=0 d=7 a=1 q=(Query (lioneer,dvd)) avgPos=[2.2738095238095237, 3.2738095238095237, 4.273809523809524, 1.2738095238095237, 1.0, 5.0] sampAvgPos=[2.2, 3.2, 4.2, 1.2, 1.0, NaN] bids=[0.8871037256070207, 0.7673870025234946, 0.6036604488081566, 1.3486029689734846, 1.5366761665532283, 0.6036604488081565] imps=[252, 252, 252, 252, 69, 5] order=[4, 3, 0, 1, 2, 5] MIP
+//		   
+		
+		
+		
+		double[] knownI_a = {-1.0, -1.0, -1.0, 252.0, -1.0, -1.0};
+		double[] knownMu_a = {-1.0, -1.0, -1.0, 3.2738095238095237, -1.0, -1.0};
+		double[] knownI_aPromoted= {-1.0, -1.0, -1.0, 0.0, -1.0, -1.0};
+		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false};
+		int[] hitBudget = {-1, -1, -1, 0, -1, -1};
 		int numSlots = 5;
 		int numPromotedSlots = 0;
 		boolean integerProgram = false;
 		boolean useEpsilon = true;
-		double[] knownSampledMu_a = {1.0, 2.0, 1.2857142857142858, 2.2857142857142856, 2.6};
+		double[] knownSampledMu_a = {1.0, 1.2, 2.2, 3.2, 4.2, 5.0};
 		int numSamples = 10;
-		int maxImpsPerAgent = 1004;
-		double[] knownI_aDistributionMean = {-1.0, -1.0, -1.0, -1.0, -1.0};
-		double[] knownI_aDistributionStdev = {-1.0, -1.0, -1.0, -1.0, -1.0};
+		int maxImpsPerAgent = 302;
+		double[] knownI_aDistributionMean = {-1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
+		double[] knownI_aDistributionStdev = {-1.0, -1.0, -1.0, -1.0, -1.0, -1.0};
 		boolean useRankingConstraints = false;
 		boolean multipleSolutions = false;
 		double timeoutInSeconds = 3;
@@ -2474,6 +2513,63 @@ public class WaterfallILP {
 		System.out.println("Agent Imps: " + Arrays.toString(agentImps));
 
 		//Get all impressions, given mu_a values and our agent's impressions
+
+		
+		
+		
+		
+		
+//		double[] knownI_a = {51.0, -1.0, -1.0, -1.0, -1.0};
+//		double[] knownMu_a = {1.0, -1.0, -1.0, -1.0, -1.0};
+//		double[] knownI_aPromoted= {0.0, -1.0, -1.0, -1.0, -1.0};
+//		boolean[] isKnownPromotionEligible = {false, false, false, false, false};
+//		int[] hitBudget = {0, -1, -1, -1, -1};
+//		int numSlots = 5;
+//		int numPromotedSlots = 0;
+//		boolean integerProgram = false;
+//		boolean useEpsilon = true;
+//		double[] knownSampledMu_a = {1.0, 2.0, 1.2857142857142858, 2.2857142857142856, 2.6};
+//		int numSamples = 10;
+//		int maxImpsPerAgent = 1004;
+//		double[] knownI_aDistributionMean = {-1.0, -1.0, -1.0, -1.0, -1.0};
+//		double[] knownI_aDistributionStdev = {-1.0, -1.0, -1.0, -1.0, -1.0};
+//		boolean useRankingConstraints = false;
+//		boolean multipleSolutions = false;
+//		double timeoutInSeconds = 3;
+//		
+//		
+//		//Get mu_a values, given impressions
+//		WaterfallILP ilp = new WaterfallILP(
+//				knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
+//				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
+//				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev,
+//				useRankingConstraints, multipleSolutions, timeoutInSeconds);
+//
+//		WaterfallResult result = ilp.solve();
+//		double[][] I_a_s = result.getI_a_s();
+//		double[] U_k = result.getU_k();
+//		int[][] V_i_k = result.getV_i_k();
+//		int[] ordering = result.getOrdering();
+//		System.out.println("I_a_s = " + arrayString(I_a_s));
+//		System.out.println("U_k = " + Arrays.toString(U_k));
+//		System.out.println("V_i_k = " + arrayString(V_i_k));
+//		System.out.println("ordering = " + Arrays.toString(ordering));
+//		System.out.println("objective = " + result.getObjectiveVal());
+//		System.out.println("Done");
+//
+//
+//
+//		//Print each agent's impressions
+//		double[] agentImps = new double[I_a_s.length];
+//		for (int a=0; a<I_a_s.length; a++) {
+////			for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+//			for (int s=0; s<numSlots; s++) {
+//				agentImps[a] += I_a_s[a][s];
+//			}
+//		}
+//		System.out.println("Agent Imps: " + Arrays.toString(agentImps));
+//
+//		//Get all impressions, given mu_a values and our agent's impressions
 
 
 

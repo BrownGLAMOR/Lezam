@@ -30,7 +30,7 @@ public class ImpressionEstimatorTest {
       this.IMP_UB_FACTOR = upperBoundNoise;
    }
 
-   private static boolean DEBUG = false;
+   private static boolean DEBUG = true;
    private static boolean LOGGING = false;
    private static boolean SUMMARY = true;
 
@@ -2358,13 +2358,13 @@ public class ImpressionEstimatorTest {
 //	   ImpressionEstimatorTest.runAllTests();
 
 
-      boolean sampleAvgPositions = false;
+      boolean sampleAvgPositions = true;
       boolean perfectImps = true;
       boolean useWaterfallPriors = false;
       double noiseFactor = 0.0;
       boolean useHistoricPriors = false;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
-      boolean orderingKnown = false;
+      boolean orderingKnown = true;
       SolverType solverToUse = SolverType.MIP; //SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
@@ -2380,7 +2380,7 @@ public class ImpressionEstimatorTest {
       int START_QUERY = 0; //0
       int END_QUERY = 15; //15
       String AGENT_NAME = "Schlemazl"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
-      double IP_TIMEOUT_IN_SECONDS = 3;
+      double IP_TIMEOUT_IN_SECONDS = 6;
       int sampFrac = 100;
       double upperBoundNoise = 1.2;
 
