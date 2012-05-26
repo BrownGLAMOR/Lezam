@@ -140,7 +140,7 @@ public class MCKP extends AbstractAgent {
       _capMod = new HashMap<Integer, Double>();
       _capMod.put( _lowCapacThresh,1.0); //why are these hardcoded in now?//HC num
       _capMod.put( _midCapacThresh,1.0);
-      _capMod.put( _lowCapacThresh,1.0);
+      _capMod.put( _highCapacThresh,1.0);
 //      _capMod.put(300,c1);
 //      _capMod.put(450,c2);
 //      _capMod.put(600,c3);
