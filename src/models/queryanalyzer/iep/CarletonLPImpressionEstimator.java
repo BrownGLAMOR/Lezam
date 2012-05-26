@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class CarletonLPImpressionEstimator implements AbstractImpressionEstimator {
 
-   private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
+   private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MAXIMIZE; //maximize or minimize?
    private QAInstance _instance;
    private int _advertisers;
    private int _slots;
@@ -37,7 +37,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    int _bestChecked;
    
    CarletonLP carletonLP;
-   boolean BRANCH_AND_BOUND = true;
+   boolean BRANCH_AND_BOUND = false;
    
    
    static int boundCount = 0;

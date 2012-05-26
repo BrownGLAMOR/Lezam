@@ -7,6 +7,8 @@ import ilog.cplex.IloCplex.UnknownObjectException;
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
+import weka.experiment.AveragingResultProducer;
+
 
 
 //NOTE: CPLEX environment variable must be correctly set:
@@ -38,11 +40,15 @@ public class WaterfallILP {
 		CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
 		MINIMIZE_SAMPLE_MU_DIFF, //get resulting avgPos as close as possible to sampledMu
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
+		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF, 
 		DEPENDS_ON_CIRCUMSTANCES,
 		MAXIMIZE_IMPRESSIONS_IN_SAMPLED_BUCKETS,
-		MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS
+		MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS,
 	}
 
+	
+	boolean BUGGY_VERSION = false;
+	
 	//************************************ CONFIG ************************************
 	private static boolean DEBUG = true;
 	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES;
@@ -213,7 +219,9 @@ public class WaterfallILP {
 			} else if (usingPriors && !sampledProblem) {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
 			} else { //usingPriors && sampledProblem
-				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+				//DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+				//DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
 			}
 			System.out.println("usingPriors: " + usingPriors + ", sampledProblem: " + sampledProblem + ", objective: " + DESIRED_OBJECTIVE);
 		}
@@ -278,7 +286,12 @@ public class WaterfallILP {
 		this.isKnownSampledMu_a = new boolean[numAgents];
 		for (int a=0; a<numAgents; a++) {
 			//change NaN values to the agent's position (assumes their average position was roughly their starting position
-			if(Double.isNaN( knownSampledMu_a[a] )) knownSampledMu_a[a] = Math.min(numSlots, a+1); 
+			if(Double.isNaN( knownSampledMu_a[a] )) {
+				knownSampledMu_a[a] = Math.min(numSlots, a+1);
+				if (BUGGY_VERSION) knownSampledMu_a[a] = 0;
+			}
+			
+			
 			if(knownSampledMu_a[a] != -1) {
 				isKnownSampledMu_a[a] = true; //mark whether it's known
 				samplingAnyAveragePositions = true; //If any sampled avg positions are known, this is true.
@@ -408,6 +421,14 @@ public class WaterfallILP {
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
 				if (!USE_RANKING_CONSTRAINTS) addObjective_minimizeImpressionPriorError(cplex, I_a);
 				else addObjective_minimizeImpressionPriorErrorRankingUnknown(cplex, I_a, r_a_agent);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF) {
+				if (!USE_RANKING_CONSTRAINTS) {
+					addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(cplex, I_a_s, I_a);
+				}
+				else {
+					System.err.println("We don't have an objective for this. Switching to a default case.");
+					addObjective_minimizeImpressionPriorErrorRankingUnknown(cplex, I_a, r_a_agent);
+				}
 			} else if (DESIRED_OBJECTIVE == Objective.MAXIMIZE_IMPRESSIONS_IN_SAMPLED_BUCKETS) {
 				addObjective_maximizeImpressionsInSampledBuckets(cplex, z_k);
 			} else if (DESIRED_OBJECTIVE == Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS) {
@@ -1242,8 +1263,9 @@ public class WaterfallILP {
 			IloNumVar[][] I_a_s, IloNumVar[] I_a) throws IloException {
 		
 		//The maximum allowed difference between the sample and observed average positions 
-		int LARGE_CONSTANT = numSlots;
-			
+		int LARGE_CONSTANT = numSlots*maxImpsPerAgent;
+		if (BUGGY_VERSION) LARGE_CONSTANT = numSlots;
+		
 		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
 		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
 		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
@@ -1297,6 +1319,75 @@ public class WaterfallILP {
 		}
 		cplex.addMinimize(relevantErrors);
 	}
+	
+	
+	
+	
+	/**
+	 * This will make the predicted agent impressions as close to our priors as possible. 
+	 * @param cplex
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(IloCplex cplex, IloNumVar[][] I_a_s, IloNumVar[] I_a) throws IloException {
+		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
+		
+		
+		//----- Impressions prior error
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, MAX_ERROR);				
+		
+		// This constraint ensures that any difference between the waterfall's predicted impressions and 
+		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
+		IloLinearNumExpr impressionsErrors = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			//Only consider this agent's impressions model if we don't know its exact impressions.
+			if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
+				cplex.addLe(I_a[a], cplex.sum( knownI_aDistributionMean[a] , cplex.prod(knownI_aDistributionStdev[a], I_aError[a])  )  );
+				cplex.addGe(I_a[a], cplex.diff( knownI_aDistributionMean[a] , cplex.prod(knownI_aDistributionStdev[a], I_aError[a])  )  );
+				impressionsErrors.addTerm(1, I_aError[a]);
+			}
+		}
+		
+		
+		//----- Average position error
+				
+		//The maximum allowed difference between the sample and observed average positions 
+		int LARGE_CONSTANT = numSlots*maxImpsPerAgent;
+		
+		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
+		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		
+		//Add constraints stating resulting avgPositions have to be close to sampledMu
+		for (int a=0; a<numAgents; a++) {
+			if (!isKnownMu_a[a] && isKnownSampledMu_a[a]) {
+				//Compute resulting avgPosition
+				IloLinearNumExpr lhs = cplex.linearNumExpr();
+				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+					lhs.addTerm(s+1, I_a_s[a][s]);
+				}
+				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], I_a[a]);
+
+				//Make sure avgPosition is close to satisfied
+				cplex.addLe(lhs, cplex.sum(rhs, errors[a]));
+				cplex.addGe(lhs, cplex.sum(rhs, cplex.prod(-1, errors[a])));
+				
+				//Keep track of which agents have constraints here
+				relevantErrors.addTerm(1, errors[a]);
+			}
+		}
+		
+		
+		//Compute some weighted sum of these two errors
+		//TODO: what should the weight be?
+		double impressionsWeight = 1;
+		double avgPosWeight = 10;
+		IloNumExpr weightedError = cplex.sum( cplex.prod(impressionsWeight, impressionsErrors),
+				cplex.prod(avgPosWeight, relevantErrors) );
+		cplex.addMinimize(weightedError);
+	}
+	
+	
 	
 	
 	

@@ -21,9 +21,10 @@ public class CarletonLP {
 	
 	public enum Objective
 	{
-		CLOSE_TO_IMPRESSIONS_UPPER_BOUND,
+		MAXIMIZE_IMPRESSIONS,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
 		MINIMIZE_SAMPLE_MU_DIFF,
+		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF,
 	}
 	
 	private final static boolean USE_EPSILON = false;
@@ -31,7 +32,7 @@ public class CarletonLP {
 	private final static boolean SUPPRESS_OUTPUT = true;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-	private final static Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
+	private final static Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
 
 	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
@@ -128,13 +129,15 @@ public class CarletonLP {
 			
 			//-------------------------------- CREATE OBJECTIVE FUNCITON -------------------------------------
 			
-			if (DESIRED_OBJECTIVE == Objective.CLOSE_TO_IMPRESSIONS_UPPER_BOUND) {
+			if (DESIRED_OBJECTIVE == Objective.MAXIMIZE_IMPRESSIONS) {
 				addObjective_closeToImpressionsUpperBound(cplex, T_a, bestObj, effectiveNumAgents);
 			}
 			else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
 				addObjective_minimizeImpressionPriorError(cplex, T_a, us, T_aPriorMean, T_aPriorStdev, bestObj, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SAMPLE_MU_DIFF) {
-				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, T_a, bestObj, effectiveNumAgents);
+				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, T_a, bestObj, effectiveNumAgents, M);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF) {
+				addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(cplex, I_a_s, T_a, effectiveNumAgents, us, imp, M, bestObj);
 			}
 			
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
@@ -296,21 +299,20 @@ public class CarletonLP {
 	
 	
 	
-	
 	/**
 	 * This will cause constraints to be created that try to make the average positions
 	 * as close as possible to what were sampled (assuming you don't have exact info for that position).
 	 * 
 	 * @param cplex
 	 * @param I_a_s
-	 * @param T_a
+	 * @param I_a
 	 * @throws IloException
 	 */
 	private void addObjective_minimizeDistanceFromSampledMu(IloCplex cplex,
-			IloNumVar[][] I_a_s, IloNumVar[] T_a, double bestObj, int numAgents) throws IloException {
+			IloNumVar[][] I_a_s, IloNumVar[] I_a, double bestObj, int numAgents, int maxImpsPerAgent) throws IloException {
 		
 		//The maximum allowed difference between the sample and observed average positions 
-		int LARGE_CONSTANT = numSlots;
+		int LARGE_CONSTANT = numSlots*maxImpsPerAgent;
 		
 		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
 		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
@@ -324,7 +326,7 @@ public class CarletonLP {
 				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
 					lhs.addTerm(s+1, I_a_s[a][s]);
 				}
-				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], T_a[a]);
+				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], I_a[a]);
 
 				//Make sure avgPosition is close to satisfied
 				cplex.addLe(lhs, cplex.sum(rhs, errors[a]));
@@ -343,6 +345,149 @@ public class CarletonLP {
 			cplex.addLe(relevantErrors, bestObj);
 		}
 	}
+	
+	
+	
+	
+	
+	
+	
+
+	
+	/**
+	 * This will make the predicted agent impressions as close to our priors as possible. 
+	 * @param cplex
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(
+			IloCplex cplex, IloNumVar[][] I_a_s, IloNumVar[] I_a, int numAgents, int us, int imp, int M, double bestObj) throws IloException {
+		// These variables will determine how close the resulting waterfall is to our prior I_a distributions
+		
+		
+		//----- Impressions prior error
+		IloNumVar[] I_aError = cplex.numVarArray(numAgents, 0, MAX_ERROR);				
+		
+		// This constraint ensures that any difference between the waterfall's predicted impressions and 
+		// our prior impression predictions is accounted for in an error term (some objectives will be trying to minimize this).
+		IloLinearNumExpr impressionsErrors = cplex.linearNumExpr();
+		for (int a=0; a<numAgents; a++) {
+			//Only consider this agent's impressions model if we don't know its exact impressions.
+			//NOTE! This is assuming we have some impressions prior for each agent.
+			if (a != us) {
+			//if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
+				cplex.addLe(I_a[a], cplex.sum( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
+				cplex.addGe(I_a[a], cplex.diff( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
+				impressionsErrors.addTerm(1, I_aError[a]);
+			}
+		}
+		
+		
+		//----- Average position error
+				
+		//The maximum allowed difference between the sample and observed average positions 
+		int LARGE_CONSTANT = numSlots*M;
+		
+		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
+		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
+		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+		
+		//Add constraints stating resulting avgPositions have to be close to sampledMu
+		for (int a=0; a<numAgents; a++) {
+			if (!isKnownMu_a[a] && isKnownSampledMu_a[a]) {
+				//Compute resulting avgPosition
+				IloLinearNumExpr lhs = cplex.linearNumExpr();
+				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+					lhs.addTerm(s+1, I_a_s[a][s]);
+				}
+				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], I_a[a]);
+
+				//Make sure avgPosition is close to satisfied
+				cplex.addLe(lhs, cplex.sum(rhs, errors[a]));
+				cplex.addGe(lhs, cplex.sum(rhs, cplex.prod(-1, errors[a])));
+				
+				//Keep track of which agents have constraints here
+				relevantErrors.addTerm(1, errors[a]);
+			}
+		}
+		
+		
+		//Compute some weighted sum of these two errors
+		//TODO: what should the weight be?
+		double impressionsWeight = 1;
+		double avgPosWeight = 10;
+		IloNumExpr weightedError = cplex.sum( cplex.prod(impressionsWeight, impressionsErrors),
+				cplex.prod(avgPosWeight, relevantErrors) );
+		cplex.addMinimize(weightedError);
+		
+	
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addLe(relevantErrors, bestObj);
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
+	 * This will cause constraints to be created that try to make the average positions
+	 * as close as possible to what were sampled (assuming you don't have exact info for that position).
+	 * 
+	 * @param cplex
+	 * @param I_a_s
+	 * @param T_a
+	 * @throws IloException
+	 */
+//	private void addObjective_minimizeDistanceFromSampledMu(IloCplex cplex,
+//			IloNumVar[][] I_a_s, IloNumVar[] T_a, double bestObj, int numAgents) throws IloException {
+//		
+//		//The maximum allowed difference between the sample and observed average positions 
+//		int LARGE_CONSTANT = numSlots;
+//		
+//		//Create variable which will say how far an agent's predicted average position is from the observed sampleMu
+//		IloNumVar[] errors = cplex.numVarArray(numAgents, 0, LARGE_CONSTANT);	
+//		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
+//		
+//		//Add constraints stating resulting avgPositions have to be close to sampledMu
+//		for (int a=0; a<numAgents; a++) {
+//			if (!isKnownMu_a[a] && isKnownSampledMu_a[a]) {
+//				//Compute resulting avgPosition
+//				IloLinearNumExpr lhs = cplex.linearNumExpr();
+//				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+//					lhs.addTerm(s+1, I_a_s[a][s]);
+//				}
+//				IloNumExpr rhs = cplex.prod(knownSampledMu_a[a], T_a[a]);
+//
+//				//Make sure avgPosition is close to satisfied
+//				cplex.addLe(lhs, cplex.sum(rhs, errors[a]));
+//				cplex.addGe(lhs, cplex.sum(rhs, cplex.prod(-1, errors[a])));
+//				
+//				//Keep track of which agents have constraints here
+//				relevantErrors.addTerm(1, errors[a]);
+//			}
+//		}
+//		
+//		//Minimize total distance from sampledMus
+//		cplex.addMinimize(relevantErrors);
+//		
+//		//Must be better than previously best objective
+//		if (bestObj != -1) {
+//			cplex.addLe(relevantErrors, bestObj);
+//		}
+//	}
 	
 	
 	

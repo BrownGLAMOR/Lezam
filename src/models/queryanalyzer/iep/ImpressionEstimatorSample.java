@@ -61,6 +61,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    private boolean[] _agentSawSample; //true if the agent saw at least one sample.
    private boolean[] _agentIsPadded; //true if the agent is a dummy or "padded" agent.
    private int[] _agentIds;
+   
 
    private double _startTime;
    private double _timeOut = 5; //in seconds

@@ -31,6 +31,7 @@ public interface AbstractImpressionEstimator {
 	 */
 	public ObjectiveGoal getObjectiveGoal(); 
 	
+		
 	
 	public enum ObjectiveGoal {
 		MINIMIZE, MAXIMIZE
