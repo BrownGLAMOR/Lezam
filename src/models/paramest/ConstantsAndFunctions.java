@@ -22,6 +22,9 @@ public class ConstantsAndFunctions {
            {0.4, 0.5}};
 
    // Average advertiser effect
+   //TODO: If we are going to average these, should it really be unweighted? It seems that
+   //  users not satisfying the advertiser effect will be more likely. 
+   //  (Does a weighting of 2/3 no advertiser effect and 1/3 advertiser effect make more sense?)
    public static final double[] _advertiserEffectBoundsAvg = {
            (_advertiserEffectBounds[0][0] + _advertiserEffectBounds[0][1]) / 2,
            (_advertiserEffectBounds[1][0] + _advertiserEffectBounds[1][1]) / 2,

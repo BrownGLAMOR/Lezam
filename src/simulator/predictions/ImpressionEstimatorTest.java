@@ -31,7 +31,7 @@ public class ImpressionEstimatorTest {
    }
 
    private static boolean DEBUG = true;
-   private static boolean LOGGING = false;
+   private static boolean LOGGING = true;
    private static boolean SUMMARY = true;
 
    private static boolean NO_F0 = true;
@@ -54,7 +54,7 @@ public class ImpressionEstimatorTest {
 
    //if we're sampling average positions, do we want to remove agents that received no samples?
    //(if we're using exact average positions anyway, true/false has no effect)
-   boolean REMOVE_SAMPLE_NANS = true;
+   boolean REMOVE_SAMPLE_NANS = false;
 
 
    private double IMP_UB_FACTOR;
@@ -831,7 +831,7 @@ public class ImpressionEstimatorTest {
                      boolean considerPaddingAgents = true;
                      inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
                                            ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
-                                           reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone());
+                                           reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone(), reducedAgents.clone());
 
 
                      //System.exit(0); //DEBUG
@@ -1047,7 +1047,7 @@ public class ImpressionEstimatorTest {
                      //asdf
                      
                      //Update performance metrics
-                     updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedTotImpr, impsInFirstSlot, predictedOrdering, reducedTrueOrdering);
+                     updatePerformanceMetrics(predictedImpsPerAgent, reducedImps, predictedTotImpr, impsInFirstSlot, predictedOrdering, reducedTrueOrdering, reducedSampledAvgPos);
                      //outputPerformanceMetrics();
 
                      if(LOGGING) {
@@ -1512,7 +1512,7 @@ public class ImpressionEstimatorTest {
                                             int ourImps, int ourPromotedImps, int impressionsUB,
                                             boolean ourPromotionEligibility, boolean ourHitBudget,
                                             double[] reducedImpsDistMean, double[] reducedImpsDistStdev,
-                                            int[] ordering) {
+                                            int[] ordering, String[] reducedAgentNames) {
 
       double[] avgPos = new double[reducedAvgPos.length];
       boolean considerPadding = false;
@@ -1522,7 +1522,7 @@ public class ImpressionEstimatorTest {
          avgPos = reducedAvgPos.clone();
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
-                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null, reducedAgentNames);
       } else {
          avgPos = reducedSampledAvgPos.clone();
 
@@ -1541,7 +1541,7 @@ public class ImpressionEstimatorTest {
          debug("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
          return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
-                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null);
+                               reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null, reducedAgentNames);
       }
    }
 
@@ -1875,10 +1875,13 @@ public class ImpressionEstimatorTest {
     * @param predictedImpsPerAgent
     * @param actualImpsPerAgent
     */
-   private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int predTotImpr, int actualTotImpr, int[] predictedOrdering, int[] actualOrdering) {
+   private void updatePerformanceMetrics(int[] predictedImpsPerAgent, int[] actualImpsPerAgent, int predTotImpr, int actualTotImpr, int[] predictedOrdering, int[] actualOrdering, double[] reducedSampledAvgPos) {
       assert (predictedImpsPerAgent.length == actualImpsPerAgent.length);
-
+      
+      //System.out.println("reducedSampledAvgPos=" + Arrays.toString(reducedSampledAvgPos));
+      
       for (int a = 0; a < actualImpsPerAgent.length; a++) {
+    	  if (Double.isNaN(reducedSampledAvgPos[a])) continue; //Don't make predictions if no sampled avg position was received
          numImprsPredictions++;
          aggregateAbsImprError += Math.abs(predictedImpsPerAgent[a] - actualImpsPerAgent[a]);
       }
@@ -1901,6 +1904,8 @@ public class ImpressionEstimatorTest {
          boolean isCorrectParticipants = true;
          boolean isCorrectOrdering = true;
          for (int a=0; a<actualOrderingSorted.length; a++) {
+       	  	if (Double.isNaN(reducedSampledAvgPos[a])) continue; //Don't make predictions if no sampled avg position was received
+
             if (predictedOrderingSorted[a] != actualOrderingSorted[a]) isCorrectParticipants = false;
             if (predictedOrdering[a] != actualOrdering[a]) isCorrectOrdering = false;
          }
@@ -2371,22 +2376,21 @@ public class ImpressionEstimatorTest {
 	   int END_GAME = 15127;
 	   //	      int END_GAME = 15136;
 	   //	      int END_GAME = 15170;
-	   int START_DAY = 2; //0
-	   int END_DAY = 2; //57
-	   int START_QUERY = 1; //0
-	   int END_QUERY = 1; //15
+	   int START_DAY = 0; //0
+	   int END_DAY = 57; //57
+	   int START_QUERY = 0; //0
+	   int END_QUERY = 15; //15
 	   String AGENT_NAME = "Schlemazl"; //(Schlemazl, crocodileagent, McCon, Nanda_AA, TacTex, tau, Mertacor, MetroClick, all)
-	   double IP_TIMEOUT_IN_SECONDS = 6;
+	   double IP_TIMEOUT_IN_SECONDS = 30;
 	   int sampFrac = 100;
 	   double upperBoundNoise = 1.2;
 	   double convPrMult = .1;
 
 
-	   SolverType solverType = SolverType.CP;
 	   boolean exactAvgPositions=false;
-	   boolean orderingKnown=false; //FALSE? 
+	   boolean orderingKnown=true; //FALSE? 
 	   boolean perfectImps=false;
-	   boolean useHistoricPriors = true;
+	   boolean useHistoricPriors = false;
 
 	   StringBuffer sb = new StringBuffer();
 	   boolean sampledAvgPositions = !exactAvgPositions;
@@ -2396,16 +2400,16 @@ public class ImpressionEstimatorTest {
 	   double secondsElapsed;
 
 
+	   SolverType solverType = SolverType.Carleton_LP;
+
+	   
 	   String tmp = "SUMMARY: ---------------\n";
 	   tmp += "SUMMARY: STARTING TEST: exactAvgPos=" + exactAvgPositions + ", rankingKnown=" + orderingKnown + ", perfectImps=" + perfectImps + ", useHistoricPrior=" + useHistoricPriors + ", solver=" + solverType + "\n";
 	   System.out.println(tmp);
 	   sb.append(tmp);
-
 	   start = System.currentTimeMillis();
-
 	   double[] results = evaluator.impressionEstimatorPredictionChallenge(solverType, GAMES_TO_TEST, START_GAME, END_GAME,
 			   START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
-
 	   stop = System.currentTimeMillis();
 	   secondsElapsed = (stop - start) / 1000.0;
 	   tmp = "SUMMARY: results=" + Arrays.toString(results) + "\n";
@@ -2413,6 +2417,27 @@ public class ImpressionEstimatorTest {
 	   System.out.println(tmp);
 	   sb.append(tmp);
 	   System.out.println("\n\n\n\n\n" + sb.toString());
+	   
+	   
+	   
+	   solverType = SolverType.MIP_LP;
+	   tmp = "SUMMARY: ---------------\n";
+	   tmp += "SUMMARY: STARTING TEST: exactAvgPos=" + exactAvgPositions + ", rankingKnown=" + orderingKnown + ", perfectImps=" + perfectImps + ", useHistoricPrior=" + useHistoricPriors + ", solver=" + solverType + "\n";
+	   System.out.println(tmp);
+	   sb.append(tmp);
+	   start = System.currentTimeMillis();
+	   double[] results2 = evaluator.impressionEstimatorPredictionChallenge(solverType, GAMES_TO_TEST, START_GAME, END_GAME,
+			   START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
+	   stop = System.currentTimeMillis();
+	   secondsElapsed = (stop - start) / 1000.0;
+	   tmp = "SUMMARY: results=" + Arrays.toString(results2) + "\n";
+	   tmp += "SUMMARY: Seconds elapsed: " + secondsElapsed + "\n";
+	   System.out.println(tmp);
+	   sb.append(tmp);
+	   System.out.println("\n\n\n\n\n" + sb.toString());
+	   
+	   
+	   
    }
 
    
@@ -2440,11 +2465,12 @@ public class ImpressionEstimatorTest {
 
 	   boolean[] trueArr = {true};
 	   boolean[] falseArr = {false};
-	   boolean[] trueOrFalseArr = {false, true};
+	   boolean[] trueOrFalseArr = {true, false};
 	   //double[] noiseFactorArr = {0, .5, 1, 1.5};
 	   //SolverType[] solverArr = SolverType.values();
 	   //SolverType[] solverArr = {SolverType.CP, SolverType.MIP, SolverType.MIP_LP, SolverType.LDSMIP}; //, SolverType.MULTI_MIP};
-	   SolverType[] solverArr = {SolverType.CP, SolverType.MIP}; //, SolverType.MULTI_MIP};
+//	   SolverType[] solverArr = {SolverType.CP, SolverType.MIP, SolverType.Carleton_LP}; //, SolverType.MULTI_MIP};
+	   SolverType[] solverArr = {SolverType.LDSMIP, SolverType.Carleton_LP}; //, SolverType.MULTI_MIP};
 
 	   StringBuffer sb = new StringBuffer();
 	   for (boolean exactAvgPositions : trueOrFalseArr) {
@@ -2528,7 +2554,7 @@ public class ImpressionEstimatorTest {
 
 	   
 	   
-	   boolean debuggingTests=false;
+	   boolean debuggingTests=true;
 	   if (debuggingTests) {
 		   runDebuggingTests();
 		   System.exit(0);

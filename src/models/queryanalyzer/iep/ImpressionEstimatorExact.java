@@ -173,18 +173,22 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    private IEResult reduceIEResult(IEResult result) {
       //FIXME: Add something here
       int[] originalIds = _instance.getAgentIds();
+      _instance.getAgentNames();
 
       int[] paddedImpressions = result.getSol();
       int[] paddedOrder = result.getOrder();
       int[] paddedSlotImpressions = result.getSlotImpressions();
-
+      String[] paddedAgentNames = result.getAgentNames();
+      
       int[] reducedImpressions = new int[originalIds.length];
+      String[] reducedAgentNames = new String[originalIds.length];
       Arrays.fill(reducedImpressions, -1);
       for (int i = 0; i < originalIds.length; i++) {
          int originalId = originalIds[i];
          for (int j = 0; j < _agentIds.length; j++) {
             if (originalId == _agentIds[j]) {
                reducedImpressions[i] = paddedImpressions[j];
+               reducedAgentNames[i] = paddedAgentNames[j];
                //TODO: What should we do with reduced order? [2, 0, 1].
             }
          }
@@ -208,7 +212,9 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          }
       }
 
-      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions,result.getWaterfall());
+      //FIXME: Which names to use?
+      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions,result.getWaterfall(), reducedAgentNames);
+//      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions,result.getWaterfall(), originalNames);
    }
 
 
@@ -288,7 +294,8 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          //System.exit(-1);
          return null;
       } else {
-         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr, sol._waterfall);
+    	  String[] agentNames = _instance.getAgentNames(); //FIXME: This will only work if there were no padded agents (there shouldn't be any in the exact problem).
+         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr, sol._waterfall, agentNames);
          IEResult reducedResult = reduceIEResult(result);
          if (IE_DEBUG) {
             System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result + "\nReduced " + reducedResult);

@@ -24,12 +24,13 @@ public class QAInstance {
    private boolean _isSampled;
    private boolean _orderingKnown;
    private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
+   private String[] agentNames;
    int MIN_PADDED_AGENT_ID = 100;
 
    public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
                      boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
-                     int[] initialPosition) {
+                     int[] initialPosition, String[] agentNames) {
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
       assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -50,6 +51,7 @@ public class QAInstance {
       _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
       _isSampled = isSampled;
       _initialPosition = initialPosition;
+      this.agentNames = agentNames;
 
       _orderingKnown = true;
       for (int i = 0; i < _advetisers; i++) {
@@ -122,6 +124,10 @@ public class QAInstance {
 
    public boolean isSampled() {
       return _isSampled;
+   }
+   
+   public String[] getAgentNames() {
+	   return agentNames;
    }
 
    public boolean[] isPadded() {
@@ -314,13 +320,15 @@ public class QAInstance {
 
 
    public String toString() {
-      String temp = "";
-      temp += "Slots: " + _slots + "\n";
-      temp += "Advertisers: " + _advetisers + "\n";
-      temp += Arrays.toString(_agentIds) + "\n";
-      temp += Arrays.toString(_avgPos) + "\n";
-      temp += "index: " + _agentIndex + "\n";
-      temp += "impressions: " + _impressions + "\n";
+      String temp = "Instance:\n";
+      temp += "\tnumSlots: " + _slots + "\n";
+      temp += "\tnumAgents: " + _advetisers + "\n";
+      temp += "\tagentIds=" + Arrays.toString(_agentIds) + "\n";
+      temp += "\tagentNames=" + Arrays.toString(agentNames) + "\n";
+      temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";
+      temp += "\tsampledAvgPos=" + Arrays.toString(_sampledAvgPos) + "\n";
+      temp += "\touragentIdx=" + _agentIndex + "\n";
+      temp += "\tourImpressions=" + _impressions + "\n";
       return temp;
    }
 

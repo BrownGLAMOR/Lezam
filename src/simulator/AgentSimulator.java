@@ -163,9 +163,9 @@ public class AgentSimulator {
 		//----------------------------------------------------------
 		//  Simulator configuration parameters
 		//----------------------------------------------------------
-		GameSet gameSet = GameSet.qual2012; //GameSet.semi2011server1; //GameSet.semi2011server2;
-		int gameNumStart = 944; //1414; //621;
-		int gameNumEnd = 944; //1414; //621;
+		GameSet gameSet = GameSet.semi2011server1; //GameSet.qual2012; //GameSet.semi2011server1; //GameSet.semi2011server2;
+		int gameNumStart = 1417; //944; //1414; //621;
+		int gameNumEnd = 1417; //944; //1414; //621;
 		int agentNum = 1;
 
 

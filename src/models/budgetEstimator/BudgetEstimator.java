@@ -147,7 +147,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                      continue;
                   }
 
-                  //FIXME: Shouldn't this be the number of imps the agent
+                  //FIX ME: Shouldn't this be the number of imps the agent
                   //saw in this slot FOR THIS DROPOUT PERIOD?
                   //e.g. an agent that was in the 1st slot for 1000 imps
                   //may have been there while other agents were dropping out.
@@ -181,6 +181,8 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                      * We only want to assign the number of imps to this
                      * advertiser as there are before the advertiser drops out
                      */
+                     //TODO: Is the min necessary, or can we just take impsSinceLastDrop? 
+                     //  (It's not harming anything to take the min, I'm just not sure if there's a case I'm missing)
                      costs[agentIdx] += Math.min(slotImps,impsSinceLastDrop)*prClick*cpc;
 
                      
@@ -250,6 +252,7 @@ public class BudgetEstimator extends AbstractBudgetEstimator {
                //After conversation w/ Jordan: it is a question of what to do when agents make probe bids.
                //If an agent makes a probe bid today, does that necessarily mean they'll make a probe bid
                //tomorrow? If they're more likely to have a high budget the next day, maybe this makes sense.
+               //TODO: What is rankable? Add a comment about it here.
                if(!droppedOut[i] || cost < MIN_COST || imps[i] < MIN_IMPS || !rankable.get(currAdv)) {
                   cost = Double.MAX_VALUE;
                }

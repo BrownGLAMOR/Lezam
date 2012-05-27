@@ -56,7 +56,7 @@ public class WaterfallILP {
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
 	private double TIMEOUT_IN_SECONDS = 3;
-	private boolean SUPPRESS_OUTPUT = true;
+	private boolean SUPPRESS_OUTPUT = false;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
 	private boolean USE_RANKING_CONSTRAINTS; //If this is true, we don't actually know the rankings of agents, so we'll have to add constraints. (If false, agent in element i has the ith highest rank)
@@ -210,7 +210,7 @@ public class WaterfallILP {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
 				USE_SAMPLING_CONSTRAINTS = false;
 				USE_NEW_SAMPLING_CONSTRAINTS = false;
-				INTEGER_PROGRAM = true;
+				//INTEGER_PROGRAM = true;
 				
 //				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
 //				USE_SAMPLING_CONSTRAINTS = true;
@@ -560,6 +560,7 @@ public class WaterfallILP {
 			/**
 			 * Print and solve model
 			 */
+			System.out.println("WaterfallILP Objective: " + DESIRED_OBJECTIVE);
 //			System.out.println("Constraints added.");
 			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
 			

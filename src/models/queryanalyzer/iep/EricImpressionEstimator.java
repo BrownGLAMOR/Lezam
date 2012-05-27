@@ -23,9 +23,10 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
    private int[] _agentImprLB;
    private double[] _agentImpressionDistributionMean;
    private double[] _agentImpressionDistributionStdev;
+   private String[] agentNames;
 
    boolean INTEGER_PROGRAM;
-   boolean USE_EPSILON = true;
+   boolean USE_EPSILON = false;
    int NUM_SAMPLES = 10;
    boolean USE_RANKING_CONSTRAINTS;
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
@@ -51,7 +52,9 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       _imprUB = inst.getImpressionsUB();
       _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
       _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
-
+      agentNames = inst.getAgentNames();
+      
+      System.out.println("DEBUG Eric IE avgPos: " + Arrays.toString(_trueAvgPos));
    }
 
    public ObjectiveGoal getObjectiveGoal() {
@@ -139,7 +142,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
       //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
 
-      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall);
+      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall, agentNames);
    }
 
 
@@ -283,16 +286,18 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
          int[] predictedOrder = {-1, -1};
 
-         //Give arbitrary agent IDs
+         //Give arbitrary agent IDs and names
          int[] agentIds = new int[numAgents];
+         String[] agentNames = new String[numAgents];
          for (int i = 0; i < agentIds.length; i++) {
             agentIds[i] = -(i + 1);
+            agentNames[i] = "A" + i;
          }
 
 
          //int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified
-         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
-         QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
+         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
+         QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
 
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);

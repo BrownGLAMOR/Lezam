@@ -25,14 +25,15 @@ public class CarletonLP {
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
 		MINIMIZE_SAMPLE_MU_DIFF,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF,
+		DEPENDS_ON_CIRCUMSTANCES,
 	}
 	
 	private final static boolean USE_EPSILON = false;
-	private final static double epsilon = .0001;
-	private final static boolean SUPPRESS_OUTPUT = true;
+	private final static double epsilon = .00001;
+	private final static boolean SUPPRESS_OUTPUT = false;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-	private final static Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
 
 	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
@@ -45,31 +46,35 @@ public class CarletonLP {
 	//Predicted agent impressions
 	double[] T_aPriorMean;	
 	double[] T_aPriorStdev;
-	
+	boolean[] isKnownI_aDistributionMean; //Is T_a prior known? TODO: Should probably use this convention instead of T_aPrior (to match WaterfallILP)
+
 	int numAgents;
 	int numSlots;
 	double[] knownMu_a; //average position for each agent
 	boolean[] isKnownMu_a; //(if mu is not known, a default -1 value is used)
 	double[] knownSampledMu_a; //sampled average position
 	boolean[] isKnownSampledMu_a; //(if sampledMu not known, a default -1 value is used)
-
+	boolean[] isKnownI_a; //(if I_a is not known, a default -1 value is used)
+	double[] knownI_a;
 	
 	
 	
-	public CarletonLP(double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
+	public CarletonLP(double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
 		this.numAgents = knownMu_a.length;
 		this.numSlots = numSlots;
 		this.knownMu_a = knownMu_a;
 		this.knownSampledMu_a = knownSampledMu_a;
 		this.T_aPriorMean = T_aPriorMean;
 		this.T_aPriorStdev = T_aPriorStdev;
+		this.knownI_a = knownI_a;
 		
-
-		//isKnownI_a = new boolean[numAgents];
+		isKnownI_a = new boolean[numAgents];
 		isKnownMu_a = new boolean[numAgents];
 		this.isKnownSampledMu_a = new boolean[numAgents];
+		this.isKnownI_aDistributionMean = new boolean[numAgents];
+
 		for (int a=0; a<numAgents; a++) {
-			//if(knownI_a[a] != -1) isKnownI_a[a] = true;
+			if(knownI_a[a] != -1) isKnownI_a[a] = true;
 			if(knownMu_a[a] != -1) isKnownMu_a[a] = true;
 
 			//change NaN values to the agent's position (assumes their average position was roughly their starting position
@@ -79,7 +84,52 @@ public class CarletonLP {
 
 			//Make sure the minimum I_a stdev is 1. (We don't want to ever assume we know exactly what the opponent imps will be).
 			if (T_aPriorStdev[a] != -1 && T_aPriorStdev[a]< MIN_IMPRESSIONS_STDEV) T_aPriorStdev[a] = MIN_IMPRESSIONS_STDEV;
+			
+			if(T_aPriorMean[a] != -1) isKnownI_aDistributionMean[a] = true;
 		}
+		
+		
+		//-------------------
+		//(sampled problem if not all avgPositions are known exactly)
+		//usingPriors, sampledProblem = (f,f): minimizeSlotDiff
+		//usingPriors, sampledProblem = (f,t): spread_samples_linear (and USE_SAMPLING_CONSTRAINTS=true)
+		//usingPriors, sampledProblem = (t,f): minimize_impression_prior_error
+		//usingPriors, sampledProblem = (t,t): ??? (spread_samples_linear) : should be a combo, though
+		//If we don't know any priors, don't use an objective that depends on it
+		if (DESIRED_OBJECTIVE == Objective.DEPENDS_ON_CIRCUMSTANCES) {
+			boolean usingPriors = false;
+			boolean sampledProblem = false;
+			for (int a=0; a<numAgents; a++) {
+				if (isKnownI_aDistributionMean[a]) usingPriors = true;
+				if (!isKnownMu_a[a]) sampledProblem = true; 
+			}
+		
+			//Choose appropriate objective
+			if (!usingPriors && !sampledProblem) {
+				//DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
+				DESIRED_OBJECTIVE = Objective.MAXIMIZE_IMPRESSIONS;
+			} else if (!usingPriors && sampledProblem) {
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
+				//USE_SAMPLING_CONSTRAINTS = false;
+				//USE_NEW_SAMPLING_CONSTRAINTS = false;
+				//INTEGER_PROGRAM = true;
+				
+//				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
+//				USE_SAMPLING_CONSTRAINTS = true;
+//				USE_NEW_SAMPLING_CONSTRAINTS = true;
+//				INTEGER_PROGRAM = false;
+			} else if (usingPriors && !sampledProblem) {
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+			} else { //usingPriors && sampledProblem
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+				//DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
+				//DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
+			}
+			System.out.println("usingPriors: " + usingPriors + ", sampledProblem: " + sampledProblem + ", objective: " + DESIRED_OBJECTIVE);
+		}
+		//--------------------
+		
+		
 	}
 	
 	
@@ -95,7 +145,7 @@ public class CarletonLP {
 
 	//Solve problem with some (potentially reduced) number of agents.
 	public LPSolution solveIt(int effectiveNumAgents, int M, int us, int imp, int[] dropout_a, double bestObj) {
-		//if (effectiveNumAgents != numAgents) System.out.println("solveIt: effectiveNumAgents=" + effectiveNumAgents + ", numSlots=" + numSlots + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj);
+		System.out.println("solveIt: effectiveNumAgents=" + effectiveNumAgents + ", numSlots=" + numSlots + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj + ", avgPos=" + Arrays.toString(knownMu_a) + ", sampledAvgPos=" + Arrays.toString(knownSampledMu_a));
 		
 		LPSolution solution = null; // The solution that will ultimately be returned.
 
@@ -146,7 +196,7 @@ public class CarletonLP {
 
 			
 			//Our total impressions constraint
-			cplex.addEq(T_a[us], imp);
+			addConstraint_totalImpressionsKnown(cplex, T_a, effectiveNumAgents);
 			
 			
 			//Total number of impressions constraint:
@@ -203,12 +253,14 @@ public class CarletonLP {
 			
 			
 			//----------------------------- PRINT AND SOLVE MODEL --------------------------------------------------
+			System.out.println("CarletonLP Objective: " + DESIRED_OBJECTIVE);
 			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
 			if ( cplex.solve() ) {
 				cplex.output().println("Solution status = " + cplex.getStatus());
 				cplex.output().println("Solution value = " + cplex.getObjValue());
 				cplex.output().println("Objective function = " + cplex.getObjective());
 
+				
 				
 				double objectiveVal = cplex.getObjValue();	
 				double[] S_aVal = cplex.getValues(S_a);
@@ -218,6 +270,16 @@ public class CarletonLP {
 					I_a_sVal[a] = cplex.getValues(I_a_s[a]);
 				}				
 				solution = new LPSolution(objectiveVal, I_a_sVal, S_aVal, T_aVal);
+
+				
+				
+				System.out.println("Total Imps: " + Arrays.toString(T_aVal));
+				for (int a=0; a<I_a_s.length; a++) {
+					System.out.println("I_" + a + "_s Imps per slot: " + Arrays.toString(I_a_sVal[a]));					
+				}
+				
+				
+				
 				
 				
 			} else {
@@ -282,7 +344,7 @@ public class CarletonLP {
 		IloLinearNumExpr relevantErrors = cplex.linearNumExpr();
 		for (int a=0; a<numAgents; a++) {
 			//Only consider this agent's impressions model if we don't know its exact impressions.
-			if (a != us) {
+			if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
 				cplex.addLe(T_a[a], cplex.sum( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
 				cplex.addGe(T_a[a], cplex.diff( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
 				relevantErrors.addTerm(1, I_aError[a]);
@@ -374,7 +436,7 @@ public class CarletonLP {
 		for (int a=0; a<numAgents; a++) {
 			//Only consider this agent's impressions model if we don't know its exact impressions.
 			//NOTE! This is assuming we have some impressions prior for each agent.
-			if (a != us) {
+			if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
 			//if (isKnownI_aDistributionMean[a] && !isKnownI_a[a]) {
 				cplex.addLe(I_a[a], cplex.sum( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
 				cplex.addGe(I_a[a], cplex.diff( T_aPriorMean[a] , cplex.prod(T_aPriorStdev[a], I_aError[a])  )  );
@@ -437,6 +499,20 @@ public class CarletonLP {
 	
 	
 	
+	/**
+	 * This constraint ensures that if we know any agents' total impressions, the total 
+	 * impressions CPLEX decides on will match this value.
+	 * @param cplex
+	 * @param I_a
+	 * @throws IloException
+	 */
+	private void addConstraint_totalImpressionsKnown(IloCplex cplex, IloNumVar[] I_a, int numAgents) throws IloException {
+		for (int a=0; a<numAgents; a++) { 
+			if (isKnownI_a[a]) {
+				cplex.addEq(I_a[a], knownI_a[a]);
+			}
+		}
+	}
 	
 	
 	
@@ -571,7 +647,11 @@ public class CarletonLP {
 		double bestObj = -1;
 		double[] T_aPriorMean = {200, 200};
 		double[] T_aPriorStdev = {50, 50};
-		CarletonLP carletonLP = new CarletonLP(knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
+		double[] knownI_a = new double[numAgents];
+		Arrays.fill(knownI_a, -1);
+		knownI_a[us] = imp;
+		
+		CarletonLP carletonLP = new CarletonLP(knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
 		LPSolution sol = carletonLP.solveIt(M, us, imp, dropout_a, bestObj);
 		System.out.println(sol);
 		

@@ -496,11 +496,12 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 
             boolean padAgents = true;
 
+            
             QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(),
                                              trueAvgPos, sampledAvgPos, agentIdsArr, ourNewIdx,
                                              queryReport.getImpressions(q), queryReport.getPromotedImpressions(q), maxImps.get(q),
                                              padAgents, promotionEligibiltyVerified, hitOurBudget,
-                                             reducedImpMean, reducedImpStdDev, _isSampled, ordering);
+                                             reducedImpMean, reducedImpStdDev, _isSampled, ordering, agentNamesArr);
 
             ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);
             ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);

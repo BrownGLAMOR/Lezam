@@ -61,7 +61,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    private boolean[] _agentSawSample; //true if the agent saw at least one sample.
    private boolean[] _agentIsPadded; //true if the agent is a dummy or "padded" agent.
    private int[] _agentIds;
-   
+   String[] _agentNames;
 
    private double _startTime;
    private double _timeOut = 5; //in seconds
@@ -141,7 +141,8 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       }
 
       _agentIds = inst.getAgentIds();
-
+      _agentNames = inst.getAgentNames();
+      
       if (PAD_AGENTS) {
          //Initially, none of the agents are padded
          //(This isn't really needed when we know the rankings of everybody)
@@ -197,19 +198,27 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
     * @return
     */
    private IEResult reduceIEResult(IEResult result) {
+	   
+	   //If we didn't use padded agents, we don't need to reduce the result.
+	   if (!PAD_AGENTS) return result;
+	   
+	   
       int[] originalIds = _instance.getAgentIds();
 
       int[] paddedImpressions = result.getSol();
       int[] paddedOrder = result.getOrder();
       int[] paddedSlotImpressions = result.getSlotImpressions();
+      String[] paddedAgentNames = result.getAgentNames();
 
       int[] reducedImpressions = new int[originalIds.length];
+      String[] reducedAgentNames = new String[originalIds.length];
       Arrays.fill(reducedImpressions, -1);
       for (int i = 0; i < originalIds.length; i++) {
          int originalId = originalIds[i];
          for (int j = 0; j < _agentIds.length; j++) {
             if (originalId == _agentIds[j]) {
                reducedImpressions[i] = paddedImpressions[j];
+               reducedAgentNames[i] = paddedAgentNames[j];
                break;
             }
          }
@@ -233,7 +242,11 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          }
       }
 
-      return new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions, result.getWaterfall());
+      IEResult reducedResult = new IEResult(result.getObj(), reducedImpressions, reducedOrder, paddedSlotImpressions, result.getWaterfall(), reducedAgentNames);
+      System.out.println("Reduced IE Result: " + result);
+      System.out.println("Reduced IE Result: " + reducedResult);
+      
+      return reducedResult;
    }
 
 
@@ -262,6 +275,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       //Otherwise, remove anyone that didn't see a sample.
       int numAgents = _advertisers - numAgentsToRemove;
       int[] agentIds = new int[numAgents];
+      String[] agentNames = new String[numAgents];
       double[] avgPos = new double[numAgents];
       double[] sampledAvgPos = new double[numAgents];
       boolean[] agentIsPadded = new boolean[numAgents];
@@ -272,6 +286,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       for (int i = 0; i < _advertisers; i++) {
          if (!Double.isNaN(_trueAvgPos[i]) && _trueAvgPos[i] != -1) {
             agentIds[idx] = _agentIds[i];
+            agentNames[idx] = _agentNames[i];
             avgPos[idx] = _trueAvgPos[i];
             sampledAvgPos[idx] = _sampledAvgPos[i];
             agentIsPadded[idx] = _agentIsPadded[i];
@@ -283,6 +298,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       }
       _advertisers = numAgents;
       _agentIds = agentIds;
+      _agentNames = agentNames;
       _trueAvgPos = avgPos;
       _sampledAvgPos = sampledAvgPos;
       _agentIsPadded = agentIsPadded;
@@ -321,6 +337,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       double[] newAvgPos = new double[newAdvertisers];
       double[] newSampledAvgPos = new double[newAdvertisers];
       int[] newAgentIds = new int[newAdvertisers];
+      String[] newAgentNames = new String[newAdvertisers];
       boolean[] newAgentIsPadded = new boolean[newAdvertisers];
       double[] newAgentImpressionDistributionMean = new double[newAdvertisers];
       double[] newAgentImpressionDistributionStdev = new double[newAdvertisers];
@@ -330,6 +347,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          newAvgPos[i] = _trueAvgPos[i];
          newSampledAvgPos[i] = _sampledAvgPos[i];
          newAgentIds[i] = _agentIds[i];
+         newAgentNames[i] = _agentNames[i];
          newAgentIsPadded[i] = _agentIsPadded[i];
          newAgentImpressionDistributionMean[i] = _agentImpressionDistributionMean[i];
          newAgentImpressionDistributionStdev[i] = _agentImpressionDistributionStdev[i];
@@ -340,6 +358,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          newAvgPos[_advertisers + i] = startSlot + i;
          newSampledAvgPos[_advertisers + i] = Double.NaN;
          newAgentIds[_advertisers + i] = MIN_PADDED_AGENT_ID + i;
+         newAgentNames[_advertisers + i] = "PaddedAgent" + i;
          newAgentIsPadded[_advertisers + i] = true;
          newAgentImpressionDistributionMean[_advertisers + i] = 0.5 * _imprUB / ((double) _numSamples);
          newAgentImpressionDistributionStdev[_advertisers + i] = 2 * _imprUB / ((double) _numSamples);
@@ -350,6 +369,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       _trueAvgPos = newAvgPos;
       _sampledAvgPos = newSampledAvgPos;
       _agentIds = newAgentIds;
+      _agentNames = newAgentNames;
       _agentIsPadded = newAgentIsPadded;
       _agentImpressionDistributionMean = newAgentImpressionDistributionMean;
       _agentImpressionDistributionStdev = newAgentImpressionDistributionStdev;
@@ -379,7 +399,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    public IEResult search(int[] order) {
       //System.out.println("Search on order=" + Arrays.toString(order));
       //System.out.println(allDataString());
-
+	   
       if (!feasibleOrder(order)) {
          System.out.println("Not a feasible ordering: " + Arrays.toString(order));
          System.out.print("_trueAvgPos (sorted by order): ");
@@ -393,7 +413,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       }
 
       if(order.length == 1) {
-         return new IEResult(0,new int[]{ _ourImpressions }, new int[] { 0 }, new int[] { _ourImpressions, 0, 0, 0, 0 });
+         return reduceIEResult(  new IEResult(0,new int[]{ _ourImpressions }, new int[] { 0 }, new int[] { _ourImpressions, 0, 0, 0, 0 }, _agentNames)  );
       }
       else if(order.length == 2) {
          if(_trueAvgPos[_ourIndex] == 1.0) {
@@ -441,18 +461,18 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 
             if(_ourIndex == 0) {
                if(_ourImpressions >= oppImps) {
-                  return new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 0, 1 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 0, 1 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 }, _agentNames)  );
                }
                else {
-                  return new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 0, 1 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 0, 1 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 }, _agentNames)  );
                }
             }
             else {
                if(_ourImpressions >= oppImps) {
-                  return new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 1, 0 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 1, 0 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 }, _agentNames)  );
                }
                else {
-                  return new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 1, 0 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 1, 0 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 }, _agentNames)  );
                }
             }
          }
@@ -487,18 +507,18 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 
             if(_ourIndex == 0) {
                if(_ourImpressions >= oppImps) {
-                  return new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 1, 0 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 1, 0 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 }, _agentNames)  );
                }
                else {
-                  return new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 1, 0 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ _ourImpressions, oppImps }, new int[] { 1, 0 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 }, _agentNames)  );
                }
             }
             else {
                if(_ourImpressions >= oppImps) {
-                  return new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 0, 1 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 0, 1 }, new int[] { _ourImpressions, oppImps, 0, 0, 0 }, _agentNames)  );
                }
                else {
-                  return new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 0, 1 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 });
+                  return reduceIEResult(  new IEResult(0,new int[]{ oppImps, _ourImpressions }, new int[] { 0, 1 }, new int[] { oppImps, _ourImpressions, 0, 0, 0 }, _agentNames)  );
                }
             }
          }
@@ -530,7 +550,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
          //System.exit(-1);
          return null;
       } else {
-         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr);
+         IEResult result = new IEResult(_combinedObjectiveBound, sol._agentImpr, order.clone(), sol._slotImpr, _agentNames);
          if (IE_DEBUG) {
             System.out.println("Search completed for order " + Arrays.toString(order) + "\n" + result);
          }
@@ -1298,6 +1318,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       sb.append("agentSawSample=" + Arrays.toString(_agentSawSample) + "\n");
       sb.append("agentIsPadded=" + Arrays.toString(_agentIsPadded) + "\n");
       sb.append("agentIds=" + Arrays.toString(_agentIds) + "\n");
+      sb.append("agentNames=" + Arrays.toString(_agentNames) + "\n");
       return sb.toString();
    }
 
