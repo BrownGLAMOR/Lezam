@@ -4,6 +4,20 @@ import models.queryanalyzer.ds.QAInstance;
 
 import java.util.Arrays;
 
+
+/**
+ * TODO: Add a timeout that limits the amount of loops over dropout points
+ * TODO: Add maximizing total impressions to the objective (to be weighted with minimizing average position error and impressions prior error)
+ * TODO: Add padded agents to IE problem (with sampled average position)
+ * TODO: If an agent has an integer average position and starts in that slot, the agent also drops out in that slot (implement for both avgPos being exact or sampled)
+ * TODO: Cplex: just create it once, instead of each time the agent is called (hack: just make it static)
+ * TODO: Get a quick solution with CP, then solve with CarletonLP or MIP with the remaining time.
+ * TODO: Get a quick solution with CP, and actually use that to guide the CarletonLP search (or at least use as an initial bound on best solution for branch and bound)
+ * @author sodomka
+ *
+ */
+
+
 public class CarletonLPImpressionEstimator implements AbstractImpressionEstimator {
 
    private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
