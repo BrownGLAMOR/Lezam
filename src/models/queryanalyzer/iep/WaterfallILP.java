@@ -56,7 +56,7 @@ public class WaterfallILP {
 	private boolean LET_CPLEX_HANDLE_CONDITIONALS = false;
 	private boolean USE_PROMOTED_SLOT_CONSTRAINTS = false;
 	private double TIMEOUT_IN_SECONDS = 3;
-	private boolean SUPPRESS_OUTPUT = false;
+	private boolean SUPPRESS_OUTPUT = true;
 	private boolean SUPPRESS_OUTPUT_MODEL = true;
 	private boolean USE_SAMPLING_CONSTRAINTS = false;
 	private boolean USE_RANKING_CONSTRAINTS; //If this is true, we don't actually know the rankings of agents, so we'll have to add constraints. (If false, agent in element i has the ith highest rank)

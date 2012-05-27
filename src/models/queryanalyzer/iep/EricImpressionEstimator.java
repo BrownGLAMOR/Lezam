@@ -54,7 +54,6 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
       _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
       agentNames = inst.getAgentNames();
       
-      System.out.println("DEBUG Eric IE avgPos: " + Arrays.toString(_trueAvgPos));
    }
 
    public ObjectiveGoal getObjectiveGoal() {

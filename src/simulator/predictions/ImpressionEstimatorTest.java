@@ -30,7 +30,7 @@ public class ImpressionEstimatorTest {
       this.IMP_UB_FACTOR = upperBoundNoise;
    }
 
-   private static boolean DEBUG = true;
+   private static boolean DEBUG = false;
    private static boolean LOGGING = true;
    private static boolean SUMMARY = true;
 
@@ -1002,7 +1002,6 @@ public class ImpressionEstimatorTest {
                               if(agentIdx >= predictedImpsPerAgent.length) {
                                  int j = 0; 
                               }
-                              System.out.println("predictedImpsPerAgent: " + Arrays.toString(predictedImpsPerAgent));
                               impPredMap.put(query, predictedImpsPerAgent[agentIdx]);
                            } else {
                               impPredMap.put(query, -1);
@@ -2390,7 +2389,7 @@ public class ImpressionEstimatorTest {
 	   boolean exactAvgPositions=false;
 	   boolean orderingKnown=true; //FALSE? 
 	   boolean perfectImps=false;
-	   boolean useHistoricPriors = false;
+	   boolean useHistoricPriors = true;
 
 	   StringBuffer sb = new StringBuffer();
 	   boolean sampledAvgPositions = !exactAvgPositions;
@@ -2420,21 +2419,21 @@ public class ImpressionEstimatorTest {
 	   
 	   
 	   
-	   solverType = SolverType.MIP_LP;
-	   tmp = "SUMMARY: ---------------\n";
-	   tmp += "SUMMARY: STARTING TEST: exactAvgPos=" + exactAvgPositions + ", rankingKnown=" + orderingKnown + ", perfectImps=" + perfectImps + ", useHistoricPrior=" + useHistoricPriors + ", solver=" + solverType + "\n";
-	   System.out.println(tmp);
-	   sb.append(tmp);
-	   start = System.currentTimeMillis();
-	   double[] results2 = evaluator.impressionEstimatorPredictionChallenge(solverType, GAMES_TO_TEST, START_GAME, END_GAME,
-			   START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
-	   stop = System.currentTimeMillis();
-	   secondsElapsed = (stop - start) / 1000.0;
-	   tmp = "SUMMARY: results=" + Arrays.toString(results2) + "\n";
-	   tmp += "SUMMARY: Seconds elapsed: " + secondsElapsed + "\n";
-	   System.out.println(tmp);
-	   sb.append(tmp);
-	   System.out.println("\n\n\n\n\n" + sb.toString());
+//	   solverType = SolverType.MIP_LP;
+//	   tmp = "SUMMARY: ---------------\n";
+//	   tmp += "SUMMARY: STARTING TEST: exactAvgPos=" + exactAvgPositions + ", rankingKnown=" + orderingKnown + ", perfectImps=" + perfectImps + ", useHistoricPrior=" + useHistoricPriors + ", solver=" + solverType + "\n";
+//	   System.out.println(tmp);
+//	   sb.append(tmp);
+//	   start = System.currentTimeMillis();
+//	   double[] results2 = evaluator.impressionEstimatorPredictionChallenge(solverType, GAMES_TO_TEST, START_GAME, END_GAME,
+//			   START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
+//	   stop = System.currentTimeMillis();
+//	   secondsElapsed = (stop - start) / 1000.0;
+//	   tmp = "SUMMARY: results=" + Arrays.toString(results2) + "\n";
+//	   tmp += "SUMMARY: Seconds elapsed: " + secondsElapsed + "\n";
+//	   System.out.println(tmp);
+//	   sb.append(tmp);
+//	   System.out.println("\n\n\n\n\n" + sb.toString());
 	   
 	   
 	   

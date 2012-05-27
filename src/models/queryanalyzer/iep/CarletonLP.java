@@ -30,10 +30,10 @@ public class CarletonLP {
 	
 	private final static boolean USE_EPSILON = false;
 	private final static double epsilon = .00001;
-	private final static boolean SUPPRESS_OUTPUT = false;
+	private final static boolean SUPPRESS_OUTPUT = true;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
 
 	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
@@ -145,7 +145,7 @@ public class CarletonLP {
 
 	//Solve problem with some (potentially reduced) number of agents.
 	public LPSolution solveIt(int effectiveNumAgents, int M, int us, int imp, int[] dropout_a, double bestObj) {
-		System.out.println("solveIt: effectiveNumAgents=" + effectiveNumAgents + ", numSlots=" + numSlots + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj + ", avgPos=" + Arrays.toString(knownMu_a) + ", sampledAvgPos=" + Arrays.toString(knownSampledMu_a));
+		//System.out.println("solveIt: effectiveNumAgents=" + effectiveNumAgents + ", numSlots=" + numSlots + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj + ", avgPos=" + Arrays.toString(knownMu_a) + ", sampledAvgPos=" + Arrays.toString(knownSampledMu_a));
 		
 		LPSolution solution = null; // The solution that will ultimately be returned.
 
@@ -253,7 +253,7 @@ public class CarletonLP {
 			
 			
 			//----------------------------- PRINT AND SOLVE MODEL --------------------------------------------------
-			System.out.println("CarletonLP Objective: " + DESIRED_OBJECTIVE);
+			//System.out.println("CarletonLP Objective: " + DESIRED_OBJECTIVE);
 			if (!SUPPRESS_OUTPUT_MODEL) System.out.println("MODEL:\n" + cplex.getModel() + "\n\n\nEND MODEL\n");
 			if ( cplex.solve() ) {
 				cplex.output().println("Solution status = " + cplex.getStatus());
@@ -270,18 +270,6 @@ public class CarletonLP {
 					I_a_sVal[a] = cplex.getValues(I_a_s[a]);
 				}				
 				solution = new LPSolution(objectiveVal, I_a_sVal, S_aVal, T_aVal);
-
-				
-				
-				System.out.println("Total Imps: " + Arrays.toString(T_aVal));
-				for (int a=0; a<I_a_s.length; a++) {
-					System.out.println("I_" + a + "_s Imps per slot: " + Arrays.toString(I_a_sVal[a]));					
-				}
-				
-				
-				
-				
-				
 			} else {
 				//System.out.println("Solver returned false.");
 				//System.out.println("Model: " + cplex.getModel() );

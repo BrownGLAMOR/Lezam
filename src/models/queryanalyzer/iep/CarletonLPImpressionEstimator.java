@@ -68,7 +68,6 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();      
       agentNames = inst.getAgentNames();
       
-      System.out.println("DEBUG Carleton IE avgPos: " + Arrays.toString(_trueAvgPos));
 
    }
 
@@ -213,9 +212,6 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 //	   System.out.println("dropoutDFS: dropout=" + Arrays.toString(dropout) + ", minDropOut=" + Arrays.toString(minDropOut) +
 //			   ", maxDropOut=" + Arrays.toString(maxDropOut) + ", agent=" + agent + ", numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + 
 //			   ", M=" + M + ", us=" + us + ", imp=" + imp);
-	   //System.out.println(agent);
-	   //System.out.println(dropout.length);
-	   //System.out.println(Arrays.toString(dropout));
 	   
 	   
 	   boolean DEBUG = false;
@@ -225,13 +221,9 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   return;
 	   }
 	   
-	   
 	   int[] minDropOutLocal = Arrays.copyOf(minDropOut, avgPos_a.length);
 	   int[] maxDropOutLocal = Arrays.copyOf(maxDropOut, avgPos_a.length);
 
-	   //System.out.println(Arrays.toString(maxDropOut));
-	   //System.out.println(Arrays.toString(minDropOutLocal));
-	   
 	   
 	   // this is the base case of the tree search, all drop outs are fixed.
 	   if(agent >= dropout.length){
@@ -292,7 +284,6 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 							   _objectiveGoal==ObjectiveGoal.MAXIMIZE && sol.objectiveVal <= _bestObj ) {
 						   //Objective value is already worse than best solution, and will only get worse. Stop trying.
 						   boundCount++;
-						   System.out.println("Bound!");
 						   return;
 					   }
 				   }
@@ -358,7 +349,6 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 			   if (maxDropoutForAvgPos < maxDropOutLocal[agent]) {
 				   maxDropOutLocal[agent] = maxDropoutForAvgPos;
 				   avgPosBoundCount++;
-				   System.out.println("AVGPOSBOUND");
 			   }
 		   }
 		   
