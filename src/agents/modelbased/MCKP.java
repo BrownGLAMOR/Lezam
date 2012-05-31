@@ -52,7 +52,7 @@ public class MCKP extends AbstractAgent {
 	//make this not hardcoded at some point in the future?
 	//  "//in file" marks those vars. that are already set in paramFile
 	// "//HC num" marks random numbers that are hard coded for some, maybe unknown, reason 
-	String paramFile = "origMCKP";
+	//String paramFile = "origMCKP";
 
    double[] _c;
 
@@ -158,7 +158,7 @@ public class MCKP extends AbstractAgent {
       _5DayBid = .4;//in file
       _bidStdDev = 2.0;//in file
       
-      updateParams(paramFile);
+     // updateParams(paramFile);
       
    }
 
@@ -579,17 +579,17 @@ public class MCKP extends AbstractAgent {
 //                        System.out.println();
 
                   if(Double.isNaN(CPC)) {
-                	 System.out.println("ERROR CPC NaN"); //ap
+                	 //System.out.println("ERROR CPC NaN"); //ap
                      CPC = 0.0;//HC num
                   }
 
                   if(Double.isNaN(clickPr)) {
-                	  System.out.println("ERROR clickPr NaN"); //ap
+                	  //System.out.println("ERROR clickPr NaN"); //ap
                      clickPr = 0.0;//HC num
                   }
 
                   if(Double.isNaN(convProbWithPen)) {
-                	  System.out.println("ERROR convProbWithPen NaN"); //ap
+                	  //System.out.println("ERROR convProbWithPen NaN"); //ap
                      convProbWithPen = 0.0;//HC num
                   }
 
@@ -750,17 +750,17 @@ public class MCKP extends AbstractAgent {
 //                        System.out.println();
 
                            if(Double.isNaN(CPC)) {
-                        	   System.out.println("ERROR CPC NaN2"); //ap
+                        	   //System.out.println("ERROR CPC NaN2"); //ap
                               CPC = 0.0;//HC num
                            }
 
                            if(Double.isNaN(clickPr)) {
-                        	   System.out.println("ERROR clickPr NaN2"); //ap
+                        	   //System.out.println("ERROR clickPr NaN2"); //ap
                               clickPr = 0.0;//HC num
                            }
 
                            if(Double.isNaN(convProbWithPen)) {
-                        	   System.out.println("ERROR convProWithPen NaN2"); //ap
+                        	  // System.out.println("ERROR convProWithPen NaN2"); //ap
                               convProbWithPen = 0.0;//HC num
                            }
 
@@ -855,7 +855,7 @@ public class MCKP extends AbstractAgent {
          } else if (_multiDayHeuristic == MultiDay.DPHill) {
             solution = fillKnapsackDPHill(bidLists,budgetLists,allPredictionsMap);
          } else {
-        	 System.out.println("solution null"); //ap
+        	// System.out.println("solution null"); //ap
             solution = null;
          }
 
@@ -939,7 +939,7 @@ public class MCKP extends AbstractAgent {
       */
       for(Query q : _querySpace) {
          if(Double.isNaN(bidBundle.getBid(q)) || bidBundle.getBid(q) < 0) {
-        	 System.out.println("ERROR bid bundle bib is NaN"); //ap
+        	 //System.out.println("ERROR bid bundle bib is NaN"); //ap
             bidBundle.setBid(q, 0.0);//HC num
          }
       }
@@ -1753,7 +1753,7 @@ public class MCKP extends AbstractAgent {
          double penalty = getPenalty(budget, lastSolWeight);
          for(Query q : _querySpace) {
             if(solution.get(q) == null) {
-            	System.out.println("ERROR solution q is null"); //ap
+            	//System.out.println("ERROR solution q is null"); //ap
                continue;
             }
             Predictions predictions = allPredictionsMap.get(q).get(solution.get(q).idx());
@@ -1768,22 +1768,22 @@ public class MCKP extends AbstractAgent {
             double convProb = getConversionPrWithPenalty(q, penalty,predictions.getISRatio());
 
             if(Double.isNaN(CPC)) {
-            	System.out.println("ERROR CPC NaN4"); //ap
+            	//System.out.println("ERROR CPC NaN4"); //ap
                CPC = 0.0;//HC num
             }
 
             if(Double.isNaN(clickPr)) {
-            	System.out.println("ERROR clickPr NaN4"); //ap
+            	//System.out.println("ERROR clickPr NaN4"); //ap
                clickPr = 0.0;//HC num
             }
 
             if(Double.isNaN(convProb)) {
-            	System.out.println("ERROR convPr NaN4"); //ap
+            	//System.out.println("ERROR convPr NaN4"); //ap
                convProb = 0.0;//HC num
             }
 
             if(!Double.isNaN(dailyLimit)) {
-            	System.out.println("ERROR dailyLimit NaN4"); //ap
+            	//System.out.println("ERROR dailyLimit NaN4"); //ap
                if(numClicks*CPC > dailyLimit) {
                   numClicks = (int) (dailyLimit/CPC);
                }
@@ -2220,7 +2220,7 @@ public class MCKP extends AbstractAgent {
 
 
    private HashMap<Query,Item> fillKnapsackDP(HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap){
-      System.out.println("Running DP.");
+      //System.out.println("Running DP.");
 
       //CONFIG FOR DP
       int PLANNING_HORIZON = 58;//HC num
@@ -2779,7 +2779,7 @@ public class MCKP extends AbstractAgent {
 		}
 		
 		if(props.containsKey("SAFETYBUDGET")){
-			System.out.println("updating safety");
+			//System.out.println("updating safety");
 			int val = getBooleanParam("SAFETYBUDGET", props);
 			if(val==0){
 				SAFETYBUDGET = false;
@@ -2789,7 +2789,7 @@ public class MCKP extends AbstractAgent {
 		}
 		
 		if(props.containsKey("BUDGET")){
-			System.out.println("updating bud");
+			//System.out.println("updating bud");
 			int val = getBooleanParam("BUDGET", props);
 			if(val==0){
 				BUDGET = false;
@@ -2799,7 +2799,7 @@ public class MCKP extends AbstractAgent {
 		}
 		
 		if(props.containsKey("FORWARDUPDATING")){
-			System.out.println("updating forward");
+			//System.out.println("updating forward");
 			int val = getBooleanParam("FORWARDUPDATING", props);
 			if(val==0){
 				FORWARDUPDATING = false;
@@ -2861,7 +2861,7 @@ public class MCKP extends AbstractAgent {
 		}
 		
 		if(props.containsKey("_multiDayHeuristic")){
-			System.out.println("updating mdh");
+		//System.out.println("updating mdh");
 			if(getStringParam("_multiDayHeuristic", props).compareToIgnoreCase("hillclimbing")==0){
 				_multiDayHeuristic = MultiDay.HillClimbing;
 			}else if(getStringParam("_multiDayHeuristic", props).compareToIgnoreCase("OneDayHeuristic")==0){
@@ -2957,28 +2957,28 @@ public class MCKP extends AbstractAgent {
 public static void main (String[] args){
 	MCKP testParams = new MCKP();
 	
-	System.out.println(testParams.DEBUG);
-	System.out.println(testParams.SAFETYBUDGET);
-	System.out.println(testParams.BUDGET);
-	System.out.println(testParams.FORWARDUPDATING);
-	System.out.println(testParams.PRICELINES);
-	System.out.println(testParams.UPDATE_WITH_ITEM);
-	System.out.println(testParams.USER_MODEL_UB );
-	System.out.println(testParams.RANKABLE);
-	System.out.println(testParams.lagDays);
-	System.out.println(testParams._multiDayHeuristic);
-	System.out.println(testParams._multiDayDiscretization);
-	System.out.println(THREADING);
-	System.out.println(testParams._probeBidMult);
-	System.out.println(testParams._budgetMult);
-	System.out.println(testParams._lowCapacThresh);
-	System.out.println(testParams._midCapacThresh);
-	System.out.println(testParams._highCapacThresh);
-	System.out.println(testParams._randJump);
-	System.out.println(testParams._yestBid);
-	System.out.println(testParams._5DayBid);
-	System.out.println(testParams._bidStdDev);
-	System.out.println(USER_MODEL_UB_MULT);
+//	System.out.println(testParams.DEBUG);
+//	System.out.println(testParams.SAFETYBUDGET);
+//	System.out.println(testParams.BUDGET);
+//	System.out.println(testParams.FORWARDUPDATING);
+//	System.out.println(testParams.PRICELINES);
+//	System.out.println(testParams.UPDATE_WITH_ITEM);
+//	System.out.println(testParams.USER_MODEL_UB );
+//	System.out.println(testParams.RANKABLE);
+//	System.out.println(testParams.lagDays);
+//	System.out.println(testParams._multiDayHeuristic);
+//	System.out.println(testParams._multiDayDiscretization);
+//	System.out.println(THREADING);
+//	System.out.println(testParams._probeBidMult);
+//	System.out.println(testParams._budgetMult);
+//	System.out.println(testParams._lowCapacThresh);
+//	System.out.println(testParams._midCapacThresh);
+//	System.out.println(testParams._highCapacThresh);
+//	System.out.println(testParams._randJump);
+//	System.out.println(testParams._yestBid);
+//	System.out.println(testParams._5DayBid);
+//	System.out.println(testParams._bidStdDev);
+//	System.out.println(USER_MODEL_UB_MULT);
 	
 }
 }
