@@ -11,6 +11,7 @@ public class QAData {
       assert (agents == agentInfo.length);
       _agents = agents;
       _slots = slots;
+      // Agent info contains agent id, avg position, impression(total impression?), bid, budget
       _agentInfo = agentInfo;
    }
 
@@ -22,11 +23,13 @@ public class QAData {
       assert (advIndex < _agents);
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
+    	 
          if (_agentInfo[i].avgPos >= 0) {
             usedAgents++;
          }
       }
-
+      
+      // Assign the usedAngent info
       AdvertiserInfo[] usedAgentInfo = new AdvertiserInfo[usedAgents];
       int index = 0;
       for (int i = 0; i < _agents; i++) {
@@ -36,6 +39,7 @@ public class QAData {
          }
       }
 
+      
       double[] avgPos = new double[usedAgents];
       int[] agentIds = new int[usedAgents];
       int impressionsUB = 0;
@@ -44,6 +48,8 @@ public class QAData {
          avgPos[i] = usedAgentInfo[i].avgPos;
          agentIds[i] = usedAgentInfo[i].id;
          //impressionsUB += usedAgentInfo[i].impressions;
+         
+         //Find the MAX Impression
          impressionsUB = Math.max(impressionsUB, usedAgentInfo[i].impressions);
       }
       impressionsUB = 2 * impressionsUB;
@@ -72,13 +78,17 @@ public class QAData {
 
       //--------------
 
-
-//      return new QAInstance(_slots, numPromotedSlots, usedAgents,
-//                            avgPos, dummySampledAvgPositions, agentIds, advIndex,
-//                            usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
-//                            true, promotionEligibiltyVerified,
-//                            agentImpressionDistributionMean, agentImpressionDistributionStdev, true);
-      return null;
+      String[] agentname={"a1","a2","a3","a4","a5","a6","a7","a8"};
+      
+   
+      
+      
+      return new QAInstance(_slots, numPromotedSlots, usedAgents,
+                            avgPos, dummySampledAvgPositions, agentIds, advIndex,
+                            usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
+                            true, promotionEligibiltyVerified,
+                            promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentname);
+      //return null;
    }
 
    public String toString() {
