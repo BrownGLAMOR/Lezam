@@ -9,33 +9,23 @@ import models.queryanalyzer.util.LoadData;
 import java.util.Arrays;
 import java.io.*;
 public class TestIEP {
-	private BufferedReader reader=null;
 	
-	public TestIEP(){
-		reader=new BufferedReader(new InputStreamReader(System.in));
-		
-	}
+	public TestIEP(){}
 	
-	
-	public void run(String[] args, boolean readfromCommandLine) throws IOException {
-		
-		
-	try{
+	public void run(String[] args) throws IOException {
 		String fileName="";
-		// Read from the commandLine
-		if(readfromCommandLine){
+		
+		if(args.length > 0){ // Read from the commandLine
 			assert(args.length > 0);
 			fileName = args[0];
 			System.out.println("Loading File: "+args[0]);
 			System.out.println("");
-		}
-		// Input the filePath by user
-		else{
+		} else { // Read from the console input
+			BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
 			System.out.println("Please input file path:");
 			fileName = reader.readLine();
 			System.out.println("Loading File: "+fileName);
 			System.out.println("");
-			
 		}
 			// Load QA data for test
 			QAData data = LoadData.LoadIt(fileName);
@@ -63,10 +53,6 @@ public class TestIEP {
 			System.out.println("Ground Truth:  "+Arrays.toString(trueImpressions));
 			
 			System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));
-			
-		}catch(IOException e){
-			System.out.println(e);
-		}
 	}
 	
 	// Check if we can readin and output the file correctly
@@ -74,7 +60,7 @@ public class TestIEP {
 		BufferedReader r;
 		try{
 			System.out.println("Input File ");
-			String filename=reader.readLine();
+			String filename=new BufferedReader(new InputStreamReader(System.in)).readLine();
 			System.out.println("Read From File "+filename);
 			r= new BufferedReader(new FileReader(filename));
 			String line="";
@@ -92,8 +78,7 @@ public class TestIEP {
 		
 	}
 	public static void main(String[] args) throws Exception {
-		boolean readfromCommandLine=false;
 		//new TestIEP().test();
-		new TestIEP().run(args,readfromCommandLine);
+		new TestIEP().run(args);
 	}
 }
