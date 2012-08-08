@@ -280,6 +280,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 			   _bestObj = sol.objectiveVal;
 			   _bestChecked = _checked;
 			   
+			   //System.out.println(sol);
 			   System.out.println(_bestChecked+": "+_bestObj);
 		   }
 		   

@@ -202,7 +202,7 @@ public class CarletonLP {
 			//Make sure "Total Agent Impressions" variable actually equals the sum of the agent's impressions per slot.
 			for (int a=0; a<effectiveNumAgents; a++) {
 				IloLinearNumExpr totalImps = cplex.linearNumExpr();
-				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+				for (int s=dropout_a[a]; s<=Math.min(a, numSlots-1); s++) {
 					totalImps.addTerm(1, I_a_s[a][s]);
 				}
 				cplex.addEq(totalImps, T_a[a]);
@@ -211,7 +211,7 @@ public class CarletonLP {
 			
 			
 			//Average position constraint
-			addConstraint_exactAveragePositionsKnown(cplex, I_a_s, T_a, effectiveNumAgents);
+			addConstraint_exactAveragePositionsKnown(cplex, I_a_s, T_a, effectiveNumAgents, dropout_a);
 					
 			
 			
@@ -243,11 +243,11 @@ public class CarletonLP {
 				cplex.addEq(totalImpsInSlot, S_a[s]);
 			}
 			
-			
 			//Slot totals must be (non-strictly) increasing
 			for (int s=1; s<effectiveNumAgents; s++) {
 				cplex.addGe(S_a[s-1], S_a[s]);
 			}
+			
 			
 			
 			
@@ -493,10 +493,11 @@ public class CarletonLP {
 	 * @param I_a
 	 * @throws IloException
 	 */
-	private void addConstraint_totalImpressionsKnown(IloCplex cplex, IloNumVar[] I_a, int numAgents) throws IloException {
+	private void addConstraint_totalImpressionsKnown(IloCplex cplex, IloNumVar[] T_a, int numAgents) throws IloException {
+		//System.out.println(Arrays.toString(isKnownI_a)+" - "+Arrays.toString(knownI_a));
 		for (int a=0; a<numAgents; a++) { 
 			if (isKnownI_a[a]) {
-				cplex.addEq(I_a[a], knownI_a[a]);
+				cplex.addEq(T_a[a], knownI_a[a]);
 			}
 		}
 	}
@@ -564,11 +565,11 @@ public class CarletonLP {
 	 * @throws IloException
 	 */
 	private void addConstraint_exactAveragePositionsKnown(IloCplex cplex,
-			IloNumVar[][] I_a_s, IloNumVar[] I_a, int numAgents) throws IloException {
+			IloNumVar[][] I_a_s, IloNumVar[] I_a, int numAgents, int[] dropout_a) throws IloException {
 		for (int a=0; a<numAgents; a++) {
 			if (isKnownMu_a[a]) {
 				IloLinearNumExpr lhs = cplex.linearNumExpr();
-				for (int s=0; s<=Math.min(a, numSlots-1); s++) {
+				for (int s=dropout_a[a]; s<=Math.min(a, numSlots-1); s++) {
 					lhs.addTerm(s+1, I_a_s[a][s]);
 				}
 				IloNumExpr rhs = cplex.prod(knownMu_a[a], I_a[a]);
