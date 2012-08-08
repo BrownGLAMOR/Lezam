@@ -274,7 +274,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 		   //If the solution is non-null we know it's the best solution found so far, because of the _bestObj bound in the LP.
 		   if(sol != null){
-			   assert(sol.objectiveVal > _bestObj) : "this property is implicit in the LP solveIt method";
+			   //assert(sol.objectiveVal >= _bestObj) : "this property is implicit in the LP solveIt method";
 			   
 			   _bestSol = sol;
 			   _bestObj = sol.objectiveVal;

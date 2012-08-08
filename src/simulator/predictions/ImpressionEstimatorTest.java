@@ -2386,7 +2386,7 @@ public class ImpressionEstimatorTest {
 	   double convPrMult = .1;
 
 
-	   boolean exactAvgPositions=false;
+	   boolean exactAvgPositions=true;
 	   boolean orderingKnown=true; //FALSE? 
 	   boolean perfectImps=false;
 	   boolean useHistoricPriors = true;

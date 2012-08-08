@@ -76,6 +76,9 @@ public class QAData {
       double[] agentImpressionDistributionMean = new double[agentIds.length];
       double[] agentImpressionDistributionStdev = new double[agentIds.length];
 
+      for (int i = 0; i < agentIds.length; i++) {
+    	  agentImpressionDistributionMean[i] = usedAgentInfo[i].impressions;
+      }
       //--------------
 
       String[] agentname={"a1","a2","a3","a4","a5","a6","a7","a8"};

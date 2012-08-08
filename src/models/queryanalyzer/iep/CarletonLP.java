@@ -24,7 +24,9 @@ public class CarletonLP {
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
 		MINIMIZE_SAMPLE_MU_DIFF,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF,
-		DEPENDS_ON_CIRCUMSTANCES,
+		DEPENDS_ON_CIRCUMSTANCES, 
+		MINIMIZE_SLOT_DIFF,
+		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF,
 	}
 	
 	private final static boolean USE_EPSILON = false;
@@ -32,7 +34,7 @@ public class CarletonLP {
 	private final static boolean SUPPRESS_OUTPUT = true;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-	private Objective DESIRED_OBJECTIVE = Objective.MAXIMIZE_IMPRESSIONS; //Objective.DEPENDS_ON_CIRCUMSTANCES; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+	private Objective DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF; //Objective.DEPENDS_ON_CIRCUMSTANCES; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
 
 	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
@@ -180,13 +182,16 @@ public class CarletonLP {
 			
 			if (DESIRED_OBJECTIVE == Objective.MAXIMIZE_IMPRESSIONS) {
 				addObjective_closeToImpressionsUpperBound(cplex, T_a, bestObj, effectiveNumAgents);
-			}
-			else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
 				addObjective_minimizeImpressionPriorError(cplex, T_a, us, T_aPriorMean, T_aPriorStdev, bestObj, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SAMPLE_MU_DIFF) {
 				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, T_a, bestObj, effectiveNumAgents, M);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF) {
 				addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(cplex, I_a_s, T_a, effectiveNumAgents, us, imp, M, bestObj);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF) {
+				addObjective_minimizeSlotDiff(cplex, S_a, bestObj, numSlots, effectiveNumAgents);
+			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF) {
+				addObjective_minimizeImpressionPriorErrorSlotDiff(cplex, S_a,  T_a, T_aPriorMean, bestObj, numSlots, effectiveNumAgents);
 			}
 			
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
@@ -296,6 +301,102 @@ public class CarletonLP {
 	
 	
 	
+
+	private void addObjective_minimizeImpressionPriorErrorSlotDiff(IloCplex cplex, IloNumVar[] S_a, IloNumVar[] T_a,
+			double[] T_aPriorMean, double bestObj, int numSlots, int effectiveNumAgents) throws IloException  {
+		
+		int trueSlots = Math.min(numSlots, effectiveNumAgents);
+		double maxImp = S_a[0].getUB();
+		
+		IloNumVar[] SDeltas = cplex.numVarArray(trueSlots-1, 0, 2*maxImp);
+		IloNumVar[] IDeltas = cplex.numVarArray(effectiveNumAgents, 0, maxImp);
+		
+		//System.out.println(Arrays.toString(T_aPriorMean));
+		
+		//T_aPriorMean
+		for (int a=0; a < effectiveNumAgents-1; a++) {
+			if(T_aPriorMean[a] > 0){
+				IloLinearNumExpr delta = cplex.linearNumExpr();
+				cplex.addGe(IDeltas[a], cplex.sum(T_a[a], -T_aPriorMean[a]));
+				cplex.addGe(IDeltas[a], cplex.sum(cplex.negative(T_a[a]), T_aPriorMean[a]));
+			} else {
+				cplex.eq(IDeltas[a], 0);
+			}
+		}
+		
+		IloLinearNumExpr allIDeltas = cplex.linearNumExpr();
+		//for (int a=0; a<numSlots-1; a++) {
+		for(IloNumVar IDelta : IDeltas){
+			allIDeltas.addTerm(1, IDelta);
+		}
+		
+		
+		for (int s=0; s < trueSlots-1; s++) {
+			IloLinearNumExpr delta = cplex.linearNumExpr();
+			delta.addTerm(1, S_a[s]);
+			delta.addTerm(-1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+			
+			delta.addTerm(-1, S_a[s]);
+			delta.addTerm(1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+		}
+		
+		IloLinearNumExpr allSDeltas = cplex.linearNumExpr();
+		//for (int a=0; a<numSlots-1; a++) {
+		for(IloNumVar SDelta : SDeltas){
+			allSDeltas.addTerm(1, SDelta);
+		}
+		
+		
+		cplex.addMinimize(cplex.sum(cplex.prod(0.1, allSDeltas), allIDeltas));	
+		//cplex.addMinimize(allSDeltas);	
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addLe(cplex.sum(cplex.prod(0.1, allSDeltas), allIDeltas), bestObj);
+			//cplex.addLe(allSDeltas, bestObj);
+		}
+		
+	}
+
+
+
+
+
+	private void addObjective_minimizeSlotDiff(IloCplex cplex, IloNumVar[] S_a, double bestObj, int numSlots, int effectiveNumAgents) throws IloException  {
+		int trueSlots = Math.min(numSlots, effectiveNumAgents);
+		double maxImp = S_a[0].getUB();
+		
+		IloNumVar[] SDeltas = cplex.numVarArray(trueSlots-1, 0, 2*maxImp);
+		
+		for (int s=0; s < trueSlots-1; s++) {
+			IloLinearNumExpr delta = cplex.linearNumExpr();
+			delta.addTerm(1, S_a[s]);
+			delta.addTerm(-1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+			
+			delta.addTerm(-1, S_a[s]);
+			delta.addTerm(1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+		}
+		
+		IloLinearNumExpr allSDeltas = cplex.linearNumExpr();
+		//for (int a=0; a<numSlots-1; a++) {
+		for(IloNumVar SDelta : SDeltas){
+			allSDeltas.addTerm(1, SDelta);
+		}
+		cplex.addMinimize(allSDeltas);		
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addLe(allSDeltas, bestObj);
+		}
+	}
+
+
+
+
 
 	private void addObjective_closeToImpressionsUpperBound(IloCplex cplex,
 			IloNumVar[] T_a, double bestObj, int numAgents) throws IloException {
