@@ -52,7 +52,7 @@ public class QAInstance {
       _isSampled = isSampled;
       _initialPosition = initialPosition;
       this.agentNames = agentNames;
-
+     
       _orderingKnown = true;
       for (int i = 0; i < _advetisers; i++) {
          if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
@@ -142,6 +142,7 @@ public class QAInstance {
 
    //The ith index contains the index of the agent that started in the ith position.
    public int[] getInitialPositionOrdering() {
+	
       return _initialPosition;
    }
 
@@ -157,13 +158,14 @@ public class QAInstance {
    public int[] getBidOrder(QAData data) {
       double[] bids = new double[_advetisers];
       int[] bidOrder = new int[_advetisers];
+      
       for (int i = 0; i < _advetisers; i++) {
          bids[i] = data._agentInfo[_agentIds[i] - 1].bid;
          bidOrder[i] = i;
       }
-
+     
       sortListsDecending(bidOrder, bids);
-
+    
       //System.out.println("Bid order "+Arrays.toString(bidOrder));
       //System.out.println("Bid value "+Arrays.toString(bids));
 
