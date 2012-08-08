@@ -167,12 +167,34 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       //set default values
       for(int a=0; a < _advertisers; a++){
     	  dropout[a] = -1;
-    	  minDropOut[a] = 0; //0 becouse 0 is the top slot, slots are 0 indexed like agents?
-    	  maxDropOut[a] = a;
+    	  int ceilingSlot = ((int)Math.ceil(orderedMu_a[a]))-1;
+    	  int floorSlot = ((int)Math.floor(orderedMu_a[a]))-1;
+    	  if(ceilingSlot - floorSlot == 0 && (ceilingSlot == a || floorSlot == _slots-1)){
+    		  minDropOut[a] = ceilingSlot;
+    	  } else {
+    		  minDropOut[a] = 0; //0 becouse 0 is the top slot, slots are 0 indexed like agents?  
+    	  }
+    	  maxDropOut[a] = Math.min(Math.min(a,_slots-1),floorSlot);
       }
+      
+      System.out.println(Arrays.toString(orderedMu_a));
+      System.out.println(Arrays.toString(minDropOut));
+      System.out.println(Arrays.toString(maxDropOut));
+      
+      
+      long t0 = System.currentTimeMillis();
       
       dropoutDFS(dropout, minDropOut, maxDropOut, 0, _slots, orderedMu_a, _imprUB, us, _ourImpressions);      
       //_bestSol <== best solution found after the search
+      
+      long runtime = System.currentTimeMillis() - t0;
+      
+      int allPossible = 1;
+      for(int a=0; a < _advertisers; a++){
+    	  allPossible *= maxDropOut[a]+1;
+      }
+      System.out.println("Checked: "+_checked+" / "+allPossible);
+      System.out.println("Runtime: "+runtime/1000.0+" - "+runtime/1000.0/_checked);
       
       //---------------------------------------------------------------
       // Calling Carleton's search ends here.
@@ -245,14 +267,20 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 	
 		   //This is a leaf in the tree search, solve the LP and see if you have a better solution.
 		   //System.out.println("Solve: numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout=" + Arrays.toString(dropout) + ", bestObj=" + _bestObj);
+		   //LPSolution sol = carletonLP.solveIt(M, us, imp, dropout, _bestObj);
+		   //System.out.println(Arrays.toString(dropout));
 		   LPSolution sol = carletonLP.solveIt(M, us, imp, dropout, _bestObj);
 		   _checked++;
 		   //Here I assume a null value means the solution is infeasible or some other problem occurred.
 		   //If the solution is non-null we know it's the best solution found so far, because of the _bestObj bound in the LP.
 		   if(sol != null){
+			   assert(sol.objectiveVal > _bestObj) : "this property is implicit in the LP solveIt method";
+			   
 			   _bestSol = sol;
 			   _bestObj = sol.objectiveVal;
 			   _bestChecked = _checked;
+			   
+			   System.out.println(_bestChecked+": "+_bestObj);
 		   }
 		   
 	   } else {
@@ -265,7 +293,8 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   //      e.g., impressions an agent would need would have to go beyond the specified bounds to be feasible.)
 		   //  2) IF the waterfall is feasible, then we can apply the greedy algorithm to all agents below us, until we hit a whole number avg pos.
 		   //  3) the solution to the greedy algorithm provides tight bounds on the drop out of all agents it was applied to.
-		   //*
+		   
+		   /*
 		   if(ALWAYS_SOLVE_PARTIAL_PROBLEM || agent-1 == us){
 			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
 			   double[] avgPos_tmp = new double[agent];
@@ -357,7 +386,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   }  
 		   //*/
 		   
-		   
+		   /*
 		   if (BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION) {
 			   int maxDropoutForAvgPos = (int) Math.floor(avgPos_a[agent]) - 1;
 			   if (maxDropoutForAvgPos < maxDropOutLocal[agent]) {
@@ -365,6 +394,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 				   avgPosBoundCount++;
 			   }
 		   }
+		   */
 		   
 		   //if feasiblity is ok, then lets continue with the search
 		   for(int d=maxDropOut[agent]; d >= minDropOutLocal[agent]; d--){

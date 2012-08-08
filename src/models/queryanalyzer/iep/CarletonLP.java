@@ -19,8 +19,7 @@ import ilog.cplex.IloCplex;
  */
 public class CarletonLP {
 	
-	public enum Objective
-	{
+	public enum Objective {
 		MAXIMIZE_IMPRESSIONS,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR, //get resulting I_a as close as possible to I_aDistributionMean
 		MINIMIZE_SAMPLE_MU_DIFF,
@@ -33,7 +32,7 @@ public class CarletonLP {
 	private final static boolean SUPPRESS_OUTPUT = true;
 	private final static boolean SUPPRESS_OUTPUT_MODEL = true;
 	private final static double TIMEOUT_IN_SECONDS = 3;
-	private Objective DESIRED_OBJECTIVE = Objective.DEPENDS_ON_CIRCUMSTANCES; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
+	private Objective DESIRED_OBJECTIVE = Objective.MAXIMIZE_IMPRESSIONS; //Objective.DEPENDS_ON_CIRCUMSTANCES; //Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF;
 
 	double MIN_IMPRESSIONS_STDEV = 1; //The smallest standard deviation assumed by impressions models (Shouldn't be 0, or we can get no feasible solution if models are bad)
 
@@ -154,7 +153,7 @@ public class CarletonLP {
 			
 			//-------------------------------- SET CPLEX PARAMS -------------------------------------
 			if (SUPPRESS_OUTPUT) cplex.setOut(null);
-			cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
+			//cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
 			
 			
 			//-------------------------------- CREATE DECISION VARIABLES -------------------------------------

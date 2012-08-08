@@ -2,6 +2,8 @@ package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.iep.CarletonLPImpressionEstimator;
 import models.queryanalyzer.iep.IEResult;
 import models.queryanalyzer.iep.ImpressionEstimatorExact;
 import models.queryanalyzer.util.LoadData;
@@ -33,7 +35,7 @@ public class TestIEP {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 0;
+			int advetiser = 1;
 			QAInstance inst = data.buildInstances(advetiser);
 			
 			System.out.println("Instance for "+advetiser+":");
@@ -43,7 +45,8 @@ public class TestIEP {
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
 
-			ImpressionEstimatorExact IEP = new ImpressionEstimatorExact(inst);
+			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
+			AbstractImpressionEstimator IEP = new CarletonLPImpressionEstimator(inst, false, false, false, -1);
 
 			IEResult bestSol = IEP.search(bidOrder);
 
