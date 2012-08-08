@@ -349,12 +349,12 @@ public class CarletonLP {
 		}
 		
 		
-		cplex.addMinimize(cplex.sum(cplex.prod(0.1, allSDeltas), allIDeltas));	
+		cplex.addMinimize(cplex.sum(cplex.prod(1.0, allSDeltas), allIDeltas));	
 		//cplex.addMinimize(allSDeltas);	
 		
 		//Must be better than previously best objective
 		if (bestObj != -1) {
-			cplex.addLe(cplex.sum(cplex.prod(0.1, allSDeltas), allIDeltas), bestObj);
+			cplex.addLe(cplex.sum(cplex.prod(1.0, allSDeltas), allIDeltas), bestObj);
 			//cplex.addLe(allSDeltas, bestObj);
 		}
 		

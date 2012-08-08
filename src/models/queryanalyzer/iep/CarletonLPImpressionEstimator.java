@@ -7,10 +7,7 @@ import java.util.Arrays;
 
 /**
  * TODO: Add a timeout that limits the amount of loops over dropout points
- * TODO: Add maximizing total impressions to the objective (to be weighted with minimizing average position error and impressions prior error)
  * TODO: Add padded agents to IE problem (with sampled average position)
- * TODO: If an agent has an integer average position and starts in that slot, the agent also drops out in that slot (implement for both avgPos being exact or sampled)
- * TODO: Cplex: just create it once, instead of each time the agent is called (hack: just make it static)
  * TODO: Get a quick solution with CP, then solve with CarletonLP or MIP with the remaining time.
  * TODO: Get a quick solution with CP, and actually use that to guide the CarletonLP search (or at least use as an initial bound on best solution for branch and bound)
  * @author sodomka
@@ -54,7 +51,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    
    CarletonLP carletonLP;
    boolean BRANCH_AND_BOUND = true;
-   boolean ALWAYS_SOLVE_PARTIAL_PROBLEM = true;
+   boolean ALWAYS_SOLVE_PARTIAL_PROBLEM = false;
    boolean BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION = true;
    boolean SET_WATERFALL_MAX_DROPOUT = true;
    
@@ -193,7 +190,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       for(int a=0; a < _advertisers; a++){
     	  allPossible *= maxDropOut[a]+1;
       }
-      System.out.println("Checked: "+_checked+" / "+allPossible);
+      System.out.println("Checked: "+_checked+"("+_bestChecked+ ")"+" / "+allPossible);
       System.out.println("Runtime: "+runtime/1000.0+" - "+runtime/1000.0/_checked);
       
       //---------------------------------------------------------------
@@ -295,8 +292,10 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 		   //  2) IF the waterfall is feasible, then we can apply the greedy algorithm to all agents below us, until we hit a whole number avg pos.
 		   //  3) the solution to the greedy algorithm provides tight bounds on the drop out of all agents it was applied to.
 		   
-		   /*
-		   if(ALWAYS_SOLVE_PARTIAL_PROBLEM || agent-1 == us){
+		   
+		   //if(ALWAYS_SOLVE_PARTIAL_PROBLEM || agent-1 == us){
+		   if(agent >= us && agent > 0){
+			   //System.out.println(agent+", "+us);
 			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
 			   double[] avgPos_tmp = new double[agent];
 			   for(int i=0; i < agent; i++){
@@ -318,6 +317,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 			   } else {
 				   
 				   //If feasible but a terrible solution (compared to the best found so far), we can also backtrack immediately 
+				   /*
 				   if (BRANCH_AND_BOUND && _bestSol != null) {
 					   
 					   //Note: This may not work if objective values are not monotonically increasing/decreasing as a more complete solution is considered.
@@ -331,20 +331,31 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 						   return;
 					   }
 				   }
-				   
+				   */
 				   
 				   
 				   //we can check if the waterfall may be applied!
 				   //Only do this if we have reached our agent, since that gives us some number of impressions
-				   if (agent-1 == us) {
 				   
+				   //this doesn't work for all objectives so omitting it
+				   /*
+				   if (agent >= us) {
+				    
 			        double[] simps = new double[avgPos_a.length];
 			        for(int s=0; s < avgPos_tmp.length; s++){ //assuming slots are 0 indexed
 			          simps[s] = sol.S_a[s];
 			        }
 			        
 			        for(int a2=agent; a2 < avgPos_a.length; a2++){
-			          //range PSlots = 1..a2;
+				          
+			          //Continue running the waterfall for agents starting in higher slots until an agent has an integer average position.
+			          //if((avgPos_a[a2]-(int)Math.ceil(avgPos_a[a2])) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
+			          System.out.println(a2+": "+avgPos_a[a2]+", "+(int)avgPos_a[a2]+", "+(avgPos_a[a2] == (int)avgPos_a[a2]));
+			          if (avgPos_a[a2] == (int)avgPos_a[a2]) {
+			            break;
+			          }
+		          
+				      //range PSlots = 1..a2;
 			          double[] pimps = new double[a2+1];
 			          for(int s=0; s < a2;  s++){
 			            pimps[s] = simps[s];
@@ -373,21 +384,17 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 			          }
 			          //cout << a2 << " : " << slotImps << " - " << minDropOut[a2] << endl;
 
-			          //Continue running the waterfall for agents starting in higher slots until an agent has an integer average position.
-			          //if((avgPos_a[a2]-(int)Math.ceil(avgPos_a[a2])) == 0){ //this is a crappy check if an avg pos is a whole number, got a better one?
-			          if (avgPos_a[a2] == (int)avgPos_a[a2]) {
-			            break;
-			          }
 			        }
 			        
 				   }
-			        
+			       //*/
 			        
 			   }
 		   }  
 		   //*/
 		   
 		   /*
+		   //does not appear to break things, but also does not seem to bring any improvement
 		   if (BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION) {
 			   int maxDropoutForAvgPos = (int) Math.floor(avgPos_a[agent]) - 1;
 			   if (maxDropoutForAvgPos < maxDropOutLocal[agent]) {
@@ -395,7 +402,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
 				   avgPosBoundCount++;
 			   }
 		   }
-		   */
+		   //*/
 		   
 		   //if feasiblity is ok, then lets continue with the search
 		   for(int d=maxDropOut[agent]; d >= minDropOutLocal[agent]; d--){
