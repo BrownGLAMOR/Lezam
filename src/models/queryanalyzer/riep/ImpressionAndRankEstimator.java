@@ -1,4 +1,6 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep;
+
+import models.queryanalyzer.riep.iep.IEResult;
 
 public interface ImpressionAndRankEstimator {
 	

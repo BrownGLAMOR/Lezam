@@ -1,8 +1,8 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep.iep;
 
 import java.util.Arrays;
 
-import models.queryanalyzer.iep.WaterfallILP.Objective;
+import models.queryanalyzer.riep.iep.WaterfallILP.Objective;
 
 
 import ilog.concert.IloException;

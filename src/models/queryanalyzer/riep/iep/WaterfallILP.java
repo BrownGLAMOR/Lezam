@@ -1,4 +1,4 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep.iep;
 
 import ilog.concert.*;
 import ilog.cplex.IloCplex;

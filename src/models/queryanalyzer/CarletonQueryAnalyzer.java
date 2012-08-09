@@ -7,10 +7,10 @@ import models.AbstractModel;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.forecast.AbstractImpressionForecaster;
 import models.queryanalyzer.forecast.EMAImpressionForecaster;
-import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionAndRankEstimator;
-import models.queryanalyzer.iep.ImpressionEstimatorSample;
-import models.queryanalyzer.iep.LDSImpressionAndRankEstimator;
+import models.queryanalyzer.riep.ImpressionAndRankEstimator;
+import models.queryanalyzer.riep.LDSImpressionAndRankEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.ImpressionEstimatorSample;
 
 import java.util.*;
 

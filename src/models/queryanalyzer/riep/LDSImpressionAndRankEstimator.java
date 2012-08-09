@@ -1,6 +1,8 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep;
 
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.search.LDSearchIESmart;
 
 public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator {

@@ -2,8 +2,8 @@ package models.queryanalyzer.search;
 
 
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.iep.AbstractImpressionEstimator;
-import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
 
 public class LDSearchHybrid {
 	private QAInstance _inst;

@@ -1,6 +1,6 @@
 package models.queryanalyzer.search;
 
-import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.riep.iep.IEResult;
 
 import java.util.*;
 

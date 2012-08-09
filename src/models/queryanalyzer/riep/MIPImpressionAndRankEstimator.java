@@ -1,6 +1,8 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep;
 
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.riep.iep.EricImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
 
 public class MIPImpressionAndRankEstimator implements ImpressionAndRankEstimator {
 

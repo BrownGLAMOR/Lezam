@@ -2,10 +2,10 @@ package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.iep.AbstractImpressionEstimator;
-import models.queryanalyzer.iep.CarletonLPImpressionEstimator;
-import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.CarletonLPImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.ImpressionEstimatorExact;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;

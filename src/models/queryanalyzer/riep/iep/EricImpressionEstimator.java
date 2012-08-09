@@ -1,6 +1,7 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep.iep;
 
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.riep.iep.WaterfallILP.WaterfallResult;
 
 import java.util.Arrays;
 

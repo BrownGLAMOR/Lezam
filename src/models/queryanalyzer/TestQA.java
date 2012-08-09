@@ -2,8 +2,8 @@ package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.iep.IEResult;
-import models.queryanalyzer.iep.ImpressionEstimatorSample;
+import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.ImpressionEstimatorSample;
 import models.queryanalyzer.search.LDSearchIESmart;
 import models.queryanalyzer.util.LoadData;
 

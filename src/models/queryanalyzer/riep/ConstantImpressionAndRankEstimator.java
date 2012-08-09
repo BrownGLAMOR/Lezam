@@ -1,4 +1,7 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep;
+
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
 
 /**
  * This chooses a constant ordering of squashed bids, and tries to find impressions

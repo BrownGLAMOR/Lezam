@@ -1,7 +1,7 @@
 package models.queryanalyzer.search;
 
-import models.queryanalyzer.iep.AbstractImpressionEstimator;
-import models.queryanalyzer.iep.IEResult;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
 
 public class LDSearchIESmart extends LDSearchSmart {
 	int _maxIter;

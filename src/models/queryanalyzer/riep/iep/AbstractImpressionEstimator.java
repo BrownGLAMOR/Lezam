@@ -1,4 +1,4 @@
-package models.queryanalyzer.iep;
+package models.queryanalyzer.riep.iep;
 
 import models.queryanalyzer.ds.QAInstance;
 
