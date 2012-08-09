@@ -1,7 +1,10 @@
-package models.queryanalyzer.riep.iep;
+package models.queryanalyzer.riep.iep.cp;
 
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.probsample.SampleProbability;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 
 import java.util.*;
 

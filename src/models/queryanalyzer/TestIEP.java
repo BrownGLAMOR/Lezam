@@ -3,9 +3,9 @@ package models.queryanalyzer;
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
-import models.queryanalyzer.riep.iep.CarletonLPImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.riep.iep.ImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimator;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;
@@ -45,8 +45,13 @@ public class TestIEP {
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
 
+<<<<<<< .mine
+			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
+			AbstractImpressionEstimator IEP = new DropoutImpressionEstimator(inst, false, false, false, -1);
+=======
 			AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
 			//AbstractImpressionEstimator IEP = new CarletonLPImpressionEstimator(inst, false, false, false, -1);
+>>>>>>> .r2315
 
 			IEResult bestSol = IEP.search(bidOrder);
 

@@ -10,7 +10,7 @@ import models.queryanalyzer.forecast.EMAImpressionForecaster;
 import models.queryanalyzer.riep.ImpressionAndRankEstimator;
 import models.queryanalyzer.riep.LDSImpressionAndRankEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.riep.iep.ImpressionEstimatorSample;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
 
 import java.util.*;
 

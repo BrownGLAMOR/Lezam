@@ -5,11 +5,11 @@ import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.forecast.*;
 import models.queryanalyzer.riep.*;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
-import models.queryanalyzer.riep.iep.CarletonLPImpressionEstimator;
-import models.queryanalyzer.riep.iep.EricImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.riep.iep.ImpressionEstimatorExact;
-import models.queryanalyzer.riep.iep.ImpressionEstimatorSample;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimator;
+import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import simulator.parser.GameStatus;
@@ -892,10 +892,10 @@ public class ImpressionEstimatorTest {
                      }
                      if (impressionEstimatorIdx == SolverType.Carleton_LP) {
                     	 if (ORDERING_KNOWN) {
-                             model = new CarletonLPImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             model = new DropoutImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                     	 } else {
-                             model = new CarletonLPImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             model = new DropoutImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
                              fullModel = new LDSImpressionAndRankEstimator(model);
                     	 }
                      }

@@ -1,6 +1,11 @@
-package models.queryanalyzer.riep.iep;
+package models.queryanalyzer.riep.iep.cplp;
 
 import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
+import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
 
 import java.util.Arrays;
 
@@ -15,7 +20,7 @@ import java.util.Arrays;
  */
 
 
-public class CarletonLPImpressionEstimator implements AbstractImpressionEstimator {
+public class DropoutImpressionEstimator implements AbstractImpressionEstimator {
 
    private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
    private QAInstance _instance;
@@ -49,7 +54,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    int _checked;
    int _bestChecked;
    
-   CarletonLP carletonLP;
+   ImpressionEstimationLP carletonLP;
    boolean BRANCH_AND_BOUND = true;
    boolean ALWAYS_SOLVE_PARTIAL_PROBLEM = false;
    boolean BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION = true;
@@ -58,7 +63,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
    static int boundCount = 0;
    static int avgPosBoundCount = 0;
    
-   public CarletonLPImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
+   public DropoutImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
       TIMEOUT_IN_SECONDS = timeoutInSeconds;
       MULTIPLE_SOLUTIONS = multipleSolutions;
       INTEGER_PROGRAM = integerProgram;
@@ -146,7 +151,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
       //---------------------------------------------------------------
       // Calling Carleton's search will go here.
       //---------------------------------------------------------------    
-      carletonLP = new CarletonLP(orderedI_a, orderedMu_a, orderedSampledMu_a, _slots, orderedI_aDistributionMean, orderedI_aDistributionStdev);
+      carletonLP = new ImpressionEstimationLP(orderedI_a, orderedMu_a, orderedSampledMu_a, _slots, orderedI_aDistributionMean, orderedI_aDistributionStdev);
 
       
       //this causes pruning, and thus algorithm correctness, 
@@ -720,7 +725,7 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 10);
 
-         CarletonLPImpressionEstimator carletonLP = new CarletonLPImpressionEstimator(ericInst, false, true, false, 5);
+         DropoutImpressionEstimator carletonLP = new DropoutImpressionEstimator(ericInst, false, true, false, 5);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          //int[] cOrder = QAInstance.getAvgPosOrder(cPos);
@@ -744,8 +749,8 @@ public class CarletonLPImpressionEstimator implements AbstractImpressionEstimato
          System.out.println("  IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
          System.out.println("  CarletonLP: " + carletonLPResult + "\tactual=" + Arrays.toString(I_aFull));
          
-         System.out.println("boundcount=" + CarletonLPImpressionEstimator.boundCount);
-         System.out.println("avgPosBoundcount=" + CarletonLPImpressionEstimator.avgPosBoundCount);
+         System.out.println("boundcount=" + DropoutImpressionEstimator.boundCount);
+         System.out.println("avgPosBoundcount=" + DropoutImpressionEstimator.avgPosBoundCount);
          System.out.println("carletonLPSeconds=" + seconds);
       }
       

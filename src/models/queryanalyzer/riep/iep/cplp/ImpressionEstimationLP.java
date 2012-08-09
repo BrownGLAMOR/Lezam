@@ -1,8 +1,8 @@
-package models.queryanalyzer.riep.iep;
+package models.queryanalyzer.riep.iep.cplp;
 
 import java.util.Arrays;
 
-import models.queryanalyzer.riep.iep.WaterfallILP.Objective;
+import models.queryanalyzer.riep.iep.mip.WaterfallILP.Objective;
 
 
 import ilog.concert.IloException;
@@ -17,7 +17,7 @@ import ilog.cplex.IloCplex;
  * @author sodomka
  *
  */
-public class CarletonLP {
+public class ImpressionEstimationLP {
 	
 	public enum Objective {
 		MAXIMIZE_IMPRESSIONS,
@@ -27,7 +27,6 @@ public class CarletonLP {
 		DEPENDS_ON_CIRCUMSTANCES, 
 		MINIMIZE_SLOT_DIFF,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF,
-		MINIMIZE_IMPRESSIONS_AND_SLOT_DIFF,
 	}
 	
 	private final static boolean USE_EPSILON = false;
@@ -61,7 +60,7 @@ public class CarletonLP {
 	
 	
 	
-	public CarletonLP(double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
+	public ImpressionEstimationLP(double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
 		this.numAgents = knownMu_a.length;
 		this.numSlots = numSlots;
 		this.knownMu_a = knownMu_a;
@@ -193,8 +192,6 @@ public class CarletonLP {
 				addObjective_minimizeSlotDiff(cplex, S_a, bestObj, numSlots, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF) {
 				addObjective_minimizeImpressionPriorErrorSlotDiff(cplex, S_a,  T_a, T_aPriorMean, bestObj, numSlots, effectiveNumAgents);
-			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSIONS_AND_SLOT_DIFF) {
-				addObjective_minimizeImpressionSlotDiff(cplex, S_a,  T_a, T_aPriorMean, bestObj, numSlots, effectiveNumAgents);
 			}
 			
 			//----------------------------- ADD CONSTRAINTS --------------------------------------------------
@@ -305,57 +302,6 @@ public class CarletonLP {
 	
 	
 
-	private void addObjective_minimizeImpressionSlotDiff(IloCplex cplex,
-			IloNumVar[] S_a, IloNumVar[] T_a, double[] T_aPriorMean,
-			double bestObj, int numSlots2, int effectiveNumAgents) throws IloException {
-
-		int trueSlots = Math.min(numSlots, effectiveNumAgents);
-		double maxImp = S_a[0].getUB();
-		
-		IloNumVar[] SDeltas = cplex.numVarArray(trueSlots-1, 0, 2*maxImp);
-		
-		//System.out.println(Arrays.toString(T_aPriorMean));
-		
-		
-		IloLinearNumExpr allSTotal = cplex.linearNumExpr();
-		//for (int a=0; a<numSlots-1; a++) {
-		for(int s=0; s < trueSlots-1; s++){
-			allSTotal.addTerm(-1, S_a[s]);
-		}
-		
-		
-		for (int s=0; s < trueSlots-1; s++) {
-			IloLinearNumExpr delta = cplex.linearNumExpr();
-			delta.addTerm(1, S_a[s]);
-			delta.addTerm(-1, S_a[s+1]);
-			cplex.addGe(SDeltas[s], delta);
-			
-			delta.addTerm(-1, S_a[s]);
-			delta.addTerm(1, S_a[s+1]);
-			cplex.addGe(SDeltas[s], delta);
-		}
-		
-		IloLinearNumExpr allSDeltas = cplex.linearNumExpr();
-		//for (int a=0; a<numSlots-1; a++) {
-		for(IloNumVar SDelta : SDeltas){
-			allSDeltas.addTerm(1, SDelta);
-		}
-		
-		
-		cplex.addMinimize(cplex.sum(cplex.prod(10, allSDeltas), allSTotal));	
-		//cplex.addMinimize(allSDeltas);	
-		
-		//Must be better than previously best objective
-		if (bestObj != -1) {
-			cplex.addLe(cplex.sum(cplex.prod(10, allSDeltas), allSTotal), bestObj);
-			//cplex.addLe(allSDeltas, bestObj);
-		}
-	}
-
-
-
-
-
 	private void addObjective_minimizeImpressionPriorErrorSlotDiff(IloCplex cplex, IloNumVar[] S_a, IloNumVar[] T_a,
 			double[] T_aPriorMean, double bestObj, int numSlots, int effectiveNumAgents) throws IloException  {
 		
@@ -370,6 +316,7 @@ public class CarletonLP {
 		//T_aPriorMean
 		for (int a=0; a < effectiveNumAgents-1; a++) {
 			if(T_aPriorMean[a] > 0){
+				IloLinearNumExpr delta = cplex.linearNumExpr();
 				cplex.addGe(IDeltas[a], cplex.sum(T_a[a], -T_aPriorMean[a]));
 				cplex.addGe(IDeltas[a], cplex.sum(cplex.negative(T_a[a]), T_aPriorMean[a]));
 			} else {
@@ -793,7 +740,7 @@ public class CarletonLP {
 		Arrays.fill(knownI_a, -1);
 		knownI_a[us] = imp;
 		
-		CarletonLP carletonLP = new CarletonLP(knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
+		ImpressionEstimationLP carletonLP = new ImpressionEstimationLP(knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
 		LPSolution sol = carletonLP.solveIt(M, us, imp, dropout_a, bestObj);
 		System.out.println(sol);
 		
