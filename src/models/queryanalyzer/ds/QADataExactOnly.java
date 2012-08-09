@@ -69,6 +69,8 @@ public class QADataExactOnly {
       return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentnames, avgPos);
    }
 
+
+   
    public String toString() {
       String temp = "";
       temp += "Slots: " + _slots + "\n";

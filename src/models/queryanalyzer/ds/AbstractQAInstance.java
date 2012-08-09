@@ -72,17 +72,7 @@ public abstract class AbstractQAInstance {
 		   }
 	   }
 
-	   
-	   public int[] getTrueImpressions(QADataExactOnly data) {
-	      int[] impressions = new int[_advetisers];
-	      for (int i = 0; i < _advetisers; i++) {
-	         impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;
-	      }
-	      return impressions;
-	   }
-	   
-	   
-
+	  
 	   protected static void sortListsDecending(int[] ids, double[] vals) {
 		      assert (ids.length == vals.length);
 		      int length = ids.length;

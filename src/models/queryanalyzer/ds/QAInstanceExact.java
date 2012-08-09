@@ -33,6 +33,16 @@ public class QAInstanceExact extends AbstractQAInstance {
       return bidOrder;
    }
    
+   
+   public int[] getTrueImpressions(QADataExactOnly data) {
+      int[] impressions = new int[_advetisers];
+      for (int i = 0; i < _advetisers; i++) {
+         impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;
+      }
+      return impressions;
+   }
+   
+   
    /**
     * This method converts a QAInstanceExactOnly instance into a QAInstanceAll, 
     * by using with dummy data.  This is intended for testing only!
