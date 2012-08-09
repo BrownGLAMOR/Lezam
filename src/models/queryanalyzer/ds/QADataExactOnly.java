@@ -61,9 +61,12 @@ public class QADataExactOnly {
       }
       impressionsUB = 2 * impressionsUB;
       
-      String[] agentname={"a1","a2","a3","a4","a5","a6","a7","a8"};
+      String[] agentnames = new String[usedAgents];
+      for (int i = 0; i < usedAgents; i++){
+    	  agentnames[i] = "a"+i;
+      }
       
-      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentname, avgPos);
+      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentnames, avgPos);
    }
 
    public String toString() {
