@@ -1,6 +1,6 @@
 package models.queryanalyzer;
 
-import models.queryanalyzer.ds.QAData;
+import models.queryanalyzer.ds.QADataExactOnly;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.search.LDSearchOrder;
 import models.queryanalyzer.riep.search.LDSearchOrderSmart;
@@ -15,7 +15,7 @@ public class TestLDSearch {
 		String fileName = args[0];
 		System.out.println("Loading File: "+args[0]);
 		System.out.println("");
-		QAData data = LoadData.LoadIt(fileName);
+		QADataExactOnly data = LoadData.LoadIt(fileName);
 		
 		System.out.println("All Data:");
 		System.out.println(data);

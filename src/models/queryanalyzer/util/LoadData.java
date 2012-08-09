@@ -1,7 +1,7 @@
 package models.queryanalyzer.util;
 
 import models.queryanalyzer.ds.AdvertiserInfo;
-import models.queryanalyzer.ds.QAData;
+import models.queryanalyzer.ds.QADataExactOnly;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,7 +10,7 @@ import java.util.StringTokenizer;
 
 
 public class LoadData {
-	static public QAData LoadIt(String fileName){
+	static public QADataExactOnly LoadIt(String fileName){
 		String instanceString = fileToString(fileName);
 		//System.out.println(instanceString);
 		StringTokenizer tokens = new StringTokenizer(instanceString);
@@ -29,7 +29,7 @@ public class LoadData {
 		}
 
 		
-		return new QAData(agents, slots, agentInfo);
+		return new QADataExactOnly(agents, slots, agentInfo);
 	}
 	
 	private static String fileToString(String fileLoc) {

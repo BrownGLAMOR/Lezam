@@ -162,7 +162,7 @@ public int getNumSlots() {
       return _orderingKnown;
    }
 
-   public int[] getBidOrder(QAData data) {
+   public int[] getBidOrder(QADataExactOnly data) {
       double[] bids = new double[_advetisers];
       int[] bidOrder = new int[_advetisers];
       
@@ -270,7 +270,7 @@ public int getNumSlots() {
       return carletonOrder;
    }
 
-   public int[] getTrueImpressions(QAData data) {
+   public int[] getTrueImpressions(QADataExactOnly data) {
       int[] impressions = new int[_advetisers];
       for (int i = 0; i < _advetisers; i++) {
          impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;

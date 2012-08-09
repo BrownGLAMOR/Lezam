@@ -1,6 +1,6 @@
 package models.queryanalyzer;
 
-import models.queryanalyzer.ds.QAData;
+import models.queryanalyzer.ds.QADataExactOnly;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
@@ -38,7 +38,7 @@ public class TestQA {
 			System.out.println(e);
 		}
 		
-		QAData data = LoadData.LoadIt(fileName);
+		QADataExactOnly data = LoadData.LoadIt(fileName);
 		
 		System.out.println("All Data:");
 		System.out.println(data);
