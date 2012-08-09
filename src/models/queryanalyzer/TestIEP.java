@@ -45,8 +45,8 @@ public class TestIEP {
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
 
-			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new CarletonLPImpressionEstimator(inst, false, false, false, -1);
+			AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
+			//AbstractImpressionEstimator IEP = new CarletonLPImpressionEstimator(inst, false, false, false, -1);
 
 			IEResult bestSol = IEP.search(bidOrder);
 

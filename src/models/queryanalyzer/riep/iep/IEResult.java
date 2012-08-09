@@ -12,18 +12,6 @@ public class IEResult {
    private int[][] _waterfall;
    private double _obj;
 
-   
-
-//   //TODO: We should get rid of this completely. Force agent names to be provided.
-//   public IEResult(double obj, int[] sol, int[] order, int[] slotImpr) {
-//		 _obj = obj;
-//	      _sol = sol;
-//	      _order = order;
-//	      _slotImpr = slotImpr;
-//	      _waterfall = AbstractQueryAnalyzer.greedyAssign(slotImpr.length,sol.length,order,sol);
-//	      this.agentNames = null;
-//	   }
-   
    public IEResult(double obj, int[] sol, int[] order, int[] slotImpr, String[] agentNames) {
 	 _obj = obj;
       _sol = sol;
@@ -33,18 +21,6 @@ public class IEResult {
       this.agentNames = agentNames;
    }
 
-   
-   
-//   //TODO: We should get rid of this completely. Force agent names to be provided.
-//   public IEResult(double obj, int[] sol, int[] order, int[] slotImpr, int[][] waterfall) {
-//	      _obj = obj;
-//	      _sol = sol;
-//	      _order = order;
-//	      _slotImpr = slotImpr;
-//	      _waterfall = waterfall;
-//	      agentNames = null;
-//	   }
-   
    public IEResult(double obj, int[] sol, int[] order, int[] slotImpr, int[][] waterfall, String[] agentNames) {
       _obj = obj;
       _sol = sol;
