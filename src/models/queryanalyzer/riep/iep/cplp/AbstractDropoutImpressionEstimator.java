@@ -59,46 +59,25 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       if (_bestSol == null) { //no solution found  =(
     	  return null;
       } else { //solution found! need to un-order it...
+          
+          int[][] waterfall = _bestSol.getImpressions(); //kinda strange we distill the waterfall before re-ordering, but I am just replicating current semantics [cjc]
+          LPSolution orginalOrder = _bestSol.unorder(order);
+                   
+          int[] impsPerAgent = makeFilterArray(orginalOrder.T_a, _inst.getNumAdvetisers());
+          int[] impsPerSlot = makeFilterArray(orginalOrder.S_a, _inst.getNumSlots());
 
-          double[][] I_a_s = _bestSol.I_a_s;
-
-
-          int[][] waterfall = new int[I_a_s.length][I_a_s[0].length];
-          for(int i = 0; i < waterfall.length; i++) {
-             for(int j = 0; j < waterfall[i].length; j++) {
-                waterfall[i][j] = (int) I_a_s[i][j];
-             }
-          }
-    	
-          //relativeRanking[i]: the agent in initial position i had index relativeRanking[i]
-          int[] relativeRanking = order.clone(); //result.getOrdering();
-
-          //Convert this into the IEResult that Carleton's QueryAnalyzer likes.
-          double obj = _bestSol.objectiveVal;
-          int[] impsPerAgent = getImpsPerAgent(I_a_s);
-          int[] impsPerSlot = getImpsPerSlot(I_a_s);
-
-//    			System.out.println("agents=" + _advertisers + "\tslots=" + _slots + "\tI_a_s size=" + I_a_s.length + " " + I_a_s[0].length);
-          //TODO: do we have to undo the ordering?
-          int[] unorderedImpsPerAgent = unorder(impsPerAgent, order);
-
-          //TODO: WHY IS ORDER CALLED??? 
-          //This is pretty confusing. When impsPerAgent is ordered, the impressions each agent saw are shuffled.
-          //The end result has each index corresponding to an agent.
-          //However, the result.getOrdering() does not have its slots corresponding to agent indices.
-          //So calling unorder doesn't work.
-          //But somehow, calling order() works?? (at least it seems to be empirically)
-          //Confusing.
-          //FIXME: This is probably a dormant bug that will break things if the LDS is used with the 
-          //unranked version of the problem (which we never do). (verify?) [yes, it does.]
-          int[] unorderedRelativeRanking = order(relativeRanking, order);
-
-          //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
-
-          return new IEResult(obj, unorderedImpsPerAgent, order.clone(), impsPerSlot, waterfall, _inst.getAgentNames());
+          return new IEResult(orginalOrder.objectiveVal, impsPerAgent, order.clone(), impsPerSlot, waterfall, _inst.getAgentNames());
       }
    }
   
+   private int[] makeFilterArray(double[] arr, int ub){
+	   int length = Math.min(arr.length, ub);
+	   int[] arri = new int[length];
+	   for(int i=0; i<length; i++){
+		   arri[i] = (int)arr[i];
+	   }
+	   return arri;
+   }
    
    //this method will implictly assume length of dropout,minDropOut,maxDropOut,avgPos_a are the same and this is the number of agents.
    protected void dropoutDFS(ImpressionEstimationLP IELP, int[] dropout, int[] minDropOut, int[] maxDropOut, int agent){
@@ -183,42 +162,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    //It assumes slots are 0 based.
   
    
-   private boolean isInBounds(double[][] I_a_s, int a, int s) {
-	   if (a >= 0 && a < I_a_s.length) {
-		   if (s >= 0 && s < I_a_s[a].length) {
-			   return true;
-		   }
-	   }
-	   return false;
-   }
-   
-   
-   protected int[] getImpsPerAgent(double[][] I_a_s) {
-      int[] impsPerAgent = new int[_inst.getNumAdvetisers()];
-      for (int a = 0; a < _inst.getNumAdvetisers(); a++) {
-    	  for (int s=0; s<_inst.getNumSlots(); s++) {
-    		  if (isInBounds(I_a_s, a, s)) {
-    			  impsPerAgent[a] += Math.round(I_a_s[a][s]);
-    		  }
-         }
-      }
-      return impsPerAgent;
-   }
-
-   
-   protected int[] getImpsPerSlot(double[][] I_a_s) {
-      int[] impsPerSlot = new int[_inst.getNumSlots()];
-      for (int s = 0; s < _inst.getNumSlots(); s++) {
-         for (int a = 0; a < _inst.getNumAdvetisers(); a++) {
-        	 if (isInBounds(I_a_s, a, s)) {
-        		 impsPerSlot[s] += Math.round(I_a_s[a][s]);
-        	 }
-         }
-      }
-      return impsPerSlot;
-   }
-
-
    /**
     * Reorder the specified array. order's ith value returns
     * the index of the original array that should be moved to
@@ -228,6 +171,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
     * @param order
     * @return
     */
+   
    protected static double[] order(double[] arr, int[] order) {
       double[] orderedArr = new double[arr.length];
       for (int i = 0; i < order.length; i++) {
@@ -244,13 +188,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       return orderedArr;
    }
 
-   protected static int[] unorder(int[] orderedArr, int[] order) {
-      int[] arr = new int[orderedArr.length];
-      for (int i = 0; i < order.length; i++) {
-         arr[order[i]] = orderedArr[i];
-      }
-      return arr;
-   }
 
    protected static boolean[] order(boolean[] arr, int[] order) {
       boolean[] orderedArr = new boolean[arr.length];
@@ -259,13 +196,5 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       }
       return orderedArr;
    }
-
-   protected static double[] unorder(double[] orderedArr, int[] order) {
-      double[] arr = new double[orderedArr.length];
-      for (int i = 0; i < order.length; i++) {
-         arr[order[i]] = orderedArr[i];
-      }
-      return arr;
-   }
-
+   
 }

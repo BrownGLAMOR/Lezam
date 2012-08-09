@@ -15,6 +15,34 @@ public class LPSolution {
 		this.T_a = T_a;
 	}
 	
+	public int[][] getImpressions() {
+        int[][] cascade = new int[I_a_s.length][];
+        for(int i = 0; i < cascade.length; i++) {
+        	cascade[i] = new int[I_a_s[i].length];
+           for(int j = 0; j < cascade[i].length; j++) {
+        	   cascade[i][j] = (int)I_a_s[i][j];
+           }
+        }
+        return cascade;
+	}
+
+	public LPSolution unorder(int[] order) {
+		assert(order.length == T_a.length);
+		int[] orderLookup = new int[order.length];
+		for(int i=0; i < order.length; i++){
+			orderLookup[order[i]] = i;
+		}
+		double[][] I_a_sCopy = new double[I_a_s.length][];
+		double[] S_aCopy = Arrays.copyOf(S_a, S_a.length);
+		double[] T_aCopy = new double[T_a.length];
+		
+		for(int i=0; i < order.length; i++){
+			I_a_sCopy[i] = Arrays.copyOf(I_a_s[orderLookup[i]],I_a_s[orderLookup[i]].length);
+			T_aCopy[i] = T_a[orderLookup[i]];
+		}
+		return new LPSolution(objectiveVal, I_a_sCopy, S_aCopy, T_aCopy);
+	}
+	
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append("obj: " + objectiveVal + "\n");

@@ -57,6 +57,8 @@ public class TestIEP {
 			System.out.println("Ground Truth:  "+Arrays.toString(trueImpressions));
 			
 			System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));
+		
+			System.out.println(bestSol);
 	}
 	
 	// Check if we can readin and output the file correctly

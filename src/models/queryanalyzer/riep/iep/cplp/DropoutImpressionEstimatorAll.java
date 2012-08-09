@@ -161,12 +161,10 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
       double[] a = {90, 80, 70, 10, 20, 30};
       int[] order = {0, 1, 2, 5, 4, 3};
       double[] orderedArr = order(a, order);
-      double[] unorderedArr = unorder(orderedArr, order);
 
       System.out.println("a: " + Arrays.toString(a));
       System.out.println("order: " + Arrays.toString(order));
       System.out.println("orderedArr: " + Arrays.toString(orderedArr));
-      System.out.println("unorderedArr: " + Arrays.toString(unorderedArr));
    }
 
    
