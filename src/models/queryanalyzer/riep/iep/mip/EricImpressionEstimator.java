@@ -311,7 +311,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
          DropoutImpressionEstimatorAll carletonLP = new DropoutImpressionEstimatorAll(ericInst, false, true, false, 5);
 
-         double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
+         double[] cPos = carletonInst.getAvgPos();
          int[] cOrder = QAInstanceAll.getAvgPosOrder(cPos);
          //int[] cOrder = {1, 2, 0};
          System.out.println("cPos: " + Arrays.toString(cPos) + ", cOrder: " + Arrays.toString(cOrder));

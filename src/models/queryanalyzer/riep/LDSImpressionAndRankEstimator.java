@@ -19,7 +19,7 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
    }
 
    public IEResult getBestSolution() {
-      double[] avgPos = ie.getApproximateAveragePositions();
+      double[] avgPos = inst.getAvgPos();
       int[] avgPosOrder;
       //TODO: we may re-integrate the CarletonOrdering after AbstractQAInstance have been refactored
       /*

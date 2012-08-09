@@ -2,8 +2,7 @@ package models.queryanalyzer.riep.iep.cplp;
 
 import java.util.Arrays;
 
-import models.queryanalyzer.riep.iep.mip.WaterfallILP.Objective;
-
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -29,6 +28,8 @@ public class ImpressionEstimationLP {
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF,
 	}
 	
+	
+	
 	private final static boolean USE_EPSILON = false;
 	private final static double epsilon = .00001;
 	private final static boolean SUPPRESS_OUTPUT = true;
@@ -45,22 +46,29 @@ public class ImpressionEstimationLP {
 	private final static double MAX_ERROR = 100000; 
 	
 	//Predicted agent impressions
-	double[] T_aPriorMean;	
-	double[] T_aPriorStdev;
-	boolean[] isKnownI_aDistributionMean; //Is T_a prior known? TODO: Should probably use this convention instead of T_aPrior (to match WaterfallILP)
+	private int _M;
+	private int _us;
+	private int _imp;
+	private double[] T_aPriorMean;	
+	private double[] T_aPriorStdev;
+	private boolean[] isKnownI_aDistributionMean; //Is T_a prior known? TODO: Should probably use this convention instead of T_aPrior (to match WaterfallILP)
 
-	int numAgents;
-	int numSlots;
-	double[] knownMu_a; //average position for each agent
-	boolean[] isKnownMu_a; //(if mu is not known, a default -1 value is used)
-	double[] knownSampledMu_a; //sampled average position
-	boolean[] isKnownSampledMu_a; //(if sampledMu not known, a default -1 value is used)
-	boolean[] isKnownI_a; //(if I_a is not known, a default -1 value is used)
-	double[] knownI_a;
+	private int numAgents;
+	private int numSlots;
+	private double[] knownMu_a; //average position for each agent
+	private boolean[] isKnownMu_a; //(if mu is not known, a default -1 value is used)
+	private double[] knownSampledMu_a; //sampled average position
+	private boolean[] isKnownSampledMu_a; //(if sampledMu not known, a default -1 value is used)
+	private boolean[] isKnownI_a; //(if I_a is not known, a default -1 value is used)
+	private double[] knownI_a;
 	
 	
 	
-	public ImpressionEstimationLP(double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
+	public ImpressionEstimationLP(int M, int us, int imp, double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
+		_M = M;
+		_us = us;
+		_imp = imp;
+		
 		this.numAgents = knownMu_a.length;
 		this.numSlots = numSlots;
 		this.knownMu_a = knownMu_a;
@@ -133,19 +141,22 @@ public class ImpressionEstimationLP {
 		
 	}
 	
+
+	public ObjectiveGoal getObjectiveGoal() {return ObjectiveGoal.MINIMIZE;}
+	
 	
 	
 	
 	
 	//************************************ MAIN SOLVER METHOD ************************************
 
-	public LPSolution solveIt(int M, int us, int imp, int[] dropout_a, double bestObj) {
-		return solveIt(numAgents, M, us, imp, dropout_a, bestObj);
+	public LPSolution solveIt(int[] dropout_a, double bestObj) {
+		return solveIt(numAgents, dropout_a, bestObj);
 	}
 	
 
 	//Solve problem with some (potentially reduced) number of agents.
-	public LPSolution solveIt(int effectiveNumAgents, int M, int us, int imp, int[] dropout_a, double bestObj) {
+	public LPSolution solveIt(int effectiveNumAgents, int[] dropout_a, double bestObj) {
 		//System.out.println("solveIt: effectiveNumAgents=" + effectiveNumAgents + ", numSlots=" + numSlots + ", M=" + M + ", us=" + us + ", imp=" + imp + ", dropout_a=" + Arrays.toString(dropout_a) + ", bestObj=" + bestObj + ", avgPos=" + Arrays.toString(knownMu_a) + ", sampledAvgPos=" + Arrays.toString(knownSampledMu_a));
 		
 		LPSolution solution = null; // The solution that will ultimately be returned.
@@ -160,17 +171,17 @@ public class ImpressionEstimationLP {
 			
 			//-------------------------------- CREATE DECISION VARIABLES -------------------------------------
 			IloNumVar[][] I_a_s = new IloNumVar[effectiveNumAgents][]; //(#imps per agent/slot)
-			IloNumVar[] S_a = cplex.numVarArray(effectiveNumAgents, 0, M);
-			IloNumVar[] T_a = cplex.numVarArray(effectiveNumAgents, 1, M);
+			IloNumVar[] S_a = cplex.numVarArray(effectiveNumAgents, 0, _M);
+			IloNumVar[] T_a = cplex.numVarArray(effectiveNumAgents, 1, _M);
 			for (int a=0; a<effectiveNumAgents; a++) {
 				I_a_s[a] = new IloNumVar[a+1]; //cplex.numVarArray(a+1, 0, M);
 				for (int s=0; s<=a; s++) {
 					if (s < dropout_a[a]) {
 						I_a_s[a][s] = cplex.numVar(0, 0);
 					} else if (s==dropout_a[a] || s==a){
-						I_a_s[a][s] = cplex.numVar(1, M);
+						I_a_s[a][s] = cplex.numVar(1, _M);
 					} else {
-						I_a_s[a][s] = cplex.numVar(0, M);						
+						I_a_s[a][s] = cplex.numVar(0, _M);						
 					}
 				}
 			}
@@ -183,11 +194,11 @@ public class ImpressionEstimationLP {
 			if (DESIRED_OBJECTIVE == Objective.MAXIMIZE_IMPRESSIONS) {
 				addObjective_closeToImpressionsUpperBound(cplex, T_a, bestObj, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR) {
-				addObjective_minimizeImpressionPriorError(cplex, T_a, us, T_aPriorMean, T_aPriorStdev, bestObj, effectiveNumAgents);
+				addObjective_minimizeImpressionPriorError(cplex, T_a, _us, T_aPriorMean, T_aPriorStdev, bestObj, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SAMPLE_MU_DIFF) {
-				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, T_a, bestObj, effectiveNumAgents, M);
+				addObjective_minimizeDistanceFromSampledMu(cplex, I_a_s, T_a, bestObj, effectiveNumAgents, _M);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF) {
-				addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(cplex, I_a_s, T_a, effectiveNumAgents, us, imp, M, bestObj);
+				addObjective_minimizeImpressionPriorErrorAndDistanceFromSampledMu(cplex, I_a_s, T_a, effectiveNumAgents, _us, _imp, _M, bestObj);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF) {
 				addObjective_minimizeSlotDiff(cplex, S_a, bestObj, numSlots, effectiveNumAgents);
 			} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF) {
@@ -740,10 +751,14 @@ public class ImpressionEstimationLP {
 		Arrays.fill(knownI_a, -1);
 		knownI_a[us] = imp;
 		
-		ImpressionEstimationLP carletonLP = new ImpressionEstimationLP(knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
-		LPSolution sol = carletonLP.solveIt(M, us, imp, dropout_a, bestObj);
+		ImpressionEstimationLP carletonLP = new ImpressionEstimationLP(M, us, imp, knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
+		LPSolution sol = carletonLP.solveIt(dropout_a, bestObj);
 		System.out.println(sol);
 		
 	}
-	
+
+
+
+
+
 }

@@ -43,8 +43,13 @@ public abstract class AbstractQAInstance {
 	   public int getAgentIndex() { return _agentIndex; }
 	   public int getImpressions() { return _impressions; }
 	   public int getImpressionsUB() { return _impressionsUB; }
-
-	   //returns some form of average positions (sampled or exact) for use in ranking agents
+	   public String[] getAgentNames() {return _agentNames;}
+	   /**
+		 * Gets the average position of each agent.
+		 * If exact average positions are known, those should be used.
+		 * Otherwise, use sampled average positions.
+		 * This can possibly include padded agents if they exist.
+		 */
 	   public abstract double[] getAvgPos();
 
 	   public void setAgentImpressionDistributionMean(double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev){
