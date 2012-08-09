@@ -12,7 +12,9 @@ import java.util.StringTokenizer;
 public class LoadData {
 	static public QADataExactOnly LoadIt(String fileName){
 		String instanceString = fileToString(fileName);
+		
 		//System.out.println(instanceString);
+		
 		StringTokenizer tokens = new StringTokenizer(instanceString);
 		
 		int agents = Integer.parseInt(tokens.nextToken());
@@ -25,7 +27,11 @@ public class LoadData {
 			int impressions = Integer.parseInt(tokens.nextToken());
 			double bid = Double.parseDouble(tokens.nextToken());
 			double budget = Double.parseDouble(tokens.nextToken());
-			agentInfo[a] = new AdvertiserInfo(id, avgPos, impressions, bid, budget);
+			double sampledAveragePositions = Double.parseDouble(tokens.nextToken());
+			double impsDistMean = Double.parseDouble(tokens.nextToken());
+			double impsDistStdev = Double.parseDouble(tokens.nextToken());
+
+			agentInfo[a] = new AdvertiserInfo(id, avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
 		}
 
 		
