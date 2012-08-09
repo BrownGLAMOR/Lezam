@@ -40,7 +40,8 @@ public abstract class AbstractQAInstance {
 	   public int getImpressions() { return _impressions; }
 	   public int getImpressionsUB() { return _impressionsUB; }
 
-	   
+	   //returns some form of average positions (sampled or exact) for use in ranking agents
+	   public abstract double[] getAvgPos();
 	   
 	   public boolean hasImpressionPrior() { return _hasImpressionPrior; }
 	   public double[] getAgentImpressionDistributionMean() {

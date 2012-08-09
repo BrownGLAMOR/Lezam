@@ -1,5 +1,6 @@
 package models.queryanalyzer.riep;
 
+import models.queryanalyzer.ds.AbstractQAInstance;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
@@ -9,7 +10,7 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
 
    public final static int NUM_SLOTS = 5;
    public int NUM_ITERATIONS_2 = 20;
-   private QAInstanceAll inst;
+   private AbstractQAInstance inst;
    private AbstractImpressionEstimator ie;
 
    public LDSImpressionAndRankEstimator(AbstractImpressionEstimator ie) {
@@ -20,12 +21,17 @@ public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator
    public IEResult getBestSolution() {
       double[] avgPos = ie.getApproximateAveragePositions();
       int[] avgPosOrder;
+      //TODO: we may re-integrate the CarletonOrdering after AbstractQAInstance have been refactored
+      /*
       if(inst.isPadding()) {
          avgPosOrder = QAInstanceAll.getAvgPosOrder(avgPos);
       }
       else {
          avgPosOrder = QAInstanceAll.getCarletonOrder(avgPos, NUM_SLOTS);
       }
+      */
+      avgPosOrder = QAInstanceAll.getAvgPosOrder(avgPos);
+      
       int numActualAgents = inst.getNumAdvetisers(); //regardless of any padding
 
       IEResult bestSol;

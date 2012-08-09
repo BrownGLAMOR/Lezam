@@ -2,6 +2,7 @@ package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QADataExactOnly;
 import models.queryanalyzer.ds.QAInstanceAll;
+import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
 import models.queryanalyzer.riep.search.LDSearchIESmart;
@@ -45,7 +46,8 @@ public class TestQA {
 		
 		// Why are we hard code here?
 		int advetiser = 3;
-		QAInstanceAll inst = data.buildInstances(advetiser);
+		QAInstanceExact instExact = data.buildInstances(advetiser);
+		QAInstanceAll inst = instExact.makeQAInstanceAll();
 		
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);
@@ -75,7 +77,7 @@ public class TestQA {
 		
 		
 		System.out.println("our Order: "+Arrays.toString(bestSol.getOrder()));
-		int[] bidOrder = inst.getBidOrder(data);
+		int[] bidOrder = instExact.getBidOrder(data);
 		System.out.println("bid Order: "+Arrays.toString(bidOrder));
 		
 		System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));

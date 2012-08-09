@@ -1,12 +1,13 @@
 package models.queryanalyzer.riep.search;
 
 
+import models.queryanalyzer.ds.AbstractQAInstance;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 
 public class LDSearchHybrid {
-	private QAInstanceAll _inst;
+	private AbstractQAInstance _inst;
 	private LDSearchIESmart _avgPosLDS;
 	private LDSearchIESmart _carletonLDS;
 	private int _iterations;

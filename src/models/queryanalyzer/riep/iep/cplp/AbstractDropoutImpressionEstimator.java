@@ -264,14 +264,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    //this function simply applies the waterfall effect to one agent
    //It assumes slots are 0 based.
   
-   
-   /**
-    * Simple check to make sure what is being accessed is in bounds.
-    * @param I_a_s
-    * @param a
-    * @param s
-    * @return
-    */
+   /*
    private boolean isInBounds(double[][] I_a_s, int a, int s) {
 	   if (a >= 0 && a < I_a_s.length) {
 		   if (s >= 0 && s < I_a_s[a].length) {
@@ -306,7 +299,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       }
       return impsPerSlot;
    }
-
+*/
 
    /**
     * Reorder the specified array. order's ith value returns
@@ -341,17 +334,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       return arr;
    }
 
-
-//	//FIXME DEBUG: Don't do any ordering (see how the alg performs)
-//	private static double[] order(double[] arr, int[] order) {
-//		return arr.clone();
-//	}
-//	private static int[] unorder(int[] orderedArr, int[] order) {
-//		return orderedArr.clone();
-//	}
-//	//END FIXME DEBUG
-
-
    private static boolean[] order(boolean[] arr, int[] order) {
       boolean[] orderedArr = new boolean[arr.length];
       for (int i = 0; i < order.length; i++) {
@@ -369,21 +351,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    }
 
 
-
-   public static void testOrdering() {
-      double[] a = {90, 80, 70, 10, 20, 30};
-      int[] order = {0, 1, 2, 5, 4, 3};
-      double[] orderedArr = order(a, order);
-      double[] unorderedArr = unorder(orderedArr, order);
-
-      System.out.println("a: " + Arrays.toString(a));
-      System.out.println("order: " + Arrays.toString(order));
-      System.out.println("orderedArr: " + Arrays.toString(orderedArr));
-      System.out.println("unorderedArr: " + Arrays.toString(unorderedArr));
-   }
-
-   
-
+   /*
    public double[] getApproximateAveragePositions() {
       double[] avgPos = new double[_advertisers];
       for (int i=0; i<_advertisers; i++) {
@@ -393,6 +361,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       }
       return avgPos;
    }
-
+   */
 
 }

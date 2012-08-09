@@ -14,6 +14,7 @@ public class QAInstanceExact extends AbstractQAInstance {
    }
 
    public double[] getAvgPos() {return _avgPos;}
+   public double[] getExactAvgPos() {return _avgPos;}
    
    public int[] getBidOrder(QADataExactOnly data) {
       double[] bids = new double[_advetisers];
