@@ -5,7 +5,7 @@ import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
-import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimator;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
 import models.queryanalyzer.riep.iep.mip.WaterfallILP.WaterfallResult;
 
 import java.util.Arrays;
@@ -309,7 +309,7 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 3);
-         DropoutImpressionEstimator carletonLP = new DropoutImpressionEstimator(ericInst, false, true, false, 5);
+         DropoutImpressionEstimatorAll carletonLP = new DropoutImpressionEstimatorAll(ericInst, false, true, false, 5);
 
          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
          int[] cOrder = QAInstanceAll.getAvgPosOrder(cPos);

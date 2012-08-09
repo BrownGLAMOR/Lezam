@@ -8,7 +8,7 @@ import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
-import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimator;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
 import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
@@ -892,10 +892,10 @@ public class ImpressionEstimatorTest {
                      }
                      if (impressionEstimatorIdx == SolverType.Carleton_LP) {
                     	 if (ORDERING_KNOWN) {
-                             model = new DropoutImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             model = new DropoutImpressionEstimatorAll(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                     	 } else {
-                             model = new DropoutImpressionEstimator(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
+                             model = new DropoutImpressionEstimatorAll(inst, false, false, false, IP_TIMEOUT_IN_SECONDS);
                              fullModel = new LDSImpressionAndRankEstimator(model);
                     	 }
                      }

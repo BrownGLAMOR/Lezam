@@ -1,6 +1,6 @@
 package models.queryanalyzer.riep.iep;
 
-import models.queryanalyzer.ds.QAInstanceAll;
+import models.queryanalyzer.ds.AbstractQAInstance;
 
 public interface AbstractImpressionEstimator {
 	
@@ -13,7 +13,7 @@ public interface AbstractImpressionEstimator {
 	
 	public String getName();
 	
-	public QAInstanceAll getInstance();
+	public AbstractQAInstance getInstance();
 
 
 	/**
@@ -32,7 +32,6 @@ public interface AbstractImpressionEstimator {
 	public ObjectiveGoal getObjectiveGoal(); 
 	
 		
-	
 	public enum ObjectiveGoal {
 		MINIMIZE, MAXIMIZE
 	}

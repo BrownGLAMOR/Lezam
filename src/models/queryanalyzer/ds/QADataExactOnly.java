@@ -26,7 +26,7 @@ public class QADataExactOnly {
     * @param advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
     * @return
     */
-   public QAInstanceAll buildInstances(int advIndex) {
+   public QAInstanceExact buildInstances(int advIndex) {
       assert (advIndex < _agents);
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
@@ -60,44 +60,10 @@ public class QADataExactOnly {
          impressionsUB = Math.max(impressionsUB, usedAgentInfo[i].impressions);
       }
       impressionsUB = 2 * impressionsUB;
-
-      //--------------
-      //sodomka: 3/1/11: I added some things to the QAInstance that Carleton doesn't use. Let's just add dummy values.
-      //(We could have just added a default constructor to take care of these things, but this
-      // should make it more visible that these are possible extensions to CarletonQueryAnalyzer).
-
-      //No distinguishing between exact and sampled positions.
-      double[] dummySampledAvgPositions = new double[agentIds.length];
-      Arrays.fill(dummySampledAvgPositions, -1);
-
-      //No distinguishing between promoted and unpromoted slots
-      int numPromotedSlots = -1;
-
-      //Not considering how many promoted impressions we saw
-      int numPromotedImpressions = -1;
-
-      //Not considering whether our bid is high enough to be in a promoted slot
-      boolean promotionEligibiltyVerified = false;
-
-      //Not using any prior knowledge about agent impressions
-      double[] agentImpressionDistributionMean = new double[agentIds.length];
-      double[] agentImpressionDistributionStdev = new double[agentIds.length];
-
-      for (int i = 0; i < agentIds.length; i++) {
-    	  //agentImpressionDistributionMean[i] = usedAgentInfo[i].impressions;
-      }
-      //--------------
-
+      
       String[] agentname={"a1","a2","a3","a4","a5","a6","a7","a8"};
       
-   
-      
-      
-      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
-                            avgPos, dummySampledAvgPositions, agentIds, advIndex,
-                            usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
-                            true, promotionEligibiltyVerified,
-                            promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentname);
+      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentname, avgPos);
    }
 
    public String toString() {

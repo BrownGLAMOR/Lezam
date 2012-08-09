@@ -62,14 +62,8 @@ public class QAInstanceAll extends AbstractQAInstance {
          }
       }
    }
-
-   private void AbstractQAInstance(int slots, int advetisers, int[] agentIds,
-		int agentIndex, int impressions, int impressionsUB, String[] agentNames2) {
-	// TODO Auto-generated method stub
-	
-}
-
-public int getNumSlots() {
+   
+   public int getNumSlots() {
       return _slots;
    }
 
@@ -160,23 +154,6 @@ public int getNumSlots() {
     */
    public boolean allInitialPositionsKnown() {
       return _orderingKnown;
-   }
-
-   public int[] getBidOrder(QADataExactOnly data) {
-      double[] bids = new double[_advetisers];
-      int[] bidOrder = new int[_advetisers];
-      
-      for (int i = 0; i < _advetisers; i++) {
-         bids[i] = data._agentInfo[_agentIds[i] - 1].bid;
-         bidOrder[i] = i;
-      }
-     
-      sortListsDecending(bidOrder, bids);
-    
-      //System.out.println("Bid order "+Arrays.toString(bidOrder));
-      //System.out.println("Bid value "+Arrays.toString(bids));
-
-      return bidOrder;
    }
 
    private boolean feasibleOrder(int[] order) {
@@ -277,26 +254,6 @@ public int getNumSlots() {
       }
 
       return impressions;
-   }
-
-   private static void sortListsDecending(int[] ids, double[] vals) {
-      assert (ids.length == vals.length);
-      int length = ids.length;
-
-      for (int i = 0; i < length; i++) {
-         for (int j = i + 1; j < length; j++) {
-            if (vals[i] < vals[j]) {
-               double tempVal = vals[i];
-               int tempId = ids[i];
-
-               vals[i] = vals[j];
-               ids[i] = ids[j];
-
-               vals[j] = tempVal;
-               ids[j] = tempId;
-            }
-         }
-      }
    }
 
    /**
