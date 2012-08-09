@@ -2,8 +2,8 @@ package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
-import models.queryanalyzer.search.LDSearchOrder;
-import models.queryanalyzer.search.LDSearchOrderSmart;
+import models.queryanalyzer.riep.search.LDSearchOrder;
+import models.queryanalyzer.riep.search.LDSearchOrderSmart;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;

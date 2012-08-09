@@ -4,7 +4,7 @@ import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.ImpressionEstimatorSample;
-import models.queryanalyzer.search.LDSearchIESmart;
+import models.queryanalyzer.riep.search.LDSearchIESmart;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;

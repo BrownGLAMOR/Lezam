@@ -1,4 +1,4 @@
-package models.queryanalyzer.search;
+package models.queryanalyzer.riep.search;
 
 public class LDSearchOrderSmart extends LDSearchSmart {
 	int[] _goalPerm;

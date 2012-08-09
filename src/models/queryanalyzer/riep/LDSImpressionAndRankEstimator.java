@@ -3,7 +3,7 @@ package models.queryanalyzer.riep;
 import models.queryanalyzer.ds.QAInstance;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.search.LDSearchIESmart;
+import models.queryanalyzer.riep.search.LDSearchIESmart;
 
 public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator {
 

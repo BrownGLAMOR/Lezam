@@ -1,4 +1,4 @@
-package models.queryanalyzer.search;
+package models.queryanalyzer.riep.search;
 
 import models.queryanalyzer.riep.iep.IEResult;
 

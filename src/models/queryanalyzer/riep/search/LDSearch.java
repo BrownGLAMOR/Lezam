@@ -1,4 +1,4 @@
-package models.queryanalyzer.search;
+package models.queryanalyzer.riep.search;
 
 import java.util.LinkedList;
 import java.util.PriorityQueue;

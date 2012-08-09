@@ -1,4 +1,4 @@
-package models.queryanalyzer.search;
+package models.queryanalyzer.riep.search;
 
 public class LDSSwap implements Comparable<LDSSwap> {
    int _a1;
