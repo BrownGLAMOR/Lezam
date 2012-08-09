@@ -1,6 +1,7 @@
 package models.queryanalyzer.util;
 
 import models.queryanalyzer.ds.AdvertiserInfo;
+import models.queryanalyzer.ds.AdvertiserInfoExactOnly;
 import models.queryanalyzer.ds.QADataExactOnly;
 
 import java.io.BufferedReader;
@@ -32,6 +33,31 @@ public class LoadData {
 			double impsDistStdev = Double.parseDouble(tokens.nextToken());
 
 			agentInfo[a] = new AdvertiserInfo(id, avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
+		}
+
+		
+		return null;//Class name unknown.... new QADataExactOnly(agents, slots, agentInfo);
+	}
+	
+	static public QADataExactOnly LoadItExactOnly(String fileName){
+		String instanceString = fileToString(fileName);
+		
+		//System.out.println(instanceString);
+		
+		StringTokenizer tokens = new StringTokenizer(instanceString);
+		
+		int agents = Integer.parseInt(tokens.nextToken());
+		int slots = Integer.parseInt(tokens.nextToken());
+		AdvertiserInfoExactOnly[] agentInfo = new AdvertiserInfoExactOnly[agents];
+		
+		for(int a = 0; a < agents; a++){
+			int id = Integer.parseInt(tokens.nextToken());
+			double avgPos = Double.parseDouble(tokens.nextToken());
+			int impressions = Integer.parseInt(tokens.nextToken());
+			double bid = Double.parseDouble(tokens.nextToken());
+			double budget = Double.parseDouble(tokens.nextToken());
+
+			agentInfo[a] = new AdvertiserInfoExactOnly(id, avgPos, impressions, bid, budget);
 		}
 
 		

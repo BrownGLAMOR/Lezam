@@ -31,7 +31,7 @@ public class TestIEP {
 			System.out.println("");
 		}
 			// Load QA data for test
-			QADataExactOnly data = LoadData.LoadIt(fileName);
+			QADataExactOnly data = LoadData.LoadItExactOnly(fileName);
 			
 			System.out.println("All Data:");
 			System.out.println(data);

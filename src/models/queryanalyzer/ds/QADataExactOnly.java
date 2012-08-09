@@ -12,9 +12,9 @@ import java.util.Arrays;
 public class QADataExactOnly {
    int _agents;
    int _slots;
-   AdvertiserInfo[] _agentInfo;
+   AdvertiserInfoExactOnly[] _agentInfo;
 
-   public QADataExactOnly(int agents, int slots, AdvertiserInfo[] agentInfo) {
+   public QADataExactOnly(int agents, int slots, AdvertiserInfoExactOnly[] agentInfo) {
       assert (agents == agentInfo.length);
       _agents = agents;
       _slots = slots;
@@ -37,7 +37,7 @@ public class QADataExactOnly {
       }
       
       // Assign the usedAngent info
-      AdvertiserInfo[] usedAgentInfo = new AdvertiserInfo[usedAgents];
+      AdvertiserInfoExactOnly[] usedAgentInfo = new AdvertiserInfoExactOnly[usedAgents];
       int index = 0;
       for (int i = 0; i < _agents; i++) {
          if (_agentInfo[i].avgPos >= 0) {

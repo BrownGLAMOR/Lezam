@@ -31,6 +31,10 @@ public abstract class AbstractQAInstance {
 	      _hasImpressionPrior = false;
 	      
 	      _agentNames = agentNames;
+	      
+	      _hasImpressionPrior = false;
+	      _agentImpressionDistributionMean = null;
+	      _agentImpressionDistributionStdev = null;
 	   }
 
 	   public int getNumSlots() { return _slots; }
@@ -42,12 +46,19 @@ public abstract class AbstractQAInstance {
 
 	   //returns some form of average positions (sampled or exact) for use in ranking agents
 	   public abstract double[] getAvgPos();
+
+	   public void setAgentImpressionDistributionMean(double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev){
+		   _hasImpressionPrior = true;
+		   _agentImpressionDistributionMean = agentImpressionDistributionMean;
+		   _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
+	   }
 	   
 	   public boolean hasImpressionPrior() { return _hasImpressionPrior; }
 	   public double[] getAgentImpressionDistributionMean() {
 		  if(_hasImpressionPrior){
 			  return _agentImpressionDistributionMean;
 		  } else {
+			  assert(false) : "Attempted to accept impression prior info without setting it";
 			  return null;
 		  }
 	   }
@@ -56,6 +67,7 @@ public abstract class AbstractQAInstance {
 		   if(_hasImpressionPrior){
 			  return _agentImpressionDistributionStdev;
 		   } else {
+			   assert(false) : "Attempted to accept impression prior info without setting it";
 			   return null; 
 		   }
 	   }
