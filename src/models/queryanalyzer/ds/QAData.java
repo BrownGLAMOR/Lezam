@@ -27,7 +27,7 @@ public class QAData {
     * @param advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
     * @return
     */
-   public QAInstanceAll buildInstances(int advIndex) {
+   public QAInstanceExact buildInstances(int advIndex) {
       assert (advIndex < _agents);
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
@@ -75,24 +75,24 @@ public class QAData {
       
       
       //No distinguishing between promoted and unpromoted slots
-      int numPromotedSlots = -1;
-
-      //Not considering how many promoted impressions we saw
-      int numPromotedImpressions = -1;
-
-      //Not considering whether our bid is high enough to be in a promoted slot
-      boolean promotionEligibiltyVerified = false;
+//      int numPromotedSlots = -1;
+//
+//      //Not considering how many promoted impressions we saw
+//      int numPromotedImpressions = -1;
+//
+//      //Not considering whether our bid is high enough to be in a promoted slot
+//      boolean promotionEligibiltyVerified = false;
 
       //Not using any prior knowledge about agent impressions
 
       
    
-      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
-              avgPos, sampledAvgPos, agentIds, advIndex,
-              usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
-              true, promotionEligibiltyVerified,
-              promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentnames);
-
+//      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
+//              avgPos, sampledAvgPos, agentIds, advIndex,
+//              usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
+//              true, promotionEligibiltyVerified,
+//              promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentnames);
+      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentnames, avgPos);
      
 
     
