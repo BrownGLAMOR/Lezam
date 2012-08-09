@@ -1,7 +1,7 @@
 package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.util.LoadData;
 
 public class TestFileLoading {
@@ -18,7 +18,7 @@ public class TestFileLoading {
 		System.out.println(data);
 		
 		int advetiser = 3;
-		QAInstance inst = data.buildInstances(advetiser);
+		QAInstanceAll inst = data.buildInstances(advetiser);
 		
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);

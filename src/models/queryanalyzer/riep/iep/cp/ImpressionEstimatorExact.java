@@ -1,6 +1,6 @@
 package models.queryanalyzer.riep.iep.cp;
 
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
@@ -13,7 +13,7 @@ import java.util.*;
 public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
    private boolean IE_DEBUG = false;
-   QAInstance _instance;
+   QAInstanceAll _instance;
 
    private boolean BRANCH_AROUND_PRIOR = false;
    private boolean SEARCH_ON_PRIOR = true;
@@ -60,19 +60,19 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    private double _startTime;
    private double _timeOut = 5; //in seconds
 
-   public ImpressionEstimatorExact(QAInstance inst) {
+   public ImpressionEstimatorExact(QAInstanceAll inst) {
       this(inst, 200, 0);
    }
 
-   public ImpressionEstimatorExact(QAInstance inst, int samplingFactor, int fractionalBranches) {
+   public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches) {
       this(inst, samplingFactor, fractionalBranches, 0.082111,2.51308611,2.419581,0.8278350);
    }
 
-   public ImpressionEstimatorExact(QAInstance inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev) {
+   public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev) {
       this(inst, samplingFactor, fractionalBranches, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,1,1,1,1);
    }
 
-   public ImpressionEstimatorExact(QAInstance inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
+   public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
                                    double avgpospower, double ouravgpospower, double imppriorpower, double ourimppriorpower) {
       _instance = inst;
       SAMPLING_FACTOR = samplingFactor;
@@ -227,7 +227,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    }
 
 
-   public QAInstance getInstance() {
+   public QAInstanceAll getInstance() {
       return _instance;
    }
 

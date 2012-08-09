@@ -1,12 +1,12 @@
 package models.queryanalyzer.riep.search;
 
 
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 
 public class LDSearchHybrid {
-	private QAInstance _inst;
+	private QAInstanceAll _inst;
 	private LDSearchIESmart _avgPosLDS;
 	private LDSearchIESmart _carletonLDS;
 	private int _iterations;
@@ -19,8 +19,8 @@ public class LDSearchHybrid {
 	}
 	
 	public void search(){
-		_avgPosLDS.search(QAInstance.getAvgPosOrder(_inst.getAvgPos()), _inst.getAvgPos());
-		_carletonLDS.search(QAInstance.getCarletonOrder(_inst.getAvgPos(), _inst.getNumSlots()), _inst.getAvgPos());
+		_avgPosLDS.search(QAInstanceAll.getAvgPosOrder(_inst.getAvgPos()), _inst.getAvgPos());
+		_carletonLDS.search(QAInstanceAll.getCarletonOrder(_inst.getAvgPos(), _inst.getNumSlots()), _inst.getAvgPos());
 		
 		_iterations = _avgPosLDS.getIterations() + _carletonLDS.getIterations();
 		IEResult avgPosResult = _avgPosLDS.getBestSolution();

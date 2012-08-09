@@ -1,7 +1,7 @@
 package simulator.predictions;
 
 import edu.umich.eecs.tac.props.*;
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.forecast.*;
 import models.queryanalyzer.riep.*;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
@@ -597,7 +597,7 @@ public class ImpressionEstimatorTest {
                               }
                            }
 
-                           int[] nonNaNOrder = QAInstance.getAvgPosOrder(nonNaNAvgPos);
+                           int[] nonNaNOrder = QAInstanceAll.getAvgPosOrder(nonNaNAvgPos);
 
                            int foundTooBigStart = 0;
                            int foundTooBigStop = 0;
@@ -803,7 +803,7 @@ public class ImpressionEstimatorTest {
                      //This is annoying... ImpressionEstimator requires a QAInstance in the constructor,
                      //but this QAInstance isn't ready until now.
                      //Terrible, band-aid solution is to have an integer corresponding to each test.
-                     QAInstance inst;
+                     QAInstanceAll inst;
                      ImpressionAndRankEstimator fullModel = null;
                      AbstractImpressionEstimator model = null;
 
@@ -835,7 +835,7 @@ public class ImpressionEstimatorTest {
 
                      //---------------- Create new QAInstance --------------
                      boolean considerPaddingAgents = true;
-                     inst = new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
+                     inst = new QAInstanceAll(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos.clone(), sAvgPos.clone(), agentIds.clone(), ourAgentIdx,
                                            ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone(), reducedAgents.clone());
 
@@ -1511,7 +1511,7 @@ public class ImpressionEstimatorTest {
     * @param reducedImpsDistStdev
     * @return
     */
-   private QAInstance getCarletonQAInstance(int NUM_SLOTS, int NUM_PROMOTED_SLOTS,
+   private QAInstanceAll getCarletonQAInstance(int NUM_SLOTS, int NUM_PROMOTED_SLOTS,
                                             int numParticipants, double[] reducedAvgPos,
                                             double[] reducedSampledAvgPos, int[] agentIds, int ourAgentIdx,
                                             int ourImps, int ourPromotedImps, int impressionsUB,
@@ -1525,7 +1525,7 @@ public class ImpressionEstimatorTest {
       //If exact average positions, just return a standard query instance (with no padding)
       if (!SAMPLED_AVERAGE_POSITIONS) {
          avgPos = reducedAvgPos.clone();
-         return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+         return new QAInstanceAll(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null, reducedAgentNames);
       } else {
@@ -1544,7 +1544,7 @@ public class ImpressionEstimatorTest {
          }
 
          debug("actual=" + Arrays.toString(reducedAvgPos) + ", sample=" + Arrays.toString(reducedSampledAvgPos) + ", newSample=" + Arrays.toString(avgPos));
-         return new QAInstance(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
+         return new QAInstanceAll(NUM_SLOTS, NUM_PROMOTED_SLOTS, numParticipants, avgPos, reducedSampledAvgPos, agentIds, ourAgentIdx,
                                ourImps, ourPromotedImps, impressionsUB, false, ourPromotionEligibility, ourHitBudget,
                                reducedImpsDistMean, reducedImpsDistStdev, SAMPLED_AVERAGE_POSITIONS, null, reducedAgentNames);
       }

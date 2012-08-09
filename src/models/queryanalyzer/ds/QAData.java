@@ -19,7 +19,7 @@ public class QAData {
     * @param advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
     * @return
     */
-   public QAInstance buildInstances(int advIndex) {
+   public QAInstanceAll buildInstances(int advIndex) {
       assert (advIndex < _agents);
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
@@ -86,7 +86,7 @@ public class QAData {
    
       
       
-      return new QAInstance(_slots, numPromotedSlots, usedAgents,
+      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
                             avgPos, dummySampledAvgPositions, agentIds, advIndex,
                             usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
                             true, promotionEligibiltyVerified,

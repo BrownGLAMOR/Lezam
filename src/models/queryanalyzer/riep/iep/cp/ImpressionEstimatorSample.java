@@ -1,6 +1,6 @@
 package models.queryanalyzer.riep.iep.cp;
 
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.probsample.SampleProbability;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
@@ -11,7 +11,7 @@ import java.util.*;
 public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 
    private boolean IE_DEBUG = false;
-   QAInstance _instance;
+   QAInstanceAll _instance;
    int MIN_PADDED_AGENT_ID = 100;
 
    private double AVG_POS_EPSILON = 0;
@@ -69,19 +69,19 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    private double _startTime;
    private double _timeOut = 5; //in seconds
 
-   public ImpressionEstimatorSample(QAInstance inst) {
+   public ImpressionEstimatorSample(QAInstanceAll inst) {
       this(inst, 150, 0, 10);
    }
 
-   public ImpressionEstimatorSample(QAInstance inst, int samplingFactor, int fractionalBranches, int numSamples) {
+   public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, int numSamples) {
       this(inst, samplingFactor, fractionalBranches, 0.77,0.88,0.029,0.433,numSamples);
    }
 
-   public ImpressionEstimatorSample(QAInstance inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev, int numSamples) {
+   public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev, int numSamples) {
       this(inst, samplingFactor, fractionalBranches, avgposstddev, ouravgposstddev, imppriorstddev, ourimppriorstddev,1,1,1,1,numSamples);
    }
 
-   public ImpressionEstimatorSample(QAInstance inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
+   public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev,
                                     double avgpospower, double ouravgpospower, double imppriorpower, double ourimppriorpower, int numSamples) {
       _instance = inst;
       SAMPLING_FACTOR = samplingFactor;
@@ -313,7 +313,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 
 
    private void padAgentsWithUnknownPositions() {
-      int[] apOrder = QAInstance.getAvgPosOrder(_trueAvgPos);
+      int[] apOrder = QAInstanceAll.getAvgPosOrder(_trueAvgPos);
       while (!feasibleOrder(apOrder)) {
          int foundTooBigStart = 0;
          int foundTooBigStop = 0;
@@ -329,7 +329,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
             addPaddingAgents(foundTooBigStart, foundTooBigStop);
          }
 
-         apOrder = QAInstance.getAvgPosOrder(_trueAvgPos);
+         apOrder = QAInstanceAll.getAvgPosOrder(_trueAvgPos);
       }
    }
 
@@ -1295,7 +1295,7 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       return _trueAvgPos.clone();
    }
 
-   public QAInstance getInstance() {
+   public QAInstanceAll getInstance() {
       return _instance;
    }
 

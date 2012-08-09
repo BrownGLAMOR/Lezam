@@ -1,6 +1,6 @@
 package models.queryanalyzer.riep.iep;
 
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 
 public interface AbstractImpressionEstimator {
 	
@@ -13,7 +13,7 @@ public interface AbstractImpressionEstimator {
 	
 	public String getName();
 	
-	public QAInstance getInstance();
+	public QAInstanceAll getInstance();
 
 
 	/**

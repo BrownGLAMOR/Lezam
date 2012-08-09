@@ -1,7 +1,7 @@
 package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QAData;
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.search.LDSearchOrder;
 import models.queryanalyzer.riep.search.LDSearchOrderSmart;
 import models.queryanalyzer.util.LoadData;
@@ -21,15 +21,15 @@ public class TestLDSearch {
 		System.out.println(data);
 		
 		int advetiser = 3;
-		QAInstance inst = data.buildInstances(advetiser);
+		QAInstanceAll inst = data.buildInstances(advetiser);
 		
 		System.out.println("Instance for "+advetiser+":");
 		System.out.println(inst);
 		
-		int[] avgPosOrder = QAInstance.getAvgPosOrder(inst.getAvgPos());
+		int[] avgPosOrder = QAInstanceAll.getAvgPosOrder(inst.getAvgPos());
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
-		int[] carletonOrder = QAInstance.getCarletonOrder(inst.getAvgPos(),inst.getNumSlots());
+		int[] carletonOrder = QAInstanceAll.getCarletonOrder(inst.getAvgPos(),inst.getNumSlots());
 		System.out.println("Carleton order: "+Arrays.toString(carletonOrder));
 		
 		int[] bidOrder = inst.getBidOrder(data);

@@ -1,6 +1,6 @@
 package models.queryanalyzer.riep.iep.cplp;
 
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
@@ -23,7 +23,7 @@ import java.util.Arrays;
 public class DropoutImpressionEstimator implements AbstractImpressionEstimator {
 
    private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
-   private QAInstance _instance;
+   private QAInstanceAll _instance;
    private int _advertisers;
    private int _slots;
    private int _promotedSlots;
@@ -63,7 +63,7 @@ public class DropoutImpressionEstimator implements AbstractImpressionEstimator {
    static int boundCount = 0;
    static int avgPosBoundCount = 0;
    
-   public DropoutImpressionEstimator(QAInstance inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
+   public DropoutImpressionEstimator(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
       TIMEOUT_IN_SECONDS = timeoutInSeconds;
       MULTIPLE_SOLUTIONS = multipleSolutions;
       INTEGER_PROGRAM = integerProgram;
@@ -99,7 +99,7 @@ public class DropoutImpressionEstimator implements AbstractImpressionEstimator {
       }
    }
 
-   public QAInstance getInstance() {
+   public QAInstanceAll getInstance() {
       return _instance;
    }
 
@@ -720,8 +720,8 @@ public class DropoutImpressionEstimator implements AbstractImpressionEstimator {
             agentNames[i] = "A" + i;
          }
 
-         QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
-         QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
+         QAInstanceAll carletonInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
+         QAInstanceAll ericInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 10);
 

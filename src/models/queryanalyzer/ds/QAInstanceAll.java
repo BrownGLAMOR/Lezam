@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 
-public class QAInstance {
+public class QAInstanceAll extends AbstractQAInstance {
    private int _slots;
    private int _promotedSlots;
    private int _advetisers;
@@ -27,10 +27,11 @@ public class QAInstance {
    private String[] agentNames;
    int MIN_PADDED_AGENT_ID = 100;
 
-   public QAInstance(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
+   public QAInstanceAll(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
                      boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
                      int[] initialPosition, String[] agentNames) {
+	  super(slots, advetisers, agentIds, agentIndex, impressions, impressionsUB, agentNames);
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
       assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
@@ -62,7 +63,13 @@ public class QAInstance {
       }
    }
 
-   public int getNumSlots() {
+   private void AbstractQAInstance(int slots, int advetisers, int[] agentIds,
+		int agentIndex, int impressions, int impressionsUB, String[] agentNames2) {
+	// TODO Auto-generated method stub
+	
+}
+
+public int getNumSlots() {
       return _slots;
    }
 

@@ -4,7 +4,7 @@ import edu.umich.eecs.tac.props.BidBundle;
 import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import models.AbstractModel;
-import models.queryanalyzer.ds.QAInstance;
+import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.forecast.AbstractImpressionForecaster;
 import models.queryanalyzer.forecast.EMAImpressionForecaster;
 import models.queryanalyzer.riep.ImpressionAndRankEstimator;
@@ -497,7 +497,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             boolean padAgents = true;
 
             
-            QAInstance inst = new QAInstance(NUM_SLOTS, numPromotedSlots, allAvgPos.size(),
+            QAInstanceAll inst = new QAInstanceAll(NUM_SLOTS, numPromotedSlots, allAvgPos.size(),
                                              trueAvgPos, sampledAvgPos, agentIdsArr, ourNewIdx,
                                              queryReport.getImpressions(q), queryReport.getPromotedImpressions(q), maxImps.get(q),
                                              padAgents, promotionEligibiltyVerified, hitOurBudget,
