@@ -14,6 +14,7 @@ import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
+import simulator.predictions.AllModelTest.GameSet;
 
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
@@ -107,7 +108,7 @@ public class ImpressionEstimatorTest {
    }
 
    public enum GameSet {
-      finals2010, semifinals2010, test2010
+      finals2010, semifinals2010, test2010,semi2011server1,semi2011server2
    }
 
    public enum HistoricalPriorsType {
@@ -118,7 +119,19 @@ public class ImpressionEstimatorTest {
       String baseFile = null;
       if (GAMES_TO_TEST == GameSet.test2010) baseFile = "./game";
       if (GAMES_TO_TEST == GameSet.finals2010) baseFile = "/pro/aa/finals2010/game-tacaa1-";  //"/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-"; //"/Users/sodomka/Desktop/tacaa2010/game-tacaa1-";
+     
+      if (GAMES_TO_TEST == GameSet.finals2010) 
+         baseFile = "/pro/aa/finals2010/game-tacaa1-";
+      
+      if (GAMES_TO_TEST == GameSet.semi2011server1)
+         baseFile = "/pro/aa/tacaa2011/semi/server1/game";
+      
+      if (GAMES_TO_TEST == GameSet.semi2011server2) 
+         baseFile = "/pro/aa/tacaa2011/semi/server2/game";
+      
 
+      
+      
       ArrayList<String> filenames = new ArrayList<String>();
       for (int i = gameStart; i <= gameEnd; i++) {
          filenames.add(baseFile + i + ".slg");
@@ -1228,10 +1241,12 @@ public class ImpressionEstimatorTest {
   	{
 	   BufferedWriter resultToCarleton=new BufferedWriter(new FileWriter("ResultToCarletonOutPut"));
 
-	         if(SUMMARY) {
-	            resultToCarleton.write(filename+'\n');
-	         }
+//	         if(SUMMARY) {
+//	            resultToCarleton.write(filename+'\n');
+//	         }
 
+	   		
+	   
 	         // Load this game and its basic parameters
 	         GameStatus status = new GameStatusHandler(filename).getGameStatus();
 	       
@@ -1286,6 +1301,7 @@ public class ImpressionEstimatorTest {
 	         double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, queryArr[queryId], d, false);
        
 	         System.out.println(agents.length+" "+NUM_SLOTS);
+	         resultToCarleton.write(agents.length+" "+NUM_SLOTS);
 	         for (int i = 0; i < agents.length; i++) {
 	        	 System.out.println((i+1)+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]);
 	        	 try {
@@ -2649,18 +2665,18 @@ public class ImpressionEstimatorTest {
 
 	   
 	   
-	   boolean debuggingTests=true;
-	   if (debuggingTests) {
-		   runDebuggingTests();
-		   System.exit(0);
-	   }
-	   
-	   
-	   boolean allTests=true;
-	   if (allTests) {
-		   runAllTests();
-		   System.exit(0);
-	   }
+//	   boolean debuggingTests=true;
+//	   if (debuggingTests) {
+//		   runDebuggingTests();
+//		   System.exit(0);
+//	   }
+//	   
+//	   
+//	   boolean allTests=true;
+//	   if (allTests) {
+//		   runAllTests();
+//		   System.exit(0);
+//	   }
 	   
 	   
 	   
@@ -2676,9 +2692,14 @@ public class ImpressionEstimatorTest {
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
 //      int START_GAME = 1;
 //      int END_GAME = 4;
-      GameSet GAMES_TO_TEST = GameSet.finals2010;
-      int START_GAME = 15127;
-      int END_GAME = 15127;
+//      GameSet GAMES_TO_TEST = GameSet.finals2010;
+//      int START_GAME = 15127;
+//      int END_GAME = 15127;
+      
+      GameSet GAMES_TO_TEST = GameSet.semi2011server1;
+      int START_GAME = 1414;
+      int END_GAME = 1414;
+      
 //      int END_GAME = 15136;
 //      int END_GAME = 15170;
       int START_DAY = 0; //0
@@ -2757,7 +2778,8 @@ public class ImpressionEstimatorTest {
 //      }
 
       evaluator = new ImpressionEstimatorTest(sampleAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, useHistoricPriors, historicPriorsType, orderingKnown, upperBoundNoise);
-
+      ArrayList<String> gameString= evaluator.getGameStrings(GAMES_TO_TEST,START_GAME,END_GAME);
+      evaluator.generateTestingFilesForCarleton(gameString.get(0),0,0);
 
       if(SUMMARY || DEBUG) {
          //PRINT PARAMETERS
