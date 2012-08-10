@@ -1209,7 +1209,97 @@ public class ImpressionEstimatorTest {
       }
       return true;
    }
+   
+   /**
+    * 
+    * @param filename
+    * @param d
+    * @param queryId
+    * @throws IOException
+    * @throws ParseException
+    *
+    *
+    * This is a class that generate an output for debugging. This generate the agentinfo in specific game, day, and query
+    *
+    */
+   
+   
+   public void generateTestingFilesForCarleton(String filename, int d, int queryId) throws IOException, ParseException
+  	{
+	   BufferedWriter resultToCarleton=new BufferedWriter(new FileWriter("ResultToCarletonOutPut"));
 
+	         if(SUMMARY) {
+	            resultToCarleton.write(filename+'\n');
+	         }
+
+	         // Load this game and its basic parameters
+	         GameStatus status = new GameStatusHandler(filename).getGameStatus();
+	       
+	         int NUM_SLOTS = status.getSlotInfo().getRegularSlots();
+	        
+
+	         // Make the query space
+	         int numQueries=16;
+	         Query[] queryArr = new Query[numQueries];
+	  	   
+	         	queryArr[0] = new Query(null,null);
+	         	queryArr[1] = new Query(null,"audio");
+	         	queryArr[2] = new Query(null,"dvd");
+	         	queryArr[3] = new Query ("lioneer","dvd");
+	         	queryArr[4] = new Query ("flat","tv");
+	         	queryArr[5] = new Query ("lioneer",null);
+	         	queryArr[6] = new Query ("pg","dvd");
+	         	queryArr[7] = new Query ("flat","dvd");
+		  	 	queryArr[8] = new Query ("flat","audio");
+		  		queryArr[9] = new Query ("lioneer","tv");
+		  		queryArr[10] = new Query ("flat",null);
+		  		queryArr[11] = new Query (null,"tv");
+		  		queryArr[12] = new Query ("lioneer","audio");
+		  		queryArr[13] = new Query ("pg","tv");
+		  		queryArr[14] = new Query ("pg","audio");
+		  		queryArr[15] = new Query ("pg",null);
+		  	   
+	         
+	         
+	         String[] agents = status.getAdvertisers();
+	         
+  	 
+         
+	         // The original data without deducing
+	         Double[] actualAveragePositions = getAveragePositions(status, d, queryArr[queryId]);
+
+	         // Get avg position for each agent
+	         Double[] sampledAveragePositions = getSampledAveragePositions(status, d, queryArr[queryId]);
+
+	         Double[] bids = getBids(status, d, queryArr[queryId]);
+
+	         // Get squashed bids for each agent
+	         Double[] squashedBids = getSquashedBids(status, d, queryArr[queryId]);
+
+	         Double[] budgets = getBudgets(status, d, queryArr[queryId]);
+
+
+	         // Get total number of impressions for each agent
+	         Integer[] impressions = getAgentImpressions(status, d, queryArr[queryId]);
+         
+	         double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status,queryArr[queryId] , d, true);
+	         double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, queryArr[queryId], d, false);
+       
+	         System.out.println(agents.length+" "+NUM_SLOTS);
+	         for (int i = 0; i < agents.length; i++) {
+	        	 System.out.println((i+1)+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]);
+	        	 try {
+	        		 resultToCarleton.write((i+1)+" "+agents[i]+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]+'\n');
+  			
+	        	 } catch (IOException e) {
+  			
+	        		 e.printStackTrace();
+	        	 }
+	         }
+	         resultToCarleton.flush();
+	         resultToCarleton.close();
+         
+    }
    /*
   Function input
   number of slots: int slots
