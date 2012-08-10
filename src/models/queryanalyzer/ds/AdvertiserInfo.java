@@ -2,6 +2,7 @@ package models.queryanalyzer.ds;
 
 public class AdvertiserInfo {
 	public int id;
+	public String agentName;
 	public double avgPos;
 	public int impressions;
 	public double bid;
@@ -10,10 +11,11 @@ public class AdvertiserInfo {
 	public double impsDistMean; 
 	public double impsDistStdev; 
 
-	public AdvertiserInfo(int id, double avgPos, int impressions, double bid, double budget, 
+	public AdvertiserInfo(int id,String agentName, double avgPos, int impressions, double bid, double budget, 
 	double sampledAveragePositions, double impsDistMean, double impsDistStdev)
 	{
 		this.id = id;
+		this.agentName=agentName;
 		this.avgPos = avgPos;
 		this.impressions = impressions;
 		this.bid = bid;
@@ -24,7 +26,7 @@ public class AdvertiserInfo {
 	}
 	
 	public String toString() {
-		return id + " " + avgPos + " " + impressions + " " + bid + " " + budget+" "+sampledAveragePositions
+		return id+" "+agentName+ " " + avgPos + " " + impressions + " " + bid + " " + budget+" "+sampledAveragePositions
 		+" "+impsDistMean+" "+impsDistStdev;
 	}
 }
