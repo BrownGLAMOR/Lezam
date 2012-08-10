@@ -1301,11 +1301,11 @@ public class ImpressionEstimatorTest {
 	         double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, queryArr[queryId], d, false);
        
 	         System.out.println(agents.length+" "+NUM_SLOTS);
-	         resultToCarleton.write(agents.length+" "+NUM_SLOTS);
+	         resultToCarleton.write(agents.length+" "+NUM_SLOTS+"\n");
 	         for (int i = 0; i < agents.length; i++) {
 	        	 System.out.println((i+1)+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]);
 	        	 try {
-	        		 resultToCarleton.write((i+1)+" "+agents[i]+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]+'\n');
+	        		 resultToCarleton.write((i+1)+" "+agents[i]+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+" "+impsDistMean[i]+" "+impsDistStdev[i]+'\n');
   			
 	        	 } catch (IOException e) {
   			
