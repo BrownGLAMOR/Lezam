@@ -11,7 +11,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    protected AbstractQAInstance _inst;
    
    //Gloabl Variables for DFS Search.
-   //protected ImpressionEstimationLP _IELP;
    protected double _bestObj;
    protected LPSolution _bestSol;
    protected int _checked;

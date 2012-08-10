@@ -18,42 +18,24 @@ import java.util.Arrays;
  */
 
 public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEstimator {
+	static int boundCount = 0;
+	static int avgPosBoundCount = 0;
+	   
+   protected QAInstanceAll _instanceAll;
+   
+   protected boolean INTEGER_PROGRAM;
+   protected boolean USE_EPSILON = true;
+   protected int NUM_SAMPLES = 10;
+   protected boolean USE_RANKING_CONSTRAINTS;
+   protected boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
+   protected double TIMEOUT_IN_SECONDS;
 
-   private QAInstanceAll _instanceAll;
-   private int _advertisers;
-   private int _slots;
-   private int _promotedSlots;
-   private double[] _trueAvgPos;
-   private double[] _sampledAvgPos;
-   private int _ourIndex;
-   private int _ourImpressions;
-   private int _ourPromotedImpressions;
-   private boolean _ourPromotedEligibilityVerified;
-   private boolean hitOurBudget;
-   private int _imprUB;
-   private int[] _agentImprUB;
-   private int[] _agentImprLB;
-   private double[] _agentImpressionDistributionMean;
-   private double[] _agentImpressionDistributionStdev;
-   private String[] agentNames;
+   protected boolean BRANCH_AND_BOUND = true;
+   protected boolean ALWAYS_SOLVE_PARTIAL_PROBLEM = false;
+   protected boolean BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION = true;
+   protected boolean SET_WATERFALL_MAX_DROPOUT = true;
+   
 
-   
-   boolean INTEGER_PROGRAM;
-   boolean USE_EPSILON = true;
-   int NUM_SAMPLES = 10;
-   boolean USE_RANKING_CONSTRAINTS;
-   boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
-   double TIMEOUT_IN_SECONDS;
-
-   
-   boolean BRANCH_AND_BOUND = true;
-   boolean ALWAYS_SOLVE_PARTIAL_PROBLEM = false;
-   boolean BOUND_DROPOUT_SEARCH_BY_AVERAGE_POSITION = true;
-   boolean SET_WATERFALL_MAX_DROPOUT = true;
-   
-   static int boundCount = 0;
-   static int avgPosBoundCount = 0;
-   
    public DropoutImpressionEstimatorAll(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
       super(inst);
       _instanceAll = inst;
@@ -61,22 +43,6 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
       MULTIPLE_SOLUTIONS = multipleSolutions;
       INTEGER_PROGRAM = integerProgram;
       USE_RANKING_CONSTRAINTS = useRankingConstraints;
-      _advertisers = inst.getNumAdvetisers();
-      _slots = inst.getNumSlots();
-      _promotedSlots = inst.getNumPromotedSlots();
-      _trueAvgPos = inst.getAvgPos();
-      _sampledAvgPos = inst.getSampledAvgPos();
-      _ourIndex = inst.getAgentIndex(); //TODO is this ID or Index?
-      _ourImpressions = inst.getImpressions();
-      _ourPromotedImpressions = inst.getPromotedImpressions();
-      _ourPromotedEligibilityVerified = inst.getPromotionEligibilityVerified();
-      hitOurBudget = inst.getHitOurBudget();
-      _imprUB = inst.getImpressionsUB();
-      _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
-      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();      
-      agentNames = inst.getAgentNames();
-      
-
    }
 
    public String getName() { return "IELP_All"; }
@@ -87,30 +53,34 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
 	  QAInstanceAll orderedInst = _instanceAll.reorder(order); 
 	  int agentIndex = orderedInst.getAgentIndex();
 	  
-      double[] I_a = new double[_advertisers];
-      double[] I_aPromoted = new double[_advertisers];
-      boolean[] promotionEligiblityVerified = new boolean[_advertisers];
+	  int advertisers = orderedInst.getNumAdvetisers();
+	  int slots = orderedInst.getNumSlots();
+	  
+	  
+      double[] I_a = new double[advertisers];
+      double[] I_aPromoted = new double[advertisers];
+      boolean[] promotionEligiblityVerified = new boolean[advertisers];
       Arrays.fill(I_a, -1);
       Arrays.fill(I_aPromoted, -1);
 	  
-      I_a[agentIndex] = _ourImpressions;
-      I_aPromoted[agentIndex] = _ourPromotedImpressions;
-      promotionEligiblityVerified[agentIndex] = _ourPromotedEligibilityVerified;
+      I_a[agentIndex] = orderedInst.getImpressions();
+      I_aPromoted[agentIndex] = orderedInst.getPromotedImpressions();
+      promotionEligiblityVerified[agentIndex] = orderedInst.getPromotionEligibilityVerified();
 
       
-      int[] minDropOut = new int[_advertisers];
-      int[] maxDropOut = new int[_advertisers];
+      int[] minDropOut = new int[advertisers];
+      int[] maxDropOut = new int[advertisers];
       
       //set default values
-      for(int a=0; a < _advertisers; a++){
+      for(int a=0; a < advertisers; a++){
     	  int ceilingSlot = ((int)Math.ceil(orderedInst.getAvgPos()[a]))-1;
     	  int floorSlot = ((int)Math.floor(orderedInst.getAvgPos()[a]))-1;
-    	  if(ceilingSlot - floorSlot == 0 && (ceilingSlot == a || floorSlot == _slots-1)){
+    	  if(ceilingSlot - floorSlot == 0 && (ceilingSlot == a || floorSlot == slots-1)){
     		  minDropOut[a] = ceilingSlot;
     	  } else {
     		  minDropOut[a] = 0; //0 becouse 0 is the top slot, slots are 0 indexed like agents?  
     	  }
-    	  maxDropOut[a] = Math.min(Math.min(a,_slots-1),floorSlot);
+    	  maxDropOut[a] = Math.min(Math.min(a,slots-1),floorSlot);
       }
       
       System.out.println(Arrays.toString(orderedInst.getAvgPos()));
@@ -118,14 +88,10 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
       System.out.println(Arrays.toString(maxDropOut));
       
       
-      ImpressionEstimationLP IELP = new ImpressionEstimationLP(_imprUB, agentIndex, _ourImpressions, I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), _slots, orderedInst.getAgentImpressionDistributionMean(), orderedInst.getAgentImpressionDistributionStdev());
+      ImpressionEstimationLP IELP = new ImpressionEstimationLP(orderedInst.getImpressionsUB(), agentIndex, orderedInst.getImpressions(), I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), slots, orderedInst.getAgentImpressionDistributionMean(), orderedInst.getAgentImpressionDistributionStdev());
 
       return search(order, IELP, minDropOut, maxDropOut, agentIndex);
    }
-
-   //this function simply applies the waterfall effect to one agent
-   //It assumes slots are 0 based.
-   
 
    
    /**
@@ -133,71 +99,6 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
     */
    public static void main(String[] args) {
 
-	   
-//	   int agentInSlot=3;
-//	   int slotLimit=5;
-//	   double avgPos=1.5;
-//	   double[] slotImp={500, 300, 200, 0};
-//	   double[] impsPerSlot = CarletonLPImpressionEstimator.calcMinDropOut(agentInSlot, slotLimit, avgPos, slotImp);
-//	   System.out.println(Arrays.toString(impsPerSlot));
-//	   System.exit(0);
-	   
-	   
-      //EricImpressionEstimator.testOrdering();
-
-      //err=[2800.0, 2702.0, 0.0]	pred=[398, 579, 202]	actual=[3198, 3281, 202]	g=1 d=8 a=2 q=(Query (null,null)) avgPos=[1.0, 2.0362694300518136, 2.0] bids=[0.3150841472838487, 0.126159214933152, 0.13126460037679655] imps=[3198, 3281, 202] order=[0, 2, 1] IP
-
-	   
-//	      for (int ourAgentIdx = 0; ourAgentIdx <= 0; ourAgentIdx++) {
-//	          //These aren't actually used; everything is -1 except the current agentIdx
-//	          double[] I_aFull = {300, 600};
-//	          double[] mu_aFull = {1.0, 1.5};
-//	          double[] agentImpressionDistributionMean = {-1, -1};
-//	          double[] agentImpressionDistributionStdev = {-1, -1};
-//	          double[] mu_a = new double[mu_aFull.length];
-//	          Arrays.fill(mu_a, -1);
-//	          mu_a[ourAgentIdx] = mu_aFull[ourAgentIdx];
-//	          double[] I_aPromoted = {-1, -1};
-//	          boolean[] isKnownPromotionEligible = {false, false};
-//	          double[] knownSampledMu_a = {1.0, 1.5}; 
-//	          int numSlots = 5;
-//	          int numPromotedSlots = 0;
-//	          int ourImpressions = (int) I_aFull[ourAgentIdx];
-//	          int ourPromotedImpressions = (int) I_aPromoted[ourAgentIdx];
-//	          boolean ourPromotionKnownAllowed = isKnownPromotionEligible[ourAgentIdx];
-//	          int impressionsUB = 1300;
-//	          int numAgents = mu_a.length;
-//	          boolean hitOurBudget = true; //Did we hit our budget? (added constraint if we didn't)
-//	          int[] predictedOrder = {-1, -1, -1, -1, -1, -1, -1, -1};
-//	          int[] agentIds = new int[numAgents]; //Give arbitrary agent IDs
-//	          for (int i = 0; i < agentIds.length; i++) {
-//	             agentIds[i] = -(i + 1);
-//	          }
-//
-//	          QAInstance carletonInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
-//	          QAInstance ericInst = new QAInstance(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder);
-//	          ImpressionEstimatorExact carletonImpressionEstimator = new ImpressionEstimatorExact(carletonInst);
-//	          EricImpressionEstimator ericImpressionEstimator = new EricImpressionEstimator(ericInst, false, true, false, 10);
-//	          CarletonLPImpressionEstimator carletonLP = new CarletonLPImpressionEstimator(ericInst, false, true, false, 5);
-//	          double[] cPos = carletonImpressionEstimator.getApproximateAveragePositions();
-//	          //int[] cOrder = QAInstance.getAvgPosOrder(cPos);
-//	          int[] cOrder = {0, 1};
-////	          IEResult carletonResult = carletonImpressionEstimator.search(cOrder);
-////	          IEResult ericResult = ericImpressionEstimator.search(cOrder);
-//	          IEResult carletonLPResult = carletonLP.search(cOrder);
-//
-//	          System.out.println("ourAgentIdx=" + ourAgentIdx);
-////	          System.out.println("  Carleton: " + carletonResult + "\tactual=" + Arrays.toString(I_aFull));
-////	          System.out.println("  IP: " + ericResult + "\tactual=" + Arrays.toString(I_aFull));
-//	          System.out.println("  CarletonLP: " + carletonLPResult + "\tactual=" + Arrays.toString(I_aFull));
-//	       }
-	   
-	   
-	   
-	   
-	   
-	   
-	   
 //	  for (int ourAgentIdx = 2; ourAgentIdx <= 2; ourAgentIdx++) {
       for (int ourAgentIdx = 3; ourAgentIdx <= 3; ourAgentIdx++) {
          //These aren't actually used; everything is -1 except the current agentIdx
