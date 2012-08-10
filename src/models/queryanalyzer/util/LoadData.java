@@ -25,6 +25,7 @@ public class LoadData {
 		
 		for(int a = 0; a < agents; a++){
 			int id = Integer.parseInt(tokens.nextToken());
+			String agent= tokens.nextToken();
 			double avgPos = Double.parseDouble(tokens.nextToken());
 			int impressions = Integer.parseInt(tokens.nextToken());
 			double bid = Double.parseDouble(tokens.nextToken());
@@ -33,7 +34,7 @@ public class LoadData {
 			double impsDistMean = Double.parseDouble(tokens.nextToken());
 			double impsDistStdev = Double.parseDouble(tokens.nextToken());
 
-			agentInfo[a] = new AdvertiserInfo(id, avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
+			agentInfo[a] = new AdvertiserInfo(id, agent ,avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
 		}
 
 		
