@@ -24,13 +24,19 @@ public class QAInstanceAll extends AbstractQAInstance {
    private boolean _isSampled;
    private boolean _orderingKnown;
    private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
-   private String[] agentNames;
+
    int MIN_PADDED_AGENT_ID = 100;
 
    public QAInstanceAll(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
                      int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
                      boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
                      int[] initialPosition, String[] agentNames) {
+/*   
+   private QAInstanceAll(int slots,int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, 
+		   			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibilityVerified,
+		   			boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
+		   			int[] initialPosition, String[] agentNames) {
+*/
 	  super(slots, advetisers, agentIds, agentIndex, impressions, impressionsUB, agentNames);
       assert (avgPos.length == advetisers);
       assert (agentIds.length == advetisers);
@@ -52,7 +58,6 @@ public class QAInstanceAll extends AbstractQAInstance {
       _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
       _isSampled = isSampled;
       _initialPosition = initialPosition;
-      this.agentNames = agentNames;
      
       _orderingKnown = true;
       for (int i = 0; i < _advetisers; i++) {
@@ -125,10 +130,6 @@ public class QAInstanceAll extends AbstractQAInstance {
 
    public boolean isSampled() {
       return _isSampled;
-   }
-   
-   public String[] getAgentNames() {
-	   return agentNames;
    }
 
    public boolean[] isPadded() {
@@ -284,13 +285,39 @@ public class QAInstanceAll extends AbstractQAInstance {
       }
    }
 
+   
+   public QAInstanceAll reorder(int[] order){
+      int agentIndex = -1;
+      for (int i=0; i<order.length; i++) {
+    	  if (order[i] == _agentIndex) {
+    		  agentIndex = i;
+    		  break;
+    	  }
+      }
+      
+	   double[] avgPos = reorder(_avgPos,order);
+	   double[] sampledAvgPos = reorder(_sampledAvgPos,order);
+	   double[] agentImpressionDistributionMean = reorder(_agentImpressionDistributionMean,order);
+	   double[] agentImpressionDistributionStdev = reorder(_agentImpressionDistributionStdev,order);
+	   int[] agentIds = reorder(_agentIds,order);
+	   int[] initialPosition = reorder(_initialPosition,order);
+	   String[] agentNames = reorder(_agentNames,order);
+	   
+	   
+	   return new QAInstanceAll(_slots, _promotedSlots, _advetisers, avgPos, sampledAvgPos, agentIds, agentIndex,
+               _impressions, _promotedImpressions, _impressionsUB, _considerPaddingAgents, _promotionEligibilityVerified,
+               _hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled,
+               initialPosition, agentNames);
+   }
+   
+
 
    public String toString() {
       String temp = "Instance:\n";
       temp += "\tnumSlots: " + _slots + "\n";
       temp += "\tnumAgents: " + _advetisers + "\n";
       temp += "\tagentIds=" + Arrays.toString(_agentIds) + "\n";
-      temp += "\tagentNames=" + Arrays.toString(agentNames) + "\n";
+      temp += "\tagentNames=" + Arrays.toString(_agentNames) + "\n";
       temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";
       temp += "\tsampledAvgPos=" + Arrays.toString(_sampledAvgPos) + "\n";
       temp += "\touragentIdx=" + _agentIndex + "\n";

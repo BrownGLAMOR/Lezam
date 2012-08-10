@@ -73,6 +73,23 @@ public class QAInstanceExact extends AbstractQAInstance {
             promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, _agentIds, _agentNames);
    }
 
+   public QAInstanceExact reorder(int[] order){
+	   int agentIndex = -1;
+	   for (int i=0; i<order.length; i++) {
+		   if (order[i] == _agentIndex) {
+			   agentIndex = i;
+			   break;
+		   }
+	   }
+	   
+	   int[] agentIds = reorder(_agentIds,order);
+	   String[] agentNames = reorder(_agentNames,order);   
+	   double[] avgPos = reorder(_avgPos,order);
+	     
+	   return new QAInstanceExact(_slots, _advetisers, agentIds, agentIndex, _impressions, _impressionsUB, agentNames, avgPos);
+   }
+   
+   
    public String toString() {
       String temp =  super.toString();
       temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";

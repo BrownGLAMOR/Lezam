@@ -84,56 +84,27 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
    public QAInstanceAll getInstanceAll() {return _instanceAll;}
 
    public IEResult search(int[] order) {
-      //Impressions seen by each agent
+	  QAInstanceAll orderedInst = _instanceAll.reorder(order); 
+	  int agentIndex = orderedInst.getAgentIndex();
+	  
       double[] I_a = new double[_advertisers];
       double[] I_aPromoted = new double[_advertisers];
       boolean[] promotionEligiblityVerified = new boolean[_advertisers];
       Arrays.fill(I_a, -1);
       Arrays.fill(I_aPromoted, -1);
-      
-      
-      //Modify our index to reflect ordering change
-      //  if order[i]==x, the agent in the ith slot can be found at index x.
-      //  e.g., if order[i]==x, the agent in the ith slot had I_a[x] impressions. Or I_a[order[i]] impressions
-      //  "us" is meant to be the slot that we were in. So we should find the index i s.t. order[i]=_ourIndex 
-      _us = -1;
-      for (int i=0; i<order.length; i++) {
-    	  if (order[i] == _ourIndex) {
-    		  _us = i;
-    	  }
-      }
-      
-      
-      I_a[_ourIndex] = _ourImpressions;
-      I_aPromoted[_ourIndex] = _ourPromotedImpressions;
-      promotionEligiblityVerified[_ourIndex] = _ourPromotedEligibilityVerified;
+	  
+      I_a[agentIndex] = _ourImpressions;
+      I_aPromoted[agentIndex] = _ourPromotedImpressions;
+      promotionEligiblityVerified[agentIndex] = _ourPromotedEligibilityVerified;
 
-      int[] hitBudget = new int[_advertisers];
-      Arrays.fill(hitBudget, -1);
-      hitBudget[_ourIndex] = (hitOurBudget) ? 1 : 0;
-
-      //Average position for each agent
-      double[] mu_a = _trueAvgPos;
-      double[] sampledMu_a = _sampledAvgPos;
-
-      //Reorder values according to the specified order
-      double[] orderedI_a = order(I_a, order);
-      double[] orderedMu_a = order(mu_a, order);
-      double[] orderedSampledMu_a = order(sampledMu_a, order);
-      double[] orderedI_aPromoted = order(I_aPromoted, order);
-      boolean[] orderedPromotionEligibilityVerified = order(promotionEligiblityVerified, order);
-      int[] orderedHitBudget = order(hitBudget, order);
-      double[] orderedI_aDistributionMean = order(_agentImpressionDistributionMean, order);
-      double[] orderedI_aDistributionStdev = order(_agentImpressionDistributionStdev, order);
-
- 
+      
       int[] minDropOut = new int[_advertisers];
       int[] maxDropOut = new int[_advertisers];
       
       //set default values
       for(int a=0; a < _advertisers; a++){
-    	  int ceilingSlot = ((int)Math.ceil(orderedMu_a[a]))-1;
-    	  int floorSlot = ((int)Math.floor(orderedMu_a[a]))-1;
+    	  int ceilingSlot = ((int)Math.ceil(orderedInst.getAvgPos()[a]))-1;
+    	  int floorSlot = ((int)Math.floor(orderedInst.getAvgPos()[a]))-1;
     	  if(ceilingSlot - floorSlot == 0 && (ceilingSlot == a || floorSlot == _slots-1)){
     		  minDropOut[a] = ceilingSlot;
     	  } else {
@@ -142,32 +113,20 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
     	  maxDropOut[a] = Math.min(Math.min(a,_slots-1),floorSlot);
       }
       
-      System.out.println(Arrays.toString(orderedMu_a));
+      System.out.println(Arrays.toString(orderedInst.getAvgPos()));
       System.out.println(Arrays.toString(minDropOut));
       System.out.println(Arrays.toString(maxDropOut));
       
       
-      ImpressionEstimationLP IELP = new ImpressionEstimationLP(_imprUB, _us, _ourImpressions, orderedI_a, orderedMu_a, orderedSampledMu_a, _slots, orderedI_aDistributionMean, orderedI_aDistributionStdev);
+      ImpressionEstimationLP IELP = new ImpressionEstimationLP(_imprUB, agentIndex, _ourImpressions, I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), _slots, orderedInst.getAgentImpressionDistributionMean(), orderedInst.getAgentImpressionDistributionStdev());
 
-      return search(order, IELP, minDropOut, maxDropOut);
+      return search(order, IELP, minDropOut, maxDropOut, agentIndex);
    }
 
    //this function simply applies the waterfall effect to one agent
    //It assumes slots are 0 based.
    
- 
 
-   private static void testOrdering() {
-      double[] a = {90, 80, 70, 10, 20, 30};
-      int[] order = {0, 1, 2, 5, 4, 3};
-      double[] orderedArr = order(a, order);
-
-      System.out.println("a: " + Arrays.toString(a));
-      System.out.println("order: " + Arrays.toString(order));
-      System.out.println("orderedArr: " + Arrays.toString(orderedArr));
-   }
-
-   
    
    /**
     * Main method for testing.

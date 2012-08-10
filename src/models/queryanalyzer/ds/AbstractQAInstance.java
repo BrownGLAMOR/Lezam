@@ -98,7 +98,31 @@ public abstract class AbstractQAInstance {
 		      }
 		   }
 
-
+	   protected int[] reorder(int[] data, int[] order){
+		   int[] newData = new int[data.length];
+		   for(int i=0; i<data.length; i++){
+			   newData[i] = data[order[i]];
+		   }
+		   return newData;
+	   }
+	   
+	   protected double[] reorder(double[] data, int[] order){
+		   double[] newData = new double[data.length];
+		   for(int i=0; i<data.length; i++){
+			   newData[i] = data[order[i]];
+		   }
+		   return newData;
+	   }
+	   
+	   protected String[] reorder(String[] data, int[] order){
+		   String[] newData = new String[data.length];
+		   for(int i=0; i<data.length; i++){
+			   newData[i] = data[order[i]];
+		   }
+		   return newData;
+	   }
+	   
+	   
 	   public String toString() {
 	      String temp = "Instance:\n";
 	      temp += "\tnumSlots: " + _slots + "\n";

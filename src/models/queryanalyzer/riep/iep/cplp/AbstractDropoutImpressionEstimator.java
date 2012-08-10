@@ -16,7 +16,6 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    protected LPSolution _bestSol;
    protected int _checked;
    protected int _bestChecked;
-   protected int _us;
 
    public AbstractDropoutImpressionEstimator(AbstractQAInstance inst) {
       _inst = inst;
@@ -30,7 +29,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 
    public abstract IEResult search(int[] order);
    
-   protected IEResult search(int[] order, ImpressionEstimationLP IELP, int[] minDropOut, int[] maxDropOut){
+   protected IEResult search(int[] order, ImpressionEstimationLP IELP, int[] minDropOut, int[] maxDropOut, int us){
 	  assert(order.length == minDropOut.length && order.length == maxDropOut.length);
 	  
 	  _bestObj = -1; //FIXME: If we change objective functions, we'll have to make sure objectives can't be negative (since -1 could otherwise naturally arise)
@@ -44,7 +43,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
       
       long t0 = System.currentTimeMillis();
       
-      dropoutDFS(IELP, dropout, minDropOut, maxDropOut, 0);      
+      dropoutDFS(IELP, dropout, minDropOut, maxDropOut, us, 0);      
       //_bestSol <== best solution found after the search
       
       long runtime = System.currentTimeMillis() - t0;
@@ -74,13 +73,13 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 	   int length = Math.min(arr.length, ub);
 	   int[] arri = new int[length];
 	   for(int i=0; i<length; i++){
-		   arri[i] = (int)arr[i];
+		   arri[i] = (int)Math.round(arr[i]);
 	   }
 	   return arri;
    }
    
    //this method will implictly assume length of dropout,minDropOut,maxDropOut,avgPos_a are the same and this is the number of agents.
-   protected void dropoutDFS(ImpressionEstimationLP IELP, int[] dropout, int[] minDropOut, int[] maxDropOut, int agent){
+   protected void dropoutDFS(ImpressionEstimationLP IELP, int[] dropout, int[] minDropOut, int[] maxDropOut, int us, int agent){
 //	   System.out.println("dropoutDFS: dropout=" + Arrays.toString(dropout) + ", minDropOut=" + Arrays.toString(minDropOut) +
 //			   ", maxDropOut=" + Arrays.toString(maxDropOut) + ", agent=" + agent + ", numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + 
 //			   ", M=" + M + ", us=" + us + ", imp=" + imp);
@@ -117,7 +116,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 		   
 		   
 		   //if(ALWAYS_SOLVE_PARTIAL_PROBLEM || agent-1 == us){
-		   if(agent >= _us && agent > 0){
+		   if(agent >= us && agent > 0){
 			   //System.out.println(agent+", "+us);
 			   //At this step we want to solve the problem with agents "0" through "agent-1", I think this will work, maybe off by one;
 			   int[] dropout_tmp = new int[agent];
@@ -151,50 +150,11 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 		   //if feasiblity is ok, then lets continue with the search
 		   for(int d=maxDropOut[agent]; d >= minDropOut[agent]; d--){
 			   dropout[agent] = d; //I will modify this arrary in place, but if we parallize we would need to deep copy this
-			   dropoutDFS(IELP, dropout, minDropOut, maxDropOut, agent+1);
+			   dropoutDFS(IELP, dropout, minDropOut, maxDropOut, us, agent+1);
 		   }
 		   
 	   }
 	   
-   }
-   
-   //this function simply applies the waterfall effect to one agent
-   //It assumes slots are 0 based.
-  
-   
-   /**
-    * Reorder the specified array. order's ith value returns
-    * the index of the original array that should be moved to
-    * the ith position in the new array.
-    *
-    * @param arr
-    * @param order
-    * @return
-    */
-   
-   protected static double[] order(double[] arr, int[] order) {
-      double[] orderedArr = new double[arr.length];
-      for (int i = 0; i < order.length; i++) {
-         orderedArr[i] = arr[order[i]];
-      }
-      return orderedArr;
-   }
-
-   protected static int[] order(int[] arr, int[] order) {
-      int[] orderedArr = new int[arr.length];
-      for (int i = 0; i < order.length; i++) {
-         orderedArr[i] = arr[order[i]];
-      }
-      return orderedArr;
-   }
-
-
-   protected static boolean[] order(boolean[] arr, int[] order) {
-      boolean[] orderedArr = new boolean[arr.length];
-      for (int i = 0; i < order.length; i++) {
-         orderedArr[i] = arr[order[i]];
-      }
-      return orderedArr;
    }
    
 }
