@@ -2,8 +2,6 @@ package models.queryanalyzer.riep.iep.cplp;
 
 import java.util.Arrays;
 
-import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
-
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
@@ -37,10 +35,6 @@ public class ImpressionEstimationLPAll extends AbstractImpressionEstimationLP {
 		
 		updateObjecitve();
 	}
-	
-
-	public ObjectiveGoal getObjectiveGoal() {return ObjectiveGoal.MINIMIZE;}
-	
 	
 
 	@Override

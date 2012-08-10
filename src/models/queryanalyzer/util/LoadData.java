@@ -2,6 +2,7 @@ package models.queryanalyzer.util;
 
 import models.queryanalyzer.ds.AdvertiserInfo;
 import models.queryanalyzer.ds.AdvertiserInfoExactOnly;
+import models.queryanalyzer.ds.QAData;
 import models.queryanalyzer.ds.QADataExactOnly;
 
 import java.io.BufferedReader;
@@ -11,7 +12,7 @@ import java.util.StringTokenizer;
 
 
 public class LoadData {
-	static public QADataExactOnly LoadIt(String fileName){
+	static public QAData LoadIt(String fileName){
 		String instanceString = fileToString(fileName);
 		
 		//System.out.println(instanceString);
@@ -36,7 +37,7 @@ public class LoadData {
 		}
 
 		
-		return null;//Class name unknown.... new QADataExactOnly(agents, slots, agentInfo);
+		return new QAData(agents, slots, agentInfo);
 	}
 	
 	static public QADataExactOnly LoadItExactOnly(String fileName){

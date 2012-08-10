@@ -1,5 +1,6 @@
 package models.queryanalyzer.riep.iep.cplp;
 
+import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumVar;
@@ -88,6 +89,10 @@ public abstract class AbstractImpressionEstimationLP {
 		
 		updateObjecitve();
 	}
+	
+	
+	//public ObjectiveGoal getObjectiveGoal() {return ObjectiveGoal.MINIMIZE;}
+	
 	
 	/**
 	 * Updates the objective depending on the model inputs

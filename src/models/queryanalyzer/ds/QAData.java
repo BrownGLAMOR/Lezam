@@ -27,12 +27,13 @@ public class QAData {
     * @param advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
     * @return
     */
-   public QAInstanceExact buildInstances(int advIndex) {
+   public QAInstanceAll buildInstances(int advIndex) {
       assert (advIndex < _agents);
+      assert (_agentInfo[advIndex].avgPos > 0);
+      
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
-    	 
-         if (_agentInfo[i].avgPos >= 0) {
+    	 if (_agentInfo[i].avgPos > 0) {
             usedAgents++;
          }
       }
@@ -40,9 +41,13 @@ public class QAData {
       // Assign the usedAngent info
       AdvertiserInfo[] usedAgentInfo = new AdvertiserInfo[usedAgents];
       int index = 0;
+      int newAdvIndex = 0;
       for (int i = 0; i < _agents; i++) {
-         if (_agentInfo[i].avgPos >= 0) {
+         if (_agentInfo[i].avgPos > 0) {
             usedAgentInfo[index] = _agentInfo[i];
+            if(i == advIndex){
+            	newAdvIndex = index;
+            }
             index++;
          }
       }
@@ -56,9 +61,13 @@ public class QAData {
       int impressionsUB = 0;
 
       for (int i = 0; i < usedAgents; i++) {
-         avgPos[i] = usedAgentInfo[i].avgPos;
+    	 if(i == newAdvIndex){
+    		 avgPos[i] = usedAgentInfo[i].avgPos;
+    	 } else {
+    		 avgPos[i] = -1;
+    	 }
          agentIds[i] = usedAgentInfo[i].id;
-         sampledAvgPos[i]=usedAgentInfo[i].avgPos;
+         sampledAvgPos[i]=usedAgentInfo[i].sampledAveragePositions;
          agentImpressionDistributionMean[i]=usedAgentInfo[i].impsDistMean;
          agentImpressionDistributionStdev[i]=usedAgentInfo[i].impsDistStdev;
        
@@ -75,34 +84,23 @@ public class QAData {
       
       
       //No distinguishing between promoted and unpromoted slots
-//      int numPromotedSlots = -1;
-//
-//      //Not considering how many promoted impressions we saw
-//      int numPromotedImpressions = -1;
-//
-//      //Not considering whether our bid is high enough to be in a promoted slot
-//      boolean promotionEligibiltyVerified = false;
+      int numPromotedSlots = -1;
+
+      //Not considering how many promoted impressions we saw
+      int numPromotedImpressions = -1;
+
+      //Not considering whether our bid is high enough to be in a promoted slot
+      boolean promotionEligibiltyVerified = false;
 
       //Not using any prior knowledge about agent impressions
 
       
    
-//      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
-//              avgPos, sampledAvgPos, agentIds, advIndex,
-//              usedAgentInfo[advIndex].impressions, numPromotedImpressions, impressionsUB,
-//              true, promotionEligibiltyVerified,
-//              promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentnames);
-      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentnames, avgPos);
-     
-
-    
-
-     
-
-   
-      
-      
-  
+      return new QAInstanceAll(_slots, numPromotedSlots, usedAgents,
+              avgPos, sampledAvgPos, agentIds, newAdvIndex,
+              usedAgentInfo[newAdvIndex].impressions, numPromotedImpressions, impressionsUB,
+              true, promotionEligibiltyVerified,
+              promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, agentIds, agentnames);
    }
 
 

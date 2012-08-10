@@ -50,9 +50,13 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
    public QAInstanceAll getInstanceAll() {return _instanceAll;}
 
    public IEResult search(int[] order) {
+	  
 	  QAInstanceAll orderedInst = _instanceAll.reorder(order); 
 	  int agentIndex = orderedInst.getAgentIndex();
 	  
+	  //System.out.println(Arrays.toString(_instanceAll.getAvgPos()));
+	  //System.out.println(Arrays.toString(orderedInst.getAvgPos()));
+	   
 	  int advertisers = orderedInst.getNumAdvetisers();
 	  int slots = orderedInst.getNumSlots();
 	  
@@ -73,6 +77,10 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
       
       //set default values
       for(int a=0; a < advertisers; a++){
+    	  minDropOut[a] = 0;
+    	  maxDropOut[a] = Math.min(a,slots-1);
+    	  /*
+    	  //needs to be exteneded to support sampled averager positions!
     	  int ceilingSlot = ((int)Math.ceil(orderedInst.getAvgPos()[a]))-1;
     	  int floorSlot = ((int)Math.floor(orderedInst.getAvgPos()[a]))-1;
     	  if(ceilingSlot - floorSlot == 0 && (ceilingSlot == a || floorSlot == slots-1)){
@@ -81,6 +89,7 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
     		  minDropOut[a] = 0; //0 becouse 0 is the top slot, slots are 0 indexed like agents?  
     	  }
     	  maxDropOut[a] = Math.min(Math.min(a,slots-1),floorSlot);
+    	  */
       }
       
       System.out.println(Arrays.toString(orderedInst.getAvgPos()));

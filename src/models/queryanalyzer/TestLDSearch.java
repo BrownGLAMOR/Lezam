@@ -16,7 +16,7 @@ public class TestLDSearch {
 		String fileName = args[0];
 		System.out.println("Loading File: "+args[0]);
 		System.out.println("");
-		QADataExactOnly data = LoadData.LoadIt(fileName);
+		QADataExactOnly data = LoadData.LoadItExactOnly(fileName);
 		
 		System.out.println("All Data:");
 		System.out.println(data);

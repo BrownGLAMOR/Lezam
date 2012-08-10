@@ -6,21 +6,14 @@ import java.util.HashSet;
 
 
 public class QAInstanceAll extends AbstractQAInstance {
-   private int _slots;
+
    private int _promotedSlots;
-   private int _advetisers;
    private double[] _avgPos;
    private double[] _sampledAvgPos;
-   private int[] _agentIds;
-   private int _agentIndex;
-   private int _impressions;
    private int _promotedImpressions;
-   private int _impressionsUB;
    private boolean _considerPaddingAgents;
    private boolean _promotionEligibilityVerified;
    private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
-   private double[] _agentImpressionDistributionMean; //prior on agent impressions
-   private double[] _agentImpressionDistributionStdev; //prior on agent impressions
    private boolean _isSampled;
    private boolean _orderingKnown;
    private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
@@ -157,6 +150,32 @@ public class QAInstanceAll extends AbstractQAInstance {
       return _orderingKnown;
    }
 
+
+   public int[] getBidOrder(QAData data) {
+      double[] bids = new double[_advetisers];
+      int[] bidOrder = new int[_advetisers];
+      
+      for (int i = 0; i < _advetisers; i++) {
+         bids[i] = data._agentInfo[_agentIds[i]].bid;
+         bidOrder[i] = i;
+      }
+     
+      sortListsDecending(bidOrder, bids);
+    
+      //System.out.println("Bid order "+Arrays.toString(bidOrder));
+      //System.out.println("Bid value "+Arrays.toString(bids));
+
+      return bidOrder;
+   }
+   
+   public int[] getTrueImpressions(QAData data) {
+      int[] impressions = new int[_advetisers];
+      for (int i = 0; i < _advetisers; i++) {
+         impressions[i] = data._agentInfo[_agentIds[i]].impressions;
+      }
+      return impressions;
+   }
+   
    private boolean feasibleOrder(int[] order) {
       for (int i = 0; i < order.length; i++) {
          int startPos = Math.min(i + 1, _slots);

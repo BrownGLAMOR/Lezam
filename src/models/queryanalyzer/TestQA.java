@@ -39,7 +39,7 @@ public class TestQA {
 			System.out.println(e);
 		}
 		
-		QADataExactOnly data = LoadData.LoadIt(fileName);
+		QADataExactOnly data = LoadData.LoadItExactOnly(fileName);
 		
 		System.out.println("All Data:");
 		System.out.println(data);

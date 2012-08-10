@@ -1,7 +1,5 @@
 package models.queryanalyzer.ds;
 
-import java.util.Arrays;
-
 /**
  * The QAData class that only reads old files 
  * before the TAC:AA game integrated sampled average positions 
@@ -28,6 +26,8 @@ public class QADataExactOnly {
     */
    public QAInstanceExact buildInstances(int advIndex) {
       assert (advIndex < _agents);
+      assert (_agentInfo[advIndex].avgPos > 0);
+      
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
     	 
@@ -39,9 +39,13 @@ public class QADataExactOnly {
       // Assign the usedAngent info
       AdvertiserInfoExactOnly[] usedAgentInfo = new AdvertiserInfoExactOnly[usedAgents];
       int index = 0;
+      int newAdvIndex = 0;
       for (int i = 0; i < _agents; i++) {
          if (_agentInfo[i].avgPos >= 0) {
             usedAgentInfo[index] = _agentInfo[i];
+            if(i == advIndex){
+            	newAdvIndex = index;
+            }
             index++;
          }
       }
@@ -66,7 +70,7 @@ public class QADataExactOnly {
     	  agentnames[i] = "a"+i;
       }
       
-      return new QAInstanceExact(_slots, usedAgents, agentIds,  advIndex, usedAgentInfo[advIndex].impressions, impressionsUB, agentnames, avgPos);
+      return new QAInstanceExact(_slots, usedAgents, agentIds,  newAdvIndex, usedAgentInfo[newAdvIndex].impressions, impressionsUB, agentnames, avgPos);
    }
 
 

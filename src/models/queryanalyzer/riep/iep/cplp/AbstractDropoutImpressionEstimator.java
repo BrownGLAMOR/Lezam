@@ -28,7 +28,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 
    public abstract IEResult search(int[] order);
    
-   protected IEResult search(int[] order, ImpressionEstimationLPAll IELP, int[] minDropOut, int[] maxDropOut, int us){
+   protected IEResult search(int[] order, AbstractImpressionEstimationLP IELP, int[] minDropOut, int[] maxDropOut, int us){
 	  assert(order.length == minDropOut.length && order.length == maxDropOut.length);
 	  
 	  _bestObj = -1; //FIXME: If we change objective functions, we'll have to make sure objectives can't be negative (since -1 could otherwise naturally arise)
@@ -78,7 +78,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
    }
    
    //this method will implictly assume length of dropout,minDropOut,maxDropOut,avgPos_a are the same and this is the number of agents.
-   protected void dropoutDFS(ImpressionEstimationLPAll IELP, int[] dropout, int[] minDropOut, int[] maxDropOut, int us, int agent){
+   protected void dropoutDFS(AbstractImpressionEstimationLP IELP, int[] dropout, int[] minDropOut, int[] maxDropOut, int us, int agent){
 //	   System.out.println("dropoutDFS: dropout=" + Arrays.toString(dropout) + ", minDropOut=" + Arrays.toString(minDropOut) +
 //			   ", maxDropOut=" + Arrays.toString(maxDropOut) + ", agent=" + agent + ", numSlots=" + numSlots + ", avgPos=" + Arrays.toString(avgPos_a) + 
 //			   ", M=" + M + ", us=" + us + ", imp=" + imp);

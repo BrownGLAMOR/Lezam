@@ -1,17 +1,20 @@
 package models.queryanalyzer;
 
-import models.queryanalyzer.ds.QAData;
+import models.queryanalyzer.ds.QADataExactOnly;
 import models.queryanalyzer.ds.QAInstanceAll;
+import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
+import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;
 import java.io.*;
-public class TestIEP {
+public class TestIEPExact {
 	
-	public TestIEP(){}
+	public TestIEPExact(){}
 	
 	public void run(String[] args) throws IOException {
 		String fileName="";
@@ -29,13 +32,13 @@ public class TestIEP {
 			System.out.println("");
 		}
 			// Load QA data for test
-			QAData data = LoadData.LoadIt(fileName);
+			QADataExactOnly data = LoadData.LoadItExactOnly(fileName);
 			
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 3;
-			QAInstanceAll inst = data.buildInstances(advetiser);
+			int advetiser = 2;
+			QAInstanceExact inst = data.buildInstances(advetiser);
 			
 			System.out.println("Instance for "+advetiser+":");
 			System.out.println(inst);
@@ -43,11 +46,9 @@ public class TestIEP {
 			int[] bidOrder = inst.getBidOrder(data);
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
-			System.out.println("Avg pos: "+Arrays.toString(inst.getAvgPos()));
-			System.out.println("Samp Avg pos: "+Arrays.toString(inst.getSampledAvgPos()));
-			
+
 			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorAll(inst, false, false, false, -1);
+			AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
 
 			IEResult bestSol = IEP.search(bidOrder);
 
@@ -85,6 +86,6 @@ public class TestIEP {
 	}
 	public static void main(String[] args) throws Exception {
 		//new TestIEP().test();
-		new TestIEP().run(args);
+		new TestIEPExact().run(args);
 	}
 }
