@@ -34,7 +34,7 @@ public class TestIEP {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 3;
+			int advetiser = 2;
 			QAInstanceAll inst = data.buildInstances(advetiser);
 			
 			System.out.println("Instance for "+advetiser+":");
