@@ -16,7 +16,7 @@ import ilog.cplex.IloCplex;
  * @author sodomka
  *
  */
-public class ImpressionEstimationLP {
+public abstract class AbstractImpressionEstimationLP {
 	
 	public enum Objective {
 		MAXIMIZE_IMPRESSIONS,
@@ -27,8 +27,6 @@ public class ImpressionEstimationLP {
 		MINIMIZE_SLOT_DIFF,
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF,
 	}
-	
-	
 	
 	private final static boolean USE_EPSILON = false;
 	private final static double epsilon = .00001;
@@ -64,7 +62,7 @@ public class ImpressionEstimationLP {
 	
 	
 	
-	public ImpressionEstimationLP(int M, int us, int imp, double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
+	public AbstractImpressionEstimationLP(int M, int us, int imp, double[] knownI_a, double[] knownMu_a, double[] knownSampledMu_a, int numSlots, double[] T_aPriorMean, double[] T_aPriorStdev) {
 		_M = M;
 		_us = us;
 		_imp = imp;
@@ -304,13 +302,7 @@ public class ImpressionEstimationLP {
 	
 	
 	
-	
-	
-	
-	
-	
-	
-	
+
 	
 
 	private void addObjective_minimizeImpressionPriorErrorSlotDiff(IloCplex cplex, IloNumVar[] S_a, IloNumVar[] T_a,
@@ -697,65 +689,6 @@ public class ImpressionEstimationLP {
 	}
 
 	
-
-	
-	
-	
-	
-	public static void main(String[] args) {
-		
-		
-		
-//		int numSlots = 5;
-//		double[] avgPos_a = {1, 1.5, 1.5}; 
-//		int M = 1500;
-//		int us = 2;
-//		int imp = 1500;
-//		int[] dropout_a = {0, 0, 0};
-//		double bestObj = -1;
-//		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
-		
-		
-//		int numSlots = 5;
-//		double[] avgPos_a = {1, 2, 1.87800454, 1.81100666, 3.09521291}; 
-//		int M = 5106;
-//		int us = 2;
-//		int imp = 2205;
-//		int[] dropout_a = {0, 1, 0, 0, 1};
-//		double bestObj = -1;
-//		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
-		
-		
-//		int numSlots = 5;
-////		double[] avgPos_a = {1, 1.504146, 2.126708, 3.035672, 3.461909, 3.918221, 3.930876, 4}; 
-//		double[] avgPos_a = {1, 1.50414594, 2.12670807, 3.03567182, 3.46190935, 3.91822095, 3.93087558, 4};
-//		int M = 1037;
-//		int us = 2;
-//		int imp = 805;
-//		int[] dropout_a = {0, 0, 0, 0, 0, 1, 1, 2};
-//		double bestObj = -1;
-//		CarletonLP.solveIt(numSlots, avgPos_a, M, us, imp, dropout_a, bestObj);
-
-		int numAgents = 2;
-		int numSlots = 5;
-		double[] knownMu_a = {1.0, 2.0};
-		double[] knownSampledMu_a = {-1, -1};
-		int M = 1300;
-		int us = 0;
-		int imp = 300;
-		int[] dropout_a = {0, 1};
-		double bestObj = -1;
-		double[] T_aPriorMean = {200, 200};
-		double[] T_aPriorStdev = {50, 50};
-		double[] knownI_a = new double[numAgents];
-		Arrays.fill(knownI_a, -1);
-		knownI_a[us] = imp;
-		
-		ImpressionEstimationLP carletonLP = new ImpressionEstimationLP(M, us, imp, knownI_a, knownMu_a, knownSampledMu_a, numSlots, T_aPriorMean, T_aPriorStdev);
-		LPSolution sol = carletonLP.solveIt(dropout_a, bestObj);
-		System.out.println(sol);
-		
-	}
 
 
 

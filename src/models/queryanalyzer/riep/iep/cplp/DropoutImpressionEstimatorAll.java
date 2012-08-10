@@ -88,7 +88,7 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
       System.out.println(Arrays.toString(maxDropOut));
       
       
-      ImpressionEstimationLP IELP = new ImpressionEstimationLP(orderedInst.getImpressionsUB(), agentIndex, orderedInst.getImpressions(), I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), slots, orderedInst.getAgentImpressionDistributionMean(), orderedInst.getAgentImpressionDistributionStdev());
+      ImpressionEstimationLPAll IELP = new ImpressionEstimationLPAll(orderedInst.getImpressionsUB(), agentIndex, orderedInst.getImpressions(), I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), slots, orderedInst.getAgentImpressionDistributionMean(), orderedInst.getAgentImpressionDistributionStdev());
 
       return search(order, IELP, minDropOut, maxDropOut, agentIndex);
    }
