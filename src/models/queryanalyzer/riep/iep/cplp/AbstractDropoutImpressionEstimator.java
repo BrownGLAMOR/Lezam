@@ -58,13 +58,12 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
     	  return null;
       } else { //solution found! need to un-order it...
           
-          int[][] waterfall = _bestSol.getImpressions(); //kinda strange we distill the waterfall before re-ordering, but I am just replicating current semantics [cjc]
-          LPSolution orginalOrder = _bestSol.unorder(order);
+    	  LPSolution orginalOrder = _bestSol.unorder(order);
                    
           int[] impsPerAgent = makeFilterArray(orginalOrder.T_a, _inst.getNumAdvetisers());
           int[] impsPerSlot = makeFilterArray(orginalOrder.S_a, _inst.getNumSlots());
 
-          return new IEResult(orginalOrder.objectiveVal, impsPerAgent, order.clone(), impsPerSlot, waterfall, _inst.getAgentNames());
+          return new IEResult(_bestSol.objectiveVal, impsPerAgent, order.clone(), impsPerSlot, _inst.getAgentNames());             	  
       }
    }
   

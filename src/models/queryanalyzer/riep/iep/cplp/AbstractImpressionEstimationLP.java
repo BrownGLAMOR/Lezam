@@ -183,7 +183,8 @@ public abstract class AbstractImpressionEstimationLP {
 			//FIXME: Does this catch all cases? What about with two agents, both w/ integer avgPos.
 			//  Seems that we are relying on the objective to maximize total impressions.
 			for (int a=0; a<effectiveNumAgents; a++) {
-				for (int s=dropout_a[a]; s<=Math.min(a, _numSlots-1); s++) {
+				//for (int s=dropout_a[a]; s<=Math.min(a, _numSlots-1); s++) {
+				for (int s=dropout_a[a]; s<=a; s++) {
 					IloLinearNumExpr myCumulativeImps = cplex.linearNumExpr();
 					IloLinearNumExpr oppCumulativeImps = cplex.linearNumExpr();
 					//Create constraint for this value of $a$ and $k$
@@ -321,6 +322,7 @@ public abstract class AbstractImpressionEstimationLP {
 			delta.addTerm(-1, S_a[s+1]);
 			cplex.addGe(SDeltas[s], delta);
 			
+			delta = cplex.linearNumExpr();
 			delta.addTerm(-1, S_a[s]);
 			delta.addTerm(1, S_a[s+1]);
 			cplex.addGe(SDeltas[s], delta);
@@ -360,6 +362,7 @@ public abstract class AbstractImpressionEstimationLP {
 			delta.addTerm(-1, S_a[s+1]);
 			cplex.addGe(SDeltas[s], delta);
 			
+			delta = cplex.linearNumExpr();
 			delta.addTerm(-1, S_a[s]);
 			delta.addTerm(1, S_a[s+1]);
 			cplex.addGe(SDeltas[s], delta);

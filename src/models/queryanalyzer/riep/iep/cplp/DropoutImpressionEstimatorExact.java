@@ -26,7 +26,7 @@ public class DropoutImpressionEstimatorExact extends AbstractDropoutImpressionEs
    public AbstractQAInstance getInstanceExact() {return _instanceExact;}
    
    public IEResult search(int[] order) {
-	   QAInstanceExact orderedInst = _instanceExact.reorder(order); 
+	  QAInstanceExact orderedInst = _instanceExact.reorder(order); 
 	  int agentIndex = orderedInst.getAgentIndex();
 	  
 	  //System.out.println(Arrays.toString(_instanceExact.getAvgPos()));

@@ -1,13 +1,11 @@
 package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QADataExactOnly;
-import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
-import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;
@@ -48,7 +46,8 @@ public class TestIEPExact {
 			
 
 			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
+			//AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
+			AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPExact(inst);
 
 			IEResult bestSol = IEP.search(bidOrder);
 

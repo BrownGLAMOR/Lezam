@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 
 public class LoadData {
-	static public QADataExactOnly LoadIt(String fileName){
+	static public QAData LoadIt(String fileName){
 		String instanceString = fileToString(fileName);
 		
 		//System.out.println(instanceString);
@@ -37,8 +37,7 @@ public class LoadData {
 			agentInfo[a] = new AdvertiserInfo(id, agent ,avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
 		}
 
-		
-		return null;//new QAData(agents, slots, agentInfo);
+		return new QAData(agents, slots, agentInfo);
 	}
 	
 	static public QADataExactOnly LoadItExactOnly(String fileName){

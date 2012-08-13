@@ -10,7 +10,7 @@ import models.queryanalyzer.riep.iep.mip.WaterfallILP.WaterfallResult;
 
 import java.util.Arrays;
 
-public class EricImpressionEstimator implements AbstractImpressionEstimator {
+public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
 
    private ObjectiveGoal _objectiveGoal = ObjectiveGoal.MINIMIZE; //maximize or minimize?
    private QAInstanceAll _instance;
@@ -40,7 +40,8 @@ public class EricImpressionEstimator implements AbstractImpressionEstimator {
 
 
    public EricImpressionEstimator(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
-      TIMEOUT_IN_SECONDS = timeoutInSeconds;
+	  super(inst);
+	  TIMEOUT_IN_SECONDS = timeoutInSeconds;
       MULTIPLE_SOLUTIONS = multipleSolutions;
       INTEGER_PROGRAM = integerProgram;
       USE_RANKING_CONSTRAINTS = useRankingConstraints;
