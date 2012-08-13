@@ -151,7 +151,7 @@ public class QAInstanceAll extends AbstractQAInstance {
    }
 
 
-   public int[] getBidOrder(QAData data) {
+   public int[] getBidOrder(QADataAll data) {
       double[] bids = new double[_advetisers];
       int[] bidOrder = new int[_advetisers];
       
@@ -168,7 +168,7 @@ public class QAInstanceAll extends AbstractQAInstance {
       return bidOrder;
    }
    
-   public int[] getTrueImpressions(QAData data) {
+   public int[] getTrueImpressions(QADataAll data) {
       int[] impressions = new int[_advetisers];
       for (int i = 0; i < _advetisers; i++) {
          impressions[i] = data._agentInfo[_agentIds[i]].impressions;

@@ -7,7 +7,7 @@ package models.queryanalyzer.ds;
  * @author cjc
  *
  */
-public class QADataExactOnly {
+public class QADataExactOnly  extends AbstractQAData {
    int _agents;
    int _slots;
    AdvertiserInfoExactOnly[] _agentInfo;

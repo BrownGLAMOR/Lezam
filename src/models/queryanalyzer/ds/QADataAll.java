@@ -1,7 +1,5 @@
 package models.queryanalyzer.ds;
 
-import java.util.Arrays;
-
 /**
  * The QAData class that only reads new files 
  * After the TAC:AA game integrated sampled average positions 
@@ -9,12 +7,12 @@ import java.util.Arrays;
  * @author cc26
  *
  */
-public class QAData {
+public class QADataAll extends AbstractQAData {
    int _agents;
    int _slots;
    AdvertiserInfo[] _agentInfo;
 
-   public QAData(int agents, int slots, AdvertiserInfo[] agentInfo) {
+   public QADataAll(int agents, int slots, AdvertiserInfo[] agentInfo) {
       assert (agents == agentInfo.length);
       _agents = agents;
       _slots = slots;

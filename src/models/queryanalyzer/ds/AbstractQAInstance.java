@@ -1,6 +1,8 @@
 package models.queryanalyzer.ds;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class AbstractQAInstance {
 	   protected int _slots;
@@ -10,7 +12,7 @@ public abstract class AbstractQAInstance {
 	   protected int _impressions;
 	   protected int _impressionsUB;
 	   protected String[] _agentNames;
-
+	   
 	   protected boolean _hasImpressionPrior;
 	   protected double[] _agentImpressionDistributionMean; //prior on agent impressions
 	   protected double[] _agentImpressionDistributionStdev; //prior on agent impressions
@@ -44,6 +46,15 @@ public abstract class AbstractQAInstance {
 	   public int getImpressions() { return _impressions; }
 	   public int getImpressionsUB() { return _impressionsUB; }
 	   public String[] getAgentNames() {return _agentNames;}
+	   
+	   public Set<Integer> getAgentIdSet() {
+		   HashSet<Integer> ids = new HashSet<Integer>();
+		   for(int val :  _agentIds){
+			   ids.add(val);
+		   }
+		   return ids;
+   	   }
+	   
 	   /**
 		 * Gets the average position of each agent.
 		 * If exact average positions are known, those should be used.
