@@ -77,7 +77,7 @@ public class TestQA {
 		
 		
 		System.out.println("our Order: "+Arrays.toString(bestSol.getOrder()));
-		int[] bidOrder = instExact.getBidOrder(data);
+		int[] bidOrder = data.getBidOrder(instExact.getAgentIds());
 		System.out.println("bid Order: "+Arrays.toString(bidOrder));
 		
 		System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));

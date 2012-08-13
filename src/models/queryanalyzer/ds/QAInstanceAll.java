@@ -149,32 +149,6 @@ public class QAInstanceAll extends AbstractQAInstance {
    public boolean allInitialPositionsKnown() {
       return _orderingKnown;
    }
-
-
-   public int[] getBidOrder(QADataAll data) {
-      double[] bids = new double[_advetisers];
-      int[] bidOrder = new int[_advetisers];
-      
-      for (int i = 0; i < _advetisers; i++) {
-         bids[i] = data._agentInfo[_agentIds[i]].bid;
-         bidOrder[i] = i;
-      }
-     
-      sortListsDecending(bidOrder, bids);
-    
-      //System.out.println("Bid order "+Arrays.toString(bidOrder));
-      //System.out.println("Bid value "+Arrays.toString(bids));
-
-      return bidOrder;
-   }
-   
-   public int[] getTrueImpressions(QADataAll data) {
-      int[] impressions = new int[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
-         impressions[i] = data._agentInfo[_agentIds[i]].impressions;
-      }
-      return impressions;
-   }
    
    private boolean feasibleOrder(int[] order) {
       for (int i = 0; i < order.length; i++) {
@@ -210,6 +184,27 @@ public class QAInstanceAll extends AbstractQAInstance {
       return posOrder;
    }
 
+   protected static void sortListsDecending(int[] ids, double[] vals) {
+	      assert (ids.length == vals.length);
+	      int length = ids.length;
+
+	      for (int i = 0; i < length; i++) {
+	         for (int j = i + 1; j < length; j++) {
+	            if (vals[i] < vals[j]) {
+	               double tempVal = vals[i];
+	               int tempId = ids[i];
+
+	               vals[i] = vals[j];
+	               ids[i] = ids[j];
+
+	               vals[j] = tempVal;
+	               ids[j] = tempId;
+	            }
+	         }
+	      }
+	   }
+	   
+   
    public static int[] getCarletonOrder(double[] averagePositions, int numSlots) {
       int numAdvertisers = averagePositions.length;
       int[] avgPosOrder = getAvgPosOrder(averagePositions);

@@ -1,5 +1,8 @@
 package models.queryanalyzer.ds;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * The QAData class that only reads old files 
  * before the TAC:AA game integrated sampled average positions 
@@ -11,13 +14,19 @@ public class QADataExactOnly  extends AbstractQAData {
    int _agents;
    int _slots;
    AdvertiserInfoExactOnly[] _agentInfo;
-
+   Map<Integer,AdvertiserInfoExactOnly> _agentIdLookup;
+   
    public QADataExactOnly(int agents, int slots, AdvertiserInfoExactOnly[] agentInfo) {
       assert (agents == agentInfo.length);
       _agents = agents;
       _slots = slots;
       // Agent info contains agent id, avg position, impression(total impression?), bid, budget
       _agentInfo = agentInfo;
+      
+      _agentIdLookup = new HashMap<Integer,AdvertiserInfoExactOnly>();
+      for(AdvertiserInfoExactOnly info : _agentInfo){
+    	  _agentIdLookup.put(info.id, info);
+      }
    }
 
    /**
@@ -74,7 +83,32 @@ public class QADataExactOnly  extends AbstractQAData {
    }
 
 
-   
+	@Override
+	public int[] getBidOrder(int[] agentIds) {
+		int length = agentIds.length;
+		double[] bids = new double[length];
+		int[] bidOrder = new int[length];
+      
+      for (int i = 0; i < length; i++) {
+         bids[i] = _agentIdLookup.get(agentIds[i]).bid;
+         bidOrder[i] = i;
+      }
+     
+      sortListsDecending(bidOrder, bids);
+
+      return bidOrder;
+	}
+	
+	@Override
+	public int[] getTrueImpressions(int[] agentIds) {
+		int length = agentIds.length;
+		int[] impressions = new int[length];
+		for (int i = 0; i < length; i++) {
+			impressions[i] = _agentIdLookup.get(agentIds[i]).impressions;
+		}
+		return impressions;
+	}
+	
    public String toString() {
       String temp = "";
       temp += "Slots: " + _slots + "\n";

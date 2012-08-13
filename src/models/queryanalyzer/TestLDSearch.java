@@ -35,7 +35,7 @@ public class TestLDSearch {
 		int[] carletonOrder = QAInstanceAll.getCarletonOrder(inst.getAvgPos(),inst.getNumSlots());
 		System.out.println("Carleton order: "+Arrays.toString(carletonOrder));
 		
-		int[] bidOrder = instExact.getBidOrder(data);
+		int[] bidOrder = data.getBidOrder(instExact.getAgentIds());
 		System.out.println("Bid order: "+Arrays.toString(bidOrder));
 		
 		LDSearchOrder searcher = new LDSearchOrder(bidOrder);

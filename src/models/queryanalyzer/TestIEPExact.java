@@ -41,7 +41,7 @@ public class TestIEPExact {
 			System.out.println("Instance for "+advetiser+":");
 			System.out.println(inst);
 			
-			int[] bidOrder = inst.getBidOrder(data);
+			int[] bidOrder = data.getBidOrder(inst.getAgentIds());
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
 
@@ -53,7 +53,7 @@ public class TestIEPExact {
 
 			System.out.println("Best solution: "+Arrays.toString(bestSol.getSol()));
 
-			int[] trueImpressions = inst.getTrueImpressions(data);
+			int[] trueImpressions = data.getTrueImpressions(inst.getAgentIds());
 			System.out.println("Ground Truth:  "+Arrays.toString(trueImpressions));
 			
 			System.out.println("Slot impressions: "+Arrays.toString(bestSol.getSlotImpressions()));

@@ -1,17 +1,19 @@
 package models.queryanalyzer;
 
 import models.queryanalyzer.ds.QADataAll;
-import models.queryanalyzer.ds.QAInstanceAll;
+import models.queryanalyzer.ds.QADataExactOnly;
+import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
-import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
+import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;
 import java.io.*;
-public class TestIEP {
+public class TestIEPExactNew {
 	
-	public TestIEP(){}
+	public TestIEPExactNew(){}
 	
 	public void run(String[] args) throws IOException {
 		String fileName="";
@@ -35,7 +37,7 @@ public class TestIEP {
 			System.out.println(data);
 			
 			int advetiser = 2;
-			QAInstanceAll inst = data.buildInstances(advetiser);
+			QAInstanceExact inst = data.buildExactInstance(advetiser);
 			
 			System.out.println("Instance for "+advetiser+":");
 			System.out.println(inst);
@@ -43,11 +45,10 @@ public class TestIEP {
 			int[] bidOrder = data.getBidOrder(inst.getAgentIds());
 			System.out.println("Bid order: "+Arrays.toString(bidOrder));
 			
-			System.out.println("Avg pos: "+Arrays.toString(inst.getAvgPos()));
-			System.out.println("Samp Avg pos: "+Arrays.toString(inst.getSampledAvgPos()));
-			
+
 			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorAll(inst, false, false, false, -1);
+			//AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
+			AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPExact(inst);
 
 			IEResult bestSol = IEP.search(bidOrder);
 
@@ -85,6 +86,6 @@ public class TestIEP {
 	}
 	public static void main(String[] args) throws Exception {
 		//new TestIEP().test();
-		new TestIEP().run(args);
+		new TestIEPExactNew().run(args);
 	}
 }

@@ -16,33 +16,6 @@ public class QAInstanceExact extends AbstractQAInstance {
    public double[] getAvgPos() {return _avgPos;}
    public double[] getExactAvgPos() {return _avgPos;}
    
-   public int[] getBidOrder(QADataExactOnly data) {
-      double[] bids = new double[_advetisers];
-      int[] bidOrder = new int[_advetisers];
-      
-      for (int i = 0; i < _advetisers; i++) {
-         bids[i] = data._agentInfo[_agentIds[i] - 1].bid;
-         bidOrder[i] = i;
-      }
-     
-      sortListsDecending(bidOrder, bids);
-    
-      //System.out.println("Bid order "+Arrays.toString(bidOrder));
-      //System.out.println("Bid value "+Arrays.toString(bids));
-
-      return bidOrder;
-   }
-   
-   
-   public int[] getTrueImpressions(QADataExactOnly data) {
-      int[] impressions = new int[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
-         impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;
-      }
-      return impressions;
-   }
-   
-   
    /**
     * This method converts a QAInstanceExactOnly instance into a QAInstanceAll, 
     * by using with dummy data.  This is intended for testing only!
