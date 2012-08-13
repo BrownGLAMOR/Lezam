@@ -2,6 +2,7 @@ package simulator.predictions;
 
 import edu.umich.eecs.tac.props.*;
 import models.queryanalyzer.ds.QAInstanceAll;
+import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.forecast.*;
 import models.queryanalyzer.riep.*;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
@@ -9,7 +10,9 @@ import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorSample;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
+import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
+import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
 import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.jbergParticleFilter;
 import simulator.parser.GameStatus;
@@ -104,7 +107,7 @@ public class ImpressionEstimatorTest {
    double aggregateAbsTotImprError = 0;
 
    public enum SolverType {
-      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP
+      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP, SIMPLE_MIP_Exact, Carleton_LP_Exact,
    }
 
    public enum GameSet {
@@ -852,6 +855,12 @@ public class ImpressionEstimatorTest {
                                            ourImps, ourPromotedImps, impressionsUB, considerPaddingAgents, ourPromotionEligibility, ourHitBudget,
                                            reducedImpsDistMean.clone(), reducedImpsDistStdev.clone(), SAMPLED_AVERAGE_POSITIONS, knownInitialPositions.clone(), reducedAgents.clone());
 
+                     int slots = Math.min(NUM_SLOTS, numParticipants);
+                	 QAInstanceExact instExact = new QAInstanceExact(slots, numParticipants, agentIds.clone(), ourAgentIdx,
+                             ourImps, impressionsUB, reducedAgents.clone(), avgPos.clone());
+                	 if(USE_HISTORIC_PRIORS){
+                		 instExact.setAgentImpressionDistributionMean(reducedImpsDistMean.clone(), reducedImpsDistStdev.clone()); 
+                	 }
 
                      //System.exit(0); //DEBUG
 
@@ -877,6 +886,7 @@ public class ImpressionEstimatorTest {
                               fullModel = new LDSImpressionAndRankEstimator(model);
                            }
                         }
+                        
                      }
                      if (impressionEstimatorIdx == SolverType.MIP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
@@ -913,6 +923,25 @@ public class ImpressionEstimatorTest {
                     	 }
                      }
                      
+                     if (impressionEstimatorIdx == SolverType.Carleton_LP_Exact) {
+                    	 if (ORDERING_KNOWN) {
+                             model = new DropoutImpressionEstimatorExact(instExact);
+                             fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                    	 } else {
+                             model = new DropoutImpressionEstimatorExact(instExact);
+                             fullModel = new LDSImpressionAndRankEstimator(model);
+                    	 }
+                     }
+                     
+                     if (impressionEstimatorIdx == SolverType.SIMPLE_MIP_Exact) {
+                    	 if (ORDERING_KNOWN) {
+                             model = new ImpressionEstimatorSimpleMIPExact(instExact);
+                             fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+                    	 } else {
+                             model = new ImpressionEstimatorSimpleMIPExact(instExact);
+                             fullModel = new LDSImpressionAndRankEstimator(model);
+                    	 }
+                     }
 
                      //---------------- SOLVE FOR RESULT -----------------------
                      IEResult result = fullModel.getBestSolution();
@@ -2501,7 +2530,7 @@ public class ImpressionEstimatorTest {
 	   boolean exactAvgPositions=true;
 	   boolean orderingKnown=true; //FALSE? 
 	   boolean perfectImps=false;
-	   boolean useHistoricPriors = true;
+	   boolean useHistoricPriors = false;
 
 	   StringBuffer sb = new StringBuffer();
 	   boolean sampledAvgPositions = !exactAvgPositions;
@@ -2511,7 +2540,7 @@ public class ImpressionEstimatorTest {
 	   double secondsElapsed;
 
 
-	   SolverType solverType = SolverType.Carleton_LP;
+	   SolverType solverType = SolverType.CP; //SolverType.Carleton_LP_Exact; //SolverType.SIMPLE_MIP_Exact; //SolverType.Carleton_LP;
 
 	   
 	   String tmp = "SUMMARY: ---------------\n";
@@ -2664,12 +2693,14 @@ public class ImpressionEstimatorTest {
 
 
 	   
+	   /*
+	   boolean debuggingTests=true;
+	   if (debuggingTests) {
+		   runDebuggingTests();
+		   System.exit(0);
+	   }
+	   */
 	   
-//	   boolean debuggingTests=true;
-//	   if (debuggingTests) {
-//		   runDebuggingTests();
-//		   System.exit(0);
-//	   }
 //	   
 //	   
 //	   boolean allTests=true;

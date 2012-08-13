@@ -20,7 +20,8 @@ public class ImpressionEstimationLPExact extends AbstractImpressionEstimationLP 
 		if(_hasPrior){
 			DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF;
 		} else {
-			DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
+			//DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF; MINIMIZE_SLOT_DIFF_AND_IMPRESSIONS
+			DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF_AND_IMPRESSIONS; 
 		}
 		System.out.println("Objective: "+DESIRED_OBJECTIVE);
 	}
@@ -49,6 +50,8 @@ public class ImpressionEstimationLPExact extends AbstractImpressionEstimationLP 
 			addObjective_minimizeSlotDiff(cplex, vars.S_a, bestObj, _numSlots, effectiveNumAgents);
 		} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF) {
 			addObjective_minimizeImpressionPriorErrorSlotDiff(cplex, vars.S_a,  vars.T_a, _T_aPriorMean, bestObj, _numSlots, effectiveNumAgents);
+		} else if (DESIRED_OBJECTIVE == Objective.MINIMIZE_SLOT_DIFF_AND_IMPRESSIONS) {
+			addObjective_minimizeSlotDiff_maxImpressions(cplex, vars.S_a,  vars.T_a, bestObj, _numSlots, effectiveNumAgents);
 		} else {
 			throw new RuntimeException("Objective: "+DESIRED_OBJECTIVE+" not supported by this model");
 		}

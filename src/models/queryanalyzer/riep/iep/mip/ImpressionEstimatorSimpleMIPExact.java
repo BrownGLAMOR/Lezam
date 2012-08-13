@@ -183,7 +183,17 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 			for(IloNumVar SDelta : SDeltas){
 				allSDeltas.addTerm(1, SDelta);
 			}
-			cplex.addMinimize(allSDeltas);		
+			//cplex.addMinimize(allSDeltas);		
+
+			
+			IloLinearNumExpr allTs = cplex.linearNumExpr();
+			for(IloNumVar T : T_a){
+				allTs.addTerm(1, T);
+			}
+						
+			cplex.addMinimize(cplex.sum(cplex.prod(100.0, allSDeltas), allTs));	
+			
+			
 			
 			
 			long t0 = System.currentTimeMillis();

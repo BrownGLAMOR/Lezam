@@ -20,7 +20,8 @@ public abstract class AbstractImpressionEstimationLP {
 		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SAMPLE_MU_DIFF,
 		DEPENDS_ON_CIRCUMSTANCES, 
 		MINIMIZE_SLOT_DIFF,
-		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF,
+		MINIMIZE_IMPRESSION_PRIOR_ERROR_AND_SLOT_DIFF, 
+		MINIMIZE_SLOT_DIFF_AND_IMPRESSIONS,
 	}
 	
 	protected final static boolean USE_EPSILON = false;
@@ -381,6 +382,48 @@ public abstract class AbstractImpressionEstimationLP {
 		}
 	}
 
+
+	
+	protected void addObjective_minimizeSlotDiff_maxImpressions(IloCplex cplex, IloNumVar[] S_a, IloNumVar[] T_a, double bestObj, int numSlots, int effectiveNumAgents) throws IloException  {
+		int trueSlots = Math.min(numSlots, effectiveNumAgents);
+		double maxImp = S_a[0].getUB();
+		
+		IloNumVar[] SDeltas = cplex.numVarArray(trueSlots-1, 0, 2*maxImp);
+		
+		for (int s=0; s < trueSlots-1; s++) {
+			IloLinearNumExpr delta = cplex.linearNumExpr();
+			delta.addTerm(1, S_a[s]);
+			delta.addTerm(-1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+			
+			delta = cplex.linearNumExpr();
+			delta.addTerm(-1, S_a[s]);
+			delta.addTerm(1, S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+		}
+		
+		IloLinearNumExpr allSDeltas = cplex.linearNumExpr();
+		//for (int a=0; a<numSlots-1; a++) {
+		for(IloNumVar SDelta : SDeltas){
+			allSDeltas.addTerm(1, SDelta);
+		}
+	
+		IloLinearNumExpr allTs = cplex.linearNumExpr();
+		//for (int a=0; a<numSlots-1; a++) {
+		for(IloNumVar T : T_a){
+			allTs.addTerm(1, T);
+		}
+		
+		
+		cplex.addMinimize(cplex.sum(cplex.prod(100.0, allSDeltas), allTs));	
+		//cplex.addMinimize(allSDeltas);	
+		
+		//Must be better than previously best objective
+		if (bestObj != -1) {
+			cplex.addLe(cplex.sum(cplex.prod(100.0, allSDeltas), allTs), bestObj);
+			//cplex.addLe(allSDeltas, bestObj);
+		}
+	}
 
 
 
