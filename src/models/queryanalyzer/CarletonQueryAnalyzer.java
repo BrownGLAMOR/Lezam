@@ -111,6 +111,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    @Override
    public int getTotImps(Query query) {
       IEResult result = _allResults.get(query).get(_allResults.get(query).size()-1);
+      System.out.println("Size of allResults"+_allResults.get(query).size());
       if(result != null) {
          return result.getSlotImpressions()[0];
       }
@@ -411,7 +412,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
       }
 
       for (Query q : _querySpace) {
-
+    	 
          /*
           * For now we can only solve the auctions we were in
           */
@@ -503,6 +504,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                              padAgents, promotionEligibiltyVerified, hitOurBudget,
                                              reducedImpMean, reducedImpStdDev, _isSampled, ordering, agentNamesArr);
 
+            //TODO: Pull out the data format
             ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);
             ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
             IEResult bestSol = estimator.getBestSolution();
@@ -610,6 +612,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
 //               System.out.println("Done solving. " + bestSol + "\t agentNames:" + Arrays.toString(agentNamesArr));
             }
             else {
+            	
                _allResults.get(q).add(null);
                _allImpRanges.get(q).add(null);
                _allAgentNames.get(q).add(null);
@@ -624,6 +627,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
             }
          }
          else {
+        	 
             _allResults.get(q).add(null);
             _allImpRanges.get(q).add(null);
             _allAgentNames.get(q).add(null);
