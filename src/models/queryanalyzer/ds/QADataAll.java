@@ -18,10 +18,11 @@ public class QADataAll extends AbstractQAData {
    Map<Integer,AdvertiserInfo> _agentIdLookup;
    
 
-   public QADataAll(int agents, int slots, AdvertiserInfo[] agentInfo) {
+   public QADataAll(int agents, int slots,int ourAgentNum, AdvertiserInfo[] agentInfo) {
       assert (agents == agentInfo.length);
       _agents = agents;
       _slots = slots;
+      _ourAgentNum=ourAgentNum;
       // Agent info contains agent id, avg position, impression(total impression?), bid, budget
       _agentInfo = agentInfo;
       
