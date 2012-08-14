@@ -201,4 +201,8 @@ public class QADataAll extends AbstractQAData {
    }
 
 
+   public int getOurAgentNum(){
+	   return _ourAgentNum;
+   }
+
 }
