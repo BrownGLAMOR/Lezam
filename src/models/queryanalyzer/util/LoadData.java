@@ -21,6 +21,7 @@ public class LoadData {
 		
 		int agents = Integer.parseInt(tokens.nextToken());
 		int slots = Integer.parseInt(tokens.nextToken());
+		int ourAgentNum= Integer.parseInt(tokens.nextToken());
 		AdvertiserInfo[] agentInfo = new AdvertiserInfo[agents];
 		
 		for(int a = 0; a < agents; a++){
@@ -37,7 +38,7 @@ public class LoadData {
 			agentInfo[a] = new AdvertiserInfo(id, agent ,avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
 		}
 
-		return new QADataAll(agents, slots, agentInfo);
+		return new QADataAll(agents, slots, ourAgentNum, agentInfo);
 	}
 	
 	static public QADataExactOnly LoadItExactOnly(String fileName){
