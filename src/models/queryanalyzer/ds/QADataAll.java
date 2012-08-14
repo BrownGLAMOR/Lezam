@@ -13,6 +13,7 @@ import java.util.Map;
 public class QADataAll extends AbstractQAData {
    int _agents;
    int _slots;
+   int _ourAgentNum;
    AdvertiserInfo[] _agentInfo;
    Map<Integer,AdvertiserInfo> _agentIdLookup;
    
