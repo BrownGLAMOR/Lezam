@@ -490,7 +490,8 @@ public class AllModelTest {
                      HashMap<Product,HashMap<GameStatusHandler.UserState,Double>> preUpdateUserStates = getUserStates(userModel,products);
                      _maxImps = getMaxImpsPred(preUpdateUserStates,1.45,querySpace);
                   }
-
+                  
+                  System.out.println("Agent:"+ advertisers.get(agent));
                   queryAnalyzer.updateModel(queryReport, bidBundle, _maxImps);
 
                   HashMap<Query,Integer> totalImpressions = new HashMap<Query,Integer>();
