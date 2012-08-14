@@ -193,6 +193,7 @@ public class QADataAll extends AbstractQAData {
       String temp = "";
       temp += "Slots: " + _slots + "\n";
       temp += "Agents: " + _agents + "\n";
+      temp += "OurAgentNum:"+ _ourAgentNum +"\n"; 
       for (int i = 0; i < _agentInfo.length; i++) {
          temp += _agentInfo[i].toString() + "\n";
       }
