@@ -111,7 +111,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    @Override
    public int getTotImps(Query query) {
       IEResult result = _allResults.get(query).get(_allResults.get(query).size()-1);
-      System.out.println("Size of allResults"+_allResults.get(query).size());
+     
       if(result != null) {
          return result.getSlotImpressions()[0];
       }
