@@ -54,13 +54,15 @@ public class QADataAll extends AbstractQAData {
       for (int i = 0; i < _agents; i++) {
          if (_agentInfo[i].avgPos > 0) {
             usedAgentInfo[index] = _agentInfo[i];
-            if(i == advIndex){
+           
+            if(i == advIndex-1){
+            	
             	newAdvIndex = index;
             }
             index++;
          }
       }
-
+      
       
       double[] avgPos = new double[usedAgents];
       int[] agentIds = new int[usedAgents];
@@ -73,7 +75,7 @@ public class QADataAll extends AbstractQAData {
     	 if(i == newAdvIndex){
     		 avgPos[i] = usedAgentInfo[i].avgPos;
     	 } else {
-    		 avgPos[i] = -1;
+    	 	 avgPos[i] = -1;
     	 }
          agentIds[i] = usedAgentInfo[i].id;
          sampledAvgPos[i]=usedAgentInfo[i].sampledAveragePositions;
@@ -129,9 +131,11 @@ public class QADataAll extends AbstractQAData {
 	      int index = 0;
 	      int newAdvIndex = 0;
 	      for (int i = 0; i < _agents; i++) {
+	    
 	         if (_agentInfo[i].avgPos >= 0) {
-	            usedAgentInfo[index] = _agentInfo[i];
-	            if(i == advIndex){
+	           
+	            System.out.println(i);
+	            if(i == advIndex-1){
 	            	newAdvIndex = index;
 	            }
 	            index++;
@@ -188,6 +192,10 @@ public class QADataAll extends AbstractQAData {
 		return impressions;
 	}
 	
+	public int getOurAgentId(){
+		
+		return this._ourAgentNum;
+	}
    
    public String toString() {
       String temp = "";
