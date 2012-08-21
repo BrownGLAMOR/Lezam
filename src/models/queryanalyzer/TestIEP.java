@@ -34,8 +34,16 @@ public class TestIEP {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 2;
-			QAInstanceAll inst = data.buildInstances(advetiser);
+			
+			/**
+			 * Not so sure what is this used for?
+			 * advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
+			 */
+			int advetiser = 4;
+			
+			//QAInstanceAll inst = data.buildInstances(advetiser);
+			QAInstanceAll inst = data.buildInstances(data.getOurAgentId());
+			
 			
 			System.out.println("Instance for "+advetiser+":");
 			System.out.println(inst);
