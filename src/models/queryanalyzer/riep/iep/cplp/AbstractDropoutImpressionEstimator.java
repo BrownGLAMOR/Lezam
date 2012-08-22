@@ -101,6 +101,7 @@ public abstract class AbstractDropoutImpressionEstimator implements AbstractImpr
 			   _bestChecked = _checked;
 			   
 			   //System.out.println(sol);
+			   System.out.println("_bestChecked : _bestObj");
 			   System.out.println(_bestChecked+": "+_bestObj);
 		   }
 		   
