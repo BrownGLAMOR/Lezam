@@ -49,9 +49,10 @@ public class IEResult {
      // sb.append("Result:\n\tobj=" + _obj + "\n\tsol=" + Arrays.toString(_sol) + "\n\torder=" + Arrays.toString(_order) + "\n\tslotImpr=" + Arrays.toString(_slotImpr));
       sb.append("Result:\n\tobj=" + _obj + "\n\torder=" + Arrays.toString(_order) + "\n\tslotImpr=" + Arrays.toString(_slotImpr) + "\n\tsol=" + Arrays.toString(_sol) + "\n\tnames=" + Arrays.toString(_agentNames)+"\n");
       //sb.append("Result:\tobj=" + _obj + "\tsol=" + Arrays.toString(_sol));
+      sb.append("\tcol:solt, row:agents, \n\tElement of water fall 2-d array[i][j]: the impressions for agent i can see in slot j\n");
       sb.append("\twaterfall:\n");
       for(int i=0; i < _waterfall.length; i++){
-    	  sb.append("\t  R"+i+": "+Arrays.toString(_waterfall[i])+"\n");
+    	  sb.append("\t"+"agent"+i+": "+Arrays.toString(_waterfall[i])+"\n");
       }
       return sb.toString();
 
