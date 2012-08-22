@@ -92,9 +92,11 @@ public class DropoutImpressionEstimatorAll extends AbstractDropoutImpressionEsti
     	  */
       }
       
-      System.out.println(Arrays.toString(orderedInst.getAvgPos()));
-      System.out.println(Arrays.toString(minDropOut));
-      System.out.println(Arrays.toString(maxDropOut));
+      System.out.println("average position in order: "+Arrays.toString(orderedInst.getAvgPos()));
+     
+      System.out.println("min drop out: "+Arrays.toString(minDropOut));
+      
+      System.out.println("max drop out: "+Arrays.toString(maxDropOut));
       
       
       ImpressionEstimationLPAll IELP = new ImpressionEstimationLPAll(orderedInst.getImpressionsUB(), I_a, orderedInst.getAvgPos(), orderedInst.getSampledAvgPos(), slots);
