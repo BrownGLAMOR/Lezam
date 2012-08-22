@@ -1266,7 +1266,7 @@ public class ImpressionEstimatorTest {
     */
    
    
-   public void generateTestingFilesForCarleton(String filename, int d, int queryId) throws IOException, ParseException
+   public void generateTestingFiles(String filename, int d, int queryId) throws IOException, ParseException
   	{
 	   BufferedWriter resultToCarleton=new BufferedWriter(new FileWriter("ResultToCarletonOutPut"));
 
@@ -2810,7 +2810,7 @@ public class ImpressionEstimatorTest {
 
       evaluator = new ImpressionEstimatorTest(sampleAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, useHistoricPriors, historicPriorsType, orderingKnown, upperBoundNoise);
       ArrayList<String> gameString= evaluator.getGameStrings(GAMES_TO_TEST,START_GAME,END_GAME);
-      evaluator.generateTestingFilesForCarleton(gameString.get(0),0,0);
+      evaluator.generateTestingFiles(gameString.get(0),0,0);
 
       if(SUMMARY || DEBUG) {
          //PRINT PARAMETERS
