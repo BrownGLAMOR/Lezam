@@ -72,11 +72,11 @@ public class QADataAll extends AbstractQAData {
       int impressionsUB = 0;
 
       for (int i = 0; i < usedAgents; i++) {
-    	 if(i == newAdvIndex){
+    	 //if(i == newAdvIndex){
     		 avgPos[i] = usedAgentInfo[i].avgPos;
-    	 } else {
-    	 	 avgPos[i] = -1;
-    	 }
+    	 // } else {
+    	 //	 avgPos[i] = -1;
+    	 //}
          agentIds[i] = usedAgentInfo[i].id;
          sampledAvgPos[i]=usedAgentInfo[i].sampledAveragePositions;
          agentImpressionDistributionMean[i]=usedAgentInfo[i].impsDistMean;
@@ -90,7 +90,9 @@ public class QADataAll extends AbstractQAData {
       
       String[] agentnames = new String[usedAgents];
       for (int i = 0; i < usedAgents; i++){
-    	  agentnames[i] = "a"+i;
+    	  
+    	  agentnames[i]=usedAgentInfo[i].agentName;
+    	  //agentnames[i] = "a"+i;
       }
       
       
