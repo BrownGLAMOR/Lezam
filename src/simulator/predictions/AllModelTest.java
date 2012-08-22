@@ -180,6 +180,7 @@ public class AllModelTest {
          // Load this game and its basic parameters
          GameStatus status = new GameStatusHandler(filename).getGameStatus();
          String[] statusAgents = status.getAdvertisers();
+      
          System.out.println("Agents: " + Arrays.toString(statusAgents));
          int NUM_PROMOTED_SLOTS = status.getSlotInfo().getPromotedSlots();
          int NUM_SLOTS = status.getSlotInfo().getRegularSlots();
@@ -676,6 +677,7 @@ public class AllModelTest {
             */
             for (int queryIdx=START_QUERY; queryIdx<=END_QUERY; queryIdx++) {
                Query query = queryArr[queryIdx];
+              
                Integer[] impressions = getAgentImpressions(status, d, query);
                Double[] bids = getBids(status, d, query);
                double[] squashedBids = getSquashedBids(status, d, query);
@@ -694,9 +696,14 @@ public class AllModelTest {
                for(int agent = 0; agent < advertisers.size(); agent++) {
                   if(agent == replaceIdx) {
                      String agentName = advertisers.get(agent);
-
+                     
+                 
+                     
                      int[] rankPredictions = allAgentRankPredictions.get(agentName).get(query);
                      int[] impressionPredictions = allAgentImpressionPredictions.get(agentName).get(query);
+                     
+                
+                     
                      double[] bidPredictions = allAgentBidPredictions.get(agentName).get(query);
                      double[] budgetPredictions = allAgentBudgetPredictions.get(agentName).get(query);
                      double advEffectPredictions = allAgentAdvEffectPredictions.get(agentName).get(query);
@@ -712,15 +719,16 @@ public class AllModelTest {
                      */
                      for(int innerAgent = 0; innerAgent < advertisers.size(); innerAgent++) {
                         if(innerAgent != agent) {
-                           if(impressionPredictions != null) {
-                              impErrorList.add((double) Math.abs(impressions[innerAgent] - impressionPredictions[innerAgent]));
-                           }
+                        	 if(impressionPredictions != null) {
+                                 impErrorList.add((double) Math.abs(impressions[innerAgent] - impressionPredictions[innerAgent]));
+                              }
                         }
                      }
 
                      if(rankPredictions != null) {
                         for(int innerAgent = 0; innerAgent < advertisers.size(); innerAgent++) {
                            int orderedAgent = ranks[agent];
+                           
                            int orderedInnerAgent = rankPredictions[innerAgent];
                            if(orderedInnerAgent != orderedAgent) {
                               if(impressionPredictions != null) {
@@ -867,7 +875,7 @@ public class AllModelTest {
       }
 
       double[] results = new double[24];
-      results[0] = sumList(impErrorList) / ((double) impErrorList.size());
+      results[0] = sumList(impErrorList) / ((double) impErrorList.size());     
       results[1] = sumList(impInOrderErrorList) / ((double) impInOrderErrorList.size());
       results[2] = sumList(bidErrorList) / ((double) bidErrorList.size());
       results[3] = sumList(bidInOrderErrorList) / ((double) bidInOrderErrorList.size());
