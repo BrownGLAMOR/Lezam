@@ -20,7 +20,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
     * Number of users per product type
     */
    public static final int NUM_USERS_PER_PROD = 10000;
-
+   int DAY = -1;
    /**
     * Number of particles in the filter
     */
@@ -218,4 +218,11 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
       }
 
    }
+
+
+public void updateDay(int d) {
+	DAY = d;
+	System.out.println("DAY UPDATED: "+DAY+"_________________________________");
+	
+}
 }

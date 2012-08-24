@@ -13,13 +13,13 @@ import static simulator.parser.GameStatusHandler.UserState;
 public class ConstantsAndFunctions {
 
    // Target Effect
-   public static final double _TE = 0.5;
+   public static final double _TE = 0.5; //HC num
    // Promoted Slot Bonus
-   public static final double _PSB = 0.5;
+   public static final double _PSB = 0.5;//HC num
    // Advertiser effect lower bound <> upper bound
    public static final double[][] _advertiserEffectBounds = {{0.2, 0.3},
            {0.3, 0.4},
-           {0.4, 0.5}};
+           {0.4, 0.5}}; //HC num
 
    // Average advertiser effect
    //TODO: If we are going to average these, should it really be unweighted? It seems that
@@ -33,7 +33,7 @@ public class ConstantsAndFunctions {
    // Continuation Probability lower bound <> upper bound
    public static final double[][] _continuationProbBounds = {{0.2, 0.5},
            {0.3, 0.6},
-           {0.4, 0.7}};
+           {0.4, 0.7}}; //HC num
 
    // Average continuation probability
    public static final double[] _continuationProbBoundsAvg = {
@@ -42,7 +42,7 @@ public class ConstantsAndFunctions {
            (_continuationProbBounds[2][0] + _continuationProbBounds[2][1]) / 2};
 
 
-   public static final double[] _regReserveLow = {.08, .29, .46};
+   public static final double[] _regReserveLow = {.08, .29, .46}; //HC num
    public static final double[] _regReserveHigh = {.29, .46, .6};
 
    // first index:
@@ -54,7 +54,7 @@ public class ConstantsAndFunctions {
    // 1 - promoted
    public static final double[][] fTargetfPro = {{(1.0), (1.0) * (1.0 + _PSB)},
            {(1.0 + _TE), (1.0 + _TE) * (1.0 + _PSB)},
-           {(1.0) / (1.0 + _TE), ((1.0) / (1.0 + _TE)) * (1.0 + _PSB)}};
+           {(1.0) / (1.0 + _TE), ((1.0) / (1.0 + _TE)) * (1.0 + _PSB)}}; //HC num
 
    // Turns a boolean into binary
    public static int bool2int(boolean bool) {
@@ -107,9 +107,9 @@ public class ConstantsAndFunctions {
 
    public static double getBinomialProbUsingGaussian(double n, double p, double k) {
       double mean = n * p;
-      double sigma2 = mean * (1.0 - p);
+      double sigma2 = mean * (1.0 - p); //HC num
       double diff = k - mean;
-      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2));
+      return 1.0 / Math.sqrt(2.0 * Math.PI * sigma2) * Math.exp(-(diff * diff) / (2.0 * sigma2)); //HC num
    }
 
    // Get Click Distribution
@@ -128,15 +128,15 @@ public class ConstantsAndFunctions {
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  q.getComponent().equals(p.getComponent()) &&
                  q.getManufacturer().equals(p.getManufacturer())) {
-            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);//HC num
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
                  ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
                           (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
-            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);//HC num
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);//HC num
          }
 
          total += searching;
@@ -173,15 +173,15 @@ public class ConstantsAndFunctions {
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  q.getComponent().equals(p.getComponent()) &&
                  q.getManufacturer().equals(p.getManufacturer())) {
-            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F2);//HC num
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
                  ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
                           (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
-            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);
+            searching = (1.0 / 6.0) * states.get(UserState.IS) + 0.5 * states.get(UserState.F1);//HC num
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);
+            searching = (1.0 / 3.0) * states.get(UserState.IS) + states.get(UserState.F0);//HC num
          }
          total += searching;
          userDist.put(p, searching);
@@ -195,32 +195,40 @@ public class ConstantsAndFunctions {
    public static double[] getPrView(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       return getViewOrIS(false,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
    }
-
+   //FIXME: Should this be moved to the ISRatio model? Why is it here? REVISED:Also used in Budget Estimator
    public static double[] getISRatio(Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       return getViewOrIS(true,q,numSlots,numPromSlots,advEffect,contProb,convProb,userStates);
    }
-
+   
+   //both Probability of view and ISRation use this method
    public static double[] getViewOrIS(boolean isRatio,Query q,int numSlots, int numPromSlots, double advEffect, double contProb, double convProb, HashMap<Product, HashMap<UserState, Double>> userStates) {
       QueryType qt = q.getType();
-
+      
       double ISusers = 0.0;
       double nonISusers = 0.0;
+      //for each product, update IS and nonIS users based on F level, component and manufacturer type
       for(Product p : userStates.keySet()) {
          HashMap<UserState, Double> states = userStates.get(p);
          if (qt.equals(QueryType.FOCUS_LEVEL_TWO) &&
                  q.getComponent().equals(p.getComponent()) &&
                  q.getManufacturer().equals(p.getManufacturer())) {
-            ISusers += (1.0 / 3.0) * states.get(UserState.IS);
+        	//1/3 users in IS are in FL1
+            ISusers += (1.0 / 3.0) * states.get(UserState.IS);//HC num
+            //all in F2
             nonISusers += states.get(UserState.F2);
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ONE) &&
                  ((q.getComponent() != null && q.getComponent().equals(p.getComponent())) ||
                           (q.getManufacturer() != null && q.getManufacturer().equals(p.getManufacturer())))) {
-            ISusers += (1.0 / 6.0) * states.get(UserState.IS);
-            nonISusers += 0.5 * states.get(UserState.F1);
+        	 //1/6 users are in FL2
+            ISusers += (1.0 / 6.0) * states.get(UserState.IS);//HC num
+            //1/2 in F1
+            nonISusers += 0.5 * states.get(UserState.F1); //HC num
          }
          else if (qt.equals(QueryType.FOCUS_LEVEL_ZERO)) {
-            ISusers += (1.0 / 3.0) * states.get(UserState.IS);
+        	 //1/3 users are in FL0
+            ISusers += (1.0 / 3.0) * states.get(UserState.IS);//HC num
+            //all in F0
             nonISusers += states.get(UserState.F0);
          }
       }
@@ -234,6 +242,8 @@ public class ConstantsAndFunctions {
          double lastPrView = prView[i-1];
          double lastClickPr;
          if((i-1) < numPromSlots) {
+        	 //convert advertiser effect to click probability
+        	 //how does this work?
             lastClickPr = clickPrtoE(advEffect,fTargetfPro[0][1]);
          }
          else {
@@ -244,7 +254,7 @@ public class ConstantsAndFunctions {
 
          //Remove non-IS Users that converted
          nonISusers -= nonISusers*lastPrView*lastClickPr*convProb*(1.0 - ISRatio[i-1]);
-
+         //ratio is the number of IS users/all users
          ISRatio[i] = ISusers/(ISusers+nonISusers);
       }
 
@@ -367,7 +377,7 @@ public class ConstantsAndFunctions {
 
    
    public static void main(String[] args) {
-	   int[] impsPerAgent = {190, 80, 120, 130};
+	   int[] impsPerAgent = {190, 80, 120, 130}; //HC num
 	   int[] orderArr = {2, 1, 0, 3};
 	   int numSlots = 2;
 	   

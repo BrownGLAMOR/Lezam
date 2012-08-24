@@ -73,7 +73,16 @@ public class Item {
 	}
 	
 	public String toString() {
-		return _q+" [W: " + _weight + ", V: " + _value + ", B: " + _bid + "Budget: " + _budget + ", T: " + _targ + "]";
+		return _q+" [W: " + _weight + ", V: " + _value + ", B: " + _bid + " Budget: " + _budget + ", T: " + _targ + "]";
+	}
+
+	public boolean compareTo(Item item) {
+		boolean equal = true;
+		if (_q!= item.q()||_weight!= item.w()||_value!= item.v()||_bid!= item.b()||_budget!= item.budget()||_targ!= item.targ()){
+			equal = false;
+		}
+		
+		return equal;
 	}
 
 }

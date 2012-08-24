@@ -29,9 +29,11 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
    private double _baseConvPr1, _baseConvPr2, _baseConvPr3;
    private double _convPrVar1, _convPrVar2, _convPrVar3; //multiply this by the baseConvPr
    private HashMap<Product, HashMap<UserState, Double>> _predictions, _currentEstimate;
-
+   private HashMap<Query,double[]> _avgImps; 
+   
    int _numSlots;
    int _promSlots;
+   int rand2 = 4321;
 
    private static final boolean _rules2009 = false;
 
@@ -47,7 +49,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
       _promSlots = promSlots;
       _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
       _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
-      _R = new Random();
+      _R = new Random(rand2);
       _particles = new HashMap<Product, Particle[]>();
 
       HashMap<UserState, Double> standardFromNSProbs = new HashMap<UserState, Double>();
@@ -188,6 +190,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 //      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/src/resources/initUserParticles.txt");
       initializeParticlesFromFile("initUserParticles.txt");
+      initAvgImps("avgImps.txt");
       updatePredictionMaps();
    }
 
@@ -245,8 +248,92 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
          }
       }
    }
+   
+   //creates an _avgImps map from query to average number of imps
+   //this is a hack to try to catch when the QA outputs bad/no information
+   //
+   //FIXME: This should probably be a map from day to average numImps
+   public void initAvgImps(String filename)
+   {
+	   int numQueries = 16;
+	   int numDays = 59;
+	   _avgImps = new HashMap<Query,double[]>();
+	   double [][] avgImps = new double[numDays][numQueries];
+	   
+	   int count = 0;
+	   
+	   try{
+		   BufferedReader input = new BufferedReader(new FileReader(filename));
+		   String line;
+		   
+		   
+		   
+		   while ((line = input.readLine()) != null && count < 59){
+			   StringTokenizer st = new StringTokenizer(line, " ");
+			   if (st.countTokens() == numQueries) {
+				   //double[] avgImps = new double[numDays];
+				   for(int i = 0; i < numQueries; ++i){
+					   avgImps[count][i] = Double.parseDouble(st.nextToken());
+				   }//end i iteraion
+				   //_avgImps.put(queryList[count],avgImps);
+			   }//end check line is right length
+			   else{
+				   System.out.println("-----WARNING-----");
+				   System.out.println("In jbergParticleFilter::initAvgImps(.)");
+				   System.out.println("Line is not the correct length");
+				   break;
+			   }//end else check line is right length
+			   count++;
+		   }//end while((line = input.readLine()....
+	   }catch (FileNotFoundException e) {
+		   e.printStackTrace();
+	   } catch (IOException e) {
+		   e.printStackTrace();
+	   }
+	   
+	   Query[] queryList = new Query[numQueries];
+	   
+	   queryList[0] = new Query(null,null);
+	   queryList[1] = new Query(null,"audio");
+	   queryList[2] = new Query(null,"dvd");
+	   queryList[3] = new Query ("lioneer","dvd");
+	   queryList[4] = new Query ("flat","tv");
+	   queryList[5] = new Query ("lioneer",null);
+	   queryList[6] = new Query ("pg","dvd");
+	   queryList[7] = new Query ("flat","dvd");
+	   queryList[8] = new Query ("flat","audio");
+	   queryList[9] = new Query ("lioneer","tv");
+	   queryList[10] = new Query ("flat",null);
+	   queryList[11] = new Query (null,"tv");
+	   queryList[12] = new Query ("lioneer","audio");
+	   queryList[13] = new Query ("pg","tv");
+	   queryList[14] = new Query ("pg","audio");
+	   queryList[15] = new Query ("pg",null);
+	   
+	   
+	   for(int i = 0; i < numQueries; i++){
+		   double[] a = new double[numDays];
+		   for(int j = 0; j < numDays; j++){
+			   a[j] = avgImps[j][i];
+		   }
+		   for(Query q : _querySpace){
+			   if(q.getComponent() == queryList[i].getComponent() &&
+				  q.getManufacturer() == queryList[i].getManufacturer()){
+				   System.out.println("Q array: "+q+" "+Arrays.toString(a));
+				   _avgImps.put(q,a);
+			   }
+		   }
+		   
+	   }
+		   
+   }//end initAvgImps
 
-   public UserState transitionUserWithoutConversions(UserState currState, boolean burst) {
+   private Object Query(Object object, Object object2) {
+	// TODO Auto-generated method stub
+	return null;
+}
+
+public UserState transitionUserWithoutConversions(UserState currState, boolean burst) {
       HashMap<UserState, HashMap<UserState, Double>> transProbs;
       if (burst) {
          transProbs = _burstProbs;
@@ -423,6 +510,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
    @Override
    public boolean updateModel(Map<Query, Integer> totalImpressions) {
+	   updateDay(DAY+1);
       for (Query q : _querySpace) {
          String man = q.getManufacturer();
          String comp = q.getComponent();
@@ -430,6 +518,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
             Product prod = new Product(man, comp);
             Integer totalImps = totalImpressions.get(q);
             if (totalImps != null && totalImps > 0) {
+            	//System.out.println("TOTAL IMPS:"+totalImps);
                Particle[] particles = _particles.get(prod);
                updateParticles(totalImps, particles);
                particles = resampleParticles(particles);
@@ -443,7 +532,32 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 //               updateParticles(totalImps, particles);
 //               particles = resampleParticles(particles);
 //               _particles.put(prod, particles);
-               updatePredictionMaps(prod, true);
+                //updatePredictionMaps(prod, true);
+            	
+            	//only take average b/c particle filter 
+            	//is agnostic to day. If it knew the day, we could condition on
+            	//the row of the table.
+            	double [] avgImps = _avgImps.get(q);
+            	double avg =0.0;
+            	if(DAY>58){
+            		System.out.println("ERROR_____________________");
+            		avg = avgImps[58];
+            	}else{
+            		avg = avgImps[DAY];
+            	}
+            	System.out.println("AVG: "+avg);
+//            	double avg = 0.0;
+//            	for(int k = 0; k < avgImps.length; ++k){
+//            		avg+=avgImps[k];
+//            	}
+//            	avg/=avgImps.length;
+            	
+            	Particle[] particles = _particles.get(prod);
+                //updateParticles(totalImps, particles);
+            	updateParticles((int)Math.floor(avg), particles);
+                particles = resampleParticles(particles);
+                _particles.put(prod, particles);
+                updatePredictionMaps(prod, false);
             }
 
             Particle[] particles = _particles.get(prod);
@@ -817,7 +931,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
          _predictions.put(prod, estimates);
       }
    }
-
+   
    public String toString() {
       return "jbergFilter(" + _baseConvPr1 + ", " + _convPrVar1 + ", " + _baseConvPr2 + ", " + _convPrVar2 + ", " + _baseConvPr3 + ", " + _convPrVar3 + ")";
    }

@@ -27,7 +27,8 @@ public class IndependentBidModel extends AbstractBidModel {
    private String _ourAgent;
    Set<String> _advertisers;
 
-   public IndependentBidModel(Set<String> advertisers, String me, int iterations, double randJump, double yesterday, double nDaysAgo, double var, Set<Query> querySpace) {
+   public IndependentBidModel(Set<String> advertisers, String me, int iterations, double randJump, 
+		   double yesterday, double nDaysAgo, double var, Set<Query> querySpace) {
 
       _numIterations = iterations;
       _randomJumpProb = randJump;
@@ -45,6 +46,8 @@ public class IndependentBidModel extends AbstractBidModel {
       _allBidEsts = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
       _allPredDists = new HashMap<Query, HashMap<String, ArrayList<Double>>>(_querySpace.size());
       Double startVal = Math.pow(2, (1.0 / 25.0 - 2.0)) - 0.25;//HC num
+      //for each query, loop over advertisers and create an initial distribution
+      // based on the query's type
       for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> bidDistMap = new HashMap<String, ArrayList<ArrayList<Double>>>(advertisers.size());
          HashMap<String, ArrayList<Double>> bidEstMap = new HashMap<String, ArrayList<Double>>(advertisers.size());
@@ -65,6 +68,7 @@ public class IndependentBidModel extends AbstractBidModel {
                _numBidValues++;
                index++;
             }
+            
             bidDists.add(curDist);
             bidDistMap.put(s, bidDists);
 
@@ -74,6 +78,7 @@ public class IndependentBidModel extends AbstractBidModel {
             ArrayList<Double> predDists = new ArrayList<Double>();
             predDistMap.put(s, predDists);
          }
+         //add bid, estimates and prediction distributions
          _allBidDists.put(q, bidDistMap);
          _allBidEsts.put(q, bidEstMap);
          _allPredDists.put(q, predDistMap);
@@ -83,19 +88,24 @@ public class IndependentBidModel extends AbstractBidModel {
       for (int i = 0; i < _numBidValues; i++) {
          _transProbs[i] = normalDensFn(i);
       }
+      //generate current estimates
       genCurEst();
+      //push the predictions forward
       pushPredictionsForward();
    }
-
+   
+   //get a current bid estimate in each query
    private void genCurEst() {
       for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> bidDistsMap = _allBidDists.get(q);
          for (String s : bidDistsMap.keySet()) {
             ArrayList<ArrayList<Double>> bidDists = bidDistsMap.get(s);
             ArrayList<Double> curBidDist = new ArrayList<Double>(bidDists.get(bidDists.size() - 1));
+            //if Maximum likelihood estimate set, use MLE
             if(MLE) {
                _allBidEsts.get(q).get(s).add(maxAL(curBidDist));
             }
+            //if not, use avg likelihood estimate (This is set for current agent)
             else {
                _allBidEsts.get(q).get(s).add(averageAL(curBidDist));
             }
@@ -166,6 +176,10 @@ public class IndependentBidModel extends AbstractBidModel {
       double max = -1;
       ArrayList<Double> maxBids = new ArrayList<Double>();
       for (int i = 0; i < newPred.size(); i++) {
+    	  // if new Prediction is greater than current max prediction
+    	  // update the maximum, create a new maxBids and add the bid
+    	  // to the arrayList that holds all of the found maxBids
+    	  //note: maxBids is array of bids that correspond to the maximum predicted value
          if(newPred.get(i) > max) {
             max = newPred.get(i);
             maxBids = new ArrayList<Double>();
@@ -175,6 +189,7 @@ public class IndependentBidModel extends AbstractBidModel {
             maxBids.add(indexToBidValue(i));
          }
       }
+      //get average
       double sum = 0.0;
       for(Double bid : maxBids) {
          sum += bid;
@@ -192,6 +207,7 @@ public class IndependentBidModel extends AbstractBidModel {
    }
 
    private void pushPredictionsForward() {
+	   //for each query for each advertiser, create a new pushed forward prediction
       for(Query q: _querySpace){
          for(String s : _advertisers){
             ArrayList<ArrayList<Double>> bidDists = _allBidDists.get(q).get(s);
@@ -212,6 +228,7 @@ public class IndependentBidModel extends AbstractBidModel {
       ArrayList<Double> tmpDist = new ArrayList<Double>();
       for (int j = 0; j < _numBidValues; j++) {
          double toAdd = 0.0;
+         //apply push forward for each focus level
          if(q.getType()==QueryType.FOCUS_LEVEL_ZERO){
             toAdd += _randomJumpProb*(InitDistributions.initDistF0[j]);
          }
@@ -221,9 +238,11 @@ public class IndependentBidModel extends AbstractBidModel {
          else if(q.getType()==QueryType.FOCUS_LEVEL_TWO){
             toAdd += _randomJumpProb*(InitDistributions.initDistF2[j]);
          }
+         //for each bid, add value based on bid distributions and probabilities
          for (int k = 0; k < _numBidValues; k++) {
             toAdd += _yesterdayProb * _transProbs[Math.abs(k - j)] * bidDists.get(bidDists.size() - 1).get(k);
          }
+         //push forward based on nDaysAgo Probability
          for (int k = 0; k < _numBidValues; k++) {
             if (bidDists.size() > 5) {//HC num
                toAdd += _nDaysAgoProb * _transProbs[Math.abs(k - j)] * bidDists.get(bidDists.size() - 6).get(k);//HC num
@@ -231,9 +250,11 @@ public class IndependentBidModel extends AbstractBidModel {
                toAdd += _nDaysAgoProb * _transProbs[Math.abs(k - j)] * bidDists.get(0).get(k);
             }
          }
+         //toAdd cannot be negative, when might it be negative to begin with?
          toAdd = Math.max(0, toAdd);
          tmpDist.add(toAdd);
       }
+      //normalize the distribution for this query
       normalizeAL(tmpDist,q);
       return tmpDist;
    }
@@ -257,17 +278,26 @@ public class IndependentBidModel extends AbstractBidModel {
       ArrayList<Double> toRet = _allBidEsts.get(q).get(player);
       return toRet.get(toRet.size() - 1);
    }
-
+   //update Bid Model with CPC, ourBids and ranks
    @Override
-   public boolean updateModel(HashMap<Query, Double> ourCPCs, HashMap<Query, Double> ourBids, HashMap<Query, HashMap<String, Integer>> ourRanks, HashMap<Query, HashMap<String, Boolean>> allRankable) {
+   public boolean updateModel(HashMap<Query, Double> ourCPCs, HashMap<Query, Double> ourBids, HashMap<Query, HashMap<String, Integer>> ourRanks, 
+		   HashMap<Query, HashMap<String, Boolean>> allRankable) {
+	   //push the estimate forward based on CBC bids and ranks
       pushForwardCurEst(ourCPCs, ourBids, ourRanks);
+      //update the probability
+      //why do we do this after pushing forward?
       updateProbs(ourBids, ourRanks, allRankable);
+      //updates _allBidsEsts
       genCurEst();
+      //push the predictions forward //Betsy: how is this diff from pushForwardCurEst
       pushPredictionsForward();
       return true;
    }
-
-   private void updateProbs(HashMap<Query,Double> ourBids, HashMap<Query, HashMap<String, Integer>> ranks, HashMap<Query, HashMap<String, Boolean>> allRankable) {
+   
+   //updates the probabilities
+   private void updateProbs(HashMap<Query,Double> ourBids, HashMap<Query, HashMap<String, Integer>> ranks, HashMap<Query, 
+		   HashMap<String, Boolean>> allRankable) {
+	   
       for (Query q : _querySpace) {
          double ourBid = ourBids.get(q);
          HashMap<String, Integer> ranksMap = ranks.get(q);
@@ -275,6 +305,8 @@ public class IndependentBidModel extends AbstractBidModel {
          HashMap<String, ArrayList<ArrayList<Double>>> bidDistMap = _allBidDists.get(q);
          Set<String> agents = bidDistMap.keySet();
          if(ranksMap != null) {
+        	 //iterations is defined by user; 
+        	 //note: in doc. about method, iterations is not 1, but agent is currently using 1. Is this due to time?
             for (int n = 0; n < _numIterations; n++) {
                HashMap<String, ArrayList<Double>> ordPrMap = new HashMap<String, ArrayList<Double>>();
                for (String agent : agents) {
@@ -284,26 +316,34 @@ public class IndependentBidModel extends AbstractBidModel {
                   }
                   ordPrMap.put(agent, ordPr);
                }
+               //for each agent 
                for (String agent : agents) {
                   if (!agent.equals(_ourAgent) && rankable.get(agent)) {
+                	  //for each advertiser, if ranked, proceed with update
                      for (String curAdv : agents) {
                         if(rankable.get(curAdv)) {
                            ArrayList<Double> yDist = bidDistMap.get(curAdv).get(bidDistMap.get(curAdv).size() - 1);
+                           //for each bid value update the prob Map
                            for (int i = 0; i < _numBidValues; i++) {
                               double toSet = 0.0;
                               if (!curAdv.equals(agent)) {
                                  if(!curAdv.equals(_ourAgent)) {
+                                	 //If greater than the rank of current advertiser,  set Dist for all bid values greater
                                     if (ranksMap.get(agent) > ranksMap.get(curAdv)) {
                                        for (int j = i; j < _numBidValues; j++) {
                                           toSet += yDist.get(j);
                                        }
+                                       //if agent ranked below current agent, set Dists of those bids below
                                     } else if (ranksMap.get(agent) < ranksMap.get(curAdv)) {
                                        for (int j = i; j >= 0; j--) {
                                           toSet += yDist.get(j);
                                        }
                                     }
                                  } else {//HC num several in else statement
+                                
                                     double bid = indexToBidValue(i);
+                                    //if our bid is < curr bid thinking, toSet is 0 if we are ranked higher and 1 otherwise
+                                    //the opposite is true if ourBid is > bid
                                     if(ourBid < bid) {//HC num in if block
                                        if(ranksMap.get(agent) > ranksMap.get(curAdv)) {
                                           toSet = 0.0;
@@ -331,6 +371,7 @@ public class IndependentBidModel extends AbstractBidModel {
                            }
                         }
                      }
+                     //normalize the agent's probability map for the agent 
                      normalizeAL(ordPrMap.get(agent),q);
                   }
                }
@@ -353,8 +394,10 @@ public class IndependentBidModel extends AbstractBidModel {
       }
    }
 
+   //push the current estimate forward 
    private void pushForwardCurEst(HashMap<Query, Double> ourCPCs, HashMap<Query, Double> ourBids, HashMap<Query, HashMap<String, Integer>> allRanks) {
-      for (Query q : _querySpace) {
+      //for each query, if we have have a ranking, update estimate for each agent
+	   for (Query q : _querySpace) {
          HashMap<String, ArrayList<ArrayList<Double>>> bidDistsMap = _allBidDists.get(q);
          Set<String> agents = bidDistsMap.keySet();
          HashMap<String, Integer> ranksMap = allRanks.get(q);
@@ -364,8 +407,10 @@ public class IndependentBidModel extends AbstractBidModel {
             if(ourRank > -1) {
                rankAfterUs = ourRank+1;
             }
+            //for each agent 
             for (String s : agents) {
                ArrayList<ArrayList<Double>> bidDists = bidDistsMap.get(s);
+               //if current agent is our agent, 
                if (s.equals(_ourAgent)) {
                   ArrayList<Double> currDist = new ArrayList<Double>();
                   for (int i = 0; i < _numBidValues; i++) {
@@ -418,6 +463,7 @@ public class IndependentBidModel extends AbstractBidModel {
 //                  normalizeAL(currDist,q);
 //                  bidDists.add(currDist);
 //               }
+               //if not our agent, push the bids forward, normalize distributions
                else {
                   ArrayList<Double> currDist = pushForward(bidDists, q);
                   normalizeAL(currDist,q);
@@ -426,6 +472,7 @@ public class IndependentBidModel extends AbstractBidModel {
             }
          }
          else {
+        	 //for each agent, push estimates forward and normalize distributions
             for (String s : agents) {
                ArrayList<ArrayList<Double>> bidDists = bidDistsMap.get(s);
                ArrayList<Double> currDist = pushForward(bidDists, q);

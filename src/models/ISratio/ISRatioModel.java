@@ -5,13 +5,14 @@ import models.AbstractModel;
 
 import java.util.HashMap;
 import java.util.Set;
-
+// predicts the ration of Informational searchers to other searchers
 public class ISRatioModel extends AbstractModel {
 
    Set<Query> _querySpace;
    int _numSlots;
    HashMap<Query,double[]> _ISRatioPreds;
 
+   //Initializes ISRatio Map
    public ISRatioModel(Set<Query> querySpace,int numSlots) {
       _querySpace = querySpace;
       _numSlots = numSlots;
@@ -29,7 +30,8 @@ public class ISRatioModel extends AbstractModel {
    public void updateISRatio(Query q, double[] ISRatio) {
       _ISRatioPreds.put(q,ISRatio);
    }
-
+   // FIXME: There is another getISRatio method in Constants and Functions. 
+   //Should that be moved here?
    public double[] getISRatio(Query q) {
       return _ISRatioPreds.get(q);
    }

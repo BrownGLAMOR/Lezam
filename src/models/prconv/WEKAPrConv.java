@@ -24,6 +24,7 @@ public class WEKAPrConv extends AbstractConversionModel {
    Classifier _predictor;
    int _idx;
    double _weight;
+   int _seed = 234;
 
    public WEKAPrConv(int idx, double weight) {
       _idx = idx;
@@ -50,7 +51,7 @@ public class WEKAPrConv extends AbstractConversionModel {
       _allAttributes = new FastVector(3);
       _allAttributes.addElement(prClickAttribute);
       _allAttributes.addElement(queryAttribute);
-      Random random = new Random();
+      Random random = new Random(_seed);
       _data = new Instances("data" + random.nextLong(), _allAttributes, 100);
       _data.setClassIndex(0);
 

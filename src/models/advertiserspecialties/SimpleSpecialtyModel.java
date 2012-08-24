@@ -30,6 +30,7 @@ public class SimpleSpecialtyModel extends AbstractSpecialtyModel {
 //	int numProducts = 9;
 
    int _numSlots;
+   int _seed = 1122;
    private Set<Product> _products;
    private Set<Query> _querySpace;
    Set<String> advertisers;
@@ -242,7 +243,7 @@ public class SimpleSpecialtyModel extends AbstractSpecialtyModel {
 
 
       //If there are ties, randomly choose from the list of most likely specialties.
-      Random r = new Random();
+      Random r = new Random(_seed);
       int randomIndex = r.nextInt(mostLikelySpecialties.size());
       String mostLikelySpecialty = mostLikelySpecialties.get(randomIndex);
       
