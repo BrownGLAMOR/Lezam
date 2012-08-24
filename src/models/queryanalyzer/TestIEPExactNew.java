@@ -36,7 +36,7 @@ public class TestIEPExactNew {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 2;
+			int advetiser = 4;
 			QAInstanceExact inst = data.buildExactInstance(advetiser);
 			
 			System.out.println("Instance for "+advetiser+":");

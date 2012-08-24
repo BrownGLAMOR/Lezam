@@ -2693,13 +2693,13 @@ public class ImpressionEstimatorTest {
 
 
 	   
-	   /*
+	   //*
 	   boolean debuggingTests=true;
 	   if (debuggingTests) {
 		   runDebuggingTests();
 		   System.exit(0);
 	   }
-	   */
+	   //*/
 	   
 //	   
 //	   

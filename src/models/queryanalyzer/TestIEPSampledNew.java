@@ -8,6 +8,7 @@ import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
+import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPSampled;
 import models.queryanalyzer.util.LoadData;
 
 import java.util.Arrays;
@@ -37,8 +38,8 @@ public class TestIEPSampledNew {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 2;
-			int precision = 2;
+			int advetiser = 4;
+			int precision = 0;
 			QAInstanceSampled inst = data.buildSampledInstance(advetiser, precision);
 			
 			System.out.println("Instance for "+advetiser+":");

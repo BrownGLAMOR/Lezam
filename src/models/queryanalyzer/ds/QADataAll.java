@@ -136,10 +136,11 @@ public class QADataAll extends AbstractQAData {
 	    
 	         if (_agentInfo[i].avgPos >= 0) {
 	           
-	            System.out.println(i);
+	            //System.out.println(i);
 	            if(i == advIndex-1){
 	            	newAdvIndex = index;
 	            }
+	            usedAgentInfo[index] = _agentInfo[i];
 	            index++;
 	         }
 	      }
@@ -217,7 +218,7 @@ public class QADataAll extends AbstractQAData {
 
 	public QAInstanceSampled buildSampledInstance(int advIndex, int precision) {
 		assert (advIndex < _agents);
-	      assert (_agentInfo[advIndex].avgPos > 0);
+	      assert (_agentInfo[advIndex].avgPos > 0) : "infeasible advertiser";
 	      
 	      int usedAgents = 0;
 	      for (int i = 0; i < _agents; i++) {
@@ -235,16 +236,18 @@ public class QADataAll extends AbstractQAData {
 	    
 	         if (_agentInfo[i].avgPos >= 0) {
 	           
-	            System.out.println(i);
+	            //System.out.println(i);
 	            if(i == advIndex-1){
 	            	newAdvIndex = index;
 	            }
+	            usedAgentInfo[index] = _agentInfo[i];
 	            index++;
 	         }
 	      }
 
 	      
 	      double accuracy = Math.pow(10, -precision);
+	      System.out.println(accuracy);
 	      
 	      double[] avgPos = new double[usedAgents];
 	      double[] avgPosLB = new double[usedAgents];
@@ -253,10 +256,21 @@ public class QADataAll extends AbstractQAData {
 	      int impressionsUB = 0;
 
 	      for (int i = 0; i < usedAgents; i++) {
-	         avgPos[i] = truncate(usedAgentInfo[i].avgPos, precision);
-	         avgPosLB[i] = avgPos[i]-accuracy;
-	         avgPosUB[i] = avgPos[i]+accuracy;
-	         
+	    	 if(i == newAdvIndex){
+    			avgPos[i] = usedAgentInfo[i].avgPos;
+	         	avgPosLB[i] = avgPos[i];
+	         	avgPosUB[i] = avgPos[i];	 
+	    	 } else {
+	    		avgPos[i] = truncate(usedAgentInfo[i].avgPos, precision);
+	         	avgPosLB[i] = avgPos[i];
+	         	avgPosUB[i] = avgPos[i]+accuracy;
+	         	
+	         	//useful for sanity checking
+	    		 //avgPos[i] = usedAgentInfo[i].avgPos;
+	    		 //double tmp = truncate(usedAgentInfo[i].avgPos, precision);
+		         //avgPosLB[i] = tmp;
+		         //avgPosUB[i] = tmp+accuracy;
+	    	 }
 	         agentIds[i] = usedAgentInfo[i].id;
 	         //impressionsUB += usedAgentInfo[i].impressions;
 	         
@@ -275,6 +289,8 @@ public class QADataAll extends AbstractQAData {
 	
 	private double truncate(double value, int places) {
 	    double multiplier = Math.pow(10, places);
+	    //System.out.println(places+" - "+multiplier);
+	    //System.out.println(value+" - "+multiplier * value+" - "+ Math.floor(multiplier * value));
 	    return Math.floor(multiplier * value) / multiplier;
 	}
 
