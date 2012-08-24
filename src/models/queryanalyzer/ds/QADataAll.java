@@ -215,4 +215,67 @@ public class QADataAll extends AbstractQAData {
 	   return _ourAgentNum;
    }
 
+	public QAInstanceSampled buildSampledInstance(int advIndex, int precision) {
+		assert (advIndex < _agents);
+	      assert (_agentInfo[advIndex].avgPos > 0);
+	      
+	      int usedAgents = 0;
+	      for (int i = 0; i < _agents; i++) {
+	    	 
+	         if (_agentInfo[i].avgPos >= 0) {
+	            usedAgents++;
+	         }
+	      }
+	      
+	      // Assign the usedAngent info
+	      AdvertiserInfo[] usedAgentInfo = new AdvertiserInfo[usedAgents];
+	      int index = 0;
+	      int newAdvIndex = 0;
+	      for (int i = 0; i < _agents; i++) {
+	    
+	         if (_agentInfo[i].avgPos >= 0) {
+	           
+	            System.out.println(i);
+	            if(i == advIndex-1){
+	            	newAdvIndex = index;
+	            }
+	            index++;
+	         }
+	      }
+
+	      
+	      double accuracy = Math.pow(10, -precision);
+	      
+	      double[] avgPos = new double[usedAgents];
+	      double[] avgPosLB = new double[usedAgents];
+	      double[] avgPosUB = new double[usedAgents];
+	      int[] agentIds = new int[usedAgents];
+	      int impressionsUB = 0;
+
+	      for (int i = 0; i < usedAgents; i++) {
+	         avgPos[i] = truncate(usedAgentInfo[i].avgPos, precision);
+	         avgPosLB[i] = avgPos[i]-accuracy;
+	         avgPosUB[i] = avgPos[i]+accuracy;
+	         
+	         agentIds[i] = usedAgentInfo[i].id;
+	         //impressionsUB += usedAgentInfo[i].impressions;
+	         
+	         //Find the MAX Impression
+	         impressionsUB = Math.max(impressionsUB, usedAgentInfo[i].impressions);
+	      }
+	      impressionsUB = 2 * impressionsUB;
+	      
+	      String[] agentnames = new String[usedAgents];
+	      for (int i = 0; i < usedAgents; i++){
+	    	  agentnames[i] = "a"+i;
+	      }
+	      
+	      return new QAInstanceSampled(_slots, usedAgents, agentIds,  newAdvIndex, usedAgentInfo[newAdvIndex].impressions, impressionsUB, agentnames, avgPos, avgPosLB, avgPosUB);
+	}
+	
+	private double truncate(double value, int places) {
+	    double multiplier = Math.pow(10, places);
+	    return Math.floor(multiplier * value) / multiplier;
+	}
+
 }

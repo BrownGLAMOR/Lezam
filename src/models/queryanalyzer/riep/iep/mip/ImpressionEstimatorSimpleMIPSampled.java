@@ -11,20 +11,21 @@ import ilog.cplex.IloCplex.UnknownObjectException;
 import java.util.Arrays;
 
 import models.queryanalyzer.ds.QAInstanceExact;
+import models.queryanalyzer.ds.QAInstanceSampled;
 import models.queryanalyzer.riep.iep.IEResult;
 
-public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimatorSimpleMIP {
+public class ImpressionEstimatorSimpleMIPSampled extends AbstractImpressionEstimatorSimpleMIP {
 	protected final static boolean SUPPRESS_OUTPUT = true;
 	
-	public QAInstanceExact _instExact;
+	public QAInstanceSampled _instSampled;
 	
-	public ImpressionEstimatorSimpleMIPExact(QAInstanceExact inst){
+	public ImpressionEstimatorSimpleMIPSampled(QAInstanceSampled inst){
 		super(inst);
-		_instExact = inst;
+		_instSampled = inst;
 	}
 
 	@Override
-	public String getName() {return "SimpleMIPExact";}
+	public String getName() {return "SimpleMIPSampled";}
 
 	
 	
