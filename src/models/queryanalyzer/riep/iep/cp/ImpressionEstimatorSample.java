@@ -8,6 +8,8 @@ import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 
 import java.util.*;
 
+
+//TODO: We have bug in padAgentsWithknownPositions,  array out of boundary. The ordering array is passing values bigger than size of trueAvgPos, Data type: old
 public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 
    private boolean IE_DEBUG = false;
@@ -378,11 +380,13 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       _agentImpressionDistributionStdev = newAgentImpressionDistributionStdev;
       _agentSawSample = newAgentSawSample;
    }
-
+   
+   //TODO: We have bug here,  array out of boundary. The ordering array is passing values bigger than size of trueAvgPos, Data type: old 
    private void padAgentsWithKnownPositions(int[] ordering) {
       //If any agents have a NaN sampled average position,
       //give them a dummy average position equal to min(their starting position, numSlots).
       for (int i = 0; i < _trueAvgPos.length; i++) {
+    	  System.out.println(ordering[i]);
          if (Double.isNaN(_trueAvgPos[ordering[i]])) {
             _trueAvgPos[ordering[i]] = Math.min(i + 1, _slots);
          }
