@@ -7,15 +7,29 @@ import models.queryanalyzer.riep.search.LDSearchOrder;
 import models.queryanalyzer.riep.search.LDSearchOrderSmart;
 import models.queryanalyzer.util.LoadData;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 
 public class TestLDSearch {
 	
-	public void run(String[] args) {
-		assert(args.length > 0);
-		String fileName = args[0];
-		System.out.println("Loading File: "+args[0]);
-		System.out.println("");
+	public void run(String[] args) throws IOException {
+		String fileName="";
+		
+		if(args.length > 0){ // Read from the commandLine
+			assert(args.length > 0);
+			fileName = args[0];
+			System.out.println("Loading File: "+args[0]);
+			System.out.println("");
+		} else { // Read from the console input
+			BufferedReader reader=new BufferedReader(new InputStreamReader(System.in));
+			System.out.println("Please input file path:");
+			fileName = reader.readLine();
+			System.out.println("Loading File: "+fileName);
+			System.out.println("");
+		}	
+		
 		QADataExactOnly data = LoadData.LoadItExactOnly(fileName);
 		
 		System.out.println("All Data:");

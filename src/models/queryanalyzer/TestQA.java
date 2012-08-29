@@ -58,11 +58,10 @@ public class TestQA {
 
 		System.out.println("AvgPos order: "+Arrays.toString(avgPosOrder));
 		
-		System.out.println("passA");
 
 		ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);
 
-		System.out.println("passB");
+	
 
 		
 		LDSearchIESmart smartIESearcher = new LDSearchIESmart(10, ie);

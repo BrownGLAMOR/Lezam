@@ -38,6 +38,8 @@ public class TestIEP {
 			/**
 			 * Not so sure what is this used for?
 			 * advIndex the value of adv can be a bit missleading.  This is the index of the i-th advetiser after non-participants are dropped
+			 * I passed our agent id into QAInstance, we probably don't need the advetiser here. (Sam)
+			 *
 			 */
 			int advetiser = 4;
 			
