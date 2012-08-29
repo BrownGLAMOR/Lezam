@@ -6,6 +6,7 @@ import clojure.lang.PersistentArrayMap;
 import clojure.lang.PersistentHashMap;
 import tacaa.javasim;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -122,7 +123,7 @@ public class AgentSimulator {
 						
 					
 						System.out.println(tester+"________________________________________");
-						agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization, tester);
+						agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
 						
 					}else{
 						agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);

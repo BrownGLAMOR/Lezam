@@ -34,7 +34,7 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 		//System.out.println(Arrays.toString(orderedInst.getAvgPos()));
 		   
 		int advertisers = orderedInst.getNumAdvetisers();
-		int slots = orderedInst.getNumSlots();
+		int slots = Math.min(advertisers, orderedInst.getNumSlots());
 		int M = orderedInst.getImpressionsUB();
 		
 		double[] avgPos = orderedInst.getAvgPos();

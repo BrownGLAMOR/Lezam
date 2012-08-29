@@ -32,7 +32,7 @@ import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
  */
 public class QAAlgorithmTester {
 	
-	private static final boolean SAMPLED_AVERAGE_POSITIONS = true;
+	private static final boolean SAMPLED_AVERAGE_POSITIONS = false;
 	private static final boolean ORDERING_KNOWN = true;
 	private static final double IP_TIMEOUT_IN_SECONDS = 0;
 	private static final boolean CHEATING = false;
@@ -58,18 +58,21 @@ public class QAAlgorithmTester {
 	
 	//runs the specified solvers on the files
 	public void runTests(SolverType[] solvers){
-		
+
 		for(int s=0; s<solvers.length; s++){
 			for(int f = 0; f<filesToTest.length; f++){
-				//creates an Instance result for 
-				if(s==0){
-					QAInstanceResults res = new QAInstanceResults(filesToTest[f].getAbsolutePath());
-					//System.out.println(res+" "+filesToTest[f]);
-					results.put(filesToTest[f], res);
+				if(filesToTest[f].getAbsolutePath().split("/")[8].compareToIgnoreCase(".svn")!=0){
+					if(s==0){
+						QAInstanceResults res = new QAInstanceResults(filesToTest[f].getAbsolutePath());
+						//System.out.println(res+" "+filesToTest[f]);
+						results.put(filesToTest[f], res);
+					}
+					runInstance(results.get(filesToTest[f]), solvers[s]);
+				}else{
+					System.out.println("SKIPPING SVN__________________________________________________________________");
 				}
-				runInstance(results.get(filesToTest[f]), solvers[s]);
 			}
-		
+
 		}
 	}
 
@@ -79,7 +82,10 @@ public class QAAlgorithmTester {
 		QAInstanceAll inst = qaInstanceResults.getQAInstAll();
 		QAInstanceExact instExact = qaInstanceResults.getQAInstExact();
 		
-		
+		for(int j=0; j<inst.getAvgPos().length; j++){
+			System.out.println("Avg Pos: "+inst.getAvgPos()[j]);
+			System.out.println("SampAvg Pos: "+inst.getSampledAvgPos()[j]);
+		}
 		
 		
        
@@ -88,7 +94,7 @@ public class QAAlgorithmTester {
 		//System.out.println(temp);
 		// Need to determine how many agents actually participated?
 		
-        double[] reducedBids = temp.getBids();
+        //double[] reducedBids = temp.getBids();
         //TODO: fix this...
         int[] agentIds = inst.getAgentIds();
         
@@ -96,6 +102,10 @@ public class QAAlgorithmTester {
        
         
 		int[] trueOrdering = temp.getBidOrder(agentIds);
+		for (int i = 0; i < trueOrdering.length; i++) {
+          System.out.println("Ord: "+trueOrdering[i]);
+		}
+//       tru
 		//int[] ordering;
 //		
 //        if (ORDERING_KNOWN) {
@@ -124,6 +134,7 @@ public class QAAlgorithmTester {
            }
            else {
               if (ORDERING_KNOWN) {
+            	  System.out.println("__________________________________DOING RIGHT THING____________________________");
                  model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
                  fullModel = new ConstantImpressionAndRankEstimator(model, trueOrdering);
               } else {
@@ -325,7 +336,7 @@ public class QAAlgorithmTester {
 //				
 //				for(File f : keys){
 //					int size = results.get(f).getFilename().split("/").length;
-//					System.out.println("File: "+results.get(f).getFilename().split("/")[size-1]+" Stat:"+results.get(f).getStat(solvers[s])+" Time:"+results.get(f).getTime(solvers[s]));
+//					System.out.println("File: "+results.get(f).getFilename().split("/")[size ]+" Stat:"+results.get(f).getStat(solvers[s])+" Time:"+results.get(f).getTime(solvers[s]));
 //				}
 //			}
 //	   }
@@ -347,7 +358,7 @@ public class QAAlgorithmTester {
 	   
 	   public static void main(String args[]){
 		   QAAlgorithmTester tester = new QAAlgorithmTester("/gpfs/main/home/betsy/TACAA2/aa-2012/goodData");
-		   SolverType[] solvers = {SolverType.CP, SolverType.SIMPLE_MIP_Exact};
+		   SolverType[] solvers = {SolverType.CP};//, SolverType.SIMPLE_MIP_Exact};
 		   tester.runTests(solvers);
 		   tester.getResults(solvers, true, true);
 		  

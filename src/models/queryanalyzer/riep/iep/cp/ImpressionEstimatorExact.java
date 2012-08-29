@@ -97,6 +97,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
          }
          if (_trueAvgPos[i] == -1) {
             _trueAvgPos[i] = inst.getSampledAvgPos()[i];
+            //_trueAvgPos[i] = inst.getAvgPos()[i];
          }
       }
 
@@ -421,7 +422,11 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
       }
 
       int currAgent = order[currIndex];
-
+      if(Double.isNaN(_trueAvgPos[currAgent])){
+      System.out.println("AVG: "+_trueAvgPos[currAgent]+" AGENT: "+currAgent+" currInd: "+currIndex);
+      }else if(currAgent==0){
+    	  System.out.println("SPECIAL");
+      }
       int bestImpr = calcMinImpressions(slotImpr, currIndex, _trueAvgPos[currAgent]);
 
       if (bestImpr > 0) {
@@ -628,6 +633,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
             stdDev = mean * AVG_POS_STD_DEV;
          }
          if (mean != -1 && stdDev != -1) {
+        	 
             double avgpos = predAvgPos[i];
             if (LOG_GAUSSIAN_PDF) {
                double prob;
@@ -766,6 +772,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
    private int calcMinImpressions(int[] slotImpr, int currIndex, double trueAvgPos) {
       if (Double.isNaN(trueAvgPos)) {
+    	  System.out.println("Setting -1");
          return -1;
       }
 
@@ -820,6 +827,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
       double approxAvgPos = firstSlot;
       if (approxAvgPos == trueAvgPos) {
+    	  System.out.println("Something -1");
          return -1;
       }
 

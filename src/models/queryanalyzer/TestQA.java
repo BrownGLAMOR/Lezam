@@ -83,6 +83,6 @@ public class TestQA {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		new TestQA().run(args,false);
+		new TestQA().run(args,true);
 	}
 }
