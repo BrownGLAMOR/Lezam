@@ -107,7 +107,7 @@ public class ImpressionEstimatorTest {
    double aggregateAbsTotImprError = 0;
 
    public enum SolverType {
-      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP, SIMPLE_MIP_Exact, Carleton_LP_Exact,
+      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP, SIMPLE_MIP_Exact, Carleton_LP_Exact, SIMPLE_MIP_Sampled,
    }
 
    public enum GameSet {

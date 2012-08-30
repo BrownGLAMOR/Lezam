@@ -42,6 +42,7 @@ public class QADataAll extends AbstractQAData {
       
       int usedAgents = 0;
       for (int i = 0; i < _agents; i++) {
+    	  //System.out.println(_agentInfo[i].avgPos);
     	 if (_agentInfo[i].avgPos > 0) {
             usedAgents++;
          }
@@ -72,11 +73,11 @@ public class QADataAll extends AbstractQAData {
       int impressionsUB = 0;
 
       for (int i = 0; i < usedAgents; i++) {
-    	 //if(i == newAdvIndex){
-    		 avgPos[i] = usedAgentInfo[i].avgPos;
-    	 // } else {
-    	 //	 avgPos[i] = -1;
-    	 //}
+    	 if(i == newAdvIndex){
+    	  	avgPos[i] = usedAgentInfo[i].avgPos;
+    	 } else {
+    		 avgPos[i] = -1;
+    	 }
          agentIds[i] = usedAgentInfo[i].id;
          sampledAvgPos[i]=usedAgentInfo[i].sampledAveragePositions;
          agentImpressionDistributionMean[i]=usedAgentInfo[i].impsDistMean;
@@ -222,8 +223,9 @@ public class QADataAll extends AbstractQAData {
 	      
 	      int usedAgents = 0;
 	      for (int i = 0; i < _agents; i++) {
-	    	 
+	    	  //System.out.println("Samp"+_agentInfo[i].avgPos);
 	         if (_agentInfo[i].avgPos >= 0) {
+	        	 //System.out.println("Samp inc");
 	            usedAgents++;
 	         }
 	      }
@@ -292,6 +294,21 @@ public class QADataAll extends AbstractQAData {
 	    //System.out.println(places+" - "+multiplier);
 	    //System.out.println(value+" - "+multiplier * value+" - "+ Math.floor(multiplier * value));
 	    return Math.floor(multiplier * value) / multiplier;
+	}
+
+	public double[] getBids(int[] agentIds) {
+		int length = agentIds.length;
+		double[] bids = new double[length];
+		int[] bidOrder = new int[length];
+      
+      for (int i = 0; i < length; i++) {
+         bids[i] = _agentIdLookup.get(agentIds[i]).bid;
+         bidOrder[i] = i;
+      }
+     
+      sortListsDecending(bidOrder, bids);
+
+      return bids;
 	}
 
 }

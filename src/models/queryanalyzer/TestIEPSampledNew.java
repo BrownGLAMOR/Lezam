@@ -38,8 +38,8 @@ public class TestIEPSampledNew {
 			System.out.println("All Data:");
 			System.out.println(data);
 			
-			int advetiser = 4;
-			int precision = 0;
+			int advetiser = 3;
+			int precision = 9;
 			QAInstanceSampled inst = data.buildSampledInstance(advetiser, precision);
 			
 			System.out.println("Instance for "+advetiser+":");

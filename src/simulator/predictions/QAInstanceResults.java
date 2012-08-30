@@ -8,6 +8,7 @@ import simulator.predictions.ImpressionEstimatorTest.SolverType;
 import models.queryanalyzer.ds.QADataAll;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.ds.QAInstanceExact;
+import models.queryanalyzer.ds.QAInstanceSampled;
 import models.queryanalyzer.util.LoadData;
 
 public class QAInstanceResults {
@@ -17,12 +18,14 @@ public class QAInstanceResults {
 	private QAInstanceExact instExact;
 	private HashMap<SolverType, ResultValues> results = new HashMap<SolverType, ResultValues>();
 	private String filename;
+	private QAInstanceSampled instSamp;
 	
 	public QAInstanceResults(String filename){
 		this.filename = filename;
 		data = LoadData.LoadIt(filename);
 		inst = data.buildInstances(data.getOurAgentNum());
 		instExact = data.buildExactInstance(data.getOurAgentNum());
+		instSamp = data.buildSampledInstance(data.getOurAgentNum(), 8);
 		
 	}
 	
@@ -79,5 +82,10 @@ public class QAInstanceResults {
 	}
 
 	
+
+	public QAInstanceSampled getQAInstSampled() {
+		// TODO Auto-generated method stub
+		return this.instSamp;
+	}
 
 }

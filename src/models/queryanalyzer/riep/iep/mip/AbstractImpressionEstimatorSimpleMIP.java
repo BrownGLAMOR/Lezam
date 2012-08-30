@@ -172,9 +172,11 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 	}
 	
 	protected void postObjective(IloCplex cplex, CPlexVariables vars, int advertisers, int slots, int M) throws IloException {
+		slots = Math.min(slots,advertisers);
 		IloNumVar[] SDeltas = cplex.numVarArray(slots, 0, 2*M);
-		
+		//System.out.println("Slots:"+slots);
 		for (int s=0; s < slots-1; s++) {
+			
 			IloLinearNumExpr delta = cplex.linearNumExpr();
 			delta.addTerm(1, vars.S_a[s]);
 			delta.addTerm(-1, vars.S_a[s+1]);
