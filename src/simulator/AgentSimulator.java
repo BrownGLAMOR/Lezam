@@ -1,13 +1,23 @@
 package simulator;
 
 import agents.AbstractAgent;
+import agents.modelbased.AgentComparator;
+import agents.modelbased.MultipleAgentSimulator;
+import agents.modelbased.DP;
+import agents.modelbased.DPHill;
+import agents.modelbased.JordanHillClimbing;
 import agents.modelbased.MCKP;
+import agents.modelbased.MultiDayOptimizer;
+import agents.modelbased.OneDayHeuristic;
+import agents.modelbased.MCKP.MultiDay;
 import clojure.lang.PersistentArrayMap;
 import clojure.lang.PersistentHashMap;
 import tacaa.javasim;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class AgentSimulator {
@@ -15,6 +25,10 @@ public class AgentSimulator {
 	public enum GameSet {
 		finals2010, semifinals2010, test2010, semi2011server1, semi2011server2, qual2012
 	}
+
+
+	public static String timeFile = null;
+	public static String gameString = null;
 
 
 
@@ -53,17 +67,15 @@ public class AgentSimulator {
 		return javasim.setupClojureSim(filename);
 	}
 
-	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) throws IOException {
+	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
 		MCKP.MultiDay multiDay = MCKP.MultiDay.HillClimbing;
 		int multiDayDiscretization = 50;
 		boolean PERFECT_SIM = true;
-		boolean TEST_QUEUES = false;
-		simulateAgent(filenames, gameSet, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM, TEST_QUEUES);
+		simulateAgent(filenames, gameSet, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
 	}
 
 	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
-			MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM, boolean TEST_QUEUES) throws IOException {
-
+			MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM) {
 		String[] agentsToReplace;
 		if(agentNum == 0) {
 			agentsToReplace = new String[] {"TacTex"};
@@ -86,7 +98,7 @@ public class AgentSimulator {
 			for(String agentToReplace : agentsToReplace) {
 
 				if(gameSet.equals(GameSet.semi2011server2) && agentToReplace.equals("TacTex")) {
-					String gameString = filename.substring(filename.length()-7);
+					gameString = filename.substring(filename.length()-7);
 					if(gameString.equals("621.slg") ||
 							gameString.equals("622.slg") ||
 							gameString.equals("623.slg") ||
@@ -95,7 +107,7 @@ public class AgentSimulator {
 					}
 				}
 				else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("TacTex")) {
-					String gameString = filename.substring(filename.length()-8);
+					gameString = filename.substring(filename.length()-8);
 					if(gameString.equals("1426.slg") ||
 							gameString.equals("1427.slg") ||
 							gameString.equals("1428.slg") ||
@@ -104,7 +116,7 @@ public class AgentSimulator {
 					}
 				}
 				else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("Schlemazl")) {
-					String gameString = filename.substring(filename.length()-8);
+					gameString = filename.substring(filename.length()-8);
 					if(gameString.equals("1434.slg") ||
 							gameString.equals("1435.slg") ||
 							gameString.equals("1436.slg") ||
@@ -112,26 +124,23 @@ public class AgentSimulator {
 						continue;
 					}
 				}
-
+				//for testing purposes
+				timeFile = Long.toString(System.currentTimeMillis());
+				Boolean fileDir = (new File(System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile)).mkdirs();
+				if(!fileDir){
+					System.out.println("Error: Directory not created");
+				}
 				AbstractAgent agent;
-				TestAgent tester = new TestAgent(filename);
 				if(PERFECT_SIM) {
-					agent = new MCKP(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
+					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
 				}
 				else {
-					if(TEST_QUEUES){
-						
-					
-						System.out.println(tester+"________________________________________");
-						agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
-						
-					}else{
-						agent = new MCKP(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
+					agent = makeAgent(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
 					//               agent = new EquatePPSSimple2010();
-					}
 				}
+				
 				PersistentArrayMap results = javasim.simulateAgent(cljSim, agent, agentToReplace);
-				tester.closeFile();
+				//tester.closeFile();
 				PersistentArrayMap actual = javasim.getActualResults(cljSim);
 				            System.out.println("Results of " + filename + " Sim: \n"); 
 				            javasim.printResults(results);
@@ -144,6 +153,8 @@ public class AgentSimulator {
 				}
 				//            System.out.println(agentToReplace + ", " + multiDay + ", " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
 				totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
+				AgentComparator.profit = profDiffArr[1];
+				System.out.println("Profit: "+AgentComparator.profit+" difArr: "+profDiffArr[1]);
 				
 			}
 			
@@ -154,7 +165,139 @@ public class AgentSimulator {
 		System.out.println(totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
 		
 	}
+	
+	
+	private static AbstractAgent makeAgent(double c1, double c2, double c3,
+			double budgetL, double budgetM, double budgetH, double bidMultLow,
+			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization) {
+		
+		if(multiDay.equals(MultiDay.HillClimbing)){
+			return new JordanHillClimbing(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
+			return new MultiDayOptimizer(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DP)){
+			return new DP(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DPHill)){
+			return new DPHill(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.OneDayHeuristic)){
+			return new OneDayHeuristic(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else{
+			return null;
+		}
+	}
 
+	private static AbstractAgent makeAgent(PersistentHashMap cljSim,
+			String agentToReplace, double c1, double c2, double c3,
+			MultiDay multiDay, int multiDayDiscretization) {
+		if(multiDay.equals(MultiDay.HillClimbing)){
+			return new JordanHillClimbing(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
+			return new MultiDayOptimizer(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DP)){
+			return new DP(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DPHill)){
+			return new DPHill(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.OneDayHeuristic)){
+			return new OneDayHeuristic(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else{
+			return null;
+		}
+	}
+
+	private static AbstractAgent makeAgent(double c1, double c2, double c3,
+			double budgetL, double budgetM, double budgetH, double bidMultLow,
+			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization, HashMap<String,String> params) {
+		
+		if(multiDay.equals(MultiDay.HillClimbing)){
+			return new JordanHillClimbing(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization, 
+					Integer.parseInt(params.get("accountForProbing")), params.get("changeWandV").compareToIgnoreCase("true")==0, 
+					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+			//accountForProbing, boolean changeWandV, boolean adjustBudget
+		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
+			return new MultiDayOptimizer(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization,
+					Integer.parseInt(params.get("numTake")), 
+					params.get("reCalc").compareToIgnoreCase("true")==0, 
+					params.get("reCalcWithExtra").compareToIgnoreCase("true")==0,
+					params.get("changeWandV").compareToIgnoreCase("true")==0,
+					params.get("adjustBudget").compareToIgnoreCase("true")==0, 
+					Integer.parseInt(params.get("accountForProbing")));
+		}else if(multiDay.equals(MultiDay.DP)){
+			return new DP(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DPHill)){
+			return new DPHill(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.OneDayHeuristic)){
+			return new OneDayHeuristic(c1, c2, c3,
+					budgetL, budgetM,  budgetH,  bidMultLow,
+					bidMultHigh, multiDay, multiDayDiscretization);
+		}else{
+			return null;
+		}
+	}
+
+	private static AbstractAgent makeAgent(PersistentHashMap cljSim,
+			String agentToReplace, double c1, double c2, double c3,
+			MultiDay multiDay, int multiDayDiscretization, HashMap<String,String> params) {
+		if(multiDay.equals(MultiDay.HillClimbing)){
+			return new JordanHillClimbing(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization, 
+					Integer.parseInt(params.get("accountForProbing")), params.get("changeWandV").compareToIgnoreCase("true")==0, 
+					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
+			return new MultiDayOptimizer(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization,
+					Integer.parseInt(params.get("numToTake")), 
+					params.get("reCalc").compareToIgnoreCase("true")==0, 
+					params.get("reCalcWithExtra").compareToIgnoreCase("true")==0,
+					params.get("changeWandV").compareToIgnoreCase("true")==0,
+					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+		}else if(multiDay.equals(MultiDay.DP)){
+			return new DP(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.DPHill)){
+			return new DPHill(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else if(multiDay.equals(MultiDay.OneDayHeuristic)){
+			return new OneDayHeuristic(cljSim,
+					agentToReplace, c1, c2, c3,
+					multiDay, multiDayDiscretization);
+		}else{
+			return null;
+		}
+	}
+	
+	
 	private static double randDouble(Random R, double a, double b) {
 		double rand = R.nextDouble();
 		return rand * (b - a) + a;
@@ -243,9 +386,102 @@ public class AgentSimulator {
 		ArrayList<String> filenames = getGameStrings(gameSet, gameNumStart, gameNumEnd);
 		System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay + ", discretization=" + multiDayDiscretization + ", perfect=" + PERFECT_SIM);
 		long start = System.currentTimeMillis();
-		simulateAgent(filenames,gameSet,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM, TEST_QUEUES);
+		simulateAgent(filenames,gameSet,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
 		long end = System.currentTimeMillis();
 		System.out.println("Total seconds elapsed: " + (end-start)/1000.0 );
+	}
+
+	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
+			MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM, HashMap<String, String> parameters) {
+		
+		String[] agentsToReplace;
+		if(agentNum == 0) {
+			agentsToReplace = new String[] {"TacTex"};
+		}
+		else if(agentNum == 1) {
+			agentsToReplace = new String[] {"Schlemazl"};
+		}
+		else {
+			agentsToReplace = new String[] {"Schlemazl", "TacTex"};
+		}
+		//      String[] agentsToReplace = new String[] {"TacTex", "Schlemazl", "Mertacor"};
+		//      String[] agentsToReplace = new String[] {"TacTex", "Schlemazl", "Mertacor" , "MetroClick", "tau", "Nanda_AA", "crocodileagent", "McCon"};
+
+		
+		
+		double totalProfitdiff = 0.0;
+		for(String filename : filenames) {
+			long gameStart = System.currentTimeMillis();
+			PersistentHashMap cljSim = setupSimulator(filename);
+			for(String agentToReplace : agentsToReplace) {
+
+				if(gameSet.equals(GameSet.semi2011server2) && agentToReplace.equals("TacTex")) {
+					gameString = filename.substring(filename.length()-7);
+					if(gameString.equals("621.slg") ||
+							gameString.equals("622.slg") ||
+							gameString.equals("623.slg") ||
+							gameString.equals("624.slg")) {
+						continue;
+					}
+				}
+				else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("TacTex")) {
+					gameString = filename.substring(filename.length()-8);
+					if(gameString.equals("1426.slg") ||
+							gameString.equals("1427.slg") ||
+							gameString.equals("1428.slg") ||
+							gameString.equals("1429.slg")) {
+						continue;
+					}
+				}
+				else if(gameSet.equals(GameSet.semi2011server1) && agentToReplace.equals("Schlemazl")) {
+					gameString = filename.substring(filename.length()-8);
+					if(gameString.equals("1434.slg") ||
+							gameString.equals("1435.slg") ||
+							gameString.equals("1436.slg") ||
+							gameString.equals("1437.slg")) {
+						continue;
+					}
+				}
+				//for testing purposes
+				timeFile = Long.toString(System.currentTimeMillis());
+				Boolean fileDir = (new File(System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile)).mkdirs();
+				if(!fileDir){
+					System.out.println("Error: Directory not created");
+				}
+				AbstractAgent agent;
+				if(PERFECT_SIM) {
+					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization, parameters);
+				}
+				else {
+					agent = makeAgent(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization, parameters);
+					//               agent = new EquatePPSSimple2010();
+				}
+				
+				PersistentArrayMap results = javasim.simulateAgent(cljSim, agent, agentToReplace);
+				//tester.closeFile();
+				PersistentArrayMap actual = javasim.getActualResults(cljSim);
+				            System.out.println("Results of " + filename + " Sim: \n"); 
+				            javasim.printResults(results);
+				            System.out.println("Results of " + filename + " Actual: \n");
+				            javasim.printResults(actual);
+				ArrayList profDiff = javasim.compareResults(results,actual,agentToReplace);
+				double[] profDiffArr = new double[profDiff.size()];
+				for(int i = 0; i < profDiff.size(); i++) {
+					profDiffArr[i] = (Double)profDiff.get(i);
+				}
+				//            System.out.println(agentToReplace + ", " + multiDay + ", " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
+				totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
+				MultipleAgentSimulator.profit = profDiffArr[1];
+				System.out.println("Profit: "+MultipleAgentSimulator.profit+" difArr: "+profDiffArr[1]);
+				
+			}
+			
+			long gameEnd = System.currentTimeMillis();
+			System.out.println("Game Time: "+(gameEnd-gameStart)/1000.000);
+		}
+		//FIXME: put in file so can compare
+		System.out.println(totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
+		
 	}
 
 	
