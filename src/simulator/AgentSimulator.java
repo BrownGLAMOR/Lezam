@@ -17,6 +17,7 @@ import tacaa.javasim;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -126,7 +127,7 @@ public class AgentSimulator {
 				}
 				//for testing purposes
 				timeFile = Long.toString(System.currentTimeMillis());
-				Boolean fileDir = (new File(System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile)).mkdirs();
+				Boolean fileDir = (new File(System.getProperty("user.dir")+System.getProperty("file.separator")+"Details").mkdirs());
 				if(!fileDir){
 					System.out.println("Error: Directory not created");
 				}
@@ -155,7 +156,7 @@ public class AgentSimulator {
 				totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
 				AgentComparator.profit = profDiffArr[1];
 				System.out.println("Profit: "+AgentComparator.profit+" difArr: "+profDiffArr[1]);
-				
+				System.out.println("TARGET ARRAY" +Arrays.toString((int[])agent.targetArray));
 			}
 			
 			long gameEnd = System.currentTimeMillis();
@@ -232,8 +233,10 @@ public class AgentSimulator {
 			return new JordanHillClimbing(c1, c2, c3,
 					budgetL, budgetM,  budgetH,  bidMultLow,
 					bidMultHigh, multiDay, multiDayDiscretization, 
-					Integer.parseInt(params.get("accountForProbing")), params.get("changeWandV").compareToIgnoreCase("true")==0, 
-					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+					Integer.parseInt(params.get("accountForProbing")), 
+					params.get("changeWandV").compareToIgnoreCase("true")==0, 
+					params.get("adjustBudget").compareToIgnoreCase("true")==0,
+					params.get("goOver").compareToIgnoreCase("true")==0);
 			//accountForProbing, boolean changeWandV, boolean adjustBudget
 		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
 			return new MultiDayOptimizer(c1, c2, c3,
@@ -244,6 +247,7 @@ public class AgentSimulator {
 					params.get("reCalcWithExtra").compareToIgnoreCase("true")==0,
 					params.get("changeWandV").compareToIgnoreCase("true")==0,
 					params.get("adjustBudget").compareToIgnoreCase("true")==0, 
+					params.get("goOver").compareToIgnoreCase("true")==0, 
 					Integer.parseInt(params.get("accountForProbing")));
 		}else if(multiDay.equals(MultiDay.DP)){
 			return new DP(c1, c2, c3,
@@ -269,8 +273,10 @@ public class AgentSimulator {
 			return new JordanHillClimbing(cljSim,
 					agentToReplace, c1, c2, c3,
 					multiDay, multiDayDiscretization, 
-					Integer.parseInt(params.get("accountForProbing")), params.get("changeWandV").compareToIgnoreCase("true")==0, 
-					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+					Integer.parseInt(params.get("accountForProbing")), 
+					params.get("changeWandV").compareToIgnoreCase("true")==0, 
+					params.get("adjustBudget").compareToIgnoreCase("true")==0, 
+					params.get("goOver").compareToIgnoreCase("true")==0);
 		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
 			return new MultiDayOptimizer(cljSim,
 					agentToReplace, c1, c2, c3,
@@ -279,7 +285,8 @@ public class AgentSimulator {
 					params.get("reCalc").compareToIgnoreCase("true")==0, 
 					params.get("reCalcWithExtra").compareToIgnoreCase("true")==0,
 					params.get("changeWandV").compareToIgnoreCase("true")==0,
-					params.get("adjustBudget").compareToIgnoreCase("true")==0);
+					params.get("adjustBudget").compareToIgnoreCase("true")==0,
+					params.get("goOver").compareToIgnoreCase("true")==0);
 		}else if(multiDay.equals(MultiDay.DP)){
 			return new DP(cljSim,
 					agentToReplace, c1, c2, c3,
@@ -473,6 +480,7 @@ public class AgentSimulator {
 				totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
 				MultipleAgentSimulator.profit = profDiffArr[1];
 				System.out.println("Profit: "+MultipleAgentSimulator.profit+" difArr: "+profDiffArr[1]);
+				System.out.println("TARGET ARRAY" +Arrays.toString((int[])agent.targetArray));
 				
 			}
 			

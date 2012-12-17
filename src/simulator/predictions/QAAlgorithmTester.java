@@ -32,7 +32,7 @@ import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
  */
 public class QAAlgorithmTester {
 	
-	private static final boolean SAMPLED_AVERAGE_POSITIONS = false;
+	private static final boolean SAMPLED_AVERAGE_POSITIONS = true;
 	private static final boolean ORDERING_KNOWN = true;
 	private static final double IP_TIMEOUT_IN_SECONDS = 0;
 	private static final boolean CHEATING = false;
@@ -357,8 +357,11 @@ public class QAAlgorithmTester {
 	   }
 	   
 	   public static void main(String args[]){
-		   QAAlgorithmTester tester = new QAAlgorithmTester("/gpfs/main/home/betsy/TACAA2/aa-2012/goodData");
-		   SolverType[] solvers = {SolverType.CP};//, SolverType.SIMPLE_MIP_Exact};
+		   
+		   //can run goodData or smallTest
+		   QAAlgorithmTester tester = new QAAlgorithmTester("/gpfs/main/home/betsy/TACAA2/aa-2012/smallTest");
+		   //SolverType[] solvers = {SolverType.SIMPLE_MIP_Exact};//, SolverType.CP};//,
+		   SolverType[] solvers = {SolverType.CP};//,
 		   tester.runTests(solvers);
 		   tester.getResults(solvers, true, true);
 		  

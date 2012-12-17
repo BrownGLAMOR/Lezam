@@ -44,9 +44,12 @@ public class MultiDayOptimizer extends MCKP {
 	/**
 	 * 
 	 */
+	
+	int numTaken = 0;
 	int _numTake = 1;
 	boolean amyHack = false;
 	boolean amyHack2 = false;
+	boolean overstuff = false;
 	boolean changeWandV = false;
 	boolean changeBudget = false;
 	int accountForProbing = 0;
@@ -56,11 +59,12 @@ public class MultiDayOptimizer extends MCKP {
 	}
 	
 	public MultiDayOptimizer(int numTake, boolean reCalc, boolean reCalcWithExtra, 
-			boolean changeWandV, boolean changeBudget, int accountForProbing) {
+			boolean changeWandV, boolean changeBudget, boolean goOver, int accountForProbing) {
 		super();
 		_numTake = numTake;
 		amyHack = reCalc;
 		amyHack2 = reCalcWithExtra;
+		overstuff = goOver;
 		this.changeWandV = changeWandV;
 		this.changeBudget = changeBudget;
 		this.accountForProbing = accountForProbing;
@@ -70,11 +74,12 @@ public class MultiDayOptimizer extends MCKP {
 	public MultiDayOptimizer(double c1, double c2, double c3, double budgetL,
 			double budgetM, double budgetH, double bidMultLow,
 			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization,
-			int numTake, boolean reCalc, boolean reCalcWithExtra, boolean changeWandV, boolean changeBudget, int accountForProbing) {
+			int numTake, boolean reCalc, boolean reCalcWithExtra, boolean changeWandV, boolean changeBudget, boolean goOver, int accountForProbing) {
 		super(c1, c2,c3, budgetL, budgetM, budgetH,  bidMultLow, bidMultHigh, multiDay, multiDayDiscretization);
 		_numTake = numTake;
 		amyHack = reCalc;
 		amyHack2 = reCalcWithExtra;
+		overstuff = goOver;
 		this.changeWandV = changeWandV;
 		this.changeBudget = changeBudget;
 		this.accountForProbing = accountForProbing;
@@ -82,11 +87,12 @@ public class MultiDayOptimizer extends MCKP {
 
 	public MultiDayOptimizer(PersistentHashMap cljSim, String agentToReplace,
 			double c1, double c2, double c3, MultiDay multiDay,	int multiDayDiscretization,
-			int numTake, boolean reCalc, boolean reCalcWithExtra, boolean changeWandV, boolean changeBudget) {
+			int numTake, boolean reCalc, boolean reCalcWithExtra, boolean changeWandV, boolean changeBudget, boolean goOver) {
 		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
 		_numTake = numTake;
 		amyHack = reCalc;
 		amyHack2 = reCalcWithExtra;
+		overstuff = goOver;
 		this.changeWandV = changeWandV;
 		this.changeBudget = changeBudget;
 	}
@@ -190,6 +196,7 @@ public class MultiDayOptimizer extends MCKP {
 
 		double currProfit;
 		double bestProfit = SolutionProfit(profitMemoizeMap, allPredictionsMap, bidLists, budgetLists, capacityArray);
+		//COMMENTING OUT HILLCLIMBING
 		do {
 			currProfit = bestProfit;
 			int bestIdx = -1;
@@ -239,7 +246,11 @@ public class MultiDayOptimizer extends MCKP {
 		
 
 		//At this point, hill-climbing has theoretically produced the best set of capacity targets. Our solution for today is obtained from FGMCKP.
+		
+		targetArray[(int)_day]= capacityArray[currentDayIndex];
+		
 		HashMap<Query,Item> solution = FastGreedyMCKP(allPredictionsMap, bidLists, budgetLists, capacityArray, currentDayIndex);
+		System.out.println("Target For Day: "+capacityArray[currentDayIndex]+" numTaken: "+numTaken);
 		return solution;	   
 	}
 
@@ -271,6 +282,7 @@ public class MultiDayOptimizer extends MCKP {
 		//Variables to keep track of our target capacity and how much our solution has used.
 		double capacityUsed = 0;
 		double capacityTarget = capacityArray[targetDay];
+		//System.out.println("CapTarget: "+capacityTarget);
 
 		//Next, we cycle through a process where we select each item in turn from the queue. If it pushes our weight over capacity, we do not take it (and also stop taking
 		//items). Otherwise, we add it to the set of incremental items taken so far and add a new item from that query to the queue.
@@ -278,14 +290,16 @@ public class MultiDayOptimizer extends MCKP {
 		IncItem bestItem;
 		HashMap<Query,Item> solution = new HashMap<Query,Item>();
 		int numToTake = _numTake;
-		do{		   
+		numTaken=0;
+		do{		  
+
 			//System.out.println("Queue size before: "+selectionQueue.size());//Debugging statements
 			//System.out.println(selectionQueue.toString());
-			System.out.println("start loop");
+			//System.out.println("start loop");
 			//Retrieve the best item from the selection queue. If there are no more items, we can break, as we are done.
 			bestItem = selectionQueue.poll();
 			if (bestItem == null){
-				System.out.println("breaking: "+numToTake);
+				//System.out.println("breaking: "+numToTake);
 				break;
 			}		   
 
@@ -308,10 +322,13 @@ public class MultiDayOptimizer extends MCKP {
 			//		   }
 
 			//If we have enough space in our knapsack for the item, take it.
+			
 			if (capacityTarget-capacityUsed>=bestItem.w()){
+				//System.out.println("CapTarget: "+capacityTarget+" capacityUsed: "+capacityUsed+ "Item weight: "+bestItem.w());
 				capacityUsed += bestItem.w();
+				//System.out.println("Taking 1");
 				solution.put(q, bestItem.itemHigh());
-
+				numTaken++;
 				//As we're not using MakeRegularItems, this step is moot.
 				//incItemsTaken.get(q).add(bestItem);			   
 
@@ -323,47 +340,54 @@ public class MultiDayOptimizer extends MCKP {
 					//System.out.println("Queue size after: "+selectionQueue.size());//Debugging statement
 				}
 			} else {
-				//System.out.println("In heuristics");
-				//There are two different heuristics which we have the option of using here: Jordan's hack, and Amy's hack, contained between two indicators here.
-				//Uncomment everything between whichever one you're using, except of course for the actual comments.
-
-				//=========================================================
-				//Jordan's hack
-				//=========================================================
-				//Jordan's hack involves taking the item which doesn't quite fit, but adjusting the weight and value to his own specifications
-				//(perhaps as a way of implicitly taking into account the conversion penalty incurred from going over budget).
-				if(!amyHack){
-					stuffKnapsackWithoutRecalc(capacityTarget-capacityUsed, bestItem, solution);
-					break;
-				}else if(!amyHack2){
-//					//=========================================================
-//					//Amy's hack
-//					//=========================================================
-//					//Amy's hack involves recalculating the weights and values of both the item being added and the items already taken to account for the solution's new weight.
-//					//Unfortunately, this implementation of it is either flawed or not producing the desired results. My money is on flawed, personally, since this was written
-//					//in something of a rush and I haven't had time to test it properly.
-//
-//					
-					stuffKnapsackWithRecalcNoExtra(capacityUsed, capacityTarget, targetDay, capacityArray, itemSet,
-							itemIndex,  selectionQueue, lastUsedIndices, allPredictionsMap, bestItem, solution);
-					break;	
-
-					//=========================================================
-					//End of Amy's hack
-					//=========================================================
+				if(!overstuff || capacityTarget==0){
+					capacityUsed = capacityTarget;
 				}else{
-//					//=========================================================
-//					//Amy's hack 2.0
-//					//=========================================================
-//					//This is a variant on Amy's hack, above, which keeps taking additional items until doing so would put us over budget, at which point we take
-//					//one more and call it quits.
+					//System.out.println("In heuristics");
+					//There are two different heuristics which we have the option of using here: Jordan's hack, and Amy's hack, contained between two indicators here.
+					//Uncomment everything between whichever one you're using, except of course for the actual comments.
 
-					stuffKnapsackWithRecalc(capacityUsed, capacityTarget, targetDay, capacityArray, itemSet,
-							itemIndex,  selectionQueue, lastUsedIndices, allPredictionsMap, bestItem, solution, numToTake);
+					//=========================================================
+					//Jordan's hack
+					//=========================================================
+					//Jordan's hack involves taking the item which doesn't quite fit, but adjusting the weight and value to his own specifications
+					//(perhaps as a way of implicitly taking into account the conversion penalty incurred from going over budget).
+					if(!amyHack){
+						stuffKnapsackWithoutRecalc(capacityTarget-capacityUsed, bestItem, solution);
+						break;
+					}else if(!amyHack2){
+						//					//=========================================================
+						//					//Amy's hack
+						//					//=========================================================
+						//					//Amy's hack involves recalculating the weights and values of both the item being added and the items already taken to account for the solution's new weight.
+						//					//Unfortunately, this implementation of it is either flawed or not producing the desired results. My money is on flawed, personally, since this was written
+						//					//in something of a rush and I haven't had time to test it properly.
+						//
+						//					
+						stuffKnapsackWithRecalcNoExtra(capacityUsed, capacityTarget, targetDay, capacityArray, itemSet,
+								itemIndex,  selectionQueue, lastUsedIndices, allPredictionsMap, bestItem, solution);
+						break;	
+
+						//=========================================================
+						//End of Amy's hack
+						//=========================================================
+					}else{
+						//					//=========================================================
+						//					//Amy's hack 2.0
+						//					//=========================================================
+						//					//This is a variant on Amy's hack, above, which keeps taking additional items until doing so would put us over budget, at which point we take
+						//					//one more and call it quits.
+
+						stuffKnapsackWithRecalc(capacityUsed, capacityTarget, targetDay, capacityArray, itemSet,
+								itemIndex,  selectionQueue, lastUsedIndices, allPredictionsMap, bestItem, solution, numToTake);
+						break;
+					}
 				}
 			}
+			//System.out.println("CapTarget: "+capacityTarget+" capacityUsed: "+capacityUsed+ "numToTake: "+numToTake);
 		} while(capacityUsed<capacityTarget || numToTake>0);
-		System.out.println("Out while "+numToTake);
+		//System.out.println("Out while "+numToTake);
+		//System.out.println("TOOK "+numTaken+" items.");
 		numToTake = _numTake;
 		//If we were using MakeRegularItems, we would use this to make our solution. But we're not, so we don't.
 		//		   HashMap<Query,Item> solution = MakeRegularItems(incItemsTaken);	   
@@ -379,6 +403,8 @@ public class MultiDayOptimizer extends MCKP {
 		double lowVal = ((bestItem.itemLow() == null) ? 0.0 : bestItem.itemLow().v());
 		double lowW = ((bestItem.itemLow() == null) ? 0.0 : bestItem.itemLow().w());
 		
+		numTaken++;
+		//System.out.println("Taking an extra");
 		if(changeWandV){
 			double newValue = itemHigh.v()*weightHigh + lowVal*weightLow;
 			if(changeBudget){
@@ -390,10 +416,10 @@ public class MultiDayOptimizer extends MCKP {
 		}else{
 			if(changeBudget){
 				double newBudget = itemHigh.budget()*weightHigh; //for changed budget
-				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), itemHigh.w(),itemHigh.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), bestItem.w(),bestItem.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 
 			}else{
-				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), itemHigh.w(),itemHigh.v(),itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), bestItem.w(),bestItem.v(),itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 
 			}
 		}
@@ -416,6 +442,7 @@ public class MultiDayOptimizer extends MCKP {
 			double newCapacityUsed = 0;
 			for (Query qu : _querySpace){
 				if (soltn.get(qu) != null){
+					numTaken++;
 					soltn.put(qu, RecalculatePenalty(soltn.get(qu), allPredictionsMap, (int) capacityUsed, capRemaining));
 					newCapacityUsed += soltn.get(qu).w();
 				}
@@ -426,6 +453,7 @@ public class MultiDayOptimizer extends MCKP {
 			newCapacityUsed += solnItem.w();
 			//If it still fits, take it
 			if (newCapacityUsed<=capacityTarget){
+				numTaken++;
 				soltn.put(bestItem.item().q(), solnItem);
 				capacityUsed = newCapacityUsed;
 				if (itemIndex<itemSet.get(bestItem.item().q()).size()){
@@ -446,9 +474,7 @@ public class MultiDayOptimizer extends MCKP {
 		for (int i = targetDay-1; i>targetDay-5; i--){
 			capRemaining -= capacityArray[i];
 		}
-		System.out.println("cap rem: "+capRemaining+" num: "+numToTake);
-		if (capRemaining <= 0 || numToTake>0){	
-			System.out.println("In cap num if. num: "+numToTake);
+		if (capRemaining <= 0){	
 			//Recalculate the w/v of the item.
 			capacityUsed += bestItem.w();
 			Item solnItem = RecalculatePenalty(bestItem.itemHigh(), allPredictionsMap, (int) capacityUsed, capRemaining);
@@ -456,6 +482,7 @@ public class MultiDayOptimizer extends MCKP {
 			double newCapacityUsed = 0;
 			for (Query qu : _querySpace){
 				if (soltn.get(qu) != null){
+					numTaken++;
 					soltn.put(qu, RecalculatePenalty(soltn.get(qu), allPredictionsMap, (int) capacityUsed, capRemaining));
 					newCapacityUsed += soltn.get(qu).w();
 				}
@@ -465,34 +492,17 @@ public class MultiDayOptimizer extends MCKP {
 			}
 			newCapacityUsed += solnItem.w();
 			//If it still fits, take it
-			System.out.println("before 2nd cap num if. num: "+numToTake);
-			if (newCapacityUsed<=capacityTarget || numToTake>1){
-				System.out.println("In 2nd cap num if. num: "+numToTake);
+			if (newCapacityUsed<=capacityTarget){
+				numTaken++;
 				soltn.put(bestItem.item().q(), solnItem);
-				if(newCapacityUsed>capacityTarget){
-					numToTake -=1;
-					//System.out.println("TOOK EXTRA: "+numToTake+" ___________________________________________________");
-				}
 				capacityUsed = newCapacityUsed;
 				if (itemIndex<itemSet.get(bestItem.item().q()).size()){
 					selectionQueue.add(NextIncrementalItem(itemSet.get(bestItem.item().q()),itemIndex));
 					lastUsedIndices.put(bestItem.item().q(), itemIndex+1);
 				}
-
-			} else {
-				System.out.println("before 2nd cap num if. num: "+numToTake);
-				//Else take it anyway, just so we go over. We then break.
-				//These next lines recalc the budget, don't think this is helping the agent at all
-				//double newBudget = (capacityTarget-(newCapacityUsed - solnItem.w()))*solnItem.budget();
-				//solnItem._budget=newBudget;
-				soltn.put(bestItem.item().q(), solnItem);
-				numToTake-=1;
-				//System.out.println("__TOOK EXTRA: "+numToTake+" ____________________________________________");
-				return soltn;
 			}
-			System.out.println("here");
 		}
-	
+		
 		return soltn;
 	}
 
@@ -840,8 +850,31 @@ public class MultiDayOptimizer extends MCKP {
 
 	@Override
 	public AbstractAgent getCopy() {
-		MultiDayOptimizer copy = new MultiDayOptimizer(_numTake, amyHack,amyHack2, changeWandV, changeBudget, accountForProbing);
+		MultiDayOptimizer copy = new MultiDayOptimizer(_numTake, amyHack,amyHack2, changeWandV, changeBudget, overstuff, accountForProbing);
 		return copy;
+	}
+
+	@Override
+	protected Item makeNewItem(IncItem ii, double budget, double lowW,
+			double newValue, double newBudget, boolean changeWandV,
+			boolean changeBudget) {
+			Item itemHigh = ii.itemHigh();
+			if(changeWandV && !changeBudget){
+				return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+					itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}else if (changeWandV && changeBudget){
+				return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}else{
+				return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+
+			}
+		
+	}
+
+	@Override
+	protected boolean getGoOver() {
+		
+		return overstuff;
 	}
 
 	

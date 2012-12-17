@@ -108,7 +108,8 @@ public abstract class HillClimbing extends MCKP {
 	         profitMemoizeMap = new HashMap<Integer, Map<Integer, Double>>(daysAhead);
 	         double currProfit;
 	         double bestProfit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
-	         do {
+//COMMENTING OUT HILLCLIMBING
+	         	         do {
 	            currProfit = bestProfit;
 	            int bestIdx = -1;
 	            int bestIncrement = 0;
@@ -200,6 +201,7 @@ public abstract class HillClimbing extends MCKP {
 
 	      int salesToday = salesOnDay[0];
 	      //HC num
+	      targetArray[(int) _day]= salesToday;
 	      int knapsackSales = salesToday-accountForProbing;
 	      
 

@@ -275,5 +275,19 @@ public class OneDayHeuristic extends MCKP {
 		OneDayHeuristic copy = new OneDayHeuristic(FORWARDUPDATING,PRICELINES,UPDATE_WITH_ITEM);
 		return copy;
 	}
+
+	@Override
+	protected Item makeNewItem(IncItem ii, double budget, double lowW,
+			double newValue, double newBudget, boolean changeWandV,
+			boolean changeBudget) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	protected boolean getGoOver() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 	
 }

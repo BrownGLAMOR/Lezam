@@ -149,4 +149,26 @@ public class DP extends MCKP {
 		DP copy = new DP();
 		return copy;
 	}
+
+	@Override
+	protected Item makeNewItem(IncItem ii, double budget, double lowW,
+			double newValue, double newBudget, boolean changeWandV, boolean changeBudget) {
+		Item itemHigh = ii.itemHigh();
+		if(changeWandV && !changeBudget){
+			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+				itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+		}else if (changeWandV && changeBudget){
+			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+		}else{
+			return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+
+		}
+		
+	}
+
+	@Override
+	protected boolean getGoOver() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

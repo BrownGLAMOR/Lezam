@@ -114,6 +114,8 @@ public abstract class MCKP extends AbstractAgent {
 	double _budgetMult;
 
 	int _numDays = 59; //Hardcoded; should be initialized properly in the game settings but is currently defaulting to 0.
+	
+	int[] targetArray = new int[_numDays];
 
 	protected static boolean THREADING = false;//in file
 	protected static final int NTHREDS = Runtime.getRuntime().availableProcessors();
@@ -712,10 +714,13 @@ public abstract class MCKP extends AbstractAgent {
 				String bidFilename;
 				//For testing purposes
 				if(hasPerfectModels()){
-					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile+System.getProperty("file.separator")+AgentSimulator.gameString+"perfectBidSpaceTest.csv";
+					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
+					+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidSpaceTest.csv";
 				}
 				else{
-					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile+System.getProperty("file.separator")+AgentSimulator.gameString+"bidSpaceTest.csv";
+					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
+					+System.getProperty("file.separator")+AgentSimulator.timeFile+
+					"_bidSpaceTest.csv";
 				}
 				StringBuffer stBuff = new StringBuffer();//modified
 				BufferedWriter bufferedWriter = null;
@@ -941,7 +946,7 @@ public abstract class MCKP extends AbstractAgent {
 
 			
 			long solutionEndTime = System.currentTimeMillis();
-			System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
+			//System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -987,9 +992,12 @@ public abstract class MCKP extends AbstractAgent {
 					if(!hasPerfectModels() && !q.getType().equals(QueryType.FOCUS_LEVEL_ZERO)) {
 						//                  double bid = getRandomProbeBid(q);
 						//                  double budget = getProbeBudget(q,bid);
-						double[] bidBudget = getProbeSlotBidBudget(q);
-						double bid = bidBudget[0];
-						double budget = bidBudget[1];
+						//EDITS
+						//double[] bidBudget = getProbeSlotBidBudget(q);
+						//double bid = bidBudget[0];
+						//double budget = bidBudget[1];
+						double bid = 0.0;
+						double budget = 0;
 						Ad ad = getProbeAd(q,bid,budget);
 						bidBundle.addQuery(q, bid, ad, budget);
 					}
@@ -1024,9 +1032,9 @@ public abstract class MCKP extends AbstractAgent {
 		String bidgametest;
 
 		if(hasPerfectModels()){
-			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile+System.getProperty("file.separator")+AgentSimulator.gameString+"perfectBidBundleTest.csv";
+			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidBundleTest.csv";
 		} else{
-			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+AgentSimulator.timeFile+System.getProperty("file.separator")+AgentSimulator.gameString+"bidBundleTest.csv";
+			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_bidBundleTest.csv";
 		}
 
 		try {
@@ -1321,10 +1329,10 @@ public abstract class MCKP extends AbstractAgent {
 			if(!q.equals(new Query())) { //Skip over F0 Query FIXME: Make configurable
 				ArrayList<Double> budgetList = new ArrayList<Double>();
 				budgetList.add(10.0);//HC num
-				budgetList.add(200.0);//HC num
+				budgetList.add(100.0);//HC num
 				budgetList.add(300.0);//HC num
 				//            budgetList.add(400.0);
-				budgetList.add(Double.MAX_VALUE);
+				budgetList.add(1000.0);
 				budgetLists.put(q,budgetList);
 			}
 			else {
@@ -2010,10 +2018,12 @@ public abstract class MCKP extends AbstractAgent {
 		HashMap<Query, Item> solution = new HashMap<Query, Item>();
 		for (IncItem ii : incItems) {
 			if (budget >= ii.w()) {
+				//System.out.println("Taking 1");
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();
 			}
-			else if(budget > 0) {
+			else if(budget > 0 && getGoOver()) {
+				//System.out.println("Taking an extra");
 				Item itemHigh = ii.itemHigh();
 				double incW = ii.w();
 				double weightHigh = budget / incW;
@@ -2023,7 +2033,8 @@ public abstract class MCKP extends AbstractAgent {
 				double newValue = itemHigh.v()*weightHigh + lowVal*weightLow;
 				double newBudget = itemHigh.budget()*weightHigh;//Added for testing
 				//ORIGINAL
-				solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+				solution.put(ii.item().q(), makeNewItem(ii, budget, lowW, newValue, newBudget, true, false));
+				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 				//TO TEST NOT CHANGING WEIGHT AND VALUE, just change budget
 				//solution.put(ii.item().q(), new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
@@ -2036,6 +2047,25 @@ public abstract class MCKP extends AbstractAgent {
 		}
 		return solution;
 	}
+
+	protected abstract boolean getGoOver();
+
+
+	protected abstract Item makeNewItem(IncItem ii, double budget, double lowW,
+			double newValue, double newBudget, boolean changeWandV, boolean changeBudget);
+//		Item itemHigh = ii.itemHigh();
+//		if(changeWandV && !changeBudget){
+//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+//				itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+//		}else if (changeWandV && changeBudget){
+//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+//		}else{
+//			return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+//
+//		}
+//		
+//	}
+
 
 	/**
 	 * Get undominated items
@@ -2259,9 +2289,9 @@ public abstract class MCKP extends AbstractAgent {
 		try {
 			props.load(new FileInputStream(System.getProperty("user.dir")+System.getProperty("file.separator")+filename+".properties"));
 
-			System.out.println("updating");
+			//System.out.println("updating");
 			if(props.containsKey("DEBUG")){
-				System.out.println("updating debug");
+				//System.out.println("updating debug");
 				int val = getBooleanParam("DEBUG", props);
 				if(val==0){
 					DEBUG = false;

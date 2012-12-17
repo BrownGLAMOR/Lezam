@@ -37,37 +37,41 @@ public class JordanHillClimbing extends HillClimbing {
 	int accountForProbing = 0;
 	boolean changeWandV = true;
 	boolean adjustBudget = false;
+	boolean goOver = false;
 	
 	public JordanHillClimbing() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 	
-	public JordanHillClimbing(int accountForProbing, boolean changeWandV, boolean adjustBudget) {
+	public JordanHillClimbing(int accountForProbing, boolean changeWandV, boolean adjustBudget, boolean goOver) {
 		super();
 		this.accountForProbing = accountForProbing;
 		this.changeWandV = changeWandV;
 		this.adjustBudget = adjustBudget;
+		this.goOver = goOver;
 	}
 
 	public JordanHillClimbing(double c1, double c2, double c3, double budgetL,
 			double budgetM, double budgetH, double bidMultLow,
 			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization, 
-			int accountForProbing, boolean changeWandV, boolean adjustBudget) {
+			int accountForProbing, boolean changeWandV, boolean adjustBudget, boolean goOver) {
 		super( c1, c2,c3, budgetL,budgetM, budgetH, bidMultLow, bidMultHigh, 
 				multiDay, multiDayDiscretization);
 		this.accountForProbing = accountForProbing;
 		this.changeWandV = changeWandV;
 		this.adjustBudget = adjustBudget;
+		this.goOver = goOver;
 	}
 
 	public JordanHillClimbing(PersistentHashMap cljSim, String agentToReplace,
 			double c1, double c2, double c3, MultiDay multiDay,	int multiDayDiscretization,
-			int accountForProbing, boolean changeWandV, boolean adjustBudget) {
+			int accountForProbing, boolean changeWandV, boolean adjustBudget, boolean goOver) {
 		super(cljSim, agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
 		this.accountForProbing = accountForProbing;
 		this.changeWandV = changeWandV;
 		this.adjustBudget = adjustBudget;
+		this.goOver = goOver;
 	}
 	
 	public JordanHillClimbing(double c1, double c2, double c3, double budgetL,
@@ -103,12 +107,42 @@ public class JordanHillClimbing extends HillClimbing {
 	      return fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap, initialSales, accountForProbing);
 	   }
 
-	
+	protected Item makeNewItem(IncItem ii, double budget, double lowW,
+			double newValue, double newBudget, boolean changeWV, boolean changeB) {
+		Item itemHigh = ii.itemHigh();
+		if(changeWandV){
+			if (adjustBudget){
+				//System.out.println("1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
+			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+				newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}else{
+				//System.out.println("2");
+				return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+						itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}
+		}else{
+			if(adjustBudget){
+				//System.out.println("3; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
+				return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}else{
+				//System.out.println("4");
+				return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+			}
+		}
+		
+	}
 	   
 		@Override
 		public AbstractAgent getCopy() {
-			JordanHillClimbing copy = new JordanHillClimbing(accountForProbing,changeWandV,adjustBudget);
+			JordanHillClimbing copy = new JordanHillClimbing(accountForProbing,changeWandV,adjustBudget, goOver);
 			return copy;
 		}
+
+		@Override
+		protected boolean getGoOver() {
+			
+			return goOver;
+		}
+		
 
 }

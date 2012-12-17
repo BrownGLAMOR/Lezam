@@ -242,6 +242,8 @@ public abstract class AbstractAgent extends Agent {
 
    protected int[] _perfectStartSales = null;
 
+public Object targetArray;
+
    /**
     *
     */

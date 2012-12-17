@@ -15,7 +15,7 @@ import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.IEResult;
 
 public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpressionEstimatorMIP {
-	protected final static boolean SUPPRESS_OUTPUT = true;
+	protected final static boolean SUPPRESS_OUTPUT = false;
 	
 	public AbstractImpressionEstimatorSimpleMIP(AbstractQAInstance inst){
 		super(inst);

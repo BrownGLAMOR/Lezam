@@ -23,7 +23,7 @@ public class MultipleAgentSimulator {
 		//TODO: Read parameters in
 		//String name = args[0];
 		int numAgents=1;
-		String name = "test7_9_10_12_";
+		String name = "test1_9_25_12_";
 		Properties prop = new Properties();
 		List<HashMap<String, String>> parameters = new ArrayList<HashMap<String,String>>();
 		MultiDay[] agentTypes = new MultiDay[numAgents];;
@@ -102,6 +102,7 @@ public class MultipleAgentSimulator {
 		while (gamesRun<gamesToRun){
 			if(gameFolders.contains("finals2010")){
 				//for (int i = 1297; i<=1320; i++){
+				//for (int i = 15145; i<=15160; i++){
 				for (int i = 15145; i<=15160; i++){
 					for(int j = 0; j<numAgents; j++){
 						if(gamesRun<gamesToRun){
@@ -120,7 +121,7 @@ public class MultipleAgentSimulator {
 							} catch (Exception e){
 								e.printStackTrace();
 							}
-							System.out.println("Profit:"+profit);
+							//System.out.println("Profit:"+profit);
 							agentProfits[j] += profit;
 							agentTimes[j] += (timeEnd-timeStart)/1000;
 							gamesRun++;
@@ -139,7 +140,8 @@ public class MultipleAgentSimulator {
 			}
 
 			if(gameFolders.contains("semi2011server1")){
-				for (int i = 1414; i<=1445; i++){
+				//for (int i = 1414; i<=1445; i++){
+				for (int i = 1414; i<=1429; i++){
 					for(int j = 0; j<numAgents; j++){
 						if(gamesRun<gamesToRun){
 							stBuff = new StringWriter();
@@ -157,7 +159,7 @@ public class MultipleAgentSimulator {
 							} catch (Exception e){
 								e.printStackTrace();
 							}
-							System.out.println("Profit:"+profit);
+							//System.out.println("Profit:"+profit);
 							agentProfits[j] += profit;
 							agentTimes[j] += (timeEnd-timeStart)/1000;
 							gamesRun++;
@@ -175,7 +177,8 @@ public class MultipleAgentSimulator {
 			}
 
 			if(gameFolders.contains("semi2011server2")){
-				for (int i = 621; i<=640; i++){
+				//for (int i = 621; i<=640; i++){
+				for (int i = 621; i<=636; i++){	
 					for(int j = 0; j<numAgents; j++){
 						if(gamesRun<gamesToRun){
 							stBuff = new StringWriter();
@@ -193,7 +196,7 @@ public class MultipleAgentSimulator {
 							} catch (Exception e){
 								e.printStackTrace();
 							}
-							System.out.println("Profit:"+profit);
+							//System.out.println("Profit:"+profit);
 							agentProfits[j] += profit;
 							agentTimes[j] += (timeEnd-timeStart)/1000;
 							gamesRun++;
@@ -262,6 +265,8 @@ public class MultipleAgentSimulator {
 			params.put("reCalcWithExtra", vals[3]);
 			params.put("changeWandV", vals[4]);
 			params.put("adjustBudget", vals[5]);
+			params.put("goOver", vals[6]);
+			params.put("accountForProbing", vals[7]);
 
 
 		}
@@ -270,6 +275,7 @@ public class MultipleAgentSimulator {
 			params.put("accountForProbing", vals[1]);
 			params.put("changeWandV", vals[2]);
 			params.put("adjustBudget", vals[3]);
+			params.put("goOver", vals[4]);
 
 		}
 		return params;
