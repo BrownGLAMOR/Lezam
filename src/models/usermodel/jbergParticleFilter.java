@@ -190,7 +190,7 @@ public class jbergParticleFilter extends ParticleFilterAbstractUserModel {
 
 //      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/src/resources/initUserParticles.txt");
       initializeParticlesFromFile("initUserParticles.txt");
-      initAvgImps("avgImps.txt");
+      initAvgImps(System.getProperty("user.dir")+"/avgImps.txt");
       updatePredictionMaps();
    }
 
