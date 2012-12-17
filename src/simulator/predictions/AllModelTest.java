@@ -1,6 +1,12 @@
 package simulator.predictions;
 
+import agents.modelbased.DP;
+import agents.modelbased.DPHill;
+import agents.modelbased.JordanHillClimbing;
 import agents.modelbased.MCKP;
+import agents.modelbased.MultiDayOptimizer;
+import agents.modelbased.OneDayHeuristic;
+import agents.modelbased.MCKP.MultiDay;
 import clojure.lang.PersistentHashMap;
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
@@ -310,7 +316,8 @@ public class AllModelTest {
             cljSim = setupSimulator(filename);
             for(int i = 0; i < advertisers.size(); i++) {
                if(i == replaceIdx) {
-                  MCKP agent = new MCKP(0.3,0.5,0.1,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
+            	   MCKP agent = makeAgent(0.3,0.5,0.1,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
+                   //MCKP agent = new MCKP(0.3,0.5,0.1,1.0,1.0,1.0,1.0,1.0, MCKP.MultiDay.HillClimbing,10);
                   agent.sendSimMessage(new Message("bla","bla", status.getPubInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getSlotInfo()));
                   agent.sendSimMessage(new Message("bla","bla", status.getRetailCatalog()));
@@ -936,6 +943,30 @@ public class AllModelTest {
 
       return results;
    }
+   
+   private MCKP makeAgent(double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, 
+			double lowBidMult, double highBidMult, MultiDay multiDay, int multiDayDiscretization) {
+		
+			if(multiDay.equals(MultiDay.HillClimbing)){
+				return new JordanHillClimbing(c1, c2, c3, budgetL, budgetM, budgetH, 
+						lowBidMult, highBidMult, multiDay, multiDayDiscretization);
+			}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
+				return new MultiDayOptimizer(c1, c2, c3, budgetL, budgetM, budgetH, 
+						lowBidMult, highBidMult, multiDay, multiDayDiscretization);
+			}else if(multiDay.equals(MultiDay.DP)){
+				return new DP(c1, c2, c3, budgetL, budgetM, budgetH, 
+						lowBidMult, highBidMult, multiDay, multiDayDiscretization);
+			}else if(multiDay.equals(MultiDay.DPHill)){
+				return new DPHill(c1, c2, c3, budgetL, budgetM, budgetH, 
+						lowBidMult, highBidMult, multiDay, multiDayDiscretization);
+			}else if(multiDay.equals(MultiDay.OneDayHeuristic)){
+				return new OneDayHeuristic(c1, c2, c3, budgetL, budgetM, budgetH, 
+						lowBidMult, highBidMult, multiDay, multiDayDiscretization);
+			}else{
+				return null;
+			}	
+
+}
 
    private static double sumList(ArrayList<Double> list) {
       double sum = 0.0;
