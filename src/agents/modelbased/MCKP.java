@@ -23,8 +23,10 @@ import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
-import models.usermodel.ParticleFilterAbstractUserModel;
-import models.usermodel.jbergParticleFilter;
+import models.usermodel.UserModel;
+import models.usermodel.UserModelInput;
+//import models.usermodel.ParticleFilterAbstractUserModel;
+//import models.usermodel.jbergParticleFilter;
 import simulator.AgentSimulator;
 import simulator.TestAgent;
 import tacaa.javasim;
@@ -87,7 +89,7 @@ public abstract class MCKP extends AbstractAgent {
 	protected HashMap<Query, Double> _salesPrices;
 
 	private AbstractQueryAnalyzer _queryAnalyzer;  //the following variables are all models 
-	private ParticleFilterAbstractUserModel _userModel;
+	private UserModel _userModel;
 	protected AbstractUnitsSoldModel _unitsSold;
 	private AbstractBidModel _bidModel;
 	private AbstractParameterEstimation _paramEstimation;
@@ -457,7 +459,8 @@ public abstract class MCKP extends AbstractAgent {
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
-		_userModel = new jbergParticleFilter(_c,_numSlots,_numPS);
+		_userModel = UserModel.build(new UserModelInput(_c, _numSlots, _numPS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
+				//new jbergParticleFilter(_c,_numSlots,_numPS);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		_bidModel = new IndependentBidModel(_advertisersSet, _advId,1,_randJump,_yestBid,_5DayBid,_bidStdDev,_querySpace);//HC num
 		//      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
@@ -486,9 +489,9 @@ public abstract class MCKP extends AbstractAgent {
 			if(model instanceof AbstractQueryAnalyzer) {
 				_queryAnalyzer = (AbstractQueryAnalyzer)model;
 			}
-			else if(model instanceof ParticleFilterAbstractUserModel) {
-				_userModel = (ParticleFilterAbstractUserModel)model;
-			}
+//			else if(model instanceof ParticleFilterAbstractUserModel) {
+//				_userModel = (ParticleFilterAbstractUserModel)model;
+//			}
 			else if(model instanceof AbstractUnitsSoldModel) {
 				_unitsSold = (AbstractUnitsSoldModel)model;
 			}
@@ -1630,7 +1633,7 @@ public abstract class MCKP extends AbstractAgent {
 		}
 	}
 
-	public static HashMap<Product,HashMap<UserState,Double>> getUserStates(ParticleFilterAbstractUserModel userModel, Set<Product> products) {
+	public static HashMap<Product,HashMap<UserState,Double>> getUserStates(UserModel userModel, Set<Product> products) {
 		HashMap<Product,HashMap<UserState,Double>> userStates = new HashMap<Product,HashMap<UserState,Double>>();
 		for(Product p : products) {
 			HashMap<UserState,Double> userState = new HashMap<UserState,Double>();

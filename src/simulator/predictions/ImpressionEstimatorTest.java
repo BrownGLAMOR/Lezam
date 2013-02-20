@@ -13,8 +13,8 @@ import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
 import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
-import models.usermodel.ParticleFilterAbstractUserModel;
-import models.usermodel.jbergParticleFilter;
+import models.usermodel.UserModel;
+import models.usermodel.UserModelInput;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import simulator.predictions.AllModelTest.GameSet;
@@ -413,11 +413,13 @@ public class ImpressionEstimatorTest {
             }
          }
 
-         List<ParticleFilterAbstractUserModel> userModelList = null;
+         List<UserModel> userModelList = null;
          if (TEST_USER_MODEL) {
-            userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
+            userModelList = new ArrayList<UserModel>();
             for (int i = 0; i < agents.length; i++) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+            	// ETHAN-TODO: Fix this up
+            	UserModel userModel = UserModel.build(new UserModelInput(), UserModel.ModelType.JBERG_PARTICLE_FILTER);
+//               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS);
                userModelList.add(userModel);
             }
          }
@@ -1173,7 +1175,7 @@ public class ImpressionEstimatorTest {
                HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userDistributions = status.getUserDistributions().get(d);
                for (int i = 0; i < agents.length; i++) {
                   Map<Query, Integer> totalImpMap = totalImpsMapList.get(i);
-                  ParticleFilterAbstractUserModel userModel = userModelList.get(i);
+                  UserModel userModel = userModelList.get(i);
                   userModel.updateModel(totalImpMap);
 
                   Map<Product, Map<GameStatusHandler.UserState, Integer>> userPredictionMap = new HashMap<Product, Map<GameStatusHandler.UserState, Integer>>();
@@ -1181,7 +1183,7 @@ public class ImpressionEstimatorTest {
                      HashMap<GameStatusHandler.UserState, Double> userDistProductMap = userDistributions.get(product);
                      Map<GameStatusHandler.UserState, Integer> userPredProductMap = new HashMap<GameStatusHandler.UserState, Integer>();
                      for (GameStatusHandler.UserState state : GameStatusHandler.UserState.values()) {
-                        int userPred = userModel.getCurrentEstimate(product, state);
+                        int userPred = (int)userModel.getPrediction(product, state);
                         userPredProductMap.put(state, userPred);
 
                         double users = userDistProductMap.get(state);

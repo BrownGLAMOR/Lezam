@@ -2,7 +2,7 @@ package models.querytousermodel;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.AbstractUserModel;
+import models.usermodel.UserModel;
 import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
@@ -11,12 +11,12 @@ import java.util.Set;
 
 public class BasicQueryToUserModel extends AbstractQueryToUserModel {
 
-   private AbstractUserModel _userModel;
+   private UserModel _userModel;
    private Set<Product> _products;
    private HashMap<Query, HashMap<GameStatusHandler.UserState, Integer>> _numUsers;
    private Set<Query> _querySpace;
 
-   public BasicQueryToUserModel(AbstractUserModel userModel) {
+   public BasicQueryToUserModel(UserModel userModel) {
       _userModel = userModel;
       _products = new HashSet<Product>();
       _querySpace = new HashSet<Query>();

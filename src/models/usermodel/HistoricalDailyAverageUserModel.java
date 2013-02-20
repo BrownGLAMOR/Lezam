@@ -6,17 +6,20 @@ package models.usermodel;
  */
 
 import edu.umich.eecs.tac.props.Product;
+import edu.umich.eecs.tac.props.Query;
 import edu.umich.eecs.tac.props.QueryReport;
 import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
 import simulator.parser.GameStatusHandler;
+import simulator.parser.GameStatusHandler.UserState;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.Map;
 import java.util.StringTokenizer;
 
-public class HistoricalDailyAverageUserModel extends AbstractUserModel {
+public class HistoricalDailyAverageUserModel extends UserModel {
 
 
    //#Users in each state, for each product/day
@@ -27,23 +30,27 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
    private double[][] Tusers;
    private double[][] NSusers;
 
-   public HistoricalDailyAverageUserModel() {
-
-      int numProds = 9; //FIXME: DON'T HARDCODE!!! Is this data available globally?
-      int numDays = 60; //FIXME: DON'T HARDCODE!!! Is this data available globally?
-      String filename = "src/newmodels/usermodel/UserDetailData-Finals.csv";
-
-
-      String[][] rawVals = readCSVData(filename);
-
-      F0users = new double[numProds][numDays];
-      F1users = new double[numProds][numDays];
-      F2users = new double[numProds][numDays];
-      ISusers = new double[numProds][numDays];
-      Tusers = new double[numProds][numDays];
-      NSusers = new double[numProds][numDays];
-
-      fillUserStatesFromRawData(rawVals);
+//   public HistoricalDailyAverageUserModel() {
+//
+//      int numProds = 9; //FIXME: DON'T HARDCODE!!! Is this data available globally?
+//      int numDays = 60; //FIXME: DON'T HARDCODE!!! Is this data available globally?
+//      String filename = "src/newmodels/usermodel/UserDetailData-Finals.csv";
+//
+//
+//      String[][] rawVals = readCSVData(filename);
+//
+//      F0users = new double[numProds][numDays];
+//      F1users = new double[numProds][numDays];
+//      F2users = new double[numProds][numDays];
+//      ISusers = new double[numProds][numDays];
+//      Tusers = new double[numProds][numDays];
+//      NSusers = new double[numProds][numDays];
+//
+//      fillUserStatesFromRawData(rawVals);
+//   }
+   
+   public HistoricalDailyAverageUserModel(UserModelInput input) {
+	   
    }
 
 
@@ -189,7 +196,7 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 
    @Override
    public AbstractModel getCopy() {
-      return new HistoricalDailyAverageUserModel();
+      return new HistoricalDailyAverageUserModel(new UserModelInput());
    }
 
 
@@ -275,7 +282,7 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
       }
 
 
-      HistoricalDailyAverageUserModel model = new HistoricalDailyAverageUserModel();
+      HistoricalDailyAverageUserModel model = new HistoricalDailyAverageUserModel(new UserModelInput());
 
       Product p = new Product("lioneer", "tv");
       GameStatusHandler.UserState u = GameStatusHandler.UserState.T;
@@ -283,6 +290,18 @@ public class HistoricalDailyAverageUserModel extends AbstractUserModel {
 
       System.out.println("prediction: " + model.getPrediction(p, u, d));
    }
+
+@Override
+public boolean updateModel(Map<Query, Integer> numImpressions) {
+	// TODO Auto-generated method stub
+	return false;
+}
+
+@Override
+public double getPrediction(Product prod, UserState userState) {
+	// TODO Auto-generated method stub
+	return 0;
+}
 
 
 }

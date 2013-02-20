@@ -7,7 +7,7 @@ package models.querytonumimp;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.AbstractUserModel;
+import models.usermodel.UserModel;
 import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
@@ -16,13 +16,13 @@ import java.util.Set;
 
 public class BasicQueryToNumImp extends AbstractQueryToNumImp {
 
-   private AbstractUserModel _userModel;
+   private UserModel _userModel;
    private Set<Product> _products;
    private HashMap<Query, Integer> _numImps;
    private Set<Query> _querySpace;
    private int _lastDay;
 
-   public BasicQueryToNumImp(AbstractUserModel userModel) {
+   public BasicQueryToNumImp(UserModel userModel) {
       _userModel = userModel;
       _products = new HashSet<Product>();
       _querySpace = new HashSet<Query>();

@@ -7,13 +7,14 @@ package models.usermodel;
 
 import edu.umich.eecs.tac.props.Product;
 import edu.umich.eecs.tac.props.Query;
+import edu.umich.eecs.tac.props.QueryReport;
+import edu.umich.eecs.tac.props.SalesReport;
 import models.AbstractModel;
 
 import java.io.*;
 import java.util.*;
 
-import static simulator.parser.GameStatusHandler.UserState;
-
+import simulator.parser.GameStatusHandler.UserState;
 
 public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel {
 
@@ -32,164 +33,168 @@ public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel 
    public HashMap<Product, TransactedProbUpdater> _tpu;
 
    private static final boolean _rules2009 = true;
-
-   public jbergDynamicParticleFilter(double convPr1, double convPrVar1,
-                                     double convPr2, double convPrVar2,
-                                     double convPr3, double convPrVar3) {
-      _baseConvPr1 = convPr1;
-      _convPrVar1 = convPrVar1;
-      _baseConvPr2 = convPr2;
-      _convPrVar2 = convPrVar2;
-      _baseConvPr3 = convPr3;
-      _convPrVar3 = convPrVar3;
-//		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
-//				_baseConvPr2 + " " + _convPrVar2 + " " + 
-//				_baseConvPr3 + " " + _convPrVar3);
-      _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
-      _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
-      _R = new Random(_seed);
-      _particles = new HashMap<Product, Particle[]>();
-      _conversionProbs = new HashMap<UserState, Double>();
-      _tpu = new HashMap<Product, TransactedProbUpdater>();
-
-      _conversionProbs.put(UserState.NS, 0.0);
-      _conversionProbs.put(UserState.IS, 0.0);
-      _conversionProbs.put(UserState.F0, _baseConvPr1);
-      _conversionProbs.put(UserState.F1, _baseConvPr2);
-      _conversionProbs.put(UserState.F2, _baseConvPr3);
-      _conversionProbs.put(UserState.T, 0.0);
-
-      HashMap<UserState, Double> standardFromNSProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromISProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF0Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF1Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromF2Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> standardFromTProbs = new HashMap<UserState, Double>();
-
-      HashMap<UserState, Double> burstFromNSProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromISProbs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF0Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF1Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromF2Probs = new HashMap<UserState, Double>();
-      HashMap<UserState, Double> burstFromTProbs = new HashMap<UserState, Double>();
-
-      standardFromNSProbs.put(UserState.NS, 0.99);
-      standardFromNSProbs.put(UserState.IS, 0.01);
-      standardFromNSProbs.put(UserState.F0, 0.0);
-      standardFromNSProbs.put(UserState.F1, 0.0);
-      standardFromNSProbs.put(UserState.F2, 0.0);
-      standardFromNSProbs.put(UserState.T, 0.0);
-
-      standardFromISProbs.put(UserState.NS, 0.05);
-      standardFromISProbs.put(UserState.IS, 0.2);
-      standardFromISProbs.put(UserState.F0, 0.6);
-      standardFromISProbs.put(UserState.F1, 0.1);
-      standardFromISProbs.put(UserState.F2, 0.05);
-      standardFromISProbs.put(UserState.T, 0.0);
-
-      standardFromF0Probs.put(UserState.NS, 0.1);
-      standardFromF0Probs.put(UserState.IS, 0.0);
-      standardFromF0Probs.put(UserState.F0, 0.7);
-      standardFromF0Probs.put(UserState.F1, 0.2);
-      standardFromF0Probs.put(UserState.F2, 0.0);
-      standardFromF0Probs.put(UserState.T, 0.0);
-
-      standardFromF1Probs.put(UserState.NS, 0.1);
-      standardFromF1Probs.put(UserState.IS, 0.0);
-      standardFromF1Probs.put(UserState.F0, 0.0);
-      standardFromF1Probs.put(UserState.F1, 0.7);
-      standardFromF1Probs.put(UserState.F2, 0.2);
-      standardFromF1Probs.put(UserState.T, 0.0);
-
-      standardFromF2Probs.put(UserState.NS, 0.1);
-      standardFromF2Probs.put(UserState.IS, 0.0);
-      standardFromF2Probs.put(UserState.F0, 0.0);
-      standardFromF2Probs.put(UserState.F1, 0.0);
-      standardFromF2Probs.put(UserState.F2, 0.9);
-      standardFromF2Probs.put(UserState.T, 0.0);
-
-      standardFromTProbs.put(UserState.NS, 0.8);
-      standardFromTProbs.put(UserState.IS, 0.0);
-      standardFromTProbs.put(UserState.F0, 0.0);
-      standardFromTProbs.put(UserState.F1, 0.0);
-      standardFromTProbs.put(UserState.F2, 0.0);
-      standardFromTProbs.put(UserState.T, 0.2);
-
-      burstFromNSProbs.put(UserState.NS, 0.8);
-      burstFromNSProbs.put(UserState.IS, 0.2);
-      burstFromNSProbs.put(UserState.F0, 0.0);
-      burstFromNSProbs.put(UserState.F1, 0.0);
-      burstFromNSProbs.put(UserState.F2, 0.0);
-      burstFromNSProbs.put(UserState.T, 0.0);
-
-      burstFromISProbs.put(UserState.NS, 0.05);
-      burstFromISProbs.put(UserState.IS, 0.2);
-      burstFromISProbs.put(UserState.F0, 0.6);
-      burstFromISProbs.put(UserState.F1, 0.1);
-      burstFromISProbs.put(UserState.F2, 0.05);
-      burstFromISProbs.put(UserState.T, 0.0);
-
-      burstFromF0Probs.put(UserState.NS, 0.1);
-      burstFromF0Probs.put(UserState.IS, 0.0);
-      burstFromF0Probs.put(UserState.F0, 0.7);
-      burstFromF0Probs.put(UserState.F1, 0.2);
-      burstFromF0Probs.put(UserState.F2, 0.0);
-      burstFromF0Probs.put(UserState.T, 0.0);
-
-      burstFromF1Probs.put(UserState.NS, 0.1);
-      burstFromF1Probs.put(UserState.IS, 0.0);
-      burstFromF1Probs.put(UserState.F0, 0.0);
-      burstFromF1Probs.put(UserState.F1, 0.7);
-      burstFromF1Probs.put(UserState.F2, 0.2);
-      burstFromF1Probs.put(UserState.T, 0.0);
-
-      burstFromF2Probs.put(UserState.NS, 0.1);
-      burstFromF2Probs.put(UserState.IS, 0.0);
-      burstFromF2Probs.put(UserState.F0, 0.0);
-      burstFromF2Probs.put(UserState.F1, 0.0);
-      burstFromF2Probs.put(UserState.F2, 0.9);
-      burstFromF2Probs.put(UserState.T, 0.0);
-
-      burstFromTProbs.put(UserState.NS, 0.8);
-      burstFromTProbs.put(UserState.IS, 0.0);
-      burstFromTProbs.put(UserState.F0, 0.0);
-      burstFromTProbs.put(UserState.F1, 0.0);
-      burstFromTProbs.put(UserState.F2, 0.0);
-      burstFromTProbs.put(UserState.T, 0.2);
-
-      _standardProbs.put(UserState.NS, standardFromNSProbs);
-      _standardProbs.put(UserState.IS, standardFromISProbs);
-      _standardProbs.put(UserState.F0, standardFromF0Probs);
-      _standardProbs.put(UserState.F1, standardFromF1Probs);
-      _standardProbs.put(UserState.F2, standardFromF2Probs);
-      _standardProbs.put(UserState.T, standardFromTProbs);
-
-      _burstProbs.put(UserState.NS, burstFromNSProbs);
-      _burstProbs.put(UserState.IS, burstFromISProbs);
-      _burstProbs.put(UserState.F0, burstFromF0Probs);
-      _burstProbs.put(UserState.F1, burstFromF1Probs);
-      _burstProbs.put(UserState.F2, burstFromF2Probs);
-      _burstProbs.put(UserState.T, burstFromTProbs);
-
-      _products = new ArrayList<Product>();
-      _products.add(new Product("flat", "dvd"));
-      _products.add(new Product("flat", "tv"));
-      _products.add(new Product("flat", "audio"));
-      _products.add(new Product("pg", "dvd"));
-      _products.add(new Product("pg", "tv"));
-      _products.add(new Product("pg", "audio"));
-      _products.add(new Product("lioneer", "dvd"));
-      _products.add(new Product("lioneer", "tv"));
-      _products.add(new Product("lioneer", "audio"));
-
-      for (Product product : _products) {
-         _tpu.put(product, new TransactedProbUpdater());
-      }
-
-      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
-//				initializeParticlesFromFile("/u/jberg/initUserParticles");
-      updatePredictionMaps();
+   
+   public jbergDynamicParticleFilter(UserModelInput input) {
+	   
    }
+
+//   public jbergDynamicParticleFilter(double convPr1, double convPrVar1,
+//                                     double convPr2, double convPrVar2,
+//                                     double convPr3, double convPrVar3) {
+//      _baseConvPr1 = convPr1;
+//      _convPrVar1 = convPrVar1;
+//      _baseConvPr2 = convPr2;
+//      _convPrVar2 = convPrVar2;
+//      _baseConvPr3 = convPr3;
+//      _convPrVar3 = convPrVar3;
+////		System.out.println(_baseConvPr1 + " " + _convPrVar1 + " " + 
+////				_baseConvPr2 + " " + _convPrVar2 + " " + 
+////				_baseConvPr3 + " " + _convPrVar3);
+//      _standardProbs = new HashMap<UserState, HashMap<UserState, Double>>();
+//      _burstProbs = new HashMap<UserState, HashMap<UserState, Double>>();
+//      _R = new Random(_seed);
+//      _particles = new HashMap<Product, Particle[]>();
+//      _conversionProbs = new HashMap<UserState, Double>();
+//      _tpu = new HashMap<Product, TransactedProbUpdater>();
+//
+//      _conversionProbs.put(UserState.NS, 0.0);
+//      _conversionProbs.put(UserState.IS, 0.0);
+//      _conversionProbs.put(UserState.F0, _baseConvPr1);
+//      _conversionProbs.put(UserState.F1, _baseConvPr2);
+//      _conversionProbs.put(UserState.F2, _baseConvPr3);
+//      _conversionProbs.put(UserState.T, 0.0);
+//
+//      HashMap<UserState, Double> standardFromNSProbs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> standardFromISProbs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> standardFromF0Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> standardFromF1Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> standardFromF2Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> standardFromTProbs = new HashMap<UserState, Double>();
+//
+//      HashMap<UserState, Double> burstFromNSProbs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> burstFromISProbs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> burstFromF0Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> burstFromF1Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> burstFromF2Probs = new HashMap<UserState, Double>();
+//      HashMap<UserState, Double> burstFromTProbs = new HashMap<UserState, Double>();
+//
+//      standardFromNSProbs.put(UserState.NS, 0.99);
+//      standardFromNSProbs.put(UserState.IS, 0.01);
+//      standardFromNSProbs.put(UserState.F0, 0.0);
+//      standardFromNSProbs.put(UserState.F1, 0.0);
+//      standardFromNSProbs.put(UserState.F2, 0.0);
+//      standardFromNSProbs.put(UserState.T, 0.0);
+//
+//      standardFromISProbs.put(UserState.NS, 0.05);
+//      standardFromISProbs.put(UserState.IS, 0.2);
+//      standardFromISProbs.put(UserState.F0, 0.6);
+//      standardFromISProbs.put(UserState.F1, 0.1);
+//      standardFromISProbs.put(UserState.F2, 0.05);
+//      standardFromISProbs.put(UserState.T, 0.0);
+//
+//      standardFromF0Probs.put(UserState.NS, 0.1);
+//      standardFromF0Probs.put(UserState.IS, 0.0);
+//      standardFromF0Probs.put(UserState.F0, 0.7);
+//      standardFromF0Probs.put(UserState.F1, 0.2);
+//      standardFromF0Probs.put(UserState.F2, 0.0);
+//      standardFromF0Probs.put(UserState.T, 0.0);
+//
+//      standardFromF1Probs.put(UserState.NS, 0.1);
+//      standardFromF1Probs.put(UserState.IS, 0.0);
+//      standardFromF1Probs.put(UserState.F0, 0.0);
+//      standardFromF1Probs.put(UserState.F1, 0.7);
+//      standardFromF1Probs.put(UserState.F2, 0.2);
+//      standardFromF1Probs.put(UserState.T, 0.0);
+//
+//      standardFromF2Probs.put(UserState.NS, 0.1);
+//      standardFromF2Probs.put(UserState.IS, 0.0);
+//      standardFromF2Probs.put(UserState.F0, 0.0);
+//      standardFromF2Probs.put(UserState.F1, 0.0);
+//      standardFromF2Probs.put(UserState.F2, 0.9);
+//      standardFromF2Probs.put(UserState.T, 0.0);
+//
+//      standardFromTProbs.put(UserState.NS, 0.8);
+//      standardFromTProbs.put(UserState.IS, 0.0);
+//      standardFromTProbs.put(UserState.F0, 0.0);
+//      standardFromTProbs.put(UserState.F1, 0.0);
+//      standardFromTProbs.put(UserState.F2, 0.0);
+//      standardFromTProbs.put(UserState.T, 0.2);
+//
+//      burstFromNSProbs.put(UserState.NS, 0.8);
+//      burstFromNSProbs.put(UserState.IS, 0.2);
+//      burstFromNSProbs.put(UserState.F0, 0.0);
+//      burstFromNSProbs.put(UserState.F1, 0.0);
+//      burstFromNSProbs.put(UserState.F2, 0.0);
+//      burstFromNSProbs.put(UserState.T, 0.0);
+//
+//      burstFromISProbs.put(UserState.NS, 0.05);
+//      burstFromISProbs.put(UserState.IS, 0.2);
+//      burstFromISProbs.put(UserState.F0, 0.6);
+//      burstFromISProbs.put(UserState.F1, 0.1);
+//      burstFromISProbs.put(UserState.F2, 0.05);
+//      burstFromISProbs.put(UserState.T, 0.0);
+//
+//      burstFromF0Probs.put(UserState.NS, 0.1);
+//      burstFromF0Probs.put(UserState.IS, 0.0);
+//      burstFromF0Probs.put(UserState.F0, 0.7);
+//      burstFromF0Probs.put(UserState.F1, 0.2);
+//      burstFromF0Probs.put(UserState.F2, 0.0);
+//      burstFromF0Probs.put(UserState.T, 0.0);
+//
+//      burstFromF1Probs.put(UserState.NS, 0.1);
+//      burstFromF1Probs.put(UserState.IS, 0.0);
+//      burstFromF1Probs.put(UserState.F0, 0.0);
+//      burstFromF1Probs.put(UserState.F1, 0.7);
+//      burstFromF1Probs.put(UserState.F2, 0.2);
+//      burstFromF1Probs.put(UserState.T, 0.0);
+//
+//      burstFromF2Probs.put(UserState.NS, 0.1);
+//      burstFromF2Probs.put(UserState.IS, 0.0);
+//      burstFromF2Probs.put(UserState.F0, 0.0);
+//      burstFromF2Probs.put(UserState.F1, 0.0);
+//      burstFromF2Probs.put(UserState.F2, 0.9);
+//      burstFromF2Probs.put(UserState.T, 0.0);
+//
+//      burstFromTProbs.put(UserState.NS, 0.8);
+//      burstFromTProbs.put(UserState.IS, 0.0);
+//      burstFromTProbs.put(UserState.F0, 0.0);
+//      burstFromTProbs.put(UserState.F1, 0.0);
+//      burstFromTProbs.put(UserState.F2, 0.0);
+//      burstFromTProbs.put(UserState.T, 0.2);
+//
+//      _standardProbs.put(UserState.NS, standardFromNSProbs);
+//      _standardProbs.put(UserState.IS, standardFromISProbs);
+//      _standardProbs.put(UserState.F0, standardFromF0Probs);
+//      _standardProbs.put(UserState.F1, standardFromF1Probs);
+//      _standardProbs.put(UserState.F2, standardFromF2Probs);
+//      _standardProbs.put(UserState.T, standardFromTProbs);
+//
+//      _burstProbs.put(UserState.NS, burstFromNSProbs);
+//      _burstProbs.put(UserState.IS, burstFromISProbs);
+//      _burstProbs.put(UserState.F0, burstFromF0Probs);
+//      _burstProbs.put(UserState.F1, burstFromF1Probs);
+//      _burstProbs.put(UserState.F2, burstFromF2Probs);
+//      _burstProbs.put(UserState.T, burstFromTProbs);
+//
+//      _products = new ArrayList<Product>();
+//      _products.add(new Product("flat", "dvd"));
+//      _products.add(new Product("flat", "tv"));
+//      _products.add(new Product("flat", "audio"));
+//      _products.add(new Product("pg", "dvd"));
+//      _products.add(new Product("pg", "tv"));
+//      _products.add(new Product("pg", "audio"));
+//      _products.add(new Product("lioneer", "dvd"));
+//      _products.add(new Product("lioneer", "tv"));
+//      _products.add(new Product("lioneer", "audio"));
+//
+//      for (Product product : _products) {
+//         _tpu.put(product, new TransactedProbUpdater());
+//      }
+//
+//      initializeParticlesFromFile("/Users/jordanberg/Documents/workspace/Clients/initUserParticles");
+////				initializeParticlesFromFile("/u/jberg/initUserParticles");
+//      updatePredictionMaps();
+//   }
 
    public void initializeParticlesFromFile(String filename) {
       int[][] allStates = new int[NUM_PARTICLES][UserState.values().length];
@@ -412,8 +417,8 @@ public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel 
    }
 
    @Override
-   public int getPrediction(Product product, UserState userState) {
-      return ((int) ((double) _predictions.get(product).get(userState)));
+   public double getPrediction(Product product, UserState userState) {
+      return ((double) _predictions.get(product).get(userState));
    }
 
    @Override
@@ -744,8 +749,22 @@ public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel 
 
    @Override
    public AbstractModel getCopy() {
-      return new jbergDynamicParticleFilter(_baseConvPr1, _convPrVar1, _baseConvPr2, _convPrVar2, _baseConvPr3, _convPrVar3);
+	   // ETHAN-TODO: Fix this up
+	  return new jbergDynamicParticleFilter(new UserModelInput());
+//      return new jbergDynamicParticleFilter(_baseConvPr1, _convPrVar1, _baseConvPr2, _convPrVar2, _baseConvPr3, _convPrVar3);
    }
+
+@Override
+public boolean updateModel(QueryReport queryReport, SalesReport salesReport) {
+	// TODO Auto-generated method stub
+	return false;
+}
+
+@Override
+public int getPrediction(Product product, UserState userState, int day) {
+	// TODO Auto-generated method stub
+	return 0;
+}
 
 }
 

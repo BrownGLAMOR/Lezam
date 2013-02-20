@@ -25,6 +25,8 @@ import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
+import models.usermodel.UserModel;
+import models.usermodel.UserModelInput;
 import models.usermodel.jbergParticleFilter;
 import se.sics.tasim.aw.Message;
 import simulator.parser.GameStatus;
@@ -242,10 +244,12 @@ public class AllModelTest {
             }
          }
 
-         List<ParticleFilterAbstractUserModel> userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
+         List<UserModel> userModelList = new ArrayList<UserModel>();
          for (int i = 0; i < advertisers.size(); i++) {
             if(i == replaceIdx) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+            	// ETHAN-TODO: Fixup
+            	UserModel userModel = UserModel.build(new UserModelInput(), UserModel.ModelType.JBERG_PARTICLE_FILTER);
+//               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
                userModelList.add(userModel);
             }
             else {
@@ -472,7 +476,7 @@ public class AllModelTest {
                   }
 
                   AbstractQueryAnalyzer queryAnalyzer = queryAnalyzerList.get(agent);
-                  ParticleFilterAbstractUserModel userModel = userModelList.get(agent);
+                  UserModel userModel = userModelList.get(agent);
                   AbstractBudgetEstimator budgetModel = budgetModelList.get(agent);
                   AbstractBidModel bidModel = bidModelList.get(agent);
                   AbstractParameterEstimation paramModel = paramModelList.get(agent);

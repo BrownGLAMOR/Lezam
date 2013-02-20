@@ -2,7 +2,7 @@ package models.prconv;
 
 import edu.umich.eecs.tac.props.*;
 import models.AbstractModel;
-import models.usermodel.AbstractUserModel;
+import models.usermodel.UserModel;
 import simulator.parser.GameStatusHandler;
 
 import java.util.HashMap;
@@ -10,12 +10,12 @@ import java.util.Set;
 
 public class BasicConvPrModel extends AbstractConversionModel {
 
-   private AbstractUserModel _userModel;
+   private UserModel _userModel;
    private Set<Query> _querySpace;
    private HashMap<Query, Double> _baselineConvPr;
    int day = 0;
 
-   public BasicConvPrModel(AbstractUserModel userModel, Set<Query> querySpace, HashMap<Query, Double> baselineConvPr) {
+   public BasicConvPrModel(UserModel userModel, Set<Query> querySpace, HashMap<Query, Double> baselineConvPr) {
       _userModel = userModel;
       _querySpace = querySpace;
       _baselineConvPr = baselineConvPr;

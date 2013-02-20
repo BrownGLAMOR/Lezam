@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * @author jberg
  */
-public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
+public abstract class ParticleFilterAbstractUserModel extends UserModel {
    /**
     * Number of users per product type
     */
@@ -51,7 +51,7 @@ public abstract class ParticleFilterAbstractUserModel extends AbstractModel {
     * two days from the current day, because we are bidding for tomorrow and there
     * is one day of lag
     */
-   public abstract int getPrediction(Product product, GameStatusHandler.UserState userState);
+   public abstract double getPrediction(Product product, GameStatusHandler.UserState userState);
 
    /**
     * This method should return the current estimate for this
