@@ -417,10 +417,8 @@ public class ImpressionEstimatorTest {
          if (TEST_USER_MODEL) {
             userModelList = new ArrayList<UserModel>();
             for (int i = 0; i < agents.length; i++) {
-            	// ETHAN-TODO: Fix this up
-            	UserModel userModel = UserModel.build(new UserModelInput(), UserModel.ModelType.JBERG_PARTICLE_FILTER);
-//               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS);
-               userModelList.add(userModel);
+            	UserModel userModel = UserModel.build(new UserModelInput(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
+            	userModelList.add(userModel);
             }
          }
 

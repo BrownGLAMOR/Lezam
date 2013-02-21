@@ -25,8 +25,6 @@ import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.UserModel;
 import models.usermodel.UserModelInput;
-//import models.usermodel.ParticleFilterAbstractUserModel;
-//import models.usermodel.jbergParticleFilter;
 import simulator.AgentSimulator;
 import simulator.TestAgent;
 import tacaa.javasim;

@@ -24,10 +24,8 @@ import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
-import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.UserModel;
 import models.usermodel.UserModelInput;
-import models.usermodel.jbergParticleFilter;
 import se.sics.tasim.aw.Message;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
@@ -247,10 +245,8 @@ public class AllModelTest {
          List<UserModel> userModelList = new ArrayList<UserModel>();
          for (int i = 0; i < advertisers.size(); i++) {
             if(i == replaceIdx) {
-            	// ETHAN-TODO: Fixup
-            	UserModel userModel = UserModel.build(new UserModelInput(), UserModel.ModelType.JBERG_PARTICLE_FILTER);
-//               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
-               userModelList.add(userModel);
+            	UserModel userModel = UserModel.build(new UserModelInput(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
+            	userModelList.add(userModel);
             }
             else {
                userModelList.add(null);

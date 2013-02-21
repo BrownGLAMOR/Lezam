@@ -35,7 +35,9 @@ public class jbergDynamicParticleFilter extends ParticleFilterAbstractUserModel 
    private static final boolean _rules2009 = true;
    
    public jbergDynamicParticleFilter(UserModelInput input) {
-	   
+	   // ETHAN-TODO: Fix this up though it never seems to be used
+//	   double[] convProb = input.getConversionProbs();
+//	   this.initialize(convProb[0],)
    }
 
 //   public jbergDynamicParticleFilter(double convPr1, double convPrVar1,

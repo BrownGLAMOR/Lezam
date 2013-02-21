@@ -37,7 +37,7 @@ public abstract class UserModel extends AbstractModel {
 				return new SingleParticleFilter(input);
 			case DEFAULT:
 			default:
-				return new jbergDynamicParticleFilter(input);
+				return new jbergParticleFilter(input);
 		}
 	}
 
@@ -45,7 +45,8 @@ public abstract class UserModel extends AbstractModel {
 			SalesReport salesReport);
 	
 	public abstract boolean updateModel(Map<Query,Integer> numImpressions);
-	
+
+	// This should basically be equivalent to calling the other one with day == 0
 	public abstract double getPrediction(Product prod, GameStatusHandler.UserState userState);
 
 	public abstract int getPrediction(Product product,
