@@ -13,8 +13,15 @@
                                      AdvertiserInfo PublisherInfo
                                      SlotInfo QueryType RetailCatalog)))
 
-
-
+; get-exp-convs: double double int int -> double
+; Inputs:
+; - convp, the conversion probability
+; - lam, the lambda parameter controlling distribution capacity penalty
+; - remcap, a limiting number of conversions
+; - clicks, number of clicks currently given
+; Output:
+; - the number of conversions for the given parameters (i.e given this cap and this many clicks already,
+;   how many conversions do we get?)
 (defn get-exp-convs
   [convpr lam remcap clicks]
   (loop [clicks (double clicks)
@@ -28,6 +35,15 @@
         (+ convs (/ clicks clicks-to-conv))
         (recur (- clicks clicks-to-conv) (inc convs) (dec remcap))))))
 
+
+; convpr-penalty2: double int double -> double
+; Inputs:
+; - lam, the lambda paramter controlling distribution capacity penalty
+; - rem-cap, the limiting number of conversions
+; - sol-weight, controls threshold for iteration: high weight = more iterations
+;   negative = NO iterations. can think of this as a way to tell us how many more purchases over limit we can make
+; Output:
+; - the penalty to be applied to the conversion probability
 (defn convpr-penalty2
   ([lam rem-cap sol-weight]
      (let [rem-cap (int rem-cap)
@@ -41,10 +57,10 @@
                     n (int (+ arem-cap 1))
                     weightsum (double 0.0)]
                (if (not (<= n (+ arem-cap sol-weight)))
-                 (/ psum weightsum)
+                 (/ psum weightsum) ;BREAKS UNDER BASE CONDITION HERE (e.g rem-cap = -1, sol-weight = 0.5), yields NaN
                  (let [pen (double (Math/pow lam n))
                        penweight (double (/ 1.0 pen))]
-                   (recur (+ psum (* pen penweight))
+                   (recur (+ psum (* pen penweight)) ; = (+ psum 1)?
                           (inc n)
                           (+ weightsum penweight)))))))
          (if (<= sol-weight 0)
@@ -64,12 +80,17 @@
   ([convpr lam remcap clicks]
      (/ (/ (get-exp-convs convpr lam remcap clicks) clicks) convpr)))
 
-
+; calc-mean (num list) -> double
+; Input: a list of numbers
+; Output: the mean of that list of numbers
 (defn calc-mean
   [lst]
   (/ (reduce + lst) (count lst)))
 
-
+; calc-std-dev (num list) -> double, (num list) num -> double
+; Input: either a list of numbers or a list of numbers and a mean
+; Output: the standard deviation of that list with respect to the given mean
+; alternatively, the standard deviation of the list wrt to its own mean
 (defn calc-std-dev
   ([lst] (calc-std-dev lst (calc-mean lst)))
   ([lst mean]
@@ -77,6 +98,9 @@
            sumdiff (reduce + diffs)]
        (Math/sqrt (/ sumdiff (dec (count lst)))))))
 
+; calc-mean-and-std
+; Input: a list of numbers
+; Output: a vector where mean is first, stdev is second
 (defn calc-mean-and-std
   [lst]
   (let [mean (calc-mean lst)]
@@ -95,7 +119,8 @@
        (java.util.Collections/shuffle al rnd)
        (clojure.lang.RT/vector (.toArray al)))))
 
-
+;next two possibly redundant? pretty sure we have built-in functions for finding
+;min and max of lists of doubles (apply min/max)
 (defn find-min
   [lst]
   (loop [min Double/MAX_VALUE lst lst]
@@ -118,12 +143,19 @@
          max)
        (rest lst)))))
 
+;should just be a global variable
 (defn mk-convpr-map
   []
   {:qsf0 0.11,
    :qsf1 0.23,
    :qsf2 0.36})
 
+;mk-adv-effect-map: map -> map (agent to map (query to double))
+;Input: status, a map hopefully containing the following keys:
+; - user-click, a UserClickModel
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map associating each Agent with a map of Queries to respective advertiser effects
 (defn mk-adv-effect-map
   [status]
   (let [^UserClickModel user-click (status :user-click)
@@ -139,6 +171,13 @@
                              {} queryspace)))
             {} (range (count agents)))))
 
+
+;mk-cont-prob-map: map -> map (query to double)
+;Input: status, a map hopefully containing the following keys:
+; - user-click, a UserClickModel
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map associating each Query with its continuation probability
 (defn mk-cont-prob-map
   [status]
   (let [^UserClickModel user-click (status :user-click)
@@ -149,6 +188,12 @@
                                                            (.queryIndex user-click query))))
             {} queryspace)))
 
+;mk-man-spec-map: map -> map (string to string)
+;Input: status, a map hopefully containing the following keys:
+; - adv-info, a map of Agents to AdvertiserInfo objects
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map associating each Agent with the manufacturer it specializes in
 (defn mk-man-spec-map
   [status]
   (let [adv-info (status :adv-info)
@@ -157,6 +202,13 @@
     (reduce (fn [coll val]
               (assoc coll val (.getManufacturerSpecialty ^AdvertiserInfo (adv-info val))))
             {} agents)))
+
+;mk-comp-spec-map: map -> map (string to string)
+;Input: status, a map hopefully containing the following keys:
+; - adv-info, a map of Agents to AdvertiserInfo objects
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map associating each Agent with the component it specializes in
 
 (defn mk-comp-spec-map
   [status]
@@ -167,6 +219,12 @@
               (assoc coll val (.getComponentSpecialty ^AdvertiserInfo (adv-info val))))
             {} agents)))
 
+;mk-capacity-map: map -> map (string to int)
+;Input: status, a map hopefully containing the following keys:
+; - adv-info, a map of Agents to AdvertiserInfo objects
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map associating each Agent with its distribution capacity (purchases before penalty kicks in)
 (defn mk-capacity-map
   [status]
   (let [adv-info (status :adv-info)
@@ -176,6 +234,12 @@
               (assoc coll val (.getDistributionCapacity ^AdvertiserInfo (adv-info val))))
             {} agents)))
 
+;mk-single-budget-map: BidBundle -> Query coll -> map (query to double)
+;Input:
+;- bundle, a BidBundle object
+;- queryspace, a collection of Queries
+;Output: A map associating each query in queryspace with its daily spending limit, plus the total spending limit
+;- note the daily spending limit per query is at most the campaign daily spending limit
 (defn mk-single-budget-map
   [^BidBundle bundle queryspace]
   (let [tot-budget (.getCampaignDailySpendLimit bundle)]
@@ -185,6 +249,12 @@
             {:total-budget tot-budget}
             queryspace)))
 
+;mk-budget-map: map -> map (string to 60-vector of map (query to double))
+;Input: status, a map hopefully containing the following keys:
+; - bid-bundle, a map from agents to 60-vectors of BidBundles
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map from agents to vectors containing full budgets for each of 60 days
 (defn mk-budget-map
   [status]
   (let [bid-bundle (status :bid-bundle)
@@ -200,6 +270,12 @@
                                [] (range 59)))))
             {} agents)))
 
+;mk-single-ad-map: BidBundle -> Query coll -> map (Query to Ad)
+;Input:
+;- bundle, a BidBundle object
+;- queryspace, a collection of Query objects
+;Output: a map associating each query in queryspace with its corresponding Ad
+; in the BidBundle
 (defn mk-single-ad-map
   [^BidBundle bundle queryspace]
   (reduce (fn [coll ^Query query]
@@ -207,6 +283,13 @@
                    (.getAd bundle query)))
           {} queryspace))
 
+;mk-ad-map: map -> map (string to 60-vector of map (query to ad))
+;Input: status, a map hopefully containing the following keys:
+; - bid-bundle, a map from agents to 60-vectors of BidBundles
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+;Output: a map from agents to vectors containing full ad strategies 
+; (targeted vs generic for each query) for each of 60 days
 (defn mk-ad-map
   [status]
   (let [bid-bundle (status :bid-bundle)
@@ -222,7 +305,13 @@
                                [] (range 59)))))
             {} agents)))
 
-
+;mk-single-squashed-bid-map: BidBundle -> Query coll -> map (Query to double)
+;Input:
+;- bundle, a BidBundle object
+;- adv-effect, a map associating Queries with baseline click probability (advertiser-effect)
+;- squash-param, the game's squash parameter
+;- queryspace, a collection of Query objects
+;Output: a map associating each query in queryspace with its corresponding squashed bid
 (defn mk-single-squashed-bid-map
   [^BidBundle bundle adv-effect squash-param queryspace]
   (reduce (fn [coll ^Query query]
@@ -232,6 +321,15 @@
                                 squash-param))))
           {} queryspace))
 
+;mk-squashed-bid-map: map -> map (string to 60-vector of map (Query to double))
+;Input: status, a map hopefully containing the following keys:
+; - bid-bundle, a map from agents to 60-vectors of BidBundles
+; - adv-effects, a map associating agents with a map relating queries to advertiser-effects
+; - agents, a vector of Agents
+; - queryspace, a collection of Queries
+; - squash-param, the game's squash parameter
+;Output: a map from agents to vectors containing full squashed-bid amounts
+; (effective scores for each query) for each of 60 days
 (defn mk-squashed-bid-map
   [status]
   (let [bid-bundle (status :bid-bundle)
@@ -253,7 +351,10 @@
                                [] (range 59)))))
             {} agents)))
 
-
+;mk-prod-query-map [status]: map -> map (Product to (Query vector))
+;Input: status, a map hopefully with key retail-cat, a collection of products OR
+;       retail-cat, a collection of products and dummy, some integer dummy variable (just to give a different -arity, who knows why)
+;Output: a map associating each Product with a 4-vector of all possible queries that deal with it
 (defn mk-prod-query-map
   ([status] (mk-prod-query-map (status :retail-cat) 0))
   ([retail-cat dummy]
@@ -266,6 +367,9 @@
                                    (new Query man comp)])))
              {} (seq retail-cat))))
 
+;mk-query-type-map: map -> map (query to querytype)
+;Input: status, a map with the key :query-space, a collection of Queries
+;Output: a map from queries to their corresponding querytypes
 (defn mk-query-type-map
   ([status] (mk-query-type-map (status :query-space) 0))
   ([query-space dummy]
@@ -279,6 +383,15 @@
                             :qsf2)))))
              {} query-space)))
 
+;min-reg-res: map -> (Query coll) -> int
+;Input:
+; - status, a map hopefully containing keys:
+;   - query-report, a map associating agents to 60-vectors of QueryReports
+;   - squashed-bids, a map assocating agents to 60-vectors of maps from queries to effective bid scores
+;   - agents, a collection of agents
+; - queryspace, a collection of queries
+;Output: the absolute minimum effective bid score for any query, on any day, among all agents
+;NOTE: if there are no values to check, returns Double/MAX_VALUE
 (defn min-reg-res
   [status queryspace]
   (let [query-reports (status :query-report)
@@ -293,7 +406,7 @@
                       (let [^QueryReport qr (query-report day)
                             sb (squashed-bid day)]
                         (find-min
-                         (filter identity
+                         (filter identity ;get a list of the scores from all queries with a nonzero number of impressions
                                  (map (fn [^Query query] (if (> (.getImpressions qr query) 0)
                                                    (sb query)
                                                    nil))
@@ -301,6 +414,8 @@
                     (range 59)))))
           agents))))
 
+;[#INIT]
+; calculates the minimum reserve score for promoted slots
 (defn min-prom-res
   [status queryspace]
   (let [query-reports (status :query-report)
@@ -356,7 +471,7 @@
                                                                            (.getConversions sr query))
                                                                          queryspace)))))
                                                 (vec (replicate (dec sales-window) (/ capacity sales-window)))
-                                                (range 59)))))))
+                                                (range 59)))))))                        
             {} agents)))
 
 (defn mk-random-search-pools-map
@@ -485,7 +600,11 @@
                    search-maps))
      random)))
 
-
+;from parser, parse game messages to get a rudimentary status. from functions above and rudiementary 
+;status, make all these other parameters required to start the game
+;interesting notes:
+; -does this in pseudo-imperative fashion (incrementally constructs the status based on earlier defns
+; 	in the let expression
 (defn init-sim-info
   ([status]
      (let [agents (status :agents)
@@ -775,9 +894,10 @@
                    (conj samps samp))))))
     (vec (range max-val))))
 
+;[#CORE]
 (defn sample-avg-pos
   [stats queryspace random]
-  (reduce (fn [coll query]
+  (reduce (fn [coll query] ;everything indented here is one giant function ;_; (agent is a -var- here, not the fn)
             (let [lenlst (map (fn [[agent astats]]
                                 (count ((astats query) :pos-vec)))
                               coll)
@@ -877,6 +997,7 @@
                                             :revenue (aqstats :revenue)})))))))))
           stats queryspace))
 
+;NEED TO FIGURE OUT OUTPUT TYPE HERE [#CORE]
 (defn simulate-day
   ([status day search-queue ^java.util.Random random singleq?]
      (let [agents (status :agents)
@@ -912,6 +1033,7 @@
               stats (reduce (fn [coll agent]
                               (assoc! coll agent
                                      (reduce (fn [coll2 query]
+                                     			;initialize day's statistics to zero
                                                (assoc! coll2 query
                                                        {:imps 0,
                                                         :prom-imps 0,
@@ -928,12 +1050,14 @@
                                                          :total-convs 0}) queryspace)))
                             (transient {}) agents)]
          (if (not (seq search-queue))
+         	;-----base case----- returns the information necessary to give the report (sample-avg-pos), i assume
            (sample-avg-pos
             (reduce (fn [coll [agent astats]]
                       (assoc coll agent (persistent! astats)))
                     {} (persistent! stats))
             queryspace
             random)
+            ;-----recursive case-----
            (let [smap (first search-queue)
                  isis (contains? smap :is)
                  q (if isis
@@ -1119,6 +1243,7 @@
                     ranked-agents
                     stats)))))))
 
+; [#CORE]
 (defn simulate-expected-day
   ([status day]
      (let [random (java.util.Random.)
@@ -1126,6 +1251,7 @@
            search-queue (mk-search-queue search-pool random false)]
        (simulate-day status day search-queue random false))))
 
+; [#CORE]
 (defn simulate-random-day
   ([status day]
      (let [random (java.util.Random.)
@@ -1133,7 +1259,7 @@
            search-queue (mk-search-queue search-pool random false)]
        (simulate-day status day search-queue random false))))
 
-
+; [#CORE]
 (defn simulate-query
   [status day query]
   (let [random (java.util.Random.)
@@ -1164,6 +1290,7 @@
                     (peek (first astats)) (rest astats))))
           {} stats))
 
+;[#CORE]
 (defn combine-stats-days
   [statslst]
   (reduce (fn [coll vals1]
@@ -1180,9 +1307,11 @@
                               :convs (+ ((coll agent) :convs)
                                         (vals2 :convs)),
                               :revenue (+ ((coll agent) :revenue)
-                                          (vals2 :revenue))}))
-                    {} vals1))
-          (first statslst) (rest statslst)))
+                                          (vals2 :revenue))})) ;end of fn2
+                    {} vals1)) ;fn1 = reduce fn2 over empty set base, vals1
+          (first statslst) (rest statslst))) ;reduce fn1 over statslst
+;inner fn2 looks like it
+
 
 (defn mk-query-report
   [status stats agent day]
@@ -1252,6 +1381,7 @@
           (status :query-space)))
     nil))
 
+; [#CORE] [#MAIN]
 (defn simulate-game-with-agent
   [status ^AbstractAgent agent agent-to-replace]
   (if (not (some #{agent-to-replace} (status :agents)))
@@ -1352,7 +1482,7 @@
                   ;(prn "Seconds spent on day " day ": " (/ (double (- (. System (nanoTime)) start-time)) 1000000000.0))
                   (recur (inc day) (conj statslst stats) status))))))))))
 
-
+; [#CORE]
 (defn simulate-game
   [status]
   (let [statslst (map (fn [day] (combine-queries (simulate-expected-day status day))) (range 59))]
@@ -1394,7 +1524,7 @@
                              (stats :cost)
                              (stats :revenue)))))
             {} agents)))
-
+; [#CORE]
 (defn game-full-summary
   [status]
   (let [agents (status :agents)
@@ -1431,7 +1561,11 @@
                                (range 59)))))
             {} agents)))
 
-
+; [#CORE] [#MAIN]
+;looks to be main function (no other functions call it)
+;Inputs:
+;	status: an (initial) game status
+;	numests: number of estimates to be made...?
 (defn game-full-dists
   [status numests]
   (let [actualstats (game-full-summary status)
@@ -1462,7 +1596,7 @@
                              (assoc coll agent
                                     {:imps (calc-mean-and-std (statsmap :imps)),
                                      :prom-imps (calc-mean-and-std (statsmap :prom-imps)),
-                                     :clicks (calc-mean-and-std (statsmap :clicks)),
+                                     :clicks (calc-mean-and-std (statsmap :clicks)),	
                                      :convs (calc-mean-and-std (statsmap :convs)),
                                      :cost (calc-mean-and-std (statsmap :cost)),
                                      :revenue (calc-mean-and-std (statsmap :revenue))}))
@@ -1614,7 +1748,11 @@
                                   n))
                      (inc n)))))))))
 
-
+; solution-weight
+; inputs:
+; - self-explanatory; stats is a big table, all the rest are parameters
+; output:
+; - the weight of the solution
 (defn solution-weight
   [stats convprs query-type rem-cap comp-spec comp-bonus lam]
   (loop [weight 0
@@ -1821,7 +1959,7 @@
 (defn crap
   []
   (doall
-   (for [x (range 15147 15150) :let [file (str "/Users/jordanberg/Desktop/tacaa2010/game-tacaa1-" x ".slg")]]
+   (for [x (range 1410 1445) :let [file (str "/Users/Aniran/tacaa2011/semi/server1/game" x ".slg")]]
      (do
        (prn "File: " file)
        (prn (doall (simq-dists (init-sim-info (tacaa.parser/parse-file file)))))))))

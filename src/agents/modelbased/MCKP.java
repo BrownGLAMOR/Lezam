@@ -23,6 +23,7 @@ import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
+import models.usermodel.ParticleFilterAbstractUserModel;
 import models.usermodel.UserModel;
 import models.usermodel.UserModelInput;
 import simulator.AgentSimulator;
@@ -345,7 +346,8 @@ public abstract class MCKP extends AbstractAgent {
 			return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace, 0);//HC num
 		}
 	}
-
+	
+	//returns an array of average impressions,clicks,costs,sales, and other stats
 	public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
 		ArrayList result;
 		if(hasPerfectModels()) {
@@ -360,7 +362,8 @@ public abstract class MCKP extends AbstractAgent {
 		}
 		return resultArr;
 	}
-
+	
+	//returns an array of total conversions and total costs for the day
 	public double[] simulateDay(PersistentHashMap cljSim, BidBundle bundle) {
 		ArrayList result;
 		if(hasPerfectModels()) {
@@ -484,12 +487,13 @@ public abstract class MCKP extends AbstractAgent {
 	public void setModels(Set<AbstractModel> models) {
 		super.setModels(models);
 		for(AbstractModel model : _models) {
+			System.out.println(model.getClass());
 			if(model instanceof AbstractQueryAnalyzer) {
 				_queryAnalyzer = (AbstractQueryAnalyzer)model;
 			}
-//			else if(model instanceof ParticleFilterAbstractUserModel) {
-//				_userModel = (ParticleFilterAbstractUserModel)model;
-//			}
+			else if(model instanceof ParticleFilterAbstractUserModel) {
+				_userModel = (ParticleFilterAbstractUserModel)model;
+			}
 			else if(model instanceof AbstractUnitsSoldModel) {
 				_unitsSold = (AbstractUnitsSoldModel)model;
 			}
@@ -588,7 +592,7 @@ public abstract class MCKP extends AbstractAgent {
 								impsClicksAndCost[10],
 								impsClicksAndCost[11],
 								impsClicksAndCost[12]};
-						double ISRatio = impsClicksAndCost[13];
+						double ISRatio = impsClicksAndCost[13]; //general IS ratio
 						double CPC = cost / numClicks;
 						double clickPr = numClicks / numImps;
 
@@ -619,7 +623,9 @@ public abstract class MCKP extends AbstractAgent {
 							//System.out.println("ERROR convProbWithPen NaN"); //ap
 							convProbWithPen = 0.0;//HC num
 						}
-
+						//-----knapsack segment of the problem: convert this all into weights, values-----
+						//what segments of this problem come from the clojure model? numClicks (directly), CPC (via cost)
+						//
 						double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
 						double v = numClicks*convProbWithPen*_salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 						itemList.add(new Item(_q,w,v,bid,budget,targeting,0,itemCount));
@@ -750,15 +756,24 @@ public abstract class MCKP extends AbstractAgent {
 					e.printStackTrace();
 				}
 
-
-				for(Query q : _querySpace) {
+				for(Query q : _querySpace)
 					if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
 						ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
 						ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
 						double convProb = getConversionPrWithPenalty(q, 1.0);//HC num
 						double salesPrice = _salesPrices.get(q);
 						int itemCount = 0;                 
-
+ 
+						//-----INITIALIZING CHART DATA-----
+						Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
+						Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
+						int bidLen = bidsArr.length;
+						int budgetLen = budgetsArr.length;
+						Double[][] costsMat = new Double[bidLen][budgetLen];
+						Double[][] numClicksMat = new Double[bidLen][budgetLen];
+						Double[][] weightsMat = new Double[bidLen][budgetLen];
+						Double[][] profitsMat = new Double[bidLen][budgetLen];
+						//-----END CHART DATA-----
 
 						//FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
 						for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
@@ -818,12 +833,20 @@ public abstract class MCKP extends AbstractAgent {
 										// System.out.println("ERROR convProWithPen NaN2"); //ap
 										convProbWithPen = 0.0;//HC num
 									}
+									
 
 									double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
 									double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 									itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));//HC num
 									queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps,slotDistr,isRatioArr,ISRatio));
 									itemCount++;
+									
+									//-----------BEGIN ADDING CHART DATA------------
+									costsMat[i][j] = cost;
+									numClicksMat[i][j] = numClicks;
+									weightsMat[i][j] = w;
+									profitsMat[i][j] = v;
+									//-----------END ADDING CHART DATA--------------
 
 									//Write testing information to the string buffer and then to the file.
 									stBuff = new StringBuffer();
@@ -859,6 +882,20 @@ public abstract class MCKP extends AbstractAgent {
 								}
 							}
 						}
+						
+						//-----BEGIN COLLATION/DUMP OF CHART DATA-----
+						String[] reports = {"cost","numClicks","weights"};
+						Reporter rep = new Reporter(bidsArr,budgetsArr,costsMat,numClicksMat,weightsMat,profitsMat);
+						String dirString = ""; //CHANGE THIS TO CONTROL WHERE OUTPUT DATA GOES
+						for (String r : reports) {
+							try {
+								rep.dump(dirString+q.toString()+_day,r);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+						
+						//-----END COLLATION/DUMP OF CHART DATA-----
 
 						debug("Items for " + q);
 						if(itemList.size() > 0) {
@@ -869,15 +906,14 @@ public abstract class MCKP extends AbstractAgent {
 						}
 					}
 				}
-				try {//modified
-					if(bufferedWriter != null){
-						bufferedWriter.flush();
-						bufferedWriter.close();
-					}        	 
-				} catch (Exception ex){
-					ex.printStackTrace();
-				}
-			}
+//				try {//modified
+//					if(bufferedWriter != null){
+//						bufferedWriter.flush();
+//						bufferedWriter.close();
+//					}        	 
+//				} catch (Exception ex){
+//					ex.printStackTrace();
+//				}
 			else {
 				allPredictionsMap = new ConcurrentHashMap<Query, ArrayList<Predictions>>();
 				ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
@@ -947,7 +983,7 @@ public abstract class MCKP extends AbstractAgent {
 
 			
 			long solutionEndTime = System.currentTimeMillis();
-			//System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
+			System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
 			//set bids
 			for(Query q : _querySpace) {
