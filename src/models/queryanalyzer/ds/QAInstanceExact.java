@@ -43,7 +43,7 @@ public class QAInstanceExact extends AbstractQAInstance {
             _avgPos, dummySampledAvgPositions, _agentIds, _agentIndex,
             _impressions, numPromotedImpressions, _impressionsUB,
             true, promotionEligibiltyVerified,
-            promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, _agentIds, _agentNames);
+            promotionEligibiltyVerified, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, _agentIds, _agentNames, 0);
    }
 
    public QAInstanceExact reorder(int[] order){
@@ -62,11 +62,15 @@ public class QAInstanceExact extends AbstractQAInstance {
 	   return new QAInstanceExact(_slots, _advetisers, agentIds, agentIndex, _impressions, _impressionsUB, agentNames, avgPos);
    }
    
+//   public int getTotalImpsFirstSlot(){
+//	   return _totalImpsFirstSlot;
+//   }
    
    public String toString() {
       String temp =  super.toString();
       temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";
       return temp;
    }
+
 
 }

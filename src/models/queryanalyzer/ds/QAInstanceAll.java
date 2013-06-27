@@ -7,337 +7,392 @@ import java.util.HashSet;
 
 public class QAInstanceAll extends AbstractQAInstance {
 
-   private int _promotedSlots;
-   private double[] _avgPos;
-   private double[] _sampledAvgPos;
-   private int _promotedImpressions;
-   private boolean _considerPaddingAgents;
-   private boolean _promotionEligibilityVerified;
-   private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
-   private boolean _isSampled;
-   private boolean _orderingKnown;
-   private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
+	private int _promotedSlots;
+	private double[] _avgPos;
+	private double[] _sampledAvgPos;
+	private int _promotedImpressions;
+	private boolean _considerPaddingAgents;
+	private boolean _promotionEligibilityVerified;
+	private boolean _hitOurBudget; //1 if agent hit budget, 0 if didn't hit budget, -1 if unknown
+	private boolean _isSampled;
+	private boolean _orderingKnown;
+	private int[] _initialPosition; //The agentIdx in the ith position in (-1 if unknown)
 
-   int MIN_PADDED_AGENT_ID = 100;
+	private int _totalImpsFirstSlot;
 
-   public QAInstanceAll(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
-                     int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
-                     boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
-                     int[] initialPosition, String[] agentNames) {
-/*   
+
+	int MIN_PADDED_AGENT_ID = 100;
+
+	public QAInstanceAll(int slots, int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex,
+			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified,
+			boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
+			int[] initialPosition, String[] agentNames, int totalImpsFirstSlot) {
+		/*   
    private QAInstanceAll(int slots,int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, 
 		   			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibilityVerified,
 		   			boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
 		   			int[] initialPosition, String[] agentNames) {
-*/
-	  super(slots, advetisers, agentIds, agentIndex, impressions, impressionsUB, agentNames);
-      assert (avgPos.length == advetisers);
-      assert (agentIds.length == advetisers);
-      assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
-      _slots = slots;
-      _promotedSlots = promotedSlots;
-      _advetisers = advetisers;
-      _avgPos = avgPos;
-      _sampledAvgPos = sampledAvgPos;
-      _agentIds = agentIds;
-      _agentIndex = agentIndex;
-      _impressions = impressions;
-      _promotedImpressions = promotedImpressions;
-      _impressionsUB = impressionsUB;
-      _considerPaddingAgents = considerPaddingAgents;
-      _promotionEligibilityVerified = promotionEligibiltyVerified;
-      _hitOurBudget = hitOurBudget;
-      _agentImpressionDistributionMean = agentImpressionDistributionMean;
-      _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
-      _isSampled = isSampled;
-      _initialPosition = initialPosition;
-     
-      _orderingKnown = true;
-      for (int i = 0; i < _advetisers; i++) {
-         if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
-            _orderingKnown = false;
-            break;
-         }
-      }
-   }
-   
-   public int getNumSlots() {
-      return _slots;
-   }
+		 */
+		super(slots, advetisers, agentIds, agentIndex, impressions, impressionsUB, agentNames);
+		assert (avgPos.length == advetisers);
+		assert (agentIds.length == advetisers);
+		assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
 
-   public int getNumPromotedSlots() {
-      return _promotedSlots;
-   }
+		_slots = slots;
+		_promotedSlots = promotedSlots;
+		_advetisers = advetisers;
+		_avgPos = avgPos;
+		_sampledAvgPos = sampledAvgPos;
+		_agentIds = agentIds;
+		_agentIndex = agentIndex;
+		_impressions = impressions;
+		_promotedImpressions = promotedImpressions;
+		_impressionsUB = impressionsUB;
+		_considerPaddingAgents = considerPaddingAgents;
+		_promotionEligibilityVerified = promotionEligibiltyVerified;
+		_hitOurBudget = hitOurBudget;
+		_agentImpressionDistributionMean = agentImpressionDistributionMean;
+		_agentImpressionDistributionStdev = agentImpressionDistributionStdev;
+		_isSampled = isSampled;
+		_initialPosition = initialPosition;
 
-   public int getNumAdvetisers() {
-      return _advetisers;
-   }
+		_totalImpsFirstSlot = totalImpsFirstSlot;
+		_orderingKnown = true;
+		for (int i = 0; i < _advetisers; i++) {
+			if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
+				_orderingKnown = false;
+				break;
+			}
+		}
+	}
 
-   public double[] getAvgPos() {
-      return _avgPos;
-   }
+	public QAInstanceAll(int slots,int promotedSlots, int advetisers, double[] avgPos, double[] sampledAvgPos, int[] agentIds, int agentIndex, 
+			int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibilityVerified,
+			boolean hitOurBudget, double[] agentImpressionDistributionMean, double[] agentImpressionDistributionStdev, boolean isSampled,
+			int[] initialPosition, String[] agentNames) {
 
-   public double[] getSampledAvgPos() {
-      return _sampledAvgPos;
-   }
+		super(slots, advetisers, agentIds, agentIndex, impressions, impressionsUB, agentNames);
+		assert (avgPos.length == advetisers);
+		assert (agentIds.length == advetisers);
+		assert (advetisers == 0 || (advetisers > agentIndex && agentIndex >= 0));
 
-   public int[] getAgentIds() {
-      return _agentIds;
-   }
+		_slots = slots;
+		_promotedSlots = promotedSlots;
+		_advetisers = advetisers;
+		_avgPos = avgPos;
+		_sampledAvgPos = sampledAvgPos;
+		_agentIds = agentIds;
+		_agentIndex = agentIndex;
+		_impressions = impressions;
+		_promotedImpressions = promotedImpressions;
+		_impressionsUB = impressionsUB;
+		_considerPaddingAgents = considerPaddingAgents;
+		_hitOurBudget = hitOurBudget;
+		_agentImpressionDistributionMean = agentImpressionDistributionMean;
+		_agentImpressionDistributionStdev = agentImpressionDistributionStdev;
+		_isSampled = isSampled;
+		_initialPosition = initialPosition;
 
-   public int getAgentIndex() {
-      return _agentIndex;
-   }
+		_orderingKnown = true;
+		for (int i = 0; i < _advetisers; i++) {
+			if (_initialPosition[i] == -1 || Double.isNaN(_initialPosition[i])) {
+				_orderingKnown = false;
+				break;
+			}
+		}
+	}
+	public int getNumSlots() {
+		return _slots;
+	}
 
-   public int getImpressions() {
-      return _impressions;
-   }
+	public int getNumPromotedSlots() {
+		return _promotedSlots;
+	}
 
-   public int getPromotedImpressions() {
-      return _promotedImpressions;
-   }
+	public int getNumAdvetisers() {
+		return _advetisers;
+	}
 
-   public int getImpressionsUB() {
-      return _impressionsUB;
-   }
+	public double[] getAvgPos() {
+		return _avgPos;
+	}
 
-   public boolean isPadding() {
-      return _considerPaddingAgents;
-   }
+	public void setAvgPos(double[] avgPos){
+		_avgPos = avgPos;
 
-   public boolean getPromotionEligibilityVerified() {
-      return _promotionEligibilityVerified;
-   }
+	}
 
-   public boolean getHitOurBudget() {
-      return _hitOurBudget;
-   }
+	public double[] getSampledAvgPos() {
+		return _sampledAvgPos;
+	}
 
-   public double[] getAgentImpressionDistributionMean() {
-      return _agentImpressionDistributionMean;
-   }
+	public void setSampledAvgPos(double[] sampPos){
+		_sampledAvgPos = sampPos;
 
-   public double[] getAgentImpressionDistributionStdev() {
-      return _agentImpressionDistributionStdev;
-   }
+	}
 
-   public boolean isSampled() {
-      return _isSampled;
-   }
+	public int[] getAgentIds() {
+		return _agentIds;
+	}
 
-   public boolean[] isPadded() {
-      boolean[] padded = new boolean[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
-         if (_agentIds[i] >= MIN_PADDED_AGENT_ID) {
-            padded[i] = true;
-         }
-      }
-      return padded;
-   }
+	public int getAgentIndex() {
+		return _agentIndex;
+	}
 
-   //The ith index contains the index of the agent that started in the ith position.
-   public int[] getInitialPositionOrdering() {
-	
-      return _initialPosition;
-   }
+	public int getImpressions() {
+		return _impressions;
+	}
 
-   /**
-    * If any initial positions are not known (i.e. they are -1), return false.
-    *
-    * @return
-    */
-   public boolean allInitialPositionsKnown() {
-      return _orderingKnown;
-   }
-   
-   private boolean feasibleOrder(int[] order) {
-      for (int i = 0; i < order.length; i++) {
-         int startPos = Math.min(i + 1, _slots);
-         if (startPos < _avgPos[order[i]]) {
-            return false;
-         }
-      }
-      return true;
-   }
+	public int getPromotedImpressions() {
+		return _promotedImpressions;
+	}
 
-   public static int[] getAvgPosOrder(double[] averagePositions) {
-      double[] pos = new double[averagePositions.length];
-      int[] posOrder = new int[averagePositions.length];
-      for (int i = 0; i < averagePositions.length; i++) {
-//         pos[i] = -_avgPos[i];
-         pos[i] = -averagePositions[i];
-         posOrder[i] = i;
-      }
+	public int getImpressionsUB() {
+		return _impressionsUB;
+	}
 
-      sortListsDecending(posOrder, pos);
+	public boolean isPadding() {
+		return _considerPaddingAgents;
+	}
 
-      //System.out.println("Pos order "+Arrays.toString(posOrder));
-      //System.out.println("Pos value "+Arrays.toString(pos));
+	public boolean getPromotionEligibilityVerified() {
+		return _promotionEligibilityVerified;
+	}
 
-      //not nessissary in general, but makes results consistent with the comet model
-      sortTiesAccending(posOrder, pos);
+	public boolean getHitOurBudget() {
+		return _hitOurBudget;
+	}
 
-      //System.out.println("Pos order (break ties) "+Arrays.toString(posOrder));
-      //System.out.println("Pos value (break ties) "+Arrays.toString(pos));
+	public double[] getAgentImpressionDistributionMean() {
+		return _agentImpressionDistributionMean;
+	}
 
+	public double[] getAgentImpressionDistributionStdev() {
+		return _agentImpressionDistributionStdev;
+	}
 
-      return posOrder;
-   }
+	public int getTotalImpsFirstSlot(){
+		return _totalImpsFirstSlot;
+	}
 
-   protected static void sortListsDecending(int[] ids, double[] vals) {
-	      assert (ids.length == vals.length);
-	      int length = ids.length;
+	public boolean isSampled() {
+		return _isSampled;
+	}
 
-	      for (int i = 0; i < length; i++) {
-	         for (int j = i + 1; j < length; j++) {
-	            if (vals[i] < vals[j]) {
-	               double tempVal = vals[i];
-	               int tempId = ids[i];
+	public boolean[] isPadded() {
+		boolean[] padded = new boolean[_advetisers];
+		for (int i = 0; i < _advetisers; i++) {
+			if (_agentIds[i] >= MIN_PADDED_AGENT_ID) {
+				padded[i] = true;
+			}
+		}
+		return padded;
+	}
 
-	               vals[i] = vals[j];
-	               ids[i] = ids[j];
+	//The ith index contains the index of the agent that started in the ith position.
+	public int[] getInitialPositionOrdering() {
+		System.out.println("InitPos: "+Arrays.toString(_initialPosition));
+		return _initialPosition;
+	}
 
-	               vals[j] = tempVal;
-	               ids[j] = tempId;
-	            }
-	         }
-	      }
-	   }
-	   
-   
-   public static int[] getCarletonOrder(double[] averagePositions, int numSlots) {
-      int numAdvertisers = averagePositions.length;
-      int[] avgPosOrder = getAvgPosOrder(averagePositions);
-      boolean[] avdAssigned = new boolean[numAdvertisers];
-      //boolean[] posAssigned = new boolean[_advetisers];
-      int[] carletonOrder = new int[numAdvertisers];
-      for (int i = 0; i < numAdvertisers; i++) {
-         avdAssigned[i] = false;
-         carletonOrder[i] = -1;
-      }
+	/**
+	 * If any initial positions are not known (i.e. they are -1), return false.
+	 *
+	 * @return
+	 */
+	public boolean allInitialPositionsKnown() {
+		return _orderingKnown;
+	}
 
-      ArrayList<HashSet<Integer>> advWholePos = new ArrayList<HashSet<Integer>>();
-      for (int i = 0; i < numSlots; i++) {
-         advWholePos.add(i, new HashSet<Integer>());
-      }
+	private boolean feasibleOrder(int[] order) {
+		for (int i = 0; i < order.length; i++) {
+			int startPos = Math.min(i + 1, _slots);
+			if (startPos < _avgPos[order[i]]) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-      for (int i = 0; i < numAdvertisers; i++) {
-         if ((((int) (averagePositions[i] * 100000) % 100000)) == 0) {
-            int slot = (int) averagePositions[i];
-            if (slot < numSlots) { //very important not to keep the last slot
-               //System.out.println("slot=" + slot + ", slots=" + numSlots);
-               HashSet<Integer> advs = advWholePos.get(slot - 1);
-               advs.add(i);
-            }
-         }
-      }
+	public static int[] getAvgPosOrder(double[] averagePositions) {
+		double[] pos = new double[averagePositions.length];
+		int[] posOrder = new int[averagePositions.length];
+		for (int i = 0; i < averagePositions.length; i++) {
+			//         pos[i] = -_avgPos[i];
+			pos[i] = -averagePositions[i];
+			posOrder[i] = i;
+		}
 
-      for (int i = 0; i < numSlots - 1; i++) { //this should hold as long as we don't consider the last slot
-         HashSet<Integer> advs = advWholePos.get(i);
-         //assert(advs.size() <= 1) : "this may need to go away in new game data";
-         if (advs.size() > 0) {
-            int adv = advs.iterator().next(); //no good idea on how to pick, just do random.
+		sortListsDecending(posOrder, pos);
 
-            assert (carletonOrder[i] < 0);
-            carletonOrder[i] = adv;
-            assert (!avdAssigned[adv]);
-            avdAssigned[adv] = true;
-         }
-      }
+		//System.out.println("Pos order "+Arrays.toString(posOrder));
+		//System.out.println("Pos value "+Arrays.toString(pos));
 
-      for (int i = 0; i < numAdvertisers; i++) {
-         int a = avgPosOrder[i];
-         if (!avdAssigned[a]) {
-            for (int j = 0; j < numAdvertisers; j++) {
-               if (carletonOrder[j] < 0) {
-                  carletonOrder[j] = a;
-                  avdAssigned[a] = true;
-                  break;
-               }
-            }
-         }
-      }
+		//not nessissary in general, but makes results consistent with the comet model
+		sortTiesAccending(posOrder, pos);
+
+		//System.out.println("Pos order (break ties) "+Arrays.toString(posOrder));
+		//System.out.println("Pos value (break ties) "+Arrays.toString(pos));
 
 
-      return carletonOrder;
-   }
+		return posOrder;
+	}
 
-   public int[] getTrueImpressions(QADataExactOnly data) {
-      int[] impressions = new int[_advetisers];
-      for (int i = 0; i < _advetisers; i++) {
-         impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;
-      }
+	protected static void sortListsDecending(int[] ids, double[] vals) {
+		assert (ids.length == vals.length);
+		int length = ids.length;
 
-      return impressions;
-   }
+		for (int i = 0; i < length; i++) {
+			for (int j = i + 1; j < length; j++) {
+				if (vals[i] < vals[j]) {
+					double tempVal = vals[i];
+					int tempId = ids[i];
 
-   /**
-    * sorts ties by accending agent id
-    * This has 0 impact on the algorithm, it was added just to have identical results
-    * with the comet model
-    *
-    * @param ids
-    * @param vals
-    */
-   private static void sortTiesAccending(int[] ids, double[] vals) {
-      assert (ids.length == vals.length);
-      int length = ids.length;
+					vals[i] = vals[j];
+					ids[i] = ids[j];
 
-      for (int i = 0; i < length; i++) {
-         for (int j = i + 1; j < length; j++) {
-            if (vals[i] == vals[j] && ids[i] > ids[j]) {
-               double tempVal = vals[i];
-               int tempId = ids[i];
-
-               vals[i] = vals[j];
-               ids[i] = ids[j];
-
-               vals[j] = tempVal;
-               ids[j] = tempId;
-            }
-         }
-      }
-   }
-
-   
-   public QAInstanceAll reorder(int[] order){
-      int agentIndex = -1;
-      for (int i=0; i<order.length; i++) {
-    	  if (order[i] == _agentIndex) {
-    		  agentIndex = i;
-    		  break;
-    	  }
-      }
-      
-	   double[] avgPos = reorder(_avgPos,order);
-	   double[] sampledAvgPos = reorder(_sampledAvgPos,order);
-	   double[] agentImpressionDistributionMean = reorder(_agentImpressionDistributionMean,order);
-	   double[] agentImpressionDistributionStdev = reorder(_agentImpressionDistributionStdev,order);
-	   int[] agentIds = reorder(_agentIds,order);
-	   int[] initialPosition = reorder(_initialPosition,order);
-	   String[] agentNames = reorder(_agentNames,order);
-	   
-	   
-	   return new QAInstanceAll(_slots, _promotedSlots, _advetisers, avgPos, sampledAvgPos, agentIds, agentIndex,
-               _impressions, _promotedImpressions, _impressionsUB, _considerPaddingAgents, _promotionEligibilityVerified,
-               _hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled,
-               initialPosition, agentNames);
-   }
-   
+					vals[j] = tempVal;
+					ids[j] = tempId;
+				}
+			}
+		}
+	}
 
 
-   public String toString() {
-      String temp = "Instance:\n";
-      temp += "\tnumSlots: " + _slots + "\n";
-      temp += "\tnumAgents: " + _advetisers + "\n";
-      temp += "\tagentIds=" + Arrays.toString(_agentIds) + "\n";
-      temp += "\tagentNames=" + Arrays.toString(_agentNames) + "\n";
-      temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";
-      temp += "\tsampledAvgPos=" + Arrays.toString(_sampledAvgPos) + "\n";
-      temp += "\touragentIdx=" + _agentIndex + "\n";
-      temp += "\tourImpressions=" + _impressions + "\n";
-      return temp;
-   }
+	public static int[] getCarletonOrder(double[] averagePositions, int numSlots) {
+		int numAdvertisers = averagePositions.length;
+		int[] avgPosOrder = getAvgPosOrder(averagePositions);
+		boolean[] avdAssigned = new boolean[numAdvertisers];
+		//boolean[] posAssigned = new boolean[_advetisers];
+		int[] carletonOrder = new int[numAdvertisers];
+		for (int i = 0; i < numAdvertisers; i++) {
+			avdAssigned[i] = false;
+			carletonOrder[i] = -1;
+		}
+
+		ArrayList<HashSet<Integer>> advWholePos = new ArrayList<HashSet<Integer>>();
+		for (int i = 0; i < numSlots; i++) {
+			advWholePos.add(i, new HashSet<Integer>());
+		}
+
+		for (int i = 0; i < numAdvertisers; i++) {
+			if ((((int) (averagePositions[i] * 100000) % 100000)) == 0) {
+				int slot = (int) averagePositions[i];
+				if (slot < numSlots) { //very important not to keep the last slot
+					//System.out.println("slot=" + slot + ", slots=" + numSlots);
+					HashSet<Integer> advs = advWholePos.get(slot - 1);
+					advs.add(i);
+				}
+			}
+		}
+
+		for (int i = 0; i < numSlots - 1; i++) { //this should hold as long as we don't consider the last slot
+			HashSet<Integer> advs = advWholePos.get(i);
+			//assert(advs.size() <= 1) : "this may need to go away in new game data";
+			if (advs.size() > 0) {
+				int adv = advs.iterator().next(); //no good idea on how to pick, just do random.
+
+				assert (carletonOrder[i] < 0);
+				carletonOrder[i] = adv;
+				assert (!avdAssigned[adv]);
+				avdAssigned[adv] = true;
+			}
+		}
+
+		for (int i = 0; i < numAdvertisers; i++) {
+			int a = avgPosOrder[i];
+			if (!avdAssigned[a]) {
+				for (int j = 0; j < numAdvertisers; j++) {
+					if (carletonOrder[j] < 0) {
+						carletonOrder[j] = a;
+						avdAssigned[a] = true;
+						break;
+					}
+				}
+			}
+		}
+
+
+		return carletonOrder;
+	}
+
+	public int[] getTrueImpressions(QADataExactOnly data) {
+		int[] impressions = new int[_advetisers];
+		for (int i = 0; i < _advetisers; i++) {
+			impressions[i] = data._agentInfo[_agentIds[i] - 1].impressions;
+		}
+
+		return impressions;
+	}
+
+
+	/**
+	 * sorts ties by accending agent id
+	 * This has 0 impact on the algorithm, it was added just to have identical results
+	 * with the comet model
+	 *
+	 * @param ids
+	 * @param vals
+	 */
+	private static void sortTiesAccending(int[] ids, double[] vals) {
+		assert (ids.length == vals.length);
+		int length = ids.length;
+
+		for (int i = 0; i < length; i++) {
+			for (int j = i + 1; j < length; j++) {
+				if (vals[i] == vals[j] && ids[i] > ids[j]) {
+					double tempVal = vals[i];
+					int tempId = ids[i];
+
+					vals[i] = vals[j];
+					ids[i] = ids[j];
+
+					vals[j] = tempVal;
+					ids[j] = tempId;
+				}
+			}
+		}
+	}
+
+
+	public QAInstanceAll reorder(int[] order){
+		int agentIndex = -1;
+		for (int i=0; i<order.length; i++) {
+			if (order[i] == _agentIndex) {
+				agentIndex = i;
+				break;
+			}
+		}
+
+		double[] avgPos = reorder(_avgPos,order);
+		double[] sampledAvgPos = reorder(_sampledAvgPos,order);
+		double[] agentImpressionDistributionMean = reorder(_agentImpressionDistributionMean,order);
+		double[] agentImpressionDistributionStdev = reorder(_agentImpressionDistributionStdev,order);
+		int[] agentIds = reorder(_agentIds,order);
+		int[] initialPosition = reorder(_initialPosition,order);
+		String[] agentNames = reorder(_agentNames,order);
+
+
+		return new QAInstanceAll(_slots, _promotedSlots, _advetisers, avgPos, sampledAvgPos, agentIds, agentIndex,
+				_impressions, _promotedImpressions, _impressionsUB, _considerPaddingAgents, _promotionEligibilityVerified,
+				_hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, _isSampled,
+				initialPosition, agentNames, _totalImpsFirstSlot);
+	}
+
+
+
+	public String toString() {
+		String temp = "Instance:\n";
+		temp += "\tnumSlots: " + _slots + "\n";
+		temp += "\tnumAgents: " + _advetisers + "\n";
+		temp += "\tagentIds=" + Arrays.toString(_agentIds) + "\n";
+		temp += "\tagentNames=" + Arrays.toString(_agentNames) + "\n";
+		temp += "\tavgPos=" + Arrays.toString(_avgPos) + "\n";
+		temp += "\tsampledAvgPos=" + Arrays.toString(_sampledAvgPos) + "\n";
+		temp += "\touragentIdx=" + _agentIndex + "\n";
+		temp += "\tourImpressions=" + _impressions + "\n";
+		return temp;
+	}
 
 
 }

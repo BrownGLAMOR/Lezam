@@ -124,4 +124,14 @@ public abstract class AbstractQAInstance {
 	      return temp;
 	   }
 	   
+	   //TO REMOVE
+//	   public void setAgentIndex(String agent) {
+//			for(int i=0;i<_agentNames.length;i++){
+//				if(_agentNames[i].compareToIgnoreCase(agent)==0){
+//					_agentIndex = i;
+//				}
+//			}
+//			
+//		}
+//	   
 }
