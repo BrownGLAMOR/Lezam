@@ -61,11 +61,12 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
    private double _timeOut = 5; //in seconds
 
    public ImpressionEstimatorExact(QAInstanceAll inst) {
-      this(inst, 200, 0);
+      this(inst, 200, 0,5);
    }
 
-   public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches) {
+   public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double timeout) {
       this(inst, samplingFactor, fractionalBranches, 0.082111,2.51308611,2.419581,0.8278350);
+      _timeOut = timeout;
    }
 
    public ImpressionEstimatorExact(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev) {
@@ -147,6 +148,8 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
       }
 
    }
+   
+   
 
 
    private String allDataString() {
@@ -315,13 +318,16 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 //      System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
       //+ ", slotImps=" + Arrays.toString(slotImpr) );
 
-//      double stop = System.currentTimeMillis();
-//      double elapsed = (stop - _startTime) / 1000.0;
-//      if (elapsed > _timeOut) {
-//         return;
-//      }
+      double stop = System.currentTimeMillis();
+      double elapsed = (stop - _startTime) / 1000.0;
+      //System.out.println("__________________Elapsed: "+elapsed);
+     if (elapsed > _timeOut) { 
+    	 System.out.println("Hit Timeout: "+elapsed);
+         return;
+      }
 
       if (slotImpr[0] > _imprUB) {
+    	  System.out.println("Hit Imp UB: "+_imprUB);
          return; //this is infeasible
       }
 
@@ -331,6 +337,7 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
          //Prune if we have a waterfall with fewer than minimum impressions
          if (slotImpr[0] < MIN_TOT_IMPR) {
+        	 System.out.println("Hit min tot Impr: "+MIN_TOT_IMPR);
             return;
          }
 
@@ -423,9 +430,9 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
       int currAgent = order[currIndex];
       if(Double.isNaN(_trueAvgPos[currAgent])){
-      System.out.println("AVG: "+_trueAvgPos[currAgent]+" AGENT: "+currAgent+" currInd: "+currIndex);
+    	  System.out.println("AVG: "+_trueAvgPos[currAgent]+" AGENT: "+currAgent+" currInd: "+currIndex);
       }else if(currAgent==0){
-    	  System.out.println("SPECIAL");
+    	 // System.out.println("SPECIAL");
       }
       int bestImpr = calcMinImpressions(slotImpr, currIndex, _trueAvgPos[currAgent]);
 
@@ -827,7 +834,8 @@ public class ImpressionEstimatorExact implements AbstractImpressionEstimator {
 
       double approxAvgPos = firstSlot;
       if (approxAvgPos == trueAvgPos) {
-    	  System.out.println("Something -1");
+    	  //Bug?
+    	 // System.out.println("Something -1");
          return -1;
       }
 
