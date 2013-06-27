@@ -1,34 +1,36 @@
+/**
+ * 
+ */
 package models.queryanalyzer.riep.iep.mip;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 
 import java.util.Arrays;
 
 import models.queryanalyzer.ds.QAInstanceExact;
 
-public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimatorSimpleMIP {
-	protected final static boolean SUPPRESS_OUTPUT = true;
-	
-	public QAInstanceExact _instExact;
-	
-//	public ImpressionEstimatorSimpleMIPExact(QAInstanceExact inst, double timeout){
-//		super(inst, timeout);
-//		_instExact = inst;
-//	}
+/**
+ * @author betsy
+ *
+ */
+public class ImpressionEstimatorMaxTotalImpressions extends
+		AbstractImpressionEstimatorSimpleMIP {
 
-	public ImpressionEstimatorSimpleMIPExact(QAInstanceExact inst, double timeout, IloCplex cplex){
+	public QAInstanceExact _instExact;
+	/**
+	 * @param inst
+	 */
+	public ImpressionEstimatorMaxTotalImpressions(QAInstanceExact inst, double timeout, IloCplex cplex) {
 		super(inst, timeout, cplex);
 		_instExact = inst;
 	}
-	
-	@Override
-	public String getName() {return "SimpleMIPExact";}
-
-	
-	
+	/**
+	 * copied from ImpressionEstimatorSimpleMipExact
+	 */
 	@Override
 	protected CPlexVariables makeModel(IloCplex cplex, int[] order) throws IloException {
 		QAInstanceExact orderedInst = _instExact.reorder(order); 
@@ -52,6 +54,7 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 	    int[] minDropOut = new int[advertisers];
 	    int[] maxDropOut = new int[advertisers];
 	      
+	    //THis is CJC's constraint and should probably be put back in
 	    //set default values
 	    for(int a=0; a < advertisers; a++){
 	    	int ceilingSlot = ((int)Math.ceil(orderedInst.getAvgPos()[a]))-1;
@@ -63,6 +66,13 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 	    	}
 	    	maxDropOut[a] = Math.min(Math.min(a,slots-1),floorSlot);
 	    }
+	  
+	    //set default values
+//	    for(int a=0; a < advertisers; a++){
+//	    	minDropOut[a] = 0;
+//	    	maxDropOut[a] = Math.min(a,slots-1);
+//	    }
+	    
 	    
 	    System.out.println(Arrays.toString(orderedInst.getAvgPos()));
 	    System.out.println(Arrays.toString(minDropOut));
@@ -77,7 +87,7 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 		postCascadeConstraints(cplex, vars, advertisers, slots);
 		
 		
-		//System.out.println(agentIndex+" - "+agentImpressions);
+		System.out.println(agentIndex+" - "+agentImpressions);
 		cplex.addEq(vars.T_a[agentIndex], agentImpressions);
 		
 		for (int a=0; a<advertisers; a++) {
@@ -96,9 +106,29 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 		return vars;
 	}
 
-
-
-
-
 	
+	protected void postObjective(IloCplex cplex, CPlexVariables vars, int advertisers, int slots, int M) throws IloException {
+		slots = Math.min(slots,advertisers);
+			
+
+		
+		IloLinearNumExpr allTs = cplex.linearNumExpr();
+		for(IloNumVar T : vars.T_a){
+			allTs.addTerm(1, T);
+		}
+		//TODO: Change back to max			
+		cplex.addMinimize(allTs);	
+		//cplex.addMinimize(cplex.sum(cplex.prod(100.0, allSDeltas), allTs));	
+	}
+	
+
+	/* (non-Javadoc)
+	 * @see models.queryanalyzer.riep.iep.AbstractImpressionEstimator#getName()
+	 */
+	@Override
+	public String getName() {
+		
+		return "SimpleMipExact-MaxImpressions";
+	}
+
 }
