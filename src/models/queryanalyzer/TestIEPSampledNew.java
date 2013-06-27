@@ -51,7 +51,8 @@ public class TestIEPSampledNew {
 
 			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
 			//AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPSampled(inst);
+			//AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPSampled(inst);
+			AbstractImpressionEstimator IEP = null;
 
 			IEResult bestSol = IEP.search(bidOrder);
 
