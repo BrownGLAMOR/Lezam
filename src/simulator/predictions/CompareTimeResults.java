@@ -1,6 +1,6 @@
 package simulator.predictions;
 
-import simulator.predictions.ImpressionEstimatorTest.SolverType;
+import models.queryanalyzer.QAAlgorithmEvaluator.SolverType;
 import java.util.Comparator;
 
 
