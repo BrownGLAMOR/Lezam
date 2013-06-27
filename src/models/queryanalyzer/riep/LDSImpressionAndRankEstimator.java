@@ -9,12 +9,13 @@ import models.queryanalyzer.riep.search.LDSearchIESmart;
 public class LDSImpressionAndRankEstimator implements ImpressionAndRankEstimator {
 
    public final static int NUM_SLOTS = 5;
-   public int NUM_ITERATIONS_2 = 20;
+   public int NUM_ITERATIONS_2 = 15;
    private AbstractQAInstance inst;
    private AbstractImpressionEstimator ie;
 
    public LDSImpressionAndRankEstimator(AbstractImpressionEstimator ie) {
       this.ie = ie;
+      System.out.println(ie);
       this.inst = ie.getInstance();
    }
 

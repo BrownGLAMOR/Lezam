@@ -22,6 +22,7 @@ public class ConstantImpressionAndRankEstimator implements ImpressionAndRankEsti
 	}
 	
 	public IEResult getBestSolution() {
+		System.out.println("RUNNING WITH KNOWN RANK!!");
 		return ie.search(ordering);
 	}
 	
