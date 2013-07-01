@@ -36,6 +36,7 @@ import java.io.FileInputStream;//modified: added
 import java.io.FileNotFoundException;
 import java.io.FileWriter;//modified: added
 import java.io.IOException;
+import java.io.Writer;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -578,7 +579,7 @@ public abstract class MCKP extends AbstractAgent {
 						double numImps = impsClicksAndCost[0];
 						double numClicks = impsClicksAndCost[1];
 						double cost = impsClicksAndCost[2];
-
+						
 						//Amount of impressions our agent sees in each slot
 						double[] slotDistr = new double[] {impsClicksAndCost[3],
 								impsClicksAndCost[4],
@@ -649,6 +650,7 @@ public abstract class MCKP extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle() {
 		BidBundle bidBundle = new BidBundle();
+		String outDir = "/Users/Aniran/hi_trials_data/"; //CHANGE OUTPUT DIR HERE
 
 		//The only campaign-level budget we consider is a constant value.
 		//FIXME: _safetyBudget needs to be set somewhere.
@@ -755,7 +757,8 @@ public abstract class MCKP extends AbstractAgent {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
+			
+				
 				for(Query q : _querySpace)
 					if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
 						ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
@@ -774,7 +777,6 @@ public abstract class MCKP extends AbstractAgent {
 						Double[][] weightsMat = new Double[bidLen][budgetLen];
 						Double[][] profitsMat = new Double[bidLen][budgetLen];
 						//-----END CHART DATA-----
-
 						//FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
 						for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
 							for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
@@ -784,8 +786,9 @@ public abstract class MCKP extends AbstractAgent {
 									double budget = budgetLists.get(q).get(j);
 									Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);               	  	
 
-
+									long clojureSimStart = System.currentTimeMillis();
 									double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
+									long clojureSimTime = (System.currentTimeMillis() - clojureSimStart);
 									double numImps = impsClicksAndCost[0];
 									double numClicks = impsClicksAndCost[1];
 									double cost = impsClicksAndCost[2];
@@ -873,28 +876,26 @@ public abstract class MCKP extends AbstractAgent {
 									}
 
 
-									if(cost + bid*2 < budget) {//HC num
-										//If we don't hit our budget, we do not need to consider
-										//higher budgets, since we will have the same result
-										//so we break out of the budget loop
-										break;
-									}
+//									if(cost + bid*2 < budget) {//HC num
+//										//If we don't hit our budget, we do not need to consider
+//										//higher budgets, since we will have the same result
+//										//so we break out of the budget loop
+//										break;
+//									}
 								}
 							}
 						}
 						
 						//-----BEGIN COLLATION/DUMP OF CHART DATA-----
-						String[] reports = {"cost","numClicks","weights"};
+						String[] reports = {"cost","numClicks","weights","profits"};
 						Reporter rep = new Reporter(bidsArr,budgetsArr,costsMat,numClicksMat,weightsMat,profitsMat);
-						String dirString = ""; //CHANGE THIS TO CONTROL WHERE OUTPUT DATA GOES
 						for (String r : reports) {
 							try {
-								rep.dump(dirString+q.toString()+_day,r);
+								rep.dump(outDir+q.toString()+_day,r);
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
 						}
-						
 						//-----END COLLATION/DUMP OF CHART DATA-----
 
 						debug("Items for " + q);
@@ -905,6 +906,7 @@ public abstract class MCKP extends AbstractAgent {
 							allPredictionsMap.put(q, queryPredictions);
 						}
 					}
+
 				}
 //				try {//modified
 //					if(bufferedWriter != null){
@@ -914,6 +916,7 @@ public abstract class MCKP extends AbstractAgent {
 //				} catch (Exception ex){
 //					ex.printStackTrace();
 //				}
+			
 			else {
 				allPredictionsMap = new ConcurrentHashMap<Query, ArrayList<Predictions>>();
 				ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
@@ -954,7 +957,6 @@ public abstract class MCKP extends AbstractAgent {
 
 			long knapsackEnd = System.currentTimeMillis();
 			System.out.println("Time to build knapsacks: " + (knapsackEnd-knapsackStart)/1000.0 );//HC num
-
 
 			//         PersistentHashMap daySim;
 			//         if(hasPerfectModels()) {
@@ -1368,9 +1370,11 @@ public abstract class MCKP extends AbstractAgent {
 				budgetList.add(10.0);//HC num
 				budgetList.add(100.0);//HC num
 				budgetList.add(300.0);//HC num
-				//            budgetList.add(400.0);
 				budgetList.add(1000.0);
-				budgetLists.put(q,budgetList);
+//				for (int b = 1; b <= 10 ;b++) {
+//					budgetList.add(b*100.0);
+//				}
+      			budgetLists.put(q,budgetList);
 			}
 			else {
 				budgetLists.put(q,new ArrayList<Double>());

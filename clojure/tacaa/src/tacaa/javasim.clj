@@ -211,18 +211,21 @@
                 man-specialties comp-specialties ads))
 
 
-(defn simQuery
+(defn simQuery ;if we feed this num-ests > 1 we can get an average from num-ests trials
   [status ^Query query agent day bid budget ^Ad ad num-ests perfectsim?]
   (let [squashed-bid (* bid
                         (Math/pow (((status :adv-effects) agent) query)
                                   (status :squash-param)))
         status (assoc status :squashed-bids
+                      ; = a map from Agents to singleton vectors containing singleton maps from our query to its squashed-bid
                       (assoc (status :squashed-bids) agent
                              (if perfectsim?
                                (assoc ((status :squashed-bids) agent) day
                                       (assoc (((status :squashed-bids) agent) day) query squashed-bid))
                                [{query squashed-bid}])))
         status (assoc status :budgets
+                      ; = a map from Agents to singleton vectors containg a map relating our query to our budget,
+                      ;   also enforcing total budget to be our given budget
                       (assoc (status :budgets) agent
                              (if perfectsim?
                                (assoc ((status :budgets) agent) day
@@ -238,15 +241,15 @@
                                       (assoc (((status :ads) agent) day) query ad))
                                [{query ad}])))
                                         ;Pass in day 0 because all arrays are length 1
-        aqstatv (loop [n (int 0)
+        aqstatv (loop [n (int 0) ;guess it doesn't matter for shorter vectors, but should probably use transient here
                        aqstatsvec []]
                   (if (not (< n num-ests))
                     aqstatsvec
                     (recur (inc n)
                            (conj aqstatsvec
                                  (((simulate-query status (if perfectsim? day 0) query) agent) query)))))]
-    (doto (new java.util.ArrayList)
-      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :imps)) aqstatv))
+      (doto (new java.util.ArrayList)
+      (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :imps)) aqstatv)) ;average values from all trials
                        num-ests)))
       (.add (double (/ (reduce + (map (fn [aqstats] (aqstats :clicks)) aqstatv))
                        num-ests)))

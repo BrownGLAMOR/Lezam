@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/J2SE-1.5"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="lib/aa-agent-0.9.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/aa-common-0.9.6.2.jar"/>
 	<classpathentry kind="lib" path="lib/aa-logging-0.9.6.2.jar"/>
@@ -10,10 +10,15 @@
 	<classpathentry kind="lib" path="lib/clojure-1.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/weka.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math-2.0.jar"/>
-	<classpathentry kind="lib" path="/gpfs/main/sys/shared/psfu/local/projects/cplex/cplex/cplex123/i686/lib/cplex.jar">
+	<classpathentry kind="lib" path="C:/Users/Aniran/GitHub/Lezam/lib/cplex.jar">
 		<attributes>
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/gpfs/main/sys/shared/psfu/local/projects/cplex/cplex/cplex123/i686/bin/x86_sles10_4.1"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/Jama-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/jcommon-1.0.16.jar"/>
+	<classpathentry kind="lib" path="lib/jfreechart-1.0.13.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.7-bin.jar"/>
+	<classpathentry kind="lib" path="lib/org.mortbay.jetty-4.2.27.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

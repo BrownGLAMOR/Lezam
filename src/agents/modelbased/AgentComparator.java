@@ -154,7 +154,7 @@ public class AgentComparator {
 //		
 		//semi2011server1 set
 			//loop through 1410-1445
-		for (int i = 1414; i<=1445; i++){
+		for (int i = 1418; i<=1418; i++){
 			stBuff = new StringWriter();
 			filenames = AgentSimulator.getGameStrings(AgentSimulator.GameSet.semi2011server1, i, i);
 			
@@ -175,7 +175,7 @@ public class AgentComparator {
 			timeTotalMDO += (timeEnd-timeStart)/1000;
 			
 			timeStart = System.currentTimeMillis();
-			AgentSimulator.simulateAgent(filenames, AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, simUB, simUB, simUB, simUB, agent2, HCDiscretization, PERFECT_SIM);
+			//AgentSimulator.simulateAgent(filenames, AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, simUB, simUB, simUB, simUB, agent2, HCDiscretization, PERFECT_SIM);
 			timeEnd = System.currentTimeMillis();
 			try{
 				stBuff.append("semi2011server1"+",");

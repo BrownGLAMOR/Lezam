@@ -400,3 +400,13 @@
                              31.0)) ;don't get 30.0 here because we expect min-reg-res to skip the first index because it has no impressions
     ))
 
+(clojure.core/println "testing mk-expected-search-pools")
+(let
+  [prod1 (new Product "pg" "audio")
+   prod2 (new Product "lioneer" "tv")
+   u-pops {prod1 [10 20 30 40 50 60]
+           prod2 [60 50 40 30 20 10]}
+   r-cat [prod1 prod2]
+   p-query {prod1 [(new Query) (new Query nil "audio") (new Query "pg" nil) (new Query "pg" "audio")]
+            prod2 [(new Query) (new Query nil "tv") (new Query "lioneer" nil) (new Query "lioneer" "tv")]}]
+  (clojure.core/println (mk-expected-search-pools-map u-pops r-cat p-query)))

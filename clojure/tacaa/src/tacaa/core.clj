@@ -537,6 +537,18 @@
                                                                   [0 1]))
                                            :else search-map))))))))))))))
 
+;mk-expected-search-pools-map: map -> day -> map (Product to map (Query to int vector))
+;Input: 
+;- a map, status, hopefully with the keys:
+;  - user-pop, a 60-vector of maps from Products to 6-vectors of ints representing the
+;    number of users in each state (Not Searching, etc) for that particular product
+;  - retail-cat, a collection of Products
+;  - prod-query, a map from Products to 4-vectors of Queries
+;    (representing the Queries that concern that Product)
+;- day, an integer representing the day we want to use
+;Output: a map from Products to maps relating Queries to 2-vectors containing
+; the number of users in IS searching the given query in the first index,
+; and the number of users in a Focus state searching the given query in the second index
 (defn mk-expected-search-pools-map
   ([status day]
      (mk-expected-search-pools-map
@@ -546,8 +558,8 @@
   ([userpops retail-cat prod-query]
      (reduce (fn [coll prod]
                (assoc coll prod
-                      (let [[uns uis uf0 uf1 uf2 ut] (userpops prod)
-                            [f0q f1cq f1mq f2q] (prod-query prod)
+                      (let [[uns uis uf0 uf1 uf2 ut] (userpops prod) ;vector of user state pops
+                            [f0q f1cq f1mq f2q] (prod-query prod) ;vector of queries
                             isf0 (if (> (rem uis 3) 0)
                                    (int (+ (/ uis 3) 1))
                                    (int (/ uis 3)))
@@ -555,7 +567,7 @@
                                    (int (+ (/ uis 3) 1))
                                    (int (/ uis 3)))
                             isf1c (int (/ isf1 2))
-                            isf1m (int (+ (/ isf1 2) 0.5))
+                            isf1m (int (+ (/ isf1 2) 0.5)) ;rounded up/ceil
                             isf2 (int (/ uis 3))
                             uf1c (int (/ uf1 2))
                             uf1m (int (+ (/ uf1 2) 0.5))
@@ -571,13 +583,28 @@
                             uf2 (if (coll f2q)
                                   [(+ (first (coll f2q)) isf2) (+ (peek (coll f2q)) uf2)]
                                   [isf2 uf2])]
+                        (do
+                          (clojure.core/println "f0q:" f0q (coll f0q))
+                          (clojure.core/println "f1cq:" f1cq (coll f1cq))
+                          (clojure.core/println "f1mq:" f1mq (coll f1mq))
+                          (clojure.core/println "f2q:" f2q (coll f2q))
                         {f0q uf0,
                          f1cq uf1c,
                          f1mq uf1m,
-                         f2q uf2})))
+                         f2q uf2})
+                        )))
              {} retail-cat)))
 
-
+;mk-search-queue: map (Product to map (Query to int vector)) -> Random -> Boolean -> map seq
+;Input:
+; - search-maps, a map from products to maps associating Queries with vectors 
+;   containing users in IS and focused search states
+; - random, a Random object
+; - singleq? a query telling whether or not we're only making a search queue
+;   for a particular query (usually yes)
+;Output: a sequence of maps which contain the search state 
+; (:is = informational, :s = focused), the query, and the product for each product
+; and desired query in search-maps, shuffled into a random order
 (defn mk-search-queue
   [search-maps random singleq?]
   (if (not singleq?)
@@ -589,7 +616,7 @@
                           search-map))
                    search-maps))
      random)
-    (my-shuffle
+    (my-shuffle ;case for the simQuery application
      (flatten (map (fn [[prod search-map]]
                      (map (fn [[q [uis us]]]
                             (if (= q singleq?)
@@ -647,9 +674,9 @@
   (loop [newqagents []
          qagents qagents
          slot 1]
-    (if (not (seq qagents))
+    (if (not (seq qagents)) ;qagents empty
       newqagents
-      (let [qagent (first qagents)
+      (let [qagent (first qagents) ;qagents non-empty
             agent (first qagent)
             bid (peek qagent)
             is-prom (and (<= slot prom-slots) (>= bid prom-res))
@@ -680,6 +707,9 @@
                               (<= (peek key) (nth key 3)))) ; bid <= budget
                 qagents)))
 
+;returns a sorted list (by bid, adjusted for reserve score rules) of
+;qagent vectors with metadata detailing cost-per-click, slot number,
+;and promoted slot status
 (defn rank-agents
   ([status day singleq?]
      (rank-agents day
@@ -708,6 +738,8 @@
                                            (((squashed-bids agent) day) query)])
                                agents)
                           (reg-res (query-type query)))
+                         ;take all the agents given, and among those with bids greater than the reserve score,
+                         ;and less than their budget, rank them highest-to-lowest by bid
                          query
                          prom-slots
                          (reg-res (query-type query))
@@ -760,13 +792,13 @@
 (defn re-rank-query
   [ranked-agents stats budgets prom-slots reg-res prom-res squash-param q day query-type]
   (let [qagents (ranked-agents q)
-        to-remove (filter (fn [qagent]
+        to-remove (filter (fn [qagent] ;calculate bids and cost, if bid + cost exceeds budget, put it in to-remove
                             (let [[agent
                                    adv-effect
                                    ad
                                    budget
                                    sbid] qagent
-                                   bid (/ sbid (Math/pow adv-effect squash-param))
+                                   bid (/ sbid (Math/pow adv-effect squash-param)) ;recover real bid
                                    cost (((stats agent) q) :cost)]
                               (if (< (+ cost bid)
                                      budget)
@@ -775,13 +807,13 @@
                           qagents)
         to-remove (map (fn [qagent] (first qagent)) to-remove)]
     (if (not (seq to-remove))
-      ranked-agents
-      (loop [qagents qagents
-             to-remove to-remove]
-        (if (not (seq to-remove))
-          (assoc ranked-agents q qagents)
+      ranked-agents ;just return the initial list
+      (loop [qagents qagents 
+             to-remove to-remove] ;otherwise enter loop
+        (if (not (seq to-remove)) 
+          (assoc ranked-agents q qagents) ;replace the value of q with qagents
           (let [agent-to-remove (first to-remove)
-                qagents (remove-from-query agent-to-remove
+                qagents (remove-from-query agent-to-remove ;remove and rerank qagents
                                            qagents
                                                  prom-slots
                                                  reg-res
@@ -897,7 +929,7 @@
 ;[#CORE]
 (defn sample-avg-pos
   [stats queryspace random]
-  (reduce (fn [coll query] ;everything indented here is one giant function ;_; (agent is a -var- here, not the fn)
+  (reduce (fn [coll query]
             (let [lenlst (map (fn [[agent astats]]
                                 (count ((astats query) :pos-vec)))
                               coll)
@@ -997,7 +1029,6 @@
                                             :revenue (aqstats :revenue)})))))))))
           stats queryspace))
 
-;NEED TO FIGURE OUT OUTPUT TYPE HERE [#CORE]
 (defn simulate-day
   ([status day search-queue ^java.util.Random random singleq?]
      (let [agents (status :agents)
@@ -1024,13 +1055,15 @@
            prom-bonus (status :prom-bonus)
            comp-bonus (status :comp-bonus)
            man-bonus (status :man-bonus)
+           num-slots (.getRegularSlots (status :slot-info))
            USP (status :USP)
            ;;;;;;;;;;;;;;;;;;
+           ;here, singleq? == our query (i.e. evaluates to true). agent may disappear from the list if below reserve score
            ranked-agents (rank-agents day singleq? bids budgets ads adv-effects prom-slots
                                       reg-res prom-res squash-param agents queryspace query-type)]
        (loop [search-queue search-queue
               ranked-agents ranked-agents
-              stats (reduce (fn [coll agent]
+              stats (reduce (fn [coll agent] ;initialize "empty" model (associates agents with a map of queries to maps of keys to numbers)
                               (assoc! coll agent
                                      (reduce (fn [coll2 query]
                                      			;initialize day's statistics to zero
@@ -1039,7 +1072,7 @@
                                                         :prom-imps 0,
                                                         :pos-sum 0,
                                                         :pos-vec [],
-                                                        :is-vecs [[0 0] [0 0] [0 0] [0 0] [0 0]],
+                                                        :is-vecs (vec (repeat 5 [0 0])),
                                                         :click-is [0 0],
                                                         :clicks 0,
                                                         :cost 0,
@@ -1049,9 +1082,9 @@
                                                          :total-revenue 0,
                                                          :total-convs 0}) queryspace)))
                             (transient {}) agents)]
-         (if (not (seq search-queue))
-         	;-----base case----- returns the information necessary to give the report (sample-avg-pos), i assume
-           (sample-avg-pos
+         (if (not (seq search-queue)) ;process one element i
+         	;-----base case-----
+           (sample-avg-pos ;turn everything persistent, feed it to sample-avg-pos
             (reduce (fn [coll [agent astats]]
                       (assoc coll agent (persistent! astats)))
                     {} (persistent! stats))
@@ -1071,7 +1104,7 @@
                  qagents (ranked-agents q)
                  stats (loop [qagents qagents
                               stats stats
-                              cont? true]
+                              cont? true] ;loop until we-ve exhausted all agents in the query
                          (if (not (seq qagents))
                            stats
                            (let [qagent (first qagents)
@@ -1116,9 +1149,9 @@
                                         clickpr (if (> ftargprom 1)
                                                   (eta adv-effect ftargprom)
                                                   adv-effect)
-                                        click? (< (.nextDouble random) clickpr)
+                                        click? (< (.nextDouble random) clickpr) ;sample: clicked or not?
                                         conv? (if (and click? (not isis))
-                                                (let [convpr (conv-probs (query-type q))
+                                                (let [convpr (conv-probs (query-type q)) ;
                                                       cap (capacities agent)
                                                       comp-spec (comp-specs agent)
                                                       convs (astats :total-convs)
@@ -1144,7 +1177,7 @@
                                         cont? (if (not conv?)
                                                 (< (.nextDouble random) (cont-probs q))
                                                 false)
-                                        astats (if conv?
+                                        astats (if conv? ;if a user bought something, update the appropriate stats
                                                  (assoc!
                                                   (assoc!
                                                    (assoc! astats :total-convs (inc (astats :total-convs)))
@@ -1152,7 +1185,7 @@
                                                   :total-cost (+ (astats :total-cost) cpc))
                                                  (if click?
                                                    (assoc! astats :total-cost (+ (astats :total-cost) cpc))
-                                                   astats))
+                                                   astats)) ;if they clicked but didn't buy, charge the advertiser
                                         aqstats (astats q)
                                         aqstats (if conv?
                                                   {:imps (inc (aqstats :imps)),
@@ -1162,13 +1195,13 @@
                                                    :pos-sum (+ (aqstats :pos-sum)
                                                                pos),
                                                    :pos-vec (conj (aqstats :pos-vec) pos),
-                                                   :is-vecs (let [is-vecs (aqstats :is-vecs)
+                                                   :is-vecs (let [is-vecs (aqstats :is-vecs) ;change the click data associated with a position
                                                                   is-vec (nth is-vecs (dec pos))
                                                                   is-vec (if isis
                                                                            [(inc (first is-vec)) (peek is-vec)]
                                                                            [(first is-vec) (inc (peek is-vec))])]
                                                               (assoc is-vecs (dec pos) is-vec)),
-                                                   :click-is (let [click-is (aqstats :click-is)]
+                                                   :click-is (let [click-is (aqstats :click-is)] ;why do we have a choice between which index to increment below, but not here?
                                                                [(first click-is) (inc (peek click-is))]),
                                                    :clicks (inc (aqstats :clicks)),
                                                    :cost (+ (aqstats :cost)
@@ -1198,11 +1231,11 @@
                                                               cpc),
                                                      :convs (aqstats :convs),
                                                      :revenue (aqstats :revenue)}
-                                                    {:imps (inc (aqstats :imps)),
+                                                    {:imps (inc (aqstats :imps)), ;note that this map tracks the things incremented on EVERY impression, regardless of click or purchase
                                                      :prom-imps (if is-prom
                                                                   (inc (aqstats :prom-imps))
                                                                   (aqstats :prom-imps)),
-                                                     :pos-sum (+ (aqstats :pos-sum)
+                                                     :pos-sum (+ (aqstats :pos-sum) ;and why hold pos-sum if we can just sum over pos-vec...
                                                                  pos),
                                                      :pos-vec (conj (aqstats :pos-vec) pos),
                                                      :is-vecs (let [is-vecs (aqstats :is-vecs)
@@ -1219,7 +1252,7 @@
                                         astats (assoc! astats q aqstats)
                                         stats (assoc! stats agent astats)]
                                    (recur (rest qagents) stats cont?))
-                                 (let [agent (first qagent) ;agent not continuing
+                                 (let [agent (first qagent) ;agent not continuing: just update position history, increment impressions
                                        is-prom (metadata :is-prom)
                                        astats (stats agent)
                                        aqstats (astats q)
@@ -1263,8 +1296,8 @@
 (defn simulate-query
   [status day query]
   (let [random (java.util.Random.)
-        search-pool (mk-expected-search-pools-map status day)
-        search-queue (mk-search-queue search-pool random query)]
+        search-pool (mk-expected-search-pools-map status day) ;get the search pool for all queries
+        search-queue (mk-search-queue search-pool random query)] ;generate a queue just for our particular query
     (simulate-day status day search-queue random query)))
 
 (defn combine-queries

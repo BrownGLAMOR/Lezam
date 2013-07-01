@@ -1,7 +1,7 @@
 manufacturers <- c("flat","lioneer","pg","null")
 products <- c("audio","dvd","tv","null")
 indices <- c("bids","budgets")
-data <- c("cost","numClicks","weights")
+data <- c("cost","numClicks","weights","profits")
 
 #INPUT: a manufacturer string and a product string
 #OUTPUT: the string which heads the data files for a particular query
@@ -57,6 +57,8 @@ makeChartAnimation <- function(manufacturer, product, dat, margin = "",save=FALS
 		bidVec <- c()
 		budgetVec <- c()
 		lines <- readLines(con, encoding = "UTF-8")
+		print(inputFile)
+		print(paste("number of lines", length(lines)))
 		for (j in 1:2) {
 			if (j == 1) {
 				bidVec <- processRow(lines[j]);
@@ -70,9 +72,12 @@ makeChartAnimation <- function(manufacturer, product, dat, margin = "",save=FALS
 		}
 		print(length(bidVec))
 		print(length(budgetVec))
+		print("constructing datMatrix")
 		datMatrix <- mat.or.vec(length(bidVec),length(budgetVec))
+		print("entering matrix read loop")
 		for (k in 4:length(lines)) {
 			datMatrix[k-3, ] <- processRow(lines[k])
+			print(paste("line read", k-3))
 		}
 		title <- paste("Query",manufacturer,product)
 		subtitle <- paste(dat," Day ",i ,sep = "")

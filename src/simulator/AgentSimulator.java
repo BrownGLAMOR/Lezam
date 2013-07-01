@@ -38,7 +38,7 @@ public class AgentSimulator {
 
 		
 		
-		String baseDir = "/pro/aa/";
+		String baseDir = "/Users/Aniran/"; //CHANGE WHERE TO FIND GAMES HERE
 		if (isMac()) {
 			String homeDir = System.getProperty("user.home");
 			if (homeDir.equals("/Users/sodomka")) baseDir = homeDir + "/Desktop/";
@@ -61,6 +61,7 @@ public class AgentSimulator {
 		for (int i = gameStart; i <= gameEnd; i++) {
 			filenames.add(baseDir + baseFile + i + ".slg");
 		}
+//		System.out.println(filenames.size());
 		return filenames;
 	}
 
