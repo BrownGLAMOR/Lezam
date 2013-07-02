@@ -650,6 +650,7 @@ public abstract class MCKP extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle() {
 		BidBundle bidBundle = new BidBundle();
+		boolean collectData = false;
 		String outDir = "/Users/Aniran/hi_trials_data/"; //CHANGE OUTPUT DIR HERE
 
 		//The only campaign-level budget we consider is a constant value.
@@ -768,14 +769,23 @@ public abstract class MCKP extends AbstractAgent {
 						int itemCount = 0;                 
  
 						//-----INITIALIZING CHART DATA-----
-						Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
-						Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
-						int bidLen = bidsArr.length;
-						int budgetLen = budgetsArr.length;
-						Double[][] costsMat = new Double[bidLen][budgetLen];
-						Double[][] numClicksMat = new Double[bidLen][budgetLen];
-						Double[][] weightsMat = new Double[bidLen][budgetLen];
-						Double[][] profitsMat = new Double[bidLen][budgetLen];
+						Double[] bidsArr = null;
+						Double[] budgetsArr = null;
+						Double[][] costsMat = null;
+						Double[][] numClicksMat = null;
+						Double[][] weightsMat = null;
+						Double[][] profitsMat = null;
+						if (collectData) {
+							bidsArr = bidLists.get(q).toArray(new Double[0]);
+							budgetsArr = budgetLists.get(q).toArray(
+									new Double[0]);
+							int bidLen = bidsArr.length;
+							int budgetLen = budgetsArr.length;
+							costsMat = new Double[bidLen][budgetLen];
+							numClicksMat = new Double[bidLen][budgetLen];
+							weightsMat = new Double[bidLen][budgetLen];
+							profitsMat = new Double[bidLen][budgetLen];
+						}
 						//-----END CHART DATA-----
 						//FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
 						for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
@@ -786,9 +796,7 @@ public abstract class MCKP extends AbstractAgent {
 									double budget = budgetLists.get(q).get(j);
 									Ad ad = (k == 0) ? new Ad() : getTargetedAd(q);               	  	
 
-									long clojureSimStart = System.currentTimeMillis();
 									double[] impsClicksAndCost = simulateQuery(querySim,q,bid,budget,ad);
-									long clojureSimTime = (System.currentTimeMillis() - clojureSimStart);
 									double numImps = impsClicksAndCost[0];
 									double numClicks = impsClicksAndCost[1];
 									double cost = impsClicksAndCost[2];
@@ -845,10 +853,12 @@ public abstract class MCKP extends AbstractAgent {
 									itemCount++;
 									
 									//-----------BEGIN ADDING CHART DATA------------
-									costsMat[i][j] = cost;
-									numClicksMat[i][j] = numClicks;
-									weightsMat[i][j] = w;
-									profitsMat[i][j] = v;
+									if (collectData) {
+										costsMat[i][j] = cost;
+										numClicksMat[i][j] = numClicks;
+										weightsMat[i][j] = w;
+										profitsMat[i][j] = v;
+									}
 									//-----------END ADDING CHART DATA--------------
 
 									//Write testing information to the string buffer and then to the file.
@@ -887,13 +897,19 @@ public abstract class MCKP extends AbstractAgent {
 						}
 						
 						//-----BEGIN COLLATION/DUMP OF CHART DATA-----
-						String[] reports = {"cost","numClicks","weights","profits"};
-						Reporter rep = new Reporter(bidsArr,budgetsArr,costsMat,numClicksMat,weightsMat,profitsMat);
-						for (String r : reports) {
-							try {
-								rep.dump(outDir+q.toString()+_day,r);
-							} catch (IOException e) {
-								e.printStackTrace();
+
+						if (collectData) {
+							String[] reports = { "cost", "numClicks",
+									"weights", "profits" };
+							Reporter rep = new Reporter(bidsArr, budgetsArr,
+									costsMat, numClicksMat, weightsMat,
+									profitsMat);
+							for (String r : reports) {
+								try {
+									rep.dump(outDir + q.toString() + _day, r);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
 							}
 						}
 						//-----END COLLATION/DUMP OF CHART DATA-----
@@ -973,13 +989,6 @@ public abstract class MCKP extends AbstractAgent {
 			long solutionStartTime = System.currentTimeMillis();
 
 			HashMap<Query,Item> solution;
-			FileWriter timeFile = null;
-			try {
-				timeFile = new FileWriter(System.getProperty("user.dir")+System.getProperty("file.separator")+"timeTest.csv", true);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 			
 			solution = getSolution(allIncItems, remainingCap, allPredictionsMap, bidLists, budgetLists);
 
