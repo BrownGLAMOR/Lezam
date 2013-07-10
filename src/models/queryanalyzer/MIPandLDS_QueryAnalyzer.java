@@ -563,10 +563,26 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 				//(_solverType == SolverType.CARLETON_SIMPLE_MIP_Sampled) 
 				else{
 					//System.out.println("Num Adv: "+instSamp.getNumAdvetisers()+" (MIP QA)"); //to remove
-					QAInstanceSampled instSamp = buildSampledInstance(agentIdsArr, ourIdx, queryReport.getImpressions(q),
-							sampledAvgPos, 15);
+//					QAInstanceSampled instSamp = buildSampledInstance(agentIdsArr, ourIdx, queryReport.getImpressions(q),
+//							sampledAvgPos, 15);
+					
+					// Create a QAInstanceSampled.
+					// Instead of taking in exact and sampled average positions like QAInstanceAll, the constructor
+					// takes estimated average positions, a lower bound on average positions, and an upper bound on
+					// average positions for each agent.
+					// Other input parameters are the same as QAInstanceAll.
+					int numAgents = allAvgPos.size();
+					double[] avgPosArr = sampledAvgPos.clone(); // use sampled average position for everyone but our agent.
+					avgPosArr[ourNewIdx] = trueAvgPos[ourNewIdx]; // use exact average position for our agent.
+					
+					// For now, provide loose bounds on each agent's average position.
+					double[] avgPosLB = new double[numAgents];
+					Arrays.fill(avgPosLB, 1.0);
+					double[] avgPosUB = new double[numAgents];
+					Arrays.fill(avgPosUB, (double) NUM_SLOTS);
+					QAInstanceSampled instSamp = new QAInstanceSampled(NUM_SLOTS, numAgents, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), 
+							maxImps.get(q), agentNamesArr, avgPosArr, avgPosLB, avgPosUB);
 					ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
-
 				}
 				
 				ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
