@@ -440,6 +440,8 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 	@Override
 	public boolean updateModel(QueryReport queryReport, BidBundle bidBundle, HashMap<Query, Integer> maxImps) {
 		System.out.println("______________Updating QA model_________________________");
+		
+		// Create a list of maps that holds, for each agent, the number of impressions we think the agent saw for each query.
 		List<Map<Query, Integer>> impPredMapList = new ArrayList<Map<Query, Integer>>(_advertisers.size());
 		for (int j = 0; j < _advertisers.size(); j++) {
 			Map<Query, Integer> impPredMap = new HashMap<Query, Integer>(_querySpace.size());
