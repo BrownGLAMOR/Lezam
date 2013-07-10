@@ -218,18 +218,16 @@ public class WaterfallILP {
 			if (!usingPriors && !sampledProblem) {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_SLOT_DIFF;
 			} else if (!usingPriors && sampledProblem) {
-				//PUT THIS BACK IN
-//				DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
-//				USE_SAMPLING_CONSTRAINTS = false;
-//				USE_NEW_SAMPLING_CONSTRAINTS = false;
+				DESIRED_OBJECTIVE = Objective.MINIMIZE_SAMPLE_MU_DIFF;
+				USE_SAMPLING_CONSTRAINTS = false;
+				USE_NEW_SAMPLING_CONSTRAINTS = false;
 				//INTEGER_PROGRAM = true;
 				
-				//THIS is Eric's weird MIP...sometimes called the rediculous MIP
-				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
-				USE_SAMPLING_CONSTRAINTS = true;
-				USE_NEW_SAMPLING_CONSTRAINTS = true;
-				System.out.println("RUNNING ERIC BUCKET MIP______________");
-				INTEGER_PROGRAM = false;
+				//THIS is Eric's weird MIP...sometimes called the ridiculous MIP
+//				DESIRED_OBJECTIVE = Objective.MAXIMIZE_MIN_IMPRESSIONS_IN_SAMPLED_BUCKETS;
+//				USE_SAMPLING_CONSTRAINTS = true;
+//				USE_NEW_SAMPLING_CONSTRAINTS = true;
+//				INTEGER_PROGRAM = false;
 			} else if (usingPriors && !sampledProblem) {
 				DESIRED_OBJECTIVE = Objective.MINIMIZE_IMPRESSION_PRIOR_ERROR;
 			} else { //usingPriors && sampledProblem
