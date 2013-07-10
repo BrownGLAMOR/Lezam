@@ -21,6 +21,7 @@ import models.paramest.AbstractParameterEstimation;
 import models.paramest.BayesianParameterEstimation;
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
+import models.queryanalyzer.MIPandLDS_QueryAnalyzer;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
@@ -66,6 +67,7 @@ public abstract class MCKP extends AbstractAgent {
 	double[] _c;
 
 	private boolean DEBUG = false;//in file
+	private boolean RUNWITHREPORTS = false; //set to true to run with printed reports (from Aniran)
 	private Random _R;
 	private boolean SAFETYBUDGET = false;//in file
 	private boolean BUDGET = false;//in file
@@ -113,9 +115,11 @@ public abstract class MCKP extends AbstractAgent {
 
 	double _probeBidMult;
 	double _budgetMult;
-
-	int _numDays = 59; //Hardcoded; should be initialized properly in the game settings but is currently defaulting to 0.
 	
+	int pcount = 0;
+	BufferedWriter bwriter;
+	int _numDays = 59; //Hardcoded; should be initialized properly in the game settings but is currently defaulting to 0.
+
 	int[] targetArray = new int[_numDays];
 
 	protected static boolean THREADING = false;//in file
@@ -177,6 +181,14 @@ public abstract class MCKP extends AbstractAgent {
 		_bidStdDev = 2.0;//in file
 
 		// updateParams(paramFile);
+		
+		try {
+			bwriter= new BufferedWriter(new FileWriter(new File("/home/betsy/git/Lezam-1/bidding/bidsandprobes.txt")));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 
 	}
 
@@ -346,7 +358,7 @@ public abstract class MCKP extends AbstractAgent {
 			return javasim.mkPerfectFullStatus(_perfectCljSim, (int)_day, _agentToReplace, 0);//HC num
 		}
 	}
-	
+
 	//returns an array of average impressions,clicks,costs,sales, and other stats
 	public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
 		ArrayList result;
@@ -362,7 +374,7 @@ public abstract class MCKP extends AbstractAgent {
 		}
 		return resultArr;
 	}
-	
+
 	//returns an array of total conversions and total costs for the day
 	public double[] simulateDay(PersistentHashMap cljSim, BidBundle bundle) {
 		ArrayList result;
@@ -460,17 +472,19 @@ public abstract class MCKP extends AbstractAgent {
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
+		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
 		_userModel = UserModel.build(new UserModelInput(_c, _numSlots, _numPS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
-				//new jbergParticleFilter(_c,_numSlots,_numPS);
+		//new jbergParticleFilter(_c,_numSlots,_numPS);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
 		_bidModel = new IndependentBidModel(_advertisersSet, _advId,1,_randJump,_yestBid,_5DayBid,_bidStdDev,_querySpace);//HC num
 		//      _bidModel = new JointDistBidModel(_advertisersSet, _advId, 8, .7, 1000);
 		_paramEstimation = new BayesianParameterEstimation(_advIdx,_numSlots, _numPS, _squashing, _querySpace);
 		_budgetEstimator = new BudgetEstimator(_querySpace,_advIdx,_numSlots,_numPS,_squashing);
 		_ISRatioModel = new ISRatioModel(_querySpace,_numSlots);
+		System.out.println("_______________________INITING MODELS__________________________________________");
 		_adTypeEstimator = new AdTypeEstimator(_querySpace, _advertisersSet, _products);
 		_specialtyModel = new SimpleSpecialtyModel(_querySpace, _advertisersSet, _products, _numSlots);
-
+		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
 		models.add(_queryAnalyzer);
 		models.add(_userModel);
 		models.add(_unitsSold);
@@ -480,6 +494,7 @@ public abstract class MCKP extends AbstractAgent {
 		models.add(_ISRatioModel);
 		models.add(_adTypeEstimator);
 		models.add(_specialtyModel);
+		
 		return models;
 	}
 
@@ -718,63 +733,73 @@ public abstract class MCKP extends AbstractAgent {
 			long knapsackStart = System.currentTimeMillis();
 			if(!THREADING) {
 				allPredictionsMap = new HashMap<Query, ArrayList<Predictions>>();
-				String bidFilename;
-				//For testing purposes
-				if(hasPerfectModels()){
-					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
-					+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidSpaceTest.csv";
-				}
-				else{
-					bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
-					+System.getProperty("file.separator")+AgentSimulator.timeFile+
-					"_bidSpaceTest.csv";
-				}
+
 				StringBuffer stBuff = new StringBuffer();//modified
 				BufferedWriter bufferedWriter = null;
+				if(RUNWITHREPORTS){
+					String bidFilename;
+					//For testing purposes
+					if(hasPerfectModels()){
+						bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
+						+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidSpaceTest.csv";
+					}
+					else{
+						bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
+						+System.getProperty("file.separator")+AgentSimulator.timeFile+
+						"_bidSpaceTest.csv";
+					}
+				
+					try {
+						bufferedWriter = new BufferedWriter(new FileWriter(bidFilename, true));
+						if((_day==2.0 && !hasPerfectModels()) || (_day==0.0 && hasPerfectModels())){
+							stBuff.append("day"+",");
+							stBuff.append("manuQuery"+",");
+							stBuff.append("prodQuery"+",");
+							stBuff.append("bid"+",");
+							stBuff.append("budget"+",");
+							stBuff.append("generic"+",");
+							stBuff.append("manuAd"+",");
+							stBuff.append("prodAd"+",");
+							stBuff.append("numImps"+",");
+							stBuff.append("numClicks"+",");
+							stBuff.append("cost"+",");
+							stBuff.append("CPC"+",");
+							stBuff.append("clickPr"+",");
+							stBuff.append("convPr"+",");
+							stBuff.append("weight"+",");
+							stBuff.append("value"+"\n");
+							bufferedWriter.write(stBuff.toString());
+						}				
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
 				try {
-					bufferedWriter = new BufferedWriter(new FileWriter(bidFilename, true));
-					if((_day==2.0 && !hasPerfectModels()) || (_day==0.0 && hasPerfectModels())){
-						stBuff.append("day"+",");
-						stBuff.append("manuQuery"+",");
-						stBuff.append("prodQuery"+",");
-						stBuff.append("bid"+",");
-						stBuff.append("budget"+",");
-						stBuff.append("generic"+",");
-						stBuff.append("manuAd"+",");
-						stBuff.append("prodAd"+",");
-						stBuff.append("numImps"+",");
-						stBuff.append("numClicks"+",");
-						stBuff.append("cost"+",");
-						stBuff.append("CPC"+",");
-						stBuff.append("clickPr"+",");
-						stBuff.append("convPr"+",");
-						stBuff.append("weight"+",");
-						stBuff.append("value"+"\n");
-						bufferedWriter.write(stBuff.toString());
-					}				
-				} catch (Exception e) {
+					bwriter= new BufferedWriter(new FileWriter(new File("/home/betsy/git/Lezam-1/bidding/bidsandprobes_"+_day+".txt")));
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
-				for(Query q : _querySpace)
+				for(Query q : _querySpace){
 					if(!q.equals(new Query())) { //Do not consider the (null, null) query. //FIXME: Don't hardcode the skipping of (null, null) query.
 						ArrayList<Item> itemList = new ArrayList<Item>(bidLists.get(q).size()*budgetLists.get(q).size());
 						ArrayList<Predictions> queryPredictions = new ArrayList<Predictions>(bidLists.get(q).size()*budgetLists.get(q).size());
 						double convProb = getConversionPrWithPenalty(q, 1.0);//HC num
 						double salesPrice = _salesPrices.get(q);
 						int itemCount = 0;                 
- 
-						//-----INITIALIZING CHART DATA-----
-						Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
-						Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
-						int bidLen = bidsArr.length;
-						int budgetLen = budgetsArr.length;
-						Double[][] costsMat = new Double[bidLen][budgetLen];
-						Double[][] numClicksMat = new Double[bidLen][budgetLen];
-						Double[][] weightsMat = new Double[bidLen][budgetLen];
-						Double[][] profitsMat = new Double[bidLen][budgetLen];
-						//-----END CHART DATA-----
-
+						//THIS IS JUST FOR ANIRAN's Reports
+							//-----INITIALIZING CHART DATA-----
+							Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
+							Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
+							int bidLen = bidsArr.length;
+							int budgetLen = budgetsArr.length;
+							Double[][] costsMat = new Double[bidLen][budgetLen];
+							Double[][] numClicksMat = new Double[bidLen][budgetLen];
+							Double[][] weightsMat = new Double[bidLen][budgetLen];
+							Double[][] profitsMat = new Double[bidLen][budgetLen];
+							//-----END CHART DATA-----
+						
 						//FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
 						for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
 							for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
@@ -833,45 +858,45 @@ public abstract class MCKP extends AbstractAgent {
 										// System.out.println("ERROR convProWithPen NaN2"); //ap
 										convProbWithPen = 0.0;//HC num
 									}
-									
+
 
 									double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
 									double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 									itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));//HC num
 									queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps,slotDistr,isRatioArr,ISRatio));
 									itemCount++;
-									
-									//-----------BEGIN ADDING CHART DATA------------
-									costsMat[i][j] = cost;
-									numClicksMat[i][j] = numClicks;
-									weightsMat[i][j] = w;
-									profitsMat[i][j] = v;
-									//-----------END ADDING CHART DATA--------------
+									if(RUNWITHREPORTS){
+										//-----------BEGIN ADDING CHART DATA------------
+										costsMat[i][j] = cost;
+										numClicksMat[i][j] = numClicks;
+										weightsMat[i][j] = w;
+										profitsMat[i][j] = v;
+										//-----------END ADDING CHART DATA--------------
 
-									//Write testing information to the string buffer and then to the file.
-									stBuff = new StringBuffer();
-									stBuff.append(_day+",");
-									stBuff.append(q.getManufacturer()+",");
-									stBuff.append(q.getComponent()+",");
-									stBuff.append(bid+",");
-									stBuff.append(budget+",");
-									stBuff.append(!targeting+",");
-									stBuff.append(ad.getProduct().getManufacturer()+",");
-									stBuff.append(ad.getProduct().getComponent()+",");
-									stBuff.append(numImps+",");
-									stBuff.append(numClicks+",");
-									stBuff.append(cost+",");
-									stBuff.append(CPC+",");
-									stBuff.append(clickPr+",");
-									stBuff.append(convProbWithPen+",");
-									stBuff.append(w+",");
-									stBuff.append(v+"\n");
-									try{
-										bufferedWriter.write(stBuff.toString());
-									} catch (Exception e){
-										e.printStackTrace();                        
+										//Write testing information to the string buffer and then to the file.
+										stBuff = new StringBuffer();
+										stBuff.append(_day+",");
+										stBuff.append(q.getManufacturer()+",");
+										stBuff.append(q.getComponent()+",");
+										stBuff.append(bid+",");
+										stBuff.append(budget+",");
+										stBuff.append(!targeting+",");
+										stBuff.append(ad.getProduct().getManufacturer()+",");
+										stBuff.append(ad.getProduct().getComponent()+",");
+										stBuff.append(numImps+",");
+										stBuff.append(numClicks+",");
+										stBuff.append(cost+",");
+										stBuff.append(CPC+",");
+										stBuff.append(clickPr+",");
+										stBuff.append(convProbWithPen+",");
+										stBuff.append(w+",");
+										stBuff.append(v+"\n");
+										try{
+											bufferedWriter.write(stBuff.toString());
+										} catch (Exception e){
+											e.printStackTrace();                        
+										}
 									}
-
 
 									if(cost + bid*2 < budget) {//HC num
 										//If we don't hit our budget, we do not need to consider
@@ -882,21 +907,22 @@ public abstract class MCKP extends AbstractAgent {
 								}
 							}
 						}
-						
-						//-----BEGIN COLLATION/DUMP OF CHART DATA-----
-						String[] reports = {"cost","numClicks","weights"};
-						Reporter rep = new Reporter(bidsArr,budgetsArr,costsMat,numClicksMat,weightsMat,profitsMat);
-						String dirString = ""; //CHANGE THIS TO CONTROL WHERE OUTPUT DATA GOES
-						for (String r : reports) {
-							try {
-								rep.dump(dirString+q.toString()+_day,r);
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-						
-						//-----END COLLATION/DUMP OF CHART DATA-----
 
+						if(RUNWITHREPORTS){
+							//-----BEGIN COLLATION/DUMP OF CHART DATA-----
+							String[] reports = {"cost","numClicks","weights"};
+							Reporter rep = new Reporter(bidsArr,budgetsArr,costsMat,numClicksMat,weightsMat,profitsMat);
+							String dirString = ""; //CHANGE THIS TO CONTROL WHERE OUTPUT DATA GOES
+							for (String r : reports) {
+								try {
+									rep.dump(dirString+q.toString()+_day,r);
+								} catch (IOException e) {
+									e.printStackTrace();
+								}
+							}
+
+							//-----END COLLATION/DUMP OF CHART DATA-----
+						}
 						debug("Items for " + q);
 						if(itemList.size() > 0) {
 							Item[] items = itemList.toArray(new Item[0]);
@@ -906,14 +932,15 @@ public abstract class MCKP extends AbstractAgent {
 						}
 					}
 				}
-//				try {//modified
-//					if(bufferedWriter != null){
-//						bufferedWriter.flush();
-//						bufferedWriter.close();
-//					}        	 
-//				} catch (Exception ex){
-//					ex.printStackTrace();
-//				}
+			}
+			//				try {//modified
+			//					if(bufferedWriter != null){
+			//						bufferedWriter.flush();
+			//						bufferedWriter.close();
+			//					}        	 
+			//				} catch (Exception ex){
+			//					ex.printStackTrace();
+			//				}
 			else {
 				allPredictionsMap = new ConcurrentHashMap<Query, ArrayList<Predictions>>();
 				ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
@@ -965,7 +992,7 @@ public abstract class MCKP extends AbstractAgent {
 			//         }
 
 			Collections.sort(allIncItems);
-			
+
 			//Get a solution using on of the subclasses' methods
 
 			long solutionStartTime = System.currentTimeMillis();
@@ -978,10 +1005,10 @@ public abstract class MCKP extends AbstractAgent {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			
+
 			solution = getSolution(allIncItems, remainingCap, allPredictionsMap, bidLists, budgetLists);
 
-			
+
 			long solutionEndTime = System.currentTimeMillis();
 			System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
@@ -992,6 +1019,24 @@ public abstract class MCKP extends AbstractAgent {
 				if(solution.containsKey(q)) {
 					Item item = solution.get(q);
 					double bid = item.b();
+					System.out.println("Bidding query: "+q.toString());
+					try {
+						bwriter.write("Bid q: "+q.toString()+"bid: "+bid+" reserve: "+_paramEstimation.getRegReservePrediction(q.getType())+"\n");
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					if(bid< _paramEstimation.getRegReservePrediction(q.getType())){
+						System.out.println("__________________________Reset bid?__________________________");
+						try {
+							bwriter.write("Resetting bid: "+q.toString()+"\n");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						bid = _paramEstimation.getRegReservePrediction(q.getType());
+					}
 					double budget = item.budget();
 					int idx = solution.get(q).idx();
 					Predictions predictions = queryPrediction.get(idx);
@@ -1013,7 +1058,7 @@ public abstract class MCKP extends AbstractAgent {
 						 * Only override the budget if the flag is set
 						 * and we didn't choose to set a budget
 						 */
-						 bidBundle.setDailyLimit(q, numClicks*CPC);
+						bidBundle.setDailyLimit(q, numClicks*CPC);
 					}
 					else {
 						bidBundle.setDailyLimit(q, budget);
@@ -1030,13 +1075,21 @@ public abstract class MCKP extends AbstractAgent {
 						//                  double bid = getRandomProbeBid(q);
 						//                  double budget = getProbeBudget(q,bid);
 						//EDITS
-						//double[] bidBudget = getProbeSlotBidBudget(q);
-						//double bid = bidBudget[0];
-						//double budget = bidBudget[1];
-						double bid = 0.0;
-						double budget = 0;
+						double[] bidBudget = getProbeSlotBidBudget(q);
+						double bid = bidBudget[0];
+						double budget = bidBudget[1];
+						//double bid = 20;
+						//double budget = 30;
 						Ad ad = getProbeAd(q,bid,budget);
 						bidBundle.addQuery(q, bid, ad, budget);
+						pcount+=1;
+						try {
+							bwriter.write("Probe Q: "+ q.toString()+"Pcount: "+pcount+"\n");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						System.out.println("Q: "+ q.toString()+"Probing count: "+pcount);
 					}
 					else {
 						bidBundle.addQuery(q,0.0,new Ad(),0.0);//HC num
@@ -1066,6 +1119,7 @@ public abstract class MCKP extends AbstractAgent {
 			}
 		}
 
+		if(RUNWITHREPORTS){
 		String bidgametest;
 
 		if(hasPerfectModels()){
@@ -1113,12 +1167,20 @@ public abstract class MCKP extends AbstractAgent {
 
 			bufferedWriter.flush();
 			bufferedWriter.close();
-
+	
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
-
+		}
 		//      System.out.println(bidBundle);
+
+		try {		
+			bwriter.flush();
+			bwriter.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return bidBundle;
 	}
 
@@ -1136,7 +1198,7 @@ public abstract class MCKP extends AbstractAgent {
 		return new Ad();
 	}
 
-	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE
+	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE?
 	private double[] getProbeSlotBidBudget(Query q) {
 		double[] bidBudget = new double[2];
 		ArrayList<Double> ourBids = new ArrayList<Double>();
@@ -1166,6 +1228,7 @@ public abstract class MCKP extends AbstractAgent {
 				ourScores.add(ourScore);
 			}
 		}
+		opponentScores.add(opponentScores.get(opponentScores.size()-1)-.1);
 
 		//Also ad a score to bid directly above the reserve score,
 		//And directly above the highest score (so we get the 1st slot)
@@ -1188,6 +1251,10 @@ public abstract class MCKP extends AbstractAgent {
 				}
 			}
 		}
+		 if(ourPrunedScores.size()<=0){
+			 ourPrunedScores.add(reserveScore*1.5);
+			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
+		 }
 
 		//Turn score into bids
 		for (double score : ourPrunedScores) {
@@ -1196,14 +1263,18 @@ public abstract class MCKP extends AbstractAgent {
 		}
 
 		int numSlots = Math.min(_numSlots,ourBids.size());
-		int slot = _R.nextInt(numSlots);
-		//int slot = numSlots;
-		
+		//int slot = _R.nextInt(numSlots);
+		//int slot = (int) Math.ceil(numSlots/2.0);
+		int slot = 1;
+		if(numSlots>=3){
+			slot = numSlots-1;
+		}
+
 		double bid = ourBids.get(slot);
-		System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
+		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
 		bidBudget[0] = bid;
 		bidBudget[1] = bid * _probeBidMult;
-		
+
 		return bidBudget;
 	}
 
@@ -1389,6 +1460,7 @@ public abstract class MCKP extends AbstractAgent {
 					bundle.addQuery(q, bid, getTargetedAd(q), 200);//HC num
 				}
 				else {
+					System.out.println(_paramEstimation);
 					double bid = randDouble(_paramEstimation.getPromReservePrediction(q.getType()), _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * .7);//HC num
 					bundle.addQuery(q, bid, getTargetedAd(q), 100);//HC num
 				}
@@ -1446,7 +1518,7 @@ public abstract class MCKP extends AbstractAgent {
 			/*
 			 * F0 Query, target our specialty
 			 */
-			 ad = new Ad(new Product(manSpecialty, compSpecialty));
+			ad = new Ad(new Product(manSpecialty, compSpecialty));
 		}
 		else if (q.getType().equals(QueryType.FOCUS_LEVEL_ONE)) {
 			if(q.getComponent() == null) {
@@ -1516,6 +1588,7 @@ public abstract class MCKP extends AbstractAgent {
 
 		//      System.out.println("Updating models on day " + _day);
 		if(!hasPerfectModels()) {
+			System.out.println(_adTypeEstimator.toString());
 
 			_adTypeEstimator.updateModel(queryReport);
 			_specialtyModel.updateModel(queryReport);
@@ -1724,7 +1797,7 @@ public abstract class MCKP extends AbstractAgent {
 			}
 			else {
 				//Average penalty per click:
-					//For each conversion, compute its penalty. Use this to get conversion probability at that penalty,
+				//For each conversion, compute its penalty. Use this to get conversion probability at that penalty,
 				//and then use this to get expected number of clicks at that penalty.
 				//There is a different penalty for each conversion. Average penalty is:
 				// (\sum_{conversion} penaltyForConversion * expectedClicksAtPenalty) / totalClicks
@@ -1887,7 +1960,7 @@ public abstract class MCKP extends AbstractAgent {
 		return solutionWeight(budget, solution, allPredictionsMap, null);
 	}
 
-	
+
 	protected int[] getPreDaySales() {
 		//-------------------------
 		//Get our current conversion history (amount of conversions on past days within the window)
@@ -1924,8 +1997,8 @@ public abstract class MCKP extends AbstractAgent {
 		//System.out.println("preDaySales=" + Arrays.toString(preDaySales));
 		return preDaySales;
 	}
-	
-	
+
+
 	protected HashMap<Integer, HashMap<Integer, Double>> getSpeedyHashedProfits(int capacityWindow,
 			int totalCapacityMax, int dailyCapacityUsedMin, int dailyCapacityUsedMax, int dailyCapacityUsedStep,
 			HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query,ArrayList<Predictions>> allPredictionsMap) {
@@ -2090,18 +2163,18 @@ public abstract class MCKP extends AbstractAgent {
 
 	protected abstract Item makeNewItem(IncItem ii, double budget, double lowW,
 			double newValue, double newBudget, boolean changeWandV, boolean changeBudget);
-//		Item itemHigh = ii.itemHigh();
-//		if(changeWandV && !changeBudget){
-//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
-//				itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
-//		}else if (changeWandV && changeBudget){
-//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
-//		}else{
-//			return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
-//
-//		}
-//		
-//	}
+	//		Item itemHigh = ii.itemHigh();
+	//		if(changeWandV && !changeBudget){
+	//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
+	//				itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+	//		}else if (changeWandV && changeBudget){
+	//			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+	//		}else{
+	//			return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
+	//
+	//		}
+	//		
+	//	}
 
 
 	/**
@@ -2314,10 +2387,10 @@ public abstract class MCKP extends AbstractAgent {
 		return "MCKP";
 	}
 
-//	@Override
-//	public AbstractAgent getCopy() {
-//		return new MCKP(_c[0],_c[1],_c[2]);
-//	}
+	//	@Override
+	//	public AbstractAgent getCopy() {
+	//		return new MCKP(_c[0],_c[1],_c[2]);
+	//	}
 
 
 	//takes a filename of a "parameters" file that contains all the hardcoded parameters
