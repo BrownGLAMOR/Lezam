@@ -893,6 +893,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 
 	@Override
 	public AbstractModel getCopy() {
+		// FIXME: We should return an instance of this class, not a CarletonQueryAnalyzer.
 		return new CarletonQueryAnalyzer(_querySpace, _advertisers, _ourAdvertiser, REPORT_FULLPOS_FORSELF, _isSampled);
 	}
 
