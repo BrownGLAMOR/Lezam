@@ -1,12 +1,17 @@
-package models.queryanalyzer.riep.iep.mip;
+ package models.queryanalyzer.riep.iep.mip;
 
+ import models.queryanalyzer.QAAlgorithmEvaluator.SolverType;
+import models.queryanalyzer.ds.AbstractQAInstance;
 import models.queryanalyzer.ds.QAInstanceAll;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator;
 import models.queryanalyzer.riep.iep.IEResult;
 import models.queryanalyzer.riep.iep.AbstractImpressionEstimator.ObjectiveGoal;
 import models.queryanalyzer.riep.iep.cp.ImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
+import models.queryanalyzer.riep.iep.mip.WaterfallILP.Objective;
 import models.queryanalyzer.riep.iep.mip.WaterfallILP.WaterfallResult;
+
+import ilog.cplex.IloCplex;
 
 import java.util.Arrays;
 
@@ -32,14 +37,19 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
    private String[] agentNames;
 
    boolean INTEGER_PROGRAM;
+   boolean SAMPLED = false;
    boolean USE_EPSILON = false;
    int NUM_SAMPLES = 10;
    boolean USE_RANKING_CONSTRAINTS;
    boolean MULTIPLE_SOLUTIONS; //Have the MIP return multiple solutions and evaluate with a better objective?
    double TIMEOUT_IN_SECONDS;
+   
+   IloCplex cplex;
+   Objective DESIRED_OBJECTIVE;
 
 
-   public EricImpressionEstimator(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, boolean multipleSolutions, double timeoutInSeconds) {
+   public EricImpressionEstimator(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, 
+		   boolean multipleSolutions, double timeoutInSeconds) {
 	  super(inst);
 	  TIMEOUT_IN_SECONDS = timeoutInSeconds;
       MULTIPLE_SOLUTIONS = multipleSolutions;
@@ -63,6 +73,38 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
       
    }
 
+   //Betsy addition, to use same cplex
+   public EricImpressionEstimator(QAInstanceAll inst, boolean useRankingConstraints, boolean integerProgram, 
+		   boolean multipleSolutions, double timeoutInSeconds, IloCplex cplex, boolean sampled, Objective desiredObjective) {
+	  super(inst);
+	  SAMPLED = sampled;
+	  this.cplex = cplex;
+	  this.DESIRED_OBJECTIVE = desiredObjective;
+	  TIMEOUT_IN_SECONDS = timeoutInSeconds;
+      MULTIPLE_SOLUTIONS = multipleSolutions;
+      INTEGER_PROGRAM = integerProgram;
+      USE_RANKING_CONSTRAINTS = useRankingConstraints;
+      _instance = inst;
+      _advertisers = inst.getNumAdvetisers();
+      _slots = inst.getNumSlots();
+      _promotedSlots = inst.getNumPromotedSlots();
+      _trueAvgPos = inst.getAvgPos();
+      _sampledAvgPos = inst.getSampledAvgPos();
+      _ourIndex = inst.getAgentIndex(); //TODO is this ID or Index?
+      _ourImpressions = inst.getImpressions();
+      _ourPromotedImpressions = inst.getPromotedImpressions();
+      _ourPromotedEligibilityVerified = inst.getPromotionEligibilityVerified();
+      hitOurBudget = inst.getHitOurBudget();
+      
+      _imprUB = inst.getImpressionsUB();
+      
+//      //BETSY ADD
+      // System.out.println("Imp Upperbound "+_imprUB);
+      _agentImpressionDistributionMean = inst.getAgentImpressionDistributionMean();
+      _agentImpressionDistributionStdev = inst.getAgentImpressionDistributionStdev();
+      agentNames = inst.getAgentNames();
+      
+   }
    public ObjectiveGoal getObjectiveGoal() {
       return _objectiveGoal;
    }
@@ -80,6 +122,7 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
    }
 
    public IEResult search(int[] order) {
+	  // System.out.println("_____________________________________SEARCHING__________________________________");
       //Impressions seen by each agent
       double[] I_a = new double[_advertisers];
       double[] I_aPromoted = new double[_advertisers];
@@ -100,28 +143,99 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
 
       //Reorder values according to the specified order
       double[] orderedI_a = order(I_a, order);
+      //System.out.println(Arrays.toString(orderedI_a));
       double[] orderedMu_a = order(mu_a, order);
+      //System.out.println(Arrays.toString(orderedMu_a));
       double[] orderedSampledMu_a = order(sampledMu_a, order);
+      //System.out.println(Arrays.toString(orderedSampledMu_a));
       double[] orderedI_aPromoted = order(I_aPromoted, order);
+     // System.out.println(Arrays.toString(orderedI_aPromoted));
       boolean[] orderedPromotionEligibilityVerified = order(promotionEligiblityVerified, order);
+     // System.out.println(Arrays.toString(orderedPromotionEligibilityVerified));
       int[] orderedHitBudget = order(hitBudget, order);
+     //System.out.println(Arrays.toString(orderedHitBudget));
       double[] orderedI_aDistributionMean = order(_agentImpressionDistributionMean, order);
+      System.out.println(Arrays.toString(orderedI_aDistributionMean));
       double[] orderedI_aDistributionStdev = order(_agentImpressionDistributionStdev, order);
-
-      //Get mu_a values, given impressions
-      WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
-                                          _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
-                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS, TIMEOUT_IN_SECONDS);
+    
+      
+      
+      ///////////////////////////////////////
+//      double[] knownI_a = {-1.0, -1.0, -1.0, 252.0, -1.0, -1.0};
+//		double[] knownMu_a = {-1.0, -1.0, -1.0, 3.2738095238095237, -1.0, -1.0};
+//		double[] knownI_aPromoted= {-1.0, -1.0, -1.0, 0.0, -1.0, -1.0};
+//		boolean[] isKnownPromotionEligible = {false, false, false, false, false, false};
+//		int[] hitBudget = {-1, -1, -1, 0, -1, -1};
+//		int numSlots = 5;
+//		int numPromotedSlots = 0;
+//		boolean integerProgram = false;
+//		boolean useEpsilon = true;
+//		double[] knownSampledMu_a = {Double.NaN, 1.2, 2.2, 3.2, 4.2, 5.0};
+//		//double[] knownSampledMu_a = {1.0, 1.2, 2.2, 3.2, 4.2, 5.0};
+//		int numSamples = 10;
+//		int maxImpsPerAgent = 302;
+     // double[] orderedI_aDistributionMean  = new double[_advertisers];
+      //Arrays.fill(orderedI_aDistributionMean, -1);
+		//double[] orderedI_aDistributionStdev = new double[_advertisers];
+		//Arrays.fill(orderedI_aDistributionStdev, -1);
+//		boolean useRankingConstraints = false;
+//		boolean multipleSolutions = false;
+//		double timeoutInSeconds = 3;
+      
+      
+      
+//		WaterfallILP ilp = new WaterfallILP(
+//				knownI_a, knownMu_a, knownI_aPromoted, isKnownPromotionEligible, hitBudget, numSlots, 
+//				numPromotedSlots, integerProgram, useEpsilon, knownSampledMu_a, 
+//				numSamples, maxImpsPerAgent, knownI_aDistributionMean, knownI_aDistributionStdev,
+//				useRankingConstraints, multipleSolutions, timeoutInSeconds, cplex);
+      
+      
+      ////////////////////////////////////////////
+//      WaterfallILP ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
+//                                          _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
+//                                          orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS, TIMEOUT_IN_SECONDS, cplex);
+      WaterfallILP ilp;
+      if(SAMPLED){
+    	 // System.out.println("UB 190 EIE: "+_imprUB);
+    	  ilp = new WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, orderedPromotionEligibilityVerified, orderedHitBudget,
+              _slots, _promotedSlots, INTEGER_PROGRAM, USE_EPSILON, orderedSampledMu_a, NUM_SAMPLES, _imprUB,
+              orderedI_aDistributionMean, orderedI_aDistributionStdev, USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS, TIMEOUT_IN_SECONDS, 
+              cplex, DESIRED_OBJECTIVE);
+      }else{
+    	  //System.out.println("UB 201 EIE: "+_imprUB);
+    	  ilp = new  WaterfallILP(orderedI_a, orderedMu_a, orderedI_aPromoted, 
+    			  orderedPromotionEligibilityVerified, orderedHitBudget, _slots, _promotedSlots, 
+  			INTEGER_PROGRAM, USE_EPSILON, _imprUB,
+  			orderedI_aDistributionMean, orderedI_aDistributionStdev,
+  			USE_RANKING_CONSTRAINTS, MULTIPLE_SOLUTIONS, TIMEOUT_IN_SECONDS, cplex, DESIRED_OBJECTIVE);
+      }
 
       WaterfallILP.WaterfallResult result = ilp.solve();
+      
+      if(result!=null){
       double[][] I_a_s = result.getI_a_s();
+		double[] U_k = result.getU_k();
+		int[][] V_i_k = result.getV_i_k();
+		int[] ordering = result.getOrdering();
+//		System.out.println("I_a_s = " + WaterfallILP.arrayString(I_a_s));
+//		System.out.println("U_k = " + Arrays.toString(U_k));
+//		System.out.println("V_i_k = " + WaterfallILP.arrayString(V_i_k));
+//		System.out.println("ordering = " + Arrays.toString(ordering));
+//		System.out.println("objective = " + result.getObjectiveVal());
+//		System.out.println("Done");
+      
+      //System.out.println("_RESULT: "+result);
+      //double[][] I_a_s = result.getI_a_s();
 
       int[][] waterfall = new int[I_a_s.length][I_a_s[0].length];
       for(int i = 0; i < waterfall.length; i++) {
          for(int j = 0; j < waterfall[i].length; j++) {
-            waterfall[i][j] = (int) I_a_s[i][j];
+        	 //System.out.println("Ias "+I_a_s[i][j]);
+            waterfall[i][j] = (int) Math.round(I_a_s[i][j]);
          }
       }
+      int[][] unorderedWaterfall = unorder(waterfall, order);
 
       //relativeRanking[i]: the agent in initial position i had index relativeRanking[i]
       int[] relativeRanking = result.getOrdering();
@@ -147,8 +261,14 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
       int[] unorderedRelativeRanking = order(relativeRanking, order);
 
       //System.out.println("RelativeRanking=" + Arrays.toString(relativeRanking) + ", unorderedRelativeRanking=" + Arrays.toString(unorderedRelativeRanking));
-
-      return new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall, agentNames);
+      //IEResult ieres = new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, waterfall, agentNames);
+      IEResult ieres = new IEResult(obj, unorderedImpsPerAgent, unorderedRelativeRanking, impsPerSlot, unorderedWaterfall, agentNames);
+      //System.out.println("RESULES 2: "+ieres);
+      return ieres;
+      }else{
+    	  System.out.println("______________________________________________NULL RESULTS________________________________________");
+    	  return null;
+      }
    }
 
 
@@ -204,6 +324,15 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
          arr[order[i]] = orderedArr[i];
       }
       return arr;
+   }
+   
+   // Unorder array by first element
+   private static int[][] unorder(int[][] orderedArr, int[] order) {
+	      int[][] arr = new int[orderedArr.length][];
+	      for (int i = 0; i < order.length; i++) {
+	         arr[order[i]] = orderedArr[i].clone();
+	      }
+	      return arr;	   
    }
 
 
@@ -302,8 +431,8 @@ public class EricImpressionEstimator extends AbstractImpressionEstimatorMIP {
 
 
          //int slots, int promotedSlots, int advetisers, double[] avgPos, int[] agentIds, int agentIndex, int impressions, int promotedImpressions, int impressionsUB, boolean considerPaddingAgents, boolean promotionEligibiltyVerified
-         QAInstanceAll carletonInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
-         QAInstanceAll ericInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames);
+         QAInstanceAll carletonInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, true, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames, 0);
+         QAInstanceAll ericInst = new QAInstanceAll(numSlots, numPromotedSlots, numAgents, mu_a, knownSampledMu_a, agentIds, ourAgentIdx, ourImpressions, ourPromotedImpressions, impressionsUB, false, ourPromotionKnownAllowed, hitOurBudget, agentImpressionDistributionMean, agentImpressionDistributionStdev, true, predictedOrder, agentNames, 0);
 
 //			System.out.println("Carleton Instance:\n" + carletonInst);
 //			System.out.println("Eric Instance:\n" + ericInst);

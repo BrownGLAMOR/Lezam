@@ -1,34 +1,42 @@
+/**
+ * 
+ */
 package models.queryanalyzer.riep.iep.mip;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
+import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
 
 import java.util.Arrays;
 
 import models.queryanalyzer.ds.QAInstanceExact;
 
-public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimatorSimpleMIP {
-	protected final static boolean SUPPRESS_OUTPUT = true;
-	
+/**
+ * @author betsy
+ *
+ */
+public class ImpressionEstimatorSimpleMIPWeightedMinDiffTotalImp extends
+		AbstractImpressionEstimatorSimpleMIP {
+
 	public QAInstanceExact _instExact;
-	
-//	public ImpressionEstimatorSimpleMIPExact(QAInstanceExact inst, double timeout){
+	/**
+	 * @param inst
+	 */
+//	public ImpressionEstimatorSimpleMIPWeightedMinDiffTotalImp(QAInstanceExact inst, double timeout) {
 //		super(inst, timeout);
 //		_instExact = inst;
 //	}
-
-	public ImpressionEstimatorSimpleMIPExact(QAInstanceExact inst, double timeout, IloCplex cplex){
+	
+	public ImpressionEstimatorSimpleMIPWeightedMinDiffTotalImp(QAInstanceExact inst, double timeout, IloCplex cplex) {
 		super(inst, timeout, cplex);
 		_instExact = inst;
 	}
-	
-	@Override
-	public String getName() {return "SimpleMIPExact";}
 
-	
-	
+	/**
+	 * copied from ImpressionEstimatorSimpleMipExact
+	 */
 	@Override
 	protected CPlexVariables makeModel(IloCplex cplex, int[] order) throws IloException {
 		QAInstanceExact orderedInst = _instExact.reorder(order); 
@@ -64,6 +72,13 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 	    	maxDropOut[a] = Math.min(Math.min(a,slots-1),floorSlot);
 	    }
 	    
+	    //set default values
+//	    for(int a=0; a < advertisers; a++){
+//	    	minDropOut[a] = 0;
+//	    	maxDropOut[a] = Math.min(a,slots-1);
+//	    }
+//	    
+	    
 	    System.out.println(Arrays.toString(orderedInst.getAvgPos()));
 	    System.out.println(Arrays.toString(minDropOut));
 	    System.out.println(Arrays.toString(maxDropOut));
@@ -95,10 +110,55 @@ public class ImpressionEstimatorSimpleMIPExact extends AbstractImpressionEstimat
 		
 		return vars;
 	}
-
-
-
-
-
+// change objective
 	
+	
+	protected void postObjective(IloCplex cplex, CPlexVariables vars, int advertisers, int slots, int M) throws IloException {
+		slots = Math.min(slots,advertisers);
+		IloNumVar[] SDeltas = cplex.numVarArray(slots, 0, 2*M);
+		//System.out.println("Slots:"+slots);
+		for (int s=0; s < slots-1; s++) {
+			
+			IloLinearNumExpr delta = cplex.linearNumExpr();
+			delta.addTerm(1, vars.S_a[s]);
+			delta.addTerm(-1, vars.S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+			
+			delta = cplex.linearNumExpr();
+			delta.addTerm(-1, vars.S_a[s]);
+			delta.addTerm(1, vars.S_a[s+1]);
+			cplex.addGe(SDeltas[s], delta);
+		}
+		
+		//calculate the weighted sum a weighted sum
+		IloLinearNumExpr allSDeltas = cplex.linearNumExpr();
+		for (int a=0; a<slots-1; a++) {
+			allSDeltas.addTerm(1/(a+1), SDeltas[a]);
+			//allSDeltas.addTerm(1/((a+1)*(a+1)), SDeltas[a]);
+			//if(a<=1){
+				//allSDeltas.addTerm(20, SDeltas[a]);
+			//}else{
+			//allSDeltas.addTerm(1/slots, SDeltas[a]);
+			//}
+		}
+		
+		//minimize the total difference between slots, weighted
+		cplex.addMinimize(allSDeltas);		
+
+		
+//		IloLinearNumExpr allTs = cplex.linearNumExpr();
+//		for(IloNumVar T : vars.T_a){
+//			allTs.addTerm(1, T);
+//		}
+//					
+//		cplex.addMaximize(allTs);	
+		//cplex.addMinimize(cplex.sum(cplex.prod(100.0, allSDeltas), allTs));	
+	}
+	/* (non-Javadoc)
+	 * @see models.queryanalyzer.riep.iep.AbstractImpressionEstimator#getName()
+	 */
+	@Override
+	public String getName() {
+		return "SimpleMipExact-WeightedMinTotalDiff";
+	}
 }

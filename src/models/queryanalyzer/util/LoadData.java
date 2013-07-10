@@ -13,6 +13,7 @@ import java.util.StringTokenizer;
 
 public class LoadData {
 	static public QADataAll LoadIt(String fileName){
+		boolean valid = false;
 		String instanceString = fileToString(fileName);
 		
 		//System.out.println(instanceString);
@@ -22,12 +23,20 @@ public class LoadData {
 		int agents = Integer.parseInt(tokens.nextToken());
 		int slots = Integer.parseInt(tokens.nextToken());
 		int ourAgentNum= Integer.parseInt(tokens.nextToken());
+		//System.out.println("OurAG NUM1: "+ourAgentNum);
 		AdvertiserInfo[] agentInfo = new AdvertiserInfo[agents];
-		
+		//int ourAgentNum =4;
 		for(int a = 0; a < agents; a++){
 			int id = Integer.parseInt(tokens.nextToken());
 			String agent= tokens.nextToken();
+//			if(agent.compareToIgnoreCase("Schlemazl")==0){
+//				ourAgentNum= id;
+//			}
 			double avgPos = Double.parseDouble(tokens.nextToken());
+			//System.out.println(avgPos);
+			if(avgPos>0){
+				valid = true;
+			}
 			int impressions = Integer.parseInt(tokens.nextToken());
 			double bid = Double.parseDouble(tokens.nextToken());
 			double budget = Double.parseDouble(tokens.nextToken());
@@ -37,8 +46,11 @@ public class LoadData {
 
 			agentInfo[a] = new AdvertiserInfo(id, agent ,avgPos, impressions, bid, budget,sampledAveragePositions,impsDistMean,impsDistStdev);
 		}
-
-		return new QADataAll(agents, slots, ourAgentNum, agentInfo);
+		if(valid){
+			return new QADataAll(agents, slots, ourAgentNum, agentInfo);
+		}else{
+			return null;
+		}
 	}
 	
 	static public QADataExactOnly LoadItExactOnly(String fileName){

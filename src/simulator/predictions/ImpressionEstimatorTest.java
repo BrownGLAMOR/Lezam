@@ -13,8 +13,8 @@ import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorAll;
 import models.queryanalyzer.riep.iep.cplp.DropoutImpressionEstimatorExact;
 import models.queryanalyzer.riep.iep.mip.EricImpressionEstimator;
 import models.queryanalyzer.riep.iep.mip.ImpressionEstimatorSimpleMIPExact;
-import models.usermodel.UserModel;
-import models.usermodel.UserModelInput;
+import models.usermodel.ParticleFilterAbstractUserModel;
+import models.usermodel.jbergParticleFilter;
 import simulator.parser.GameStatus;
 import simulator.parser.GameStatusHandler;
 import simulator.predictions.AllModelTest.GameSet;
@@ -42,7 +42,7 @@ public class ImpressionEstimatorTest {
 
    private static boolean DEBUG = false;
    private static boolean LOGGING = true;
-   private static boolean SUMMARY = true;
+   private static boolean SUMMARY = false;
 
    private static boolean NO_F0 = true;
 
@@ -51,6 +51,8 @@ public class ImpressionEstimatorTest {
          System.out.println(s);
       }
    }
+   
+   String OUR_AGENT = "Schlemazl";
 
    Random _rand;
    long _seed = 1616867;
@@ -107,7 +109,9 @@ public class ImpressionEstimatorTest {
    double aggregateAbsTotImprError = 0;
 
    public enum SolverType {
-      CP, MIP, MIP_LP, LDSMIP, MULTI_MIP, Carleton_LP, SIMPLE_MIP_Exact, Carleton_LP_Exact, SIMPLE_MIP_Sampled,
+      CP, IP, MIP, ERIC_MIP_MinSlotEric, ERIS_MIP_MinSlotCJC, ERIC_MIP_MinPriors, ERIC_MIP_MinTotal, ERIC_MIP_MaxTotal, LDSMIP, MULTI_MIP, Carleton_LP, CARLETON_SIMPLE_MIP_Exact, Carleton_LP_Exact, CARLETON_SIMPLE_MIP_Sampled,
+      CARLETON_SIMPLE_MIP_Exact_MinTotal, CARLETON_SIMPLE_MIP_Exact_MinDiffTotal, CARLETON_SIMPLE_MIP_Exact_WeightedMinDiffTotal, CARLETON_SIMPLE_MIP_Exact_PRIORS, CARLETON_SIMPLE_MIP_Exact_Total_Priors, 
+      CARLETON_SIMPLE_MIP_Sampled_WeightedMinDiffTotal
    }
 
    public enum GameSet {
@@ -413,12 +417,12 @@ public class ImpressionEstimatorTest {
             }
          }
 
-         List<UserModel> userModelList = null;
+         List<ParticleFilterAbstractUserModel> userModelList = null;
          if (TEST_USER_MODEL) {
-            userModelList = new ArrayList<UserModel>();
+            userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
             for (int i = 0; i < agents.length; i++) {
-            	UserModel userModel = UserModel.build(new UserModelInput(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
-            	userModelList.add(userModel);
+               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(new double[] {0.10753988514063796,0.187966273,0.339007416}, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+               userModelList.add(userModel);
             }
          }
 
@@ -867,28 +871,28 @@ public class ImpressionEstimatorTest {
                      double start = System.currentTimeMillis(); //time the prediction time on this instance
 
                      //---------------- SOLVE INSTANCE ----------------------
-                     if (impressionEstimatorIdx == SolverType.CP) {
-                        if(SAMPLED_AVERAGE_POSITIONS) {
-                           if (ORDERING_KNOWN) {
-                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
-                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                           } else {
-                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
-                              fullModel = new LDSImpressionAndRankEstimator(model);
-                           }
-                        }
-                        else {
-                           if (ORDERING_KNOWN) {
-                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
-                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
-                           } else {
-                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
-                              fullModel = new LDSImpressionAndRankEstimator(model);
-                           }
-                        }
-                        
-                     }
-                     if (impressionEstimatorIdx == SolverType.MIP) {
+//                     if (impressionEstimatorIdx == SolverType.CP) {
+//                        if(SAMPLED_AVERAGE_POSITIONS) {
+//                           if (ORDERING_KNOWN) {
+//                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
+//                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+//                           } else {
+//                              model = new ImpressionEstimatorSample(inst, sampFrac, fractionalBran,numSamples);
+//                              fullModel = new LDSImpressionAndRankEstimator(model);
+//                           }
+//                        }
+//                        else {
+//                           if (ORDERING_KNOWN) {
+//                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
+//                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
+//                           } else {
+//                              model = new ImpressionEstimatorExact(inst, sampFrac, fractionalBran);
+//                              fullModel = new LDSImpressionAndRankEstimator(model);
+//                           }
+//                        }
+//                        
+//                     }
+                     if (impressionEstimatorIdx == SolverType.IP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
                         model = new EricImpressionEstimator(inst, useRankingConstraints, true, false, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
@@ -898,7 +902,7 @@ public class ImpressionEstimatorTest {
                         model = new EricImpressionEstimator(inst, useRankingConstraints, true, true, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                      }
-                     if (impressionEstimatorIdx == SolverType.MIP_LP) {
+                     if (impressionEstimatorIdx == SolverType.MIP) {
                         boolean useRankingConstraints = !ORDERING_KNOWN; //Only use ranking constraints if you don't know the ordering
                         model = new EricImpressionEstimator(inst, useRankingConstraints, false, false, IP_TIMEOUT_IN_SECONDS);
                         fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
@@ -933,12 +937,12 @@ public class ImpressionEstimatorTest {
                     	 }
                      }
                      
-                     if (impressionEstimatorIdx == SolverType.SIMPLE_MIP_Exact) {
+                     if (impressionEstimatorIdx == SolverType.CARLETON_SIMPLE_MIP_Exact) {
                     	 if (ORDERING_KNOWN) {
-                             model = new ImpressionEstimatorSimpleMIPExact(instExact);
+                             model = new ImpressionEstimatorSimpleMIPExact(instExact, 0.0, null);
                              fullModel = new ConstantImpressionAndRankEstimator(model, ordering);
                     	 } else {
-                             model = new ImpressionEstimatorSimpleMIPExact(instExact);
+                             model = new ImpressionEstimatorSimpleMIPExact(instExact, 0.0, null);
                              fullModel = new LDSImpressionAndRankEstimator(model);
                     	 }
                      }
@@ -1173,7 +1177,7 @@ public class ImpressionEstimatorTest {
                HashMap<Product, HashMap<GameStatusHandler.UserState, Double>> userDistributions = status.getUserDistributions().get(d);
                for (int i = 0; i < agents.length; i++) {
                   Map<Query, Integer> totalImpMap = totalImpsMapList.get(i);
-                  UserModel userModel = userModelList.get(i);
+                  ParticleFilterAbstractUserModel userModel = userModelList.get(i);
                   userModel.updateModel(totalImpMap);
 
                   Map<Product, Map<GameStatusHandler.UserState, Integer>> userPredictionMap = new HashMap<Product, Map<GameStatusHandler.UserState, Integer>>();
@@ -1181,7 +1185,7 @@ public class ImpressionEstimatorTest {
                      HashMap<GameStatusHandler.UserState, Double> userDistProductMap = userDistributions.get(product);
                      Map<GameStatusHandler.UserState, Integer> userPredProductMap = new HashMap<GameStatusHandler.UserState, Integer>();
                      for (GameStatusHandler.UserState state : GameStatusHandler.UserState.values()) {
-                        int userPred = (int)userModel.getPrediction(product, state);
+                        int userPred = userModel.getCurrentEstimate(product, state);
                         userPredProductMap.put(state, userPred);
 
                         double users = userDistProductMap.get(state);
@@ -1266,9 +1270,18 @@ public class ImpressionEstimatorTest {
     */
    
    
-   public void generateTestingFiles(String filename, int d, int queryId) throws IOException, ParseException
+   public void generateTestingFiles(String filename, int d, int queryId, String ourAgentName) throws IOException, ParseException
   	{
-	   BufferedWriter resultToCarleton=new BufferedWriter(new FileWriter("ResultToCarletonOutPut"));
+	   String[] fName = filename.split("/");
+	   String[] game1 = fName[fName.length-1].split("\\.");
+	   System.out.println(Arrays.toString(game1));
+	   String game = "Game";
+	   if(game1.length>0){
+		   game = game1[0];
+	   }
+	   
+	   
+	   BufferedWriter resultToCarleton=new BufferedWriter(new FileWriter("GameLogFiles/GameLog_"+game+"_day"+d+"_query"+queryId));
 
 //	         if(SUMMARY) {
 //	            resultToCarleton.write(filename+'\n');
@@ -1328,9 +1341,14 @@ public class ImpressionEstimatorTest {
          
 	         double[] impsDistMean = getAgentImpressionsDistributionMeanOrStdev(status,queryArr[queryId] , d, true);
 	         double[] impsDistStdev = getAgentImpressionsDistributionMeanOrStdev(status, queryArr[queryId], d, false);
-       
-	         System.out.println(agents.length+" "+NUM_SLOTS);
-	         resultToCarleton.write(agents.length+" "+NUM_SLOTS+"\n");
+	         int ourAgentNum = 0;
+	         for (int i = 0; i < agents.length; i++) {
+	        	 if(agents[i].compareToIgnoreCase(ourAgentName)==0){
+	        		 ourAgentNum = i;
+	        	 }
+	         }
+	            System.out.println(agents.length+" "+NUM_SLOTS);
+	         resultToCarleton.write(agents.length+" "+NUM_SLOTS+" "+ourAgentNum+"\n");
 	         for (int i = 0; i < agents.length; i++) {
 	        	 System.out.println((i+1)+" "+actualAveragePositions[i]+" "+impressions[i]+" "+squashedBids[i]+" "+budgets[i]+" "+sampledAveragePositions[i]+impsDistMean[i]+impsDistStdev[i]);
 	        	 try {
@@ -2694,7 +2712,7 @@ public class ImpressionEstimatorTest {
 
 	   
 	   //*
-	   boolean debuggingTests=true;
+	   boolean debuggingTests=false;
 	   if (debuggingTests) {
 		   runDebuggingTests();
 		   System.exit(0);
@@ -2718,7 +2736,7 @@ public class ImpressionEstimatorTest {
       boolean useHistoricPriors = true;
       HistoricalPriorsType historicPriorsType = HistoricalPriorsType.EMA; //Naive, LastNonZero, SMA, EMA,
       boolean orderingKnown = true;
-      SolverType solverToUse = SolverType.MIP; //SolverType.CP;
+      SolverType solverToUse = SolverType.IP; //SolverType.CP;
 
 //      GameSet GAMES_TO_TEST = GameSet.test2010;
 //      int START_GAME = 1;
@@ -2727,9 +2745,14 @@ public class ImpressionEstimatorTest {
 //      int START_GAME = 15127;
 //      int END_GAME = 15127;
       
+      //GameSet GAMES_TO_TEST = GameSet.semi2011server2;
+      //int START_GAME = 610;
+      //int END_GAME = 620;
+      
       GameSet GAMES_TO_TEST = GameSet.semi2011server1;
-      int START_GAME = 1414;
-      int END_GAME = 1414;
+      int START_GAME = 1435;
+      int END_GAME = 1445;
+   
       
 //      int END_GAME = 15136;
 //      int END_GAME = 15170;
@@ -2810,63 +2833,70 @@ public class ImpressionEstimatorTest {
 
       evaluator = new ImpressionEstimatorTest(sampleAvgPositions, perfectImps, useWaterfallPriors, noiseFactor, useHistoricPriors, historicPriorsType, orderingKnown, upperBoundNoise);
       ArrayList<String> gameString= evaluator.getGameStrings(GAMES_TO_TEST,START_GAME,END_GAME);
-      evaluator.generateTestingFiles(gameString.get(0),0,0);
+     for(int s = 0; s<gameString.size();s++){
+    	 for(int d = START_DAY; d<END_DAY;d++){
+    		 for(int q = START_QUERY;q<END_QUERY;q++){
+    			 evaluator.generateTestingFiles(gameString.get(s),d,q, AGENT_NAME);
+    		 }
+    	 }
+     }
+     
 
-      if(SUMMARY || DEBUG) {
-         //PRINT PARAMETERS
-         System.out.println();
-         System.out.println("sampleAvgPositions=" + sampleAvgPositions);
-         System.out.println("perfectImps=" + perfectImps);
-         System.out.println("useWaterfallPriors=" + useWaterfallPriors);
-         System.out.println("noiseFactor=" + noiseFactor);
-         System.out.println("useHistoricPriors=" + useHistoricPriors);
-         System.out.println("historicPriorsType=" + historicPriorsType);
-         System.out.println("orderingKnown=" + orderingKnown);
-         System.out.println("solverToUse=" + solverToUse);
-         System.out.println("GAMES_TO_TEST=" + GAMES_TO_TEST);
-         System.out.println("START_GAME=" + START_GAME);
-         System.out.println("END_GAME=" + END_GAME);
-         System.out.println("START_DAY=" + START_DAY);
-         System.out.println("END_DAY=" + END_DAY);
-         System.out.println("START_QUERY=" + START_QUERY);
-         System.out.println("END_QUERY=" + END_QUERY);
-         System.out.println("AGENT_NAME=" + AGENT_NAME);
-         System.out.println("IP_TIMEOUT_IN_SECONDS=" + IP_TIMEOUT_IN_SECONDS);
-         System.out.println("sampFrac=" + sampFrac);
-         System.out.println("upperBoundNoise=" + upperBoundNoise);
-         System.out.println();
-         //
-      }
-
-      double start;
-      double stop;
-      double secondsElapsed;
-      start = System.currentTimeMillis();
-
-      double[] results;
-
-      double convPrMult = .1;
-      if(args.length == 1) {
-         convPrMult = Double.parseDouble(args[0]);
-      }
-
-      results = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
-                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
-
-//      System.out.println(numSamples + "," + results[1] + "," + results[2]);
-
-//	   evaluator.allModelPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
-//	   evaluator.allModelPredictionChallenge(SolverType.MIP);
-//      evaluator.allModelPredictionChallenge(SolverType.MIP_LP);
-//	   evaluator.allModelPredictionChallenge(SolverType.MULTI_MIP, ORDERING_KNOWN);
-//      evaluator.allModelPredictionChallenge(SolverType.CP);
-//      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
-//      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
-      stop = System.currentTimeMillis();
-      secondsElapsed = (stop - start) / 1000.0;
-      if(SUMMARY) {
-         System.out.println("SECONDS ELAPSED: " + secondsElapsed);
-      }
+//      if(SUMMARY || DEBUG) {
+//         //PRINT PARAMETERS
+//         System.out.println();
+//         System.out.println("sampleAvgPositions=" + sampleAvgPositions);
+//         System.out.println("perfectImps=" + perfectImps);
+//         System.out.println("useWaterfallPriors=" + useWaterfallPriors);
+//         System.out.println("noiseFactor=" + noiseFactor);
+//         System.out.println("useHistoricPriors=" + useHistoricPriors);
+//         System.out.println("historicPriorsType=" + historicPriorsType);
+//         System.out.println("orderingKnown=" + orderingKnown);
+//         System.out.println("solverToUse=" + solverToUse);
+//         System.out.println("GAMES_TO_TEST=" + GAMES_TO_TEST);
+//         System.out.println("START_GAME=" + START_GAME);
+//         System.out.println("END_GAME=" + END_GAME);
+//         System.out.println("START_DAY=" + START_DAY);
+//         System.out.println("END_DAY=" + END_DAY);
+//         System.out.println("START_QUERY=" + START_QUERY);
+//         System.out.println("END_QUERY=" + END_QUERY);
+//         System.out.println("AGENT_NAME=" + AGENT_NAME);
+//         System.out.println("IP_TIMEOUT_IN_SECONDS=" + IP_TIMEOUT_IN_SECONDS);
+//         System.out.println("sampFrac=" + sampFrac);
+//         System.out.println("upperBoundNoise=" + upperBoundNoise);
+//         System.out.println();
+//         //
+//      }
+//
+//      double start;
+//      double stop;
+//      double secondsElapsed;
+//      start = System.currentTimeMillis();
+//
+//      double[] results;
+//
+//      double convPrMult = .1;
+//      if(args.length == 1) {
+//         convPrMult = Double.parseDouble(args[0]);
+//      }
+//
+//      results = evaluator.impressionEstimatorPredictionChallenge(solverToUse, GAMES_TO_TEST, START_GAME, END_GAME,
+//                                                                 START_DAY, END_DAY, START_QUERY, END_QUERY, AGENT_NAME,sampFrac, IP_TIMEOUT_IN_SECONDS,convPrMult);
+//
+////      System.out.println(numSamples + "," + results[1] + "," + results[2]);
+//
+////	   evaluator.allModelPredictionChallenge(SolverType.LDSMIP, ORDERING_KNOWN);
+////	   evaluator.allModelPredictionChallenge(SolverType.MIP);
+////      evaluator.allModelPredictionChallenge(SolverType.MIP_LP);
+////	   evaluator.allModelPredictionChallenge(SolverType.MULTI_MIP, ORDERING_KNOWN);
+////      evaluator.allModelPredictionChallenge(SolverType.CP);
+////      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
+////      evaluator.allModelPredictionChallenge(SolverType.CP, ORDERING_KNOWN,Integer.parseInt(args[0]),Integer.parseInt(args[1]));
+//      stop = System.currentTimeMillis();
+//      secondsElapsed = (stop - start) / 1000.0;
+//      if(SUMMARY) {
+//         System.out.println("SECONDS ELAPSED: " + secondsElapsed);
+//      }
 
 //      ImpressionEstimatorTest evaluator = new ImpressionEstimatorTest();
 //      double start;

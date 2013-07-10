@@ -47,8 +47,8 @@ public class TestIEPExact {
 
 			//AbstractImpressionEstimator IEP = new ImpressionEstimatorExact(inst);
 			//AbstractImpressionEstimator IEP = new DropoutImpressionEstimatorExact(inst);
-			AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPExact(inst);
-
+			//AbstractImpressionEstimator IEP = new ImpressionEstimatorSimpleMIPExact(inst);
+			AbstractImpressionEstimator IEP = null;
 			IEResult bestSol = IEP.search(bidOrder);
 
 			System.out.println("Best solution: "+Arrays.toString(bestSol.getSol()));

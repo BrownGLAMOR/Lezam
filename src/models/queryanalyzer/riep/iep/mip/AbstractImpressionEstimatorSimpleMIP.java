@@ -1,24 +1,33 @@
 package models.queryanalyzer.riep.iep.mip;
 
 import ilog.concert.IloException;
+import ilog.concert.IloIntExpr;
 import ilog.concert.IloIntVar;
 import ilog.concert.IloLinearNumExpr;
 import ilog.concert.IloNumExpr;
 import ilog.concert.IloNumVar;
 import ilog.cplex.IloCplex;
-import ilog.cplex.IloCplex.UnknownObjectException;
 
 import java.util.Arrays;
 
 import models.queryanalyzer.ds.AbstractQAInstance;
-import models.queryanalyzer.ds.QAInstanceExact;
 import models.queryanalyzer.riep.iep.IEResult;
 
 public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpressionEstimatorMIP {
-	protected final static boolean SUPPRESS_OUTPUT = false;
+	protected final static boolean SUPPRESS_OUTPUT = true;
+	private static double TIMEOUT_IN_SECONDS = 0;
+	IloCplex cplex;
 	
-	public AbstractImpressionEstimatorSimpleMIP(AbstractQAInstance inst){
+	int us;
+	
+	public AbstractImpressionEstimatorSimpleMIP(AbstractQAInstance inst, double timeout, IloCplex cplex){
 		super(inst);
+		if(timeout>0){
+			TIMEOUT_IN_SECONDS = timeout;
+		}
+		this.cplex = cplex;
+		//this.us = inst.getAgentIndex();
+		
 	}
 
 	@Override
@@ -28,11 +37,13 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 	@Override
 	public IEResult search(int[] order) {
 	    try {
-			IloCplex cplex = new IloCplex();
+			//IloCplex cplex = new IloCplex();
+	    	cplex.clearModel();
 			
 			//-------------------------------- SET CPLEX PARAMS -------------------------------------
 			if (SUPPRESS_OUTPUT) cplex.setOut(null);
-			//cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
+			
+			if(TIMEOUT_IN_SECONDS>0) cplex.setParam(IloCplex.DoubleParam.TiLim, TIMEOUT_IN_SECONDS);
 			
 			CPlexVariables vars = makeModel(cplex, order);
 			long t0 = System.currentTimeMillis();
@@ -81,7 +92,7 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 				//System.out.println("Model: " + cplex.getModel() );
 			}
 			
-			cplex.end();
+			//cplex.end();
 		}
 		catch (IloException e) {
 			System.err.println("Concert exception '" + e + "' caught");
@@ -94,6 +105,7 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 	protected abstract CPlexVariables makeModel(IloCplex cplex, int[] order) throws IloException;
 
 	protected CPlexVariables makeModelVariables(IloCplex cplex, int advertisers, int M) throws IloException{
+		//System.out.println("CJC M: "+M);
 		IloIntVar[][] D_a_s = new IloIntVar[advertisers][]; 
 		IloNumVar[][] I_a_s = new IloNumVar[advertisers][]; //(#imps per agent/slot)
 		IloNumVar[] S_a = cplex.numVarArray(advertisers, 0, M);
@@ -123,13 +135,18 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 			for(int s=1; s<=a; s++){
 				cplex.addLe(vars.D_a_s[a][s-1], vars.D_a_s[a][s]);
 			}
+			
 		}
+		
+		
+		
 		
 	}
 	
 
 	protected void postCascadeConstraints(IloCplex cplex, CPlexVariables vars, int advertisers, int slots) throws IloException {
 		//Waterfall constraints
+		
 		for (int a=0; a<advertisers; a++) {
 			for (int s=0; s<=a; s++) {
 				IloLinearNumExpr myCumulativeImps = cplex.linearNumExpr();
@@ -154,8 +171,13 @@ public abstract class AbstractImpressionEstimatorSimpleMIP extends AbstractImpre
 			}
 			cplex.addEq(totalImps, vars.T_a[a]);
 		}		
-		
+		//BETSY CHANGES
 		//Total slot impressions constraint
+		//System.out.println("ID And Imps: "+getInstance().getImpressions()+" "+getInstance().getAgentIndex());
+		//IloLinearNumExpr exactImps = cplex.linearNumExpr();
+		//exactImps.addTerm(1,vars.T_a[getInstance().getAgentIndex()]);
+		//cplex.addEq((double)getInstance().getImpressions(),vars.T_a[getInstance().getAgentIndex()]);
+		
 		for (int s=0; s<advertisers; s++) {
 			IloLinearNumExpr totalImpsInSlot = cplex.linearNumExpr();
 			for (int a=s; a<advertisers; a++) {

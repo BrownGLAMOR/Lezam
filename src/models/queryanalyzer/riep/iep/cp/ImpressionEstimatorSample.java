@@ -72,11 +72,14 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    private double _timeOut = 5; //in seconds
 
    public ImpressionEstimatorSample(QAInstanceAll inst) {
-      this(inst, 150, 0, 10);
+      this(inst, 150, 0, 10, 5);
+      
+      System.out.println("______SAMPLED_____________");
    }
 
-   public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, int numSamples) {
+   public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, int numSamples, double timeout) {
       this(inst, samplingFactor, fractionalBranches, 0.77,0.88,0.029,0.433,numSamples);
+      _timeOut = timeout;
    }
 
    public ImpressionEstimatorSample(QAInstanceAll inst, int samplingFactor, int fractionalBranches, double avgposstddev, double ouravgposstddev, double imppriorstddev, double ourimppriorstddev, int numSamples) {
@@ -111,10 +114,12 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
             FULL_SELF_POS = !(_trueAvgPos[i] == -1);
          }
          if (_trueAvgPos[i] == -1) {
+        	 System.out.println("____________________Using sampled_________________________");
             _trueAvgPos[i] = _sampledAvgPos[i];
          }
       }
-
+      System.out.println("TAP at creation: "+Arrays.toString(_trueAvgPos));
+      
       //Determine which agents saw at least one sample
       _agentSawSample = new boolean[_sampledAvgPos.length];
       for (int i = 0; i < _sampledAvgPos.length; i++) {
@@ -311,6 +316,9 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       _agentImpressionDistributionStdev = agentImpressionDistributionStdev;
       _agentSawSample = agentSawSample;
       _ourIndex = _ourIndex - ourIndexOffset;
+      
+      System.out.println("TAB: "+Arrays.toString(_trueAvgPos));
+   
    }
 
 
@@ -338,7 +346,9 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
    //pads the auction with "fake" advertisers so that the instance is feasible
    //Feasible means every agent starts in a position greater or equal to their avg pos
    private void addPaddingAgents(int startSlot, int stopSlot) {
-      int newAdvertisers = _advertisers + stopSlot - startSlot;
+     int newAdvertisers = _advertisers + stopSlot - startSlot;
+	   System.out.println("stop: "+stopSlot+" start: "+startSlot);
+     
       double[] newAvgPos = new double[newAdvertisers];
       double[] newSampledAvgPos = new double[newAdvertisers];
       int[] newAgentIds = new int[newAdvertisers];
@@ -381,16 +391,21 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
       _agentSawSample = newAgentSawSample;
    }
    
-   //TODO: We have bug here,  array out of boundary. The ordering array is passing values bigger than size of trueAvgPos, Data type: old 
+   //TODO: We have bug here,  array out of boundary.
+   //The ordering array is passing values bigger than size of trueAvgPos, Data type: old 
    private void padAgentsWithKnownPositions(int[] ordering) {
       //If any agents have a NaN sampled average position,
       //give them a dummy average position equal to min(their starting position, numSlots).
-      for (int i = 0; i < _trueAvgPos.length; i++) {
-    	  System.out.println(ordering[i]);
-         if (Double.isNaN(_trueAvgPos[ordering[i]])) {
-            _trueAvgPos[ordering[i]] = Math.min(i + 1, _slots);
+	   System.out.println(Arrays.toString(ordering));
+	   System.out.println(Arrays.toString(_trueAvgPos));
+	   //for (int i = 0; i < ordering.length; i++) { // Fix?? Not sure...
+     for (int i = 0; i < _trueAvgPos.length; i++) {
+         if (Double.isNaN(_trueAvgPos[i])) {
+            _trueAvgPos[i] = Math.min(i + 1, _slots);
+            
          }
       }
+	 System.out.println(Arrays.toString(_trueAvgPos));
    }
 
    private boolean feasibleOrder(int[] order) {
@@ -578,11 +593,11 @@ public class ImpressionEstimatorSample implements AbstractImpressionEstimator {
 //      System.out.println("nodeId=" + _nodeId + ", idx=" + currIndex + ", imps=" + Arrays.toString(agentImpr));
       //+ ", slotImps=" + Arrays.toString(slotImpr) );
 
-//      double stop = System.currentTimeMillis();
-//      double elapsed = (stop - _startTime) / 1000.0;
-//      if (elapsed > _timeOut) {
-//         return;
-//      }
+      double stop = System.currentTimeMillis();
+      double elapsed = (stop - _startTime) / 1000.0;
+      if (elapsed > _timeOut) {
+         return;
+      }
 
       if (slotImpr[0] > _imprUB) {
          return; //this is infeasible

@@ -31,6 +31,10 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
    private boolean REPORT_FULLPOS_FORSELF = true;
    private boolean _isSampled;
    private boolean usePriors = true;
+   
+   //TODO: MAke this actually access a real value (from file? Past Games?)
+   //this needs to be set if going to use Total Priors!!!!!
+   private int totalPrior = 0;
 
    /**
     * For each query/agent, this gives the sequence of squashed bid positions that the agent was in.
@@ -502,7 +506,7 @@ public class CarletonQueryAnalyzer extends AbstractQueryAnalyzer {
                                              trueAvgPos, sampledAvgPos, agentIdsArr, ourNewIdx,
                                              queryReport.getImpressions(q), queryReport.getPromotedImpressions(q), maxImps.get(q),
                                              padAgents, promotionEligibiltyVerified, hitOurBudget,
-                                             reducedImpMean, reducedImpStdDev, _isSampled, ordering, agentNamesArr);
+                                             reducedImpMean, reducedImpStdDev, _isSampled, ordering, agentNamesArr, totalPrior);
 
             //TODO: Pull out the data format
             ImpressionEstimatorSample ie = new ImpressionEstimatorSample(inst);

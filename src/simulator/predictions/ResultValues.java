@@ -1,34 +1,76 @@
 package simulator.predictions;
 
+import java.util.Arrays;
+
+import models.queryanalyzer.QAAlgorithmEvaluator.SolverType;
+
 public class ResultValues {
-	int[] guessedImps; 
-	int[] trueImps; 
-	double stat; 
 	double time;
-	double absError;
+	SolverType solver;
+	private int[][] predictedWaterfall;
+	private int predictedTotImpr;
+	private int[] predictedImpsPerAgent;
+	double objective;
 	
-	public ResultValues(int[] guessedImps, int[] trueImps, double statVal, double absError, double timeVal){
-		this.guessedImps = guessedImps;
-		this.trueImps = trueImps;
-		this.stat = statVal;
-		this.absError = absError;
-		this.time = timeVal;
+
+
+	public ResultValues(SolverType solver, int[] predictedImpsPerAgent,
+			int[][] predictedWaterfall, int predictedTotImpr, double objective, double time) {
+		
+		this.objective = objective;
+		this.predictedWaterfall = predictedWaterfall; 
+		this.predictedTotImpr = predictedTotImpr;
+		this.predictedImpsPerAgent = predictedImpsPerAgent;
+		this.time = time;
+		this.solver = solver;
 		
 	}
 
-	public double getStat() {
-		
-		return stat;
-	}
 	
-	public double getAbsError() {
-		
-		return absError;
-	}
 
 	public double getTime() {
-		// TODO Auto-generated method stub
 		return time;
 	}
+	
+	public SolverType getSolverType() {
+		return solver;
+	}
 
+	public int[][] getPredictedWaterfall(){
+		return predictedWaterfall;
+	}
+
+	public int[] getPredictedImpsPerAgent() {
+		return predictedImpsPerAgent;
+	}
+
+	public double getObjective(){
+		return objective;
+	}
+
+
+	public int getTotalImpressions() {
+		// TODO Auto-generated method stub
+		return predictedTotImpr;
+	}
+
+
+
+	public int getStat() {
+		// TODO Auto-generated method stub
+		return -1;
+	}
+
+
+
+	public int getAbsError() {
+		// TODO Auto-generated method stub
+		return -1;
+	}
+	
+	public String toString() {
+		return "predictedWaterfall=" + Arrays.deepToString(predictedWaterfall) + 
+			", predictedTotImpr=" + predictedTotImpr + 
+			", predictedImpsPerAgent=" + Arrays.toString(predictedImpsPerAgent);
+	}
 }
