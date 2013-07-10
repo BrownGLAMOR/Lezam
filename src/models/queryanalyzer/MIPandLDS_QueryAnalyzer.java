@@ -570,7 +570,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 					//ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
 
 				}
-				;
+				
 				ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
 				IEResult bestSol = estimator.getBestSolution();
 
