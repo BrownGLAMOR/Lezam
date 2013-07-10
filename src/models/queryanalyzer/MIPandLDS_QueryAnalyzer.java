@@ -548,12 +548,6 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 				//        			int[] initialPosition, String[] agentNames, int totalImpsFirstSlot)
 
 				System.out.println("Length Samp Avg: "+sampledAvgPos.length+ "(MipQA)"); //to remove
-//				QAInstanceSampled instSamp = buildSampledInstance(agentIdsArr, ourIdx, queryReport.getImpressions(q),
-//						sampledAvgPos, 15);
-				//            QAInstanceSampled instSamp = new QAInstanceSampled(NUM_SLOTS, allAvgPos.size(),
-				//                    agentIdsArr, ourNewIdx, queryReport.getImpressions(q), maxImps.get(q),
-				//                    agentNamesArr,sampledAvgPos, reducedImpMean,reducedImpMean);
-				//                    
 
 				//TODO: Pull out the data format
 
@@ -569,7 +563,9 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 				//(_solverType == SolverType.CARLETON_SIMPLE_MIP_Sampled) 
 				else{
 					//System.out.println("Num Adv: "+instSamp.getNumAdvetisers()+" (MIP QA)"); //to remove
-					//ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
+					QAInstanceSampled instSamp = buildSampledInstance(agentIdsArr, ourIdx, queryReport.getImpressions(q),
+							sampledAvgPos, 15);
+					ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
 
 				}
 				
