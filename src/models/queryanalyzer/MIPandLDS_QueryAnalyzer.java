@@ -455,7 +455,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 			 * For now we can only solve the auctions we were in
 			 */
 			if(!Double.isNaN(queryReport.getPosition(q))) {
-				System.out.println("POS TRY: "+queryReport.getPosition(1)+ "(MIP QA)"); //to remove
+				// System.out.println("POS TRY: "+queryReport.getPosition(1)+ "(MIP QA)"); //to remove
 				// if(true) {
 				// Load data from the query report (specifically, the average position for each advertiser)
 				ArrayList<Double> allAvgPos = new ArrayList<Double>();
@@ -560,9 +560,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 				}
 				else if (_solverType == SolverType.ERIC_MIP_MinSlotEric) {
 					ie = new EricImpressionEstimator(inst, false, false, false, _timeCutoff, cplex, true, Objective.DEPENDS_ON_CIRCUMSTANCES);
-				}
-				//(_solverType == SolverType.CARLETON_SIMPLE_MIP_Sampled) 
-				else{
+				} else if (_solverType == SolverType.CARLETON_SIMPLE_MIP_Sampled) {
 					//System.out.println("Num Adv: "+instSamp.getNumAdvetisers()+" (MIP QA)"); //to remove
 //					QAInstanceSampled instSamp = buildSampledInstance(agentIdsArr, ourIdx, queryReport.getImpressions(q),
 //							sampledAvgPos, 15);
@@ -584,6 +582,8 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 					QAInstanceSampled instSamp = new QAInstanceSampled(NUM_SLOTS, numAgents, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), 
 							maxImps.get(q), agentNamesArr, avgPosArr, avgPosLB, avgPosUB);
 					ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
+				} else {
+					System.err.println("Solver " + _solverType + " not supported.");
 				}
 				
 				ImpressionAndRankEstimator estimator = new LDSImpressionAndRankEstimator(ie);
@@ -899,6 +899,49 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 	@Override
 	public void setAdvertiser(String ourAdv) {
 		_ourAdvertiser = ourAdv;
+	}
+	
+	
+	public static void main(String[] args) {
+		// Create dummy query space.
+		Set<Query> querySpace = new HashSet<Query>();
+		Query query = new Query("manufacturer1", "component1");
+		querySpace.add(query);
+		
+		// Create dummy advertiser space.
+		ArrayList<String> advertisers = new ArrayList<String>(Arrays.asList("adv1", "adv2"));
+
+		// Create MIPandLDS_QueryAnalyzer
+		String ourAdvertiser = "adv1";
+		boolean selfAvgPosFlag = true;
+		boolean isSampled = true; 
+		SolverType solverType = SolverType.ERIC_MIP_MinSlotEric; // CP, ERIC_MIP_MinSlotEric, CARLETON_SIMPLE_MIP_Sampled
+		AbstractQueryAnalyzer queryAnalyzer = new MIPandLDS_QueryAnalyzer(querySpace, advertisers, ourAdvertiser, selfAvgPosFlag, isSampled, solverType);
+
+		// Create a dummy query report.
+		QueryReport queryReport = new QueryReport();
+		queryReport.setImpressions(query, 100, 0); // (regularImpressions, promotedImpressions)
+		double positionSum = 100*1.0; // ourImps*ourAvgPos
+		queryReport.setPositionSum(query, positionSum);
+		queryReport.setPosition(query, "adv1", 1.0);
+		queryReport.setPosition(query, "adv2", 1.5);
+
+		// Create a dummy bid bundle (this is passed in but never used).
+		BidBundle bidBundle = null;
+		
+		// Create a dummy maxImps map (the maximum amount of imps that could have occurred for that query?).
+		HashMap<Query, Integer> maxImps = new HashMap<Query, Integer>();
+		maxImps.put(query, 1000);
+		
+		// Run a single update.
+		queryAnalyzer.updateModel(queryReport, bidBundle, maxImps);
+		
+		int[] impressionsPrediction = queryAnalyzer.getImpressionsPrediction(query);
+		int totalImps = queryAnalyzer.getTotImps(query);
+		
+		System.out.println("\nPREDICTIONS");
+		System.out.println("Impressions prediction: " + Arrays.toString(impressionsPrediction));
+		System.out.println("Total Imps: " + totalImps);		
 	}
 
 }
