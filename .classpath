@@ -10,7 +10,7 @@
 	<classpathentry kind="lib" path="lib/clojure-1.2.1.jar"/>
 	<classpathentry kind="lib" path="lib/weka.jar"/>
 	<classpathentry kind="lib" path="lib/commons-math-2.0.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Aniran/GitHub/Lezam/lib/cplex.jar">
+	<classpathentry kind="lib" path="/Users/sodomka/Dropbox/myDocs/repositories/github/Lezam/lib/cplex.jar">
 		<attributes>
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/gpfs/main/sys/shared/psfu/local/projects/cplex/cplex/cplex123/i686/bin/x86_sles10_4.1"/>
 		</attributes>
