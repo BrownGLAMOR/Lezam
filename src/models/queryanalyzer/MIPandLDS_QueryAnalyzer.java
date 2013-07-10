@@ -62,14 +62,15 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 	private int _fractionalBran = 0;
 
 
-	SolverType _solverType = SolverType.ERIC_MIP_MinSlotEric; //SolverType.CARLETON_SIMPLE_MIP_Sampled;//
+	SolverType _solverType; // = SolverType.ERIC_MIP_MinSlotEric; //SolverType.CARLETON_SIMPLE_MIP_Sampled;
 	double _timeCutoff = .1; //this parameter can be set 
 
 	IloCplex cplex;
 
 
-	public MIPandLDS_QueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean selfAvgPosFlag, boolean isSampled) {
+	public MIPandLDS_QueryAnalyzer(Set<Query> querySpace, ArrayList<String> advertisers, String ourAdvertiser, boolean selfAvgPosFlag, boolean isSampled, SolverType solverType) {
 		_querySpace = querySpace;
+		_solverType = solverType;
 
 		try {
 			cplex = new IloCplex();
