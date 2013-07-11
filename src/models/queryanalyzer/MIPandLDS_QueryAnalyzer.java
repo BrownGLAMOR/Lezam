@@ -340,6 +340,16 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 		IEResult result = _allResults.get(q).get(latestResultIdx);
 		if(result != null) {
 			int[][] waterfallPredReduced = _allImpRanges.get(q).get(latestResultIdx);
+			
+			// Expand waterfallPredReduced so its second dimension is always of size NUMSLOTS, even
+			// for cases where there were fewer agents than slots. If there were two agents, for example,
+			// both agents are considered to have appeared in slot three 0 times.
+			int[][] waterfallPredReducedAllSlots = new int[waterfallPredReduced.length][NUM_SLOTS];
+			for (int agentIdx=0; agentIdx<waterfallPredReduced.length; agentIdx++) {
+				for (int slotIdx=0; slotIdx<waterfallPredReduced[agentIdx].length; slotIdx++) {
+					waterfallPredReducedAllSlots[agentIdx][slotIdx] = waterfallPredReduced[agentIdx][slotIdx];
+				}
+			}
 
 			//Get names of agents that appear in the IEResult
 			String[] agentNamesReduced = _allAgentNames.get(q).get(latestResultIdx);
@@ -357,7 +367,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 				String adv = _advertisers.get(a);
 				for(int aReduced = 0; aReduced < agentNamesReduced.length; aReduced++) {
 					if (adv.equals(agentNamesReduced[aReduced])) {
-						waterfallPred[a] = waterfallPredReduced[aReduced];
+						waterfallPred[a] = waterfallPredReducedAllSlots[aReduced];
 						advsLeft.remove(adv);
 						break;
 					}
