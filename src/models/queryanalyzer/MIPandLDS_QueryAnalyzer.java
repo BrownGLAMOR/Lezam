@@ -574,11 +574,23 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 					double[] avgPosArr = sampledAvgPos.clone(); // use sampled average position for everyone but our agent.
 					avgPosArr[ourNewIdx] = trueAvgPos[ourNewIdx]; // use exact average position for our agent.
 					
-					// For now, provide loose bounds on each agent's average position.
+					// Provide bounds on each agent's average position.
+					double avgPositionErrorBound = .001; // TODO: Don't hardcode.
 					double[] avgPosLB = new double[numAgents];
-					Arrays.fill(avgPosLB, 1.0);
 					double[] avgPosUB = new double[numAgents];
-					Arrays.fill(avgPosUB, (double) NUM_SLOTS);
+					for (int agentIdx=0; agentIdx<numAgents; agentIdx++) {
+						if (agentIdx==ourNewIdx) { 
+							// Use exact average position for our agent
+							avgPosLB[agentIdx] = avgPosArr[agentIdx];
+							avgPosUB[agentIdx] = avgPosArr[agentIdx];
+						} else {
+							// Add some average position error bounds to other agents (since we don't get them exactly)
+							avgPosLB[agentIdx] = Math.max(1.0, avgPosArr[agentIdx] - avgPositionErrorBound);
+							avgPosUB[agentIdx] = Math.min(NUM_SLOTS, avgPosArr[agentIdx] + avgPositionErrorBound);
+						}
+					}
+					
+					// Create ImpressionEstimatorSimpleMIPSampled
 					QAInstanceSampled instSamp = new QAInstanceSampled(NUM_SLOTS, numAgents, agentIdsArr, ourNewIdx, queryReport.getImpressions(q), 
 							maxImps.get(q), agentNamesArr, avgPosArr, avgPosLB, avgPosUB);
 					ie = new ImpressionEstimatorSimpleMIPSampled( instSamp, _timeCutoff, cplex);
@@ -912,11 +924,11 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 		// Create dummy advertiser space.
 		ArrayList<String> advertisers = new ArrayList<String>(Arrays.asList("adv1", "adv2"));
 
-		// Create MIPandLDS_QueryAnalyzer
+		// Create MIPandLDS_QueryAnalyzer.
 		String ourAdvertiser = "adv1";
 		boolean selfAvgPosFlag = true;
 		boolean isSampled = true; 
-		SolverType solverType = SolverType.ERIC_MIP_MinSlotEric; // CP, ERIC_MIP_MinSlotEric, CARLETON_SIMPLE_MIP_Sampled
+		SolverType solverType = SolverType.CARLETON_SIMPLE_MIP_Sampled; // CP, ERIC_MIP_MinSlotEric, CARLETON_SIMPLE_MIP_Sampled
 		AbstractQueryAnalyzer queryAnalyzer = new MIPandLDS_QueryAnalyzer(querySpace, advertisers, ourAdvertiser, selfAvgPosFlag, isSampled, solverType);
 
 		// Create a dummy query report.
