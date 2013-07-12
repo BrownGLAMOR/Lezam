@@ -127,6 +127,12 @@ public abstract class MCKP extends AbstractAgent {
 
 	private double[] _staticCs;
 
+	/**
+	 * Directory for logging bids and probes files.
+	 */
+	String bidsAndProbesDirname = "./bidding/";
+
+	
 	public enum MultiDay {
 		OneDayHeuristic, HillClimbing, DP, DPHill, MultiDayOptimizer
 	}
@@ -183,7 +189,6 @@ public abstract class MCKP extends AbstractAgent {
 		// updateParams(paramFile);
 		
 		try {
-			String bidsAndProbesDirname = "./bidding/";
 			new File(bidsAndProbesDirname).mkdirs(); // create directory if it doesn't already exist.
 			String bidsAndProbesFilename = bidsAndProbesDirname + "bidsandprobes.txt"; 
 			bwriter= new BufferedWriter(new FileWriter(new File(bidsAndProbesFilename)));
@@ -778,7 +783,7 @@ public abstract class MCKP extends AbstractAgent {
 					}
 				}
 				try {
-					bwriter= new BufferedWriter(new FileWriter(new File("/home/betsy/git/Lezam-1/bidding/bidsandprobes_"+_day+".txt")));
+					bwriter= new BufferedWriter(new FileWriter(new File(bidsAndProbesDirname + "bidsandprobes_"+_day+".txt")));
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
