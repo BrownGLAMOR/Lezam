@@ -1111,6 +1111,15 @@ public abstract class MCKP extends AbstractAgent {
 			double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 			//            System.out.println("We expect to get " + (int)solutionWeight + " conversions");
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) (solutionWeight));
+			
+			// Close the bwriter.
+			try {		
+				bwriter.flush();
+				bwriter.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
 		}
 		else {
 			bidBundle = getFirst2DaysBundle();
@@ -1182,13 +1191,7 @@ public abstract class MCKP extends AbstractAgent {
 		}
 		//      System.out.println(bidBundle);
 
-		try {		
-			bwriter.flush();
-			bwriter.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
 		return bidBundle;
 	}
 
