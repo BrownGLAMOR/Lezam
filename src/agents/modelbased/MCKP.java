@@ -183,7 +183,10 @@ public abstract class MCKP extends AbstractAgent {
 		// updateParams(paramFile);
 		
 		try {
-			bwriter= new BufferedWriter(new FileWriter(new File("/home/betsy/git/Lezam-1/bidding/bidsandprobes.txt")));
+			String bidsAndProbesDirname = "./bidding/";
+			new File(bidsAndProbesDirname).mkdirs(); // create directory if it doesn't already exist.
+			String bidsAndProbesFilename = bidsAndProbesDirname + "bidsandprobes.txt"; 
+			bwriter= new BufferedWriter(new FileWriter(new File(bidsAndProbesFilename)));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
