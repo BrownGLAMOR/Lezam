@@ -36,3 +36,7 @@ local.properties
 *.lck
 
 bidding/bidsandprobes.txt
+
+bidding/bidsandprobes_*.0.txt
+
+timeTest.csv
