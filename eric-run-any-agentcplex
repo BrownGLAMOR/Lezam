@@ -1,0 +1,17 @@
+#!/bin/bash
+#
+# Usage
+# From the agent directory:
+#   sh ./run-agent
+#
+
+TAC_AGENT_HOME=`pwd`
+LIB=${TAC_AGENT_HOME}/lib
+CLASSPATH=.
+CLASSPATH=${CLASSPATH}:${TAC_AGENT_HOME}/bin
+for i in $( ls ${LIB}/*.jar ); do
+  CLASSPATH=${CLASSPATH}:$i
+done
+
+# export ILOG_LICENSE_FILE=/local/projects/cplex/ilm/access.ilm
+java -Djava.library.path=/Users/sodomka/Applications/IBM/ILOG/CPLEX_Studio124/cplex/bin/x86-64_darwin9_gcc4.0 -server -Xmx1024M -Xms512M -cp $CLASSPATH edu.umich.eecs.tac.aa.agentware.Main -config config/$1.conf
