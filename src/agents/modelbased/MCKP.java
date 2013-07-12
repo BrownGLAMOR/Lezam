@@ -22,6 +22,7 @@ import models.paramest.BayesianParameterEstimation;
 import models.queryanalyzer.AbstractQueryAnalyzer;
 import models.queryanalyzer.CarletonQueryAnalyzer;
 import models.queryanalyzer.MIPandLDS_QueryAnalyzer;
+import models.queryanalyzer.QAAlgorithmEvaluator.SolverType;
 import models.unitssold.AbstractUnitsSoldModel;
 import models.unitssold.BasicUnitsSoldModel;
 import models.usermodel.ParticleFilterAbstractUserModel;
@@ -479,8 +480,10 @@ public abstract class MCKP extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
-		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
+//		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
+//		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CP);
+//		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.ERIC_MIP_MinSlotEric);
+		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CARLETON_SIMPLE_MIP_Sampled);
 		_userModel = UserModel.build(new UserModelInput(_c, _numSlots, _numPS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
 		//new jbergParticleFilter(_c,_numSlots,_numPS);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
@@ -1281,7 +1284,9 @@ public abstract class MCKP extends AbstractAgent {
 			slot = numSlots-1;
 		}
 
-		double bid = ourBids.get(slot);
+		//double bid = ourBids.get(slot);
+		double bid = 2.5; // FIXME: Temporary bug fix.
+		
 		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
 		bidBudget[0] = bid;
 		bidBudget[1] = bid * _probeBidMult;
