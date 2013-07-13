@@ -50,8 +50,8 @@ public class MultiDayOptimizer extends MCKP {
 	boolean amyHack = false;
 	boolean amyHack2 = false;
 	boolean overstuff = false;
-	boolean changeWandV = false;
-	boolean changeBudget = false;
+	boolean changeWandV = true;
+	boolean changeBudget = true;
 	int accountForProbing = 0;
 	
 	public MultiDayOptimizer(){
