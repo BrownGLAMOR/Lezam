@@ -116,6 +116,8 @@ public abstract class MCKP extends AbstractAgent {
 
 	double _probeBidMult;
 	double _budgetMult;
+	int lowSlot = 3;
+	int highSlot = 2;
 	
 	int pcount = 0;
 	BufferedWriter bwriter;
@@ -481,9 +483,9 @@ public abstract class MCKP extends AbstractAgent {
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
 //		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
-//		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CP);
-//		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.ERIC_MIP_MinSlotEric);
-		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CARLETON_SIMPLE_MIP_Sampled);
+		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CP);
+		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.ERIC_MIP_MinSlotEric);
+		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CARLETON_SIMPLE_MIP_Sampled);
 		_userModel = UserModel.build(new UserModelInput(_c, _numSlots, _numPS), UserModel.ModelType.JBERG_PARTICLE_FILTER);
 		//new jbergParticleFilter(_c,_numSlots,_numPS);
 		_unitsSold = new BasicUnitsSoldModel(_querySpace,_capacity,_capWindow);
@@ -1211,8 +1213,14 @@ public abstract class MCKP extends AbstractAgent {
 	private Ad getProbeAd(Query q, double bid, double budget) {
 		return new Ad();
 	}
-
-	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE?
+	
+	/*
+	 * Here the agent picks a probe bid from a given range of slots. We 
+	 * use predictions from out bid model to prdict what we need to bid
+	 * to be in different slots. We then randomize among the different slots
+	 * to keep costs down.
+	 * 
+	 */
 	private double[] getProbeSlotBidBudget(Query q) {
 		double[] bidBudget = new double[2];
 		ArrayList<Double> ourBids = new ArrayList<Double>();
@@ -1229,6 +1237,7 @@ public abstract class MCKP extends AbstractAgent {
 		//Add regular/promoted reserve score
 		double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
 		opponentScores.add(reserveScore);
+		
 
 		//We will choose to target scores directly between opponent scores.
 		Collections.sort(opponentScores);
@@ -1242,14 +1251,19 @@ public abstract class MCKP extends AbstractAgent {
 				ourScores.add(ourScore);
 			}
 		}
-		opponentScores.add(opponentScores.get(opponentScores.size()-1)-.1);
+		
 
 		//Also ad a score to bid directly above the reserve score,
 		//And directly above the highest score (so we get the 1st slot)
 		double scoreEpsilon = .01;//HC num
 		double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
 		ourScores.add(highestOpponentScore + scoreEpsilon);
-
+		
+		//add score epsilon below
+		double lowestOpponentScore = opponentScores.get(0);
+		//ourScores.add(lowestOpponentScore - scoreEpsilon);
+		
+		
 		double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb. //HC num
 		double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;//HC num
 		double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
@@ -1265,6 +1279,7 @@ public abstract class MCKP extends AbstractAgent {
 				}
 			}
 		}
+		//catches major problems
 		 if(ourPrunedScores.size()<=0){
 			 ourPrunedScores.add(reserveScore*1.5);
 			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
@@ -1275,24 +1290,117 @@ public abstract class MCKP extends AbstractAgent {
 			double ourBid = score / ourSquashedAdvEff;
 			ourBids.add(ourBid);
 		}
-
-		int numSlots = Math.min(_numSlots,ourBids.size());
-		//int slot = _R.nextInt(numSlots);
-		//int slot = (int) Math.ceil(numSlots/2.0);
-		int slot = 1;
-		if(numSlots>=3){
-			slot = numSlots-1;
-		}
-
-		//double bid = ourBids.get(slot);
-		double bid = 2.5; // FIXME: Temporary bug fix.
+		Collections.sort(ourBids);
 		
+		int lastSlotPicked = lowSlot; //set this to pick lowest slot to consider (5 sets the range the widest)
+		int lastSlot = Math.min(Math.min(_numSlots,ourBids.size()), lastSlotPicked);
+		int firstSlot = Math.min(highSlot,ourBids.size() );
+		//int numSlots = Math.min(_numSlots,ourBids.size());
+
+		int distAboveLowestSlot = _R.nextInt(lastSlot-firstSlot+1);
+		
+		//int slot = (int) Math.ceil(numSlots/2.0);
+		//int slot = ourBids.size()-1;
+//		if(numSlots>=3){
+//			slot = numSlots-1;
+//		}
+		int slotInArray = ourBids.size()-firstSlot-distAboveLowestSlot;
+		System.out.println("Slot: "+slotInArray+" Bids: "+ourBids.toString()); //to remove
+		
+		if(ourBids.size()<=slotInArray || slotInArray<0){
+			slotInArray = ourBids.size()-1;
+		}
+		
+		double bid = ourBids.get(slotInArray);
 		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
 		bidBudget[0] = bid;
 		bidBudget[1] = bid * _probeBidMult;
 
 		return bidBudget;
 	}
+
+//
+//	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE?
+//	private double[] getProbeSlotBidBudget(Query q) {
+//		double[] bidBudget = new double[2];
+//		ArrayList<Double> ourBids = new ArrayList<Double>();
+//		ArrayList<Double> opponentScores = new ArrayList<Double>();
+//		for (String player : _advertisersSet) {
+//			if (!player.equals(_advId)) { //only get opponent bids
+//				double opponentBid = _bidModel.getPrediction(player, q);
+//				double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
+//				double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing);
+//				opponentScores.add(opponentScore);
+//			}
+//		}
+//
+//		//Add regular/promoted reserve score
+//		double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
+//		opponentScores.add(reserveScore);
+//
+//		//We will choose to target scores directly between opponent scores.
+//		Collections.sort(opponentScores);
+//		int BIDS_BETWEEN_SCORES = 1;//HC num
+//		ArrayList<Double> ourScores = new ArrayList<Double>();
+//		for (int i=1; i<opponentScores.size(); i++) {
+//			double lowScore = opponentScores.get(i-1);
+//			double highScore = opponentScores.get(i);
+//			for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
+//				double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);//HC num
+//				ourScores.add(ourScore);
+//			}
+//		}
+//		opponentScores.add(opponentScores.get(opponentScores.size()-1)-.1);
+//
+//		//Also ad a score to bid directly above the reserve score,
+//		//And directly above the highest score (so we get the 1st slot)
+//		double scoreEpsilon = .01;//HC num
+//		double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
+//		ourScores.add(highestOpponentScore + scoreEpsilon);
+//
+//		double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb. //HC num
+//		double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;//HC num
+//		double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
+//		double ourSquashedAdvEff = Math.pow(ourAdvertiserEffect,_squashing);
+//		double maxScore = ourVPC * ourSquashedAdvEff;
+//		ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
+//		Collections.sort(ourScores);
+//		for (Double score : ourScores) {
+//			if (score >= reserveScore && score <= maxScore) { //within bounds
+//				int lastAddedIdx = ourPrunedScores.size()-1;
+//				if (lastAddedIdx == -1 || !score.equals(ourPrunedScores.get(lastAddedIdx))) { //not just added
+//					ourPrunedScores.add(score);
+//				}
+//			}
+//		}
+//		 if(ourPrunedScores.size()<=0){
+//			 ourPrunedScores.add(reserveScore*1.5);
+//			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
+//		 }
+//
+//		//Turn score into bids
+//		for (double score : ourPrunedScores) {
+//			double ourBid = score / ourSquashedAdvEff;
+//			ourBids.add(ourBid);
+//		}
+//
+//		int numSlots = Math.min(_numSlots,ourBids.size());
+//		//int slot = _R.nextInt(numSlots);
+//		//int slot = (int) Math.ceil(numSlots/2.0);
+//		int slot = 1;
+//		if(numSlots>=3){
+//			slot = numSlots-1;
+//		}
+//
+//		//double bid = ourBids.get(slot);
+//		double bid = 2.5; // FIXME: Temporary bug fix.
+//		
+//		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
+//		bidBudget[0] = bid;
+//		bidBudget[1] = bid * _probeBidMult;
+//
+//		return bidBudget;
+//	}
 
 	/**
 	 * Get a single bid for each slot (or X bids per slot).

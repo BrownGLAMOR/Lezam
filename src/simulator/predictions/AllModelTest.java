@@ -245,8 +245,8 @@ public class AllModelTest {
          List<ParticleFilterAbstractUserModel> userModelList = new ArrayList<ParticleFilterAbstractUserModel>();
          for (int i = 0; i < advertisers.size(); i++) {
             if(i == replaceIdx) {
-               ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
-               userModelList.add(userModel);
+              // ParticleFilterAbstractUserModel userModel = new jbergParticleFilter(convProbs, NUM_SLOTS, NUM_PROMOTED_SLOTS);
+              // userModelList.add(userModel);
             }
             else {
                userModelList.add(null);

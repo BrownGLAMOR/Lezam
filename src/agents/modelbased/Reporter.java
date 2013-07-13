@@ -26,12 +26,12 @@ public class Reporter {
 		dumpArr(bids,writer);
 		dumpArr(budgets,writer);
 		writer.write("\r\n");
-		switch (dataset) {
-			case "cost":  dumpMat(cost,writer); break;
-			case "numClicks": dumpMat(numClicks,writer); break;
-			case "weights": dumpMat(weights,writer); break;
-			case "profits": dumpMat(profits,writer); break;
-		}
+//		switch (dataset) {
+//			case "cost":  dumpMat(cost,writer); break;
+//			case "numClicks": dumpMat(numClicks,writer); break;
+//			case "weights": dumpMat(weights,writer); break;
+//			case "profits": dumpMat(profits,writer); break;
+//		}
 		writer.flush();
 		writer.close();
 	}

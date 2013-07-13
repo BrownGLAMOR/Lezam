@@ -14,7 +14,9 @@ import clojure.lang.PersistentArrayMap;
 import clojure.lang.PersistentHashMap;
 import tacaa.javasim;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +40,7 @@ public class AgentSimulator {
 
 		
 		
-		String baseDir = "/Users/Aniran/"; //CHANGE WHERE TO FIND GAMES HERE
+		String baseDir = "/pro/aa/";
 		if (isMac()) {
 			String homeDir = System.getProperty("user.home");
 			if (homeDir.equals("/Users/sodomka")) baseDir = homeDir + "/Desktop/";
@@ -61,7 +63,6 @@ public class AgentSimulator {
 		for (int i = gameStart; i <= gameEnd; i++) {
 			filenames.add(baseDir + baseFile + i + ".slg");
 		}
-//		System.out.println(filenames.size());
 		return filenames;
 	}
 
@@ -69,14 +70,14 @@ public class AgentSimulator {
 		return javasim.setupClojureSim(filename);
 	}
 
-	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
-		MCKP.MultiDay multiDay = MCKP.MultiDay.HillClimbing;
+	public static void simulateAgent(int lowS, int highS, ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh) {
+		MCKP.MultiDay multiDay = MCKP.MultiDay.MultiDayOptimizer;
 		int multiDayDiscretization = 50;
 		boolean PERFECT_SIM = true;
-		simulateAgent(filenames, gameSet, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
+		simulateAgent(lowS, highS, filenames, gameSet, agentNum, c1, c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh, multiDay, multiDayDiscretization, PERFECT_SIM);
 	}
 
-	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
+	public static void simulateAgent(int lowS, int highS, ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
 			MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM) {
 		String[] agentsToReplace;
 		if(agentNum == 0) {
@@ -94,6 +95,7 @@ public class AgentSimulator {
 		
 		
 		double totalProfitdiff = 0.0;
+		double totalProfit = 0.0;
 		for(String filename : filenames) {
 			long gameStart = System.currentTimeMillis();
 			PersistentHashMap cljSim = setupSimulator(filename);
@@ -137,7 +139,7 @@ public class AgentSimulator {
 					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
 				}
 				else {
-					agent = makeAgent(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
+					agent = makeAgent(lowS, highS, c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
 					//               agent = new EquatePPSSimple2010();
 				}
 				
@@ -155,21 +157,33 @@ public class AgentSimulator {
 				}
 				//            System.out.println(agentToReplace + ", " + multiDay + ", " + profDiffArr[0] + ", " + profDiffArr[1] + ", " + (profDiffArr[1] - profDiffArr[0]));
 				totalProfitdiff += (profDiffArr[1] - profDiffArr[0]);
+				totalProfit+=profDiffArr[1];
 				AgentComparator.profit = profDiffArr[1];
 				System.out.println("Profit: "+AgentComparator.profit+" difArr: "+profDiffArr[1]);
 				System.out.println("TARGET ARRAY" +Arrays.toString((int[])agent.targetArray));
+				
 			}
 			
 			long gameEnd = System.currentTimeMillis();
 			System.out.println("Game Time: "+(gameEnd-gameStart)/1000.000);
 		}
 		//FIXME: put in file so can compare
-		System.out.println(totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
-		
+		System.out.println("Profit: "+totalProfit+"Profit Diff"+ totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
+		BufferedWriter bwriter = null;
+				try {
+					bwriter= new BufferedWriter(new FileWriter(new File("/home/betsy/git/Lezam-1/bidding/Profit_"+lowS+"_"+highS+".txt")));
+					bwriter.write("Profit: "+totalProfit+"Profit Diff"+ totalProfitdiff + ", " + c1 + ", " + c2 + ", " + c3 + ", " + budgetL + ", " + budgetM + ", " + budgetH + ", " + bidMultLow + ", " + bidMultHigh);
+					bwriter.flush();
+					bwriter.close();
+				
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 	}
 	
 	
-	private static AbstractAgent makeAgent(double c1, double c2, double c3,
+	private static AbstractAgent makeAgent(int lowSlot, int highSlot, double c1, double c2, double c3,
 			double budgetL, double budgetM, double budgetH, double bidMultLow,
 			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization) {
 		
@@ -226,7 +240,7 @@ public class AgentSimulator {
 		}
 	}
 
-	private static AbstractAgent makeAgent(double c1, double c2, double c3,
+	private static AbstractAgent makeAgent(int lowSlot, int highSlot, double c1, double c2, double c3,
 			double budgetL, double budgetM, double budgetH, double bidMultLow,
 			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization, HashMap<String,String> params) {
 		
@@ -320,7 +334,8 @@ public class AgentSimulator {
 
 	public static void main(String[] args) throws IOException {
 
-
+//		for (int highS = 1;highS<=5;highS++){
+//			for(int lowS = 5;lowS>=highS;lowS--){
 		//----------------------------------------------------------
 		//  Agent configuration parameters
 		//----------------------------------------------------------
@@ -332,16 +347,14 @@ public class AgentSimulator {
 		
 
 		//For determining which of our agent configurations we should run.
-		int ourAgentMethod = 1;
+		int ourAgentMethod = 4;
 		int multiDayDiscretization = 10;
-
-		
 		//----------------------------------------------------------
 		//  Simulator configuration parameters
 		//----------------------------------------------------------
 		GameSet gameSet = GameSet.semi2011server1; //GameSet.qual2012; //GameSet.semi2011server1; //GameSet.semi2011server2;
-		int gameNumStart = 1417; //944; //1414; //621;
-		int gameNumEnd = 1417; //944; //1414; //621;
+		int gameNumStart = 1419; //944; //1414; //621;
+		int gameNumEnd = 1425; //944; //1414; //621;
 		int agentNum = 1;
 
 
@@ -382,10 +395,12 @@ public class AgentSimulator {
 		else if (ourAgentMethod==1) multiDay = MCKP.MultiDay.HillClimbing;
 		else if (ourAgentMethod==2) multiDay = MCKP.MultiDay.DP;
 		else if (ourAgentMethod==3) multiDay = MCKP.MultiDay.DPHill;
+		else if (ourAgentMethod==4) multiDay = MCKP.MultiDay.MultiDayOptimizer;
 
 		
 		
-
+		int highS = 5;
+		int lowS = 5; //low >=high
 		
 		
 		//----------------------------------------------------------
@@ -394,10 +409,12 @@ public class AgentSimulator {
 		ArrayList<String> filenames = getGameStrings(gameSet, gameNumStart, gameNumEnd);
 		System.out.println("Running games " + gameNumStart + "-" + gameNumEnd + " for opponent " + agentNum + " with agent " + multiDay + ", discretization=" + multiDayDiscretization + ", perfect=" + PERFECT_SIM);
 		long start = System.currentTimeMillis();
-		simulateAgent(filenames,gameSet,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
+		simulateAgent(lowS, highS, filenames,gameSet,agentNum,c1,c2,c3,simUB,simUB,simUB,simUB,simUB, multiDay, multiDayDiscretization, PERFECT_SIM);
 		long end = System.currentTimeMillis();
 		System.out.println("Total seconds elapsed: " + (end-start)/1000.0 );
-	}
+	//}
+		//}
+}
 
 	public static void simulateAgent(ArrayList<String> filenames, GameSet gameSet, int agentNum, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, double bidMultLow, double bidMultHigh,
 			MCKP.MultiDay multiDay, int multiDayDiscretization, boolean PERFECT_SIM, HashMap<String, String> parameters) {
@@ -461,7 +478,7 @@ public class AgentSimulator {
 					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization, parameters);
 				}
 				else {
-					agent = makeAgent(c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization, parameters);
+					agent = makeAgent(-1,-1, c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization, parameters);
 					//               agent = new EquatePPSSimple2010();
 				}
 				
@@ -482,6 +499,7 @@ public class AgentSimulator {
 				MultipleAgentSimulator.profit = profDiffArr[1];
 				System.out.println("Profit: "+MultipleAgentSimulator.profit+" difArr: "+profDiffArr[1]);
 				System.out.println("TARGET ARRAY" +Arrays.toString((int[])agent.targetArray));
+				
 				
 			}
 			
