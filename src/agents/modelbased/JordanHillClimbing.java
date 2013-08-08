@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -36,8 +37,8 @@ public class JordanHillClimbing extends HillClimbing {
 	 */
 	int accountForProbing = 0;
 	boolean changeWandV = true;
-	boolean adjustBudget = false;
-	boolean goOver = false;
+	boolean adjustBudget = true;
+	boolean goOver = true;
 	
 	public JordanHillClimbing() {
 		super();
@@ -88,6 +89,12 @@ public class JordanHillClimbing extends HillClimbing {
 		
 	}
 
+	public JordanHillClimbing(PersistentHashMap cljSim, String agentToReplace,
+			double c1, double c2, double c3, MultiDay multiDay,
+			int multiDayDiscretization, String filename) {
+		super(cljSim, agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization, filename);
+		
+	}
 	
 	/**
 	    * By default, don't take any initial sales as input. Initial sales will be a default constant.
@@ -104,7 +111,13 @@ public class JordanHillClimbing extends HillClimbing {
 	      int initSales = (int)(_capacity*_capMod.get(_capacity) / ((double) _capWindow));
 	      int[] initialSales = new int[windowSize];
 	      Arrays.fill(initialSales, initSales);
-	      return fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap, initialSales, accountForProbing);
+	      HashMap<Query,Item> solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap, initialSales, accountForProbing);
+
+			Set<Query> queries= solution.keySet();
+			for(Query qry : queries){
+				System.out.println("Query: "+qry.toString()+" bid: "+solution.get(qry).b()+" budget: "+solution.get(qry).budget());
+			}
+	      return solution;
 	   }
 
 	protected Item makeNewItem(IncItem ii, double budget, double lowW,
@@ -112,7 +125,8 @@ public class JordanHillClimbing extends HillClimbing {
 		Item itemHigh = ii.itemHigh();
 		if(changeWandV){
 			if (adjustBudget){
-				//System.out.println("1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
+				
+				System.out.println("Jordan: 1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
 			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
 				newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
 			}else{

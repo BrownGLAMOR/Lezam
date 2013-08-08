@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import clojure.lang.PersistentHashMap;
 
@@ -49,7 +50,7 @@ public class MultiDayOptimizer extends MCKP {
 	int _numTake = 1;
 	boolean amyHack = false;
 	boolean amyHack2 = false;
-	boolean overstuff = false;
+	boolean overstuff = true;
 	boolean changeWandV = true;
 	boolean changeBudget = true;
 	int accountForProbing = 0;
@@ -88,7 +89,7 @@ public class MultiDayOptimizer extends MCKP {
 	public MultiDayOptimizer(PersistentHashMap cljSim, String agentToReplace,
 			double c1, double c2, double c3, MultiDay multiDay,	int multiDayDiscretization,
 			int numTake, boolean reCalc, boolean reCalcWithExtra, boolean changeWandV, boolean changeBudget, boolean goOver) {
-		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
+		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization, "test");
 		_numTake = numTake;
 		amyHack = reCalc;
 		amyHack2 = reCalcWithExtra;
@@ -104,8 +105,8 @@ public class MultiDayOptimizer extends MCKP {
 	}
 
 	public MultiDayOptimizer(PersistentHashMap cljSim, String agentToReplace,
-			double c1, double c2, double c3, MultiDay multiDay, int multiDayDiscretization) {
-		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
+			double c1, double c2, double c3, MultiDay multiDay, int multiDayDiscretization, String filename) {
+		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization, filename);
 	}
 
 	/* (non-Javadoc)
@@ -251,6 +252,13 @@ public class MultiDayOptimizer extends MCKP {
 		
 		HashMap<Query,Item> solution = FastGreedyMCKP(allPredictionsMap, bidLists, budgetLists, capacityArray, currentDayIndex);
 		System.out.println("Target For Day: "+capacityArray[currentDayIndex]+" numTaken: "+numTaken);
+		
+		Set<Query> queries= solution.keySet();
+		for(Query qry : queries){
+			System.out.println("Query: "+qry.toString()+" bid: "+solution.get(qry).b()+" budget: "+solution.get(qry).budget());
+		}
+		
+		
 		return solution;	   
 	}
 
@@ -340,7 +348,8 @@ public class MultiDayOptimizer extends MCKP {
 					//System.out.println("Queue size after: "+selectionQueue.size());//Debugging statement
 				}
 			} else {
-				if(!overstuff || capacityTarget==0){
+				if(!overstuff || capacityTarget==0 ||capacityTarget-capacityUsed<=1){
+					//System.out.println("HERE OS: "+overstuff+" capacityTarget: "+capacityTarget);
 					capacityUsed = capacityTarget;
 				}else{
 					//System.out.println("In heuristics");
@@ -353,6 +362,7 @@ public class MultiDayOptimizer extends MCKP {
 					//Jordan's hack involves taking the item which doesn't quite fit, but adjusting the weight and value to his own specifications
 					//(perhaps as a way of implicitly taking into account the conversion penalty incurred from going over budget).
 					if(!amyHack){
+						//System.out.println("Without Recalc");
 						stuffKnapsackWithoutRecalc(capacityTarget-capacityUsed, bestItem, solution);
 						break;
 					}else if(!amyHack2){
@@ -395,10 +405,55 @@ public class MultiDayOptimizer extends MCKP {
 		return solution;
 	}
 	
-	private HashMap<Query, Item> stuffKnapsackWithoutRecalc(double budget, IncItem bestItem, HashMap<Query, Item> soltn){
+	private HashMap<Query, Item> stuffKnapsackWithoutRecalc(double capBudget, IncItem bestItem, HashMap<Query, Item> soltn){
 		Item itemHigh = bestItem.itemHigh();
+		
+//		double weight = 1;
+//		if(true){
+//			
+//			if(bestItem.itemLow()!=null){
+//				if(bestItem.itemHigh().b()==bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()>bestItem.itemLow().budget()){
+//			
+//				weight = (bestItem.itemHigh().budget()-bestItem.itemLow().budget())/bestItem.w();
+//				//System.out.println(" ___CASE 1____________");
+//				}else if(bestItem.itemHigh().b()>bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()>bestItem.itemLow().budget()){
+//					//System.out.println(" ___CASE 2____________");
+//				}else if(bestItem.itemHigh().b()<bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()>bestItem.itemLow().budget()){
+//					//System.out.println(" ___CASE 3____________");
+//						
+//				}else if(bestItem.itemHigh().b()==bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()<bestItem.itemLow().budget()){
+//					System.out.println(" ___________________________________________CASE 4____________");
+//				}else if(bestItem.itemHigh().b()>bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()==bestItem.itemLow().budget()){
+//					//System.out.println(" ___________________________________________CASE 5____________");
+//				
+//				}else if(bestItem.itemHigh().b()>bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()<bestItem.itemLow().budget()){
+//					System.out.println(" _________________________________________CASE 6________________________");
+//				}else if(bestItem.itemHigh().b()<bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()==bestItem.itemLow().budget()){
+//					//System.out.println(" _________________________________________CASE 7________________________");
+//				}else if(bestItem.itemHigh().b()<bestItem.itemLow().b() && 
+//						bestItem.itemHigh().budget()<bestItem.itemLow().budget()){
+//					System.out.println(" _________________________________________CASE 8________________________");
+//					
+//				}else{
+//					System.out.println(" ___ANOTHER CASE X____________");
+//				}
+//			}else{
+//				//System.out.println(" HERE "+bestItem.itemLow());
+//				weight = (bestItem.itemHigh().budget()-0)/bestItem.w();
+//			}
+			
+		//}
+		
+		
 		double incW = bestItem.w();
-		double weightHigh = budget / incW;
+		double weightHigh = capBudget / incW;
 		double weightLow = 1.0 - weightHigh;
 		double lowVal = ((bestItem.itemLow() == null) ? 0.0 : bestItem.itemLow().v());
 		double lowW = ((bestItem.itemLow() == null) ? 0.0 : bestItem.itemLow().w());
@@ -408,10 +463,32 @@ public class MultiDayOptimizer extends MCKP {
 		if(changeWandV){
 			double newValue = itemHigh.v()*weightHigh + lowVal*weightLow;
 			if(changeBudget){
-				double newBudget = itemHigh.budget()*weightHigh; //for changed budget
-				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+				double  newBudgetTry;
+		
+				if(bestItem.itemLow()!=null){
+					newBudgetTry = (bestItem.itemHigh().budget()/bestItem.itemHigh().w())*(bestItem.itemLow().w()+capBudget);
+					System.out.println("Before: budg: "+bestItem.itemHigh().budget()+" b: "+bestItem.itemHigh().b()+" wH: "+bestItem.itemHigh().w()+" w low: "+bestItem.itemLow().w());
+					System.out.println("After: budg: "+newBudgetTry+" capBudget: "+capBudget);
+				}else{
+					newBudgetTry = (bestItem.itemHigh().budget()/bestItem.itemHigh().w())*capBudget;
+				}
+				//double newBudget = itemHigh.budget();
+				//double newBudget = itemHigh.budget()*weightHigh; //for changed budget
+				double newBudget = newBudgetTry;
+				//weight =1;
+//				if(weight!=1){
+//					
+//					newBudget = itemHigh.budget()*weight;
+//				}else{
+					
+					//newBudget = itemHigh.budget()*weightHigh;
+				//}
+				//System.out.println("MDO: 1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget+" incW "+incW+" lowW: "+lowW+" highW "+itemHigh.w()+"  capBudget: "+capBudget);
+				//System.out.println("Item Bid:"+bestItem.item().b()+ "Item high bid "+itemHigh.b());
+				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(),capBudget+lowW,newValue,bestItem.item().b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 			}else{
-				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), budget+lowW, newValue, itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+				System.out.println("MDO: No change; budget: "+itemHigh.budget());
+				soltn.put(bestItem.item().q(), new Item(bestItem.item().q(), capBudget+lowW, newValue, itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 			}
 		}else{
 			if(changeBudget){

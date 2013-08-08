@@ -11,6 +11,8 @@ public class AgentComparator {
 	//Arguments and necessary variables	
 	
 	public static double profit;
+	private static int lowSlot = 5;
+	private static int highSlot = 1;
 	
 	public static void main(String[] args) {
 		//Set up output files
@@ -153,32 +155,91 @@ public class AgentComparator {
 //		}
 //		
 		//semi2011server1 set
-			//loop through 1410-1445
-		for (int i = 1418; i<=1418; i++){
+			//loop through 1410-1445 (1418-1433) (1418-1427)
+		for (int i = 1418; i<=1421; i++){
 			stBuff = new StringWriter();
 			filenames = AgentSimulator.getGameStrings(AgentSimulator.GameSet.semi2011server1, i, i);
+//			
+//			timeStart = System.currentTimeMillis();
+////			AgentSimulator.simulateAgent(lowSlot, highSlot, filenames, 
+////					AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, 
+////					simUB, simUB, simUB, simUB, agent1, multiDayDiscretization, PERFECT_SIM);
+//			timeEnd = System.currentTimeMillis();
+//			try{
+//				stBuff.append("semi2011server1"+",");
+//				stBuff.append(i+",");
+//				stBuff.append("MultiDayOptimizer"+",");
+//				stBuff.append((timeEnd-timeStart)/1000+",");
+//				stBuff.append(profit+"\n");
+//			} catch (Exception e){
+//				e.printStackTrace();
+//			}
+//			
+//			profitTotalMDO += profit;
+//			timeTotalMDO += (timeEnd-timeStart)/1000;
 			
 			timeStart = System.currentTimeMillis();
-			AgentSimulator.simulateAgent(filenames, AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, simUB, simUB, simUB, simUB, agent1, multiDayDiscretization, PERFECT_SIM);
+			AgentSimulator.simulateAgent(lowSlot, highSlot, filenames, 
+					AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, 
+					simUB, simUB, simUB, simUB, agent2, HCDiscretization, PERFECT_SIM);
 			timeEnd = System.currentTimeMillis();
 			try{
 				stBuff.append("semi2011server1"+",");
 				stBuff.append(i+",");
-				stBuff.append("MultiDayOptimizer"+",");
+				stBuff.append("HillClimbing"+",");
 				stBuff.append((timeEnd-timeStart)/1000+",");
 				stBuff.append(profit+"\n");
 			} catch (Exception e){
 				e.printStackTrace();
 			}
 			
-			profitTotalMDO += profit;
-			timeTotalMDO += (timeEnd-timeStart)/1000;
+			profitTotalHC += profit;
+			timeTotalHC += (timeEnd-timeStart)/1000;
+			
+			if (buffWrit != null){
+				try {
+					
+					buffWrit.write(stBuff.toString());
+					
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		//semi2011server2 set
+		//Start ordinarily at 621-640 (6210-625)
+	for (int i = 621; i<=621; i++){
+			stBuff = new StringWriter();
+	
+			filenames = AgentSimulator.getGameStrings(AgentSimulator.GameSet.semi2011server2, i, i);
+			
+//			timeStart = System.currentTimeMillis();
+////			AgentSimulator.simulateAgent(lowSlot, highSlot, filenames, 
+////					AgentSimulator.GameSet.semi2011server2, 1, c1, c2, c3, simUB, 
+////					simUB, simUB, simUB, simUB, agent1, multiDayDiscretization, PERFECT_SIM);
+//			timeEnd = System.currentTimeMillis();
+//			try{
+//				stBuff.append("semi2011server2"+",");
+//				stBuff.append(i+",");
+//				stBuff.append("MultiDayOptimizer"+",");
+//				stBuff.append((timeEnd-timeStart)/1000+",");
+//				stBuff.append(profit+"\n");
+//			} catch (Exception e){
+//				e.printStackTrace();
+//			}
+//			
+//			profitTotalMDO += profit;
+//			timeTotalMDO += (timeEnd-timeStart)/1000;
 			
 			timeStart = System.currentTimeMillis();
-			//AgentSimulator.simulateAgent(filenames, AgentSimulator.GameSet.semi2011server1, 1, c1, c2, c3, simUB, simUB, simUB, simUB, simUB, agent2, HCDiscretization, PERFECT_SIM);
+			AgentSimulator.simulateAgent(lowSlot, highSlot, filenames, 
+					AgentSimulator.GameSet.semi2011server2, 1, c1, c2, c3, simUB, 
+					simUB, simUB, simUB, simUB, agent2, HCDiscretization, PERFECT_SIM);
 			timeEnd = System.currentTimeMillis();
 			try{
-				stBuff.append("semi2011server1"+",");
+				stBuff.append("semi2011server2"+",");
 				stBuff.append(i+",");
 				stBuff.append("HillClimbing"+",");
 				stBuff.append((timeEnd-timeStart)/1000+",");
@@ -198,10 +259,6 @@ public class AgentComparator {
 				}
 			}
 		}
-		
-		//semi2011server2 set
-		//Start ordinarily at 621
-//		for (int i = 621; i<=640; i++){
 //			stBuff = new StringWriter();
 //			
 //			filenames = AgentSimulator.getGameStrings(AgentSimulator.GameSet.semi2011server2, i, i);			

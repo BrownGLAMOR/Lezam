@@ -50,6 +50,11 @@ public abstract class HillClimbing extends MCKP {
 		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
 	}
 
+	public HillClimbing(PersistentHashMap cljSim, String agentToReplace,
+			double c1, double c2, double c3, MultiDay multiDay,
+			int multiDayDiscretization, String filename) {
+		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization, filename);
+	}
 
 	public HashMap<Query,Item> fillKnapsackHillClimbing(HashMap<Query, ArrayList<Double>> bidLists, 
 			   HashMap<Query, ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap, 
@@ -109,34 +114,34 @@ public abstract class HillClimbing extends MCKP {
 	         double currProfit;
 	         double bestProfit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
 //COMMENTING OUT HILLCLIMBING
-	         	         do {
-	            currProfit = bestProfit;
-	            int bestIdx = -1;
-	            int bestIncrement = 0;
-	            for(int i = 0; i < salesOnDay.length; i++) {
-	               for(int j = 0; j < 2; j++) {
-	                  if(!(j == 1 && salesOnDay[i] < capacityIncrement)) { //capacity cannot be negative
-	                     int increment = capacityIncrement * (j == 0 ? 1 : -1);//HC num
-	                     salesOnDay[i] += increment;
-
-	                     double profit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
-	                     if(profit > bestProfit) {
-	                        bestProfit = profit;
-	                        bestIdx = i;
-	                        bestIncrement = increment;
-	                     }
-
-	                     salesOnDay[i] -= increment;
-	                  }
-	               }
-	            }
-
-	            if(bestIdx > -1) {
-	               salesOnDay[bestIdx] += bestIncrement;
-	               System.out.print(bestIdx+","+bestIncrement+" ");
-	            }
-	         }
-	         while(bestProfit > currProfit);
+//	         	         do {
+//	            currProfit = bestProfit;
+//	            int bestIdx = -1;
+//	            int bestIncrement = 0;
+//	            for(int i = 0; i < salesOnDay.length; i++) {
+//	               for(int j = 0; j < 2; j++) {
+//	                  if(!(j == 1 && salesOnDay[i] < capacityIncrement)) { //capacity cannot be negative
+//	                     int increment = capacityIncrement * (j == 0 ? 1 : -1);//HC num
+//	                     salesOnDay[i] += increment;
+//
+//	                     double profit = findProfitForDays(preDaySales,salesOnDay,bidLists,budgetLists,allPredictionsMap,profitMemoizeMap);
+//	                     if(profit > bestProfit) {
+//	                        bestProfit = profit;
+//	                        bestIdx = i;
+//	                        bestIncrement = increment;
+//	                     }
+//
+//	                     salesOnDay[i] -= increment;
+//	                  }
+//	               }
+//	            }
+//
+//	            if(bestIdx > -1) {
+//	               salesOnDay[bestIdx] += bestIncrement;
+//	               System.out.print(bestIdx+","+bestIncrement+" ");
+//	            }
+//	         }
+//	         while(bestProfit > currProfit);
 	      }
 	      else {
 	         ExecutorService executor = Executors.newFixedThreadPool(NTHREDS);
@@ -181,7 +186,7 @@ public abstract class HillClimbing extends MCKP {
 	         executor.shutdown(); //execute all threads
 	      }
 	      System.out.println();
-	      System.out.println("End Jordan's changes");
+	     // System.out.println("End Jordan's changes");
 	      System.out.println("Choosing plan for day " + _day + " : " + Arrays.toString(salesOnDay));
 //	      
 	      

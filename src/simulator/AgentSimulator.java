@@ -136,7 +136,7 @@ public class AgentSimulator {
 				}
 				AbstractAgent agent;
 				if(PERFECT_SIM) {
-					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization);
+					agent = makeAgent(cljSim, agentToReplace,c1,c2,c3,multiDay, multiDayDiscretization, filename);
 				}
 				else {
 					agent = makeAgent(lowS, highS, c1,c2,c3,budgetL,budgetM,budgetH,bidMultLow,bidMultHigh,multiDay,multiDayDiscretization);
@@ -214,15 +214,15 @@ public class AgentSimulator {
 
 	private static AbstractAgent makeAgent(PersistentHashMap cljSim,
 			String agentToReplace, double c1, double c2, double c3,
-			MultiDay multiDay, int multiDayDiscretization) {
+			MultiDay multiDay, int multiDayDiscretization, String filename) {
 		if(multiDay.equals(MultiDay.HillClimbing)){
 			return new JordanHillClimbing(cljSim,
 					agentToReplace, c1, c2, c3,
-					multiDay, multiDayDiscretization);
+					multiDay, multiDayDiscretization, filename);
 		}else if(multiDay.equals(MultiDay.MultiDayOptimizer)){
 			return new MultiDayOptimizer(cljSim,
 					agentToReplace, c1, c2, c3,
-					multiDay, multiDayDiscretization);
+					multiDay, multiDayDiscretization, filename);
 		}else if(multiDay.equals(MultiDay.DP)){
 			return new DP(cljSim,
 					agentToReplace, c1, c2, c3,

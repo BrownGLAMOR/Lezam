@@ -30,6 +30,8 @@ import models.usermodel.UserModel;
 import models.usermodel.UserModelInput;
 import simulator.AgentSimulator;
 import simulator.TestAgent;
+import simulator.parser.GameStatus;
+import simulator.parser.GameStatusHandler;
 import tacaa.javasim;
 
 import java.io.BufferedWriter;//modified: added
@@ -38,6 +40,7 @@ import java.io.FileInputStream;//modified: added
 import java.io.FileNotFoundException;
 import java.io.FileWriter;//modified: added
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -113,6 +116,8 @@ public abstract class MCKP extends AbstractAgent {
 	private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;//in file
 	protected int _multiDayDiscretization = 10;//in file
 	private TestAgent _tester;
+	
+	private String _filename; //used for perfect sim
 
 	double _probeBidMult;
 	double _budgetMult;
@@ -220,6 +225,19 @@ public abstract class MCKP extends AbstractAgent {
 	}
 
 	public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, 
+			MultiDay multiDay, int multiDayDiscretization, String filename) {
+		this(c1, c2, c3);
+		_perfectCljSim = perfectSim;
+		_agentToReplace = agentToReplace;
+		_multiDayHeuristic = multiDay;
+		_multiDayDiscretization = multiDayDiscretization;
+		_filename = filename;
+	
+	
+
+	}
+
+	public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, 
 			MultiDay multiDay, int multiDayDiscretization) {
 		this(c1, c2, c3);
 		_perfectCljSim = perfectSim;
@@ -227,8 +245,9 @@ public abstract class MCKP extends AbstractAgent {
 		_multiDayHeuristic = multiDay;
 		_multiDayDiscretization = multiDayDiscretization;
 
-	}
+	
 
+	}
 
 	public boolean hasPerfectModels() {
 		return (_perfectCljSim != null);
@@ -717,7 +736,15 @@ public abstract class MCKP extends AbstractAgent {
 			//FIXME: What about basing possible bids on the bids of opponents? Only consider N
 			//bids that would put us in each starting position.
 			//         HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
+		
 			HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();
+			
+			System.out.println("bidLists"+ bidLists.toString());
+			
+			//bidLists = getPerfectBidLists(_filename);
+			
+			//System.out.println("bidLists"+ bidLists.toString());
+			
 			HashMap<Query,ArrayList<Double>> budgetLists = getBudgetLists();
 
 			//         for (Query q : _querySpace) {
@@ -844,7 +871,7 @@ public abstract class MCKP extends AbstractAgent {
 									double ISRatio = impsClicksAndCost[13];
 									double CPC = cost / numClicks;
 									double clickPr = numClicks / numImps;
-
+									System.out.println("Pen: "+penalty);
 									double convProbWithPen = getConversionPrWithPenalty(q, penalty,ISRatio);
 
 									//                        System.out.println("Bid: " + bid);
@@ -1023,7 +1050,7 @@ public abstract class MCKP extends AbstractAgent {
 
 
 			long solutionEndTime = System.currentTimeMillis();
-			System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
+			//System.out.println("Seconds to solution: " + (solutionEndTime-solutionStartTime)/1000.0 );
 
 			//set bids
 			for(Query q : _querySpace) {
@@ -1032,7 +1059,7 @@ public abstract class MCKP extends AbstractAgent {
 				if(solution.containsKey(q)) {
 					Item item = solution.get(q);
 					double bid = item.b();
-					System.out.println("Bidding query: "+q.toString());
+					//System.out.println("Bidding query: "+q.toString());
 					try {
 						bwriter.write("Bid q: "+q.toString()+"bid: "+bid+" reserve: "+_paramEstimation.getRegReservePrediction(q.getType())+"\n");
 					} catch (IOException e) {
@@ -1505,6 +1532,79 @@ public abstract class MCKP extends AbstractAgent {
 		return bidLists;
 	}
 
+	
+	
+	/**
+	 * Get a single bid for each slot (or X bids per slot).
+	 * The idea is that our bid models are noisy, so we don't want to
+	 * even consider bids on the edges of slots, since we might be getting a completely
+	 * different slot than we expect.
+	 * @return
+	 */
+	private HashMap<Query, ArrayList<Double>> getPerfectBidLists(String filename) {
+
+		int BIDS_BETWEEN_SCORES = 1;
+
+
+		HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
+
+		for(Query q : _querySpace) {
+			//         System.out.println("QUERY " + q);
+			ArrayList<Double> ourBids = new ArrayList<Double>();
+			if(!q.equals(new Query())) { //If not the F0 Query. FIXME: Don't hardcode
+				GameStatusHandler statusHandler;
+
+				try {
+					statusHandler = new GameStatusHandler(_filename);
+					GameStatus status = statusHandler.getGameStatus(); 
+					String[] agents = status.getAdvertisers();
+					double[] squashedBids = new double[agents.length];
+					UserClickModel userClickModel = status.getUserClickModel();
+					//double squashing = status.getPubInfo().getSquashingParameter();
+					for (int a = 0; a < agents.length; a++) {
+						String agentName = agents[a];
+						try {
+							//double advEffect = userClickModel.getAdvertiserEffect(userClickModel.queryIndex(q), a);
+							double bid = status.getBidBundles().get(agentName).get((int)_day).getBid(q);
+							squashedBids[a] = bid;// * Math.pow(advEffect, squashing);
+						} catch (Exception e) {
+							squashedBids[a] = Double.NaN;
+						}
+					}
+					
+					Arrays.sort(squashedBids);
+					
+
+					for (int i=1; i<squashedBids.length; i++) {
+						double lowScore = squashedBids[i-1];
+						double highScore = squashedBids[i];
+						for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
+							double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);//HC num
+							ourBids.add(ourScore);
+						}
+					}
+					
+//					while(ourBids.size()>5){
+//						ourBids.remove(0);
+//					}
+					
+
+
+					bidLists.put(q, ourBids);
+
+				
+					
+				} catch (Exception e2) {
+					// TODO Auto-generated catch block
+					e2.printStackTrace();
+				}
+			}else{
+				bidLists.put(q, new ArrayList<Double>());
+			}
+		}
+		return bidLists;
+
+	}
 
 	private HashMap<Query, ArrayList<Double>> getBidLists() {
 		HashMap<Query,ArrayList<Double>> bidLists = new HashMap<Query,ArrayList<Double>>();
@@ -1560,11 +1660,30 @@ public abstract class MCKP extends AbstractAgent {
 		for(Query q : _querySpace) {
 			if(!q.equals(new Query())) { //Skip over F0 Query FIXME: Make configurable
 				ArrayList<Double> budgetList = new ArrayList<Double>();
+//				budgetList.add(10.0);//HC num
+//				budgetList.add(100.0);//HC num
+//				budgetList.add(300.0);//HC num
+//				//            budgetList.add(400.0);
+//				budgetList.add(1000.0);
 				budgetList.add(10.0);//HC num
+				budgetList.add(25.0);//HC num
+				budgetList.add(50.0);//HC num
+				budgetList.add(75.0);//HC num
 				budgetList.add(100.0);//HC num
+				budgetList.add(150.0);//HC num
+				budgetList.add(200.0);//HC num
+				budgetList.add(250.0);//HC num
 				budgetList.add(300.0);//HC num
-				//            budgetList.add(400.0);
-				budgetList.add(1000.0);
+				budgetList.add(350.0);//HC num
+				budgetList.add(400.0);//HC num
+				budgetList.add(450.0);//HC num
+				budgetList.add(500.0);//HC num
+				budgetList.add(550.0);//HC num
+				budgetList.add(600.0);//HC num
+				budgetList.add(650.0);//HC num
+				budgetList.add(700.0);//HC num
+				budgetList.add(750.0);//HC num
+				//budgetList.add(1000.0);//HC num
 				budgetLists.put(q,budgetList);
 			}
 			else {
@@ -2256,7 +2375,7 @@ public abstract class MCKP extends AbstractAgent {
 				solution.put(ii.item().q(), ii.item());
 				budget -= ii.w();
 			}
-			else if(budget > 0 && getGoOver()) {
+			else if(budget > 1 && getGoOver()) {
 				//System.out.println("Taking an extra");
 				Item itemHigh = ii.itemHigh();
 				double incW = ii.w();
@@ -2265,7 +2384,13 @@ public abstract class MCKP extends AbstractAgent {
 				double lowVal = ((ii.itemLow() == null) ? 0.0 : ii.itemLow().v());
 				double lowW = ((ii.itemLow() == null) ? 0.0 : ii.itemLow().w());
 				double newValue = itemHigh.v()*weightHigh + lowVal*weightLow;
-				double newBudget = itemHigh.budget()*weightHigh;//Added for testing
+				//double newBudget = itemHigh.budget()*weightHigh;//Added for testing
+				double newBudget = itemHigh.budget();
+				if(ii.itemLow()!=null){
+					newBudget = (ii.itemHigh().budget()/ii.itemHigh().w())*(ii.itemLow().w()+budget);
+				}else{
+					newBudget = (ii.itemHigh().budget()/ii.itemHigh().w())*budget;
+				}
 				//ORIGINAL
 				solution.put(ii.item().q(), makeNewItem(ii, budget, lowW, newValue, newBudget, true, false));
 				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
