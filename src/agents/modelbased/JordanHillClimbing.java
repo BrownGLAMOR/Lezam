@@ -64,7 +64,7 @@ public class JordanHillClimbing extends HillClimbing {
 		this.adjustBudget = adjustBudget;
 		this.goOver = goOver;
 	}
-
+	
 	public JordanHillClimbing(PersistentHashMap cljSim, String agentToReplace,
 			double c1, double c2, double c3, MultiDay multiDay,	int multiDayDiscretization,
 			int accountForProbing, boolean changeWandV, boolean adjustBudget, boolean goOver) {
@@ -81,6 +81,14 @@ public class JordanHillClimbing extends HillClimbing {
 		super( c1, c2,c3, budgetL, budgetM, budgetH,  bidMultLow,
 			bidMultHigh, multiDay, multiDayDiscretization);
 	}
+	
+	public JordanHillClimbing(int daysToLook, double c1, double c2, double c3, double budgetL,
+			double budgetM, double budgetH, double bidMultLow,
+			double bidMultHigh, MultiDay multiDay, int multiDayDiscretization) {
+		super(daysToLook, c1, c2,c3, budgetL, budgetM, budgetH,  bidMultLow,
+			bidMultHigh, multiDay, multiDayDiscretization);
+		System.out.println("HERE");
+	}
 
 	public JordanHillClimbing(PersistentHashMap cljSim, String agentToReplace,
 			double c1, double c2, double c3, MultiDay multiDay,
@@ -96,6 +104,12 @@ public class JordanHillClimbing extends HillClimbing {
 		
 	}
 	
+	public JordanHillClimbing(int daysToLook, long timeConstraint, PersistentHashMap cljSim, String agentToReplace,
+			double c1, double c2, double c3, MultiDay multiDay,
+			int multiDayDiscretization, String filename) {
+		super(daysToLook, timeConstraint, cljSim, agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization, filename);
+		
+	}
 	/**
 	    * By default, don't take any initial sales as input. Initial sales will be a default constant.
 	    * @param bidLists
@@ -114,9 +128,10 @@ public class JordanHillClimbing extends HillClimbing {
 	      HashMap<Query,Item> solution = fillKnapsackHillClimbing(bidLists, budgetLists, allPredictionsMap, initialSales, accountForProbing);
 
 			Set<Query> queries= solution.keySet();
-			for(Query qry : queries){
-				System.out.println("Query: "+qry.toString()+" bid: "+solution.get(qry).b()+" budget: "+solution.get(qry).budget());
-			}
+			//for(Query qry : queries){
+				//System.out.println("Query: "+qry.toString()+" bid: "+solution.get(qry).b()+" budget: "+solution.get(qry).budget());
+				
+			//}
 	      return solution;
 	   }
 
@@ -126,7 +141,7 @@ public class JordanHillClimbing extends HillClimbing {
 		if(changeWandV){
 			if (adjustBudget){
 				
-				System.out.println("Jordan: 1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
+				//System.out.println("Jordan: 1; budget before: "+itemHigh.budget()+" budget after:"+ newBudget);
 			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
 				newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
 			}else{

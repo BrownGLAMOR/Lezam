@@ -48,7 +48,7 @@ public class MultiDayOptimizer extends MCKP {
 	
 	int numTaken = 0;
 	int _numTake = 1;
-	boolean amyHack = false;
+	boolean amyHack = true;
 	boolean amyHack2 = false;
 	boolean overstuff = true;
 	boolean changeWandV = true;
@@ -340,7 +340,7 @@ public class MultiDayOptimizer extends MCKP {
 				//As we're not using MakeRegularItems, this step is moot.
 				//incItemsTaken.get(q).add(bestItem);			   
 
-				//If there is another incremental item from this query to consier, place it into the queue and update the indices.
+				//If there is another incremental item from this query to consider, place it into the queue and update the indices.
 				if (itemIndex<itemSet.get(q).size()){
 					selectionQueue.add(NextIncrementalItem(itemSet.get(q),itemIndex));				   
 					lastUsedIndices.put(q, itemIndex+1);
@@ -401,7 +401,7 @@ public class MultiDayOptimizer extends MCKP {
 		numToTake = _numTake;
 		//If we were using MakeRegularItems, we would use this to make our solution. But we're not, so we don't.
 		//		   HashMap<Query,Item> solution = MakeRegularItems(incItemsTaken);	   
-
+		
 		return solution;
 	}
 	
@@ -539,6 +539,8 @@ public class MultiDayOptimizer extends MCKP {
 				}
 			}
 		}
+		
+		
 		
 		return soltn;
 	}

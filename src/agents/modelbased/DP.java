@@ -25,6 +25,7 @@ public class DP extends MCKP {
 	/**
 	 * 
 	 */
+	int _daysToLook = 59;
 	public DP() {
 		super();
 		// TODO Auto-generated constructor stub
@@ -38,9 +39,10 @@ public class DP extends MCKP {
 				bidMultHigh, multiDay, multiDayDiscretization);
 	}
 
-	public DP(PersistentHashMap cljSim, String agentToReplace, double c1,
+	public DP(int daysToLook, PersistentHashMap cljSim, String agentToReplace, double c1,
 			double c2, double c3, MultiDay multiDay, int multiDayDiscretization) {
 		super(cljSim,agentToReplace, c1, c2, c3, multiDay, multiDayDiscretization);
+		_daysToLook =daysToLook;
 	}
 
 	/* (non-Javadoc)
@@ -50,15 +52,15 @@ public class DP extends MCKP {
 	protected HashMap<Query,Item> getSolution(ArrayList<IncItem> incItems, double budget, Map<Query, 
 			ArrayList<Predictions>> allPredictionsMap, HashMap<Query, ArrayList<Double>> bidLists,
 			HashMap<Query, ArrayList<Double>> budgetLists){
-	      //System.out.println("Running DP.");
+	      System.out.println("Running DP.");
 
 	      //CONFIG FOR DP
-	      int PLANNING_HORIZON = 58;//HC num
+	      int PLANNING_HORIZON = _daysToLook;//HC num
 	      int capacityWindow = _capWindow-1; //Excluding the current day
 	      int totalCapacityMax = 2*_capacity; //The most capacity we'll ever consider using (across all days)//HC num
 	      int dailyCapacityUsedMin = 0;//HC num
 	      int dailyCapacityUsedMax = totalCapacityMax; //The most capacity we'll ever consider using on a single day
-	      int dailyCapacityUsedStep = 50;//HC num
+	      int dailyCapacityUsedStep = 15;//HC num
 	      int dayStart = (int) _day;
 	      int dayEnd = Math.min(58, dayStart + PLANNING_HORIZON); //FIXME: _numDays starts out as 0???  //HC num
 
@@ -158,6 +160,7 @@ public class DP extends MCKP {
 			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),
 				itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
 		}else if (changeWandV && changeBudget){
+			
 			return new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
 		}else{
 			return new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx());
@@ -169,6 +172,6 @@ public class DP extends MCKP {
 	@Override
 	protected boolean getGoOver() {
 		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 }

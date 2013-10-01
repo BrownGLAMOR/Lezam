@@ -550,9 +550,10 @@ public Object targetArray;
       private double _CPC;
       private double _convPr;
       private double _numImp;
-      private double[] _slotDistr;
-      private double[] _ISRatios;
+      private double[] _slotDistr = {0,0,0,0,0};
+      private double[] _ISRatios = {0,0,0,0,0};
       private double _ISRatio;
+      private double _cost;
 
 
       public Predictions(double clickPr, double CPC, double convPr, double numImp, double[] slotDistr, double[] isRatios, double isRatio) {
@@ -563,7 +564,18 @@ public Object targetArray;
          _slotDistr = slotDistr.clone();
          _ISRatios = isRatios.clone();
          _ISRatio = isRatio;
+         _cost = clickPr*numImp;
       }
+      
+      public Predictions() {
+          _clickPr = 0;
+          _CPC =0;
+          _convPr = 0;
+          _numImp = 0;
+          _ISRatio = 0;
+          _cost = 0;
+       }
+     
 
       public void setClickPr(double clickPr) {
          this._clickPr = clickPr;
@@ -596,6 +608,10 @@ public Object targetArray;
       public double getNumImp() {
          return _numImp;
       }
+      
+      public double getCost() {
+          return _cost;
+       }
 
       public void setSlotDistr(double[] slotDistr) {
          this._slotDistr = slotDistr.clone();
@@ -621,6 +637,10 @@ public Object targetArray;
          return _ISRatio;
       }
 
+      public String toString(){
+    	  return "clickPr: "+_clickPr+" CPC: "+_CPC+" convPr: "+ _convPr+" numImp: "+ _numImp+" ISRatio: "+_ISRatio;
+        
+      }
 
    }
 

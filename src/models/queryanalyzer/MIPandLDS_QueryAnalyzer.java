@@ -566,6 +566,7 @@ public class MIPandLDS_QueryAnalyzer extends AbstractQueryAnalyzer {
 
 
 				if (_solverType == SolverType.CP) {
+					System.out.println("___________________CP_____________________");
 					ie = new ImpressionEstimatorSample(inst, _sampFrac, _fractionalBran, _numSamples, _timeCutoff);
 				}
 				else if (_solverType == SolverType.ERIC_MIP_MinSlotEric) {

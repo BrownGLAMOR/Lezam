@@ -116,18 +116,19 @@ public abstract class MCKP extends AbstractAgent {
 	private MultiDay _multiDayHeuristic = MultiDay.HillClimbing;//in file
 	protected int _multiDayDiscretization = 10;//in file
 	private TestAgent _tester;
-	
+
 	private String _filename; //used for perfect sim
 
 	double _probeBidMult;
 	double _budgetMult;
 	int lowSlot = 3;
 	int highSlot = 2;
-	
+
 	int pcount = 0;
 	BufferedWriter bwriter;
 	int _numDays = 59; //Hardcoded; should be initialized properly in the game settings but is currently defaulting to 0.
-
+	long _timeConstraint = 200000;
+	
 	int[] targetArray = new int[_numDays];
 
 	protected static boolean THREADING = false;//in file
@@ -140,9 +141,9 @@ public abstract class MCKP extends AbstractAgent {
 	 */
 	String bidsAndProbesDirname = "./bidding/";
 
-	
+
 	public enum MultiDay {
-		OneDayHeuristic, HillClimbing, DP, DPHill, MultiDayOptimizer
+		OneDayHeuristic, HillClimbing, DP, DPHill, MultiDayOptimizer,PMCKP,MDPMCKP
 	}
 
 	public MCKP() {
@@ -195,7 +196,7 @@ public abstract class MCKP extends AbstractAgent {
 		_bidStdDev = 2.0;//in file
 
 		// updateParams(paramFile);
-		
+
 		try {
 			new File(bidsAndProbesDirname).mkdirs(); // create directory if it doesn't already exist.
 			String bidsAndProbesFilename = bidsAndProbesDirname + "bidsandprobes.txt"; 
@@ -224,6 +225,15 @@ public abstract class MCKP extends AbstractAgent {
 		_tester = tester;
 	}
 
+	public MCKP(int daysToLook, double c1, double c2, double c3, double budgetL, double budgetM, double budgetH, 
+			double lowBidMult, double highBidMult, MultiDay multiDayHeuristic, int multiDayDiscretization,
+			TestAgent tester) {
+		this(c1, c2, c3, budgetL, budgetM, budgetH, lowBidMult, highBidMult);
+		_multiDayHeuristic = multiDayHeuristic;
+		_multiDayDiscretization = multiDayDiscretization;
+		_tester = tester;
+	}
+
 	public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, 
 			MultiDay multiDay, int multiDayDiscretization, String filename) {
 		this(c1, c2, c3);
@@ -232,20 +242,22 @@ public abstract class MCKP extends AbstractAgent {
 		_multiDayHeuristic = multiDay;
 		_multiDayDiscretization = multiDayDiscretization;
 		_filename = filename;
-	
-	
+
+
 
 	}
+
 
 	public MCKP(PersistentHashMap perfectSim, String agentToReplace, double c1, double c2, double c3, 
 			MultiDay multiDay, int multiDayDiscretization) {
 		this(c1, c2, c3);
+		
 		_perfectCljSim = perfectSim;
 		_agentToReplace = agentToReplace;
 		_multiDayHeuristic = multiDay;
 		_multiDayDiscretization = multiDayDiscretization;
 
-	
+
 
 	}
 
@@ -391,6 +403,7 @@ public abstract class MCKP extends AbstractAgent {
 
 	//returns an array of average impressions,clicks,costs,sales, and other stats
 	public double[] simulateQuery(PersistentHashMap cljSim, Query query, double bid, double budget, Ad ad) {
+		//System.out.println("Simulate Query");
 		ArrayList result;
 		if(hasPerfectModels()) {
 			result = javasim.simQuery(cljSim, query, _agentToReplace, (int) _day, bid, budget, ad, 1, true);//HC num
@@ -501,7 +514,7 @@ public abstract class MCKP extends AbstractAgent {
 	@Override
 	public Set<AbstractModel> initModels() {
 		Set<AbstractModel> models = new LinkedHashSet<AbstractModel>();
-//		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
+		//		_queryAnalyzer = new CarletonQueryAnalyzer(_querySpace,_advertisers,_advId,true,true);
 		_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CP);
 		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.ERIC_MIP_MinSlotEric);
 		//_queryAnalyzer = new MIPandLDS_QueryAnalyzer(_querySpace,_advertisers,_advId,true,true, SolverType.CARLETON_SIMPLE_MIP_Sampled);
@@ -526,7 +539,7 @@ public abstract class MCKP extends AbstractAgent {
 		models.add(_ISRatioModel);
 		models.add(_adTypeEstimator);
 		models.add(_specialtyModel);
-		
+
 		return models;
 	}
 
@@ -696,7 +709,7 @@ public abstract class MCKP extends AbstractAgent {
 	@Override
 	public BidBundle getBidBundle() {
 		BidBundle bidBundle = new BidBundle();
-
+		System.out.println("BID BUNDLE");
 		//The only campaign-level budget we consider is a constant value.
 		//FIXME: _safetyBudget needs to be set somewhere.
 		if(SAFETYBUDGET) {
@@ -736,15 +749,15 @@ public abstract class MCKP extends AbstractAgent {
 			//FIXME: What about basing possible bids on the bids of opponents? Only consider N
 			//bids that would put us in each starting position.
 			//         HashMap<Query,ArrayList<Double>> bidLists = getBidLists();
-		
+
 			HashMap<Query,ArrayList<Double>> bidLists = getMinimalBidLists();
-			
+
 			System.out.println("bidLists"+ bidLists.toString());
-			
+
 			//bidLists = getPerfectBidLists(_filename);
-			
+
 			//System.out.println("bidLists"+ bidLists.toString());
-			
+
 			HashMap<Query,ArrayList<Double>> budgetLists = getBudgetLists();
 
 			//         for (Query q : _querySpace) {
@@ -767,6 +780,9 @@ public abstract class MCKP extends AbstractAgent {
 
 			//want the queries to be in a guaranteed order - put them in an array
 			//index will be used as the id of the query
+
+			//CHANGE HERE
+			//double penalty = getPenaltyForSimMCKP(remainingCap); 
 			double penalty = getPenalty(remainingCap, 0); //Get initial penalty (before any additional conversions today)
 			Map<Query,ArrayList<Predictions>> allPredictionsMap;
 
@@ -781,14 +797,14 @@ public abstract class MCKP extends AbstractAgent {
 					//For testing purposes
 					if(hasPerfectModels()){
 						bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
-						+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidSpaceTest.csv";
+								+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidSpaceTest.csv";
 					}
 					else{
 						bidFilename = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"
-						+System.getProperty("file.separator")+AgentSimulator.timeFile+
-						"_bidSpaceTest.csv";
+								+System.getProperty("file.separator")+AgentSimulator.timeFile+
+								"_bidSpaceTest.csv";
 					}
-				
+
 					try {
 						bufferedWriter = new BufferedWriter(new FileWriter(bidFilename, true));
 						if((_day==2.0 && !hasPerfectModels()) || (_day==0.0 && hasPerfectModels())){
@@ -829,17 +845,17 @@ public abstract class MCKP extends AbstractAgent {
 						double salesPrice = _salesPrices.get(q);
 						int itemCount = 0;                 
 						//THIS IS JUST FOR ANIRAN's Reports
-							//-----INITIALIZING CHART DATA-----
-							Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
-							Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
-							int bidLen = bidsArr.length;
-							int budgetLen = budgetsArr.length;
-							Double[][] costsMat = new Double[bidLen][budgetLen];
-							Double[][] numClicksMat = new Double[bidLen][budgetLen];
-							Double[][] weightsMat = new Double[bidLen][budgetLen];
-							Double[][] profitsMat = new Double[bidLen][budgetLen];
-							//-----END CHART DATA-----
-						
+						//-----INITIALIZING CHART DATA-----
+						Double[] bidsArr = bidLists.get(q).toArray(new Double[0]);
+						Double[] budgetsArr = budgetLists.get(q).toArray(new Double[0]);
+						int bidLen = bidsArr.length;
+						int budgetLen = budgetsArr.length;
+						Double[][] costsMat = new Double[bidLen][budgetLen];
+						Double[][] numClicksMat = new Double[bidLen][budgetLen];
+						Double[][] weightsMat = new Double[bidLen][budgetLen];
+						Double[][] profitsMat = new Double[bidLen][budgetLen];
+						//-----END CHART DATA-----
+
 						//FIXME: Make configurable whether we allow for generic ads. Right now it's hardcoded that we're always targeting.
 						for(int k = 1; k < 2; k++) { //For each possible targeting type (0=untargeted, 1=targetedToSpecialty)
 							for(int i = 0; i < bidLists.get(q).size(); i++) { //For each possible bid
@@ -871,8 +887,9 @@ public abstract class MCKP extends AbstractAgent {
 									double ISRatio = impsClicksAndCost[13];
 									double CPC = cost / numClicks;
 									double clickPr = numClicks / numImps;
-									System.out.println("Pen: "+penalty);
+									//System.out.println("Pen: "+penalty);
 									double convProbWithPen = getConversionPrWithPenalty(q, penalty,ISRatio);
+									//double weightSim = weightSimulator(q, numClicks, remainingCap, .996, ISRatio, _baseConvProbs.get(q));
 
 									//                        System.out.println("Bid: " + bid);
 									//                        System.out.println("Budget: " + budget);
@@ -901,6 +918,8 @@ public abstract class MCKP extends AbstractAgent {
 
 
 									double w = numClicks*convProbWithPen;				//weight = numClciks * convProv
+									//System.out.println("w: "+w+"WeightSim: "+weightSim);
+									//w=weightSim;
 									double v = numClicks*convProbWithPen*salesPrice - numClicks*CPC;	//value = revenue - cost	[profit]
 									itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount));//HC num
 									queryPredictions.add(new Predictions(clickPr, CPC, convProb, numImps,slotDistr,isRatioArr,ISRatio));
@@ -1066,7 +1085,7 @@ public abstract class MCKP extends AbstractAgent {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					
+
 					if(bid< _paramEstimation.getRegReservePrediction(q.getType())){
 						System.out.println("__________________________Reset bid?__________________________");
 						try {
@@ -1143,7 +1162,7 @@ public abstract class MCKP extends AbstractAgent {
 			double solutionWeight = solutionWeight(remainingCap,solution,allPredictionsMap);
 			//            System.out.println("We expect to get " + (int)solutionWeight + " conversions");
 			((BasicUnitsSoldModel)_unitsSold).expectedConvsTomorrow((int) (solutionWeight));
-			
+
 			// Close the bwriter.
 			try {		
 				bwriter.flush();
@@ -1151,7 +1170,7 @@ public abstract class MCKP extends AbstractAgent {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			
+
 		}
 		else {
 			bidBundle = getFirst2DaysBundle();
@@ -1169,64 +1188,69 @@ public abstract class MCKP extends AbstractAgent {
 		}
 
 		if(RUNWITHREPORTS){
-		String bidgametest;
+			String bidgametest;
 
-		if(hasPerfectModels()){
-			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidBundleTest.csv";
-		} else{
-			bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_bidBundleTest.csv";
-		}
-
-		try {
-			BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(bidgametest, true));
-			StringBuffer stBuff = new StringBuffer();
-
-			if(_day == 0.0){
-				stBuff.append("day"+",");
-				stBuff.append("manuQuery"+",");
-				stBuff.append("prodQuery"+",");
-				stBuff.append("bid"+",");
-				stBuff.append("limit"+",");
-				stBuff.append("generic"+",");
-				stBuff.append("manuAd"+",");
-				stBuff.append("prodAd"+"\n");
-				bufferedWriter.write(stBuff.toString());
+			if(hasPerfectModels()){
+				bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_perfectBidBundleTest.csv";
+			} else{
+				bidgametest = System.getProperty("user.dir")+System.getProperty("file.separator")+"Details"+System.getProperty("file.separator")+AgentSimulator.timeFile+"_bidBundleTest.csv";
 			}
 
-			for(Query q: _querySpace){
-				if(bidBundle.getAd(q) != null){
-					stBuff = new StringBuffer();
-					stBuff.append(_day+",");
-					stBuff.append(q.getManufacturer()+",");
-					stBuff.append(q.getComponent()+",");
-					stBuff.append(Double.toString(bidBundle.getBid(q))+",");
-					stBuff.append(Double.toString(bidBundle.getDailyLimit(q))+",");
-					stBuff.append(Boolean.toString(bidBundle.getAd(q).isGeneric())+",");
-					if(bidBundle.getAd(q).isGeneric()){
-						stBuff.append("null"+",");
-						stBuff.append("null"+"\n");
-					} else{
-						stBuff.append(bidBundle.getAd(q).getProduct().getManufacturer()+",");
-						stBuff.append(bidBundle.getAd(q).getProduct().getComponent()+"\n");
-					}
+			try {
+				BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(bidgametest, true));
+				StringBuffer stBuff = new StringBuffer();
 
+				if(_day == 0.0){
+					stBuff.append("day"+",");
+					stBuff.append("manuQuery"+",");
+					stBuff.append("prodQuery"+",");
+					stBuff.append("bid"+",");
+					stBuff.append("limit"+",");
+					stBuff.append("generic"+",");
+					stBuff.append("manuAd"+",");
+					stBuff.append("prodAd"+"\n");
 					bufferedWriter.write(stBuff.toString());
 				}
-			}
 
-			bufferedWriter.flush();
-			bufferedWriter.close();
-	
-		} catch (IOException e) {
-			e.printStackTrace();
-		} 
+				for(Query q: _querySpace){
+					if(bidBundle.getAd(q) != null){
+						stBuff = new StringBuffer();
+						stBuff.append(_day+",");
+						stBuff.append(q.getManufacturer()+",");
+						stBuff.append(q.getComponent()+",");
+						stBuff.append(Double.toString(bidBundle.getBid(q))+",");
+						stBuff.append(Double.toString(bidBundle.getDailyLimit(q))+",");
+						stBuff.append(Boolean.toString(bidBundle.getAd(q).isGeneric())+",");
+						if(bidBundle.getAd(q).isGeneric()){
+							stBuff.append("null"+",");
+							stBuff.append("null"+"\n");
+						} else{
+							stBuff.append(bidBundle.getAd(q).getProduct().getManufacturer()+",");
+							stBuff.append(bidBundle.getAd(q).getProduct().getComponent()+"\n");
+						}
+
+						bufferedWriter.write(stBuff.toString());
+					}
+				}
+
+				bufferedWriter.flush();
+				bufferedWriter.close();
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
 		}
-		//      System.out.println(bidBundle);
+		System.out.println("BidBundle: "+bidBundle);
 
 
 		return bidBundle;
 	}
 
+	/*
+	 * 
+	 * PROBING ALGORITHMS
+	 * 
+	 */
 	private double getRandomProbeBid(Query q) {
 		double minBid = _paramEstimation.getRegReservePrediction(q.getType()) / Math.pow(_paramEstimation.getAdvEffectPrediction(q),_squashing);
 		double maxBid = Math.min(3.5,_salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * _baseClickProbs.get(q));//HC num
@@ -1240,7 +1264,7 @@ public abstract class MCKP extends AbstractAgent {
 	private Ad getProbeAd(Query q, double bid, double budget) {
 		return new Ad();
 	}
-	
+
 	/*
 	 * Here the agent picks a probe bid from a given range of slots. We 
 	 * use predictions from out bid model to prdict what we need to bid
@@ -1264,7 +1288,7 @@ public abstract class MCKP extends AbstractAgent {
 		//Add regular/promoted reserve score
 		double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
 		opponentScores.add(reserveScore);
-		
+
 
 		//We will choose to target scores directly between opponent scores.
 		Collections.sort(opponentScores);
@@ -1278,19 +1302,19 @@ public abstract class MCKP extends AbstractAgent {
 				ourScores.add(ourScore);
 			}
 		}
-		
+
 
 		//Also ad a score to bid directly above the reserve score,
 		//And directly above the highest score (so we get the 1st slot)
 		double scoreEpsilon = .01;//HC num
 		double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
 		ourScores.add(highestOpponentScore + scoreEpsilon);
-		
+
 		//add score epsilon below
 		double lowestOpponentScore = opponentScores.get(0);
 		//ourScores.add(lowestOpponentScore - scoreEpsilon);
-		
-		
+
+
 		double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb. //HC num
 		double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;//HC num
 		double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
@@ -1307,10 +1331,10 @@ public abstract class MCKP extends AbstractAgent {
 			}
 		}
 		//catches major problems
-		 if(ourPrunedScores.size()<=0){
-			 ourPrunedScores.add(reserveScore*1.5);
-			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
-		 }
+		if(ourPrunedScores.size()<=0){
+			ourPrunedScores.add(reserveScore*1.5);
+			ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
+		}
 
 		//Turn score into bids
 		for (double score : ourPrunedScores) {
@@ -1318,26 +1342,26 @@ public abstract class MCKP extends AbstractAgent {
 			ourBids.add(ourBid);
 		}
 		Collections.sort(ourBids);
-		
+
 		int lastSlotPicked = lowSlot; //set this to pick lowest slot to consider (5 sets the range the widest)
 		int lastSlot = Math.min(Math.min(_numSlots,ourBids.size()), lastSlotPicked);
 		int firstSlot = Math.min(highSlot,ourBids.size() );
 		//int numSlots = Math.min(_numSlots,ourBids.size());
 
 		int distAboveLowestSlot = _R.nextInt(lastSlot-firstSlot+1);
-		
+
 		//int slot = (int) Math.ceil(numSlots/2.0);
 		//int slot = ourBids.size()-1;
-//		if(numSlots>=3){
-//			slot = numSlots-1;
-//		}
+		//		if(numSlots>=3){
+		//			slot = numSlots-1;
+		//		}
 		int slotInArray = ourBids.size()-firstSlot-distAboveLowestSlot;
 		System.out.println("Slot: "+slotInArray+" Bids: "+ourBids.toString()); //to remove
-		
+
 		if(ourBids.size()<=slotInArray || slotInArray<0){
 			slotInArray = ourBids.size()-1;
 		}
-		
+
 		double bid = ourBids.get(slotInArray);
 		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
 		bidBudget[0] = bid;
@@ -1346,89 +1370,95 @@ public abstract class MCKP extends AbstractAgent {
 		return bidBudget;
 	}
 
-//
-//	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE?
-//	private double[] getProbeSlotBidBudget(Query q) {
-//		double[] bidBudget = new double[2];
-//		ArrayList<Double> ourBids = new ArrayList<Double>();
-//		ArrayList<Double> opponentScores = new ArrayList<Double>();
-//		for (String player : _advertisersSet) {
-//			if (!player.equals(_advId)) { //only get opponent bids
-//				double opponentBid = _bidModel.getPrediction(player, q);
-//				double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
-//				double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing);
-//				opponentScores.add(opponentScore);
-//			}
-//		}
-//
-//		//Add regular/promoted reserve score
-//		double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
-//		opponentScores.add(reserveScore);
-//
-//		//We will choose to target scores directly between opponent scores.
-//		Collections.sort(opponentScores);
-//		int BIDS_BETWEEN_SCORES = 1;//HC num
-//		ArrayList<Double> ourScores = new ArrayList<Double>();
-//		for (int i=1; i<opponentScores.size(); i++) {
-//			double lowScore = opponentScores.get(i-1);
-//			double highScore = opponentScores.get(i);
-//			for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
-//				double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);//HC num
-//				ourScores.add(ourScore);
-//			}
-//		}
-//		opponentScores.add(opponentScores.get(opponentScores.size()-1)-.1);
-//
-//		//Also ad a score to bid directly above the reserve score,
-//		//And directly above the highest score (so we get the 1st slot)
-//		double scoreEpsilon = .01;//HC num
-//		double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
-//		ourScores.add(highestOpponentScore + scoreEpsilon);
-//
-//		double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb. //HC num
-//		double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;//HC num
-//		double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
-//		double ourSquashedAdvEff = Math.pow(ourAdvertiserEffect,_squashing);
-//		double maxScore = ourVPC * ourSquashedAdvEff;
-//		ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
-//		Collections.sort(ourScores);
-//		for (Double score : ourScores) {
-//			if (score >= reserveScore && score <= maxScore) { //within bounds
-//				int lastAddedIdx = ourPrunedScores.size()-1;
-//				if (lastAddedIdx == -1 || !score.equals(ourPrunedScores.get(lastAddedIdx))) { //not just added
-//					ourPrunedScores.add(score);
-//				}
-//			}
-//		}
-//		 if(ourPrunedScores.size()<=0){
-//			 ourPrunedScores.add(reserveScore*1.5);
-//			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
-//		 }
-//
-//		//Turn score into bids
-//		for (double score : ourPrunedScores) {
-//			double ourBid = score / ourSquashedAdvEff;
-//			ourBids.add(ourBid);
-//		}
-//
-//		int numSlots = Math.min(_numSlots,ourBids.size());
-//		//int slot = _R.nextInt(numSlots);
-//		//int slot = (int) Math.ceil(numSlots/2.0);
-//		int slot = 1;
-//		if(numSlots>=3){
-//			slot = numSlots-1;
-//		}
-//
-//		//double bid = ourBids.get(slot);
-//		double bid = 2.5; // FIXME: Temporary bug fix.
-//		
-//		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
-//		bidBudget[0] = bid;
-//		bidBudget[1] = bid * _probeBidMult;
-//
-//		return bidBudget;
-//	}
+	//
+	//	//TODO: THIS IS A BUG< WE DON'T PROBE WELL HERE?
+	//	private double[] getProbeSlotBidBudget(Query q) {
+	//		double[] bidBudget = new double[2];
+	//		ArrayList<Double> ourBids = new ArrayList<Double>();
+	//		ArrayList<Double> opponentScores = new ArrayList<Double>();
+	//		for (String player : _advertisersSet) {
+	//			if (!player.equals(_advId)) { //only get opponent bids
+	//				double opponentBid = _bidModel.getPrediction(player, q);
+	//				double opponentAdvertiserEffect = _advertiserEffectBoundsAvg[queryTypeToInt(q.getType())];
+	//				double opponentScore = opponentBid * Math.pow(opponentAdvertiserEffect, _squashing);
+	//				opponentScores.add(opponentScore);
+	//			}
+	//		}
+	//
+	//		//Add regular/promoted reserve score
+	//		double reserveScore = _paramEstimation.getRegReservePrediction(q.getType());
+	//		opponentScores.add(reserveScore);
+	//
+	//		//We will choose to target scores directly between opponent scores.
+	//		Collections.sort(opponentScores);
+	//		int BIDS_BETWEEN_SCORES = 1;//HC num
+	//		ArrayList<Double> ourScores = new ArrayList<Double>();
+	//		for (int i=1; i<opponentScores.size(); i++) {
+	//			double lowScore = opponentScores.get(i-1);
+	//			double highScore = opponentScores.get(i);
+	//			for (int j=1; j<=BIDS_BETWEEN_SCORES; j++) {
+	//				double ourScore = lowScore + j*(highScore-lowScore)/(BIDS_BETWEEN_SCORES+1);//HC num
+	//				ourScores.add(ourScore);
+	//			}
+	//		}
+	//		opponentScores.add(opponentScores.get(opponentScores.size()-1)-.1);
+	//
+	//		//Also ad a score to bid directly above the reserve score,
+	//		//And directly above the highest score (so we get the 1st slot)
+	//		double scoreEpsilon = .01;//HC num
+	//		double highestOpponentScore = opponentScores.get(opponentScores.size()-1);
+	//		ourScores.add(highestOpponentScore + scoreEpsilon);
+	//
+	//		double FRACTION = 1; //_baseClickProbs.get(q); //FIXME: There's no reason this should be a clickProb. //HC num
+	//		double ourVPC = _salesPrices.get(q) * getConversionPrWithPenalty(q,1.0) * FRACTION;//HC num
+	//		double ourAdvertiserEffect = _paramEstimation.getAdvEffectPrediction(q);
+	//		double ourSquashedAdvEff = Math.pow(ourAdvertiserEffect,_squashing);
+	//		double maxScore = ourVPC * ourSquashedAdvEff;
+	//		ArrayList<Double> ourPrunedScores = new ArrayList<Double>();
+	//		Collections.sort(ourScores);
+	//		for (Double score : ourScores) {
+	//			if (score >= reserveScore && score <= maxScore) { //within bounds
+	//				int lastAddedIdx = ourPrunedScores.size()-1;
+	//				if (lastAddedIdx == -1 || !score.equals(ourPrunedScores.get(lastAddedIdx))) { //not just added
+	//					ourPrunedScores.add(score);
+	//				}
+	//			}
+	//		}
+	//		 if(ourPrunedScores.size()<=0){
+	//			 ourPrunedScores.add(reserveScore*1.5);
+	//			 ourPrunedScores.add(highestOpponentScore + scoreEpsilon);
+	//		 }
+	//
+	//		//Turn score into bids
+	//		for (double score : ourPrunedScores) {
+	//			double ourBid = score / ourSquashedAdvEff;
+	//			ourBids.add(ourBid);
+	//		}
+	//
+	//		int numSlots = Math.min(_numSlots,ourBids.size());
+	//		//int slot = _R.nextInt(numSlots);
+	//		//int slot = (int) Math.ceil(numSlots/2.0);
+	//		int slot = 1;
+	//		if(numSlots>=3){
+	//			slot = numSlots-1;
+	//		}
+	//
+	//		//double bid = ourBids.get(slot);
+	//		double bid = 2.5; // FIXME: Temporary bug fix.
+	//		
+	//		//System.out.println("Probing: "+bid+" not "+ourBids.get(_R.nextInt(numSlots)));
+	//		bidBudget[0] = bid;
+	//		bidBudget[1] = bid * _probeBidMult;
+	//
+	//		return bidBudget;
+	//	}
 
+	/*
+	 * Get Bid and Budget Lists
+	 * 
+	 * These are the predictions the agent has made. They are used to create the
+	 * "items" used in the KP algorithms.
+	 */
 	/**
 	 * Get a single bid for each slot (or X bids per slot).
 	 * The idea is that our bid models are noisy, so we don't want to
@@ -1532,8 +1562,7 @@ public abstract class MCKP extends AbstractAgent {
 		return bidLists;
 	}
 
-	
-	
+
 	/**
 	 * Get a single bid for each slot (or X bids per slot).
 	 * The idea is that our bid models are noisy, so we don't want to
@@ -1571,9 +1600,9 @@ public abstract class MCKP extends AbstractAgent {
 							squashedBids[a] = Double.NaN;
 						}
 					}
-					
+
 					Arrays.sort(squashedBids);
-					
+
 
 					for (int i=1; i<squashedBids.length; i++) {
 						double lowScore = squashedBids[i-1];
@@ -1583,17 +1612,17 @@ public abstract class MCKP extends AbstractAgent {
 							ourBids.add(ourScore);
 						}
 					}
-					
-//					while(ourBids.size()>5){
-//						ourBids.remove(0);
-//					}
-					
+
+					//					while(ourBids.size()>5){
+					//						ourBids.remove(0);
+					//					}
+
 
 
 					bidLists.put(q, ourBids);
 
-				
-					
+
+
 				} catch (Exception e2) {
 					// TODO Auto-generated catch block
 					e2.printStackTrace();
@@ -1660,29 +1689,30 @@ public abstract class MCKP extends AbstractAgent {
 		for(Query q : _querySpace) {
 			if(!q.equals(new Query())) { //Skip over F0 Query FIXME: Make configurable
 				ArrayList<Double> budgetList = new ArrayList<Double>();
-//				budgetList.add(10.0);//HC num
-//				budgetList.add(100.0);//HC num
-//				budgetList.add(300.0);//HC num
-//				//            budgetList.add(400.0);
-//				budgetList.add(1000.0);
+				//budgetList.add(10.0);//HC num
+				//budgetList.add(100.0);//HC num
+				//budgetList.add(300.0);//HC num
+				//            budgetList.add(400.0);
+				//budgetList.add(1000.0);
+
 				budgetList.add(10.0);//HC num
-				budgetList.add(25.0);//HC num
-				budgetList.add(50.0);//HC num
-				budgetList.add(75.0);//HC num
+				//				budgetList.add(25.0);//HC num
+				//				budgetList.add(50.0);//HC num
+				//				budgetList.add(75.0);//HC num
 				budgetList.add(100.0);//HC num
-				budgetList.add(150.0);//HC num
-				budgetList.add(200.0);//HC num
+				//				budgetList.add(150.0);//HC num
+				//				budgetList.add(200.0);//HC num
 				budgetList.add(250.0);//HC num
-				budgetList.add(300.0);//HC num
-				budgetList.add(350.0);//HC num
+				//				budgetList.add(300.0);//HC num
+				//				budgetList.add(350.0);//HC num
 				budgetList.add(400.0);//HC num
-				budgetList.add(450.0);//HC num
-				budgetList.add(500.0);//HC num
-				budgetList.add(550.0);//HC num
-				budgetList.add(600.0);//HC num
-				budgetList.add(650.0);//HC num
-				budgetList.add(700.0);//HC num
-				budgetList.add(750.0);//HC num
+				//				budgetList.add(450.0);//HC num
+				//				budgetList.add(500.0);//HC num
+				//				budgetList.add(550.0);//HC num
+				//				budgetList.add(600.0);//HC num
+				//				budgetList.add(650.0);//HC num
+				//				budgetList.add(700.0);//HC num
+				budgetList.add(800.0);//HC num
 				//budgetList.add(1000.0);//HC num
 				budgetLists.put(q,budgetList);
 			}
@@ -1693,6 +1723,10 @@ public abstract class MCKP extends AbstractAgent {
 		return budgetLists;
 	}
 
+	/*
+	 * Handle the special/corner case of the first two days of 
+	 * the game where we do not know what bids/budgets are.
+	 */
 
 	public BidBundle getFirst2DaysBundle() {
 		BidBundle bundle = new BidBundle();
@@ -1713,6 +1747,10 @@ public abstract class MCKP extends AbstractAgent {
 		return bundle;
 	}
 
+	/*
+	 * Given a solution the the KP, create a bid bundle that 
+	 * the agent can submit to the game server.
+	 */
 	private BidBundle mkBundleFromKnapsack(HashMap<Query,Item> solution) {
 		BidBundle bundle = new BidBundle();
 		for(Query q : _querySpace) {
@@ -1740,6 +1778,7 @@ public abstract class MCKP extends AbstractAgent {
 		return bundle;
 	}
 
+	//Appears unused
 	private ArrayList<Double> removeDupes(ArrayList<Double> bids) {
 		ArrayList<Double> noDupeList = new ArrayList<Double>();
 		for(int i = 0; i < bids.size()-1; i++) {
@@ -1751,6 +1790,10 @@ public abstract class MCKP extends AbstractAgent {
 		return noDupeList;
 	}
 
+	/*
+	 * If we can target the user, we should. This method sets the 
+	 * ad we submit to be targeted.
+	 */
 	private Ad getTargetedAd(Query q) {
 		return getTargetedAd(q, _manSpecialty, _compSpecialty);
 	}
@@ -1797,6 +1840,7 @@ public abstract class MCKP extends AbstractAgent {
 	 * @param q
 	 * @return
 	 */
+	//This doesn't appear to be used.
 	private Ad getIrrelevantAd(Query q) {
 
 		String componentToUse = _compSpecialty;
@@ -1826,6 +1870,10 @@ public abstract class MCKP extends AbstractAgent {
 	}
 
 
+	/*
+	 * This method updates all of our models. Ideally, this would not 
+	 * be in this class as this is the optimization component of the agent.
+	 */
 	@Override
 	public void updateModels(SalesReport salesReport, QueryReport queryReport) {
 
@@ -1983,6 +2031,10 @@ public abstract class MCKP extends AbstractAgent {
 		}
 	}
 
+	/*
+	 * GET NEEDED INFORMATION OUT OF VARIOUS MODELS
+	 * THESE SHOULD NOT BE HERE IN A GOOD Architecture.
+	 */
 	public static HashMap<Product,HashMap<UserState,Double>> getUserStates(UserModel userModel, Set<Product> products) {
 		HashMap<Product,HashMap<UserState,Double>> userStates = new HashMap<Product,HashMap<UserState,Double>>();
 		for(Product p : products) {
@@ -2020,12 +2072,63 @@ public abstract class MCKP extends AbstractAgent {
 		return maxImps;
 	}
 
+	/*
+	 * PENALTY METHODS
+	 * The following methods handle calculating the penalty to items 
+	 * that arises from the agent going over capacity.
+	 */
 	public double getPenalty(double remainingCap, double solutionWeight) {
 		return getPenalty(remainingCap,solutionWeight,_lambda);
 	}
 
+
+	public double getPenaltyForSimMCKP(double remainingCap) {
+		return getPenaltyForSimMCKP(remainingCap,_lambda);
+	}
+
+
+	//	/**
+	//	 * This gets the average penalty across clicks, for a given
+	//	 *  initial remaining capacity and number of conversions.
+	//	 * @param remainingCap
+	//	 * @param solutionWeight
+	//	 * @param lambda
+	//	 * @return
+	//	 */
+	//	public static double getPenalty(double remainingCap, double solutionWeight, double lambda) {
+	//		double penalty;
+	//		//System.out.println("lambda: "+lambda);
+	//		//ensure solution weight is positive.
+	//		solutionWeight = Math.max(0,solutionWeight);
+	//		
+	//		double s_0 = Math.min(remainingCap, solutionWeight); //the number of conversions with no penalty
+	//		double s = solutionWeight;
+	//		
+	//		//initialize to the number sold undercapacity
+	//		double penWeight = s_0;
+	//		
+	//		//calculate the sum from 1 to s-s_0 (the number sold over capacity) of the conv. probabilities
+	//		for(double j = 1; j <= (s-s_0); j++) {
+	//				penWeight += Math.pow(lambda, j);//HC num
+	//		}
+	//		
+	//		//calc the average conversion probability
+	//		penalty = penWeight/s;
+	//			
+	//
+	//		if(Double.isNaN(penalty)) {
+	//			System.out.println("ERROR penalty NaN"); //ap
+	//			penalty = 1.0;//HC num
+	//		}
+	//		return penalty;
+	//	}
+
+
+	//this is the original Jordan code. The algorithm isn't clear and does not match the written documentation. 
+	//Therefor, it was rewritten.
 	/**
-	 * This gets the average penalty across clicks, for a given initial remaining capacity and number of conversions.
+	 * This gets the average penalty across clicks, for a given
+	 *  initial remaining capacity and number of conversions.
 	 * @param remainingCap
 	 * @param solutionWeight
 	 * @param lambda
@@ -2033,6 +2136,7 @@ public abstract class MCKP extends AbstractAgent {
 	 */
 	public static double getPenalty(double remainingCap, double solutionWeight, double lambda) {
 		double penalty;
+		//System.out.println("lambda: "+lambda);
 		solutionWeight = Math.max(0,solutionWeight);
 		if(remainingCap < 0) {
 			if(solutionWeight <= 0) {
@@ -2066,6 +2170,9 @@ public abstract class MCKP extends AbstractAgent {
 		else {
 			if(solutionWeight <= 0) {
 				penalty = 1.0;//HC num
+				//FOR TESTING PURPOSES< REMOVE
+				//penalty = Math.pow(lambda, Math.abs(remainingCap));
+				//System.out.println("Pen: "+penalty);
 			}
 			else {
 				if(solutionWeight > remainingCap) {
@@ -2091,12 +2198,168 @@ public abstract class MCKP extends AbstractAgent {
 	}
 
 
+
+	/**
+	 * This gets the penalty faced before any additional conversions occur. 
+	 * This penalty will be used for the rest of the day.
+	 * @param remainingCap
+	 * @param lambda
+	 * @return
+	 */
+	public static double getPenaltyForSimMCKP(double remainingCap, double lambda) {
+		double penalty;
+		//System.out.println("lambda: "+lambda);
+
+		if(remainingCap < 0) {
+
+			penalty = Math.pow(lambda, Math.abs(remainingCap));
+
+
+		}else{	
+			penalty = 1.0;//HC num
+		}	
+		if(Double.isNaN(penalty)) {
+			System.out.println("ERROR penalty NaN"); //ap
+			penalty = 1.0;//HC num
+		}
+		return penalty;
+	}
+	
+	
+	public double getConversionPrWithPenalty(Query q, double penalty) {
+		double convPr;
+		String component = q.getComponent();
+		double baseConvPr = _baseConvProbs.get(q);
+		if(_compSpecialty.equals(component)) {
+			convPr = eta(baseConvPr*penalty,1+_CSB);
+		}
+		else if(component == null) {
+			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
+		}
+		else {
+			convPr = baseConvPr*penalty;
+		}
+		convPr *= (1.0 - _ISRatioModel.getISRatio(q)[0]);//HC num
+		return convPr;
+	}
+
+	public double getConversionPrWithPenalty(Query q, double penalty, double[] slotDistr) {
+		double convPr;
+		String component = q.getComponent();
+		double baseConvPr = _baseConvProbs.get(q);
+		if(_compSpecialty.equals(component)) {
+			convPr = eta(baseConvPr*penalty,1+_CSB);
+		}
+		else if(component == null) {
+			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
+		}
+		else {
+			convPr = baseConvPr*penalty;
+		}
+		double[] ISRatioArr = _ISRatioModel.getISRatio(q);
+		double ISRatio = 0;//HC num
+		for(int i = 0; i < slotDistr.length; i++) {
+			ISRatio += ISRatioArr[i]*slotDistr[i];
+		}
+		convPr *= (1.0 - ISRatio);//HC num
+		return convPr;
+	}
+
+	//this is the original code written by Jordan. Betsy rewrote it in Apr. 2013 to simplify notation
+
+	//	public double getConversionPrWithPenalty(Query q, double penalty, double ISRatio) {
+	//		double convPr;
+	//		String component = q.getComponent();
+	//		double baseConvPr = _baseConvProbs.get(q);
+	//		if(_compSpecialty.equals(component)) {
+	//			convPr = eta(baseConvPr*penalty,1+_CSB);
+	//		}
+	//		else if(component == null) {
+	//			//If query has no component, searchers who click will have some chance (1/3) of having our component specialty.
+	//			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
+	//		}
+	//		else {
+	//			convPr = baseConvPr*penalty;
+	//		}
+	//
+	//		//We just computed the conversion probability for someone, assuming they're not an IS user.
+	//		//If an IS user, conversion probability is 0.
+	//		// conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS
+	//		convPr *= (1.0 - ISRatio);
+	//		return convPr;
+	//	}
+
+	public double getConversionPrWithPenalty(Query q, double penalty, double ISRatio) {
+		double convPr;
+		String component = q.getComponent();
+
+		//calculate 2 different possible conv. prob for non IS users
+		double baseConvPr = _baseConvProbs.get(q);
+		double nonSpecialtyConvPr =  baseConvPr*penalty;
+		double specialtyConvPr = eta(baseConvPr*penalty,1+_CSB);
+
+		//handle the 3 cases: our specialty, maybe our specialty, not our specialty
+		if(_compSpecialty.equals(component)) {
+			convPr = specialtyConvPr;
+			//System.out.println("Our Specialty");
+		}
+		else if(component == null) {
+			//If query has no component, searchers who click will have some chance (1/3) of having our component specialty.
+			convPr =  specialtyConvPr* (1/3.0) +nonSpecialtyConvPr*(2/3.0);//HC num
+		}
+		else {
+			convPr = nonSpecialtyConvPr;
+		}
+
+		//We just computed the conversion probability for someone, assuming they're not an IS user.
+		//If an IS user, conversion probability is 0.
+		// conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS
+		convPr *= (1.0 - ISRatio);
+		return convPr;
+	}
+
+	//TEST METHOD FOR SIMULATION
+	private double weightSimulator(Query q, double numClicks, double remaining, double lambda, double ISRatio, double baseConvPr){
+		Random rand = new Random();
+		int numTrials = 5;
+		int totalConv = 0;
+		for(int i=1;i<numTrials;i++){
+			double conversions = 0;
+			double numOver = remaining;
+			double convPr;
+			if(_compSpecialty.equals(q.getComponent())&&numOver>0){
+				convPr = eta(baseConvPr*Math.pow(lambda,numOver), 1+_CSB);
+			}else if(numOver<=0){
+				convPr = baseConvPr;
+			}else{
+				convPr = baseConvPr*Math.pow(lambda,numOver);
+			}
+			for (int u=1; u<=numClicks*(1-ISRatio); u++){
+				double randVal = rand.nextDouble();
+				if(randVal<=convPr){
+					conversions++;
+					numOver+=1;
+					if(_compSpecialty.equals(q.getComponent())&&numOver>0){
+						convPr = eta(baseConvPr*Math.pow(lambda,numOver), 1+_CSB);
+					}else if(numOver<=0){
+						convPr = baseConvPr;
+					}else{
+						convPr = baseConvPr*Math.pow(lambda,numOver);
+					} 
+				}
+			}
+			totalConv+=conversions;
+		}
+		return totalConv/numTrials;
+	}
+
+
 	private double solutionWeight(double budget, HashMap<Query, Item> solution, Map<Query, ArrayList<Predictions>> allPredictionsMap, BidBundle bidBundle) {
-		double threshold = .5;//HC num
+		double threshold = 1;//HC num
 		int maxIters = 15;//HC num
 		double lastSolWeight = Double.MAX_VALUE;
 		double solutionWeight = 0.0;//HC num
-
+		System.out.println("START");
 		/*
 		 * As a first estimate use the weight of the solution
 		 * with no penalty
@@ -2132,10 +2395,12 @@ public abstract class MCKP extends AbstractAgent {
 			}
 
 			if(!Double.isNaN(dailyLimit)) {
-				System.out.println("ERROR dailyLimit NaN3"); //ap
+				
 				if(numClicks*CPC > dailyLimit) {
 					numClicks = (int) (dailyLimit/CPC);
 				}
+			}else{
+				//System.out.println("ERROR dailyLimit NaN3"); //ap
 			}
 
 			solutionWeight += numClicks*convProb;
@@ -2145,6 +2410,7 @@ public abstract class MCKP extends AbstractAgent {
 
 		int numIters = 0;
 		while(Math.abs(lastSolWeight-solutionWeight) > threshold) {
+			System.out.println("last: "+lastSolWeight+" curr: "+solutionWeight+"threashold");
 			numIters++;
 			if(numIters > maxIters) {
 				numIters = 0;
@@ -2204,6 +2470,12 @@ public abstract class MCKP extends AbstractAgent {
 	}
 
 
+	/*
+	 * This method calculates the number of sales on each of the
+	 * previous window-1 days so that the MCKP algorithm can be 
+	 * aware of what sales have already been made. These sales 
+	 * affect the next window-1 number of days.
+	 */
 	protected int[] getPreDaySales() {
 		//-------------------------
 		//Get our current conversion history (amount of conversions on past days within the window)
@@ -2259,6 +2531,7 @@ public abstract class MCKP extends AbstractAgent {
 		//---------------------
 		for (int salesForToday=dailyCapacityUsedMin; salesForToday<=_capacity; salesForToday+=dailyCapacityUsedStep) {
 			double remainingCapacity = (_capacity - salesForToday);
+			//System.out.println("WARNING");
 			HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCapacity,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
 			double profit = 0.0;
 			for(Query q : solution.keySet()) {
@@ -2286,7 +2559,10 @@ public abstract class MCKP extends AbstractAgent {
 
 				double remainingCapacity = (_capacity - dayStartSales);
 				//Get solution for this (startCapacity, salesOnDay)
+				//HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCapacity,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
+				//System.out.println("WARNING");
 				HashMap<Query, Item> solution = fillKnapsack(getIncItemsForOverCapLevel(remainingCapacity,salesForToday,bidLists,budgetLists,allPredictionsMap),salesForToday);
+				//System.out.println("Ran new code");
 				double profit = 0.0;
 				for(Query q : solution.keySet()) {
 					profit += solution.get(q).v();
@@ -2307,7 +2583,12 @@ public abstract class MCKP extends AbstractAgent {
 		return profitMemoizeMap;
 	}
 
+	/*
+	 * CREATE INCREMENTAL ITEMS FOR OVER CAPACITY
+	 */
 	protected ArrayList<IncItem> getIncItemsForOverCapLevel(double remainingCap, double desiredSales, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap) {
+		//System.out.println("IncItemsForOverCap");
+
 		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
 		double penalty = getPenalty(remainingCap, desiredSales);
 		for (Query q : _querySpace) {
@@ -2357,6 +2638,99 @@ public abstract class MCKP extends AbstractAgent {
 		return allIncItems;
 	}
 
+	/*
+	 * CREATE INCREMENTAL ITEM FOR OVER CAPACITY, but consider a knapsack 
+	 * that can take items from any query over the next "numDays" days.
+	 * 
+	 * Note that the bookkeeping on how far over/under capacity the agent is 
+	 * is a bit tricky.
+	 */
+	protected ArrayList<IncItem> getIncItemsForOverCapLevelMultiDay(int numDays, int remainingCap, int[] preDaySales, int[] desiredSales, HashMap<Query,ArrayList<Double>> bidLists, HashMap<Query,ArrayList<Double>> budgetLists, Map<Query, ArrayList<Predictions>> allPredictionsMap) {
+		//System.out.println("IncItemsForOverCap");
+		System.out.println("IncItemsForOverCap MD");
+		ArrayList<IncItem> allIncItems = new ArrayList<IncItem>();
+		//double numTakenYesterday = remainingCap;
+		for(int day=0;day<Math.min(numDays, desiredSales.length);day++){
+			System.out.println("DAY: "+day);
+			remainingCap = calcRemainingCap(day, preDaySales, desiredSales, remainingCap);
+			double penalty = getPenalty(remainingCap, desiredSales[day]);
+			
+			for (Query q : _querySpace) {
+				if(q != new Query()) {
+					ArrayList<Item> itemList = new ArrayList<Item>();
+					debug("Query: " + q);
+					ArrayList<Predictions> queryPredictions = allPredictionsMap.get(q);
+					int itemCount = 0;
+					for(int k = 1; k < 2; k++) {
+						for(int i = 0; i < bidLists.get(q).size(); i++) {
+							for(int j = 0; j < budgetLists.get(q).size(); j++) {
+								boolean targeting = (k != 0);
+								double bid = bidLists.get(q).get(i);
+								double budget = budgetLists.get(q).get(j);
+								Predictions predictions = queryPredictions.get(itemCount);
+								double salesPrice = _salesPrices.get(q);
+								double clickPr = predictions.getClickPr();
+								double numImps = predictions.getNumImp();
+								int numClicks = (int) (clickPr * numImps);
+								double CPC = predictions.getCPC();
+								double cost = numClicks*CPC;
+								double convProb = getConversionPrWithPenalty(q, penalty,predictions.getISRatio());
+								double w = numClicks * convProb;            //weight = numClciks * convProv
+								double v = w * salesPrice - cost;   //value = revenue - cost	[profit]
+								itemList.add(new Item(q,w,v,bid,budget,targeting,0,itemCount,day));
+								itemCount++;
+
+								if(cost + bid*2 < budget) {
+									//If we don't hit our budget, we do not need to consider
+									//higher budgets, since we will have the same result
+									//so we break out of the budget loop
+									break;
+								}
+							}
+						}
+					}
+
+					if(itemList.size() > 0) {
+						debug("Items for " + q);
+						Item[] items = itemList.toArray(new Item[0]);
+						IncItem[] iItems = getIncremental(items);
+						allIncItems.addAll(Arrays.asList(iItems));
+					}
+				}
+			}
+		}
+		Collections.sort(allIncItems);
+		return allIncItems;
+	}
+
+
+	/*
+	 * Calculate the remaining capacity.
+	 * 
+	 * This method handles the "tricky" calculation needed in the Multi-Day Multiple Choice 
+	 * Knapsack Problem. It takes the day in the knapsack being considered, the sales made 
+	 * before the knapsack, the desired sales for each day in the knapsack (based on HC) and
+	 * the remaining capacity before the MD Knapsack.
+	 * 
+	 * Note, this may need to change. The HC doesn't really make sense.
+	 * The MD-MCKP makes more sense in the PMCKP setting.
+	 * 
+	 * We could consider Hillclimbing to set the size of the Multiday Knapsack
+	 * 
+	 */
+	private int calcRemainingCap(int day, int[] preDaySales, int[] desiredSales, int remainingCap) {
+		
+		if(day==0){
+			return remainingCap;
+		}else if(preDaySales.length>day){
+			return remainingCap-desiredSales[day-1]+preDaySales[day];
+		}else{
+			return remainingCap-desiredSales[day-1]+desiredSales[day-preDaySales.length];
+		}
+		
+	}
+
+
 	/**
 	 * Greedily fill the knapsack by selecting incremental items
 	 *
@@ -2372,8 +2746,18 @@ public abstract class MCKP extends AbstractAgent {
 		for (IncItem ii : incItems) {
 			if (budget >= ii.w()) {
 				//System.out.println("Taking 1");
-				solution.put(ii.item().q(), ii.item());
-				budget -= ii.w();
+				//if this item is for the day we are considering, take it
+				if(ii.itemHigh().dayFromNow()==0){
+					solution.put(ii.item().q(), ii.item());
+					budget -= ii.w();
+					//System.out.println("Taking: Day: "+ii.itemHigh().dayFromNow()+" Q: "+ii.itemHigh().q()+" b: "+ii.itemHigh().b());
+					
+
+				}else{
+					budget -= ii.w();
+					//System.out.println("Not Today, but taking Day: "+ii.itemHigh().dayFromNow()+" Q: "+ii.itemHigh().q()+" b: "+ii.itemHigh().b());
+				}
+
 			}
 			else if(budget > 1 && getGoOver()) {
 				//System.out.println("Taking an extra");
@@ -2392,7 +2776,11 @@ public abstract class MCKP extends AbstractAgent {
 					newBudget = (ii.itemHigh().budget()/ii.itemHigh().w())*budget;
 				}
 				//ORIGINAL
-				solution.put(ii.item().q(), makeNewItem(ii, budget, lowW, newValue, newBudget, true, false));
+				if(ii.itemHigh().dayFromNow()==0){
+					solution.put(ii.item().q(), makeNewItem(ii, budget, lowW, newValue, newBudget, true, false));
+				}else{
+					System.out.println("Day: "+ii.itemHigh().dayFromNow()+" Q: "+ii.itemHigh().q()+" b: "+ii.itemHigh().b());
+				}
 				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
 				//TO TEST NOT CHANGING WEIGHT AND VALUE, just change budget
@@ -2407,6 +2795,112 @@ public abstract class MCKP extends AbstractAgent {
 		return solution;
 	}
 
+//	
+//	/**
+//	 * Fill knapsack with incremental items in a Greedy manor. Recalculate the penalty of everything 
+//	 * in the knapsack once you take it.
+//	 *
+//	 * @param incItems
+//	 * @param budget
+//	 * @return
+//	 */
+//	protected HashMap<Query, Item> fillKnapsackPenalty(ArrayList<IncItem> incItems, double budget) {
+//		if (budget <= 0) {
+//			return new HashMap<Query, Item>();
+//		}
+//		HashMap<Query, Item> solution = new HashMap<Query, Item>();
+//		for (IncItem ii : incItems) {
+//			if (budget >= ii.w()) {
+//				//System.out.println("Taking 1");
+//				//if this item is for the day we are considering, take it
+//				budget -= ii.w();
+//				if(ii.itemHigh().dayFromNow()==0){
+//					solution.put(ii.item().q(), ii.item());
+//
+//				}else{
+//					System.out.println("Day: "+ii.itemHigh().dayFromNow()+" Q: "+ii.itemHigh().q()+" b: "+ii.itemHigh().b());
+//				}
+//				incItems = recalcWandVOfItems(incItems);
+//
+//			}
+//			else if(budget > 1 && getGoOver()) {
+//				//System.out.println("Taking an extra");
+//				Item itemHigh = ii.itemHigh();
+//				double incW = ii.w();
+//				double weightHigh = budget / incW;
+//				double weightLow = 1.0 - weightHigh;
+//				double lowVal = ((ii.itemLow() == null) ? 0.0 : ii.itemLow().v());
+//				double lowW = ((ii.itemLow() == null) ? 0.0 : ii.itemLow().w());
+//				double newValue = itemHigh.v()*weightHigh + lowVal*weightLow;
+//				//double newBudget = itemHigh.budget()*weightHigh;//Added for testing
+//				double newBudget = itemHigh.budget();
+//				if(ii.itemLow()!=null){
+//					newBudget = (ii.itemHigh().budget()/ii.itemHigh().w())*(ii.itemLow().w()+budget);
+//				}else{
+//					newBudget = (ii.itemHigh().budget()/ii.itemHigh().w())*budget;
+//				}
+//				//ORIGINAL
+//				if(ii.itemHigh().dayFromNow()==0){
+//					solution.put(ii.item().q(), makeNewItem(ii, budget, lowW, newValue, newBudget, true, false));
+//				}else{
+//					System.out.println("Day: "+ii.itemHigh().dayFromNow()+" Q: "+ii.itemHigh().q()+" b: "+ii.itemHigh().b());
+//				}
+//				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),itemHigh.budget(),itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+//				//solution.put(ii.item().q(), new Item(ii.item().q(),budget+lowW,newValue,itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+//				//TO TEST NOT CHANGING WEIGHT AND VALUE, just change budget
+//				//solution.put(ii.item().q(), new Item(ii.item().q(),ii.w(),ii.v(),itemHigh.b(),newBudget,itemHigh.targ(),itemHigh.isID(),itemHigh.idx()));
+//
+//				break;
+//			}
+//			else {
+//				break;
+//			}
+//		}
+//		return solution;
+//	}
+//	
+	
+	/*private ArrayList<IncItem> recalcWandVOfItems(ArrayList<IncItem> incItems) {
+		for(int i=0;i<incItems.size();i++){
+			incItems.get(i).itemHigh()
+			incItems.add(i, recalculatePenalty(incItems.get(i).itemHigh(), pred?, ))
+		}
+		
+		
+		return null;
+	}
+
+
+	
+	 * taken from Sebastian's code
+	 
+	private Item recalculatePenalty (Item initialItem, Map<Query,ArrayList<Predictions>> allPredictionsMap, int capacityUsed, int remainingCap){
+		//This method is used only when FastGreedyMCKP uses Amy's hack.
+		//It recalculates the weight and value of an item based on a new solution weight.
+
+		//Get the new penalty and item predictions for the given item.
+		double newPenalty = getPenalty(remainingCap, capacityUsed);
+		Predictions itemPredictions = allPredictionsMap.get(initialItem.q()).get(initialItem.idx());
+
+		//Recalculate all the relevant values.
+		double salesPrice = _salesPrices.get(initialItem.q());
+		double clickPr = itemPredictions.getClickPr();
+		double CPC = itemPredictions.getCPC();
+		double numImps = itemPredictions.getNumImp();
+		double convProb = getConversionPrWithPenalty(initialItem.q(), newPenalty, itemPredictions.getISRatio());
+		int numClicks = (int) (numImps*clickPr);
+		double cost = CPC*numClicks;
+		double w = numClicks*convProb;
+		double v = w*salesPrice - cost;
+
+		//Create the new version of the item.
+		Item finalItem = new Item(initialItem.q(), w, v, initialItem.b(), initialItem.budget(), initialItem.targ(), initialItem.isID(), initialItem.idx());
+
+		//Return this version of the item.
+		return finalItem;	   
+	   }
+	*/
+	
 	protected abstract boolean getGoOver();
 
 
@@ -2546,66 +3040,7 @@ public abstract class MCKP extends AbstractAgent {
 		return ii;
 	}
 
-	public double getConversionPrWithPenalty(Query q, double penalty) {
-		double convPr;
-		String component = q.getComponent();
-		double baseConvPr = _baseConvProbs.get(q);
-		if(_compSpecialty.equals(component)) {
-			convPr = eta(baseConvPr*penalty,1+_CSB);
-		}
-		else if(component == null) {
-			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
-		}
-		else {
-			convPr = baseConvPr*penalty;
-		}
-		convPr *= (1.0 - _ISRatioModel.getISRatio(q)[0]);//HC num
-		return convPr;
-	}
-
-	public double getConversionPrWithPenalty(Query q, double penalty, double[] slotDistr) {
-		double convPr;
-		String component = q.getComponent();
-		double baseConvPr = _baseConvProbs.get(q);
-		if(_compSpecialty.equals(component)) {
-			convPr = eta(baseConvPr*penalty,1+_CSB);
-		}
-		else if(component == null) {
-			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
-		}
-		else {
-			convPr = baseConvPr*penalty;
-		}
-		double[] ISRatioArr = _ISRatioModel.getISRatio(q);
-		double ISRatio = 0;//HC num
-		for(int i = 0; i < slotDistr.length; i++) {
-			ISRatio += ISRatioArr[i]*slotDistr[i];
-		}
-		convPr *= (1.0 - ISRatio);//HC num
-		return convPr;
-	}
-
-	public double getConversionPrWithPenalty(Query q, double penalty, double ISRatio) {
-		double convPr;
-		String component = q.getComponent();
-		double baseConvPr = _baseConvProbs.get(q);
-		if(_compSpecialty.equals(component)) {
-			convPr = eta(baseConvPr*penalty,1+_CSB);
-		}
-		else if(component == null) {
-			//If query has no component, searchers who click will have some chance (1/3) of having our component specialty.
-			convPr = eta(baseConvPr*penalty,1+_CSB) * (1/3.0) + baseConvPr*penalty*(2/3.0);//HC num
-		}
-		else {
-			convPr = baseConvPr*penalty;
-		}
-
-		//We just computed the conversion probability for someone, assuming they're not an IS user.
-		//If an IS user, conversion probability is 0.
-		// conversionProb = (PrIS) * 0 + (1 - PrIS) * conversionProbGivenNonIS
-		convPr *= (1.0 - ISRatio);
-		return convPr;
-	}
+	
 
 	// returns the corresponding index for the targeting part of fTargetfPro
 	private int getFTargetIndex(boolean targeted, Product p, Product target) {
@@ -2835,6 +3270,7 @@ public abstract class MCKP extends AbstractAgent {
 	//this should be commented out if not testing the parameter reading
 	public static void main (String[] args){
 		//MCKP testParams = new MCKP();
+
 
 		//	System.out.println(testParams.DEBUG);
 		//	System.out.println(testParams.SAFETYBUDGET);
